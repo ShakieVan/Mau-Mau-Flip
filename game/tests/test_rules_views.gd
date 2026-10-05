@@ -7,13 +7,25 @@ const VIEW_KEYS := ["v", "seat", "side", "phase", "turn", "dir", "color", "wish"
 const PLAYER_KEYS := ["seat", "name", "kind", "count", "backs", "place", "mau", "connected", "score"]
 const HINT_KEYS := ["playable", "wild", "can_draw", "can_keep", "can_challenge", "can_accept", "can_mau", "catch", "need_color",
 	"can_next_round", "text"]
-const LEAK_GAMES := 60
+# Partienzahlen: Standardlauf kurz (gemeinsame Godot-Sperre), volle Zahlen in test_rules_views_long.gd. Einzeln überschreibbar
+# per Umgebungsvariable (godot_run.ps1 -EnvPairs 'RULES_LEAK_GAMES=60').
+const COUNTS := {"RULES_JSON_GAMES": 10, "RULES_LEAK_GAMES": 16, "RULES_HINT_GAMES": 5, "RULES_TRIP_GAMES": 15}
 
 var failures := 0
 var checks := 0
 var leak_errors := 0
 var leak_views := 0
 var leak_events := 0
+
+
+# Anzahl für einen Teil des Tests (test_rules_views_long.gd überschreibt counts()).
+func counts() -> Dictionary:
+	return COUNTS
+
+
+func count(key: String) -> int:
+	var env := OS.get_environment(key)
+	return int(env) if env.is_valid_int() else int(counts()[key])
 
 
 func check(ok: bool, message: String) -> void:
@@ -31,6 +43,7 @@ func _initialize() -> void:
 	_hint_consistency()
 	_determinism()
 	_round_trip()
+	print("Laufzeit seit Godot-Start: %.1f s" % (Time.get_ticks_msec() / 1000.0))
 	print("RESULT: %d ok" % (checks - failures) if failures == 0 else "RESULT: %d ok, %d FAIL" % [checks - failures, failures])
 	quit(0 if failures == 0 else 1)
 
@@ -115,7 +128,7 @@ func _json_views() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 77
 	var bad := ""
-	for i in 30:
+	for i in count("RULES_JSON_GAMES"):
 		var g := MauGame.create(RulesFixture.random_config(rng), RulesFixture.players(rng.randi_range(2, 10), "bot"), rng.randi())
 		g.start_round()
 		for step in 400:
@@ -299,7 +312,7 @@ func _leak_runs() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
 	var first := ""
-	for i in LEAK_GAMES:
+	for i in count("RULES_LEAK_GAMES"):
 		var cfg := RulesFixture.random_config(rng)
 		if i % 3 == 0:
 			cfg.backs_visible = true
@@ -371,7 +384,7 @@ func _hint_consistency() -> void:
 	rng.seed = 8080
 	var first := ""
 	var trials := 0
-	for i in 16:
+	for i in count("RULES_HINT_GAMES"):
 		var cfg := RulesFixture.random_config(rng)
 		if i % 2 == 0:
 			cfg.mau_call = "catch"
@@ -481,7 +494,8 @@ func _round_trip() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 31337
 	var bad := ""
-	for i in 40:
+	var trips := count("RULES_TRIP_GAMES")
+	for i in trips:
 		var cfg := RulesFixture.random_config(rng)
 		var n := rng.randi_range(2, 10)
 		var g := MauGame.create(cfg, RulesFixture.players(n, "bot"), 5_000_000_000 + i)
@@ -508,7 +522,7 @@ func _round_trip() -> void:
 		if JSON.stringify(g.to_dict()) != JSON.stringify(h.to_dict()):
 			bad = "Partie %d: nach dem Laden anders weitergespielt" % i
 			break
-	check(bad == "", "to_dict/from_dict-Rundreise über JSON (40 Partien): " + bad)
+	check(bad == "", "to_dict/from_dict-Rundreise über JSON (%d Partien): %s" % [trips, bad])
 	# Leerer bzw. neuer Zustand
 	var fresh := MauGame.create(RuleConfig.preset("familie"), RulesFixture.players(4), 1)
 	var back := MauGame.from_dict(JSON.parse_string(JSON.stringify(fresh.to_dict())))

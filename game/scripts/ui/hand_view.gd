@@ -9,10 +9,15 @@ extends Node2D
 #   Seitlich gleiten: Lupe (B) bzw. Karussell drehen (C). Halten 350 ms: Großansicht – die Karte steigt vergrößert über den Finger,
 #   darunter erscheint im frei gewordenen Raum ein „?“. Danach: nach oben = ausspielen, seitlich = umsortieren (schaltet auf
 #   „manuell“), kurz nach unten auf das „?“ (~40 dp) = Kartenhilfe. Loslassen ohne Zug lässt die Großansicht offen, mit „?“-Knopf.
-# Koordinaten: layout_rect ist der Handbereich im lokalen System dieses Nodes (Standard: unten in 1600×720); die Karten ragen
-# nach unten aus dem Bild, sichtbar ist der obere Teil. Signale liefern globale Positionen (Fingerposition).
-# Der Tisch (Modul F1b) setzt Karten, spielbare Karten und Ablage; Ausspielen ist optimistisch: Die Karte verlässt die Hand sofort,
-# cancel_play(id) holt sie zurück (Host lehnt ab), take_card(id) übergibt den Knoten an die Regie, set_cards ohne sie blendet aus.
+# Koordinaten: layout_rect ist der Handbereich im lokalen System dieses Nodes. Solange der Tisch ihn nicht setzt, folgt er dem
+# unteren Rand des sichtbaren Bereichs (auch 19:9); die Karten ragen nach unten aus dem Bild, sichtbar ist der obere Teil.
+# Signale liefern globale Positionen (Fingerposition).
+# Zeichenreihenfolge: über die Kindreihenfolge, nicht über große z_index-Werte. Ruhende Karten haben z_index 0; gezogene,
+# große und ausgespielte Karten samt Abdunklung und Geisterbild liegen bei TOP_Z (≤ 100) über der Tisch-UI derselben Ebene.
+# Tisch-Overlays (Farbwahl, Hilfe, Sichtschutz, Rundenende) gehören in eine CanvasLayer mit höherer Nummer.
+# Der Tisch (Modul F1b/F2) setzt Karten, spielbare Karten und Ablage; Ausspielen ist optimistisch: Die Karte verlässt die Hand
+# sofort, cancel_play(id) holt sie zurück (Host lehnt ab), take_card(id) übergibt den Knoten an die Regie, set_cards ohne sie
+# blendet aus. Neue Runde (view.round) und Spielerwechsel (view.seat bzw. reset_for_player) räumen die Hand sofort.
 
 signal play_requested(id: int, drop_global: Vector2)
 signal help_requested(id: int, face: String)
@@ -22,8 +27,9 @@ signal drag_ended(id: int, global: Vector2, played: bool)
 signal order_changed(ids: Array)
 signal selection_changed(id: int)
 signal play_denied(id: int)             # Ausspielen versucht, Karte nicht spielbar: Karte schüttelt, Hinweis zeigt der Tisch
-signal sort_mode_changed(mode: String)  # manuelles Umsortieren hat die Automatik abgeschaltet ("manuell")
+signal sort_mode_changed(mode: String)  # Sortierung hat sich ohne set_sort_mode geändert (Umsortieren → "manuell", Spielerwechsel)
 signal big_view_changed(id: int)        # Großansicht geöffnet (Kartenkennung) bzw. geschlossen (−1)
+signal drag_armed(id: int, armed: bool) # Ziehen nach oben ist scharf: Loslassen spielt aus (Geisterbild auf der Ablage)
 
 const DP := HandLayout.DP
 const LIFT_PLAYABLE := 8.0 * DP
@@ -47,18 +53,29 @@ const DRAG_OMEGA := 40.0
 const SCROLL_OMEGA := 5.0               # Einrasten (ω > 1/τ: kein Überschwingen)
 const TICK_MS := 35.0                   # Haptik-Raster höchstens alle 35 ms
 const EDGE_SCROLL := 6.0                # Karten/s beim Umsortieren am Rand des Karussells
-const TILT_PER_SPEED := 0.02              # Schwung-Neigung: Scherung (rad) je Karte/s …
-const TILT_MAX := deg_to_rad(12.0)       # … höchstens ±12°, federt zurück
+const TILT_PER_SPEED := 0.02            # Schwung-Neigung: Scherung (rad) je Karte/s …
+const TILT_MAX := deg_to_rad(12.0)      # … höchstens ±12°, federt zurück
+const FLING_STOP := 2.0                 # Karten/s: ein Tipp in einen schnelleren Schwung hält nur an
+const TOP_Z := 50                       # z_index der obersten Schicht (gezogen, groß, ausgespielt, Abdunklung); höchstens 100
+const TOP_KEY := 1000000                # Sortierschlüssel ab hier = oberste Schicht
+const GHOST_ALPHA := 0.45               # Geisterbild auf der Ablage
+const DEFAULT_RECT := Rect2(270, 500, 1060, 220)
+const SIDE_MARGIN := 270.0              # Standard-Handbereich: links/rechts frei für die Knöpfe …
+const HAND_H := 220.0                   # … und 220 px hoch am unteren Rand
 
-var layout_rect := Rect2(270, 500, 1060, 220): set = set_layout_rect
+var layout_rect := DEFAULT_RECT: set = set_layout_rect
 var sort_mode := "farbe"
 var enforce_playable := true            # nur Karten aus set_playable dürfen ausgespielt werden
 var dim_unplayable := true              # nicht spielbare Karten leicht abdunkeln, solange etwas spielbar ist
 var deselect_on_outside := true         # Tipp außerhalb der Hand hebt die Auswahl auf
-var play_target := Vector2.INF          # global: Ablage, zu der ausgespielte Karten fliegen (INF = bleiben stehen)
+var play_target := Vector2.INF: set = set_play_target    # global: Ablage, zu der ausgespielte Karten fliegen (INF = bleiben)
 var play_target_scale := 0.66
-var spawn_from := Vector2.INF           # global: woher neue Karten kommen (Nachziehstapel); INF = von oben
+var spawn_from := Vector2.INF: set = set_spawn_from      # global: woher neue Karten kommen (Nachziehstapel); INF = von oben
 var haptics := true
+var reduced := false: set = set_reduced # Effektstufe „reduziert“: kein Glanzstreifen, keine Neigung, keine Bögen
+var night := -1.0: set = set_night      # −1 = automatisch nach der aktiven Seite (hell = Tag); sonst 0 = Tag … 1 = Nacht
+var color_rim := true                   # spielbare Karten mit Rand in der aktuellen Farbe (apply_view: view.color)
+var accent := Color(0, 0, 0, 0)         # aktuelle Farbe für den Rand (Alpha 0 = Standardglühen)
 var clock_ms := -1.0                    # Testuhr (≥ 0 ersetzt Time.get_ticks_msec)
 var dp := DP                            # Pixel je dp für Gestenschwellen (aus der Bildschirmdichte)
 
@@ -72,6 +89,8 @@ var _scroll_v := 0.0
 var _scroll_target := 0.0
 var _scroll_drag := false
 var _scroll_press := 0.0
+var _user_scroll := false               # Schwung stammt vom Nutzer (nur dann Haptik-Raster)
+var _fling_stop := false                # Berührung hat einen laufenden Schwung angehalten: Tipp wählt nichts
 var _focus := -1.0
 var _selected := -1
 var _deselected_id := -1
@@ -86,6 +105,7 @@ var _drag_id := -1
 var _drag_kind := ""                    # "play" | "reorder"
 var _drag_grab := Vector2.ZERO          # Kartenmitte − Finger
 var _drag_changed := false
+var _armed_id := -1
 var _glided := false                    # die laufende Geste ist seitlich geglitten
 var _sticky_press := false              # die laufende Geste begann auf der offenen Großansicht
 var _finger := Vector2.ZERO
@@ -100,6 +120,15 @@ var _last_tick_ms := -1000.0
 var _tilt := 0.0                        # Schwung-Neigung der Karussellkarten (Scherung)
 var _tilt_prev := 0.0
 var _overlay: Overlay
+var _ghost: CardView
+var _ghost_a := 0.0
+var _rect_explicit := false             # layout_rect vom Tisch gesetzt (sonst folgt er dem sichtbaren Bereich)
+var _rect_auto := false                 # _fit_to_view setzt layout_rect gerade selbst
+var _auto_day := false                  # aktive Seite ist hell (Tagtisch)
+var _round := -1
+var _seat := -1
+var _seat_state := {}                   # Platz → {sort, order}: Sortierung je Spieler beim Weitergeben
+var _manual_seed: Array[int] = []       # gemerkte manuelle Reihenfolge für die nächste Hand
 
 
 class Slot:
@@ -123,26 +152,47 @@ class Slot:
 	var played_ms := 0.0
 	var prev_index := 0
 	var fade := 1.0
+	var key := 0                        # Zeichenreihenfolge (größer = weiter oben)
 
 
 func _init() -> void:
 	_overlay = Overlay.new()
-	_overlay.z_index = 2000
 	add_child(_overlay)
 
 
 func _ready() -> void:
 	dp = _compute_dp()
 	_gesture.dp = dp
+	reduced = UiApp.reduced_effects()
+	var app := UiApp.app()
+	var st: Variant = app.get("settings") if app != null else null
+	if st is Object and (st as Object).has_signal("changed"):
+		(st as Object).connect("changed", _on_setting_changed)
+	if not get_viewport().size_changed.is_connected(_fit_to_view):
+		get_viewport().size_changed.connect(_fit_to_view)
+	_fit_to_view()
+
+
+func _notification(what: int) -> void:
+	# Fokusverlust (Benachrichtigungsleiste, Anruf, Systemgeste): laufende Geste abbrechen, nichts ausspielen
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED:
+		if _gesture.is_active() or _big_id != -1 or _drag_id != -1:
+			touch_cancel()
+
+
+func _on_setting_changed(key: String, value: Variant) -> void:
+	if key == "effekte":
+		reduced = str(value) == "reduziert"
 
 
 # ---------------------------------------------------------------- Schnittstelle
 
 # Karten der Hand: [{id, face, back}] (face = aktive Seite). Neue Karten fliegen ein und schimmern 3 s, fehlende blenden aus,
-# geänderte Gesichter (Flip) wenden sich als Welle von links nach rechts; nach 100 ms Pause federt die Hand in die neue Sortierung.
+# gewendete Karten (Flip: andere Seite, die alte ist jetzt Rückseite) wenden sich als Welle von links nach rechts; nach 100 ms
+# Pause federt die Hand in die neue Sortierung. Eine andere Karte unter derselben Kennung (Kennungen werden je Runde neu
+# gemischt) ist kein Flip: Die alte blendet aus, die neue wird ausgeteilt.
 func set_cards(cards: Array) -> void:
 	var now := _now()
-	var dealing := _slots.is_empty()
 	var incoming := {}
 	for c in cards:
 		incoming[int(c.id)] = c
@@ -157,26 +207,34 @@ func set_cards(cards: Array) -> void:
 		var face := str(c.get("face", ""))
 		var back := str(c.get("back", ""))
 		var s: Slot = _slots.get(id)
+		if s != null and s.face != face and not _is_flip(s, face, back):
+			_remove_slot(id)
+			s = null
 		if s == null:
 			s = _make_slot(id, face, back)
 			added.append(s)
 		elif s.face != face:
-			# Seitenwechsel: angezeigt bleibt zunächst das alte Gesicht (jetzt Rückseite), dann wendet die Karte
-			s.view.setup(id, face, back, s.view.current_key() == face)
+			# Seitenwechsel: angezeigt bleibt zunächst das alte Gesicht (jetzt Rückseite), dann wendet die Karte.
+			# Ohne Rückseiten-Angabe (peek_own_backs aus) ist die neue Rückseite das alte Gesicht.
+			var nb := back if back != "" else s.face
+			s.view.setup(id, face, nb, s.view.current_key() == face)
 			s.face = face
-			s.back = back
+			s.back = nb
 			turned.append(s)
-		elif s.back != back:
+		elif back != "" and s.back != back:
 			s.back = back
 			s.view.setup(id, face, back, s.view.showing_front)
 		if s.played and now - s.played_ms < PLAY_TIMEOUT_MS:
 			continue
 		s.played = false
 		live.append({"id": id, "face": s.face, "back": s.back})
+	# Austeilen: keine Karte der bisherigen Hand bleibt (leere Hand, neue Runde)
+	var dealing := added.size() == cards.size()
 	var new_order := _ordered(live)
+	_manual_seed.clear()
 	var base_delay := _wave(turned, 0.0, FLIP_WAVE_S, FLIP_CARD_S)
 	_apply_order(new_order, base_delay, not turned.is_empty())
-	# Austeilen in eine leere Hand: Karten fliegen nacheinander ein (ohne Schimmern); sonst schimmern neue Karten 3 s
+	# Austeilen: Karten fliegen nacheinander ein (ohne Schimmern); sonst schimmern neue Karten 3 s
 	var k := 0
 	for id in _order:
 		var s: Slot = _slots[id]
@@ -234,11 +292,46 @@ func set_enabled(on: bool) -> void:
 		_focus = -1.0
 
 
+# Handbereich (lokal) nach der Geometrie des Tisches; danach folgt er nicht mehr automatisch dem sichtbaren Bereich.
 func set_layout_rect(r: Rect2) -> void:
 	layout_rect = r
+	if not _rect_auto:
+		_rect_explicit = true
 	var w := HandLayout.card_width(r.size.y)
 	for s in _slots.values():
 		(s as Slot).view.width = w
+
+
+# Handbereich wieder automatisch am unteren Rand des sichtbaren Bereichs ausrichten.
+func use_auto_layout() -> void:
+	_rect_explicit = false
+	_fit_to_view()
+
+
+# Standard-Handbereich für einen sichtbaren Bereich: unten, 220 px hoch, links/rechts 270 px frei.
+static func default_rect(view: Rect2) -> Rect2:
+	return Rect2(view.position.x + SIDE_MARGIN, view.end.y - HAND_H, maxf(view.size.x - 2.0 * SIDE_MARGIN, 200.0), HAND_H)
+
+
+# Ablage (global): ausgespielte Karten fliegen dorthin, das Geisterbild beim Hochziehen liegt dort. INF = aus.
+func set_play_target(g: Vector2) -> void:
+	play_target = g
+
+
+# Nachziehstapel (global): neue Karten kommen von dort. INF = von oben.
+func set_spawn_from(g: Vector2) -> void:
+	spawn_from = g
+
+
+func set_reduced(on: bool) -> void:
+	reduced = on
+	if on:
+		_tilt = 0.0
+
+
+# Tag/Nacht des Tisches (0 = heller Papiertisch, 1 = Nacht); −1 = nach der aktiven Seite der Karten.
+func set_night(v: float) -> void:
+	night = v
 
 
 func is_peeking() -> bool:
@@ -247,6 +340,11 @@ func is_peeking() -> bool:
 
 func is_enabled() -> bool:
 	return _enabled
+
+
+# Ziehen nach oben ist scharf (Loslassen spielt aus).
+func is_play_armed() -> bool:
+	return _armed_id != -1
 
 
 func get_order() -> Array[int]:
@@ -302,25 +400,111 @@ func cancel_play(id: int) -> void:
 
 
 # Kartenknoten an die Regie übergeben (Flug zur Ablage): ohne Eltern, transform = bisheriges globales Transform.
+# Räumt Auswahl, Großansicht und Ziehen dieser Karte auf.
 func take_card(id: int) -> CardView:
 	var s: Slot = _slots.get(id)
 	if s == null:
 		return null
+	if _drag_id == id:
+		_cancel_gesture()
+	if _big_id == id:
+		_close_big()
+	if _armed_id == id:
+		_set_armed(-1)
+	if _press_id == id:
+		_press_id = -1
+	if _selected == id:
+		_set_selected(-1)
 	var xf := s.view.global_transform
 	_slots.erase(id)
 	_order.erase(id)
 	_refresh_mode()
+	_gaps = CardSort.group_starts(_faces(_order), sort_mode)
 	remove_child(s.view)
 	s.view.transform = xf
 	s.view.z_index = 0
 	s.view.elevation = 0.0
+	s.view.skew = 0.0
+	s.view.modulate.a = 1.0
 	return s.view
+
+
+# Hand sofort leeren (neue Runde, Sichtschutz): ohne Ausblenden, Gesten/Großansicht/Auswahl/Schwung zurückgesetzt.
+# Sortierung und Rückseiten-Ansicht bleiben.
+func clear() -> void:
+	_save_seat_state()
+	_cancel_gesture()
+	_close_big()
+	_set_armed(-1)
+	for s in _slots.values():
+		_free_view((s as Slot).view)
+	for s in _leaving:
+		_free_view(s.view)
+	_slots.clear()
+	_leaving.clear()
+	_order.clear()
+	_gaps = PackedInt32Array()
+	_mode = HandLayout.Mode.FAN
+	_focus = -1.0
+	_scroll = 0.0
+	_scroll_v = 0.0
+	_scroll_target = 0.0
+	_scroll_drag = false
+	_user_scroll = false
+	_tilt = 0.0
+	_tilt_prev = 0.0
+	_ghost_a = 0.0
+	if _ghost != null:
+		_ghost.visible = false
+	if _selected != -1:
+		_set_selected(-1)
+	_deselected_id = -1
+
+
+# Spielerwechsel (Weitergeben): alles vom Vorgänger zurücksetzen – Karten, Rückseiten-Ansicht, Auswahl, Großansicht, Ziehen,
+# spielbare Karten. Mit seat ≥ 0 wird die Sortierung je Platz gemerkt und für den neuen Platz wiederhergestellt (auch die
+# manuelle Reihenfolge); ein Platz ohne gemerkten Stand behält eine automatische Sortierung, „manuell“ wird zu „farbe“.
+# apply_view ruft das selbst auf, wenn view.seat wechselt.
+func reset_for_player(seat := -1) -> void:
+	clear()
+	_peek = false
+	_playable.clear()
+	_manual_seed.clear()
+	var want := sort_mode
+	var st: Dictionary = _seat_state.get(seat, {}) if seat >= 0 else {}
+	if st.has("sort"):
+		want = str(st["sort"])
+		if want == "manuell":
+			_manual_seed.assign(st.get("order", []))
+	elif want == "manuell":
+		want = "farbe"
+	if seat >= 0:
+		_seat = seat
+	if want != sort_mode:
+		sort_mode = want
+		sort_mode_changed.emit(want)
 
 
 # ---------------------------------------------------------------- Adapter für den Tisch (TableView, Modul F1b; alle optional)
 
-# Sicht des eigenen Platzes übernehmen: Handkarten und spielbare Karten (hints.playable).
+# Sicht des eigenen Platzes übernehmen: Handkarten und spielbare Karten (hints.playable). Neue Runde (view.round) räumt die
+# Hand vor dem Austeilen; ein anderer Platz (view.seat, Weitergeben) setzt den Zustand zurück; Sichtschutz (seat < 0) leert.
 func apply_view(v: Dictionary) -> void:
+	if v.has("seat"):
+		var seat := int(v["seat"])
+		if seat < 0:
+			clear()
+			return
+		if _seat >= 0 and seat != _seat:
+			reset_for_player(seat)
+		_seat = seat
+	if v.has("round"):
+		var r := int(v["round"])
+		if _round != -1 and r != _round:
+			clear()
+		_round = r
+	var col := str(v.get("color", ""))
+	accent = UiPalette.glow(col) if color_rim and col != "" else Color(0, 0, 0, 0)
 	set_cards(v.get("hand", []))
 	var hints: Dictionary = v.get("hints", {})
 	set_playable(hints.get("playable", []))
@@ -405,12 +589,17 @@ func _unhandled_input(event: InputEvent) -> void:
 		var st := event as InputEventScreenTouch
 		var p := _event_local(st.position)
 		if st.pressed:
+			if _touch != -1 and st.index == _touch:
+				touch_cancel()        # Loslassen ging verloren: neu beginnen
 			if _touch == -1 and touch_down(p):
 				_touch = st.index
 				get_viewport().set_input_as_handled()
 		elif st.index == _touch:
 			_touch = -1
-			touch_up(p)
+			if st.canceled:
+				touch_cancel()        # vom System abgebrochen (ACTION_CANCEL): nichts ausspielen
+			else:
+				touch_up(p)
 			get_viewport().set_input_as_handled()
 	elif event is InputEventScreenDrag:
 		var sd := event as InputEventScreenDrag
@@ -429,6 +618,7 @@ func touch_down(p: Vector2, t_ms := -1.0) -> bool:
 		return false
 	var now := _time(t_ms)
 	_sticky_press = false
+	_fling_stop = false
 	if _big_sticky:
 		# Großansicht offen: „?“ = Hilfe; auf der Karte nach oben wischen = ausspielen; sonst schließen
 		var id := _big_id
@@ -457,9 +647,9 @@ func touch_down(p: Vector2, t_ms := -1.0) -> bool:
 	_glided = false
 	_gesture.press(now, p)
 	_gesture.play_dist = _play_dist()
-	var room := _view_rect().end.y - 10.0 * DP - p.y
-	_gesture.help_dist = clampf(room, 2.0 * _gesture.tol(), HandLayout.Gesture.HELP_DP * dp)
+	_gesture.help_dist = HandLayout.Gesture.HELP_DP * dp
 	if _mode == HandLayout.Mode.CAROUSEL:
+		_fling_stop = absf(_scroll_v) > FLING_STOP
 		_scroll_press = _scroll
 		_scroll_v = 0.0
 		_scroll_target = _scroll
@@ -479,6 +669,7 @@ func touch_move(p: Vector2, t_ms := -1.0) -> void:
 			_begin_play_drag()
 		if _drag_id != -1:
 			drag_moved.emit(to_global(p))
+			_update_armed()
 		return
 	match ev:
 		"hold":
@@ -487,6 +678,7 @@ func touch_move(p: Vector2, t_ms := -1.0) -> void:
 			_glided = true
 			if _mode == HandLayout.Mode.CAROUSEL:
 				_scroll_drag = true
+				_user_scroll = true
 				_scroll_press = _scroll
 		"play_drag":
 			_begin_play_drag()
@@ -505,6 +697,7 @@ func touch_move(p: Vector2, t_ms := -1.0) -> void:
 		HandLayout.Gesture.S.PLAY_DRAG:
 			if _drag_id != -1:
 				drag_moved.emit(to_global(p))
+				_update_armed()
 		HandLayout.Gesture.S.REORDER:
 			_update_reorder()
 		HandLayout.Gesture.S.HELP:
@@ -528,7 +721,8 @@ func touch_up(p: Vector2, t_ms := -1.0) -> void:
 		return
 	match ev:
 		"tap", "double_tap":
-			_on_tap(_press_id)
+			if not _fling_stop:
+				_on_tap(_press_id)
 		"play":
 			_end_play_drag(true)
 		"cancel":
@@ -547,13 +741,22 @@ func touch_up(p: Vector2, t_ms := -1.0) -> void:
 		"horizontal_end":
 			if _mode == HandLayout.Mode.CAROUSEL and _scroll_drag:
 				var v := -_gesture.velocity.x / HandLayout.FISH_S_MAX
-				_scroll_v = v
 				_scroll_target = float(HandLayout.snap(HandLayout.project(_scroll, v), _order.size()))
+				_scroll_v = _fling_velocity(v, _scroll_target - _scroll)
 	_scroll_drag = false
 	if _mode == HandLayout.Mode.CAROUSEL:
 		_scroll_target = float(HandLayout.snap(_scroll_target, _order.size()))
 	_focus = -1.0
 	_press_id = -1
+	_fling_stop = false
+
+
+# Berührung vom System abgebrochen (canceled, Fokusverlust): Geste abbrechen, nichts ausspielen, Großansicht zu.
+func touch_cancel() -> void:
+	_cancel_gesture()
+	_close_big()
+	_focus = -1.0
+	_fling_stop = false
 
 
 func _hover(p: Vector2) -> void:
@@ -569,6 +772,7 @@ func _on_tap(id: int) -> void:
 		return
 	if _mode == HandLayout.Mode.CAROUSEL:
 		_scroll_target = float(_order.find(id))
+		_user_scroll = false
 	if _peek:
 		return
 	if id == _selected:
@@ -576,6 +780,14 @@ func _on_tap(id: int) -> void:
 	else:
 		_set_selected(id)
 		_vibrate(8, 0.3)
+
+
+# Startgeschwindigkeit des Einrastens: höchstens ω·|Weg| in Richtung des Ziels, sonst überschwingt die kritisch gedämpfte Feder
+# (vor allem, wenn das Ziel am Kartenende begrenzt wurde); vom Ziel weg gar nicht.
+func _fling_velocity(v: float, to_target: float) -> float:
+	if v * to_target <= 0.0:
+		return 0.0
+	return signf(v) * minf(absf(v), SCROLL_OMEGA * absf(to_target))
 
 
 func _on_hold() -> void:
@@ -591,7 +803,14 @@ func _on_hold() -> void:
 	var s: Slot = _slots[id]
 	var ch := s.view.card_size().y * BIG_SCALE
 	var vr := _view_rect()
-	_badge_pos = Vector2(_finger.x, minf(_finger.y + HandLayout.Gesture.HELP_DP * dp, vr.end.y - BADGE_R - 8.0 * DP))
+	# „?“ unter dem Finger, höchstens so tief, dass es sichtbar bleibt. Scharf wird es, sobald der Finger seine Mitte erreicht;
+	# am unteren Rand (Finger schon auf Höhe des „?“) genügt ein kurzer Zug nach unten mit kleinerer Toleranz.
+	var help := HandLayout.Gesture.HELP_DP * dp
+	var by := minf(_finger.y + help, vr.end.y - BADGE_R * 0.65)
+	_badge_pos = Vector2(_finger.x, by)
+	var room := vr.end.y - _finger.y
+	_gesture.hold_tol = clampf((room - 2.0) * 0.8, 2.5 * dp, _gesture.tol())
+	_gesture.help_dist = clampf(by - _finger.y - BADGE_R * 0.35, minf(_gesture.hold_tol, help), help)
 	var bottom := minf(_finger.y - BIG_GAP, _badge_pos.y - BADGE_R - 6.0 * DP)
 	var half_w := s.view.width * BIG_SCALE * 0.5 + 8.0 * DP
 	_big_pos = Vector2(clampf(s.pos.x, vr.position.x + half_w, vr.end.x - half_w), maxf(bottom - ch * 0.5, vr.position.y + ch * 0.5 + 4.0 * DP))
@@ -633,6 +852,7 @@ func _end_play_drag(played: bool) -> void:
 	var id := _drag_id
 	_drag_id = -1
 	_drag_kind = ""
+	_set_armed(-1)
 	if id == -1:
 		return
 	var g := to_global(_finger)
@@ -640,6 +860,24 @@ func _end_play_drag(played: bool) -> void:
 	if ok:
 		ok = _try_play(id, g)
 	drag_ended.emit(id, g, ok)
+
+
+# Scharf = Loslassen spielt aus (nur spielbare Karten; nicht spielbare würden abgelehnt).
+func _update_armed() -> void:
+	var on := _drag_kind == "play" and _drag_id != -1 and _gesture.play_armed and not _peek \
+		and (not enforce_playable or _playable.has(_drag_id))
+	_set_armed(_drag_id if on else -1)
+
+
+func _set_armed(id: int) -> void:
+	if id == _armed_id:
+		return
+	var old := _armed_id
+	_armed_id = id
+	if old != -1:
+		drag_armed.emit(old, false)
+	if id != -1:
+		drag_armed.emit(id, true)
 
 
 func _begin_reorder() -> void:
@@ -693,6 +931,7 @@ func _cancel_gesture() -> void:
 	_drag_id = -1
 	_drag_kind = ""
 	_drag_changed = false
+	_set_armed(-1)
 	_sticky_press = false
 	_gesture.cancel()
 	_touch = -1
@@ -782,7 +1021,9 @@ func step(dt: float) -> void:
 	_update_scroll(dt)
 	_update_cards(dt)
 	_update_leaving(dt)
+	_update_ghost(dt)
 	_update_overlay(dt)
+	_arrange()
 
 
 func _update_scroll(dt: float) -> void:
@@ -793,6 +1034,7 @@ func _update_scroll(dt: float) -> void:
 		_scroll = 0.0
 		_scroll_v = 0.0
 		_scroll_target = 0.0
+		_user_scroll = false
 		return
 	if _drag_kind == "reorder":
 		# am Rand des Karussells weiterdrehen
@@ -810,17 +1052,20 @@ func _update_scroll(dt: float) -> void:
 		var r := HandLayout.spring(_scroll, _scroll_v, _scroll_target, SCROLL_OMEGA, 1.0, dt)
 		_scroll = r.x
 		_scroll_v = r.y
+		if _user_scroll and absf(_scroll_v) < 0.05 and absf(_scroll - _scroll_target) < 0.02:
+			_user_scroll = false
+	# Haptik-Raster nur, wenn der Nutzer dreht (Ziehen oder sein Schwung), nicht bei Verschiebungen durch die Hand selbst
 	var idx := roundi(clampf(_scroll, 0.0, float(n - 1)))
 	if idx != _last_tick_index:
 		_last_tick_index = idx
 		var now := _now()
-		if now - _last_tick_ms >= TICK_MS:
+		if (_scroll_drag or _user_scroll) and now - _last_tick_ms >= TICK_MS:
 			_last_tick_ms = now
 			_vibrate(10, 0.2)
 	# Schwung-Neigung aus der tatsächlichen Scrollgeschwindigkeit (auch während des Ziehens)
 	var speed := (_scroll - _tilt_prev) / maxf(dt, 0.001)
 	_tilt_prev = _scroll
-	var tilt_target := clampf(speed * TILT_PER_SPEED, -TILT_MAX, TILT_MAX)
+	var tilt_target := 0.0 if reduced else clampf(speed * TILT_PER_SPEED, -TILT_MAX, TILT_MAX)
 	_tilt = lerpf(_tilt, tilt_target, 1.0 - exp(-dt * 14.0))
 
 
@@ -833,6 +1078,7 @@ func _update_cards(dt: float) -> void:
 		if _playable.has(id):
 			any_playable = true
 			break
+	var is_day := _is_day()
 	var lens_top := -1
 	if _mode == HandLayout.Mode.LENS and _focus >= 0.0 and n > 0:
 		lens_top = clampi(roundi(_focus), 0, n - 1)
@@ -848,20 +1094,20 @@ func _update_cards(dt: float) -> void:
 			lift += LIFT_SELECTED
 		var tpos := xf.origin + layout_rect.position + Vector2(0.0, -lift).rotated(rot)
 		var t := Transform2D(rot, Vector2(scl, scl), 0.0, tpos)
-		var z := i * 2
+		var key := i * 2
 		var omega := OMEGA
 		var zeta := ZETA
 		var elev := 0.0
 		if s.id == _big_id:
 			t = Transform2D(0.0, Vector2(BIG_SCALE, BIG_SCALE), 0.0, _big_pos)
-			z = 2001
+			key = TOP_KEY + 3
 			elev = 1.2
 		elif s.id == _drag_id:
 			var p := _finger + _drag_grab
 			if _drag_kind == "reorder":
 				p.y = minf(p.y, xf.origin.y + layout_rect.position.y - LIFT_REORDER)
 			t = Transform2D(0.0, Vector2(1.06, 1.06), 0.0, p)
-			z = 2001
+			key = TOP_KEY + 3
 			omega = DRAG_OMEGA
 			zeta = 1.0
 			elev = 1.0
@@ -872,7 +1118,7 @@ func _update_cards(dt: float) -> void:
 					t = s.target
 			elif s.arc_pending:
 				s.arc_pending = false
-				s.arc_total = absf(t.origin.x - s.pos.x)
+				s.arc_total = 0.0 if reduced else absf(t.origin.x - s.pos.x)
 			if s.arc_total > 0.0 and s.delay <= 0.0:
 				var remaining := absf(t.origin.x - s.pos.x)
 				if remaining < 2.0:
@@ -880,20 +1126,23 @@ func _update_cards(dt: float) -> void:
 				else:
 					var prog := 1.0 - clampf(remaining / s.arc_total, 0.0, 1.0)
 					t.origin.y -= ARC_LIFT * sin(PI * prog) + ARC_LIFT * 0.25
-					z += n * 2 + 4
+					key += n * 2 + 4
 			if i == lens_top:
-				z = n * 2 + 2
+				key = n * 2 + 2
 			if s.id == _selected:
 				elev = 0.6
 			elif _playable.has(s.id):
 				elev = 0.25
 		s.target = t
 		s.has_target = true
+		s.key = key
 		_spring_slot(s, t, omega, zeta, dt)
 		var shade := HandLayout.shade(n, _scroll, _mode, i)
 		if dim_unplayable and any_playable and not _playable.has(s.id) and not _peek and s.id != _big_id:
-			shade *= 0.84
-		_apply_view(s, z, shade, elev)
+			shade *= 0.92 if is_day else 0.84
+		s.view.day = is_day
+		s.view.playable_tint = accent
+		_apply_view(s, shade, elev)
 		s.view.skew = _tilt if s.id != _drag_id and s.id != _big_id else 0.0
 
 
@@ -910,12 +1159,12 @@ func _spring_slot(s: Slot, t: Transform2D, omega: float, zeta: float, dt: float)
 	s.scl_v = rs.y
 
 
-func _apply_view(s: Slot, z: int, shade: float, elev: float) -> void:
+func _apply_view(s: Slot, shade: float, elev: float) -> void:
 	var v := s.view
 	v.position = s.pos
 	v.rotation = s.rot
 	v.scale = Vector2(s.scl, s.scl)
-	v.z_index = z
+	v.z_index = TOP_Z if s.key >= TOP_KEY else 0
 	v.brightness = shade
 	v.elevation = elev
 	var st := CardView.State.NORMAL
@@ -936,10 +1185,12 @@ func _update_leaving(dt: float) -> void:
 			_spring_slot(s, t, OMEGA, 1.0, dt)
 		else:
 			s.pos.y += 260.0 * dt
-		_apply_view(s, s.view.z_index, s.view.brightness, 0.0)
+		if s.played:
+			s.key = TOP_KEY + 2
+		_apply_view(s, s.view.brightness, 0.0)
 		if s.fade <= 0.0:
 			_leaving.erase(s)
-			s.view.queue_free()
+			_free_view(s.view)
 	# ausgespielte Karten (noch nicht bestätigt): fliegen zur Ablage bzw. warten über der Hand
 	for s in _slots.values():
 		var sl := s as Slot
@@ -951,8 +1202,34 @@ func _update_leaving(dt: float) -> void:
 		else:
 			t = Transform2D(0.0, Vector2(1.04, 1.04), 0.0, Vector2(sl.target.origin.x, layout_rect.position.y - sl.view.card_size().y * 0.35))
 		sl.target = t
+		sl.key = TOP_KEY + 2
 		_spring_slot(sl, t, OMEGA, 1.0, dt)
-		_apply_view(sl, 2001, 1.0, 1.0)
+		_apply_view(sl, 1.0, 1.0)
+
+
+# Geisterbild auf der Ablage, solange das Hochziehen scharf ist (Vorschau, wo die Karte landet).
+func _update_ghost(dt: float) -> void:
+	var want := _armed_id != -1 and play_target != Vector2.INF and _slots.has(_armed_id)
+	if want and _ghost == null:
+		_ghost = CardView.new()
+		_ghost.width = HandLayout.card_width(layout_rect.size.y)
+		_ghost.visible = false
+		add_child(_ghost)
+	if _ghost == null:
+		return
+	if want:
+		var s: Slot = _slots[_armed_id]
+		if _ghost.current_key() != s.view.current_key():
+			_ghost.setup(-1, s.view.current_key())
+		if _ghost.width != s.view.width:
+			_ghost.width = s.view.width
+		_ghost.position = to_local(play_target)
+		_ghost.scale = Vector2(play_target_scale, play_target_scale)
+		_ghost.day = _is_day()
+	_ghost_a = move_toward(_ghost_a, 1.0 if want else 0.0, dt / 0.12)
+	_ghost.visible = _ghost_a > 0.01
+	_ghost.modulate.a = GHOST_ALPHA * _ghost_a
+	_ghost.z_index = TOP_Z
 
 
 func _update_overlay(dt: float) -> void:
@@ -966,10 +1243,57 @@ func _update_overlay(dt: float) -> void:
 	o.badge_hot = move_toward(o.badge_hot, 1.0 if (_help_hot or _big_sticky) else 0.0, dt / 0.08)
 	o.badge_button = _big_sticky
 	o.hints = 1.0 if holding else 0.0
+	o.z_index = TOP_Z
+	o.visible = o.dim > 0.001 or o.badge > 0.001
 	var s: Slot = _slots.get(_big_id)
 	if s != null:
 		o.card_rect = Rect2(_big_pos - s.view.card_size() * BIG_SCALE * 0.5, s.view.card_size() * BIG_SCALE)
-	o.queue_redraw()
+	if o.visible:
+		o.queue_redraw()
+
+
+# Zeichenreihenfolge über die Kindreihenfolge: ruhende Karten nach Schlüssel (rechts über links, Lupe/Bogen obenauf), dann die
+# oberste Schicht (Abdunklung, Geisterbild, ausgespielte, gezogene bzw. große Karte). Umgeordnet wird nur bei Änderungen.
+func _arrange() -> void:
+	var entries: Array = []
+	for s in _slots.values():
+		entries.append([(s as Slot).key, (s as Slot).view])
+	for s in _leaving:
+		entries.append([s.key, s.view])
+	entries.append([TOP_KEY, _overlay])
+	if _ghost != null:
+		entries.append([TOP_KEY + 1, _ghost])
+	var count := get_child_count()
+	var by_index := PackedInt64Array()
+	by_index.resize(count)
+	by_index.fill(-1)
+	var ok := true
+	for e in entries:
+		var node: Node = e[1]
+		if node.get_parent() != self:
+			ok = false
+			break
+		by_index[node.get_index()] = int(e[0])
+	if ok:
+		var last := -1
+		for k in by_index:
+			if k == -1:
+				continue
+			if k < last:
+				ok = false
+				break
+			last = k
+	if ok:
+		return
+	entries.sort_custom(func(a: Array, b: Array) -> bool: return int(a[0]) < int(b[0]))
+	var i := 0
+	for e in entries:
+		var node: Node = e[1]
+		if node.get_parent() != self:
+			continue
+		if node.get_index() != i:
+			move_child(node, i)
+		i += 1
 
 
 # ---------------------------------------------------------------- Hilfsfunktionen
@@ -982,6 +1306,8 @@ func _make_slot(id: int, face: String, back: String) -> Slot:
 	s.view = CardView.new()
 	s.view.width = HandLayout.card_width(layout_rect.size.y)
 	s.view.setup(id, face, back, not (_peek and back != ""))
+	s.view.day = _is_day()
+	s.key = -1
 	add_child(s.view)
 	_slots[id] = s
 	return s
@@ -1002,7 +1328,7 @@ func _spawn(s: Slot, delay: float, shimmer: bool) -> void:
 	s.target = Transform2D(0.0, Vector2(s.scl, s.scl), 0.0, s.pos)
 	s.has_target = true
 	s.delay = delay
-	if shimmer:
+	if shimmer and not reduced:
 		s.view.shimmer(SHIMMER_S)
 
 
@@ -1014,8 +1340,41 @@ func _remove_slot(id: int) -> void:
 		_cancel_gesture()
 	if _big_id == id:
 		_close_big()
+	if _armed_id == id:
+		_set_armed(-1)
 	s.fade = minf(s.fade, 1.0)
 	_leaving.append(s)
+
+
+func _free_view(v: CardView) -> void:
+	if v == null or not is_instance_valid(v):
+		return
+	if v.get_parent() == self:
+		remove_child(v)
+	v.queue_free()
+
+
+# Flip: die Karte wechselt die Seite (hell ↔ dunkel), und – soweit bekannt – die neue Rückseite ist das alte Gesicht.
+# Sonst liegt unter derselben Kennung eine andere Karte (neue Runde).
+func _is_flip(s: Slot, face: String, back: String) -> bool:
+	if _side_of(face) == _side_of(s.face):
+		return false
+	return back == "" or s.back == "" or back == s.face
+
+
+static func _side_of(face: String) -> String:
+	return "dunkel" if face.begins_with("dunkel") else "hell"
+
+
+func _is_day() -> bool:
+	if night >= 0.0:
+		return night < 0.5
+	return _auto_day
+
+
+func _save_seat_state() -> void:
+	if _seat >= 0 and not _order.is_empty():
+		_seat_state[_seat] = {"sort": sort_mode, "order": _order.duplicate()}
 
 
 func _turn(s: Slot, show_front: bool, delay: float, dur := FLIP_CARD_S) -> void:
@@ -1054,7 +1413,7 @@ func _play_dist() -> float:
 
 func _ordered(cards: Array) -> Array[int]:
 	if sort_mode == "manuell":
-		return CardSort.merge_manual(_order, cards)
+		return CardSort.merge_manual(_order if not _order.is_empty() else _manual_seed, cards)
 	return CardSort.sort_ids(cards, sort_mode)
 
 
@@ -1076,6 +1435,8 @@ func _apply_order(new_order: Array[int], base_delay: float, all_delay: bool) -> 
 				s.arc_pending = true
 	_order = new_order
 	_gaps = CardSort.group_starts(_faces(_order), sort_mode)
+	if not _order.is_empty():
+		_auto_day = _side_of((_slots[_order[0]] as Slot).face) == "hell"
 	var old_mode := _mode
 	_refresh_mode()
 	if _mode == HandLayout.Mode.CAROUSEL:
@@ -1090,6 +1451,8 @@ func _apply_order(new_order: Array[int], base_delay: float, all_delay: bool) -> 
 			_scroll_target += shift
 		_scroll_target = clampf(_scroll_target, 0.0, float(_order.size() - 1))
 		_tilt_prev = _scroll
+		# programmatische Verschiebung: Haptik-Raster mitführen (kein Puls)
+		_last_tick_index = roundi(clampf(_scroll, 0.0, float(_order.size() - 1)))
 
 
 func _refresh_mode() -> void:
@@ -1116,14 +1479,25 @@ func _focus_at(x_local: float) -> float:
 # Oberste Karte unter p (lokal), nach Zeichenreihenfolge; −1 = keine.
 func _card_at(p: Vector2) -> int:
 	var best := -1
-	var best_z := -100000
+	var best_key := -100000
 	var g := to_global(p)
 	for id in _order:
 		var s: Slot = _slots[id]
-		if s.view.z_index > best_z and s.view.contains_global_point(g):
+		if s.key > best_key and s.view.contains_global_point(g):
 			best = id
-			best_z = s.view.z_index
+			best_key = s.key
 	return best
+
+
+# Ohne ausdrücklichen Handbereich: am unteren Rand des sichtbaren Bereichs (folgt Größenänderungen, z. B. 19:9).
+func _fit_to_view() -> void:
+	if _rect_explicit or not is_inside_tree():
+		return
+	var r := default_rect(_view_rect())
+	if r != layout_rect:
+		_rect_auto = true
+		layout_rect = r
+		_rect_auto = false
 
 
 func _event_local(screen_pos: Vector2) -> Vector2:

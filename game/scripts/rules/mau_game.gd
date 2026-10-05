@@ -14,10 +14,15 @@ extends RefCounted
 #   Sonst bei stacking=same: Opfer ist normal dran und darf nur die gleiche Ziehkarte legen oder ziehen (= Strafe nehmen).
 #   Sonst zieht das Opfer sofort und setzt aus.
 # - Flip → Joker oben: Phase "color", der Flip-Spieler wählt mit {a:"color"} (Abweichung vom Plan, dort dokumentiert).
-# - Mau: Fenster von „2 Karten und am Zug“ bis zur ersten Zughandlung (play/draw/challenge/accept) des nächsten Zugs;
-#   mau_open = Platz, der auf 1 Karte kam, ohne zu rufen (erwischbar bzw. bei mau_call=auto Strafe beim Fensterende).
+# - Mau: Fenster von „2 Karten, am Zug und eine Karte legbar“ bis zur ersten Zughandlung (play/draw/challenge/accept) des
+#   nächsten handelnden Spielers; mau_open = Platz, der auf 1 Karte kam, ohne zu rufen (bei catch erwischbar, bei auto Strafe
+#   beim Fensterende, bei reminder nur nachträglich rufbar). Ein Opfer, das automatisch zieht, oder ein Übersprungener handelt
+#   nicht selbst und schließt das Fenster daher nicht (Absicht: Zeit zum Erwischen, passt zur Schonfrist im Netz).
+# - Gastgeber: players[i].host = true markiert den Platz, der die nächste Runde startet (Standard Platz 0).
+# - Aktionen kommen auch als freies JSON aus dem Netz: Felder werden typgeprüft, Falsches wird mit Begründung abgelehnt.
 # - Letzte Karte: Wünscher +2/Farbjagd im Bluff-Modus → erst anzweifeln, dann fertig (finisher). Sonst fertig; endet die Runde,
-#   wirkt eine Ziehkarte noch (Nächster zieht), ein Flip wird nach flip_last_card ausgeführt.
+#   wirkt eine Ziehkarte noch (Nächster zieht). Ein Flip als letzte Karte wird nur bei flip_last_card=execute ausgeführt
+#   (bei ignore nie, auch nicht, wenn die Runde bei round_end=last weiterläuft).
 # - Ende ohne Sieger durch Legen: Passen alle reihum (beide Stapel leer) oder wiederholt sich bei fast leeren Stapeln dieselbe
 #   Lage zum dritten Mal (_stalled), endet die Runde als „blockiert“; vorn liegt, wer die wenigsten Karten hat.
 
@@ -27,9 +32,13 @@ const SIDES: Array[String] = ["hell", "dunkel"]
 const PLAY_PHASES := ["turn", "drawn", "challenge", "color"]
 const JAGD := "farbjagd"
 const PLUS2 := "wuenscher_plus2"
+const MIN_PLAYERS := 2
+const MAX_PLAYERS := 10
+const BAD_FIELD := -9999         # _int_field: Feld hat einen falschen Typ
 
 var config: RuleConfig
 var players: Array = []          # [{name, kind}] in Sitzordnung (Uhrzeigersinn)
+var host := 0                    # Gastgeber-Platz: nur er startet die nächste Runde (players[i].host in create())
 var connected: Array = []        # bool je Platz; setzt die Spielsteuerung (set_connected)
 var round_no := 0
 var dealer := 0
@@ -55,6 +64,7 @@ var result := {}                 # Ergebnis der letzten Runde
 var pass_streak := 0             # aufeinanderfolgende Züge ohne Karte (beide Stapel leer)
 var seen := {}                   # Lagen bei fast leeren Stapeln → Anzahl (Stillstandsregel, _stalled)
 
+var _valid := true              # false bei ungültiger Spielerzahl: start_round() und apply() lehnen ab
 var _seed := 0
 var _rng := RandomNumberGenerator.new()
 var _key: PackedStringArray
@@ -75,15 +85,22 @@ func _init() -> void:
 	config = RuleConfig.new()
 
 
-# players: [{name, kind: "human"|"bot"}], Platz 0 gibt zuerst. 2–10 Spieler.
+# players: [{name, kind: "human"|"bot", host?: true}], Platz 0 gibt zuerst. 2–10 Spieler; bei anderer Zahl gibt es push_warning
+# (kein push_error: Aufrufer prüfen vorher mit valid_player_count(), die Tests lösen den Fall absichtlich aus), und das Spiel startet nie (start_round() liefert [], apply() lehnt ab, is_valid() = false). Gastgeber ist der erste Platz mit
+# host = true, sonst Platz 0.
 static func create(cfg: RuleConfig, player_list: Array, rng_seed: int) -> MauGame:
 	var g := MauGame.new()
 	g.config = cfg.duplicate_config() if cfg != null else RuleConfig.new()
-	if player_list.size() < 2 or player_list.size() > 10:
-		push_error("MauGame: 2 bis 10 Spieler nötig, nicht %d" % player_list.size())
+	g._valid = valid_player_count(player_list.size())
+	if not g._valid:
+		push_warning("MauGame: %d bis %d Spieler nötig, nicht %d" % [MIN_PLAYERS, MAX_PLAYERS, player_list.size()])
+	var host_set := false
 	for p in player_list:
 		var d: Dictionary = p if p is Dictionary else {}
 		var kind := "bot" if str(d.get("kind", "human")) == "bot" else "human"
+		if not host_set and _truthy(d.get("host", false)):
+			g.host = g.players.size()
+			host_set = true
 		g.players.append({"name": str(d.get("name", "Spieler %d" % (g.players.size() + 1))), "kind": kind})
 		g.connected.append(true)
 		g.hands.append([])
@@ -121,9 +138,27 @@ func set_connected(seat: int, on: bool) -> void:
 		connected[seat] = on
 
 
+static func valid_player_count(n: int) -> bool:
+	return n >= MIN_PLAYERS and n <= MAX_PLAYERS
+
+
+func is_valid() -> bool:
+	return _valid
+
+
+func host_seat() -> int:
+	return host
+
+
+# Gastgeber-Platz nachträglich setzen (z. B. nach einem Platzwechsel); ungültige Plätze werden ignoriert.
+func set_host(seat: int) -> void:
+	if seat >= 0 and seat < players.size():
+		host = seat
+
+
 func start_round() -> Array:
 	var ev: Array = []
-	if state == "idle" or state == "round_over":
+	if _valid and (state == "idle" or state == "round_over"):
 		_start(ev)
 	return ev
 
@@ -131,9 +166,12 @@ func start_round() -> Array:
 # --- Aktionen ---
 
 func apply(seat: int, action: Dictionary) -> Dictionary:
+	if not _valid:
+		return {"ok": false, "reason": "Ungültige Spielerzahl.", "events": []}
 	if seat < 0 or seat >= players.size():
 		return {"ok": false, "reason": "Unbekannter Platz.", "events": []}
-	var a := str(action.get("a", ""))
+	var av: Variant = action.get("a", "")
+	var a: String = av if av is String else ""
 	var ev: Array = []
 	var why := ""
 	match a:
@@ -179,12 +217,43 @@ func _phase_reason() -> String:
 	return "Das geht gerade nicht."
 
 
+# Ganzzahliges Aktionsfeld (aus JSON kommen Zahlen als float): int oder ganzzahliger, endlicher float. Fehlt das Feld: fallback;
+# anderer Typ (null, String, Array, Dictionary, 1.5 …): BAD_FIELD.
+static func _int_field(action: Dictionary, key: String, fallback := -1) -> int:
+	if not action.has(key):
+		return fallback
+	var v: Variant = action[key]
+	if v is int:
+		return v
+	if v is float:
+		var f: float = v
+		if is_finite(f) and f == floorf(f) and absf(f) < 1.0e9:
+			return int(f)
+	return BAD_FIELD
+
+
+# Text-Aktionsfeld: nur String, sonst "".
+static func _str_field(action: Dictionary, key: String) -> String:
+	var v: Variant = action.get(key, "")
+	return v if v is String else ""
+
+
+static func _truthy(v: Variant) -> bool:
+	if v is bool:
+		return v
+	if v is int or v is float:
+		return v != 0
+	return false
+
+
 func _act_play(seat: int, action: Dictionary, ev: Array) -> String:
 	if not state in ["turn", "drawn", "challenge"]:
 		return _phase_reason()
 	if seat != current:
 		return "Du bist nicht dran."
-	var id := int(action.get("card", -1))
+	var id := _int_field(action, "card")
+	if id == BAD_FIELD:
+		return "Ungültige Aktion."
 	if not (hands[seat] as Array).has(id):
 		return "Diese Karte hast du nicht."
 	if not _playable(seat, id):
@@ -192,11 +261,18 @@ func _act_play(seat: int, action: Dictionary, ev: Array) -> String:
 	var f := faces[side * N_CARDS + id]
 	var wish := ""
 	if _wild[f] == 1:
-		wish = str(action.get("color", ""))
+		wish = _str_field(action, "color")
 		if not (CardDB.COLORS[SIDES[side]] as Array).has(wish):
 			return "Wähle eine Farbe der %s." % RulesText.side_name(SIDES[side])
+	# Regelgerechtheit und die Hand fürs Anzweifeln mit der Hand zum Zeitpunkt der Entscheidung, also vor einer auto-Strafe,
+	# die _begin_turn noch verhängen kann (Hinweise und enforce-Prüfung beruhen auf derselben Hand).
+	var legal := true
+	if _kind[f] == PLUS2 or _kind[f] == JAGD:
+		legal = _wild_legal(seat, id)
+	var snap: Array = (hands[seat] as Array).duplicate()
+	snap.erase(id)
 	_begin_turn(ev)
-	_play(seat, id, wish, ev)
+	_play(seat, id, wish, legal, snap, ev)
 	return ""
 
 
@@ -298,7 +374,7 @@ func _act_color(seat: int, action: Dictionary, ev: Array) -> String:
 		return "Gerade ist keine Farbwahl offen."
 	if seat != current:
 		return "Du bist nicht dran."
-	var c := str(action.get("color", ""))
+	var c := _str_field(action, "color")
 	if not (CardDB.COLORS[SIDES[side]] as Array).has(c):
 		return "Wähle eine Farbe der %s." % RulesText.side_name(SIDES[side])
 	color = c
@@ -316,6 +392,8 @@ func _act_mau(seat: int, ev: Array) -> String:
 	if not _can_mau(seat):
 		if mau_said[seat]:
 			return "Du hast schon „Mau!“ gerufen."
+		if seat == current and (hands[seat] as Array).size() == 2 and state in ["turn", "drawn", "challenge"]:
+			return "„Mau!“ rufst du, wenn du deine vorletzte Karte legen kannst – gerade passt keine."
 		return "„Mau!“ geht erst, wenn du mit 2 Karten dran bist."
 	mau_said[seat] = true
 	if mau_open == seat:
@@ -329,10 +407,12 @@ func _act_catch(seat: int, action: Dictionary, ev: Array) -> String:
 		return "Erwischen gibt es in diesen Regeln nicht."
 	if not state in PLAY_PHASES:
 		return _phase_reason()
-	var target := int(action.get("target", -1))
+	var target := _int_field(action, "target")
+	if target == BAD_FIELD:
+		return "Ungültige Aktion."
 	if target == seat:
 		return "Dich selbst kannst du nicht erwischen."
-	if target < 0 or target != mau_open or mau_said[target]:
+	if target < 0 or target >= players.size() or target != mau_open or mau_said[target]:
 		return "Zu spät – oder es gibt niemanden zu erwischen."
 	mau_open = -1
 	ev.append({"e": "catch", "seat": seat, "target": target})
@@ -343,7 +423,7 @@ func _act_catch(seat: int, action: Dictionary, ev: Array) -> String:
 func _act_next_round(seat: int, ev: Array) -> String:
 	if state != "round_over":
 		return "Die Partie ist vorbei." if state == "game_over" else "Die Runde läuft noch."
-	if seat != 0:
+	if seat != host:
 		return "Die nächste Runde startet der Gastgeber."
 	_start(ev)
 	return ""
@@ -482,13 +562,11 @@ func _mau_penalty(seat: int, ev: Array) -> void:
 	_draw(seat, config.mau_penalty, "mau", ev)
 
 
-func _play(p: int, id: int, wish: String, ev: Array) -> void:
+# legal/snap: Regelgerechtheit und Resthand zum Zeitpunkt der Entscheidung (siehe _act_play).
+func _play(p: int, id: int, wish: String, legal: bool, snap: Array, ev: Array) -> void:
 	var f := faces[side * N_CARDS + id]
 	var kind := _kind[f]
 	var challengeable := (kind == PLUS2 or kind == JAGD) and config.wild_restriction == "bluff"
-	var legal := true
-	if kind == PLUS2 or kind == JAGD:
-		legal = _wild_legal(p, id)
 	(hands[p] as Array).erase(id)
 	discard.append(id)
 	drawn_id = -1
@@ -502,7 +580,8 @@ func _play(p: int, id: int, wish: String, ev: Array) -> void:
 		color = _color[f]
 		wished = false
 	var left := (hands[p] as Array).size()
-	if left == 1 and not mau_said[p] and (config.mau_call == "catch" or config.mau_call == "auto"):
+	# Fenster für den nachträglichen Ruf; erwischen nur bei catch, Strafe nur bei auto (siehe _act_catch, _begin_turn).
+	if left == 1 and not mau_said[p] and config.mau_call != "off":
 		mau_open = p
 	var finishing := left == 0
 	if finishing and not challengeable:
@@ -512,6 +591,9 @@ func _play(p: int, id: int, wish: String, ev: Array) -> void:
 			_end_round("fertig", ev)
 			return
 		finishing = false
+		if kind == "flip" and config.flip_last_card == "ignore":
+			_advance(p, false, ev)             # Flip als letzte Karte wird nicht ausgeführt, auch wenn die Runde weiterläuft.
+			return
 	match kind:
 		"aussetzen":
 			_advance(p, true, ev)
@@ -534,18 +616,18 @@ func _play(p: int, id: int, wish: String, ev: Array) -> void:
 			else:
 				_advance(p, false, ev)
 		"plus1", "plus5", PLUS2, JAGD:
-			_start_pending(p, kind, legal, finishing, ev)
+			_start_pending(p, kind, legal, snap, finishing, ev)
 		_:
 			_advance(p, false, ev)
 
 
-func _start_pending(p: int, kind: String, legal: bool, finishing: bool, ev: Array) -> void:
+func _start_pending(p: int, kind: String, legal: bool, snap: Array, finishing: bool, ev: Array) -> void:
 	var amount := int(CardDB.DRAW_AMOUNT[kind])
 	if not pending.is_empty() and str(pending.kind) == kind:
 		amount += int(pending.amount)
 	var victim := _next_active(p)
 	pending = {"kind": kind, "amount": amount, "by": p, "victim": victim, "color": color, "legal": legal,
-		"snap": (hands[p] as Array).duplicate(), "finisher": finishing}
+		"snap": snap.duplicate(), "finisher": finishing}
 	ev.append({"e": "pending", "kind": kind, "amount": amount, "seat": victim, "by": p})
 	if (kind == PLUS2 or kind == JAGD) and config.wild_restriction == "bluff":
 		current = victim
@@ -835,7 +917,9 @@ func _can_mau(seat: int) -> bool:
 		return false
 	if mau_open == seat:
 		return true
-	return seat == current and (hands[seat] as Array).size() == 2 and state in ["turn", "drawn", "challenge"]
+	# Vor dem Legen nur, wenn eine Karte legbar ist (sonst zieht man und hätte 3 Karten: kein „blinder“ Ruf).
+	return seat == current and (hands[seat] as Array).size() == 2 and state in ["turn", "drawn", "challenge"] \
+		and _has_playable(seat)
 
 
 func _why_not(seat: int, id: int) -> String:
@@ -943,7 +1027,7 @@ func _hints(me: int) -> Dictionary:
 		h.can_mau = _can_mau(me)
 		if config.mau_call == "catch" and mau_open >= 0 and mau_open != me and not mau_said[mau_open]:
 			h.catch = [mau_open]
-	h.can_next_round = state == "round_over" and me == 0
+	h.can_next_round = state == "round_over" and me >= 0 and me == host
 	h.text = _hint_text(me, h)
 	return h
 
@@ -1050,7 +1134,7 @@ func events_for(seat: int, events: Array) -> Array:
 
 func to_dict() -> Dictionary:
 	return {
-		"format": FORMAT, "config": config.to_dict(), "players": players.duplicate(true), "connected": connected.duplicate(),
+		"format": FORMAT, "config": config.to_dict(), "players": players.duplicate(true), "host": host, "connected": connected.duplicate(),
 		"seed": str(_seed), "rng_state": str(_rng.state), "round": round_no, "dealer": dealer, "side": side,
 		"faces": Array(faces), "draw": draw_pile.duplicate(), "discard": discard.duplicate(), "hands": hands.duplicate(true),
 		"current": current, "dir": dir, "color": color, "wished": wished, "phase": state, "pending": pending.duplicate(true),
@@ -1066,6 +1150,8 @@ static func from_dict(d: Dictionary) -> MauGame:
 	for p in d.get("players", []):
 		g.players.append({"name": str(p.get("name", "")), "kind": str(p.get("kind", "human"))})
 	var n := g.players.size()
+	g._valid = valid_player_count(n)
+	g.host = clampi(_int_field(d, "host", 0), 0, maxi(n - 1, 0))
 	g.connected = _bools(d.get("connected", []), n, true)
 	g._seed = str(d.get("seed", "0")).to_int()
 	g._rng.seed = g._seed

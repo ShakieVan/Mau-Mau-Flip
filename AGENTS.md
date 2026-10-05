@@ -38,6 +38,8 @@ Am 04.10.2026 begonnen. Bisher Brainstorming und Recherche, noch kein Code. Erge
 17. **Gewählt: Richtung A „Papier & Neon“** (`art/entwurf/a-papier-neon/`, Generator `quelle/`, Neuaufbau mit `bash quelle/build.sh`). Logo und App-Symbol zeigen die KI-Illustration des Nutzers (`katze_mau.png`, Original und Montage in `art/referenz/`). Spiegelungen stehen mittig unter Sonne bzw. Mond. Werte mit Bricolage Grotesque bei fester optischer Größe `opsz 12`, damit 6 und 9 nicht zu dünn werden.
 18. **Regelhilfe per Geste:** Karte gedrückt halten (Großansicht), dann nach unten auf ein erscheinendes „?“ ziehen. Es öffnet sich eine kurze Hilfe zu genau dieser Karte, passend zu den aktiven Hausregeln. Gesten: halten + nach oben = ausspielen, halten + seitlich = umsortieren, halten + nach unten = Hilfe.
 19. **„Mau!“-Knopf** spielt ein süßes Mauzen, das echte Katzen weder anlockt noch verwirrt (Entwürfe in `audio/entwurf/mau/`).
+20. **Mau-Töne sind die Aufnahmen des Nutzers** (05.10.2026): „Mao“ für „Mau!“ und „Mao-Mao“ für „Mau-Mau!“, aufbereitet mit `tools/make_mau_aufnahmen.sh` (Originale in `audio/aufnahmen/`, Stärke „mittel“ im Spiel). Die synthetischen Mau-Varianten klangen dem Nutzer „schrecklich“ und entfallen.
+21. **Mau ist für alle hör- und sichtbar** (05.10.2026, ersetzt die Recherche-Empfehlung „nur das eigene Gerät“): Der Ton spielt auf **allen** Geräten (außer der Ton ist dort abgeschaltet). Zusätzlich erscheint beim rufenden Spieler eine witzig animierte Sprechblase „Mau!“; es gibt mehrere Animationsvarianten, die zufällig gewählt werden. So sieht man es auch ohne Ton.
 
 ## Empfehlung aus der Recherche
 

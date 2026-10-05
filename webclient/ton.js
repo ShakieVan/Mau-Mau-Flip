@@ -1,14 +1,27 @@
 /* Mau-Mau Flip – Browser-Client „Lite“: Töne über Web Audio (ohne AudioWorklet, also auch ohne Secure Context).
- * Klänge werden synthetisch erzeugt. Liegt sfx/index.json vor ({"mau":"mau.mp3", …}), werden diese Dateien bevorzugt.
- * Freischalten nur aus einem Tipp heraus (Beitreten-Knopf). Der Mau-Ton spielt nur auf dem Gerät, das „Mau!“ drückt.
+ * Zwei Gruppen mit eigener Lautstärke (wie in der App):
+ *  - Mau-Töne „mau“ und „mau_mau“: die Aufnahmen des Nutzers (sfx/mau.m4a bzw. .ogg, sfx/mau_mau.*). Sie spielen auf JEDEM
+ *    Gerät, sobald das Ereignis vom Gastgeber kommt (AGENTS.md Nr. 21), Stufe aus/leise/normal (Standard normal).
+ *  - Spieltöne (karte, ziehen, mischen, flip, sieg, fehler, dran): synthetisch, Standard AUS (der Nutzer fand sie nicht gut).
+ * Darüber ein Stummschalter (Ton-Knopf in der Ecke). sfx/index.json ({"mau":"mau.m4a", …}) nennt die Dateien; je Browser wird
+ * m4a (AAC, Safari) oder ogg bevorzugt und bei Bedarf auf die andere Endung ausgewichen.
+ * Freischalten nur aus einem Tipp heraus (Beitreten-Knopf).
  */
 (function (M) {
   'use strict';
 
-  const STUFEN = { aus: 0, leise: 0.35, normal: 0.85 };
-  let ctx = null, master = null, rausch = null;
-  let stufe = 'normal';
+  const MAU_TOENE = ['mau', 'mau_mau'];
+  // Pegel je Stufe: Die Aufnahmen sind auf −1 dBTP ausgesteuert und verdichtet → „normal“ = volle Lautstärke (Handy-Lautsprecher)
+  const STUFEN_MAU = { aus: 0, leise: 0.4, normal: 1.0 };
+  const STUFEN_SPIEL = { aus: 0, leise: 0.3, normal: 0.75 };
+  const STANDARD_DATEIEN = { mau: 'mau.m4a', mau_mau: 'mau_mau.m4a' };   // falls sfx/index.json fehlt
+  let ctx = null, master = null, busMau = null, busSpiel = null, rausch = null;
+  let stufeMau = 'normal', stufeSpiel = 'aus', stumm = false;
   const dateien = {};      // Name → AudioBuffer aus sfx/
+  const zaehler = {};      // Name → wie oft wirklich abgespielt (Selbsttest)
+  let ladeVersprechen = null;
+
+  const istMau = name => MAU_TOENE.indexOf(name) >= 0;
 
   function freischalten() {
     try {
@@ -17,14 +30,16 @@
         if (!AC) return false;
         ctx = new AC();
         master = ctx.createGain();
-        master.gain.value = STUFEN[stufe];
+        master.gain.value = stumm ? 0 : 1;
         master.connect(ctx.destination);
+        busMau = ctx.createGain(); busMau.gain.value = STUFEN_MAU[stufeMau]; busMau.connect(master);
+        busSpiel = ctx.createGain(); busSpiel.gain.value = STUFEN_SPIEL[stufeSpiel]; busSpiel.connect(master);
         // stummer Puffer schaltet iOS frei
         const b = ctx.createBuffer(1, 1, 22050);
         const q = ctx.createBufferSource();
         q.buffer = b; q.connect(ctx.destination); q.start(0);
         rausch = rauschPuffer();
-        ladeDateien();
+        ladeVersprechen = ladeDateien();
       }
       if (ctx.state !== 'running' && ctx.resume) ctx.resume().catch(() => {});
       return true;
@@ -33,25 +48,45 @@
   // nach Sperre oder App-Wechsel wieder aufwecken (klappt auf iOS teils erst beim nächsten Tipp)
   function wecken() { if (ctx && ctx.state !== 'running' && ctx.resume) ctx.resume().catch(() => {}); }
 
-  function setzeStufe(s) {
-    stufe = STUFEN[s] !== undefined ? s : 'normal';
-    if (master) master.gain.value = STUFEN[stufe];
+  function _pegel() {
+    if (!ctx) return;
+    master.gain.value = stumm ? 0 : 1;
+    busMau.gain.value = STUFEN_MAU[stufeMau];
+    busSpiel.gain.value = STUFEN_SPIEL[stufeSpiel];
   }
+  function setzeStufe(s) { stufeMau = STUFEN_MAU[s] !== undefined ? s : 'normal'; _pegel(); }       // Mau-Ton
+  function setzeToene(s) { stufeSpiel = STUFEN_SPIEL[s] !== undefined ? s : 'aus'; _pegel(); }     // Spieltöne
+  function setzeStumm(an) { stumm = !!an; _pegel(); }
 
-  // Klangdateien aus sfx/: sfx/index.json ({"mau":"mau.m4a", …}) legt fest, welche Synth-Klänge ersetzt werden.
-  // Ohne Liste wird nur der Mau-Ton gesucht (mau.m4a, sonst mau.ogg), damit keine Reihe von 404-Anfragen entsteht.
+  // Klangdateien aus sfx/. Je Eintrag erst die Endung, die der Browser sicher kann (m4a/AAC für Safari, sonst ogg), dann die andere.
   function ladeDateien() {
-    if (!window.fetch || location.protocol === 'file:') return;
-    const lade = (name, datei) => fetch('sfx/' + datei).then(r => (r.ok ? r.arrayBuffer() : null)).then(ab => {
-      if (!ab) return false;
-      return new Promise(ok => ctx.decodeAudioData(ab, buf => { dateien[name] = buf; ok(true); }, () => ok(false)));
-    }).catch(() => false);
-    fetch('sfx/index.json').then(r => (r.ok ? r.json() : null)).catch(() => null).then(liste => {
-      if (liste && typeof liste === 'object') { Object.keys(liste).forEach(name => lade(name, String(liste[name]))); return; }
-      const a = document.createElement('audio');
-      const aac = a.canPlayType && a.canPlayType('audio/mp4; codecs="mp4a.40.2"');
-      const reihe = aac ? ['mau.m4a', 'mau.ogg'] : ['mau.ogg', 'mau.m4a'];
-      lade('mau', reihe[0]).then(ok => { if (!ok) lade('mau', reihe[1]); });
+    if (!window.fetch || location.protocol === 'file:') return Promise.resolve([]);
+    const a = document.createElement('audio');
+    const aac = !!(a.canPlayType && a.canPlayType('audio/mp4; codecs="mp4a.40.2"'));
+    const ogg = !!(a.canPlayType && a.canPlayType('audio/ogg; codecs="vorbis"'));
+    const dekodiere = ab => new Promise(ok => {
+      try {
+        const p = ctx.decodeAudioData(ab, buf => ok(buf), () => ok(null));
+        if (p && p.catch) p.catch(() => ok(null));
+      } catch (e) { ok(null); }
+    });
+    const lade = datei => fetch('sfx/' + datei).then(r => (r.ok ? r.arrayBuffer() : null)).then(ab => (ab ? dekodiere(ab) : null)).catch(() => null);
+    const reihe = datei => {
+      const m = /^(.*)\.(m4a|ogg)$/i.exec(datei);
+      if (!m) return [datei];
+      const m4a = m[1] + '.m4a', vorbis = m[1] + '.ogg';
+      return (aac || !ogg) ? [m4a, vorbis] : [vorbis, m4a];
+    };
+    return fetch('sfx/index.json', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).catch(() => null).then(liste => {
+      if (!liste || typeof liste !== 'object') liste = STANDARD_DATEIEN;
+      return Promise.all(Object.keys(liste).map(name => {
+        const versuche = reihe(String(liste[name]));
+        const weiter = i => (i >= versuche.length ? Promise.resolve(false) : lade(versuche[i]).then(buf => {
+          if (buf) { dateien[name] = buf; return true; }
+          return weiter(i + 1);
+        }));
+        return weiter(0);
+      }));
     });
   }
 
@@ -85,8 +120,10 @@
     s.start(t, Math.random() * 0.5); s.stop(t + dauer + 0.05);
     return fl;
   }
-  function gain(ziel) { const g = ctx.createGain(); g.connect(ziel || master); return g; }
+  let synthZiel = null;
+  function gain(ziel) { const g = ctx.createGain(); g.connect(ziel || synthZiel); return g; }
 
+  // Spieltöne (synthetisch, Standard aus). Keinen synthetischen Mau-Ton mehr: Mau kommt nur aus den Aufnahmen.
   const SYNTH = {
     karte(t) {   // Karte legen: kurzes Klatschen
       const g = gain(); huelle(g, t, 0.55, 0.003, 0.01, 0.09);
@@ -139,62 +176,64 @@
         osz('sine', f * 2.01, t + d, 0.3, g2);
       });
     },
-    mau(t) {     // „Mau!“: kurzer, heller Katzenlaut (m → a → u über Formanten)
-      const ausgang = gain(); huelle(ausgang, t, 0.5, 0.04, 0.26, 0.2);
-      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 0.7;
-      lp.frequency.setValueAtTime(700, t); lp.frequency.exponentialRampToValueAtTime(4200, t + 0.09);
-      lp.frequency.setValueAtTime(4200, t + 0.22); lp.frequency.exponentialRampToValueAtTime(900, t + 0.48);
-      lp.connect(ausgang);
-      const f1 = ctx.createBiquadFilter(); f1.type = 'bandpass'; f1.Q.value = 4;
-      f1.frequency.setValueAtTime(500, t); f1.frequency.linearRampToValueAtTime(1100, t + 0.12); f1.frequency.linearRampToValueAtTime(600, t + 0.45);
-      const f2 = ctx.createBiquadFilter(); f2.type = 'bandpass'; f2.Q.value = 5;
-      f2.frequency.setValueAtTime(1500, t); f2.frequency.linearRampToValueAtTime(2000, t + 0.12); f2.frequency.linearRampToValueAtTime(900, t + 0.45);
-      const mixG = ctx.createGain(); mixG.gain.value = 0.9; mixG.connect(lp);
-      f1.connect(mixG); f2.connect(mixG);
-      const o = ctx.createOscillator(); o.type = 'sawtooth';
-      o.frequency.setValueAtTime(560, t); o.frequency.exponentialRampToValueAtTime(820, t + 0.11);
-      o.frequency.exponentialRampToValueAtTime(700, t + 0.28); o.frequency.exponentialRampToValueAtTime(470, t + 0.5);
-      const vib = ctx.createOscillator(); vib.frequency.value = 7; const vg = ctx.createGain(); vg.gain.value = 9; vib.connect(vg); vg.connect(o.frequency);
-      const roh = ctx.createGain(); roh.gain.value = 0.18; o.connect(roh); roh.connect(lp);
-      o.connect(f1); o.connect(f2);
-      o.start(t); o.stop(t + 0.6); vib.start(t); vib.stop(t + 0.6);
-    },
   };
 
+  // Abspielen; true, wenn der Ton wirklich angestoßen wurde (nicht stumm, Stufe > 0, Klang vorhanden)
   function spiele(name) {
-    if (!ctx || stufe === 'aus') return;
+    if (!ctx || stumm) return false;
+    const mau = istMau(name);
+    if ((mau ? STUFEN_MAU[stufeMau] : STUFEN_SPIEL[stufeSpiel]) <= 0) return false;
     try {
       if (ctx.state !== 'running') wecken();
       const t = ctx.currentTime + 0.01;
+      const bus = mau ? busMau : busSpiel;
       if (dateien[name]) {
-        const s = ctx.createBufferSource(); s.buffer = dateien[name]; s.connect(master); s.start(t);
-        return;
-      }
-      if (SYNTH[name]) SYNTH[name](t);
-    } catch (e) { /* Ton ist Beiwerk */ }
+        const s = ctx.createBufferSource(); s.buffer = dateien[name]; s.connect(bus); s.start(t);
+      } else if (!mau && SYNTH[name]) {
+        synthZiel = bus;
+        SYNTH[name](t);
+      } else return false;
+      zaehler[name] = (zaehler[name] || 0) + 1;
+      return true;
+    } catch (e) { return false; /* Ton ist Beiwerk */ }
   }
 
-  // Selbstprüfung (Autotest): jeden Klang offline rendern und den Spitzenpegel messen → {name: Pegel | 'Fehler: …'}
+  // Selbstprüfung (Autotest): jeden synthetischen Klang offline rendern und den Spitzenpegel messen, dazu die geladenen
+  // Aufnahmen (Spitze und Dauer) → {name: Pegel | 'Fehler: …'}, Aufnahmen als „datei:<name>“ mit {spitze, dauer}
   function pruefe() {
     const OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
     if (!OAC) return Promise.resolve(null);
     return Object.keys(SYNTH).reduce((kette, name) => kette.then(erg => {
       const off = new OAC(1, 44100 * 1.8, 44100);
-      const alt = [ctx, master, rausch];
-      ctx = off; master = off.createGain(); master.gain.value = STUFEN.normal; master.connect(off.destination); rausch = rauschPuffer();
+      const alt = [ctx, synthZiel, rausch];
+      ctx = off; synthZiel = off.createGain(); synthZiel.gain.value = STUFEN_SPIEL.normal; synthZiel.connect(off.destination); rausch = rauschPuffer();
       let fehler = null;
       try { SYNTH[name](0.01); } catch (e) { fehler = e; }
-      [ctx, master, rausch] = alt;
+      [ctx, synthZiel, rausch] = alt;
       if (fehler) { erg[name] = 'Fehler: ' + fehler.message; return erg; }
       return off.startRendering().then(buf => {
-        const d = buf.getChannelData(0);
-        let spitze = 0;
-        for (let i = 0; i < d.length; i++) { const a = Math.abs(d[i]); if (a > spitze) spitze = a; }
-        erg[name] = Math.round(spitze * 1000) / 1000;
+        erg[name] = spitze(buf);
         return erg;
       });
-    }), Promise.resolve({}));
+    }), Promise.resolve({})).then(erg => {
+      Object.keys(dateien).forEach(name => { erg['datei:' + name] = { spitze: spitze(dateien[name]), dauer: Math.round(dateien[name].duration * 100) / 100 }; });
+      return erg;
+    });
+  }
+  function spitze(buf) {
+    let s = 0;
+    for (let k = 0; k < buf.numberOfChannels; k++) {
+      const d = buf.getChannelData(k);
+      for (let i = 0; i < d.length; i++) { const a = Math.abs(d[i]); if (a > s) s = a; }
+    }
+    return Math.round(s * 1000) / 1000;
   }
 
-  M.Ton = { freischalten, wecken, spiele, setzeStufe, pruefe, get stufe() { return stufe; }, get bereit() { return !!ctx; }, get dateien() { return Object.keys(dateien); } };
+  M.Ton = {
+    freischalten, wecken, spiele, setzeStufe, setzeToene, setzeStumm, pruefe, istMau,
+    geladen() { return ladeVersprechen || Promise.resolve([]); },
+    get stufe() { return stufeMau; }, get toene() { return stufeSpiel; }, get stumm() { return stumm; },
+    get bereit() { return !!ctx; }, get dateien() { return Object.keys(dateien); }, get zaehler() { return zaehler; },
+    MAU_TOENE,
+  };
 })(window.MMF = window.MMF || {});

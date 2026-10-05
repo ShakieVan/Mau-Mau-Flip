@@ -16,6 +16,7 @@ func _initialize() -> void:
 	_cards()
 	_config()
 	_texts()
+	print("Laufzeit seit Godot-Start: %.1f s" % (Time.get_ticks_msec() / 1000.0))
 	print("RESULT: %d ok" % (checks - failures) if failures == 0 else "RESULT: %d ok, %d FAIL" % [checks - failures, failures])
 	quit(0 if failures == 0 else 1)
 

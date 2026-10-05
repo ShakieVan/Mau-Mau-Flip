@@ -5,8 +5,8 @@ extends RefCounted
 # level 0: zufällige erlaubte Karte; 1: Taktik mit etwas Zufall; 2: Taktik ohne Zufall.
 # Taktik: Aktionen bevorzugt, besonders gegen einen Nächsten mit wenigen Karten; Karte, nach der möglichst viele Restkarten
 # passen; Joker aufsparen; Flip nach eigenen Rückseiten und den sichtbaren Rückseiten der Gegner; Wunschfarbe nach Handmehrheit;
-# „Mau!“ immer rufen; erwischen, wenn möglich; nie bluffen (Stufe 2); anzweifeln bei Verdacht, also wenn der Leger viele
-# Karten hält und daher wahrscheinlich eine passende hatte. Gegen Zufallsbots gewinnt Stufe 2 zu dritt etwa 42 % statt 33 %.
+# „Mau!“ immer rufen, aber nur, wenn er im selben Zug auf 1 Karte kommt (kein blinder Ruf); erwischen, wenn möglich; nie
+# bluffen (Stufe 2); anzweifeln bei Verdacht, also wenn der Leger viele Karten hält und daher wahrscheinlich eine passende hatte. Gegen Zufallsbots gewinnt Stufe 2 zu dritt etwa 42 % statt 33 %.
 # Liefert {} wenn der Platz nichts zu tun hat; die Spielsteuerung fragt Bots daher auch außerhalb ihres Zugs (Erwischen).
 
 const COLOR_SHARE := 26.0 / 112.0    # Anteil der Karten einer Farbe (je Seite)
@@ -28,18 +28,21 @@ static func choose(view: Dictionary, rng_seed: int, level := 1) -> Dictionary:
 		return {"a": "catch", "target": int(catch_list[0])}
 	if int(view.get("turn", -1)) != me:
 		return {}
-	if bool(hints.get("can_mau", false)):
-		return {"a": "mau"}
+	var act := {}
 	match state:
 		"color":
-			return {"a": "color", "color": best_color(view, -1, rng)}
+			act = {"a": "color", "color": best_color(view, -1, rng)}
 		"challenge":
-			return _challenge(view, hints, rng, level)
+			act = _challenge(view, hints, rng, level)
 		"drawn":
-			return _drawn(view, hints, rng, level)
+			act = _drawn(view, hints, rng, level)
 		"turn":
-			return _turn(view, hints, rng, level)
-	return {}
+			act = _turn(view, hints, rng, level)
+	# „Mau!“ nur, wenn der Bot in diesem Zug auf 1 Karte kommt (er legt gleich), oder nachträglich, wenn er schon 1 Karte hat
+	# (z. B. Zusatzzug nach Aussetzen zu zweit: Seine nächste Handlung schlösse sonst das eigene Fenster).
+	if bool(hints.get("can_mau", false)) and (str(act.get("a", "")) == "play" or (view.get("hand", []) as Array).size() == 1):
+		return {"a": "mau"}
+	return act
 
 
 # Wunschfarbe: Farbe mit den meisten (bzw. wertvollsten) Karten der Resthand; bei Gleichstand zufällig.
@@ -111,6 +114,12 @@ static func _is_bluff(view: Dictionary, id: int) -> bool:
 		return false
 	var kind := CardDB.kind_table()[code]
 	return (kind == "wuenscher_plus2" or kind == "farbjagd") and not _wild_legal(view, id)
+
+
+static func _said_mau(view: Dictionary) -> bool:
+	var me := int(view.get("seat", -1))
+	var p: Dictionary = _players_by_seat(view).get(me, {})
+	return bool(p.get("mau", false))
 
 
 static func _players_by_seat(view: Dictionary) -> Dictionary:
@@ -186,7 +195,8 @@ static func _turn(view: Dictionary, hints: Dictionary, rng: RandomNumberGenerato
 		for id in playable:
 			if not _is_bluff(view, int(id)):
 				return _play(view, int(id), rng)
-		if not can_draw or rng.randf() < 0.3:
+		# Nach einem „Mau!“ bleibt der Bot bei seiner Entscheidung zu legen (kein Ruf mit anschließendem Ziehen).
+		if not can_draw or _said_mau(view) or rng.randf() < 0.3:
 			return _play(view, int(playable[0]), rng)
 		return {"a": "draw"}
 	if level <= 0:

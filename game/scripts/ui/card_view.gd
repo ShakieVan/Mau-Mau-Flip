@@ -6,7 +6,9 @@ extends Node2D
 # Ändern darf diese Datei nur Modul F1a (Hand); andere Module melden Bedarf.
 # Aufbau: Die Karte selbst (position, rotation, scale) gehört dem Besitzer (Hand, Tisch, Regie). Wende, Schütteln und Schimmern
 # wirken auf den inneren Körper, stören also keine Federn oder Tweens des Besitzers. Schatten und Glühen sind weiche,
-# einmal erzeugte Texturen (Glühen additiv, wie Neon auf dem Nachtgrund).
+# einmal erzeugte Texturen. Nachts (day = false) wird das Glühen additiv gemischt wie Neon auf dem Nachtgrund, am Tag
+# (heller Papiertisch) normal gemischt in kräftigeren Farben, sonst verschwände es auf dem Papier.
+# Zeichenreihenfolge: CardView setzt keinen z_index; die Besitzer ordnen über die Kindreihenfolge (Tisch-Overlays bleiben oben).
 
 signal flipped
 
@@ -18,6 +20,8 @@ const SOFT_SIGMA := 7.5                     # Schatten
 const GLOW_SIGMA := 3.6                     # Glühen (enger, wie drop-shadow 0 0 8–14 px im Entwurf)
 const GLOW_PLAYABLE := Color(1.0, 0.96, 0.86, 0.42)
 const GLOW_SELECTED := Color(1.0, 0.80, 0.30, 0.95)
+const GLOW_PLAYABLE_DAY := Color(0.13, 0.106, 0.173, 0.42)   # Tag: feiner Rand in Druckfarbe (normal gemischt)
+const GLOW_SELECTED_DAY := Color(0.91, 0.52, 0.0, 1.0)       # Tag: kräftiges Bernstein statt Gold
 
 enum State { NORMAL, PLAYABLE, SELECTED, DIMMED }
 
@@ -29,6 +33,8 @@ var width := 120.0: set = set_width
 var state := State.NORMAL: set = set_state
 var brightness := 1.0: set = set_brightness     # 1 = volle Helligkeit (Karussellrand 0,75, nicht spielbar ~0,85)
 var elevation := 0.0: set = set_elevation       # 0 = liegt, 1 = angehoben/gezogen (Schatten weiter und weicher)
+var day := false: set = set_day                 # heller Tisch: Glühen normal gemischt statt additiv
+var playable_tint := Color(0, 0, 0, 0): set = set_playable_tint   # Rand spielbarer Karten (aktuelle Farbe); Alpha 0 = Standard
 
 var _body: Node2D
 var _shadow: Sprite2D
@@ -99,11 +105,31 @@ func set_state(s: State) -> void:
 		State.NORMAL, State.DIMMED:
 			_glow_color = Color(0, 0, 0, 0)
 		State.PLAYABLE:
-			_glow_color = GLOW_PLAYABLE
+			if playable_tint.a > 0.01:
+				_glow_color = Color(playable_tint.r, playable_tint.g, playable_tint.b, 0.85 if day else 0.5)
+			else:
+				_glow_color = GLOW_PLAYABLE_DAY if day else GLOW_PLAYABLE
 		State.SELECTED:
-			_glow_color = GLOW_SELECTED
+			_glow_color = GLOW_SELECTED_DAY if day else GLOW_SELECTED
 	_update_glow()
 	_update_modulate()
+
+
+func set_day(on: bool) -> void:
+	if on == day:
+		return
+	day = on
+	if _glow != null:
+		_glow.material = null if on else _additive()
+		set_state(state)
+
+
+func set_playable_tint(c: Color) -> void:
+	if c == playable_tint:
+		return
+	playable_tint = c
+	if _glow != null and state == State.PLAYABLE:
+		set_state(state)
 
 
 func set_brightness(b: float) -> void:
@@ -172,13 +198,15 @@ func shimmer(duration := 3.0) -> void:
 	var mat := ShaderMaterial.new()
 	mat.shader = _shimmer()
 	_sprite.material = mat
+	# warmes Glühen, das ausklingt (am Tag kräftiger, sonst verschwindet es auf dem Papier)
+	var gc := Color(0.93, 0.6, 0.12, 0.7) if day else Color(1.0, 0.86, 0.45, 0.55)
 	_shimmer_tween = create_tween()
 	_shimmer_tween.tween_method(func(t: float) -> void:
 		var sweeps := 3.0
 		var phase := fmod(t * sweeps, 1.0)
 		mat.set_shader_parameter("shine", lerpf(-0.35, 1.75, phase / 0.75) if phase < 0.75 else -2.0)
 		mat.set_shader_parameter("strength", 0.55 * (1.0 - 0.35 * t))
-		set_glow(Color(1.0, 0.86, 0.45, 0.55 * (1.0 - t))), 0.0, 1.0, duration)
+		set_glow(Color(gc.r, gc.g, gc.b, gc.a * (1.0 - t))), 0.0, 1.0, duration)
 	_shimmer_tween.tween_callback(func() -> void:
 		_sprite.material = null
 		set_glow(Color(0, 0, 0, 0)))
@@ -217,7 +245,8 @@ func _update_glow() -> void:
 		c = _extra_glow
 		spread = 1.06
 	_glow.visible = c.a > 0.01
-	_glow.modulate = Color(c.r * c.a, c.g * c.a, c.b * c.a, 1.0)
+	# additiv (Nacht): Farbe mit Alpha vormultipliziert; normal (Tag): Farbe mit Deckkraft
+	_glow.modulate = c if day else Color(c.r * c.a, c.g * c.a, c.b * c.a, 1.0)
 	var ss := width / SOFT_CARD.x
 	_glow.scale = Vector2(ss, ss) * spread
 
@@ -231,23 +260,59 @@ func _update_shadow() -> void:
 
 
 # Weiche Kartenform (abgerundetes Rechteck mit Gaußrand der Breite sigma), je sigma einmal erzeugt; alle Karten teilen sie.
+# Schnell: nur ein Viertel wird gerechnet (die Form ist achsensymmetrisch), der Gaußrand kommt aus einer Tabelle (1/8 px),
+# die Bytes gehen ohne set_pixel direkt ins Bild.
 static func soft_texture(sigma := SOFT_SIGMA) -> Texture2D:
 	if _soft_cache.has(sigma):
 		return _soft_cache[sigma]
 	var w := int(SOFT_CARD.x + 2.0 * SOFT_MARGIN)
 	var h := int(SOFT_CARD.y + 2.0 * SOFT_MARGIN)
-	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
+	if w % 2 == 1:
+		w += 1
+	if h % 2 == 1:
+		h += 1
 	var half := SOFT_CARD * 0.5 - Vector2(SOFT_RADIUS, SOFT_RADIUS)
 	var c := Vector2(w, h) * 0.5
-	for y in h:
-		for x in w:
-			var q := (Vector2(x + 0.5, y + 0.5) - c).abs() - half
-			var sd := Vector2(maxf(q.x, 0.0), maxf(q.y, 0.0)).length() + minf(maxf(q.x, q.y), 0.0) - SOFT_RADIUS
-			var a := 0.5 - 0.5 * _erf(sd / (sigma * 1.414))
-			img.set_pixel(x, y, Color(1, 1, 1, a))
+	# Tabelle: Alpha über dem vorzeichenbehafteten Abstand sd in [−4σ, 4σ]
+	var reach := 4.0 * sigma
+	var lut_n := int(ceilf(reach * 2.0 * 8.0)) + 1
+	var lut := PackedByteArray()
+	lut.resize(lut_n)
+	for k in lut_n:
+		var sd := -reach + float(k) / 8.0
+		lut[k] = int(roundf(255.0 * (0.5 - 0.5 * _erf(sd / (sigma * 1.414)))))
+	var data := PackedByteArray()
+	data.resize(w * h * 4)
+	data.fill(255)
+	var row := w * 4
+	for y in h >> 1:
+		var qy := absf(float(y) + 0.5 - c.y) - half.y
+		var ym := h - 1 - y
+		for x in w >> 1:
+			var qx := absf(float(x) + 0.5 - c.x) - half.x
+			var sd := Vector2(maxf(qx, 0.0), maxf(qy, 0.0)).length() + minf(maxf(qx, qy), 0.0) - SOFT_RADIUS
+			var a := 255
+			if sd >= reach:
+				a = 0
+			elif sd > -reach:
+				a = lut[int((sd + reach) * 8.0)]
+			var xm := w - 1 - x
+			data[y * row + x * 4 + 3] = a
+			data[y * row + xm * 4 + 3] = a
+			data[ym * row + x * 4 + 3] = a
+			data[ym * row + xm * 4 + 3] = a
+	var img := Image.create_from_data(w, h, false, Image.FORMAT_RGBA8, data)
 	var tex := ImageTexture.create_from_image(img)
 	_soft_cache[sigma] = tex
 	return tex
+
+
+# Vorab erzeugen (Ladebildschirm/App-Start), damit das erste Austeilen nicht ruckelt.
+static func prewarm() -> void:
+	soft_texture()
+	soft_texture(GLOW_SIGMA)
+	_additive()
+	_shimmer()
 
 
 static func _additive() -> CanvasItemMaterial:

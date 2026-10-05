@@ -46,18 +46,24 @@
     tisch: null,
     fehler: [],
     logPuffer: [],
-    einstellungen: { ton: 'normal', effekte: 'voll', sort: 'farbe', vibration: true, vollbild: true },
+    // ton = Mau-Ton (Aufnahmen, Standard normal), toene = übrige Spieltöne (synthetisch, Standard aus), stumm = Ton-Knopf in der Ecke
+    einstellungen: { ton: 'normal', toene: 'aus', stumm: false, effekte: 'voll', sort: 'farbe', vibration: true, vollbild: true },
+    _mauZuletzt: {},       // „art:Platz“ → Zeitpunkt des letzten Mau-Tons (Entprellung)
 
     /* ---------------- Start ---------------- */
     init() {
       const e = this.einstellungen;
       e.ton = Speicher.get('ton', 'normal');
+      e.toene = Speicher.get('toene', 'aus');
+      e.stumm = Speicher.get('stumm', false) === true;
       const reduziert = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       e.effekte = Speicher.get('effekte', reduziert ? 'reduziert' : 'voll');
       e.sort = Speicher.get('sort', 'farbe');
       e.vibration = Speicher.get('vibration', true);
       e.vollbild = Speicher.get('vollbild', true);
       M.Ton.setzeStufe(e.ton);
+      M.Ton.setzeToene(e.toene);
+      M.Ton.setzeStumm(e.stumm);
       document.body.classList.toggle('reduziert', e.effekte === 'reduziert');
       if (params.get('ruhig')) document.body.classList.add('ruhig');
       this._fehlerFangen();
@@ -155,7 +161,7 @@
     beitreten(vorgabe) {
       const feld = $('#name');
       if (vorgabe) feld.value = vorgabe;
-      const name = feld.value.replace(/\s+/g, ' ').trim().slice(0, 16);
+      const name = feld.value.replace(/\s+/g, ' ').trim().slice(0, 14);   // Gastgeber kürzt auf 14 (NetProtocol.MAX_NAME)
       if (!name) { this._startFehler('Bitte gib deinen Namen ein.'); feld.focus(); return; }
       this.name = name;
       Speicher.set('name', name);
@@ -195,6 +201,12 @@
         this._startFehler('Keine Verbindung zum Gastgeber. Seid ihr im selben WLAN? Ich versuche es weiter …');
       }
       if (s === 'offen') { this._logLeeren(); if (this.screen === 'start') this._startFehler(''); }
+      if (s === 'ersetzt') {
+        this.beigetreten = false;
+        v.hidden = true;
+        $('#ende-text').textContent = 'Du spielst jetzt in einem anderen Fenster oder Tab weiter. Hier ist die Verbindung beendet.';
+        this.zeigeScreen('ende');
+      }
     },
     wecken() {
       if (this.verbindung) this.verbindung.wecken();
@@ -259,9 +271,13 @@
         }
         case 'lobby': {
           this.lobby = m;
-          // Während einer laufenden Partie sind Lobby-Stände nur Spielerlisten; nach Partieende zurück in die Lobby
-          const amTisch = this.screen === 'tisch' && (!this.view || this.view.phase !== 'game_over');
-          if (!amTisch && this.screen !== 'lobby') this.zeigeScreen('lobby');
+          // Der Gastgeber (NetHostSession) verteilt Lobby-Stände nur, solange keine Partie läuft. Kommt einer am Tisch an,
+          // ist die Partie vorbei (set_running(false)) → zurück in die Lobby.
+          if (this.screen !== 'lobby') {
+            this.zeigeScreen('lobby');
+            this.view = null;
+            if (this.tisch) { this.tisch.ablageVerlauf = []; this.tisch.v = null; }
+          }
           this.zeigeLobby(m);
           break;
         }
@@ -286,6 +302,9 @@
           this.vibrieren([20, 50, 20]);
           if (this.schwebend !== null && this.tisch) { this.tisch.hand.schwebe(this.schwebend, false); this.tisch.hand.wackeln(this.schwebend); this.schwebend = null; }
           if (M.Autotest && M.Autotest.fehlerNachricht) M.Autotest.fehlerNachricht(m);
+          break;
+        case 'notice':     // Hinweis des Gastgebers an alle (HostTable), z. B. „Kim ist getrennt – warte …“
+          if (m.text) this.toast(String(m.text), 'leise', 3200);
           break;
         case 'pong':
           if (m.ts) this.latenz = Date.now() - m.ts;
@@ -379,7 +398,9 @@
       const c = (v.hand || []).find(h => h.id === id);
       if (!c) return;
       const h = v.hints || {};
-      if (v.turn !== v.seat || (v.phase !== 'turn' && v.phase !== 'drawn')) {
+      // Legen geht in „turn“ und „drawn“, mit Stapeln (stacking=same) auch in „challenge“ (dann steht die Karte in hints.playable)
+      const legbar = v.turn === v.seat && (v.phase === 'turn' || v.phase === 'drawn' || (v.phase === 'challenge' && (h.playable || []).length > 0));
+      if (!legbar) {
         t.hand.wackeln(id);
         this.toast(v.phase === 'challenge' && h.can_challenge ? 'Erst anzweifeln oder annehmen.' : (h.need_color ? 'Erst die Farbe wählen.' : 'Warte, bis du dran bist.'));
         return;
@@ -392,7 +413,8 @@
         return;
       }
       if (this.offen && this.offen.a.a === 'play') return;
-      if (M.Karten.istJoker(c.face)) {
+      // hints.wild: spielbare Karten, die eine Farbe brauchen (Gastgeber); Rückfall: am Gesicht erkennen
+      if (Array.isArray(h.wild) ? h.wild.indexOf(id) >= 0 : M.Karten.istJoker(c.face)) {
         t.hand.waehle(id);
         t.oeffneFarbwahl(v.side, this.zaehleFarben(v, id), farbe => {
           if (farbe) this._spieleKarte(id, farbe);
@@ -414,6 +436,8 @@
     passtNicht(v, c) {
       const K = M.Karten;
       if (v.phase === 'drawn') return 'Jetzt geht nur die gezogene Karte – oder „Behalten“.';
+      if (v.phase === 'challenge') return 'Jetzt geht nur die gleiche Ziehkarte zum Weitergeben – oder anzweifeln bzw. annehmen.';
+      if (v.pending && v.pending.kind) return 'Erst die Strafe: ' + ((v.hints || {}).text || 'ziehen oder weitergeben.');
       if (K.istJoker(c.face)) return 'Diesen Joker darfst du gerade nicht legen – du hast noch ' + K.farbName(v.color) + '.';
       const top = v.top ? K.zerlege(v.top.face) : null;
       let was = K.farbName(v.color);
@@ -446,10 +470,31 @@
       const k = this.tisch.knMau;
       k.classList.remove('drueck'); void k.offsetWidth; k.classList.add('drueck');
       if ((v.hints || {}).can_mau) {
-        M.Ton.spiele('mau');            // nur auf diesem Gerät
+        // Kein Ton hier: Er kommt mit dem Ereignis „mau“ vom Gastgeber – auf allen Geräten gleichzeitig und nie doppelt.
         this.vibrieren(40);
         this._sendeAkt({ a: 'mau' });
       } else this.toast('„Mau!“ rufst du, wenn du nur noch zwei Karten hast und dran bist.');
+    },
+    // Mau-Ton zum Ereignis (AGENTS.md Nr. 21: auf allen Geräten, außer der Ton ist hier aus). art = 'mau' | 'mau_mau'.
+    // Entprellung je Platz und Art: höchstens ein Ton pro Sekunde (z. B. wenn ein Stand doppelt ankommt).
+    // Rückgabe: true = Ton angestoßen, false = entprellt oder Ton aus.
+    mauTon(seat, art) {
+      art = art === 'mau_mau' ? 'mau_mau' : 'mau';
+      const schluessel = art + ':' + seat, jetzt = Date.now();
+      if (this._mauZuletzt[schluessel] && jetzt - this._mauZuletzt[schluessel] < 1000) return false;
+      this._mauZuletzt[schluessel] = jetzt;
+      this.mauEreignisse = (this.mauEreignisse || 0) + 1;
+      return M.Ton.spiele(art);
+    },
+    // Ton-Knopf in der Ecke: alles stumm bzw. wieder an
+    tonSchalter() {
+      const e = this.einstellungen;
+      M.Ton.freischalten();
+      e.stumm = !e.stumm;
+      Speicher.set('stumm', e.stumm);
+      M.Ton.setzeStumm(e.stumm);
+      if (this.tisch) this.tisch.zeigeTon();
+      this.toast(e.stumm ? 'Ton aus – „Mau!“ siehst du weiter als Sprechblase.' : 'Ton an', 'leise', 1600);
     },
     sortieren() {
       const reihe = ['farbe', 'wert', 'punkte'];
@@ -504,6 +549,12 @@
         else if (s === 'menue') this.menue();
         else if (s === 'gegner') { const p = (v.players || []).find(x => x.seat !== v.seat); if (p) this.gegnerAnsicht(p.seat); }
         else if (s === 'gewaehlt' || s === 'tisch') { const id = (v.hints.playable || [])[0]; if (id !== undefined && s === 'gewaehlt') this.tisch.hand.waehle(id); }
+        else if (s === 'blasen') {
+          // alle Varianten der Mau-Blase auf einmal (eigener Platz zuerst; der letzte Gegner ruft „Mau-Mau!“); &variante= erzwingt eine
+          const reihe = ['plopp', 'ohren', 'huepf', 'ballon', 'gummi', 'schlicht'];
+          const plaetze = (v.players || []).map(p => p.seat);
+          plaetze.forEach((seat, i) => this.tisch.mauBlase(seat, i === plaetze.length - 1 && i > 0 ? 'mau_mau' : 'mau', 60000, params.get('variante') || reihe[i % reihe.length]));
+        }
       }, 60);
     },
 
@@ -527,23 +578,42 @@
       $('#ansicht-karten').innerHTML = p.backs.map(f => '<div class="karte">' + M.Karten.gesichtHTML(f) + '</div>').join('');
       this.oeffne('ansicht');
     },
+    // Rundenende nach view.result (MauGame): {ranking:[Plätze], points:[Restpunkte je Platz], gains:[Gewinn je Platz],
+    // scores:[Stand je Platz], hands:[[Gesichter] je Platz], reason:"fertig"|"blockiert"}. Ältere Form: ranking als Liste.
     zeigeRunde(v) {
       const spieler = v.players || [];
+      const res = (v.result && typeof v.result === 'object') ? v.result : {};
       const name = s => { const p = spieler.find(x => x.seat === s); return p ? p.name : 'Platz ' + (s + 1); };
-      let r = Array.isArray(v.ranking) && v.ranking.length ? v.ranking : spieler.slice().sort((a, b) => a.count - b.count).map(p => p.seat);
+      let r = Array.isArray(res.ranking) && res.ranking.length ? res.ranking : (Array.isArray(v.ranking) && v.ranking.length ? v.ranking : spieler.slice().sort((a, b) => a.count - b.count).map(p => p.seat));
       r = r.map((x, i) => (typeof x === 'object' && x) ? x : { seat: x, place: i + 1 });
-      const punkte = r.some(x => x.points !== undefined || x.punkte !== undefined);
-      const wertung = v.rules && v.rules.scoring === 'points500';
-      $('#runde-titel').textContent = v.phase === 'game_over' ? 'Partie vorbei' : 'Runde ' + (v.round || 1) + ' vorbei';
-      const erster = r[0] ? name(r[0].seat) : '';
-      $('#runde-sieger').textContent = r[0] && r[0].seat === v.seat ? 'Mau-Mau! Du hast gewonnen.' : (erster ? erster + ' gewinnt.' : '');
+      const feld = (a, s) => (Array.isArray(a) && typeof a[s] === 'number') ? a[s] : undefined;
+      const wertung = !!(v.rules && v.rules.scoring === 'points500' && v.rules.round_end !== 'last');
+      const ich = v.seat;
+      $('#runde-titel').textContent = v.phase === 'game_over' ? 'Partie vorbei' : 'Runde ' + (res.round || v.round || 1) + ' vorbei';
+      const erster = r[0] ? r[0].seat : -1;
+      const vorn = res.reason === 'blockiert' ? 'Nichts geht mehr – ' : '';
+      $('#runde-sieger').textContent = vorn + (erster === ich ? (v.phase === 'game_over' ? 'Du gewinnst die Partie!' : 'Mau-Mau! Du hast gewonnen.') : (erster >= 0 ? name(erster) + (v.phase === 'game_over' ? ' gewinnt die Partie.' : ' gewinnt.') : ''));
       $('#runde-liste').innerHTML = r.map((x, i) => {
         const p = spieler.find(q => q.seat === x.seat) || {};
-        const pts = x.points !== undefined ? x.points : x.punkte;
-        return '<li class="' + (x.seat === v.seat ? 'ich' : '') + '"><span class="pl">' + (x.place || i + 1) + '.</span><span class="nm">' + esc(name(x.seat)) + '</span>' +
-          (punkte ? '<span class="pk">' + ((x.place || i + 1) === 1 && i === 0 ? '+' : '') + (pts || 0) + ' Pkt.</span>' : '') + (wertung ? '<span class="ges">' + (p.score || 0) + '</span>' : '') + '</li>';
+        const rest = feld(res.points, x.seat) !== undefined ? feld(res.points, x.seat) : (x.points !== undefined ? x.points : x.punkte);
+        const gewinn = feld(res.gains, x.seat);
+        const stand = feld(res.scores, x.seat) !== undefined ? feld(res.scores, x.seat) : (p.score || 0);
+        const karten = Array.isArray(res.hands) && Array.isArray(res.hands[x.seat]) ? res.hands[x.seat].length : (p.count | 0);
+        let pk = '';
+        if (i === 0 && wertung && gewinn) pk = '+' + gewinn + ' Pkt.';
+        else if (karten) pk = karten + (karten === 1 ? ' Karte' : ' Karten') + (rest !== undefined ? ' · ' + rest + ' Pkt.' : '');
+        else if (i > 0) pk = 'fertig';     // „bis zum Letzten“: schon ausgeschieden
+        const ges = wertung ? stand : (stand ? stand + (stand === 1 ? ' Sieg' : ' Siege') : '');
+        return '<li class="' + (x.seat === ich ? 'ich' : '') + '"><span class="pl">' + (x.place || i + 1) + '.</span><span class="nm">' + esc(name(x.seat)) + '</span>' +
+          (pk ? '<span class="pk">' + esc(pk) + '</span>' : '') + (ges !== '' ? '<span class="ges">' + esc(ges) + '</span>' : '') + '</li>';
       }).join('');
-      $('#runde-fuss').textContent = v.phase === 'game_over' ? 'Der Gastgeber kann eine neue Partie starten.' : 'Der Gastgeber startet die nächste Runde.';
+      const weiter = !!((v.hints || {}).can_next_round) && v.phase === 'round_over';
+      const kw = $('#runde-weiter');
+      if (kw) {
+        kw.hidden = !weiter;
+        kw.onclick = ev => { ev.preventDefault(); kw.disabled = true; this._sendeAkt({ a: 'next_round' }); setTimeout(() => { kw.disabled = false; }, 1500); };
+      }
+      $('#runde-fuss').textContent = v.phase === 'game_over' ? 'Der Gastgeber kann eine neue Partie starten.' : (weiter ? 'Du startest die nächste Runde.' : (this.hostName || 'Der Gastgeber') + ' startet die nächste Runde.');
       if ($('#runde').hidden) this.oeffne('runde');
     },
     menue() {
@@ -552,6 +622,7 @@
       const el = document.documentElement;
       $('#zeile-vollbild').hidden = IST_IOS || !(el.requestFullscreen || el.webkitRequestFullscreen);
       $('#zeile-vibration').hidden = !navigator.vibrate;
+      $('#menue-stumm').hidden = !e.stumm;
       $('#menue-regeln').innerHTML = M.Karten.regelnText(this.view && this.view.rules).map(t => '<li>' + esc(t) + '</li>').join('');
       $('#menue-info').textContent = 'Mau-Mau Flip ' + this.version + ' · Browser · ' + this.name + (this.view ? ' · Platz ' + (this.view.seat + 1) : '');
       this.oeffne('menue');
@@ -562,7 +633,13 @@
       if (k === 'vollbild') { this.vollbild(wert); if (wert) setTimeout(() => this._querSperren(), 300); }
       e[k] = wert;
       Speicher.set(k, wert);
-      if (k === 'ton') { M.Ton.setzeStufe(wert); M.Ton.spiele('karte'); }
+      if ((k === 'ton' || k === 'toene') && wert !== 'aus' && e.stumm) {   // wer eine Lautstärke wählt, will Ton
+        e.stumm = false; Speicher.set('stumm', false); M.Ton.setzeStumm(false);
+        if (this.tisch) this.tisch.zeigeTon();
+      }
+      if (k === 'ton' || k === 'toene') M.Ton.freischalten();
+      if (k === 'ton') { M.Ton.setzeStufe(wert); M.Ton.spiele('mau'); }        // Probehören: die Aufnahme
+      if (k === 'toene') { M.Ton.setzeToene(wert); M.Ton.spiele('karte'); }
       if (k === 'effekte') document.body.classList.toggle('reduziert', wert === 'reduziert');
       this.menue();
     },

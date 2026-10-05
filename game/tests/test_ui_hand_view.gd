@@ -94,6 +94,7 @@ func run() -> void:
 	hand = HandView.new()
 	hand.haptics = false
 	root.add_child(hand)
+	hand.layout_rect = HandView.DEFAULT_RECT    # wie der Tisch: fester Handbereich (headless ist das Fenster höher als 720)
 	hand.set_process(false)
 	hand.clock_ms = clock
 	hand.play_requested.connect(func(id: int, g: Vector2) -> void: log.append(["play", id, g]))
@@ -120,9 +121,9 @@ func run() -> void:
 	for i in range(1, order.size()):
 		if hand.card_view(order[i]).position.x <= hand.card_view(order[i - 1]).position.x:
 			xs_ok = false
-		if hand.card_view(order[i]).z_index <= hand.card_view(order[i - 1]).z_index:
+		if hand.card_view(order[i]).get_index() <= hand.card_view(order[i - 1]).get_index():
 			z_ok = false
-	check(xs_ok and z_ok, "Karten von links nach rechts, rechte über linker")
+	check(xs_ok and z_ok, "Karten von links nach rechts, rechte über linker (Kindreihenfolge)")
 	var base_y := hand.card_view(2).position.y
 	check(absf(base_y - 720.0) < 25.0, "Hand unten, obere Hälfte sichtbar (y %.0f)" % base_y)
 

@@ -45,7 +45,14 @@
         try { msg = JSON.parse(ev.data); } catch (e) { return; }
         if (msg && typeof msg === 'object' && this.opt.beiNachricht) this.opt.beiNachricht(msg);
       };
-      ws.onclose = () => { if (ws === this.ws) { this.ws = null; this._spaeter(); } };
+      ws.onclose = ev => {
+        if (ws !== this.ws) return;
+        this.ws = null;
+        // 4000: Der Gastgeber hat diese Verbindung durch eine neuere desselben Spielers ersetzt (z. B. zweiter Tab) → nicht neu verbinden,
+        // sonst verdrängen sich zwei Tabs gegenseitig.
+        if (ev && ev.code === 4000) { this.endgueltig = true; clearTimeout(this.timer); this._setze('ersetzt'); return; }
+        this._spaeter();
+      };
       ws.onerror = () => { /* onclose folgt */ };
     }
     _schliesseSocket() {
@@ -80,6 +87,15 @@
     }
     // Nutzerwunsch „Neu verbinden“: Verbindung sofort ersetzen
     neuVerbinden() { if (this.endgueltig) return; this.versuche = Math.max(this.versuche, 1); this._verbinde(); }
+    // Selbsttest: Verbindung hart kappen (wie Funkloch) und nach ms neu verbinden
+    trennen(ms) {
+      if (this.endgueltig) return;
+      this._schliesseSocket();
+      this._setze('getrennt');
+      clearTimeout(this.timer);
+      this.versuche = Math.max(this.versuche, 1);
+      this.timer = setTimeout(() => this._verbinde(), ms || 1000);
+    }
     _roh(obj) {
       if (!this.ws || this.ws.readyState !== 1) return false;
       try { this.ws.send(JSON.stringify(obj)); return true; } catch (e) { return false; }

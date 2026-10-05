@@ -1,0 +1,83 @@
+{
+    "befunde":  [
+                    {
+                        "schwere":  "mittel",
+                        "datei":  "game/scripts/rules/mau_game.gd",
+                        "problem":  "apply() prüft die Typen der Aktionsfelder nicht. Bei null, Array oder Dictionary in card/target bricht der Handler mit einem Skriptfehler ab. apply() meldet dann trotzdem ok=true, ohne dass etwas passiert. Ein nicht numerischer String wird über int() zu 0 und spielt damit die Karte mit der id 0, falls der Spieler sie hält. Browser-Gäste schicken freies JSON, und apply() ist laut Plan die Stelle, die ablehnt und eine Begründung liefert.",
+                        "beleg":  "Prüfskript pruef_A_probe.gd (wieder gelöscht): {a:\u0027play\u0027,card:null} → {ok:true, events:[]} plus \u0027SCRIPT ERROR: Invalid call. Nonexistent int constructor at MauGame._act_play (mau_game.gd:187)\u0027. Gleiches bei card:[1], card:{} und catch target:null (Zeile 332). {a:\u0027play\u0027,card:\u0027abc\u0027} → ok:true, Ereignis play card 0 \u0027hell_rot_1\u0027. {a:\u0027catch\u0027,target:\u0027x\u0027} → Begründung \u0027Dich selbst kannst du nicht erwischen.\u0027 Ursache: Zeilen 187 und 332 rufen int() ohne Typprüfung auf; Zeilen 160–162 werten why=\u0027\u0027 (Rückgabewert nach dem Abbruch) als Erfolg.",
+                        "vorschlag":  "In apply() bzw. _act_play/_act_catch nur int oder float annehmen, die ganzzahlig sind (z. B. Hilfsfunktion _int_field(action, key) → -1 bei anderem Typ); sonst \u0027Ungültige Aktion.\u0027 zurückgeben. color nur als String annehmen. Einen Testfall mit kaputten Aktionen in test_rules_play.gd aufnehmen."
+                    },
+                    {
+                        "schwere":  "mittel",
+                        "datei":  "game/scripts/rules/mau_game.gd",
+                        "problem":  "Die nächste Runde kann nur Platz 0 starten. Laut Plan heißt es aber „nur Platz 0 bzw. Gastgeber“, und im Netzspiel legt der Gastgeber die Sitzordnung selbst fest. Sitzt der Gastgeber nicht auf Platz 0, bekommt er weder can_next_round noch den Hinweis. Ein Gast auf Platz 0 (auch ein Browser-Gast) sieht dagegen „Weiter mit der nächsten Runde.“ und dürfte die Runde starten.",
+                        "beleg":  "Zeile 346: if seat != 0 → \u0027Die nächste Runde startet der Gastgeber.\u0027; Zeile 946: h.can_next_round = state == \u0027round_over\u0027 and me == 0. Prüfskript: Platz0 can_next_round=true, Platz2=false, Text Platz0 \u0027Du gewinnst die Runde! Weiter mit der nächsten Runde.\u0027",
+                        "vorschlag":  "Gastgeber-Platz im Regelwerk führen, z. B. players[i].host oder set_host_seat(seat), gespeichert in to_dict. _act_next_round und can_next_round darauf beziehen; Standard bleibt Platz 0. Sonst muss Modul G next_round-Aktionen von Gästen filtern und den Hinweistext selbst ersetzen. Das gehört dann in die Abweichungen."
+                    },
+                    {
+                        "schwere":  "mittel",
+                        "datei":  "game/scripts/rules/bot.gd",
+                        "problem":  "Der Bot ruft „Mau!“, sobald can_mau gilt. Das passiert auch, wenn er in diesem Zug gar nicht auf 1 Karte kommen kann: Er hat nichts Spielbares und zieht, oder er nimmt als Opfer in der Phase challenge eine +2 an. Dann folgt sichtbar „Mau!“ und gleich darauf ein Zug. Das passt zum Hinweistext: Das Regelwerk erinnert auch in diesen Lagen mit „Denk an „Mau!““, und can_mau ist dort wahr.",
+                        "beleg":  "bot.gd Zeile 31–32 (if can_mau: return mau, vor jeder Zugprüfung); mau_game.gd Zeile 838 (_can_mau auch für challenge und ohne spielbare Karte) und 1019–1020 (Hinweis). Prüfskript: 2 Karten, nichts spielbar → Bot {a:\u0027mau\u0027}, danach draw, 3 Karten; Hinweis \u0027nichts passt, zieh eine Karte. Denk an „Mau!“\u0027. Opfer einer +2 ohne Stapeln mit 2 Karten: can_mau=true, Text \u0027… anzweifeln oder 2 ziehen? Denk an „Mau!“\u0027, Bot ruft Mau. In 200 Partien (Stufe 2) waren 489 von 1121 Bot-Rufen (44 %) blind.",
+                        "vorschlag":  "Bot: Mau nur rufen, wenn er im selben Zug eine Karte legen wird. Also erst die Aktion wählen und, wenn sie play ist (in challenge nur beim Stapeln), vorher mau zurückgeben. Regelwerk: den Hinweis „Denk an Mau“ (und am besten auch can_mau) nur geben, wenn hints.playable nicht leer ist. Die Mau-Animation von Modul F läuft sonst bei jedem blinden Ruf."
+                    },
+                    {
+                        "schwere":  "niedrig",
+                        "datei":  "game/scripts/rules/mau_game.gd",
+                        "problem":  "flip_last_card=ignore greift nur, wenn die Runde endet. Bei round_end=last und weiterlaufender Runde wird der Flip als letzte Karte trotzdem ausgeführt. Kartenhilfe, describe() und Übersicht sagen dagegen pauschal „Als letzte Karte wird der Flip nicht mehr ausgeführt“.",
+                        "beleg":  "Prüfskript: round_end=last, flip_last_card=ignore, Platz 0 legt letzten Flip → events [\u0027play\u0027,\u0027finish\u0027,\u0027flip\u0027,\u0027turn\u0027], side=dunkel; RulesText.card_help(...)[4] = \u0027Als letzte Karte wird der Flip nicht mehr ausgeführt.\u0027 Code: Option nur in _final_effect (Zeile 590); im Pfad Zeile 507–514/528–529 läuft _do_flip immer. Texte: rules_text.gd 101–104, 208; rule_config.gd 194–197.",
+                        "vorschlag":  "Entweder bei ignore den Flip auch bei round_end=last nicht ausführen (in _play bei finishing und kind==\u0027flip\u0027 nur _advance), oder die Texte auf „Beendet ein Flip die Runde, …“ einschränken und das in A.md, Abweichung 8, festhalten."
+                    },
+                    {
+                        "schwere":  "niedrig",
+                        "datei":  "game/scripts/rules/mau_game.gd",
+                        "problem":  "Bei mau_call=auto wird die Strafe erst innerhalb von apply() verhängt, nachdem _playable geprüft wurde. Die Prüfung auf Regelgerechtheit für Wünscher +2/Farbjagd läuft danach mit der schon vergrößerten Hand. Zu zweit oder nach „Alle aussetzen“ wird so ein laut Hinweis erlaubter +2 zum Bluff. Im Modus bluff wird er erfolgreich angezweifelt; im Modus enforce geht ein eigentlich unzulässiger +2 durch.",
+                        "beleg":  "Prüfskript pruef_A_probe2.gd: 2 Spieler, auto, Hand [rot_aussetzen, wuenscher_plus2], Nachziehstapel rot_1, rot_2. Nach Aussetzen ohne Mau: hints.playable enthält +2 → apply: [\u0027penalty\u0027,\u0027draw\u0027,\u0027play\u0027,…]. Bei enforce angenommen trotz roter Karten; bei bluff legal=false, Anzweifeln Erfolg, Leger danach 4 Karten. Code: Zeile 190 (_playable) vor 198 (_begin_turn → 476–477 Strafe) und 489–491 (_wild_legal nach der Strafe).",
+                        "vorschlag":  "legal in _act_play vor _begin_turn berechnen und an _play übergeben (die Entscheidung fiel mit der damaligen Hand). Alternativ die auto-Strafe für den eigenen Folgezug schon in _new_turn verhängen, wenn mau_open == current, also vor der Berechnung der Hinweise."
+                    },
+                    {
+                        "schwere":  "niedrig",
+                        "datei":  "game/scripts/rules/mau_game.gd",
+                        "problem":  "Bei mau_call=reminder wird mau_open nicht gesetzt. Wer nach dem Legen auf 1 Karte „Mau!“ drückt, bekommt eine Ablehnung. Bei catch und auto ist der Ruf nach dem Legen erlaubt; die Übersicht verspricht das für diese Modi ausdrücklich („vor oder nach dem Legen“). Der Mau-Knopf verhält sich je nach Modus also verschieden.",
+                        "beleg":  "Zeile 505: mau_open nur bei catch/auto. Prüfskript: catch → Ruf nach dem Legen ok=true; reminder → ok=false \u0027Mau! geht erst, wenn du mit 2 Karten dran bist.\u0027",
+                        "vorschlag":  "mau_open auch bei reminder setzen; Erwischen und Strafe bleiben durch die vorhandenen Abfragen auf catch/auto ausgeschlossen. Oder das Verhalten dokumentieren."
+                    },
+                    {
+                        "schwere":  "niedrig",
+                        "datei":  "game/scripts/rules/mau_game.gd",
+                        "problem":  "create() gibt bei weniger als 2 oder mehr als 10 Spielern nur push_error aus und baut das Spiel trotzdem. Bei 12 Spielern mit 10 Handkarten werden null-Einträge ausgeteilt. Danach scheitern discard.back(), int(null) usw., und RulesFixture.card_check meldet wegen des Abbruchs fälschlich „in Ordnung“.",
+                        "beleg":  "Zeilen 82–83. Prüfskript: 1, 11 und 12 Spieler → jeweils Phase \u0027turn\u0027. Bei 12 Spielern card_check \u0027\u0027 trotz 120 \u003e 112 Karten, weitere SCRIPT ERRORs (Ausgabe gekürzt).",
+                        "vorschlag":  "In create() bei ungültiger Spielerzahl null zurückgeben, oder auf 2–10 begrenzen und start_round() ablehnen. Hand_size × Spieler ≤ 112 − 1 sichern (mit 10 × 10 bereits erfüllt)."
+                    },
+                    {
+                        "schwere":  "niedrig",
+                        "datei":  "game/tests/test_rules_views.gd",
+                        "problem":  "Die Standardtests halten die gemeinsame Godot-Sperre deutlich länger als angegeben. test_rules_views dauert 130 s, test_rules_bots insgesamt 76 s (die Partien allein 27 s; dazu der Stärketest mit 600 Partien). A.md nennt für den Standardlauf etwa 30 s. Das bremst die parallel arbeitenden Agenten.",
+                        "beleg":  "Eigener Lauf: cards 8 s, play 32 s, views 130 s, bots 76 s, bots_long 299 s (Wanduhr inkl. Start). A.md Zeile 237 \u0027Dauer etwa 30 s\u0027.",
+                        "vorschlag":  "In views LEAK_GAMES (60) und die Hinweisprüfung (16 Partien) per Umgebungsvariable einstellbar machen, im Standardlauf etwa halbieren und die volle Zahl in den langen Lauf verschieben. Den Stärketest im Standardlauf auf etwa 300 Partien senken oder ebenfalls verschieben. A.md korrigieren."
+                    },
+                    {
+                        "schwere":  "niedrig",
+                        "datei":  "game/scripts/rules/rules_text.gd",
+                        "problem":  "Die Übersicht widerspricht sich bei drawn_card=may_not. Erst heißt es „Gelegt wird sie frühestens im nächsten Zug.“, gleich danach „Du darfst auch freiwillig ziehen; dann darfst du nur die gezogene Karte legen.“",
+                        "beleg":  "rules_text.gd Zeilen 173–175",
+                        "vorschlag":  "Den Satz zum freiwilligen Ziehen bei may_not ändern, z. B. „…; danach ist dein Zug vorbei.“"
+                    },
+                    {
+                        "schwere":  "niedrig",
+                        "datei":  "game/scripts/rules/mau_game.gd",
+                        "problem":  "Das Mau-Fenster bleibt offen, solange das Opfer einer +1/+5 (ohne Stapeln) oder ein übersprungener Spieler nicht selbst handelt; es schließt erst mit der ersten Handlung des Übernächsten. Nach Regel 1.9 beginnt der Zug des Opfers schon mit dem Ziehen. Das ist großzügiger als die Regel und uneinheitlich: Bei der +2 im Bluff-Modus schließt die Entscheidung des Opfers das Fenster.",
+                        "beleg":  "Prüfskript: 4 Spieler, Platz 0 legt +1 auf 1 Karte ohne Mau, Opfer zieht automatisch, Platz 2 dran → view_for(3).hints.catch = [0]. Code: _start_pending Zeile 559–560 ohne _begin_turn.",
+                        "vorschlag":  "Entweder als Absicht in A.md aufnehmen (mehr Zeit zum Erwischen, passt zur Schonfrist im Netz), oder in _start_pending vor _take_pending das Fenster schließen bzw. bei auto die Strafe verhängen."
+                    },
+                    {
+                        "schwere":  "niedrig",
+                        "datei":  "docs/module/A.md",
+                        "problem":  "Zwei Abweichungen betreffen Nutzerentscheidungen und stehen bisher nur in A.md, nicht im Abweichungen-Abschnitt von BETA1_PLAN.md: die Stillstandsregel (eine neue, immer aktive Spielregel ohne Option) und view_for(-1) mit allen Rückseiten. AGENTS.md Nr. 15 verlangt, dass Weitergeben-Dialoge keinerlei Karten zeigen, und der Plan nennt -1 ausdrücklich „Sichtschutz“.",
+                        "beleg":  "A.md Abweichungen 5 und 12; mau_game.gd 424–438 (_stalled), 879–880 (Rückseiten für me=-1); BETA1_PLAN.md Zeile 140 (\u0027seat = -1: Zuschauer/Sichtschutz\u0027).",
+                        "vorschlag":  "Der Koordinator überträgt die Abweichungen 1–13 in BETA1_PLAN.md und legt die Stillstandsregel dem Nutzer zur Bestätigung vor. Für Modul G/F festhalten: Der Sichtschutz rendert nichts aus view_for(-1), auch nicht top/draw_back."
+                    }
+                ],
+    "tests":  "Import, danach alle Tests headless über tools/godot_run.ps1 (Wanduhrzeit inkl. Godot-Start):\n- test_rules_cards: RESULT 655 ok (8 s)\n- test_rules_play: RESULT 771 ok (32 s)\n- test_rules_views: RESULT 66 ok (130 s); Lecktest mit 307 089 Sichten und 308 497 Ereignislisten, Hinweisprüfung mit 89 175 Versuchen, beides grün\n- test_rules_bots: RESULT 15 ok (76 s); 1 000 Partien in 27 s, Stärketest 237/600 = 39,5 %\n- test_rules_bots_long: RESULT 15 ok (299 s); 10 000 Partien in 291 s, Statistik identisch mit der des Erbauers (3 411 406 Aktionen, 1× blockiert)\n\nZwei eigene Prüfskripte (game/tests/pruef_A_probe.gd und pruef_A_probe2.gd, danach gelöscht) brachten folgende Ergebnisse:\n- Kaputte Aktionen führen zu SCRIPT ERROR und ok=true; card:\"abc\" spielt die Karte mit id 0.\n- flip_last_card=ignore führt bei round_end=last den Flip trotzdem aus.\n- 44 % der Mau-Rufe von Bots der Stufe 2 sind blind.\n- Im reminder-Modus geht kein Ruf nach dem Legen.\n- Der Rundenstart ist an Platz 0 gebunden.\n- Die auto-Strafe vor dem Legen kippt die Regelgerechtheit eines +2.\n- Ungültige Spielerzahlen werden angenommen.\n- Leistung bei 10 Spielern (PC): apply 8 µs, Bot 66 µs, view_for + events_for + JSON 100 µs je Platz; unkritisch fürs Handy.\n\nAm Modulcode habe ich nichts geändert.",
+    "gesamturteil":  "Modul A ist solide und hält den Vertrag ein. Alle Pflichtprüfungen laufen bei mir grün, auch die 10 000 Partien, deterministisch mit identischer Statistik.\n\n- **Regeln:** Startkarte, Flip mit Umkehr beider Stapel, Joker nach Flip, Bluff und Anzweifeln in beiden Fassungen, Farbjagd, Stapeln, Zweierregel, letzte Karte, Neumischen, Mau-Fenster und „bis zum Letzten“ entsprechen Regelbericht 07 und Plan.\n- **Lecks:** Keine gefunden. Gezogene Gesichter und ids sowie die Hand beim Anzweifeln werden korrekt gefiltert, Seed und Zufallszustand tauchen nirgends auf.\n- **Sonstiges:** Kein Markenname. Die Leistung reicht für Mobilgeräte.\n\nDie Befunde betreffen Robustheit und Randfälle:\n- **Vor dem Zusammenbau mit G/D/E beheben (mittel):** Typprüfung in apply() gegen kaputte Netzaktionen, Gastgeber statt fest Platz 0 für next_round, blinde Mau-Rufe der Bots samt „Denk an Mau“-Hinweis.\n- **Niedrig:** flip_last_card=ignore bei round_end=last, auto-Strafe vor dem Legen, reminder-Fenster, Spielerzahl-Grenze, Testlaufzeiten, Textwiderspruch bei may_not, Mau-Fenster nach automatischem Ziehen.\n- **Für den Koordinator:** Die Abweichungen aus A.md, vor allem die Stillstandsregel und view_for(-1) mit Rückseiten, in BETA1_PLAN.md übernehmen und die Stillstandsregel dem Nutzer vorlegen.\n\nUrteil: freigabefähig nach kleiner Nacharbeit an den drei mittleren Punkten."
+}

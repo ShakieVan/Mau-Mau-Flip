@@ -23,22 +23,27 @@ func _run() -> void:
 	var sound := AppSound.new()
 	sound.settings = settings
 	root.add_child(sound)
-	check(is_equal_approx(sound.volume_db("mau"), -6.0) and is_equal_approx(sound.volume_db("karte"), -8.0), "Ton: Mau normal -6 dB, andere -8 dB")
+	# Standard (AGENTS.md 20): Mau-Töne normal, übrige Spieltöne aus. Die genauen dB-Werte prüft test_app_sound.
+	var mau_normal := float(AppSound.MAU_DB["normal"])
+	check(is_equal_approx(sound.volume_db("mau"), mau_normal) and sound.volume_db("karte") <= -80.0, "Ton: Mau normal, Spieltöne ab Werk aus")
+	settings.set_value("toene", "normal")
+	check(is_equal_approx(sound.volume_db("karte"), float(AppSound.TON_DB["normal"])), "Ton: Spieltöne normal")
 	settings.set_value("mau_ton", "leise")
-	check(is_equal_approx(sound.volume_db("mau"), -14.0), "Ton: Mau leise -14 dB")
+	check(is_equal_approx(sound.volume_db("mau"), float(AppSound.MAU_DB["leise"])) and sound.volume_db("mau") < mau_normal, "Ton: Mau leise ist leiser")
 	settings.set_value("mau_ton", "aus")
-	check(not sound.play("mau") and sound.last_played == "", "Ton: Mau aus spielt nichts")
+	check(not sound.play("mau") and not sound.play("mau_mau") and sound.last_played == "", "Ton: Mau aus spielt nichts")
 	check(not sound.play("gibt_es_nicht") and AppSound.path_for("gibt_es_nicht") == "", "Ton: fehlende Datei bleibt still")
 	for sound_name in AppSound.NAMES:
 		var has_file := AppSound.path_for(sound_name) != ""
-		if sound_name == "mau":
+		if AppSound.is_mau(sound_name):
 			continue
 		check(sound.play(sound_name) == has_file, "Ton %s: %s" % [sound_name, "spielt" if has_file else "fehlt noch, still"])
 		if not has_file:
 			print("Hinweis: res://assets/sfx/%s.ogg/.wav fehlt noch" % sound_name)
 	settings.set_value("mau_ton", "normal")
-	var mau_file := AppSound.path_for("mau") != ""
-	check(sound.play("mau") == mau_file and (not mau_file or is_equal_approx(sound.last_db, -6.0)), "Ton: Mau normal")
+	for sound_name in AppSound.MAU_NAMES:
+		var mau_file := AppSound.path_for(sound_name) != ""
+		check(sound.play(sound_name) == mau_file and (not mau_file or is_equal_approx(sound.last_db, mau_normal)), "Ton: %s normal" % sound_name)
 	sound.stop_all()
 	sound.free()
 

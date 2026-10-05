@@ -13,7 +13,7 @@ extends RefCounted
 #   draw: [Schlüssel, …]          Nachziehstapel von oben; draw_bottom: [Schlüssel, …] ganz unten (unterste zuerst)
 #   rest: "draw"|"discard"        wohin die übrigen Karten kommen (Standard: Nachziehstapel zwischen draw und draw_bottom;
 #                                 "discard": unter die Ablage, dann ist der Nachziehstapel nur draw + draw_bottom)
-#   current, dir, color, wished, phase ("turn" …), dealer, round, scores, mau_said: [Plätze], finished: [Plätze]
+#   current, dir, color, wished, phase ("turn" …), dealer, round, scores, mau_said: [Plätze], finished: [Plätze], host (Platz)
 
 const NAMES := ["Anna", "Ben", "Cleo", "Dani", "Emil", "Fritzi", "Gus", "Hanna", "Ida", "Jo"]
 
@@ -189,6 +189,8 @@ func _build(config: RuleConfig, player_count: int, spec: Dictionary, rng_seed: i
 	var sc: Array = spec.get("scores", [])
 	for s in sc.size():
 		g.scores[s] = int(sc[s])
+	if spec.has("host"):
+		g.set_host(int(spec.host))
 	return g
 
 

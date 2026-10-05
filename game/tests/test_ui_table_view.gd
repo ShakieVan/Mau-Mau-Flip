@@ -4,6 +4,8 @@ extends SceneTree
 # komplette Demo-Ereignisfolge mit Endzustand = Sicht, Überspringen bei Rückstand, Sichtschutz ohne Karten mit Halte-
 # und Tippsperre, Farbwahl, Joker-Strahlen aus der sichtbaren Kontur, Effektstufe reduziert.
 
+const CleanExit := preload("res://tests/clean_exit.gd")
+
 var ok := 0
 var fails := 0
 
@@ -57,7 +59,8 @@ func run() -> void:
 	await _rays()
 	await _reduced()
 	print("RESULT: %d ok" % ok)
-	quit(0 if fails == 0 else 1)
+	# Töne anhalten und aufräumen, sonst „resources still in use at exit“ (Flip- und Sieg-Ton laufen noch)
+	await CleanExit.finish(self, 0 if fails == 0 else 1)
 
 
 func _view_basics() -> void:

@@ -1,5 +1,7 @@
 extends SceneTree
 # Rauchtest Modul F1b: Tisch-Demo laden und alle Schritte der Ereignisfolge durchspielen (beschleunigt).
+const CleanExit := preload("res://tests/clean_exit.gd")
+
 func _initialize() -> void:
 	call_deferred("run")
 
@@ -24,4 +26,5 @@ func run() -> void:
 	if t.round_end.visible: ok += 1
 	else: print("FAIL: Rundenende nicht sichtbar")
 	print("RESULT: %d ok" % ok)
-	quit(0 if ok == 2 else 1)
+	# Töne anhalten und aufräumen, sonst „resources still in use at exit“ (Sieg-Ton läuft noch)
+	await CleanExit.finish(self, 0 if ok == 2 else 1)

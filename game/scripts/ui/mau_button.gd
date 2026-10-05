@@ -3,7 +3,8 @@ extends Control
 # Großer runder „Mau!“-Knopf (Entwurf: rechts unten, 150 px, Fraunces kursiv 900 mit SOFT 100, Papier mit Druckfarbenrand
 # und rosa Lichtkranz). Zustände: IDLE (sichtbar, ruhig), READY (Mau ist jetzt möglich: Kranz pulsiert, Knopf hebt sich),
 # CALLED (gerufen: gedämpft mit Haken), HIDDEN. Drücken staucht den Knopf; das Signal kommt beim Loslassen im Knopf.
-# Den Mau-Ton spielt nur das Gerät, das gedrückt hat (BETA1_PLAN Abschnitt 5) – das übernimmt der Tisch.
+# Der Knopf selbst spielt keinen Ton: Ton „Mao“ und Sprechblase kommen mit dem Ereignis „mau“ auf allen Geräten (AGENTS.md
+# Nr. 21, TableView._ev_mau); so klingt es auch hier genau einmal. Die eigene Blase erscheint über diesem Knopf.
 
 signal mau_pressed
 

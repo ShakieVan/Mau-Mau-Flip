@@ -16,6 +16,8 @@ extends Control
 #   landing_point() -> Vector2 (global)  flip_wave(delay, step, dur, faces: {id: face})  set_input_locked(on)
 #   own_color_counts() -> {farbe: Anzahl}
 # Effektstufe „reduziert“ (App.settings "effekte"): kürzere Abläufe, weniger Teilchen, kein Wackeln, kein Zoom.
+# Mau (AGENTS.md Nr. 21): Ereignis „mau“ → Ton "mau" auf jedem Gerät (MauSound, außer Mau-Ton aus) und eine zufällig gewählte,
+# animierte Sprechblase beim Rufenden (show_mau); „finish“ → Ton "mau_mau" und die große Doppelblase „Mau-Mau!“.
 
 signal action(a: Dictionary)
 signal sort_pressed
@@ -77,6 +79,9 @@ var _press_pos := Vector2.ZERO
 var _pressing := false
 var _rays_fx: Node2D
 var _round_key := ""
+var mau_variant_override := ""       # Tests/Kontrollbilder: feste Variante der Mau-Blase ("" = zufällig)
+var _mau_rng := RandomNumberGenerator.new()
+var _mau_last := ""
 
 var _center := Vector2(800, 320)
 var _draw_pos := Vector2(623, 320)
@@ -88,6 +93,7 @@ var _discard_pos := Vector2(977, 320)
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_PASS
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_mau_rng.randomize()
 	director = Director.new()
 	director.handler = self
 	add_child(director)
@@ -483,6 +489,7 @@ func set_night(v: float) -> void:
 		(_act_btns[k] as PillButton).night = night
 	hint_bar.night = night
 	fx.night = night
+	fx_top.night = night
 	_pile.night = night
 	_color_mark.night = night
 	_color_ring.night = night
@@ -534,8 +541,7 @@ func _on_wheel_color(c: String) -> void:
 
 
 func _on_mau_pressed() -> void:
-	# Den Mau-Ton spielt nur dieses Gerät (Katzen-Leitplanke); die Animation kommt mit dem Ereignis „mau“ für alle
-	UiApp.sound("mau")
+	# Kein Ton beim Drücken: Ton und Sprechblase kommen mit dem Ereignis „mau“ auf allen Geräten (AGENTS.md Nr. 21)
 	UiApp.vibrate(30, 0.5)
 	_emit_action({"a": "mau"})
 
@@ -634,6 +640,8 @@ func play_event(ev: Dictionary, speed: float) -> float:
 			return _ev_challenge(ev)
 		"mau":
 			return _ev_mau(ev)
+		"finish":
+			return _ev_finish(ev)
 		"catch":
 			return _ev_catch(ev)
 		"shuffle":
@@ -956,16 +964,150 @@ func _ev_challenge(ev: Dictionary) -> float:
 	return _d(1.1)
 
 
+# „Mau!“: Ton auf jedem Gerät (außer Mau-Ton aus) und eine zufällige Sprechblase beim Rufenden (AGENTS.md Nr. 21)
 func _ev_mau(ev: Dictionary) -> float:
 	var seat := int(ev.get("seat", -1))
 	var node := seat_node(seat)
 	if node != null:
 		node.player["mau"] = true
 		node.queue_redraw()
-		fx.bubble(node.position + Vector2(0, -78), "Mau!", _d(1.0), Vector2(0, 1))
-	elif seat == my_seat:
-		fx.bubble(_world.to_local(mau_button.get_global_rect().get_center()) + Vector2(-20, -128), "Mau!", _d(1.0), Vector2(0.25, 1))
-	return _d(0.9)
+		node.set("_bump", 1.0)
+		create_tween().tween_property(node, "_bump", 0.0, 0.35)
+	MauSound.play(-1, seat, "mau")
+	show_mau(seat, false)
+	return _d(0.7)
+
+
+# Fertig („Mau-Mau!“): Aufnahme „Mao-Mao“ auf jedem Gerät und die große Doppelblase; danach erst das Rundenende
+func _ev_finish(ev: Dictionary) -> float:
+	var seat := int(ev.get("seat", -1))
+	MauSound.play(-1, seat, "mau_mau")
+	show_mau(seat, true)
+	return _d(1.0)
+
+
+# ----------------------------------------------------------------- Mau-Sprechblasen
+
+# Variante für den nächsten Ruf: zufällig (nur Darstellung), nie zweimal dieselbe hintereinander; reduziert = schlicht
+func pick_mau_variant() -> String:
+	if mau_variant_override != "":
+		return mau_variant_override
+	if reduced:
+		return "schlicht"
+	var pool := TableEffects.mau_variants(night > 0.5)
+	if pool.size() > 1:
+		pool.erase(_mau_last)
+	var v: String = pool[_mau_rng.randi_range(0, pool.size() - 1)]
+	_mau_last = v
+	return v
+
+
+# Sprechblase beim Rufenden: bei Gegnern am Avatar, beim eigenen Platz über dem Mau-Knopf (sonst über der Hand).
+# big = „Mau-Mau!“. Die Blasen liegen in fx_top (über Knöpfen und Rundenende).
+func show_mau(seat: int, big := false, variant := "") -> TableEffects.MauBubbleFx:
+	var v := variant
+	if v == "":
+		v = ("maumau_schlicht" if reduced else "maumau") if big else pick_mau_variant()
+	var sp := mau_speaker(seat)
+	var b := TableEffects.MauBubbleFx.new()
+	b.variant = v
+	b.night = night
+	b.k = 0.86 if TableLayout.compact(_n) else 1.0
+	b.accent = UiPalette.avatar(seat)
+	b.seed_v = _mau_rng.randi()
+	var center := mau_place(sp, b.extent(), b.k, seat)
+	b.speaker = Vector2(sp["pos"]) - center
+	b.speaker_r = float(sp["r"])
+	b.build()
+	fx_top.add_child(b)
+	b.position = _table_to(fx_top, center)
+	return b
+
+
+# Rufender in Tischkoordinaten: {pos, r (Radius des Avatars bzw. Knopfs), right (Abstand bis hinter Name und Kartenzahl)}
+func mau_speaker(seat: int) -> Dictionary:
+	var to_table := get_global_transform().affine_inverse()
+	var node := seat_node(seat)
+	if node != null:
+		var p := to_table * node.avatar_global()
+		var r := OpponentSeat.AVATAR_R_COMPACT if node.compact else OpponentSeat.AVATAR_R
+		var right := (to_table * node.to_global(Vector2(float(node.get("_header_w")) * 0.5, 0.0))).x - p.x
+		return {"pos": p, "r": r + 3.0, "right": maxf(right, r)}
+	if mau_button.visible and mau_button.is_inside_tree():
+		var c := to_table * mau_button.get_global_rect().get_center()
+		return {"pos": c, "r": MauButton.SIZE * 0.5 - 8.0, "right": MauButton.SIZE * 0.5}
+	var hp := _world.transform * _hand_point()
+	return {"pos": hp + Vector2(0, -40), "r": 80.0, "right": 80.0}
+
+
+# Mitte der Blase (Tischkoordinaten). Lagen: über dem Rufenden, links, rechts hinter Name und Kartenzahl, darunter. Jede Lage
+# darf entlang der freien Achse in den Bildschirm rutschen (der Schwanz zeigt weiter zum Rufenden). Gewählt wird die Lage, die
+# ganz ins Bild passt und am wenigsten andere Plätze, die Ablage und den Mau-Knopf verdeckt; bei Gleichstand die frühere.
+# ext = Umriss der Blase relativ zu ihrer Mitte (MauBubbleFx.extent).
+func mau_place(sp: Dictionary, ext: Rect2, k := 1.0, seat := -1) -> Vector2:
+	var sz := size if size.x > 10.0 else TableLayout.BASE
+	var bounds := Rect2(Vector2(6, 6), sz - Vector2(12, 12))
+	var s: Vector2 = sp["pos"]
+	var r := float(sp["r"])
+	var gap := 30.0 * k
+	var cands: Array[Vector2] = [
+		Vector2(s.x - ext.get_center().x, s.y - r - gap - ext.end.y),
+		Vector2(s.x - r - gap - ext.end.x, s.y - ext.get_center().y - 6.0),
+		Vector2(s.x + float(sp["right"]) + gap - ext.position.x, s.y - ext.get_center().y - 6.0),
+		Vector2(s.x - ext.get_center().x, s.y + r + gap - ext.position.y),
+	]
+	var lo := bounds.position - ext.position
+	var hi := bounds.end - ext.end
+	var avoid := _mau_avoid(seat)
+	var best := Vector2.INF
+	var best_cost := INF
+	for i in cands.size():
+		var c := cands[i]
+		if i == 0 or i == 3:
+			var room := maxf(ext.size.x * 0.5 - 30.0 * k, 0.0)
+			c.x = clampf(clampf(c.x, lo.x, maxf(lo.x, hi.x)), c.x - room, c.x + room)
+		else:
+			var room_y := maxf(ext.size.y * 0.5 - 16.0 * k, 0.0)
+			c.y = clampf(clampf(c.y, lo.y, maxf(lo.y, hi.y)), c.y - room_y, c.y + room_y)
+		var rect := Rect2(c + ext.position, ext.size)
+		if not bounds.encloses(rect):
+			continue
+		var cost := float(i) * 1500.0
+		for a in avoid:
+			cost += rect.intersection(a).get_area() if rect.intersects(a) else 0.0
+		if cost < best_cost:
+			best_cost = cost
+			best = c
+	if best.is_finite():
+		return best
+	# Notfall: über dem Rufenden, in den Bildschirm geschoben
+	var c0 := cands[0]
+	return Vector2(clampf(c0.x, lo.x, maxf(lo.x, hi.x)), clampf(c0.y, lo.y, maxf(lo.y, hi.y)))
+
+
+# Flächen, die eine Mau-Blase möglichst frei lässt: die anderen Plätze (Kopfzeile und Fächer), die Ablage, der Mau-Knopf
+func _mau_avoid(seat: int) -> Array[Rect2]:
+	var out: Array[Rect2] = []
+	for s in _seats:
+		if s == seat:
+			continue
+		var node: OpponentSeat = _seats[s]
+		var p := _world.transform * node.position
+		var r := OpponentSeat.AVATAR_R_COMPACT if node.compact else OpponentSeat.AVATAR_R
+		var hw := float(node.get("_header_w"))
+		var w := maxf(hw, node.fan_max_w * 0.8)
+		var h := r * 2.0 + 8.0 + (44.0 if node.compact else node.card_w * 2.0)
+		out.append(Rect2(p.x - w * 0.5, p.y - r - 4.0, w, h))
+	var dh := CARD_W * 466.0 / 300.0
+	out.append(Rect2(_world.transform * _discard_pos - Vector2(CARD_W * 0.6, dh * 0.6), Vector2(CARD_W * 1.2, dh * 1.2)))
+	if seat != my_seat and mau_button.visible:
+		out.append(Rect2(mau_button.position, mau_button.size))
+	return out
+
+
+# Punkt aus Tischkoordinaten in die Koordinaten eines Knotens auf einer anderen Ebene (CanvasLayer der Overlays)
+func _table_to(node: CanvasItem, p: Vector2) -> Vector2:
+	return node.get_global_transform_with_canvas().affine_inverse() * (get_global_transform_with_canvas() * p)
 
 
 func _ev_catch(ev: Dictionary) -> float:

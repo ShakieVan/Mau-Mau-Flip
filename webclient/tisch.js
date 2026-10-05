@@ -13,11 +13,25 @@
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   function el(tag, cls, html) { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; }
   function kartenRot(id) { return ((Math.abs(id | 0) * 37) % 23) - 11; }
+  function offenText(p) {
+    if (!p || !p.kind) return p && p.amount ? '+' + p.amount : '';
+    if (p.kind === 'farbjagd') return 'Jagd!';
+    return p.amount ? '+' + p.amount : '';
+  }
+  // Testhilfe: ?tempo=N beschleunigt die Tischregie (nur für Prüfläufe)
+  const TEMPO = Math.max(0.2, Math.min(8, +((M.param && M.param('tempo')) || new URLSearchParams(location.search).get('tempo') || 1) || 1));
+  // Standzeit der Mau-Blase: folgt dem Regie-Tempo, bleibt aber lesbar (mind. 0,9 s); ?blase=ms setzt sie fest (Kontrollbilder)
+  function blasenDauer(ms, d) { return BLASE_PARAM > 0 ? BLASE_PARAM : Math.max(900, d(ms)); }
 
   const ICON_SORT = '<svg viewBox="0 0 26 26" aria-hidden="true"><path d="M7 4v17M7 21l-4-4M7 21l4-4M19 22V5M19 5l-4 4M19 5l4 4" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const ICON_RUECK = '<svg viewBox="0 0 26 26" aria-hidden="true"><rect x="4" y="3" width="13" height="19" rx="3" fill="none" stroke="currentColor" stroke-width="2.4"/><rect x="10" y="6" width="13" height="18" rx="3" fill="#0A0D20" stroke="#FF7FCF" stroke-width="2.4"/></svg>';
   const ICON_MENUE = '<svg viewBox="0 0 26 26" aria-hidden="true"><path d="M5 8h16M5 13h16M5 18h16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>';
-  const ICON_GETRENNT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9a13 13 0 0 1 18 0M6.5 12.5a8 8 0 0 1 11 0M10 16a3 3 0 0 1 4 0" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round"/><path d="M4 4l16 16" stroke="#FF6B6B" stroke-width="2.4" stroke-linecap="round"/></svg>';
+  const ICON_TON = '<svg viewBox="0 0 26 26" aria-hidden="true"><path d="M4 10h4l6-5v16l-6-5H4z" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path class="an" d="M17.5 9.5a5 5 0 0 1 0 7M20.5 6.5a9.5 9.5 0 0 1 0 13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path class="aus" d="M17 9.5l7 7M24 9.5l-7 7" fill="none" stroke="#FF6B6B" stroke-width="2.6" stroke-linecap="round"/></svg>';
+  // Mau-Sprechblase: Animationsvarianten (zufällig je Ruf), „schlicht“ bei reduzierten Effekten bzw. prefers-reduced-motion
+  const BLASEN = ['plopp', 'ohren', 'huepf', 'ballon', 'gummi'];
+  const BLASE_PARAM = +((M.param && M.param('blase')) || new URLSearchParams(location.search).get('blase') || 0);   // Testhilfe: feste Dauer in ms
+  const STERNE = [[-8, 18, -26, -18], [104, 10, 28, -22], [92, 96, 30, 20], [-6, 88, -28, 18], [48, -18, 0, -30], [30, 108, -6, 26]];   // x %, y %, Drift x/y px
+  const ICON_GETRENNT ='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9a13 13 0 0 1 18 0M6.5 12.5a8 8 0 0 1 11 0M10 16a3 3 0 0 1 4 0" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round"/><path d="M4 4l16 16" stroke="#FF6B6B" stroke-width="2.4" stroke-linecap="round"/></svg>';
 
   class Tisch {
     // app: Rückrufe {spielen(id), antippen(id), ziehen(), aktion(a), mau(), sortieren(), rueckseiten(), menue(), hilfe(face), gegnerAnsicht(seat), sortModus()}
@@ -68,6 +82,8 @@
       this.knRueck = el('button', 'pill rueckseiten', ICON_RUECK + '<span>Rückseiten</span>'); b.appendChild(this.knRueck);
       this.knMau = el('button', 'mau-knopf', '<span>Mau!</span>'); b.appendChild(this.knMau);
       this.knMenue = el('button', 'rund menue-knopf', ICON_MENUE); this.knMenue.setAttribute('aria-label', 'Menü'); b.appendChild(this.knMenue);
+      this.knTon = el('button', 'rund ton-knopf', ICON_TON); this.knTon.id = 'ton-knopf'; b.appendChild(this.knTon);
+      this.zeigeTon();
       this.flug = el('div', 'flug'); b.appendChild(this.flug);
       this.farbwahl = el('div', 'farbwahl'); this.farbwahl.hidden = true; b.appendChild(this.farbwahl);
       this.knSort.id = 'sortieren'; this.knRueck.id = 'rueckseiten'; this.knMau.id = 'mau'; this.stapel.id = 'stapel'; this.ablage.id = 'ablage';
@@ -77,6 +93,7 @@
       tipp(this.knRueck, () => this.app.rueckseiten());
       tipp(this.knMau, () => this.app.mau());
       tipp(this.knMenue, () => this.app.menue());
+      tipp(this.knTon, () => this.app.tonSchalter());
       tipp(this.stapel, () => this.app.ziehen());
       this._halten(this.ablage, () => this.v && this.v.top && this.app.hilfe(this.v.top.face));
       this._halten(this.stapel, () => this.v && this.v.draw_back && this.app.hilfe(this.v.draw_back));
@@ -161,13 +178,19 @@
       this._zeigeFarbe(v);
       this.ring.classList.toggle('gegen', v.dir === -1);
       const h = v.hints || {};
-      const dran = v.turn === ich && (v.phase === 'turn' || v.phase === 'drawn' || v.phase === 'challenge');
+      const spielbar = h.playable || [];
+      // Phasen des Gastgebers (MauGame): turn, drawn, challenge, color, round_over, game_over (idle nur vor dem Austeilen)
+      const dran = v.turn === ich && (v.phase === 'turn' || v.phase === 'drawn' || v.phase === 'challenge' || v.phase === 'color');
       this.hinweis.textContent = h.text || this._hinweisErsatz(v);
-      this.hinweis.classList.toggle('dran', v.turn === ich);
+      this.hinweis.classList.toggle('dran', v.turn === ich && dran);
+      const p = v.pending || {};
+      const jagd = p.kind === 'farbjagd';
       let ak = '';
-      if (h.can_draw) ak += '<button class="knopf klein" data-a="draw">Ziehen</button>';
+      // In „challenge“ ist Ziehen dasselbe wie Annehmen → nur ein Knopf
+      if (h.can_draw && !h.can_accept) ak += '<button class="knopf klein" data-a="draw">' + (p.kind && v.turn === ich ? (jagd ? 'Ziehen bis Farbe' : (p.amount | 0) + ' ziehen') : 'Ziehen') + '</button>';
       if (h.can_keep) ak += '<button class="knopf klein" data-a="keep">Behalten</button>';
-      if (h.can_challenge) ak += '<button class="knopf klein warn" data-a="challenge">Anzweifeln</button><button class="knopf klein" data-a="accept">Annehmen</button>';
+      if (h.can_challenge) ak += '<button class="knopf klein warn" data-a="challenge">Anzweifeln</button>';
+      if (h.can_accept || (h.can_challenge && h.can_accept === undefined)) ak += '<button class="knopf klein" data-a="accept">' + (jagd ? 'Annehmen' : 'Annehmen' + (p.amount ? ' (+' + p.amount + ')' : '')) + '</button>';
       if (h.need_color) ak += '<button class="knopf klein" data-a="wunsch">Farbe wählen</button>';
       if (this.aktionen.innerHTML !== ak) this.aktionen.innerHTML = ak;
       this.stapel.classList.toggle('ziehbar', !!h.can_draw);
@@ -181,7 +204,7 @@
       this.knRueck.classList.toggle('aktiv', this.hand.rueck);
       this.knSort.lastChild.textContent = { farbe: 'Farbe', wert: 'Wert', punkte: 'Punkte' }[this.app.sortModus()] || 'Farbe';
       const reihe = K().sortiere(v.hand || [], this.app.sortModus());
-      this.hand.setze(reihe, { spielbar: h.playable || [], dran: dran && (v.phase === 'turn' || v.phase === 'drawn') });
+      this.hand.setze(reihe, { spielbar, dran: dran && (v.phase === 'turn' || v.phase === 'drawn' || (v.phase === 'challenge' && spielbar.length > 0)) });
       if (!nurLayout && alt && alt.turn !== ich && v.turn === ich && dran) {
         M.Ton.spiele('dran');
         if (this.app.vibrieren) this.app.vibrieren(25);
@@ -247,7 +270,9 @@
       const n = backs.length;
       const breite = kompakt ? 150 : 200;
       const einzel = n === 1;
-      const w = einzel ? (kompakt ? 60 : 80) : (kompakt ? 46 : 60);
+      // eine Karte etwas größer, aber so, dass die Marken darunter frei bleiben (Fächerhöhe passt sich an)
+      const w = einzel ? (kompakt ? 52 : 66) : (kompakt ? 46 : 60);
+      box.style.height = einzel ? Math.ceil(w * K().VERHAELTNIS + 8) + 'px' : '';
       const step = n > 1 ? Math.min(kompakt ? 16 : 22, (breite - w - 10) / (n - 1)) : 0;
       const spread = kompakt ? Math.min(4, 28 / Math.max(1, n)) : Math.min(7, 60 / Math.max(1, n));
       backs.forEach((f, i) => {
@@ -288,9 +313,11 @@
           this.ablageKarten.appendChild(k);
         });
       }
+      // offene Ziehstrafe: pending {kind, amount, by, victim, color}; Farbjagd hat amount 0 (gezogen wird bis zur Farbe)
       const p = v.pending;
-      this.offenEl.textContent = p && p.amount ? '+' + p.amount : '';
-      this.offenEl.hidden = !(p && p.amount);
+      const txt = offenText(p);
+      this.offenEl.textContent = txt;
+      this.offenEl.hidden = !txt;
     }
     _zeigeFarbe(v) {
       const f = v.color;
@@ -352,6 +379,87 @@
       this.flug.appendChild(a);
       setTimeout(() => a.remove(), dauer + 50);
     }
+    // Ton-Knopf in der Ecke: Zustand aus den Einstellungen
+    zeigeTon() {
+      const stumm = !!(this.app.einstellungen && this.app.einstellungen.stumm);
+      this.knTon.classList.toggle('stumm', stumm);
+      this.knTon.setAttribute('aria-label', stumm ? 'Ton einschalten' : 'Ton ausschalten');
+      this.knTon.setAttribute('aria-pressed', stumm ? 'true' : 'false');
+    }
+
+    /* ---------- „Mau!“-Sprechblase beim rufenden Spieler ---------- */
+    // art 'mau' („Mau!“) oder 'mau_mau' („Mau-Mau!“, größer, wer fertig ist). Variante zufällig (nie zweimal dieselbe hintereinander),
+    // „schlicht“ bei reduzierten Effekten. Rückgabe: das Element (Selbsttest).
+    mauBlase(seat, art, dauer, variante) {
+      const gross = art === 'mau_mau';
+      const ruhigWunsch = this.app.effekteReduziert() || !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+      if (!variante) {
+        if (ruhigWunsch) variante = 'schlicht';
+        else {
+          const wahl = BLASEN.filter(x => x !== this._letzteBlase);
+          variante = wahl[Math.floor(Math.random() * wahl.length)];
+        }
+      }
+      this._letzteBlase = variante;
+      const text = gross ? 'Mau-Mau!' : 'Mau!';
+      const inhalt = variante === 'huepf' ? Array.from(text).map((c, i) => '<b style="--i:' + i + '">' + esc(c) + '</b>').join('') : esc(text);
+      let extra = '';
+      if (variante === 'ballon') extra += '<i class="ring r1"></i><i class="ring r2"></i><i class="ring r3"></i>';
+      if (variante === 'ohren' || (gross && variante !== 'schlicht')) {
+        STERNE.forEach((s, i) => { extra += '<i class="stern" style="left:' + s[0] + '%;top:' + s[1] + '%;--sx:' + s[2] + 'px;--sy:' + s[3] + 'px;--i:' + i + '">✦</i>'; });
+      }
+      const b = el('div', 'mau-blase messen' + (gross ? ' gross' : ''),
+        '<div class="koerper">' + (variante === 'ohren' ? '<i class="ohr l"></i><i class="ohr r"></i>' : '') +
+        '<span class="txt">' + inhalt + '</span><i class="schwanz"></i></div>' + extra);
+      b.dataset.seat = seat; b.dataset.variante = variante; b.dataset.art = gross ? 'mau_mau' : 'mau';
+      this.flug.appendChild(b);
+      const k = b.firstChild;
+      const w = k.offsetWidth, h = k.offsetHeight;
+      const a = this._blasenAnker(seat);
+      const W = this.W, H = this.H, rand = 8, abstand = 20;
+      const klemme = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
+      let left, top, tx, ty;
+      if (a.seite === 'unten') {
+        top = klemme(a.y - abstand - h, rand, H - h - rand);
+        left = klemme(a.x - w / 2, rand, W - w - rand);
+        tx = klemme(a.x - left, 26, w - 26); ty = h;
+      } else {
+        top = klemme(a.y - h / 2, rand, H - h - rand);
+        left = klemme(a.seite === 'links' ? a.x + abstand : a.x - abstand - w, rand, W - w - rand);
+        tx = a.seite === 'links' ? 0 : w; ty = klemme(a.y - top, 22, h - 22);
+      }
+      b.style.left = left.toFixed(1) + 'px'; b.style.top = top.toFixed(1) + 'px';
+      b.style.width = w + 'px'; b.style.height = h + 'px';
+      b.style.setProperty('--tx', tx.toFixed(1) + 'px'); b.style.setProperty('--ty', ty.toFixed(1) + 'px');
+      // Spitze des Schwanzes (ragt ~18 px über den Rand): Drehpunkt der Animationen und Mitte der Schallringe
+      const ox = a.seite === 'links' ? -18 : (a.seite === 'rechts' ? w + 18 : tx), oy = a.seite === 'unten' ? h + 18 : ty;
+      b.style.setProperty('--ox', ox.toFixed(1) + 'px'); b.style.setProperty('--oy', oy.toFixed(1) + 'px');
+      b.className = 'mau-blase v-' + variante + ' zeigt-' + a.seite + (gross ? ' gross' : '');
+      this.blasenZahl = (this.blasenZahl || 0) + 1;
+      const z = this.blasenVarianten = this.blasenVarianten || {};
+      z[variante + (gross ? '+' : '')] = (z[variante + (gross ? '+' : '')] || 0) + 1;
+      setTimeout(() => b.classList.add('aus'), dauer);
+      setTimeout(() => b.remove(), dauer + 380);
+      return b;
+    }
+    // Wohin die Blase zeigt (seite = Richtung des Schwanzes): eigener Platz → auf den Mau-Knopf (Blase darüber), Gegner → auf den
+    // Kopf (Avatar, Name). Seitlich Sitzende bekommen die Blase zur Tischmitte hin, die obere Reihe nach außen (zwei Rufe oben
+    // überdecken sich so nicht), wer oben in der Mitte sitzt, rechts davon.
+    _blasenAnker(seat) {
+      if (!this.v || seat === this.v.seat) return { x: this.W - 46 - 75 - 18, y: this.H - 40 - 150 + 6, seite: 'unten' };
+      const g = this.gegnerEls.get(seat);
+      const p = g ? { x: g.px, y: g.py } : this.platzPos(seat);
+      const oben = p.y < this.H * 0.32, rechts = p.x > this.g.cx + 60, links = p.x < this.g.cx - 60;
+      const blaseLinks = oben ? links : rechts;      // Blase links vom Kopf (Schwanz zeigt nach rechts)
+      const kopf = g && g.e.querySelector('.kopf');
+      if (kopf && kopf.getBoundingClientRect().width > 0) {
+        const r = kopf.getBoundingClientRect();
+        const l = this.zuBuehne(r.left, r.top), rb = this.zuBuehne(r.right, r.bottom);
+        const y = (l.y + rb.y) / 2;
+        return blaseLinks ? { x: l.x - 2, y, seite: 'rechts' } : { x: rb.x + 2, y, seite: 'links' };
+      }
+      return blaseLinks ? { x: p.x - 40, y: p.y - 60, seite: 'rechts' } : { x: p.x + 40, y: p.y - 60, seite: 'links' };
+    }
     banner(titel, unter, cls, dauer) {
       const b = el('div', 'banner ' + (cls || ''), '<b>' + esc(titel) + '</b>' + (unter ? '<span>' + esc(unter) + '</span>' : ''));
       b.style.left = this.g.cx + 'px'; b.style.top = (this.g.cy - 4) + 'px';
@@ -412,7 +520,7 @@
       this.laeuft = true;
       while (this.schlange.length) {
         const { events, view } = this.schlange.shift();
-        const tempo = (this.schlange.length ? 0.35 : 1) * (this.t.app.effekteReduziert() ? 0.6 : 1);
+        const tempo = (this.schlange.length ? 0.35 : 1) * (this.t.app.effekteReduziert() ? 0.6 : 1) / TEMPO;
         for (const e of events) {
           if (!this.t.v) break;
           try { await this._spiele(e, view, tempo); } catch (err) { if (M.meldeFehler) M.meldeFehler('Regie ' + (e && e.e) + ': ' + err); }
@@ -506,7 +614,7 @@
           await schlaf(d(600));
           break;
         case 'pending':
-          t.offenEl.hidden = false; t.offenEl.textContent = '+' + e.amount;
+          t.offenEl.hidden = false; t.offenEl.textContent = offenText(e) || ('+' + (e.amount | 0));
           t.offenEl.classList.remove('puls'); void t.offenEl.offsetWidth; t.offenEl.classList.add('puls');
           await schlaf(d(500));
           break;
@@ -514,9 +622,10 @@
           t.banner(e.success ? 'Bluff erwischt!' : 'Kein Bluff!', t.name(e.seat) + (e.success ? ' hat richtig gezweifelt' : ' hat sich geirrt'), e.success ? 'gut' : 'warn', d(1500));
           await schlaf(d(1100));
           break;
-        case 'mau':
-          t.abzeichen(e.seat, '<span class="mau-text">Mau!</span>', 'blase', d(1400));
-          await schlaf(d(500));
+        case 'mau':      // auf allen Geräten: Aufnahme „Mao“ (außer Ton aus) und Sprechblase beim Rufenden
+          if (t.app.mauTon) t.app.mauTon(e.seat, 'mau');
+          t.mauBlase(e.seat, 'mau', blasenDauer(1700, d));
+          await schlaf(d(450));
           break;
         case 'catch':
           t.banner('Erwischt!', t.name(e.target) + ' hat „Mau!“ vergessen', 'warn', d(1400));
@@ -541,9 +650,25 @@
           break;
         }
         case 'game_over':
-          t.banner('Partie vorbei', '', 'gross', d(1500));
+          t.banner('Partie vorbei', typeof e.winner === 'number' && e.winner >= 0 ? (e.winner === ich ? 'Du gewinnst!' : t.name(e.winner) + ' gewinnt') : '', 'gross', d(1500));
           await schlaf(d(1000));
           break;
+        // zusätzliche Ereignisse des Regelwerks (docs/module/A.md)
+        case 'finish':   // {seat, place}: fertig → „Mau-Mau!“ (Aufnahme „Mao-Mao“ und große Blase); bei „bis zum Letzten“ mit Platz
+          if (t.app.mauTon) t.app.mauTon(e.seat, 'mau_mau');
+          t.mauBlase(e.seat, 'mau_mau', blasenDauer(2300, d));
+          if (t.v.rules && t.v.rules.round_end === 'last') t.abzeichen(e.seat, (e.place | 0) + '. Platz', 'platz', d(1500));
+          await schlaf(d(700));
+          break;
+        case 'pass':     // {seat}: beide Stapel leer, Ziehen entfällt
+          t.abzeichen(e.seat, 'Nichts zu ziehen', 'aussetzen', d(1100));
+          await schlaf(d(500));
+          break;
+        case 'choose_color':   // {seat}: nach einem Flip liegt ein Joker oben, dieser Platz wählt die Farbe
+          if (e.seat !== ich) t.banner('Farbwahl', t.name(e.seat) + ' wählt die Farbe', 'klein', d(1000));
+          await schlaf(d(300));
+          break;
+        // round_start, start (Startkarte), turn, keep, accept: nur Zustand, kein eigener Effekt
         default: break;
       }
     }

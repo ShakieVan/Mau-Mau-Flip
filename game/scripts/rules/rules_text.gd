@@ -172,7 +172,9 @@ static func overview(config: RuleConfig = null) -> Array[Dictionary]:
 			draw += " Passt sie, musst du sie sofort legen."
 		"may_not":
 			draw += " Gelegt wird sie frühestens im nächsten Zug."
-	out.append({"title": "Spielzug", "text": "Lege eine Karte, die in Farbe, Zahl oder Symbol zur obersten Ablagekarte passt. Joker passen immer. %s Du darfst auch freiwillig ziehen; dann darfst du nur die gezogene Karte legen." % draw})
+	var voluntary := "Du darfst auch freiwillig ziehen; danach ist dein Zug vorbei." if cfg.drawn_card == "may_not" \
+		else "Du darfst auch freiwillig ziehen; dann darfst du nur die gezogene Karte legen."
+	out.append({"title": "Spielzug", "text": "Lege eine Karte, die in Farbe, Zahl oder Symbol zur obersten Ablagekarte passt. Joker passen immer. %s %s" % [draw, voluntary]})
 	out.append({"title": "Helle Seite", "text": "+1: Der Nächste zieht 1 und setzt aus. Aussetzen: Der Nächste wird übersprungen. Richtungswechsel: Die Richtung dreht sich. Wünscher: Farbe wünschen. Wünscher +2: Farbe wünschen, der Nächste zieht 2 und setzt aus."})
 	out.append({"title": "Dunkle Seite", "text": "+5: Der Nächste zieht 5 und setzt aus. Alle aussetzen: Du bist sofort noch einmal dran. Richtungswechsel und Wünscher wie hell. Farbjagd: Farbe wünschen, der Nächste zieht, bis er diese Farbe hat, und setzt aus."})
 	out.append({"title": "Flip", "text": "Der Flip wendet Ablage, Nachziehstapel und alle Hände. Oben liegt dann die bisher unterste Ablagekarte mit ihrer anderen Seite. Eine Wunschfarbe verfällt, eine Aktionskarte oben wirkt nicht; liegt ein Joker oben, wählt der Flip-Spieler die Farbe."})

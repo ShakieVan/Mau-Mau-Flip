@@ -12,6 +12,7 @@ signal changed(key: String, value: Variant)
 const PATH := "user://einstellungen.json"
 const VERSION := 1
 const MAU_TON := ["aus", "leise", "normal"]
+const TOENE := ["aus", "leise", "normal"]   # übrige Spieltöne (AppSound), Standard aus
 const EFFEKTE := ["voll", "reduziert"]
 const SORTIERUNG := ["farbe", "wert", "punkte", "manuell"]
 const RECENT_NAMES := 12          # so viele zuletzt benutzte Namen (Weitergeben) bleiben gemerkt
@@ -42,7 +43,8 @@ func _init(save_path := PATH) -> void:
 
 static func defaults() -> Dictionary:
 	# Standardwerte. Beta-Kanal: an, wenn die installierte Version keine reguläre ist (X.Y.Z mit Z ≠ 0).
-	return {"name": "", "mau_ton": "normal", "vibration": true, "effekte": "voll", "beta": not app_version().ends_with(".0"),
+	# Mau-Ton (Aufnahmen „Mao“/„Mao-Mao“) ab Werk normal, die übrigen synthetischen Spieltöne ab Werk aus (Nutzerwunsch 05.10.2026).
+	return {"name": "", "mau_ton": "normal", "toene": "aus", "vibration": true, "effekte": "voll", "beta": not app_version().ends_with(".0"),
 		"sortierung": "farbe", "regeln": {}, "letzte_namen": []}
 
 static func app_version() -> String:
@@ -56,6 +58,8 @@ static func sanitize(key: String, value: Variant) -> Variant:
 			return clean_name(str(value)) if value is String else null
 		"mau_ton":
 			return value if value is String and MAU_TON.has(value) else null
+		"toene":
+			return value if value is String and TOENE.has(value) else null
 		"effekte":
 			return value if value is String and EFFEKTE.has(value) else null
 		"sortierung":

@@ -3,7 +3,8 @@ extends Node2D
 # art/entwurf/a-papier-neon/hand.png (Nachziehstapel, Ablage mit Farbring, Knöpfe „Farbe“ und „Rückseiten“).
 # Kein Regelwerk: spielbar ist, was zur obersten Ablagekarte passt (Farbe, Wert, Joker); Ausspielen legt die Karte ab.
 # Tasten: 1–6 = 5/9/12/16/25/40 Karten, S = Sortierung weiter, B = Rückseiten, F = Flip (Seitenwechsel), N = Karte ziehen,
-# P = alles spielbar an/aus, E = Eingabe an/aus, D = Statuszeile.
+# P = alles spielbar an/aus, E = Eingabe an/aus, T = Tag/Nacht (heller Papiertisch), D = Statuszeile.
+# Schichtung wie am Tisch: Hinweise und Status liegen in einer CanvasLayer mit höherer Nummer über der Hand.
 
 const PILE := Vector2(977, 321)
 const DRAW := Vector2(623, 321)
@@ -36,14 +37,17 @@ var _count_label: Label
 var _debug: Label
 var _help: Label
 var _help_timer := 0.0
+var _top: CanvasLayer
+var day := false
 
 
 func _ready() -> void:
 	_build_background()
 	_build_table()
 	hand = HandView.new()
-	hand.play_target = PILE
-	hand.spawn_from = DRAW
+	hand.set_play_target(PILE)
+	hand.set_spawn_from(DRAW)
+	hand.night = 1.0          # Kulisse ist Nacht (Neon), auch auf der hellen Seite; T schaltet auf den Papiertisch
 	add_child(hand)
 	hand.play_requested.connect(_on_play)
 	hand.help_requested.connect(_on_help)
@@ -66,7 +70,7 @@ func deal(n: int, seed_value := 1) -> void:
 	for i in mini(n, pairs.size()):
 		hand_ids.append(i)
 	draw_index = n
-	hand.set_cards([])   # neue Runde: alte Hand räumen, dann austeilen (sonst gälten gleiche Kennungen als Flip)
+	hand.clear()         # neue Runde: alte Hand sofort räumen, dann austeilen
 	_push_cards()
 
 
@@ -84,6 +88,19 @@ func draw_card() -> void:
 	hand_ids.append(draw_index)
 	draw_index += 1
 	_push_cards()
+
+
+# Tag: heller Papiertisch (Glühen normal gemischt), Nacht: Neon-Kulisse.
+func set_day(on: bool) -> void:
+	day = on
+	hand.night = 0.0 if on else 1.0
+	var g := (_bg.texture as GradientTexture2D).gradient
+	if on:
+		g.colors = PackedColorArray([Color("#FFF7E8"), Color("#F4EADA"), Color("#E6D7BC")])
+	else:
+		g.colors = PackedColorArray([Color("#26305A"), Color("#171C38"), Color("#0C0F22")])
+	_count_label.add_theme_color_override("font_color", Color("#6E6178") if on else Color("#C9C3E8"))
+	_color_label.add_theme_color_override("font_color", Color("#211B2C") if on else Color("#F4EADA"))
 
 
 func set_show_debug(on: bool) -> void:
@@ -201,6 +218,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			all_playable = not all_playable
 			_push_cards()
 		KEY_E: hand.set_enabled(not hand.is_enabled())
+		KEY_T: set_day(not day)
 		KEY_D: show_debug = not show_debug
 
 
@@ -292,13 +310,14 @@ func _build_table() -> void:
 	_help.add_theme_stylebox_override("normal", sb.duplicate())
 	_help.position = Vector2(620, 40)
 	_help.visible = false
-	_help.z_index = 3000
-	add_child(_help)
+	_top = CanvasLayer.new()
+	_top.layer = 2
+	add_child(_top)
+	_top.add_child(_help)
 	_debug = _label(15, Color(0.85, 0.82, 0.95, 0.8), 500)
 	_debug.position = Vector2(16, 10)
 	_debug.text = "1–6 Kartenzahl · S Sortierung · B Rückseiten · F Flip · N ziehen · P alles spielbar · E Eingabe · D Status"
-	_debug.z_index = 3000
-	add_child(_debug)
+	_top.add_child(_debug)
 	_update_table()
 
 

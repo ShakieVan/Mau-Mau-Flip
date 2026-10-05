@@ -33,6 +33,10 @@ func _initialize() -> void:
 	_draw_rules()
 	_two_players()
 	_hint_texts()
+	_broken_actions()
+	_host_seat()
+	_fixes()
+	print("Laufzeit seit Godot-Start: %.1f s" % (Time.get_ticks_msec() / 1000.0))
 	print("RESULT: %d ok" % (checks - failures) if failures == 0 else "RESULT: %d ok, %d FAIL" % [checks - failures, failures])
 	quit(0 if failures == 0 else 1)
 
@@ -614,8 +618,8 @@ func _mau() -> void:
 	check(g.view_for(1).hints.catch == [0], "erwischbar vor dem Zusatzzug")
 	act(g, 0, {"a": "draw"}, "Zusatzzug beginnt")
 	deny(g, 1, {"a": "catch", "target": 0}, "nach Beginn des Zusatzzugs zu spät")
-	# Mau gilt nur bis zum nächsten Kartenzuwachs
-	g = make({"hands": [["hell_rot_1", "hell_blau_2"], ["hell_rot_3"], ["hell_rot_6"]], "top": "hell_gelb_5", "draw": ["hell_gelb_9"]})
+	# Mau gilt nur bis zum nächsten Kartenzuwachs (hier: freiwillig ziehen trotz passender Karte)
+	g = make({"hands": [["hell_gelb_1", "hell_blau_2"], ["hell_rot_3"], ["hell_rot_6"]], "top": "hell_gelb_5", "draw": ["hell_gelb_9"]})
 	act(g, 0, {"a": "mau"}, "Mau rufen, dann ziehen")
 	act(g, 0, {"a": "draw"}, "ziehen nach Mau")
 	check(not g.mau_said[0] and not g.view_for(1).players[0].mau, "nach dem Ziehen ist der Ruf verfallen")
@@ -760,3 +764,173 @@ func _hint_texts() -> void:
 	g = make({"hands": [["hell_gruen_1", "hell_rot_1"], ["hell_rot_1"]], "top": "hell_blau_7"})
 	var why := deny(g, 0, {"a": "play", "card": id_of(g, 0, "hell_gruen_1")}, "Begründung")
 	check(why.contains("lege Blau oder eine 7"), "Begründung nennt die Möglichkeiten: " + why)
+
+
+# --- Nachbesserung nach der Prüfung (docs/module/A_pruefung.json) ---
+
+# Kaputte Aktionen (freies JSON aus dem Netz): sauber abgelehnt mit Begründung, Zustand unverändert, keine Skriptfehler.
+func _broken_actions() -> void:
+	var spec := {"hands": [["hell_rot_1", "hell_wuenscher", "hell_gelb_3"], ["hell_rot_3", "hell_rot_4"], ["hell_rot_6"]], "top": "hell_rot_5"}
+	var g := make(spec)
+	check(int(g.hands[0][0]) == 0, "Platz 0 hält die Karte mit id 0 (früher spielte card:\"abc\" sie)")
+	for bad: Variant in [null, [1], {}, "abc", "0", 1.5, true, INF, NAN]:
+		var why := deny(g, 0, {"a": "play", "card": bad}, "play mit card=%s" % str(bad))
+		check(why == "Ungültige Aktion.", "card=%s: „Ungültige Aktion.“ (%s)" % [str(bad), why])
+	deny(g, 0, {"a": "play"}, "play ohne card")
+	deny(g, 0, {"a": "play", "card": 999}, "play mit unbekannter id")
+	for bad: Variant in [null, 5, ["rot"], {}, "lila"]:
+		var why := deny(g, 0, {"a": "play", "card": id_of(g, 0, "hell_wuenscher"), "color": bad}, "Joker mit color=%s" % str(bad))
+		check(why.begins_with("Wähle eine Farbe"), "Joker mit color=%s: Farbe verlangt (%s)" % [str(bad), why])
+	for bad: Variant in [null, 5, ["play"], {}, "spielen"]:
+		var why := deny(g, 0, {"a": bad, "card": 0}, "a=%s" % str(bad))
+		check(why == "Unbekannte Aktion.", "a=%s: „Unbekannte Aktion.“ (%s)" % [str(bad), why])
+	deny(g, 0, {}, "leere Aktion")
+	deny(g, 0, {"a": "next_round", "seat": "x"}, "next_round mitten in der Runde")
+	# JSON-Zahlen kommen als float und werden angenommen
+	var jp: Dictionary = JSON.parse_string(JSON.stringify({"a": "play", "card": id_of(g, 0, "hell_rot_1")}))
+	check(jp.card is float, "JSON liefert die id als float")
+	act(g, 0, jp, "play mit JSON-Zahl")
+	# Erwischen mit kaputtem Ziel
+	g = make({"hands": [["hell_rot_1", "hell_rot_2"], ["hell_rot_3", "hell_rot_4"], ["hell_rot_6", "hell_rot_7", "hell_rot_8"]], "top": "hell_rot_5"})
+	play(g, 0, "hell_rot_1", "legen ohne Mau")
+	for bad: Variant in [null, "x", "0", [0], {}, 0.5, false]:
+		var why := deny(g, 1, {"a": "catch", "target": bad}, "catch mit target=%s" % str(bad))
+		check(why == "Ungültige Aktion.", "target=%s: „Ungültige Aktion.“ (%s)" % [str(bad), why])
+	deny(g, 1, {"a": "catch"}, "catch ohne target")
+	deny(g, 1, {"a": "catch", "target": 99}, "catch mit Platz 99")
+	deny(g, 1, {"a": "catch", "target": -5}, "catch mit Platz -5")
+	var jc: Dictionary = JSON.parse_string("{\"a\":\"catch\",\"target\":0}")
+	act(g, 1, jc, "catch mit JSON-Zahl")
+	check(n_hand(g, 0) == 3, "erwischt über JSON-Aktion")
+	# Farbwahl mit kaputter Farbe
+	g = make({"hands": [["hell_rot_flip", "hell_rot_1/dunkel_lila_1", "hell_rot_2/dunkel_lila_2"], ["hell_gelb_1"], ["hell_gelb_2"]],
+		"top": "hell_rot_5", "discard": ["hell_blau_4/dunkel_wuenscher"]})
+	play(g, 0, "hell_rot_flip", "Flip mit Joker unten")
+	check(g.state == "color", "Phase color")
+	for bad: Variant in [null, 3, ["lila"], "rot"]:
+		deny(g, 0, {"a": "color", "color": bad}, "Farbwahl mit color=%s" % str(bad))
+	act(g, 0, {"a": "color", "color": "lila"}, "Farbwahl Lila")
+
+
+# Gastgeber-Platz: players[i].host; nur er startet die nächste Runde und bekommt can_next_round.
+func _host_seat() -> void:
+	var pl: Array = [{"name": "Anna"}, {"name": "Ben", "host": true}, {"name": "Cleo", "host": true}]
+	var g := MauGame.create(RuleConfig.new(), pl, 5)
+	check(g.host_seat() == 1, "Gastgeber = erster Platz mit host (%d)" % g.host_seat())
+	check(MauGame.create(RuleConfig.new(), RulesFixture.players(3), 5).host_seat() == 0, "ohne Markierung: Platz 0")
+	var jp: Array = JSON.parse_string("[{\"name\":\"A\"},{\"name\":\"B\"},{\"name\":\"C\",\"host\":1}]")
+	check(MauGame.create(RuleConfig.new(), jp, 5).host_seat() == 2, "host als JSON-Zahl")
+	check(MauGame.create(RuleConfig.new(), [{"name": "A"}, {"name": "B", "host": "ja"}], 5).host_seat() == 0, "host nur als bool oder Zahl")
+	g.start_round()
+	var back := MauGame.from_dict(JSON.parse_string(JSON.stringify(g.to_dict())))
+	check(back.host_seat() == 1 and JSON.stringify(back.to_dict()) == JSON.stringify(g.to_dict()), "Gastgeber übersteht Speichern")
+	check(MauGame.from_dict({"players": [{"name": "A"}, {"name": "B"}]}).host_seat() == 0, "alter Spielstand ohne host: Platz 0")
+	# Runde zu Ende: nur der Gastgeber startet die nächste
+	g = make({"hands": [["hell_rot_1"], ["hell_blau_9"], ["hell_gelb_1"]], "top": "hell_rot_5", "host": 2})
+	play(g, 0, "hell_rot_1", "Runde gewinnen (Gastgeber Platz 2)")
+	check(g.state == "round_over", "Runde vorbei")
+	check(not g.view_for(0).hints.can_next_round and not g.view_for(1).hints.can_next_round and g.view_for(2).hints.can_next_round
+		and not g.view_for(-1).hints.can_next_round, "can_next_round nur für den Gastgeber")
+	check(not str(g.view_for(0).hints.text).contains("Weiter mit") and str(g.view_for(2).hints.text).contains("Weiter mit der nächsten Runde"),
+		"Hinweis nur für den Gastgeber: %s | %s" % [g.view_for(0).hints.text, g.view_for(2).hints.text])
+	var why := deny(g, 0, {"a": "next_round"}, "nächste Runde von Platz 0 (nicht Gastgeber)")
+	check(why.contains("Gastgeber"), "Begründung nennt den Gastgeber: " + why)
+	act(g, 2, {"a": "next_round"}, "Gastgeber startet die nächste Runde")
+	check(g.round_no == 2 and g.state == "turn" and g.host_seat() == 2, "Runde 2, Gastgeber bleibt")
+	g.set_host(7)
+	check(g.host_seat() == 2, "set_host ignoriert ungültige Plätze")
+	g.set_host(1)
+	check(g.host_seat() == 1, "set_host")
+	# Spielerzahl 2–10 wird erzwungen (zwei absichtliche Warnungen „WARNING: MauGame: 2 bis 10 Spieler nötig“, keine ERROR-Zeile)
+	for n in [1, 11]:
+		var bad := MauGame.create(RuleConfig.new(), RulesFixture.players(n), 3)
+		check(not bad.is_valid() and bad.start_round().is_empty() and bad.state == "idle", "%d Spieler: ungültig, startet nicht" % n)
+		var r := bad.apply(0, {"a": "draw"})
+		check(not bool(r.ok) and str(r.reason) != "", "%d Spieler: apply lehnt ab (%s)" % [n, r.reason])
+	for n in [2, 10]:
+		var ok_game := MauGame.create(RuleConfig.new(), RulesFixture.players(n), 3)
+		check(ok_game.is_valid() and not ok_game.start_round().is_empty() and ok_game.state == "turn", "%d Spieler: gültig" % n)
+		check(RulesFixture.card_check(ok_game) == "", "%d Spieler: 112 Karten" % n)
+	var big := MauGame.create(RuleConfig.from_dict({"hand_size": 10}), RulesFixture.players(10), 4)
+	big.start_round()
+	check(RulesFixture.invariants(big) == "", "10 Spieler mit 10 Karten: " + RulesFixture.invariants(big))
+
+
+func _fixes() -> void:
+	# Kein blinder Mau-Ruf: 2 Karten, nichts passt → weder can_mau noch Erinnerung, Ruf wird abgelehnt
+	var g := make({"hands": [["hell_blau_1", "hell_blau_2"], ["hell_rot_3"], ["hell_rot_6"]], "top": "hell_gelb_5", "draw": ["hell_gelb_9"]})
+	var v := g.view_for(0)
+	check(not v.hints.can_mau and not str(v.hints.text).contains("Mau"), "nichts passt: kein Mau-Hinweis (%s)" % v.hints.text)
+	var why := deny(g, 0, {"a": "mau"}, "blinder Mau-Ruf")
+	check(why.contains("vorletzte Karte"), "Begründung blinder Ruf: " + why)
+	# Opfer einer +2 ohne Stapeln mit 2 Karten: kein Mau
+	g = make({"hands": [["hell_wuenscher_plus2", "hell_gelb_1", "hell_gelb_2"], ["hell_rot_3", "hell_rot_4"], ["hell_rot_6"]], "top": "hell_rot_5"})
+	play(g, 0, "hell_wuenscher_plus2", "+2 auf Opfer mit 2 Karten", "blau")
+	v = g.view_for(1)
+	check(g.state == "challenge" and not v.hints.can_mau and not str(v.hints.text).contains("Mau"), "Opfer ohne Stapeln: kein Mau (%s)" % v.hints.text)
+	deny(g, 1, {"a": "mau"}, "Mau als Opfer ohne Stapeln")
+	# Opfer kann stapeln: Mau möglich und Erinnerung
+	g = make({"hands": [["hell_wuenscher_plus2", "hell_gelb_1", "hell_gelb_2"], ["hell_wuenscher_plus2", "hell_rot_4"], ["hell_rot_6"]], "top": "hell_rot_5"},
+		{"stacking": "same"})
+	play(g, 0, "hell_wuenscher_plus2", "+2 auf Opfer, das stapeln kann", "blau")
+	v = g.view_for(1)
+	check(v.hints.can_mau and str(v.hints.text).contains("Denk an „Mau!“"), "Opfer kann stapeln: Mau möglich (%s)" % v.hints.text)
+	act(g, 1, {"a": "mau"}, "Mau vor dem Stapeln")
+	# Flip als letzte Karte bei ignore: auch nicht ausgeführt, wenn die Runde weiterläuft (round_end=last)
+	for mode in ["execute", "ignore"]:
+		g = make({"hands": [["hell_rot_flip"], ["hell_blau_1/dunkel_lila_3", "hell_rot_2"], ["hell_gelb_2/dunkel_pink_2", "hell_rot_3"]],
+			"top": "hell_rot_5", "discard": ["hell_blau_4/dunkel_lila_6"]}, {"flip_last_card": mode, "round_end": "last"})
+		var ev := play(g, 0, "hell_rot_flip", "letzte Karte Flip, Runde läuft weiter (%s)" % mode)
+		check(g.state == "turn" and g.place[0] == 1 and g.current_seat() == 1, "Runde läuft weiter, Platz 1 dran (%s)" % mode)
+		if mode == "execute":
+			check(g.side == 1 and ev_names(ev).has("flip"), "execute: Flip ausgeführt")
+		else:
+			check(g.side == 0 and not ev_names(ev).has("flip") and g.color == "rot", "ignore: kein Flip, Farbe Rot (%s)" % str(ev_names(ev)))
+	check("\n".join(RulesText.card_help("hell_rot_flip", RuleConfig.from_dict({"flip_last_card": "ignore"}))).contains("nicht mehr ausgeführt"),
+		"Kartenhilfe bei ignore")
+	# auto-Strafe vor dem Legen ändert die Regelgerechtheit nicht (entschieden wird mit der Hand vor der Strafe)
+	for mode in ["bluff", "enforce"]:
+		g = make({"hands": [["hell_rot_aussetzen", "hell_wuenscher_plus2"], ["hell_gelb_1", "hell_gelb_2", "hell_gelb_3"]], "top": "hell_rot_5",
+			"draw": ["hell_rot_1", "hell_rot_2"]}, {"mau_call": "auto", "wild_restriction": mode}, 2)
+		play(g, 0, "hell_rot_aussetzen", "Aussetzen zu zweit ohne Mau (%s)" % mode)
+		check(g.current_seat() == 0 and g.mau_open == 0 and playable_keys(g, 0) == ["hell_wuenscher_plus2"], "Zusatzzug, +2 laut Hinweis erlaubt (%s)" % mode)
+		var ev := play(g, 0, "hell_wuenscher_plus2", "+2 nach auto-Strafe (%s)" % mode, "gelb")
+		check(ev_names(ev).slice(0, 3) == ["penalty", "draw", "play"], "Strafe vor dem Legen (%s)" % str(ev_names(ev)))
+		if mode == "bluff":
+			check(g.state == "challenge" and bool(g.pending.legal), "regelgerecht trotz Strafkarten")
+			ev = act(g, 1, {"a": "challenge"}, "anzweifeln nach auto-Strafe")
+			var ch := find_ev(ev, "challenge")
+			check(not bool(ch.success) and (ch.hand as Array).is_empty() and n_hand(g, 1) == 7,
+				"ehrlich: Herausforderer zieht 4 und sieht die Hand vor der Strafe (%s)" % str(ch))
+		else:
+			check(n_hand(g, 1) == 5 and n_hand(g, 0) == 2, "enforce: angenommen, Nächster zieht 2")
+	# reminder: Ruf auch nach dem Legen möglich, kein Erwischen, keine Strafe
+	var spec := {"hands": [["hell_rot_1", "hell_rot_2"], ["hell_rot_3", "hell_rot_4"], ["hell_rot_6", "hell_rot_7", "hell_rot_8"]], "top": "hell_rot_5"}
+	g = make(spec, {"mau_call": "reminder"})
+	play(g, 0, "hell_rot_1", "legen ohne Mau (reminder)")
+	check(g.view_for(0).hints.can_mau and g.view_for(1).hints.catch.is_empty(), "reminder: nachträglich rufbar, nicht erwischbar")
+	act(g, 0, {"a": "mau"}, "nachträglich rufen (reminder)")
+	check(g.view_for(1).players[0].mau, "Ruf sichtbar")
+	g = make(spec, {"mau_call": "reminder"})
+	play(g, 0, "hell_rot_1", "legen ohne Mau (reminder)")
+	play(g, 1, "hell_rot_3", "Nächster beginnt (reminder)")
+	deny(g, 0, {"a": "mau"}, "reminder: nach Beginn des nächsten Zugs zu spät")
+	check(n_hand(g, 0) == 1, "reminder: keine Strafe")
+	# Mau-Fenster nach automatischem Ziehen (Absicht): Das Opfer einer +1 handelt nicht selbst; erwischen geht bis zur ersten
+	# Handlung des Übernächsten.
+	g = make({"hands": [["hell_rot_plus1", "hell_rot_1"], ["hell_rot_3", "hell_rot_4"], ["hell_rot_6", "hell_rot_7"], ["hell_rot_8"]],
+		"top": "hell_rot_5"}, {}, 4)
+	play(g, 0, "hell_rot_plus1", "+1 auf 1 Karte ohne Mau")
+	check(g.current_seat() == 2 and g.view_for(3).hints.catch == [0], "nach automatischem Ziehen noch erwischbar")
+	play(g, 2, "hell_rot_6", "Übernächster handelt")
+	deny(g, 3, {"a": "catch", "target": 0}, "danach zu spät")
+	# Übersicht bei drawn_card=may_not ohne Widerspruch
+	var spielzug := ""
+	for p in RulesText.overview(RuleConfig.from_dict({"drawn_card": "may_not"})):
+		if p.title == "Spielzug":
+			spielzug = str(p.text)
+	check(spielzug.contains("danach ist dein Zug vorbei") and not spielzug.contains("nur die gezogene Karte legen"), "may_not: " + spielzug)
+	for p in RulesText.overview(RuleConfig.new()):
+		if p.title == "Spielzug":
+			spielzug = str(p.text)
+	check(spielzug.contains("nur die gezogene Karte legen"), "may: " + spielzug)

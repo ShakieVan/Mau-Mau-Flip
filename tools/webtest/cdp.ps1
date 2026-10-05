@@ -17,8 +17,11 @@ param(
 	[int]$TimeoutMs = 20000,
 	[string]$Eval = '',
 	[string]$Pre = '',
+	[string]$EndExpr = '',            # nach dem Bild noch warten, bis dieser Ausdruck wahr ist (z. B. Selbsttest fertig), dann -Eval
+	[int]$EndTimeoutMs = 200000,
 	[switch]$Console
 )
+# -EndExpr: Kontrollbilder mitten in einer Partie (z. B. Mau-Blase), deren Selbsttest danach noch zu Ende laufen und berichten soll.
 $ErrorActionPreference = 'Stop'
 $chrome = 'C:\Program Files\Google\Chrome\Application\chrome.exe'
 $port = Get-Random -Minimum 9400 -Maximum 9900
@@ -101,6 +104,15 @@ try {
 		if (-not $m.Success) { throw 'Kein Bild erhalten' }
 		[IO.File]::WriteAllBytes($Out, [Convert]::FromBase64String($m.Groups[1].Value))
 		Write-Output "BILD: $Out"
+	}
+	if ($EndExpr) {
+		$ende2 = (Get-Date).AddMilliseconds($EndTimeoutMs)
+		$fertig = $false
+		while ((Get-Date) -lt $ende2) {
+			if (Werte $EndExpr) { $fertig = $true; break }
+			Start-Sleep -Milliseconds 300
+		}
+		if (-not $fertig) { Write-Output "ENDE: Zeitueberschreitung ($EndExpr)" }
 	}
 	if ($Eval) { $e = Werte $Eval; Write-Output ('EVAL: ' + $e) }
 	if ($script:fehler) { Write-Output "JS-AUSNAHMEN: $script:fehler" }

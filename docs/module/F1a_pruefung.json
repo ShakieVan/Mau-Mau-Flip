@@ -1,0 +1,104 @@
+{
+    "befunde":  [
+                    {
+                        "schwere":  "hoch",
+                        "datei":  "game/scripts/ui/hand_view.gd",
+                        "problem":  "Die Handkarten liegen über den Overlays des Tisches. HandView setzt absolute z_index-Werte: Karte i bekommt z = i·2, gezogene, große und ausgespielte Karten z = 2001, die Abdunklung z = 2000 (Zeilen 130, 851, 857, 864, 883–885, 955). TableView hängt Sichtschutz, Kartenhilfe, Rundenende, Rückseiten-Großansicht und Farbrad als Controls mit z_index 0 in dieselbe Zeichenebene (table_view.gd 147–167). Deshalb zeichnet Godot die Hand über diese Dialoge. Beim Weitergeben sieht der nächste Spieler die Hand des Vorgängers auf dem Sichtschutz. Das verletzt AGENTS.md Nr. 15 („Weitergeben-Dialoge zeigen keinerlei Karten“). Die Kartenhilfe wird außerdem von der Hand verdeckt, „Verstanden“ eingeschlossen.",
+                        "beleg":  "Eigenes Prüfskript mit echtem Renderer bei 1600×720: TableView plus HandView, dazu handover.show_for(...) bzw. show_help(...). Ausgabe: „Hand z_index: [0, 2, 4, …, 16]  handover z_index: 0  help_popup z_index: 0“. Bilder %TEMP%\\pruef_F1a\\sichtschutz_mit_hand.png (acht von neun Handkarten liegen sichtbar über „Gib das Handy nach links an Lena“) und hilfe_mit_hand.png (Hand über dem Hilfefenster und dem Knopf „Verstanden“). hand_demo.gd setzt seine eigene Hilfe aus genau diesem Grund auf z_index 3000 (Zeilen 295, 300). Die Kontrollbilder von F1a zeigen den Fehler daher nicht.",
+                        "vorschlag":  "Die Zeichenreihenfolge innerhalb der Hand über die Kindreihenfolge regeln (move_child) statt über globale z_index-Werte. Alternativ alle Hand-z-Werte über z_as_relative in einen schmalen Bereich legen. Zusätzlich mit F1b vereinbaren, dass TableView._overlay einen höheren z_index bekommt (z. B. 3000) oder in einer eigenen CanvasLayer liegt. Einen Test mit Tisch, Hand und Sichtschutz ergänzen, der die z-Reihenfolge prüft."
+                    },
+                    {
+                        "schwere":  "mittel",
+                        "datei":  "game/scripts/ui/hand_view.gd",
+                        "problem":  "Vom System abgebrochene Berührungen werden wie ein normales Loslassen behandelt. _unhandled_input wertet InputEventScreenTouch.canceled nicht aus (Zeilen 403–414). Android meldet ACTION_CANCEL, z. B. bei Systemgesten, eingehenden Anrufen oder der Benachrichtigungsleiste, und Godot macht daraus ein Loslassen mit canceled = true. War die Karte schon über die Schwelle gezogen, wird sie ausgespielt. Nach Halten bleibt die Großansicht offen. Auch Fokusverlust (NOTIFICATION_APPLICATION_FOCUS_OUT) bricht keine laufende Geste ab, und ein veraltetes _touch verschluckt die nächste Berührung.",
+                        "beleg":  "Prüfskript über den echten Eingabeweg (root.push_input) im TableView: Karte 240 px hochgezogen, dann ScreenTouch mit pressed = false und canceled = true. Ausgabe: „[[\"play\", 44], [\"drag_ended\", 44, true]]“. Halten und danach Abbruch: „Großansicht offen = true“. Der normale Tipp über push_input funktioniert („select 44“).",
+                        "vorschlag":  "In _unhandled_input bei st.canceled _cancel_gesture() und _close_big() aufrufen statt touch_up(). Dasselbe bei NOTIFICATION_APPLICATION_FOCUS_OUT bzw. NOTIFICATION_WM_WINDOW_FOCUS_OUT. Einen neuen Druck mit demselben index wie ein hängendes _touch als Neubeginn behandeln. Testfall mit canceled ergänzen."
+                    },
+                    {
+                        "schwere":  "mittel",
+                        "datei":  "game/scripts/ui/hand_view.gd",
+                        "problem":  "Die Hilfegeste (AGENTS.md Nr. 18: halten und nach unten auf „?“) funktioniert im unteren Teil des Kartenstreifens nicht. Die Zugstrecke wird auf mindestens 2·Toleranz begrenzt (Zeilen 460–461), auch wenn bis zum Bildrand weniger Platz bleibt. Das „?“ wird bei vr.end.y − BADGE_R − 8 dp = 674 px gekappt (Zeile 594). Bei Druckpunkten ab etwa 670 px erscheint das „?“ deshalb auf Höhe des Fingers oder darüber, obwohl man nach unten ziehen muss. Ab etwa 692 px lässt sich die Hilfe gar nicht mehr auslösen. Sichtbar ist der Streifen von 573 bis 720 px, betroffen sind also die unteren rund 20 % bzw. 35 % jeder Karte.",
+                        "beleg":  "Prüfskript mit echtem Renderer bei 1600×720 (dp = 1,5), Finger nach dem Halten bis y = 719 gezogen. y = 650: „?“ bei 674, Hilfe ja. y = 670/680/690: „?“-Mitte bei 674, also NICHT unter dem Finger, Hilfe ja. y = 700: nötig 24 px, bis zum Bildrand 19 px, Hilfe NEIN. y = 710: Hilfe NEIN. Auf dem Gerät (dp ≈ 1,75, 2·Toleranz = 28 px) liegt die Grenze rechnerisch bei y \u003e 691. test_ui_hand_gesture setzt help_dist für den Randfall von Hand und deckt das nicht ab.",
+                        "vorschlag":  "Die Hilfe über die Nähe zum „?“ scharf schalten (Finger im Kreis BADGE_HIT oder unterhalb der „?“-Mitte), nicht über eine feste Wegstrecke. Bei wenig Platz unten die Großansicht und das „?“ so weit anheben, dass „?“ immer mindestens ~24 px unter dem Finger liegt. Die Zugstrecke höchstens auf den verfügbaren Raum minus Rand setzen und für die Winkelentscheidung nach dem Halten eine kleinere Toleranz zulassen. Einen Test mit Druck bei y ≥ 690 ergänzen."
+                    },
+                    {
+                        "schwere":  "mittel",
+                        "datei":  "game/scripts/ui/hand_view.gd",
+                        "problem":  "Am Rundenwechsel werden wiederverwendete Kennungen als Flip behandelt. Laut BETA1_PLAN Abschnitt 3 werden die Kennungen je Runde neu gemischt. set_cards hält jede Kennung mit geändertem face für einen Seitenwechsel (Zeilen 163–168). Solche Karten zeigen beim Austeilen kurz ihre Rückseite und wenden sich. Weil die Hand vorher nicht leer ist, gilt dealing = false (Zeile 145): Es gibt keinen Austeil-Versatz, und alle neuen Karten schimmern 3 s. Hat ein Spieler am Rundenende z. B. noch 5 Karten, trifft das bei einer neuen Hand mit 7 Karten in etwa jeder vierten Runde mindestens eine Karte (≈ 27 %). hand_demo.gd umgeht das mit hand.set_cards([]) (Kommentar „sonst gälten gleiche Kennungen als Flip“). Das steht aber nicht in den Hinweisen für F1b, und TableView._ev_deal leert die Hand nicht.",
+                        "beleg":  "Prüfskript: Runde 1 mit Kennungen 0–6, Runde 2 mit Kennungen 3–9 und anderen Gesichtern. Ausgabe: „wendet=4 schimmert=3 von 7“; z. B. „id 3 zeigt dunkel_lila_1 soll hell_blau_1 flip=true“. Die Karten 7–9 schimmern.",
+                        "vorschlag":  "In set_cards nur dann als Flip werten, wenn die neue Rückseite dem alten Gesicht entspricht. Sonst die Karte ersetzen, d. h. die alte entfernen und die neue austeilen. Außerdem eine Methode clear() oder deal() anbieten und für F1b dokumentieren (Aufruf bei deal bzw. round_over → next_round). Testfall mit überlappenden Kennungen ergänzen."
+                    },
+                    {
+                        "schwere":  "mittel",
+                        "datei":  "game/scripts/ui/hand_view.gd",
+                        "problem":  "Ein Schwung Richtung Kartenende läuft im Karussell deutlich über die letzte Karte hinaus. Beim Loslassen übernimmt die kritisch gedämpfte Feder die volle Wischgeschwindigkeit (Zeilen 547–551, 809–812). Liegt das eingerastete Ziel wegen der Begrenzung auf n − 1 nah, überschwingt die Feder, und zwar ohne Gummiband. Das widerspricht „Einrasten ohne Überschwingen“ und der Gummiband-Vorgabe (Recherche 1.4) und betrifft den Nutzerwunsch „fancy scrollbar“.",
+                        "beleg":  "Prüfskript: 20 Karten, Scroll bei 16, schneller Wisch nach links (80 px je Bild). Ausgabe: „Ziel 19: höchster Scrollwert 21.554 (Überschwingen 2.554 Karten)“. Rechnerisch: Am Ende stehend mit v = 25 Karten/s ergibt sich ein Spitzenwert von v/(ω·e) ≈ 1,8 Karten.",
+                        "vorschlag":  "Wird das Ziel an 0 oder n − 1 begrenzt, die Startgeschwindigkeit auf höchstens ω·|Ziel − Scroll| kappen. Oder den angezeigten Scrollwert außerhalb von [0, n − 1] immer über rubber_scroll führen. Test „Schwung am Ende überschwingt höchstens 0,3 Karten“ ergänzen."
+                    },
+                    {
+                        "schwere":  "mittel",
+                        "datei":  "game/scripts/ui/hand_view.gd",
+                        "problem":  "Der Handbereich ist fest auf 1600×720 eingestellt: layout_rect = Rect2(270, 500, 1060, 220) (Zeile 53). TableView setzt weder layout_rect noch play_target oder spawn_from. Auf dem S10 (19:9) ist das Bild 1600×757, die Hand schwebt dann 37 px über dem unteren Rand. Man sieht mehr als nur den oberen Teil der Karten (Nutzerentscheidung 8), und die Karten überdecken die Hinweisleiste „Du bist dran.“.",
+                        "beleg":  "Prüfskript mit -Resolution 1520x720 (19:9): „Viewport (1600.0, 757.0) layout_rect [P: (270.0, 500.0), S: (1060.0, 220.0)]“. Bild %TEMP%\\pruef_F1a\\tisch_hand_757.png: Kartenstreifen höher, Pille „Du bist dran.“ teilweise verdeckt. grep in table_view.gd findet weder layout_rect noch play_target noch spawn_from.",
+                        "vorschlag":  "HandView standardmäßig am unteren Rand des sichtbaren Bereichs ausrichten, nachgeführt bei size_changed des Viewports, solange layout_rect nicht ausdrücklich gesetzt wurde. Alternativ in die Liste „Für F1b“ aufnehmen: layout_rect, play_target und spawn_from in TableView._layout() setzen."
+                    },
+                    {
+                        "schwere":  "niedrig",
+                        "datei":  "game/scripts/ui/card_view.gd",
+                        "problem":  "Auf dem hellen Tag-Tisch ist die Hervorhebung kaum sichtbar. Das Glühen wird additiv gemischt (Zeilen 19–20, 57). Auf dem cremefarbenen Papiergrund verschwindet das goldene Glühen der gewählten Karte fast, und das spielbare Glühen ist unsichtbar. Nicht spielbare Karten mit 84 % Helligkeit wirken grau. Die Recherche (1.6) verlangt einen „feinen Rand in der aktuellen Farbe“. Alle F1a-Kontrollbilder zeigen nur den Nachttisch.",
+                        "beleg":  "Prüfskript TableView am Tag mit 2 spielbaren und 1 gewählten Karte: %TEMP%\\pruef_F1a\\tisch_tag_auswahl.png und zoom_tag.png. Die Auswahl erkennt man nur am Anheben.",
+                        "vorschlag":  "Für den Tag einen normal gemischten farbigen Rand bzw. ein dunkleres Glühen verwenden, additiv nur nachts. Kontrollbild „Tag mit Auswahl“ ergänzen."
+                    },
+                    {
+                        "schwere":  "niedrig",
+                        "datei":  "game/scripts/ui/hand_view.gd",
+                        "problem":  "Das Haptik-Raster vibriert auch ohne Scrollen durch den Nutzer. Jeder Indexwechsel von _scroll löst einen Puls aus (Zeilen 813–819), auch die programmatische Verschiebung in _apply_order (Zeilen 1088–1090), etwa wenn im Karussell eine gezogene Karte ankommt.",
+                        "beleg":  "Prüfskript: 20 Karten im Karussell, 5× receive_card ohne Berührung. Ausgabe: „Vibrationen = 5“ (je 10 ms, Stärke 0,2).",
+                        "vorschlag":  "Nur während Ziehen oder Schwung durch den Nutzer pulsen. Bei programmatischer Verschiebung _last_tick_index mitführen."
+                    },
+                    {
+                        "schwere":  "niedrig",
+                        "datei":  "game/scripts/ui/hand_view.gd",
+                        "problem":  "Ein Tipp in den laufenden Schwung hält das Karussell nicht nur an, sondern wählt auch die Karte unter dem Finger aus und dreht sie in die Mitte (Zeilen 462–465, 570–578). Üblich ist, dass so ein Tipp nur anhält.",
+                        "beleg":  "Prüfskript: Schwung mit 25,6 Karten/s, Tipp in der Mitte. Ausgabe: „Auswahl=10, Ereignisse=[[\"select\", 10]]“.",
+                        "vorschlag":  "Wenn beim Aufsetzen |_scroll_v| über einer Schwelle liegt (z. B. 2 Karten/s), den Tipp nur zum Anhalten verwenden."
+                    },
+                    {
+                        "schwere":  "niedrig",
+                        "datei":  "game/scripts/ui/hand_view.gd",
+                        "problem":  "take_card räumt Auswahl, Großansicht und Ziehen nicht auf (Zeilen 305–317). Wird die gewählte Karte übergeben, bleibt get_selected() auf ihr stehen und selection_changed(−1) fehlt, sodass ein „Spielen“-Hinweis von F1b stehen bliebe. Wird die Karte in der Großansicht übergeben, bleiben Großansicht und Abdunklung bestehen.",
+                        "beleg":  "Prüfskript. 5a: „take_card der gewählten Karte: get_selected=1 Ereignisse=[]“. 5b: „is_big_view_open=true Abdunklung=1.00“.",
+                        "vorschlag":  "In take_card wie in _remove_slot verfahren: bei _drag_id _cancel_gesture(), bei _big_id _close_big(), bei _selected _set_selected(−1)."
+                    },
+                    {
+                        "schwere":  "niedrig",
+                        "datei":  "game/scripts/ui/hand_view.gd",
+                        "problem":  "Beim Spielerwechsel (Weitergeben) bleibt der Zustand des Vorgängers erhalten. set_peek_backs bleibt an, wenn set_cards eine völlig andere Hand bringt, ebenso die „manuell“-Sortierung. Der nächste Spieler sieht zuerst Rückseiten bzw. eine unsortierte Hand. Eine Methode zum Zurücksetzen fehlt.",
+                        "beleg":  "Prüfskript: peek an, dann set_cards mit neuen Kennungen. Ausgabe: „zeigt dunkel_lila_1 (Gesicht hell_gelb_1)“.",
+                        "vorschlag":  "reset() bzw. clear() anbieten (Rückseitenansicht aus, Auswahl, Großansicht, Ziehen, Spielzustände) und als Aufgabe für F2 beim Weitergeben vermerken."
+                    },
+                    {
+                        "schwere":  "niedrig",
+                        "datei":  "game/scripts/ui/hand_view.gd",
+                        "problem":  "Die Vorschau beim Hochziehen fehlt. Recherche 1.5 (Muss-Zeile „Wischen/Ziehen nach oben“): „Ein Geisterbild auf der Ablage zeigt die Vorschau“. Das ist weder umgesetzt noch unter den offenen Punkten aufgeführt. Ob das Ziehen „scharf“ ist (_gesture.play_armed), meldet die Hand nicht nach außen, F1b kann die Vorschau also nicht zeigen.",
+                        "beleg":  "In hand_view.gd gibt es kein Signal und keine Abfrage für play_armed. F1a.md nennt das Geisterbild nicht.",
+                        "vorschlag":  "Ein Signal drag_armed(id, armed: bool) oder eine Methode is_play_armed() ergänzen, die Vorschau F1b zuweisen und in F1a.md eintragen."
+                    },
+                    {
+                        "schwere":  "niedrig",
+                        "datei":  "game/scripts/ui/card_view.gd",
+                        "problem":  "Beim ersten Erzeugen einer CardView entstehen zwei weiche Texturen von 164×230 Pixeln, Pixel für Pixel in GDScript (soft_texture, Zeilen 234–250). Am PC kostet das 30 ms, auf dem S10 ist ein spürbarer Ruckler von schätzungsweise 100 ms oder mehr zu erwarten, z. B. beim ersten Austeilen.",
+                        "beleg":  "Prüfskript: „erste CardView (erzeugt 2 weiche Texturen): 29.6 ms“. Zum Vergleich der laufende Betrieb: 25 Karten in Ruhe 185 µs je step(), 60 Karten im Karussell beim Ziehen 514 µs je Bild.",
+                        "vorschlag":  "Die Texturen einmalig als PNG unter assets/ ablegen oder beim App-Start bzw. Ladebildschirm vorab erzeugen."
+                    },
+                    {
+                        "schwere":  "niedrig",
+                        "datei":  "docs/module/F1a.md",
+                        "problem":  "Einige Abweichungen sind nicht dokumentiert. Der Bogenradius beträgt 1600 px, die Recherche nennt ≈ 2,5 × Bildschirmbreite (ARC_RADIUS, hand_layout.gd Zeile 26). Spielbare Karten glühen cremefarben statt mit einem Rand in der aktuellen Farbe. Die Einstellung „effekte = reduziert“ wird in der Hand nicht beachtet (Schimmern, Neigung, Bögen); TableView beachtet sie. Die 8 dokumentierten Abweichungen fehlen noch im Abschnitt „Abweichungen“ von BETA1_PLAN.md.",
+                        "beleg":  "hand_layout.gd Zeilen 26–27, card_view.gd Zeile 19, keine Abfrage von App.settings \"effekte\" in hand_view.gd. BETA1_PLAN.md Zeile 377: „(von Modulen ergänzt)“ ist leer.",
+                        "vorschlag":  "In F1a.md ergänzen. Der Koordinator überträgt die Abweichungen in BETA1_PLAN.md. Die reduzierte Effektstufe optional über die Eigenschaft reduced umsetzen (z. B. kein Schimmer-Shader, keine Neigung)."
+                    }
+                ],
+    "tests":  "Import über tools/godot_import.ps1, danach alle Tests headless über tools/godot_run.ps1:\n- Tests des Moduls: test_ui_hand_layout 79 ok, test_ui_hand_gesture 42 ok, test_ui_hand_sort 21 ok, test_ui_hand_view 74 ok, test_card_view 5 ok. Keine ERROR- oder WARNING-Zeilen.\n- Nachbartests (CardView wurde geändert): test_ui_table_smoke 2 ok, test_ui_table_layout 145 ok, test_smoke 1 ok.\n\nEigene Prüfskripte (game/tests/pruef_F1a_*.gd, nach Gebrauch samt .uid gelöscht):\n- **zorder** (Renderer 1600×720): Hand im TableView mit Sichtschutz und Kartenhilfe. Die Hand liegt über beiden, Befund hoch.\n- **logik** (headless): Kennungen bei neuer Runde, Haptik, Tipp im Schwung, take_card, viele Karten, Rechenzeit, Überschwingen am Ende, Doppeltipp im Karussell (korrekt), Rückseiten beim Spielerwechsel.\n- **hilfe** (Renderer 1600×720): Hilfegeste je Druckhöhe.\n- **s10** (Renderer 1520×720, Seitenverhältnis 19:9): Handbereich.\n- **tag** (Renderer): Glühen auf dem Tag-Tisch.\n- **zeit** (headless): weiche Texturen und Ruhekosten.\n- **input** (Renderer): echter Eingabeweg über push_input und abgebrochene Berührungen.\n\nWeitere Ergebnisse ohne eigenen Befund:\n- Karussell bei 60 Karten: rechte Kante bei 1047 px von 1060. Bei 80 Karten 1061 px, bei 100 Karten 1116 px (die Gruppenlücken sind in der Rechnung nicht enthalten, also leicht über den Bereich hinaus); für echte Partien unrealistisch.\n- Rechenzeit am PC: 514 µs je Bild bei 60 Karten beim Ziehen, 185 µs in Ruhe bei 25 Karten.\n\nKontrollbilder angesehen: F1a_hand5, hand12, hand25, schwung, grossansicht, grossansicht_knopf, rueckseiten sowie der Entwurf hand.png. Die eigenen Prüfbilder liegen in %TEMP%\\pruef_F1a\\.\n\nAm Modulcode habe ich nichts geändert. Einen Gerätetest auf S21/S10 habe ich nicht gemacht: Die Hand ist noch nicht in die Hauptszene eingebunden.",
+    "gesamturteil":  "Fachlich ist das Modul solide:\n- **Schnittstelle:** vollständig nach BETA1_PLAN (alle Methoden und Signale, HandLayout.layout kompatibel um gaps erweitert).\n- **Rechenteil:** Fischauge, Projektion, Gummiband, Federn und Gestenmaschine sind sauber umgesetzt und gut getestet.\n- **Sortierung:** Punktsummen stimmen mit CardDB überein.\n- **CardView:** bleibt kompatibel, die Nachbartests laufen.\n- **Ablauf:** Der echte Eingabeweg im TableView (Filter PASS) funktioniert.\n\nFreigabereif ist es noch nicht.\n\n**Hoch:** Die Handkarten zeichnen wegen ihrer z_index-Werte über alle Dialoge des Tisches: Sichtschutz, Kartenhilfe, Rundenende und Farbrad. Beim Weitergeben wird so die Hand des Vorgängers sichtbar (Verstoß gegen AGENTS.md Nr. 15). Das muss mit F1b zusammen behoben werden, am besten durch Kindreihenfolge statt z_index in der Hand und eine eigene Ebene bzw. einen hohen z_index für die Tisch-Overlays.\n\n**Mittel, vor dem Gerätetest beheben:**\n- Abgebrochene Berührungen (canceled) spielen Karten aus.\n- Die Hilfegeste versagt am unteren Rand des Kartenstreifens, und das „?“ liegt dort nicht unter dem Finger.\n- Wiederverwendete Kennungen bei einer neuen Runde laufen als Flip, ohne Austeil-Animation.\n- Der Schwung schießt am Kartenende um 2–2,5 Karten über.\n- Der feste Handbereich lässt die Hand auf dem S10 (19:9) schweben.\n\nDie übrigen Punkte sind Feinschliff.\n\n**Gerätetest (S21/S10), nach Einbau in den Tisch:**\n- Gesten-dp (erwartet ≈ 1,75 px/dp) und Haptikstärken\n- Wischen nach oben vom unteren Bildrand: Konflikt mit der Android-Startgeste und versehentliches Ausspielen\n- Erster Ruckler durch die weichen Texturen"
+}

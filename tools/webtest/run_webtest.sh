@@ -49,13 +49,14 @@ IPHONE="Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1
 bild() {   # Name, URL-Parameter, Breite, Höhe, Dichte, Wartebedingung, Wartezeit ms, [UA]
 	local name="$1"
 	if [ ${#NUR[@]} -gt 0 ]; then local treffer=0; for n in "${NUR[@]}"; do [ "$n" = "$name" ] && treffer=1; done; [ $treffer = 1 ] || return; fi
-	local ziel; ziel="$(cygpath -w "$OUT/E1_$name.png")"
+	local datei="E1_$name.png"; case "$name" in E2_*) datei="$name.png" ;; esac   # E2_…: Bilder des Moduls E2 (Mau-Blasen)
+	local ziel; ziel="$(cygpath -w "$OUT/$datei")"
 	local args=(-Url "$BASIS?$2" -Out "$ziel" -Width "$3" -Height "$4" -Scale "$5" -WaitExpr "$6" -WaitMs "$7" -TimeoutMs 25000)
 	[ "$3" -lt 1200 ] && args+=(-Mobile)
 	[ -n "${8:-}" ] && args+=(-UserAgent "$8")
 	local ausgabe
 	ausgabe="$(powershell -NoProfile -ExecutionPolicy Bypass -File "$(cygpath -w "$ROOT/tools/webtest/cdp.ps1")" "${args[@]}" 2>&1)"
-	if echo "$ausgabe" | grep -q "BILD:"; then echo "bild E1_$name.png$(echo "$ausgabe" | grep -E 'WARTEN|JS-AUSNAHMEN' | tr '\n' ' ' | sed 's/^/  /')"; else echo "FAIL: bild $name: $ausgabe"; fehler=1; fi
+	if echo "$ausgabe" | grep -q "BILD:"; then echo "bild $datei$(echo "$ausgabe" | grep -E 'WARTEN|JS-AUSNAHMEN' | tr '\n' ' ' | sed 's/^/  /')"; else echo "FAIL: bild $name: $ausgabe"; fehler=1; fi
 }
 if [ "$MODUS" != "--nur-test" ]; then
 	bild start_844x390        "mock=1"                                     844 390 2 "$BEREIT" 600 "$IPHONE"
@@ -78,6 +79,10 @@ if [ "$MODUS" != "--nur-test" ]; then
 	bild ersatzkarten_844x390 "mock=1&szene=tisch&ruhig=1&bilder=0&seed=9"  844 390 2 "$TISCH" 900
 	bild klein_760x300        "mock=1&szene=tisch&ruhig=1&karten=9"        760 300 2 "$TISCH" 900
 	bild hochformat_390x844   "mock=1&szene=tisch&ruhig=1"                 390 844 2 "$TISCH" 600 "$IPHONE"
+	# Mau-Sprechblase: alle Varianten zugleich (tags und nachts), mitten in der Animation (ohne ruhig=1)
+	bild E2_blasen_1600x720   "mock=1&szene=blasen&gegner=4&seed=3"        1600 720 1 "$TISCH&&document.querySelectorAll('.mau-blase').length>0" 1400
+	bild E2_blasen_nacht_844x390 "mock=1&szene=blasen&gegner=4&seed=5&seite=dunkel" 844 390 2 "$TISCH&&document.querySelectorAll('.mau-blase').length>0" 1400
+	bild E2_blasen_schlicht_844x390 "mock=1&szene=blasen&gegner=3&variante=schlicht" 844 390 2 "$TISCH&&document.querySelectorAll('.mau-blase').length>0" 900
 fi
 
 exit $fehler

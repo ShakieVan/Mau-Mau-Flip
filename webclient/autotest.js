@@ -7,6 +7,30 @@
   'use strict';
   const $ = s => document.querySelector(s);
   const schlaf = ms => new Promise(r => setTimeout(r, ms));
+  const P = new URLSearchParams(location.search);
+
+  // Chrome --dump-dom schreibt das DOM beim load-Ereignis. Mit &halter=<Port> hält ein verstecktes iframe zu einem Port, der nie
+  // antwortet (Testgastgeber game/tests/web_host.gd), das load-Ereignis auf, bis der Test fertig ist und es entfernt.
+  // (Dieses Skript wird vor dem load-Ereignis eingefügt und ausgeführt, also zählt das iframe noch mit.)
+  let halter = null;
+  if (P.get('halter') && document.body) {
+    halter = document.createElement('iframe');
+    halter.style.display = 'none';
+    halter.src = 'http://' + location.hostname + ':' + (+P.get('halter')) + '/halten';
+    document.body.appendChild(halter);
+  }
+
+  // Erwartete Form der Sicht (game/scripts/rules/mau_game.gd view_for/_hints) – Prüfung Feld für Feld gegen den echten Gastgeber
+  const PHASEN = ['idle', 'turn', 'drawn', 'challenge', 'color', 'round_over', 'game_over'];
+  const HINT_FELDER = { playable: 'array', wild: 'array', can_draw: 'boolean', can_keep: 'boolean', can_challenge: 'boolean', can_accept: 'boolean',
+    can_mau: 'boolean', catch: 'array', need_color: 'boolean', can_next_round: 'boolean', text: 'string' };
+  const SICHT_FELDER = { seat: 'number', side: 'string', phase: 'string', turn: 'number', dir: 'number', color: 'string', players: 'array', hand: 'array',
+    top: 'object', draw_back: 'string', draw_count: 'number', pending: 'object', hints: 'object', round: 'number', ranking: 'array', rules: 'object', result: 'object' };
+  const SPIELER_FELDER = { seat: 'number', name: 'string', kind: 'string', count: 'number', backs: 'array', place: 'number', mau: 'boolean', connected: 'boolean', score: 'number' };
+  const art = x => Array.isArray(x) ? 'array' : (x === null ? 'null' : typeof x);
+  // Ereignisse, die der Client kennt (Effekt in tisch.js oder bewusst ohne Effekt)
+  const EREIGNISSE = ['deal', 'play', 'draw', 'skip', 'skip_all', 'reverse', 'color', 'flip', 'pending', 'challenge', 'mau', 'catch', 'penalty', 'shuffle',
+    'round_over', 'game_over', 'finish', 'pass', 'choose_color', 'round_start', 'start', 'turn', 'keep', 'accept'];
 
   const T = {
     start(app) {
@@ -14,13 +38,36 @@
       this.t0 = Date.now();
       this.zuege = 0; this.runden = 0; this.states = 0; this.errs = 0; this.ereignisse = {};
       this.fehler = []; this.notizen = [];
-      this.ziel = +(M.param('zuege') || 14);
-      this.rundenZiel = +(M.param('runden') || 2);
       this.mock = !!M.param('mock');
+      // gegen den echten Gastgeber: bis zum ersten Rundenende spielen
+      this.ziel = +(M.param('zuege') || (this.mock ? 14 : 400));
+      this.rundenZiel = +(M.param('runden') || (this.mock ? 2 : 1));
       this._fertig = false;
       setTimeout(() => this.lauf(), 30);
     },
-    zustand(m) { this.states++; (m.events || []).forEach(e => { this.ereignisse[e.e] = (this.ereignisse[e.e] || 0) + 1; }); },
+    // Sicht Feld für Feld prüfen (nur gegen den echten Gastgeber; das Mock liefert eine vereinfachte Form)
+    vertrag(v) {
+      if (this.mock || !v) return;
+      Object.keys(SICHT_FELDER).forEach(k => { if (art(v[k]) !== SICHT_FELDER[k]) this.fail('Sicht.' + k + ': ' + art(v[k]) + ' statt ' + SICHT_FELDER[k]); });
+      if (PHASEN.indexOf(v.phase) < 0) this.fail('unbekannte Phase ' + v.phase);
+      const h = v.hints || {};
+      Object.keys(HINT_FELDER).forEach(k => { if (art(h[k]) !== HINT_FELDER[k]) this.fail('hints.' + k + ': ' + art(h[k]) + ' statt ' + HINT_FELDER[k]); });
+      (v.players || []).forEach(p => Object.keys(SPIELER_FELDER).forEach(k => { if (art(p[k]) !== SPIELER_FELDER[k]) this.fail('players[].' + k + ': ' + art(p[k])); }));
+      (v.hand || []).forEach(c => { if (typeof c.id !== 'number' || typeof c.face !== 'string') this.fail('hand[] ohne id/face'); });
+      if (v.pending && v.pending.kind && ['plus1', 'plus5', 'wuenscher_plus2', 'farbjagd'].indexOf(v.pending.kind) < 0) this.fail('pending.kind ' + v.pending.kind);
+      if (h.need_color && v.phase !== 'color') this.fail('need_color außerhalb der Phase color');
+      if (v.phase === 'color') this.ereignisse.phaseColor = (this.ereignisse.phaseColor || 0) + 1;
+      if ((h.wild || []).some(id => (h.playable || []).indexOf(id) < 0)) this.fail('hints.wild nicht in playable');
+      if ((v.phase === 'round_over' || v.phase === 'game_over') && !(v.result && Array.isArray(v.result.ranking) && v.result.ranking.length === (v.players || []).length)) this.fail('result.ranking fehlt');
+    },
+    zustand(m) {
+      this.states++;
+      (m.events || []).forEach(e => {
+        this.ereignisse[e.e] = (this.ereignisse[e.e] || 0) + 1;
+        if (!this.mock && EREIGNISSE.indexOf(e.e) < 0) this.fail('unbekanntes Ereignis ' + e.e);
+      });
+      try { this.vertrag(m.view); } catch (e) { this.fail('Vertrag: ' + e); }
+    },
     fehlerNachricht(m) { this.errs++; this.notiz('err vom Gastgeber: ' + m.text); },
     notiz(t) { this.notizen.push(t); },
     fail(t) { if (this.fehler.indexOf(t) < 0) this.fehler.push(t); },
@@ -144,13 +191,22 @@
         await this.toene();
         this.layoutTest();
         await this.bedienung();
-        let getrenntGetestet = !this.mock;
+        // Zählstand für die Mau-Prüfung am Ende (Ereignisse, Töne)
+        this.mau0 = { mau: this.ereignisse.mau || 0, finish: this.ereignisse.finish || 0, toene: this.app.mauEreignisse || 0,
+          blasen: this.app.tisch.blasenZahl || 0, mauTon: M.Ton.zaehler.mau || 0, mauMauTon: M.Ton.zaehler.mau_mau || 0 };
+        let getrenntGetestet = !(this.mock || M.param('trennen'));
         while (this.zuege < this.ziel) {
-          await this.warte(() => this.binDran() || this.rundeVorbei(), 40000, 'eigener Zug');
+          await this.warte(() => this.binDran() || this.rundeVorbei(), 60000, 'eigener Zug');
           this.pruefe();
           if (this.rundeVorbei()) {
             this.runden++;
             if (!$('#runde') || $('#runde').hidden) this.fail('Rundenende-Fenster fehlt');
+            else {
+              const zeilen = document.querySelectorAll('#runde-liste li').length;
+              if (zeilen !== (this.v.players || []).length) this.fail('Rundenende: ' + zeilen + ' Zeilen für ' + (this.v.players || []).length + ' Spieler');
+              if (!$('#runde-sieger').textContent) this.fail('Rundenende ohne Sieger');
+              this.notiz('Rundenende: ' + $('#runde-sieger').textContent + ' [' + Array.from(document.querySelectorAll('#runde-liste li')).map(li => li.textContent.replace(/\s+/g, ' ')).join(' / ') + ']');
+            }
             if (this.runden >= this.rundenZiel) break;
             const r = this.v.round;
             await this.warte(() => this.v.round !== r && this.ruhig(), 20000, 'nächste Runde');
@@ -162,6 +218,7 @@
         }
         await this.warte(() => this.ruhig(), 10000, "Regie am Ende");
         this.pruefe();
+        this.mauPruefung();
       } catch (e) {
         this.fail(String(e && e.message || e));
       }
@@ -189,21 +246,71 @@
       }
     },
     // alle synthetischen Klänge offline rendern: hörbar, aber ohne Übersteuerung
+    // Spieltöne synthetisch (hörbar, ohne Übersteuerung); Mau-Aufnahmen: Spitze nahe −1 dBFS, Dauer plausibel
     async toene() {
+      await Promise.race([M.Ton.geladen(), schlaf(8000)]);
       const erg = await M.Ton.pruefe();
       if (!erg) { this.notiz('Tonprüfung übersprungen'); return; }
+      if (erg.mau !== undefined) this.fail('synthetischer Mau-Ton ist noch da');
       const teile = [];
       Object.keys(erg).forEach(n => {
         const p = erg[n];
+        if (n.indexOf('datei:') === 0) {
+          teile.push(n + '=' + p.spitze + '/' + p.dauer + 's');
+          if (!(p.spitze >= 0.5 && p.spitze <= 1.0)) this.fail('Aufnahme ' + n + ': Spitze ' + p.spitze);
+          if (!(p.dauer >= 0.25 && p.dauer <= 2.0)) this.fail('Aufnahme ' + n + ': Dauer ' + p.dauer + ' s');
+          return;
+        }
         teile.push(n + '=' + p);
         if (typeof p !== 'number') this.fail('Ton ' + n + ': ' + p);
         else if (p < 0.02 || p > 1) this.fail('Ton ' + n + ': Pegel ' + p);
       });
       this.notiz('Töne ' + teile.join(' '));
     },
+    // Mau für alle (AGENTS.md Nr. 21): jedes Ereignis „mau“/„finish“ (auch fremder Plätze) ergibt genau einen Ton-Anstoß und eine Blase;
+    // mit geladenen Aufnahmen und Ton an wurde die Datei wirklich abgespielt.
+    mauPruefung() {
+      const a = this.app, t = a.tisch, z = this.mau0;
+      if (!z) return;
+      const mau = (this.ereignisse.mau || 0) - z.mau, fertig = (this.ereignisse.finish || 0) - z.finish;
+      const toene = (a.mauEreignisse || 0) - z.toene, blasen = (t.blasenZahl || 0) - z.blasen;
+      if (toene !== mau + fertig) this.fail('Mau-Töne: ' + toene + ' Anstöße für ' + mau + ' Mau und ' + fertig + ' Fertig');
+      if (blasen !== mau + fertig) this.fail('Mau-Blasen: ' + blasen + ' für ' + mau + ' Mau und ' + fertig + ' Fertig');
+      if (this.dateienGeladen && !M.Ton.stumm && M.Ton.stufe !== 'aus') {
+        const gm = (M.Ton.zaehler.mau || 0) - z.mauTon, gmm = (M.Ton.zaehler.mau_mau || 0) - z.mauMauTon;
+        if (gm !== mau || gmm !== fertig) this.fail('Aufnahmen abgespielt: mau ' + gm + '/' + mau + ', mau_mau ' + gmm + '/' + fertig);
+      }
+      const varianten = Object.keys(t.blasenVarianten || {}).sort().map(k => k + '=' + t.blasenVarianten[k]).join(' ');
+      this.notiz('Mau-Ereignisse ' + mau + ', Fertig ' + fertig + ', Blasen ' + blasen + (varianten ? ' [' + varianten + ']' : ''));
+    },
     // Sortieren, Rückseiten, Kartenhilfe, Menü, Gegneransicht einmal bedienen
     async bedienung() {
       const t = this.app.tisch;
+      // Mau-Ton zum Ereignis: Entprellung 1 s je Platz und Art (Platz 99 gibt es nicht → stört die Zählung der Partie nicht)
+      const app = this.app;
+      const n0 = app.mauEreignisse || 0;
+      app.mauTon(99, 'mau'); app.mauTon(99, 'mau'); app.mauTon(99, 'mau_mau');
+      if ((app.mauEreignisse || 0) !== n0 + 2) this.fail('Mau-Ton-Entprellung: ' + ((app.mauEreignisse || 0) - n0) + ' statt 2 Töne');
+      app.mauEreignisse = n0;
+      // Standard: Spieltöne aus, Mau-Ton normal (frisches Profil), nicht stumm
+      if (M.Speicher.get('toene', null) === null && (app.einstellungen.toene !== 'aus' || M.Ton.toene !== 'aus')) this.fail('Spieltöne sind nicht standardmäßig aus');
+      if (M.Speicher.get('ton', null) === null && M.Ton.stufe !== 'normal') this.fail('Mau-Ton ist nicht standardmäßig normal');
+      if (M.Ton.stumm) this.fail('Ton ist von Anfang an stumm');
+      // Ton-Knopf in der Ecke: stumm und wieder an
+      this.klick('#ton-knopf'); await schlaf(40);
+      if (!M.Ton.stumm || !app.einstellungen.stumm || !t.knTon.classList.contains('stumm')) this.fail('Ton-Knopf schaltet nicht stumm');
+      if (M.Ton.spiele('mau')) this.fail('Mau-Ton spielt trotz stumm');
+      this.klick('#ton-knopf'); await schlaf(40);
+      if (M.Ton.stumm || t.knTon.classList.contains('stumm')) this.fail('Ton-Knopf schaltet nicht wieder an');
+      if (M.Ton.spiele('karte')) this.fail('Spieltöne spielen, obwohl sie aus sind');
+      // Aufnahmen (sfx/mau.* und sfx/mau_mau.*) über http geladen und dekodiert
+      if (/^https?:/.test(location.protocol)) {
+        const ende = Date.now() + 8000;
+        while (Date.now() < ende && !(M.Ton.dateien.indexOf('mau') >= 0 && M.Ton.dateien.indexOf('mau_mau') >= 0)) await schlaf(100);
+        const fehlt = M.Ton.MAU_TOENE.filter(n => M.Ton.dateien.indexOf(n) < 0);
+        if (fehlt.length) this.fail('Mau-Aufnahmen nicht geladen: ' + fehlt.join(', ') + (M.Ton.bereit ? '' : ' (Web Audio nicht freigeschaltet)'));
+        else { this.dateienGeladen = true; this.notiz('Mau-Aufnahmen geladen'); }
+      }
       const vorher = this.app.einstellungen.sort;
       for (let i = 0; i < 3; i++) { this.klick('#sortieren'); await schlaf(60); }
       if (this.app.einstellungen.sort !== vorher) this.fail('Sortieren kehrt nicht zum Anfang zurück');
@@ -224,8 +331,14 @@
       this.klick('#menue .knopf.haupt.schliessen'); await schlaf(50);
       const g = t.gegnerBox.querySelector('.gg');
       if (g) {
+        const p = (this.v.players || []).find(x => x.seat === +g.dataset.seat);
+        const toasts = document.querySelectorAll('.toast').length;
         this.klick(g.querySelector('.ava')); await schlaf(50);
-        if ($('#ansicht').hidden) this.fail('Gegneransicht öffnet nicht');
+        if (p && (!p.backs || !p.backs.length)) {
+          // Rückseiten verdeckt (backs_visible=false): nur ein Hinweis mit der Kartenzahl, keine Ansicht
+          if (!$('#ansicht').hidden) this.fail('Gegneransicht trotz verdeckter Rückseiten');
+          else if (document.querySelectorAll('.toast').length <= toasts && toasts < 3) this.fail('Kein Hinweis bei verdeckten Rückseiten');
+        } else if ($('#ansicht').hidden) this.fail('Gegneransicht öffnet nicht');
         else this.klick('#ansicht .schliessen');
       }
       await schlaf(50);
@@ -254,9 +367,21 @@
       const mauSchluessel = v.round + ':' + v.hand.length + ':' + (v.top && v.top.id);
       if (h.can_mau && this._mauVersucht !== mauSchluessel) {
         this._mauVersucht = mauSchluessel;
-        this.klick('#mau'); await antwort();
-        if (this.errs > e0) this.fail('Mau! abgelehnt');
-        else this.notiz('Mau! gerufen');
+        const n0 = app.mauEreignisse || 0, b0 = app.tisch.blasenZahl || 0;
+        const anzahl = () => (this.ereignisse.mau || 0) + (this.ereignisse.finish || 0);
+        const ev0 = anzahl();
+        this.klick('#mau');
+        // kein Ton beim Drücken selbst – er kommt mit dem Ereignis „mau“ (sonst hörte man ihn hier doppelt)
+        if ((app.mauEreignisse || 0) !== n0) this.fail('Mau-Ton schon beim Drücken (doppelt)');
+        await antwort();
+        if (this.errs > e0) { this.fail('Mau! abgelehnt'); return; }
+        await this.warte(() => this.ruhig(), 8000, 'Regie nach Mau');
+        const eigene = app.tisch.flug.querySelector('.mau-blase[data-seat="' + v.seat + '"]') || (app.tisch.blasenZahl || 0) > b0;
+        const dEv = anzahl() - ev0;
+        if (dEv < 1) this.fail('Kein Ereignis „mau“ nach eigenem Ruf');
+        if ((app.mauEreignisse || 0) - n0 !== dEv) this.fail('Mau-Ton nach eigenem Ruf: ' + ((app.mauEreignisse || 0) - n0) + ' Anstöße für ' + dEv + ' Ereignisse');
+        if (!eigene) this.fail('Keine Mau-Blase nach eigenem Ruf');
+        this.notiz('Mau! gerufen');
         return;
       }
       if (h.catch && h.catch.length) {
@@ -270,7 +395,7 @@
         const c = v.hand.find(x => x.id === id);
         if (this.zuege % 3 === 1) await this.wischHoch(id);
         else { await this.tippe(id); if (app.tisch.hand.gewaehlt !== id) this.fail('Antippen hebt die Karte nicht an'); await this.tippe(id); }
-        if (M.Karten.istJoker(c.face)) await this.farbeWaehlen();
+        if (Array.isArray(h.wild) ? h.wild.indexOf(id) >= 0 : M.Karten.istJoker(c.face)) await this.farbeWaehlen();
         await antwort();
         if (this.errs > e0) this.fail('Zug abgelehnt: ' + c.face);
         else this.ereignisse.eigeneKarte = (this.ereignisse.eigeneKarte || 0) + 1;
@@ -294,6 +419,10 @@
       if (!r) { r = document.createElement('pre'); r.id = 'autotest-result'; document.body.appendChild(r); }
       r.dataset.ok = ok ? '1' : '0';
       r.textContent = text;
+      document.title = ok ? 'AUTOTEST-OK' : 'AUTOTEST-FAIL';
+      // Ergebnis auch an den Gastgeber (Testgastgeber wertet es aus; im Spiel landet es nur im Netzprotokoll)
+      if (!this.mock && this.app.verbindung && this.app.verbindung.offen) this.app.sende({ t: 'log', text: 'AUTOTEST ' + text.slice(0, 1500) });
+      if (halter) setTimeout(() => { if (halter) { halter.remove(); halter = null; } }, 300);
       r.style.cssText = 'position:fixed;left:8px;bottom:8px;z-index:9999;max-width:90vw;white-space:pre-wrap;font:12px monospace;background:' + (ok ? '#CFF1D7' : '#FFE1E3') + ';color:#211B2C;padding:6px 8px;border-radius:8px;pointer-events:none;';
       if (window.console) console.log('AUTOTEST ' + text);
     },

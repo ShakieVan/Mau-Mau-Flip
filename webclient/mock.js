@@ -3,7 +3,8 @@
  * gleiche Nachrichten (welcome, lobby, start, state mit events+view, err, pong), Sicht mit hints, sortierte Rückseiten.
  * Nicht regelvollständig (kein Stapeln, keine Platzierungen „bis zum Letzten“). Parameter:
  *   gegner=1..9 (Standard 3), karten=N (eigene Startkarten), seite=dunkel, seed=Zahl, tempo=Faktor,
- *   szene=lobby|tisch|farbwahl|anzweifeln|gezogen|mau|rundenende|getrennt|viele|hilfe|rueckseiten|menue|gegner
+ *   szene=lobby|tisch|farbwahl|anzweifeln|gezogen|mau|rundenende|getrennt|viele|hilfe|rueckseiten|menue|gegner|blasen
+ *   (blasen: alle Varianten der Mau-Sprechblase gleichzeitig, für Kontrollbilder; app.js _szene)
  */
 (function (M) {
   'use strict';
@@ -227,7 +228,7 @@
       this.scores = this.punkte.slice();
       this.phase = 'round_over';
       this.mauOffen = null; this.fordern = null;
-      ev.push({ e: 'round_over', ranking: this.ranking, scores: this.scores });
+      ev.push({ e: 'finish', seat: sieger, place: 1 }, { e: 'round_over', ranking: this.ranking, scores: this.scores });
     }
     sicht(seat) {
       const ich = seat;

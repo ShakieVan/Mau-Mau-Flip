@@ -306,6 +306,7 @@ class Gesture:
 	var dp := DP
 	var play_dist := 180.0             # Weg nach oben, ab dem das Loslassen ausspielt (≈ 25 % Bildschirmhöhe)
 	var help_dist := HELP_DP * DP      # Weg nach unten bis zum „?“ (die Hand kürzt ihn, wenn unten kein Platz ist)
+	var hold_tol := -1.0               # Toleranz der Richtungsentscheidung nach dem Halten (≤ 0 = tol()); am unteren Rand kleiner
 	var up_from_horizontal := true
 	var state := S.IDLE
 	var start := Vector2.ZERO
@@ -326,6 +327,7 @@ class Gesture:
 		return state != S.IDLE
 
 	func press(t_ms: float, p: Vector2) -> String:
+		hold_tol = -1.0
 		state = S.PENDING
 		start = p
 		pos = p
@@ -353,7 +355,8 @@ class Gesture:
 		var d := p - start
 		match state:
 			S.PENDING, S.HOLD:
-				if d.length() < tol():
+				var lim := tol() if state == S.PENDING or hold_tol <= 0.0 else minf(hold_tol, tol())
+				if d.length() < lim:
 					return held
 				var vertical := absf(d.y) > ANGLE_RATIO * absf(d.x)
 				if state == S.PENDING:

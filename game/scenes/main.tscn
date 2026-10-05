@@ -1,44 +1,6 @@
 [gd_scene load_steps=2 format=3]
 
-[sub_resource type="GDScript" id="GDScript_platzhalter"]
-script/source = "extends Control
-# PLATZHALTER von Modul C, bis Modul F die echte Startszene liefert: zeigt Version und Stand der Update-Prüfung.
-
-var info: Label
-
-func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
-	var bg := ColorRect.new()
-	bg.color = Color(0.039, 0.051, 0.125)
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(bg)
-	var title := Label.new()
-	title.text = \"Mau-Mau Flip\"
-	title.add_theme_font_size_override(\"font_size\", 96)
-	title.add_theme_color_override(\"font_color\", Color(1.0, 0.86, 0.45))
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.set_anchors_preset(Control.PRESET_FULL_RECT)
-	title.offset_top = 180
-	add_child(title)
-	info = Label.new()
-	info.add_theme_font_size_override(\"font_size\", 32)
-	info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	info.set_anchors_preset(Control.PRESET_FULL_RECT)
-	info.offset_top = 360
-	add_child(info)
-	var app = get_node_or_null(\"/root/App\")
-	if app != null and app.updater != null:
-		app.updater.changed.connect(_refresh)
-	_refresh()
-
-func _refresh() -> void:
-	var app = get_node_or_null(\"/root/App\")
-	var lines := [\"Version %s – Platzhalter\" % ProjectSettings.get_setting(\"application/config/version\", \"?\")]
-	if app != null:
-		lines.append(\"Update: %s\" % app.updater.status)
-		lines.append(\"Kanal: %s\" % (\"Beta\" if app.updater.beta() else \"Release\"))
-	info.text = String.chr(10).join(lines)
-"
+[ext_resource type="Script" path="res://scripts/ui/screens/screen_nav.gd" id="1_nav"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -47,4 +9,5 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = SubResource("GDScript_platzhalter")
+mouse_filter = 2
+script = ExtResource("1_nav")

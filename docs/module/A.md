@@ -1,6 +1,6 @@
 # Modul A – Regelwerk
 
-Stand 04.10.2026, Nachtschicht. Das Regelwerk ist vollständig umgesetzt und getestet: reine Logik ohne Nodes in `game/scripts/rules/`, deterministisch aus einem Seed. Alle Pflichtprüfungen aus BETA1_PLAN Abschnitt 4 laufen headless und sind grün.
+Stand 05.10.2026, Nachtschicht (Nachbesserung nach der Prüfung, siehe Abschnitt „Nachbesserung“ am Ende). Das Regelwerk ist vollständig umgesetzt und getestet: reine Logik ohne Nodes in `game/scripts/rules/`, deterministisch aus einem Seed. Alle Pflichtprüfungen aus BETA1_PLAN Abschnitt 4 laufen headless und sind grün.
 
 ## Umgesetzt
 
@@ -45,15 +45,16 @@ Grundlage: `docs/recherche/07_regeln_hausregeln.md`, Abschnitte 1.1–1.13 und H
 - **Zu zweit:** Der Richtungswechsel wirkt wie Aussetzen (Option). Aussetzen und Ziehkarten geben dem Leger von selbst den nächsten Zug.
 - **Letzte Karte:**
   - Ist sie eine Ziehkarte, zieht der Nächste trotzdem, auch eine gestapelte Summe.
-  - Ein Flip als letzte Karte wird ausgeführt; gewertet wird die neue Seite (Option).
+  - Ein Flip als letzte Karte wird ausgeführt; gewertet wird die neue Seite (Option). Bei `flip_last_card=ignore` wird er nie ausgeführt, auch nicht, wenn die Runde bei `round_end=last` weiterläuft.
 - **Stapel leer:**
   - Leerer Nachziehstapel: Die Ablage außer der obersten Karte wird gemischt; die Wunschfarbe bleibt.
   - Sind beide Stapel leer, entfällt das Ziehen (Ereignis `pass`), und offene Strafen verfallen.
 - **Stillstand:** Wiederholt sich bei fast leeren Stapeln dieselbe Lage zum dritten Mal, endet die Runde als „blockiert“; vorn liegt, wer die wenigsten Karten hat (siehe Abweichung 5).
 - **Mau!**
-  - Das Fenster öffnet sich, sobald man mit 2 Karten am Zug ist. Es schließt mit der ersten Zughandlung des nächsten Zugs (`play`, `draw`, `challenge`, `accept`), bei „Alle aussetzen“ also mit dem eigenen Zusatzzug.
+  - Das Fenster öffnet sich, sobald man mit 2 Karten am Zug ist und eine Karte legen kann (sonst gibt es weder `can_mau` noch die Erinnerung „Denk an „Mau!““; ein Ruf wird abgelehnt). Es schließt mit der ersten Zughandlung des nächsten handelnden Spielers (`play`, `draw`, `challenge`, `accept`), bei „Alle aussetzen“ also mit dem eigenen Zusatzzug.
+  - Ein Opfer, das automatisch zieht (+1/+5 ohne Stapeln), und ein Übersprungener handeln nicht selbst; das Fenster bleibt dann bis zur Handlung des Übernächsten offen. Das ist Absicht: Sonst könnte niemand erwischen, und es passt zur Schonfrist im Netz.
   - Wer vergisst, kann erwischt werden: Er zieht `mau_penalty` Karten.
-  - Weitere Modi: `auto`, `reminder`, `off`.
+  - Weitere Modi: `auto` (Strafe beim Fensterende), `reminder` (nur Erinnerung; nachträglicher Ruf wie bei `catch` möglich, aber kein Erwischen und keine Strafe), `off`.
   - Ein Ruf verfällt, sobald man Karten bekommt.
 - **`round_end=last`:**
   - Wer fertig ist, scheidet aus; am Ende stehen Platzierungen.
@@ -78,7 +79,7 @@ Grundlage: `docs/recherche/07_regeln_hausregeln.md`, Abschnitte 1.1–1.13 und H
   - Er wählt die Karte, nach der die meisten Restkarten noch passen, und spart Joker auf.
   - Flip: Er wägt die eigenen Rückseiten gegen die sichtbaren Rückseiten der Gegner ab, denn die sind nach dem Flip deren Vorderseiten.
   - Wunschfarbe nach Handmehrheit.
-  - Ruft immer „Mau!“, erwischt sofort und blufft auf Stufe 2 nie.
+  - Ruft „Mau!“ immer, aber nur, wenn er im selben Zug auf 1 Karte kommt (erst wird die Aktion gewählt; ist sie `play`, kommt vorher `mau`). Nachträglich ruft er, wenn er mit 1 Karte und offenem Fenster wieder dran ist (Zusatzzug). Erwischt sofort und blufft auf Stufe 2 nie.
 - **Anzweifeln bei Verdacht:** Der Bot schätzt, wie wahrscheinlich der Leger eine passende Karte hatte. Das wächst mit dessen Kartenzahl, gewichtet mit der angenommenen Bluffneigung `BLUFF_PRIOR`. Angezweifelt wird, wenn die erwarteten Kosten dadurch sinken.
 - **Spielstärke** zu dritt gegen zwei Zufallsbots: gemessen 42 % Siege bei 3 000 Partien. Zufall läge bei 33 %; das Spiel hängt stark vom Glück ab.
 - Liefert `{}`, wenn der Platz nichts zu tun hat. Auch außerhalb des eigenen Zugs kommt `{a:"catch"}` zurück, wenn jemand erwischt werden kann.
@@ -95,7 +96,9 @@ Grundlage: `docs/recherche/07_regeln_hausregeln.md`, Abschnitte 1.1–1.13 und H
 Siehe BETA1_PLAN Abschnitt 4. Hier nur, was der Plan offenlässt.
 
 ```gdscript
-var g := MauGame.create(RuleConfig.preset("offiziell"), [{name="Lena", kind="human"}, {name="Kater", kind="bot"}], seed)
+var g := MauGame.create(RuleConfig.preset("offiziell"), [{name="Lena", kind="human", host=true}, {name="Kater", kind="bot"}], seed)
+# host = true (optional, auch 1 aus JSON): Gastgeber-Platz, sonst Platz 0. g.host_seat(), g.set_host(seat)
+# 2–10 Spieler, sonst push_error und g.is_valid() == false: start_round() liefert [], apply() lehnt ab.
 var ev := g.start_round()                  # Ereignisse UNGEFILTERT → für jeden Empfänger durch events_for()
 var r := g.apply(seat, {a="play", card=17, color="blau"})   # {ok, reason (deutsch), events (ungefiltert)}
 var v := g.view_for(seat)                  # seat -1 = Zuschauer/Sichtschutz
@@ -115,8 +118,9 @@ Alle Aktionen aus dem Plan, dazu:
 | `{a:"draw"}` in der Phase `challenge` | entspricht `accept` |
 | `{a:"draw"}` unter offener Stapelstrafe | Strafe nehmen und aussetzen |
 
-- `next_round` darf nur Platz 0 auslösen, und nur in `round_over`.
-- `mau` und `catch` gehen jederzeit während der Runde, von jedem Platz.
+- `next_round` darf nur der Gastgeber-Platz auslösen (`players[i].host` in `create()`, Standard Platz 0), und nur in `round_over`. Nur er bekommt `hints.can_next_round` und den Hinweis „Weiter mit der nächsten Runde.“.
+- `mau` und `catch` gehen jederzeit während der Runde, von jedem Platz (wenn die Regeln es erlauben, siehe `hints`).
+- **Typprüfung:** `a` und `color` nur als String, `card` und `target` nur als `int` oder ganzzahliger `float` (JSON). Anderes (null, Text, Array, Dictionary, 1.5, bool) lehnt `apply()` mit „Ungültige Aktion.“ bzw. „Unbekannte Aktion.“ ab; der Zustand bleibt unverändert.
 
 ### Phasen
 
@@ -181,11 +185,11 @@ Zusätzlich:
 ## Abweichungen vom Plan (mit Begründung)
 
 1. **Phase `color` und Aktion `{a:"color"}`.** Beim Flip mit Joker oben wählt nach R24 der Flip-Spieler die Farbe; das braucht einen eigenen Schritt. Der Browser-Client (`webclient/mock.js`) nutzt dieselbe Form.
-2. **`flip_last_card`:** zusätzlich der Wert `ignore` (Flip als letzte Karte wird nicht ausgeführt), wie im Optionsbildschirm des Regelberichts vorgeschlagen.
+2. **`flip_last_card`:** zusätzlich der Wert `ignore` (Flip als letzte Karte wird nicht ausgeführt, auch bei `round_end=last`), wie im Optionsbildschirm des Regelberichts vorgeschlagen.
 3. **Wertung `points500` gilt nur bei `round_end=first`** (`RuleConfig.effective_scoring()`).
    - Bei `last` zählen Platzierungen.
    - Bei `scoring=none` zählt `score` die Rundensiege. Es gibt kein `game_over`; die Spielsteuerung startet beliebig viele Runden.
-4. **`mau_call=auto`** straft beim Fensterende, also bei der ersten Handlung des Nächsten, nicht schon beim Legen. So bleibt „Mau!“ auch nach dem Legen möglich (Regelbericht: „vor oder nach dem Legen“), auch beim Weitergeben.
+4. **`mau_call=auto`** straft beim Fensterende, also bei der ersten Handlung des Nächsten, nicht schon beim Legen. So bleibt „Mau!“ auch nach dem Legen möglich (Regelbericht: „vor oder nach dem Legen“), auch beim Weitergeben. Ist der Säumige selbst der Nächste (zu zweit, Alle aussetzen) und legt einen Wünscher +2 oder eine Farbjagd, zählt für Regelgerechtheit und Anzweifeln die Hand vor der Strafe.
 5. **Ende ohne Sieger durch Legen (zusätzliche Regeln, keine Fassung regelt das):**
    - Ziehen bei leeren Stapeln ist nur erlaubt, wenn nichts passt; dann ist es ein Aussetzen. Passen alle aktiven Spieler nacheinander, endet die Runde als „blockiert“. Praktisch nie erreichbar, weil Wünscher immer passen.
    - **Stillstandsregel:** Hat der Nachziehstapel samt Ablage höchstens so viele freie Karten wie Spieler und tritt dieselbe Lage zum dritten Mal ein, endet die Runde ebenfalls als „blockiert“. Die Lage umfasst Hände, Stapel, Platz am Zug, Richtung, Farbe, Seite und offene Strafe. Das ist wie die dreifache Stellungswiederholung im Schach.
@@ -200,8 +204,10 @@ Zusätzlich:
 9. **Platzierung bei `round_end=first`:** Sieger, dann die anderen nach Restpunkten.
 10. **Notfall Startkarte:** Ist im Stapel keine Zahl mehr übrig (nur bei 10 Spielern mit 10 Karten denkbar), bleibt die letzte Karte oben. Ein Joker bekommt dann eine zufällige Farbe aus dem Seed.
 11. **Resthände sind nach Rundenende öffentlich** (`round_over.hands`, `view.result.hands`), für die Wertungsanzeige.
-12. **`view_for(-1)`** enthält die Rückseiten aller Spieler, weil sie am Tisch sichtbar sind. Laut AGENTS.md Nr. 15 darf der Weitergeben-Sichtschutz keine Karten zeigen; das muss die Oberfläche beachten.
+12. **`view_for(-1)`** enthält die Rückseiten aller Spieler, weil sie am Tisch sichtbar sind. Laut AGENTS.md Nr. 15 darf der Weitergeben-Sichtschutz keine Karten zeigen; das muss die Oberfläche beachten: **Der Sichtschutz rendert nichts aus `view_for(-1)`, auch nicht `top` oder `draw_back`** (für Modul G/F).
 13. Der Parameter von `create` heißt `rng_seed` statt `seed`, damit er die globale Funktion `seed()` nicht verdeckt.
+14. **Gastgeber-Platz** im Regelwerk (`players[i].host`, gespeichert als `host` in `to_dict`): Der Plan sagt „nur Platz 0 bzw. Gastgeber“; im Netzspiel legt der Gastgeber die Sitzordnung fest und sitzt nicht unbedingt auf Platz 0.
+15. **Mau-Fenster nach automatischem Ziehen** bleibt offen, bis der nächste Spieler selbst handelt (siehe Regeln, Mau!). Nach Regel 1.9 begänne der Zug des Opfers schon mit dem Ziehen; dann könnte aber niemand erwischen.
 
 ## Tests
 
@@ -210,10 +216,13 @@ Alle headless, über `tools/godot_run.ps1`:
 | Test | Inhalt | Ergebnis |
 |---|---|---|
 | `test_rules_cards.gd` | CardDB: Anzahlen, Kontrollsummen, 108 Gesichter, Schlüssel, Punkte, Sortierung. RuleConfig: Standard, Voreinstellungen, JSON-Rundreise, Grenzen, `describe`. RulesText: alle 108 Gesichter, optionsabhängige Sätze, Übersicht | 655 ok |
-| `test_rules_play.gd` | Jede Karte, Regel und Option in gebauten Situationen, je mit Prüfung der 112 Karten. Abgelehnte Aktionen lassen den Zustand byte-gleich. Dazu der Rundenstart über 200 Seeds | 771 ok |
-| `test_rules_views.gd` | siehe unten | 66 ok |
-| `test_rules_bots.gd` (Standardlauf) | siehe unten | 15 ok |
-| `test_rules_bots_long.gd` | 10 000 Partien, gleiche Prüfungen | 15 ok |
+| `test_rules_play.gd` | Jede Karte, Regel und Option in gebauten Situationen, je mit Prüfung der 112 Karten. Abgelehnte Aktionen lassen den Zustand byte-gleich. Dazu der Rundenstart über 200 Seeds, kaputte Aktionen, Gastgeber-Platz, Spielerzahl | 1 053 ok |
+| `test_rules_views.gd` (Standardlauf) | siehe unten | 66 ok |
+| `test_rules_views_long.gd` | volle Partienzahlen, gleiche Prüfungen | 66 ok |
+| `test_rules_bots.gd` (Standardlauf) | siehe unten | 190 ok |
+| `test_rules_bots_long.gd` | 10 000 Partien, Stärketest 3 000, gleiche Prüfungen | siehe unten |
+
+**Laufzeiten** (in Godot gemessen, ohne Start und ohne Warten auf die Godot-Sperre): cards und play je unter 1 s, views 13 s, bots 10 s, zusammen also etwa 25 s plus viermal Godot-Start. Lange Läufe: views_long 55 s, bots_long siehe unten. Die Wanduhr ist bei parallel arbeitenden Agenten oft viel höher, weil `godot_run.ps1` auf die Sperre wartet.
 
 **`test_rules_play.gd` deckt ab:** Passen, Wünscher, +1/+5/+2, Aussetzen, Richtungswechsel (auch zu zweit, mit und ohne Option), Alle aussetzen, Flip mit allen Sonderfällen, Startkarte, Bluff und Anzweifeln in allen Kombinationen, `enforce` und `free`, Farbjagd (auch mit `jagd_wild_stops` und ohne erreichbare Farbe), Stapeln aller Ziehkarten, letzte Karte, Mischen, leere Stapel, Blockade, Stillstand, Mau in allen Modi samt Fenster, `round_end=last`, Wertung und Partieende, `draw_rule`, `drawn_card`, Hinweistexte und Begründungen.
 
@@ -221,20 +230,21 @@ Alle headless, über `tools/godot_run.ps1`:
 - Sortierte Rückseiten, eigene Rückseiten, Zuschauersicht, genaue Feldliste.
 - JSON-Tauglichkeit von Sichten, Ereignissen und `to_dict`: nur JSON-Typen, Zahlen als int, `stringify` → `parse` gleich.
 - `events_for`.
-- **Lecktest:** 60 Bot-Partien, jede Sicht jedes Platzes (auch −1) nach jedem Schritt: 307 089 Sichten und 308 497 gefilterte Ereignislisten.
+- **Partienzahlen:** Standardlauf / lang (`test_rules_views_long.gd`): JSON-Prüfung 10 / 30, Lecktest 16 / 60, Hinweisprüfung 5 / 16, Rundreise 15 / 40 Partien. Einzeln per Umgebungsvariable (`RULES_JSON_GAMES`, `RULES_LEAK_GAMES`, `RULES_HINT_GAMES`, `RULES_TRIP_GAMES`).
+- **Lecktest:** Bot-Partien, jede Sicht jedes Platzes (auch −1) nach jedem Schritt: im Standardlauf 32 387 Sichten und 32 618 gefilterte Ereignislisten, im langen Lauf 165 156 und 166 257 (vor der Nachbesserung mit anderem Bot-Verhalten 307 089 und 308 497).
   - Die Gesichter in der Sicht stimmen als Multimenge exakt mit dem Erlaubten überein.
   - Seed und Zufallszustand kommen nie vor; Gleiches gilt für alle gefilterten Ereignisse.
 - **Determinismus:** gleicher Seed und gleiche Aktionen ergeben denselben Zustand, unabhängig von der globalen Zufallsquelle. Die Paarung wechselt je Runde.
-- **Rundreise:** `to_dict` → JSON → `from_dict` in 40 Partien mitten im Spiel. Danach spielen beide Fassungen identisch weiter.
-- **Hinweise = Regeln:** In 16 Bot-Partien wird nach jedem Schritt jede Handkarte, Ziehen, Behalten, Anzweifeln, Annehmen, Farbwahl, Mau und jedes Erwischen an einer Zustandskopie ausprobiert. Ergebnis: 89 175 Versuche, `apply()` nimmt genau an, was `hints` erlaubt.
+- **Rundreise:** `to_dict` → JSON → `from_dict` mitten im Spiel. Danach spielen beide Fassungen identisch weiter.
+- **Hinweise = Regeln:** In Bot-Partien wird nach jedem Schritt jede Handkarte, Ziehen, Behalten, Anzweifeln, Annehmen, Farbwahl, Mau und jedes Erwischen an einer Zustandskopie ausprobiert. `apply()` nimmt genau an, was `hints` erlaubt: 28 543 Versuche im Standardlauf, 69 950 im langen Lauf.
 
 **Standardlauf `test_rules_bots.gd`:**
-- Bot-Entscheidungen in gebauten Situationen.
-- Spielstärke: 600 Partien, Schwelle 37 %.
-- 1 000 Bot-Partien mit zufälligen Regeln, 2–10 Spielern und Stufen 0–2. Bei Punktewertung wird bis `game_over` gespielt, sonst teils mehrere Runden.
-- Vergessene Mau-Rufe und Erwischen sind simuliert.
+- Bot-Entscheidungen in gebauten Situationen, dazu die Mau-Entscheidungen aller Stufen.
+- Spielstärke: 600 Partien, Schwelle 37 % (gemessen 241 = 40,2 %).
+- 300 Bot-Partien mit zufälligen Regeln, 2–10 Spielern und Stufen 0–2. Bei Punktewertung wird bis `game_over` gespielt, sonst teils mehrere Runden.
+- Vergessene Mau-Rufe und Erwischen sind simuliert. Blinde Mau-Rufe (Ruf mit 2 Karten, danach kein `play`) werden gezählt und müssen 0 sein (4 372 Rufe, 0 blind).
 - Nach jeder Aktion: 112 Karten, jede id einmal, gültiger Platz am Zug, Farbe passt zur Seite. Zugobergrenze 5 000 je Runde.
-- Dauer etwa 30 s. Anzahl über `-EnvPairs 'RULES_GAMES=200'`.
+- Dauer etwa 10 s. Anzahl über `-EnvPairs 'RULES_GAMES=200'` bzw. `RULES_STRENGTH`.
 
 **Langer Lauf** `test_rules_bots_long.gd`:
 - 10 000 Partien in 275 s, ohne Fehler.
@@ -264,3 +274,26 @@ powershell -NoProfile -Command "& 'E:\Documents\Programmierung\Mau-Mau Flip\tool
   - Reinwerfen, 7-Tausch, „Mau-Mau!“-Ansage, Flip-Start dunkel, R18-Startkarten, „Joker nach Flip: Nächster wählt“.
   - Die Optionen ließen sich in `RuleConfig` und `MauGame` ergänzen, ohne die Schnittstelle zu ändern.
 - **Spielstärke des Bots:** Die Taktik bringt messbar mehr Siege (42 % statt 33 %). Eine stärkere Stufe bräuchte Kartenzählen (welche Farben schon gefallen sind) und Wissen über das Bluffverhalten der Mitspieler. Beides ist für die Beta nicht nötig.
+
+## Nachbesserung (05.10.2026, Teilaufgabe FixA)
+
+Grundlage: Befunde des Prüfers in `docs/module/A_pruefung.json`. Die Schnittstelle bleibt kompatibel: Alles Bisherige gilt weiter, neu sind nur optionale Felder und Funktionen.
+
+| Befund (Schwere) | Behebung |
+|---|---|
+| Keine Typprüfung der Aktionsfelder (mittel) | `MauGame._int_field()`: `card`/`target` nur als `int` oder ganzzahliger, endlicher `float` (JSON), sonst „Ungültige Aktion.“; `a` und `color` nur als String (`_str_field()`). Kein Skriptfehler mehr, kein `ok=true` ohne Wirkung, `card:"abc"` spielt nicht mehr id 0. `catch` prüft zusätzlich die Platzgrenzen. |
+| `next_round` fest an Platz 0 (mittel) | Gastgeber-Platz `host` (Absprache der Phase): `create()` liest je Spieler optional `host: true` (auch `1` aus JSON; erster markierter Platz gewinnt, sonst Platz 0). Nur dieser Platz darf `next_round` und bekommt `hints.can_next_round` samt „Weiter mit der nächsten Runde.“. Gespeichert als `host` in `to_dict()`; alte Stände ohne `host` laden mit Platz 0. Dazu `host_seat()`, `set_host(seat)`, im Fixture `spec.host`. |
+| Blinde Mau-Rufe der Bots, Hinweis „Denk an Mau“ ohne legbare Karte (mittel) | Regelwerk: `can_mau` vor dem Legen nur, wenn eine Karte legbar ist (`_has_playable`); damit auch keine Erinnerung, und `apply` lehnt den Ruf ab („„Mau!“ rufst du, wenn du deine vorletzte Karte legen kannst – gerade passt keine.“). Bot: wählt erst die Aktion und ruft nur vor einem `play` (oder nachträglich mit 1 Karte im eigenen Zusatzzug); nach einem Ruf bleibt er beim Legen (unehrliches Stapeln). Dauerlauf zählt blinde Rufe: 0. |
+| `flip_last_card=ignore` bei `round_end=last` (niedrig) | Der Flip als letzte Karte wird bei `ignore` auch dann nicht ausgeführt, wenn die Runde weiterläuft; Texte stimmen damit. |
+| auto-Strafe vor der Regelgerechtheit (niedrig) | `_act_play` bestimmt `legal` und die Hand fürs Anzweifeln (`snap`) vor `_begin_turn`, also mit der Hand, auf der Hinweis und Entscheidung beruhten. Der Herausforderer sieht die Hand ohne die Strafkarten. |
+| `reminder`: kein Ruf nach dem Legen (niedrig) | `mau_open` wird auch bei `reminder` gesetzt: nachträglicher Ruf wie bei `catch`/`auto`; Erwischen bleibt `catch`, Strafe bleibt `auto` vorbehalten. |
+| Spielerzahl nicht erzwungen (niedrig) | `create()` mit weniger als 2 oder mehr als 10 Spielern: `push_error`, `is_valid() == false`, `start_round()` liefert `[]`, `apply()` lehnt ab („Ungültige Spielerzahl.“). `MauGame.valid_player_count(n)` für Aufrufer. 10 × 10 Handkarten + Startkarte passen (112). |
+| Testlaufzeiten (niedrig) | Standardläufe gekürzt, volle Zahlen in `*_long` (siehe unten). |
+| Widerspruch in der Übersicht bei `may_not` (niedrig) | „Du darfst auch freiwillig ziehen; danach ist dein Zug vorbei.“ |
+| Mau-Fenster nach automatischem Ziehen (niedrig) | Als Absicht dokumentiert (Abweichung 15): Sonst könnte niemand erwischen; passt zur Schonfrist im Netz. Test hält das Verhalten fest. |
+| Abweichungen in BETA1_PLAN übertragen (niedrig, Koordinator) | Nicht in meinen Dateien. Für den Koordinator: Abweichungen 1–15 nach BETA1_PLAN übernehmen und die Stillstandsregel (Abweichung 5) dem Nutzer vorlegen. Hinweis für G/F in Abweichung 12: Der Sichtschutz rendert nichts aus `view_for(-1)`. |
+
+**Neue Tests:**
+- `test_rules_play.gd`: `_broken_actions` (null, Array, Dictionary, Text, 1.5, bool, INF/NaN als `card`/`target`/`a`/`color`; JSON-float wird angenommen), `_host_seat` (Markierung, JSON-Zahl, Speichern, alter Stand, nur Gastgeber startet, Hinweistext, `set_host`, Spielerzahl 1/11 ungültig, 2/10 gültig, 10 × 10 Karten), `_fixes` (kein blinder Ruf, Opfer mit/ohne Stapeln, Flip-ignore bei `last`, auto-Strafe in `bluff`/`enforce`, `reminder`, Fenster nach automatischem Ziehen, Übersicht `may_not`). Ein bestehender Fall nutzte einen blinden Ruf und legt jetzt eine passende Karte bereit.
+- `test_rules_bots.gd`: `_mau_decisions` für alle Stufen, Zählung blinder Rufe im Dauerlauf (muss 0 sein).
+- Die zwei `ERROR: MauGame: 2 bis 10 Spieler nötig …` in der Ausgabe von `test_rules_play.gd` sind beabsichtigt (Prüfung der Spielerzahl).
