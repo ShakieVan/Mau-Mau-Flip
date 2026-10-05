@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Farbsehschwäche-Prüfung</title>
+<style>
+  :root { --bg:#15161c; --karte:#1c1f2b; --linie:#30323e; --text:#e6e7ee; --leise:#9a9db0; --gut:#7fd49a; --knapp:#f2c46b; --schlecht:#ff8a80; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; background:var(--bg); color:var(--text); font:15px/1.45 "Segoe UI", system-ui, sans-serif; }
+  main { width:1600px; padding:28px 24px 40px; }
+  h1 { font-size:30px; margin:0 0 6px; letter-spacing:.01em; }
+  h2 { font-size:22px; margin:0 0 12px; }
+  p { margin:0 0 10px; max-width:1180px; color:#cfd1dc; }
+  .kopf { display:grid; grid-template-columns: 1fr 640px; gap:28px; margin-bottom:26px; align-items:start; }
+  table { border-collapse:collapse; width:100%; font-size:13.5px; background:var(--karte); border-radius:10px; overflow:hidden; }
+  th, td { padding:6px 10px; text-align:left; border-bottom:1px solid var(--linie); vertical-align:top; }
+  th { color:var(--leise); font-weight:600; }
+  td small { color:var(--leise); display:block; font-size:11.5px; }
+  .gut { color:var(--gut); } .knapp { color:var(--knapp); } .schlecht { color:var(--schlecht); font-weight:700; }
+  section { background:var(--karte); border-radius:14px; padding:18px 18px 8px; margin-bottom:22px; }
+  .reihe { display:grid; grid-template-columns: 96px 560px 830px; gap:14px; align-items:center; margin-bottom:10px; }
+  .reihe .name { font-weight:600; font-size:14px; }
+  .reihe .name small { display:block; font-weight:400; color:var(--leise); font-size:12px; }
+  .reihe img { display:block; border-radius:8px; }
+  .hand { width:560px; height:252px; }
+  .streifen { width:830px; height:139px; }
+  .spaltenkopf { display:grid; grid-template-columns: 96px 560px 830px; gap:14px; color:var(--leise); font-size:12.5px; margin-bottom:6px; }
+  .f-protan { filter:url(#protan); } .f-deutan { filter:url(#deutan); } .f-tritan { filter:url(#tritan); } .f-grau { filter:url(#grau); }
+  .befund { font-size:14px; color:#d7d9e3; margin:6px 0 10px; }
+  .befund b { color:#fff; }
+</style>
+</head>
+<body>
+<!-- Machado, Oliveira & Fernandes (2009), Schweregrad 1,0. Matrizen wirken auf lineares RGB, daher color-interpolation-filters="linearRGB". -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="protan" color-interpolation-filters="linearRGB"><feColorMatrix type="matrix" values="0.152286 1.052583 -0.204868 0 0  0.114503 0.786281 0.099216 0 0  -0.003882 -0.048116 1.051998 0 0  0 0 0 1 0"/></filter>
+  <filter id="deutan" color-interpolation-filters="linearRGB"><feColorMatrix type="matrix" values="0.367322 0.860646 -0.227968 0 0  0.280085 0.672501 0.047413 0 0  -0.011820 0.042940 0.968881 0 0  0 0 0 1 0"/></filter>
+  <filter id="tritan" color-interpolation-filters="linearRGB"><feColorMatrix type="matrix" values="1.255528 -0.076749 -0.178779 0 0  -0.078411 0.930809 0.147602 0 0  0.004733 0.691367 0.303900 0 0  0 0 0 1 0"/></filter>
+  <filter id="grau" color-interpolation-filters="linearRGB"><feColorMatrix type="matrix" values="0.2126 0.7152 0.0722 0 0  0.2126 0.7152 0.0722 0 0  0.2126 0.7152 0.0722 0 0  0 0 0 1 0"/></filter>
+</svg>
+<main>
+  <div class="kopf">
+    <div>
+      <h1>Farbsehschwäche-Prüfung der drei Entwürfe</h1>
+      <p>Jede Richtung wird in fünf Zuständen gezeigt: normal, Protanopie (Rot-Blindheit), Deuteranopie (Grün-Blindheit), Tritanopie (Blau-Gelb-Blindheit) und ohne Farbe (nur Helligkeit). Die Simulation nutzt die Matrizen von Machado, Oliveira und Fernandes (2009) mit Schweregrad 1, angewendet als SVG-Farbmatrix im linearen RGB.</p>
+      <p>Links steht die Handansicht der jeweiligen Richtung (<code>hand.png</code>, verkleinert). Rechts steht der Streifentest aus <code>_pruefung/</code>: Er zeigt die 16 geforderten Karten als Fächer, links die helle und rechts die dunkle Seite. Jede Karte ist 80 dp breit, davon bleiben 22 dp sichtbar, und man sieht nur die obere Kartenhälfte. So wäre die Hand im Querformat zu sehen. Alle acht Farben kommen darin vor.</p>
+      <p>Die Tabelle rechts ist meine eigene Nachrechnung. Sie gibt den kleinsten OKLab-Abstand zwischen den vier Farben einer Seite an, nach derselben Simulation. Ziel ist mindestens 0,15. Wichtig ist, welcher Farbton die Farbe auf der Karte wirklich trägt: auf der hellen Seite die Fläche, auf der dunklen Seite meist der helle Leuchtton von Index und Kontur.</p>
+    </div>
+    <table>
+      <tr><th>Farbsatz (wo er die Farbe trägt)</th><th>normal</th><th>Protan</th><th>Deutan</th><th>Tritan</th></tr>
+      <tr><td>Hell, Flächen (A, B, C)<small>Index-Banner B, Fläche A und C</small></td><td class="gut">0,268</td><td class="gut">0,190</td><td class="gut">0,164</td><td class="gut">0,152<small>Grün–Blau</small></td></tr>
+      <tr><td>Dunkel, Flächen (Startpalette)<small>Index-Banner B, Sichel C</small></td><td class="gut">0,193</td><td class="gut">0,160</td><td class="gut">0,184</td><td class="knapp">0,149<small>Pink–Orange</small></td></tr>
+      <tr><td>Dunkel, Neon A<small>#FFB3DC #0B97A3 #FF7F14 #5E3BD8</small></td><td class="gut">0,208</td><td class="gut">0,161</td><td class="gut">0,195</td><td class="gut">0,165</td></tr>
+      <tr><td>Dunkel, Leuchttöne B<small>#FFC6E2 #3FD9E4 #FFA64D #B9A6FF, Konturen</small></td><td class="gut">0,151</td><td class="schlecht">0,005<small>Pink–Türkis</small></td><td class="schlecht">0,071<small>Türkis–Lila</small></td><td class="schlecht">0,123<small>Pink–Orange</small></td></tr>
+      <tr><td>Dunkel, Leuchttöne C<small>#FFC8E3 #4FDDE6 #FFA75A #A891FF, Index-Wert</small></td><td class="gut">0,162</td><td class="schlecht">0,005<small>Pink–Türkis</small></td><td class="schlecht">0,083<small>Pink–Türkis</small></td><td class="schlecht">0,123<small>Pink–Orange</small></td></tr>
+      <tr><td>Lila auf Nachtgrund (WCAG-Kontrast)<small>Fläche #4527A0 ≈ 1,9 : 1</small></td><td colspan="4">A Neon #5E3BD8: <span class="schlecht">2,8 : 1</span> · B Leuchtton #B9A6FF: <span class="gut">8,7 : 1</span> · C Leuchtton #A891FF: <span class="gut">7,4 : 1</span></td></tr>
+    </table>
+  </div>
+
+  <div class="spaltenkopf"><div></div><div>Handansicht der Richtung (hand.png)</div><div>Streifentest 22 dp: helle Seite · dunkle Seite</div></div>
+
+  <section>
+    <h2>A · Papier &amp; Neon</h2>
+    <div class="reihe"><div class="name">Normal</div><img class="hand" src="a-papier-neon/hand.png" alt=""><img class="streifen" src="_pruefung/streifen_a.png" alt=""></div>
+    <div class="reihe"><div class="name">Protanopie<small>Rot-Blindheit</small></div><img class="hand f-protan" src="a-papier-neon/hand.png" alt=""><img class="streifen f-protan" src="_pruefung/streifen_a.png" alt=""></div>
+    <div class="reihe"><div class="name">Deuteranopie<small>Grün-Blindheit</small></div><img class="hand f-deutan" src="a-papier-neon/hand.png" alt=""><img class="streifen f-deutan" src="_pruefung/streifen_a.png" alt=""></div>
+    <div class="reihe"><div class="name">Tritanopie<small>Blau-Gelb-Blindheit</small></div><img class="hand f-tritan" src="a-papier-neon/hand.png" alt=""><img class="streifen f-tritan" src="_pruefung/streifen_a.png" alt=""></div>
+    <div class="reihe"><div class="name">Ohne Farbe<small>nur Helligkeit</small></div><img class="hand f-grau" src="a-papier-neon/hand.png" alt=""><img class="streifen f-grau" src="_pruefung/streifen_a.png" alt=""></div>
+    <p class="befund"><b>Befund A:</b> Der stabilste Entwurf. Auf der hellen Seite trennen Rot und Grün bei Protan und Deutan über die Helligkeit (dunkel gegen mittel), Gelb bleibt hell, Blau dunkel. Auf der dunklen Seite folgen auch die Neontöne der Helligkeitsstaffel, deshalb bleiben Pink, Türkis, Orange und Lila in allen Simulationen getrennt. Schwachpunkt ist das Lila-Neon: Es hat auf dem Nachtgrund nur etwa 2,8 : 1 Kontrast und wirkt matt.</p>
+  </section>
+
+  <section>
+    <h2>B · Art déco / Tarot</h2>
+    <div class="reihe"><div class="name">Normal</div><img class="hand" src="b-art-deco/hand.png" alt=""><img class="streifen" src="_pruefung/streifen_b.png" alt=""></div>
+    <div class="reihe"><div class="name">Protanopie<small>Rot-Blindheit</small></div><img class="hand f-protan" src="b-art-deco/hand.png" alt=""><img class="streifen f-protan" src="_pruefung/streifen_b.png" alt=""></div>
+    <div class="reihe"><div class="name">Deuteranopie<small>Grün-Blindheit</small></div><img class="hand f-deutan" src="b-art-deco/hand.png" alt=""><img class="streifen f-deutan" src="_pruefung/streifen_b.png" alt=""></div>
+    <div class="reihe"><div class="name">Tritanopie<small>Blau-Gelb-Blindheit</small></div><img class="hand f-tritan" src="b-art-deco/hand.png" alt=""><img class="streifen f-tritan" src="_pruefung/streifen_b.png" alt=""></div>
+    <div class="reihe"><div class="name">Ohne Farbe<small>nur Helligkeit</small></div><img class="hand f-grau" src="b-art-deco/hand.png" alt=""><img class="streifen f-grau" src="_pruefung/streifen_b.png" alt=""></div>
+    <p class="befund"><b>Befund B:</b> Gut, solange man auf die Index-Banner schaut: Sie sind in den Flächenfarben gefüllt und tragen damit die geprüfte Staffel. Die Leuchttöne der Nachtseite (Konturen, Neon-Werte) sind alle sehr hell und fallen bei Protanopie fast zusammen (Pink–Türkis 0,005). Die helle Seite ist großflächig elfenbeinfarben mit Pastellstrahlen. Die Kartenfarbe steckt dort fast nur im Banner und im Wert, auf dem Ablagestapel ist sie also weniger auffällig als bei A und C.</p>
+  </section>
+
+  <section>
+    <h2>C · Geometrisch &amp; kräftig</h2>
+    <div class="reihe"><div class="name">Normal</div><img class="hand" src="c-geometrisch/hand.png" alt=""><img class="streifen" src="_pruefung/streifen_c.png" alt=""></div>
+    <div class="reihe"><div class="name">Protanopie<small>Rot-Blindheit</small></div><img class="hand f-protan" src="c-geometrisch/hand.png" alt=""><img class="streifen f-protan" src="_pruefung/streifen_c.png" alt=""></div>
+    <div class="reihe"><div class="name">Deuteranopie<small>Grün-Blindheit</small></div><img class="hand f-deutan" src="c-geometrisch/hand.png" alt=""><img class="streifen f-deutan" src="_pruefung/streifen_c.png" alt=""></div>
+    <div class="reihe"><div class="name">Tritanopie<small>Blau-Gelb-Blindheit</small></div><img class="hand f-tritan" src="c-geometrisch/hand.png" alt=""><img class="streifen f-tritan" src="_pruefung/streifen_c.png" alt=""></div>
+    <div class="reihe"><div class="name">Ohne Farbe<small>nur Helligkeit</small></div><img class="hand f-grau" src="c-geometrisch/hand.png" alt=""><img class="streifen f-grau" src="_pruefung/streifen_c.png" alt=""></div>
+    <p class="befund"><b>Befund C:</b> Die helle Seite ist am stärksten: Volle Farbflächen in der geprüften Staffel lassen sich in jeder Simulation sofort unterscheiden. Auf der dunklen Seite stehen Wert und Symbol im Index aber im hellen Leuchtton. Pink und Türkis sehen bei Protanopie im Index gleich aus, dann trennt nur noch das Formsymbol (Herz bzw. Welle). Die Farbe der Mondsichel unter dem Index hilft, liegt im Fächer aber nur teilweise im sichtbaren Bereich.</p>
+  </section>
+</main>
+</body>
+</html>

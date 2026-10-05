@@ -1,0 +1,248 @@
+{
+ "abtastrate": 48000,
+ "bit": 16,
+ "kanaele": 1,
+ "ziel_lufs_momentan": -18.0,
+ "spitze_max_dbtp": -6.0,
+ "herkunft": "synthetisch, eigenes Skript tools/make_mau_sounds.py",
+ "varianten": {
+  "a_blubb": {
+   "konzept": "A „Blubb-Mau“ (Tag)",
+   "klasse": "stimme",
+   "toene": [
+    "C4",
+    "E4"
+   ],
+   "toene_hz": [
+    261.63,
+    329.63
+   ],
+   "intervall": "große Terz aufwärts",
+   "formanten_soll": {
+    "m": [
+     300,
+     900
+    ],
+    "a": [
+     800,
+     1300
+    ],
+    "o": [
+     560,
+     1050
+    ],
+    "u_ende": [
+     380,
+     850
+    ]
+   },
+   "segmente": {
+    "a": [
+     0.065,
+     0.12
+    ],
+    "o": [
+     0.17,
+     0.215
+    ]
+   },
+   "tiefpass_hz": 5000,
+   "plopp": "Einschwingen 2 Halbtöne von oben, Zeitkonstante 7 ms (innerhalb der Anstiegszeit)",
+   "lufs_momentan_max": -18.0,
+   "echte_spitze_dbtp": -10.46,
+   "laenge_datei_s": 0.33
+  },
+  "a_blubb_nacht": {
+   "konzept": "A „Blubb-Mau“ (Nacht)",
+   "klasse": "stimme",
+   "toene": [
+    "D4",
+    "H3"
+   ],
+   "toene_hz": [
+    293.66,
+    246.94
+   ],
+   "intervall": "kleine Terz abwärts",
+   "formanten_soll": {
+    "m": [
+     290,
+     850
+    ],
+    "a": [
+     860,
+     1150
+    ],
+    "o": [
+     520,
+     980
+    ],
+    "u_ende": [
+     360,
+     800
+    ]
+   },
+   "segmente": {
+    "a": [
+     0.065,
+     0.12
+    ],
+    "o": [
+     0.17,
+     0.215
+    ]
+   },
+   "tiefpass_hz": 4000,
+   "plopp": "Einschwingen 2 Halbtöne von oben, Zeitkonstante 7 ms (innerhalb der Anstiegszeit)",
+   "lufs_momentan_max": -18.0,
+   "echte_spitze_dbtp": -10.87,
+   "laenge_datei_s": 0.35
+  },
+  "b_gesungen": {
+   "konzept": "B „Gesungenes Mau“",
+   "klasse": "stimme",
+   "toene": [
+    "H3",
+    "E4"
+   ],
+   "toene_hz": [
+    246.94,
+    329.63
+   ],
+   "intervall": "Quarte aufwärts",
+   "formanten_soll": {
+    "m": [
+     260,
+     null
+    ],
+    "a": [
+     820,
+     1250
+    ],
+    "o": [
+     560,
+     1050
+    ],
+    "u_ende": [
+     400,
+     880
+    ]
+   },
+   "segmente": {
+    "a": [
+     0.065,
+     0.135
+    ],
+    "o": [
+     0.185,
+     0.235
+    ]
+   },
+   "tiefpass_hz": 5000,
+   "parameter": {
+    "tilt": 1.0,
+    "morph": 1.0,
+    "bw": 1.0,
+    "upper_bw": null
+   },
+   "lufs_momentan_max": -18.0,
+   "echte_spitze_dbtp": -6.91,
+   "laenge_datei_s": 0.35
+  },
+  "c_spieluhr": {
+   "konzept": "C „Spieluhr-Mau“",
+   "klasse": "instrument",
+   "toene": [
+    "C5",
+    "E5"
+   ],
+   "toene_hz": [
+    523.25,
+    659.26
+   ],
+   "intervall": "große Terz aufwärts",
+   "filterweg_hz": [
+    500,
+    1250,
+    1100,
+    500
+   ],
+   "tiefpass_hz": 5000,
+   "lufs_momentan_max": -18.0,
+   "echte_spitze_dbtp": -7.92,
+   "laenge_datei_s": 0.36
+  },
+  "d_kalimba": {
+   "konzept": "D „Kalimba-Pfoten-Mau“",
+   "klasse": "instrument",
+   "toene": [
+    "F4",
+    "C5"
+   ],
+   "toene_hz": [
+    349.23,
+    523.25
+   ],
+   "intervall": "Quinte aufwärts",
+   "filterweg_hz": [
+    450,
+    1800,
+    1800,
+    600
+   ],
+   "tiefpass_hz": 5000,
+   "lufs_momentan_max": -18.0,
+   "echte_spitze_dbtp": -8.06,
+   "laenge_datei_s": 0.34
+  },
+  "e_vorlage_stil": {
+   "konzept": "E „Mau im Stil der Nutzervorlage“ (Menschenstimme, dunkles mao/mou)",
+   "klasse": "stimme",
+   "toene_hz": [
+    287.0,
+    318.45
+   ],
+   "intervall": "sanfter Anstieg +1,8 Halbtöne, kein Bogen",
+   "formanten_soll": {
+    "m": [
+     260,
+     null
+    ],
+    "a": [
+     680,
+     1150
+    ],
+    "o": [
+     450,
+     900
+    ],
+    "u_ende": [
+     400,
+     800
+    ]
+   },
+   "segmente": {
+    "a": [
+     0.062,
+     0.135
+    ],
+    "o": [
+     0.205,
+     0.27
+    ]
+   },
+   "toene": [
+    "287 Hz",
+    "318 Hz"
+   ],
+   "tiefpass_hz": 5000,
+   "vorlage": "nur Merkmale vermessen (Dauer, F0-Verlauf, Formanten); die Aufnahme selbst wird nicht verwendet",
+   "parameter": {
+    "tilt": 1.15
+   },
+   "lufs_momentan_max": -18.0,
+   "echte_spitze_dbtp": -8.18,
+   "laenge_datei_s": 0.36
+  }
+ }
+}

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><title>Mau-Mau Flip – Bogen</title>
+<style>
+/* Schriften lokal aus dem Spiel (SIL Open Font License 1.1), keine Webfonts von außen */
+@font-face{font-family:'Bricolage Grotesque';src:url('../../game/assets/fonts/BricolageGrotesque.ttf') format('truetype');font-weight:200 800;font-stretch:75% 100%;font-style:normal;font-display:block}
+@font-face{font-family:'Fraunces';src:url('../../game/assets/fonts/Fraunces.ttf') format('truetype');font-weight:100 900;font-style:normal;font-display:block}
+@font-face{font-family:'Fraunces';src:url('../../game/assets/fonts/Fraunces-Italic.ttf') format('truetype');font-weight:100 900;font-style:italic;font-display:block}
+html,body{margin:0;padding:0;background:transparent;overflow:hidden}
+.it{position:absolute;overflow:visible}
+.it svg{display:block;width:100%;height:100%}
+.it.karte{clip-path:inset(0 round 21.43px)}
+</style></head>
+<body>
+<script type="text/plain" id="out"></script>
+<script src="mmf.js"></script>
+<script src="logo.js"></script>
+<script src="karten.js"></script>
+<script src="symbole.js"></script>
+<script>
+// Rendert einen Bogen (?blatt=karten|symbole|app|logo|splash) und schreibt die Lage jedes Bildes nach #out.
+// build_cards.sh liest #out per --dump-dom, macht einen Screenshot in genau dieser Größe und schneidet die Bilder mit ffmpeg aus.
+(async () => {
+  const out = document.getElementById('out');
+  try {
+    const blatt = new URLSearchParams(location.search).get('blatt') || 'karten';
+    const fonts = ["800 100px 'Bricolage Grotesque'", "700 100px 'Bricolage Grotesque'", "900 100px 'Fraunces'", "italic 900 100px 'Fraunces'"];
+    await Promise.all(fonts.map(f => document.fonts.load(f, 'Mau0123456789+?')));
+    await document.fonts.ready;
+    const fontState = [...document.fonts].map(f => `${f.family}/${f.style}=${f.status}`).join(',');
+    const fontsOk = fonts.every(f => document.fonts.check(f, 'Mau0123456789'));
+    // Ohne Schriften nichts zeichnen: Dann bleibt auch der Screenshot leer, und build_cards.sh bricht bei der Deckungsprüfung ab
+    if (!fontsOk) throw new Error('Schriften nicht geladen: ' + fontState);
+
+    let items = [], gap = 4, maxW = 3700;
+    if (blatt === 'karten') {
+      items = allKeys().map((k, i) => ({ key: k, w: 300, h: 466, cls: 'karte', svg: faceSVG(k, { prefix: `k${i}-`, width: 300 }).replace('<svg ', '<svg preserveAspectRatio="none" ') }));
+    } else if (blatt === 'symbole') {
+      gap = 8; maxW = 1300;
+      items = UI_ICON_NAMES.map(n => ({ key: 'ui_' + n, w: 96, h: 96, svg: uiIconSVG(n) }))
+        .concat(FARB_NAMES.map(n => ({ key: 'farbe_' + n, w: 96, h: 96, svg: colorSymbolSVG(n) })));
+    } else if (blatt === 'app') {
+      gap = 8; maxW = 3000;
+      items = [
+        { key: 'icon_512', w: 512, h: 512, svg: appIconSVG(512) },
+        { key: 'icon_eckig_512', w: 512, h: 512, svg: appIconSquareSVG(512) },
+        { key: 'adaptive_background', w: 432, h: 432, svg: adaptiveBackgroundSVG() },
+        { key: 'adaptive_foreground', w: 432, h: 432, svg: adaptiveForegroundSVG() },
+        { key: 'adaptive_monochrome', w: 432, h: 432, svg: adaptiveMonochromeSVG() },
+      ];
+    } else if (blatt === 'logo') {
+      items = [{ key: 'logo', w: 1600, h: 900, svg: logoFullSVG() }];
+    } else if (blatt === 'splash') {
+      items = [{ key: 'splash', w: 1600, h: 720, svg: splashSVG() }];
+    } else throw new Error('Unbekannter Bogen ' + blatt);
+
+    // Reihen füllen, ganzzahlige Lagen
+    let x = 0, y = 0, rowH = 0, W = 0;
+    const lines = [];
+    let html = '';
+    for (const it of items) {
+      if (x > 0 && x + it.w > maxW) { x = 0; y += rowH + gap; rowH = 0; }
+      html += `<div class="it ${it.cls || ''}" style="left:${x}px;top:${y}px;width:${it.w}px;height:${it.h}px">${it.svg}</div>`;
+      lines.push(`@@ITEM ${it.key} ${x} ${y} ${it.w} ${it.h}`);
+      W = Math.max(W, x + it.w); rowH = Math.max(rowH, it.h); x += it.w + gap;
+    }
+    const H = y + rowH;
+    document.body.insertAdjacentHTML('beforeend', html);
+    out.textContent = `\n@@FONTS ${fontsOk ? 'ok' : 'FEHLT'} ${fontState}\n@@SIZE ${W} ${H}\n${lines.join('\n')}\n@@ENDE\n`;
+  } catch (e) {
+    out.textContent = '\n@@ERROR ' + e + '\n' + (e.stack || '');
+  }
+})();
+</script>
+</body></html>

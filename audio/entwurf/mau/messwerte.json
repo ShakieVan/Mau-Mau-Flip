@@ -1,0 +1,569 @@
+{
+ "a_blubb": {
+  "datei": "a_blubb.wav",
+  "abtastwerte": 15840,
+  "dauer_ueber_-40db_ms": 293.0,
+  "kern_ueber_-10db_ms": 242.0,
+  "anstieg_-40_bis_-3db_ms": 20.0,
+  "ausklang_-3_bis_-40db_ms": 75.0,
+  "beginn_ueber_-40db_ms": 0.0,
+  "stabile_toene": [
+   {
+    "von_s": 0.02,
+    "bis_s": 0.1275,
+    "f0_median_hz": 262.7,
+    "abweichung_max_cent": 20.0
+   },
+   {
+    "von_s": 0.15,
+    "bis_s": 0.28,
+    "f0_median_hz": 331.0,
+    "abweichung_max_cent": 30.0
+   }
+  ],
+  "tonwechsel_luecke_ms": 22.5,
+  "tonwechsel_luecke_ohne_fenster_ms": 1.2,
+  "intervall_halbtoene": 4.0,
+  "bogen_steigend_fallend_halbtoene": 0.1,
+  "gleiten_max_in_stabilen_toenen_okt_s": 0.41,
+  "f0_min_hz": 261.2,
+  "f0_max_hz": 331.0,
+  "bandenergie": {
+   "ueber_2k_db": -33.9,
+   "ueber_5k_db": -85.9,
+   "ueber_6k_db": -86.2,
+   "ueber_8k_db": -86.7,
+   "ueber_10k_db": -87.3,
+   "ueber_12k_db": -87.9
+  },
+  "spektraler_schwerpunkt_hz": 474.0,
+  "klick_max_anteil_ueber_6k_db": -56.9,
+  "hnr_median_db": 27.7,
+  "hnr_min_db": 5.8,
+  "am_tiefe_15_50hz_prozent": 4.3,
+  "formanten": {
+   "a": {
+    "F1_hz": 601,
+    "F2_hz": null,
+    "f0_hz": 261
+   },
+   "o": {
+    "F1_hz": null,
+    "F2_hz": null,
+    "f0_hz": 331
+   },
+   "F2_max_im_kern_hz": 601
+  },
+  "spitze_dbfs": -10.46,
+  "echte_spitze_dbtp": -10.46,
+  "lufs_momentan_max": -18.0,
+  "ffmpeg_integriert_lufs": -19.8,
+  "ffmpeg_echte_spitze_dbfs": -10.5,
+  "rms_im_kern_dbfs": -15.2,
+  "handy_lautheitsverlust_db": -9.7,
+  "ton2_gegen_ton1_db": -0.6,
+  "ton2_gegen_ton1_handy_db": -4.9,
+  "kodiert": {
+   "ogg": {
+    "bytes": 5897,
+    "dauer_s": 0.327,
+    "bandenergie": {
+     "ueber_6k_db": -96.6,
+     "ueber_10k_db": -99.1,
+     "ueber_12k_db": -102.1
+    },
+    "klick_max_anteil_ueber_6k_db": -61.2,
+    "echte_spitze_dbtp": -10.33
+   },
+   "m4a": {
+    "bytes": 5880,
+    "dauer_s": 0.33,
+    "bandenergie": {
+     "ueber_6k_db": -81.8,
+     "ueber_10k_db": -84.5,
+     "ueber_12k_db": -86.6
+    },
+    "klick_max_anteil_ueber_6k_db": -57.2,
+    "echte_spitze_dbtp": -10.25
+   }
+  },
+  "pruefung": {
+   "L1_dauer": true,
+   "L2_kontur": true,
+   "L3_grundfrequenz": true,
+   "L4_formanten": true,
+   "L5_obere_grenze": true,
+   "L5_obere_grenze_kodiert": true,
+   "L6_tonal_ohne_klick": true,
+   "L7_keine_modulation": true,
+   "L8_huellkurve": true,
+   "L9_spitze": true
+  }
+ },
+ "a_blubb_nacht": {
+  "datei": "a_blubb_nacht.wav",
+  "abtastwerte": 16800,
+  "dauer_ueber_-40db_ms": 308.0,
+  "kern_ueber_-10db_ms": 252.0,
+  "anstieg_-40_bis_-3db_ms": 21.0,
+  "ausklang_-3_bis_-40db_ms": 81.0,
+  "beginn_ueber_-40db_ms": 0.0,
+  "stabile_toene": [
+   {
+    "von_s": 0.0225,
+    "bis_s": 0.1325,
+    "f0_median_hz": 293.1,
+    "abweichung_max_cent": 20.0
+   },
+   {
+    "von_s": 0.155,
+    "bis_s": 0.295,
+    "f0_median_hz": 247.9,
+    "abweichung_max_cent": 20.0
+   }
+  ],
+  "tonwechsel_luecke_ms": 22.5,
+  "tonwechsel_luecke_ohne_fenster_ms": 1.2,
+  "intervall_halbtoene": -2.9,
+  "bogen_steigend_fallend_halbtoene": 0.1,
+  "gleiten_max_in_stabilen_toenen_okt_s": 0.4,
+  "f0_min_hz": 247.9,
+  "f0_max_hz": 298.3,
+  "bandenergie": {
+   "ueber_2k_db": -32.8,
+   "ueber_5k_db": -85.8,
+   "ueber_6k_db": -86.1,
+   "ueber_8k_db": -86.6,
+   "ueber_10k_db": -87.2,
+   "ueber_12k_db": -87.8
+  },
+  "spektraler_schwerpunkt_hz": 457.0,
+  "klick_max_anteil_ueber_6k_db": -54.9,
+  "hnr_median_db": 27.0,
+  "hnr_min_db": 6.8,
+  "am_tiefe_15_50hz_prozent": 3.4,
+  "formanten": {
+   "a": {
+    "F1_hz": 630,
+    "F2_hz": null,
+    "f0_hz": 293
+   },
+   "o": {
+    "F1_hz": null,
+    "F2_hz": null,
+    "f0_hz": 248
+   },
+   "F2_max_im_kern_hz": 630
+  },
+  "spitze_dbfs": -10.88,
+  "echte_spitze_dbtp": -10.87,
+  "lufs_momentan_max": -18.0,
+  "ffmpeg_integriert_lufs": -19.8,
+  "ffmpeg_echte_spitze_dbfs": -10.9,
+  "rms_im_kern_dbfs": -15.4,
+  "handy_lautheitsverlust_db": -9.6,
+  "ton2_gegen_ton1_db": -0.9,
+  "ton2_gegen_ton1_handy_db": -7.3,
+  "kodiert": {
+   "ogg": {
+    "bytes": 5890,
+    "dauer_s": 0.347,
+    "bandenergie": {
+     "ueber_6k_db": -95.6,
+     "ueber_10k_db": -99.3,
+     "ueber_12k_db": -101.6
+    },
+    "klick_max_anteil_ueber_6k_db": -58.0,
+    "echte_spitze_dbtp": -10.73
+   },
+   "m4a": {
+    "bytes": 6186,
+    "dauer_s": 0.35,
+    "bandenergie": {
+     "ueber_6k_db": -83.4,
+     "ueber_10k_db": -85.3,
+     "ueber_12k_db": -86.8
+    },
+    "klick_max_anteil_ueber_6k_db": -56.4,
+    "echte_spitze_dbtp": -10.7
+   }
+  },
+  "pruefung": {
+   "L1_dauer": true,
+   "L2_kontur": true,
+   "L3_grundfrequenz": true,
+   "L4_formanten": true,
+   "L5_obere_grenze": true,
+   "L5_obere_grenze_kodiert": true,
+   "L6_tonal_ohne_klick": true,
+   "L7_keine_modulation": true,
+   "L8_huellkurve": true,
+   "L9_spitze": true
+  }
+ },
+ "b_gesungen": {
+  "datei": "b_gesungen.wav",
+  "abtastwerte": 16800,
+  "dauer_ueber_-40db_ms": 318.0,
+  "kern_ueber_-10db_ms": 264.0,
+  "anstieg_-40_bis_-3db_ms": 23.0,
+  "ausklang_-3_bis_-40db_ms": 75.0,
+  "beginn_ueber_-40db_ms": 0.0,
+  "stabile_toene": [
+   {
+    "von_s": 0.02,
+    "bis_s": 0.14,
+    "f0_median_hz": 246.5,
+    "abweichung_max_cent": 30.0
+   },
+   {
+    "von_s": 0.165,
+    "bis_s": 0.305,
+    "f0_median_hz": 331.0,
+    "abweichung_max_cent": 30.0
+   }
+  ],
+  "tonwechsel_luecke_ms": 25.0,
+  "tonwechsel_luecke_ohne_fenster_ms": 3.7,
+  "intervall_halbtoene": 5.1,
+  "bogen_steigend_fallend_halbtoene": 0.1,
+  "gleiten_max_in_stabilen_toenen_okt_s": 0.53,
+  "f0_min_hz": 246.5,
+  "f0_max_hz": 331.0,
+  "bandenergie": {
+   "ueber_2k_db": -53.9,
+   "ueber_5k_db": -85.4,
+   "ueber_6k_db": -85.7,
+   "ueber_8k_db": -86.2,
+   "ueber_10k_db": -86.8,
+   "ueber_12k_db": -87.5
+  },
+  "spektraler_schwerpunkt_hz": 647.0,
+  "klick_max_anteil_ueber_6k_db": -56.1,
+  "hnr_median_db": 26.5,
+  "hnr_min_db": -3.1,
+  "am_tiefe_15_50hz_prozent": 3.7,
+  "formanten": {
+   "a": {
+    "F1_hz": 774,
+    "F2_hz": 1133,
+    "f0_hz": 247
+   },
+   "o": {
+    "F1_hz": null,
+    "F2_hz": null,
+    "f0_hz": 329
+   },
+   "F2_max_im_kern_hz": 1134
+  },
+  "spitze_dbfs": -6.91,
+  "echte_spitze_dbtp": -6.91,
+  "lufs_momentan_max": -18.0,
+  "ffmpeg_integriert_lufs": -19.8,
+  "ffmpeg_echte_spitze_dbfs": -6.9,
+  "rms_im_kern_dbfs": -15.8,
+  "handy_lautheitsverlust_db": -7.1,
+  "ton2_gegen_ton1_db": -0.9,
+  "ton2_gegen_ton1_handy_db": -3.1,
+  "kodiert": {
+   "ogg": {
+    "bytes": 5674,
+    "dauer_s": 0.347,
+    "bandenergie": {
+     "ueber_6k_db": -95.1,
+     "ueber_10k_db": -98.3,
+     "ueber_12k_db": -100.9
+    },
+    "klick_max_anteil_ueber_6k_db": -59.2,
+    "echte_spitze_dbtp": -6.76
+   },
+   "m4a": {
+    "bytes": 6224,
+    "dauer_s": 0.35,
+    "bandenergie": {
+     "ueber_6k_db": -85.5,
+     "ueber_10k_db": -86.8,
+     "ueber_12k_db": -87.6
+    },
+    "klick_max_anteil_ueber_6k_db": -56.9,
+    "echte_spitze_dbtp": -6.9
+   }
+  },
+  "pruefung": {
+   "L1_dauer": true,
+   "L2_kontur": true,
+   "L3_grundfrequenz": true,
+   "L4_formanten": true,
+   "L5_obere_grenze": true,
+   "L5_obere_grenze_kodiert": true,
+   "L6_tonal_ohne_klick": true,
+   "L7_keine_modulation": true,
+   "L8_huellkurve": true,
+   "L9_spitze": true
+  }
+ },
+ "c_spieluhr": {
+  "datei": "c_spieluhr.wav",
+  "abtastwerte": 17280,
+  "dauer_ueber_-40db_ms": 328.0,
+  "kern_ueber_-10db_ms": 254.0,
+  "anstieg_-40_bis_-3db_ms": 15.0,
+  "ausklang_-3_bis_-40db_ms": 128.0,
+  "beginn_ueber_-40db_ms": 0.0,
+  "stabile_toene": [
+   {
+    "von_s": 0.0075,
+    "bis_s": 0.13,
+    "f0_median_hz": 525.4,
+    "abweichung_max_cent": 30.0
+   },
+   {
+    "von_s": 0.15,
+    "bis_s": 0.25,
+    "f0_median_hz": 658.1,
+    "abweichung_max_cent": 30.0
+   }
+  ],
+  "tonwechsel_luecke_ms": 20.0,
+  "tonwechsel_luecke_ohne_fenster_ms": 0.0,
+  "intervall_halbtoene": 3.9,
+  "bogen_steigend_fallend_halbtoene": 0.1,
+  "gleiten_max_in_stabilen_toenen_okt_s": 0.61,
+  "f0_min_hz": 522.3,
+  "f0_max_hz": 661.9,
+  "bandenergie": {
+   "ueber_2k_db": -63.0,
+   "ueber_5k_db": -85.4,
+   "ueber_6k_db": -85.6,
+   "ueber_8k_db": -86.2,
+   "ueber_10k_db": -86.7,
+   "ueber_12k_db": -87.3
+  },
+  "spektraler_schwerpunkt_hz": 583.0,
+  "klick_max_anteil_ueber_6k_db": -50.2,
+  "hnr_median_db": 32.4,
+  "hnr_min_db": 4.7,
+  "am_tiefe_15_50hz_prozent": 3.7,
+  "spitze_dbfs": -7.93,
+  "echte_spitze_dbtp": -7.92,
+  "lufs_momentan_max": -18.0,
+  "ffmpeg_integriert_lufs": -19.8,
+  "ffmpeg_echte_spitze_dbfs": -7.9,
+  "rms_im_kern_dbfs": -15.5,
+  "handy_lautheitsverlust_db": -9.1,
+  "ton2_gegen_ton1_db": 0.5,
+  "ton2_gegen_ton1_handy_db": 2.7,
+  "kodiert": {
+   "ogg": {
+    "bytes": 5453,
+    "dauer_s": 0.357,
+    "bandenergie": {
+     "ueber_6k_db": -95.4,
+     "ueber_10k_db": -97.9,
+     "ueber_12k_db": -99.9
+    },
+    "klick_max_anteil_ueber_6k_db": -52.6,
+    "echte_spitze_dbtp": -7.78
+   },
+   "m4a": {
+    "bytes": 6519,
+    "dauer_s": 0.36,
+    "bandenergie": {
+     "ueber_6k_db": -82.9,
+     "ueber_10k_db": -85.5,
+     "ueber_12k_db": -86.7
+    },
+    "klick_max_anteil_ueber_6k_db": -51.6,
+    "echte_spitze_dbtp": -7.91
+   }
+  },
+  "pruefung": {
+   "L1_dauer": true,
+   "L2_kontur": true,
+   "L3_grundfrequenz": true,
+   "L5_obere_grenze": true,
+   "L5_obere_grenze_kodiert": true,
+   "L6_tonal_ohne_klick": true,
+   "L7_keine_modulation": true,
+   "L8_huellkurve": true,
+   "L9_spitze": true
+  }
+ },
+ "d_kalimba": {
+  "datei": "d_kalimba.wav",
+  "abtastwerte": 16320,
+  "dauer_ueber_-40db_ms": 301.0,
+  "kern_ueber_-10db_ms": 245.0,
+  "anstieg_-40_bis_-3db_ms": 12.0,
+  "ausklang_-3_bis_-40db_ms": 104.0,
+  "beginn_ueber_-40db_ms": 0.0,
+  "stabile_toene": [
+   {
+    "von_s": 0.01,
+    "bis_s": 0.1175,
+    "f0_median_hz": 350.6,
+    "abweichung_max_cent": 20.0
+   },
+   {
+    "von_s": 0.1525,
+    "bis_s": 0.285,
+    "f0_median_hz": 525.4,
+    "abweichung_max_cent": 10.0
+   }
+  ],
+  "tonwechsel_luecke_ms": 35.0,
+  "tonwechsel_luecke_ohne_fenster_ms": 13.7,
+  "intervall_halbtoene": 7.0,
+  "bogen_steigend_fallend_halbtoene": 0.1,
+  "gleiten_max_in_stabilen_toenen_okt_s": 0.21,
+  "f0_min_hz": 350.6,
+  "f0_max_hz": 525.4,
+  "bandenergie": {
+   "ueber_2k_db": -37.9,
+   "ueber_5k_db": -86.0,
+   "ueber_6k_db": -86.2,
+   "ueber_8k_db": -86.7,
+   "ueber_10k_db": -87.3,
+   "ueber_12k_db": -88.0
+  },
+  "spektraler_schwerpunkt_hz": 432.0,
+  "klick_max_anteil_ueber_6k_db": -54.2,
+  "hnr_median_db": 32.1,
+  "hnr_min_db": 9.9,
+  "am_tiefe_15_50hz_prozent": 5.1,
+  "spitze_dbfs": -8.07,
+  "echte_spitze_dbtp": -8.06,
+  "lufs_momentan_max": -18.0,
+  "ffmpeg_integriert_lufs": -19.8,
+  "ffmpeg_echte_spitze_dbfs": -8.1,
+  "rms_im_kern_dbfs": -15.2,
+  "handy_lautheitsverlust_db": -12.4,
+  "ton2_gegen_ton1_db": -0.9,
+  "ton2_gegen_ton1_handy_db": 3.7,
+  "kodiert": {
+   "ogg": {
+    "bytes": 5336,
+    "dauer_s": 0.337,
+    "bandenergie": {
+     "ueber_6k_db": -96.6,
+     "ueber_10k_db": -99.8,
+     "ueber_12k_db": -102.2
+    },
+    "klick_max_anteil_ueber_6k_db": -58.2,
+    "echte_spitze_dbtp": -8.02
+   },
+   "m4a": {
+    "bytes": 6168,
+    "dauer_s": 0.34,
+    "bandenergie": {
+     "ueber_6k_db": -78.2,
+     "ueber_10k_db": -83.9,
+     "ueber_12k_db": -86.0
+    },
+    "klick_max_anteil_ueber_6k_db": -55.6,
+    "echte_spitze_dbtp": -8.0
+   }
+  },
+  "pruefung": {
+   "L1_dauer": true,
+   "L2_kontur": true,
+   "L3_grundfrequenz": true,
+   "L5_obere_grenze": true,
+   "L5_obere_grenze_kodiert": true,
+   "L6_tonal_ohne_klick": true,
+   "L7_keine_modulation": true,
+   "L8_huellkurve": true,
+   "L9_spitze": true
+  }
+ },
+ "e_vorlage_stil": {
+  "datei": "e_vorlage_stil.wav",
+  "abtastwerte": 17280,
+  "dauer_ueber_-40db_ms": 314.0,
+  "kern_ueber_-10db_ms": 263.0,
+  "anstieg_-40_bis_-3db_ms": 26.0,
+  "ausklang_-3_bis_-40db_ms": 66.0,
+  "beginn_ueber_-40db_ms": 0.0,
+  "stabile_toene": [
+   {
+    "von_s": 0.13,
+    "bis_s": 0.3025,
+    "f0_median_hz": 316.0,
+    "abweichung_max_cent": 20.0
+   }
+  ],
+  "bogen_steigend_fallend_halbtoene": 0.2,
+  "gleiten_max_in_stabilen_toenen_okt_s": 0.81,
+  "f0_min_hz": 288.1,
+  "f0_max_hz": 319.7,
+  "bandenergie": {
+   "ueber_2k_db": -59.3,
+   "ueber_5k_db": -85.7,
+   "ueber_6k_db": -86.0,
+   "ueber_8k_db": -86.5,
+   "ueber_10k_db": -87.1,
+   "ueber_12k_db": -87.7
+  },
+  "spektraler_schwerpunkt_hz": 492.0,
+  "klick_max_anteil_ueber_6k_db": -49.9,
+  "hnr_median_db": 24.9,
+  "hnr_min_db": 13.1,
+  "am_tiefe_15_50hz_prozent": 1.7,
+  "formanten": {
+   "a": {
+    "F1_hz": 557,
+    "F2_hz": null,
+    "f0_hz": 301
+   },
+   "o": {
+    "F1_hz": null,
+    "F2_hz": null,
+    "f0_hz": 316
+   },
+   "F2_max_im_kern_hz": 564
+  },
+  "spitze_dbfs": -8.19,
+  "echte_spitze_dbtp": -8.18,
+  "lufs_momentan_max": -18.0,
+  "ffmpeg_integriert_lufs": -19.8,
+  "ffmpeg_echte_spitze_dbfs": -8.2,
+  "rms_im_kern_dbfs": -15.6,
+  "handy_lautheitsverlust_db": -10.1,
+  "kodiert": {
+   "ogg": {
+    "bytes": 5534,
+    "dauer_s": 0.357,
+    "bandenergie": {
+     "ueber_6k_db": -96.2,
+     "ueber_10k_db": -99.3,
+     "ueber_12k_db": -102.2
+    },
+    "klick_max_anteil_ueber_6k_db": -52.8,
+    "echte_spitze_dbtp": -8.1
+   },
+   "m4a": {
+    "bytes": 6212,
+    "dauer_s": 0.36,
+    "bandenergie": {
+     "ueber_6k_db": -87.1,
+     "ueber_10k_db": -88.5,
+     "ueber_12k_db": -89.3
+    },
+    "klick_max_anteil_ueber_6k_db": -50.5,
+    "echte_spitze_dbtp": -8.07
+   }
+  },
+  "pruefung": {
+   "L1_dauer": true,
+   "L2_kontur": true,
+   "L3_grundfrequenz": true,
+   "L4_formanten": true,
+   "L5_obere_grenze": true,
+   "L5_obere_grenze_kodiert": true,
+   "L6_tonal_ohne_klick": true,
+   "L7_keine_modulation": true,
+   "L8_huellkurve": true,
+   "L9_spitze": true
+  }
+ }
+}

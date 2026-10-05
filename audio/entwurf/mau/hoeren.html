@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mau-Ton Entwürfe</title>
+<style>
+  :root {
+    --paper: #f6efe2; --ink: #2b2420; --muted: #6d6158; --card: #fffaf1; --line: #e2d6c3;
+    --neon: #ff4fa3; --neon2: #20c7c7; --ok: #2f8a4c; --warn: #b5651d;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --paper: #17141f; --ink: #f1eadf; --muted: #b3a89c; --card: #221d2c; --line: #3a3247; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink);
+         font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 1.7rem; margin: 0 0 4px; }
+  h1 span { color: var(--neon); }
+  .lead { color: var(--muted); margin: 0 0 16px; }
+  .hint { border-left: 4px solid var(--neon2); background: var(--card); padding: 10px 14px; border-radius: 6px;
+          margin: 0 0 20px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px;
+          margin: 0 0 16px; }
+  .card h2 { font-size: 1.15rem; margin: 0 0 2px; }
+  .tag { display: inline-block; font-size: .78rem; padding: 1px 8px; border-radius: 99px; margin-right: 6px;
+         border: 1px solid var(--line); color: var(--muted); }
+  .tag.ok { color: var(--ok); border-color: var(--ok); }
+  audio { width: 100%; margin: 10px 0 6px; }
+  .facts { font-size: .9rem; color: var(--muted); margin: 4px 0 8px; }
+  .model { font-size: .92rem; border-top: 1px dashed var(--line); padding-top: 8px; margin-top: 8px; }
+  .model b { color: var(--neon); }
+  details { margin-top: 6px; font-size: .9rem; }
+  details img { width: 100%; height: auto; border-radius: 8px; margin-top: 8px; background: #fff; }
+  a { color: inherit; }
+  footer { color: var(--muted); font-size: .85rem; margin-top: 28px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>„Mau!“-Ton <span>Entwürfe</span></h1>
+  <p class="lead">Fünf synthetische Varianten für den „Mau!“-Knopf von Mau-Mau Flip. Kurz, süß und so gebaut, dass echte
+    Katzen möglichst nicht reagieren. Alle Varianten sind gleich laut (−18 LUFS, Spitze unter −6 dBTP).</p>
+  <div class="hint"><b>Hörtipp:</b> zuerst mit Kopfhörer oder Handy-Lautsprecher in normaler Lautstärke hören. Bitte
+    noch nicht gezielt einer Katze vorspielen; dafür gibt es einen eigenen, schonenden Testablauf (README, Abschnitt
+    „Offene Punkte“). Bewertet je Variante: Wie süß? Klingt es nach „Mau“? Klingt es nach echter Katze?</div>
+
+  <section class="card" id="a_blubb">
+    <h2>A · Blubb-Mau (Tag)</h2>
+    <span class="tag">Synth</span><span class="tag">C4 → E4, große Terz aufwärts</span><span class="tag ok">Leitplanken eingehalten</span>
+    <audio controls preload="metadata">
+      <source src="a_blubb.m4a" type="audio/mp4">
+      <source src="a_blubb.ogg" type="audio/ogg">
+    </audio>
+    <p class="facts">Weicher Synth aus Sinus und Dreieck; zwei Formantfilter wandern m → a → o, das u schließt sich im
+      Ausklang. Kleiner „Plopp“ am Anfang. 293 ms · 263 → 331 Hz · Schwerpunkt 474 Hz</p>
+    <p class="model"><b>Modell hört:</b> einen klaren Synthesizer- oder Orgelton, „wie ein einfacher Hinweiston“; Quelle: „Benachrichtigung eines Computers oder Handys“. Kein Tierruf.</p>
+    <details><summary>Spektrogramm</summary><img src="spektrogramme/a_blubb.png" alt="Spektrogramm A Tag" loading="lazy"></details>
+  </section>
+
+  <section class="card" id="a_blubb_nacht">
+    <h2>A · Blubb-Mau (Nacht)</h2>
+    <span class="tag">Synth</span><span class="tag">D4 → H3, kleine Terz abwärts</span><span class="tag ok">Leitplanken eingehalten</span>
+    <audio controls preload="metadata">
+      <source src="a_blubb_nacht.m4a" type="audio/mp4">
+      <source src="a_blubb_nacht.ogg" type="audio/ogg">
+    </audio>
+    <p class="facts">Dieselbe Idee für die dunkle Kartenseite: tiefer, fallend, dunklere Formanten, Tiefpass 4 kHz.
+      308 ms · 293 → 248 Hz · Schwerpunkt 457 Hz</p>
+    <p class="model"><b>Modell hört:</b> einen tiefen, hohlen Rechteckton, „wie das Game Over alter NES-Spiele“; Quelle: „Synthesizer oder Computer“. Kein Tierruf.</p>
+    <details><summary>Spektrogramm</summary><img src="spektrogramme/a_blubb_nacht.png" alt="Spektrogramm A Nacht" loading="lazy"></details>
+  </section>
+
+  <section class="card" id="b_gesungen">
+    <h2>B · Gesungenes Mau</h2>
+    <span class="tag">Sprachchip-Stimme</span><span class="tag">H3 → E4, Quarte aufwärts</span><span class="tag ok">Leitplanken eingehalten</span>
+    <audio controls preload="metadata">
+      <source src="b_gesungen.m4a" type="audio/mp4">
+      <source src="b_gesungen.ogg" type="audio/ogg">
+    </audio>
+    <p class="facts">Stilisierte Stimme in Menschengröße, hell wie ein Spielzeug-Sprachchip, ohne Atem und Vibrato:
+      gesummtes m, „a“ auf dem ersten Ton, „o“ → „u“ auf dem zweiten. 318 ms · 247 → 331 Hz · Schwerpunkt 647 Hz</p>
+    <p class="model"><b>Modell hört:</b> eine Kinderstimme, die „Mao“ sagt; Quelle: „Partytröte oder Scherzspielzeug“. Kein Tierruf. (Die erste, weichere Fassung hörte es noch als Katzen-Miau; sie wurde ersetzt.)</p>
+    <details><summary>Spektrogramm</summary><img src="spektrogramme/b_gesungen.png" alt="Spektrogramm B" loading="lazy"></details>
+  </section>
+
+  <section class="card" id="c_spieluhr">
+    <h2>C · Spieluhr-Mau</h2>
+    <span class="tag">Celesta</span><span class="tag">C5 → E5, große Terz aufwärts</span><span class="tag ok">Leitplanken eingehalten</span>
+    <audio controls preload="metadata">
+      <source src="c_spieluhr.m4a" type="audio/mp4">
+      <source src="c_spieluhr.ogg" type="audio/ogg">
+    </audio>
+    <p class="facts">Zwei weich angeschlagene Celesta-Töne; ein Tiefpass öffnet und schließt sich und deutet „ma-u“ an.
+      328 ms · 525 → 658 Hz · Schwerpunkt 583 Hz</p>
+    <p class="model"><b>Modell hört:</b> einen hellen Glockenton wie Glockenspiel oder Celesta, „wie der Tada-Ton von Windows XP“; Quelle: „Benachrichtigung“. Kein Tierruf.</p>
+    <details><summary>Spektrogramm</summary><img src="spektrogramme/c_spieluhr.png" alt="Spektrogramm C" loading="lazy"></details>
+  </section>
+
+  <section class="card" id="d_kalimba">
+    <h2>D · Kalimba-Pfoten-Mau</h2>
+    <span class="tag">Zupftöne</span><span class="tag">F4 → C5, Quinte aufwärts</span><span class="tag ok">Leitplanken eingehalten</span>
+    <audio controls preload="metadata">
+      <source src="d_kalimba.m4a" type="audio/mp4">
+      <source src="d_kalimba.ogg" type="audio/ogg">
+    </audio>
+    <p class="facts">Zwei warme, holzige Zupftöne wie Pfotentapser; der Tiefpass öffnet beim ersten Ton („ma“) und
+      schließt beim zweiten („u“). 301 ms · 351 → 525 Hz · Schwerpunkt 432 Hz</p>
+    <p class="model"><b>Modell hört:</b> eine synthetische Note, „wie ein Power-up in alten Videospielen“; Quelle: „Benachrichtigung“. Kein Tierruf.</p>
+    <details><summary>Spektrogramm</summary><img src="spektrogramme/d_kalimba.png" alt="Spektrogramm D" loading="lazy"></details>
+  </section>
+  <section class="card" id="e_vorlage_stil">
+    <h2>E · Mau im Stil deiner Vorlage</h2>
+    <span class="tag">Stimme</span><span class="tag">287 → 318 Hz, sanfter Anstieg</span><span class="tag ok">Leitplanken eingehalten</span>
+    <audio controls preload="metadata">
+      <source src="e_vorlage_stil.m4a" type="audio/mp4">
+      <source src="e_vorlage_stil.ogg" type="audio/ogg">
+    </audio>
+    <p class="facts">Nach den Merkmalen deiner Vorlage gebaut (nur vermessen, nicht verwendet): Menschenstimme in Menschenlage,
+      ein einziger Ton mit kleinem Anstieg, dunkler Vokal m → a → o → u („mao/mou“). Auf 314 ms gekürzt (Vorlage 440 ms),
+      Tiefpass 5 kHz. 314 ms · F0 ≈ 316 Hz · Schwerpunkt 492 Hz</p>
+    <p class="model"><b>Modell hört:</b> noch nicht befragt.</p>
+    <details><summary>Spektrogramm</summary><img src="spektrogramme/e_vorlage_stil.png" alt="Spektrogramm E" loading="lazy"></details>
+  </section>
+
+  <footer>Herkunft: synthetisch, eigenes Skript <code>tools/make_mau_sounds.py</code> (keine Aufnahmen, keine fremden
+    Samples, keine KI-Generatoren). Messwerte: <code>messwerte.json</code>, Modelltexte: <code>beschreibungen.json</code>,
+    Einzelheiten: <code>README.md</code>. Das Modell (lokaler Qwen3-Omni-Captioner) erkennt einen absichtlich katzenartigen
+    Kontrollton als Katze; über Süße kann es nichts sagen.
+    Die Seite funktioniert offline; der Browser wählt selbst zwischen .m4a (AAC, auch Safari) und .ogg (Vorbis).</footer>
+</main>
+<script>
+  // Nur ein Player gleichzeitig (wie im Spiel: ein Ton je Ansage)
+  for (const a of document.querySelectorAll("audio")) {
+    a.addEventListener("play", () => {
+      for (const b of document.querySelectorAll("audio")) if (b !== a) b.pause();
+    });
+  }
+</script>
+</body>
+</html>

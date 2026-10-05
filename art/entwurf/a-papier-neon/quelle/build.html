@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><title>Mau-Mau Flip – Build</title></head>
+<body>
+<script type="text/plain" id="out"></script>
+<script src="mmf.js"></script>
+<script src="katze.js"></script>
+<script src="logo.js"></script>
+<script src="seite.js"></script>
+<script>
+  // Schreibt alle Dateien mit Markierungen in #out; build.sh zerlegt die Ausgabe.
+  try {
+    const files = buildAll();
+    let out = '\n';
+    for (const [p, c] of Object.entries(files)) out += '@@' + 'FILE ' + p + '\n' + c + '\n@@' + 'END\n';
+    document.getElementById('out').textContent = out;
+  } catch (e) {
+    document.getElementById('out').textContent = '\n@@' + 'ERROR ' + e + '\n' + (e.stack || '');
+  }
+</script>
+</body></html>

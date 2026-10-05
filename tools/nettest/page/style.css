@@ -1,0 +1,3 @@
+/* Netztest (Modul D): Die Variable --netztest prüft, dass die Stildatei ankommt (?v=1: ein Jahr Cache). */
+body { --netztest: ok; background: #0a0d20; color: #f4eada; font-family: sans-serif; padding: 16px; }
+pre { white-space: pre-wrap; word-break: break-all; }

@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Entwurfsvergleich Mau-Mau Flip</title>
+<style>
+  :root { --bg:#15161c; --flaeche:#1c1f2b; --linie:#2f3242; --text:#e8e9f0; --leise:#9a9db0; --a:#ff9ecf; --b:#e9c46a; --c:#7fb2ff; --gut:#7fd49a; --mittel:#f2c46b; --schwach:#ff8a80; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; background:var(--bg); color:var(--text); font:15px/1.45 "Segoe UI", system-ui, sans-serif; }
+  main { width:1600px; padding:30px 24px 44px; }
+  a { color:#a9c8ff; }
+  h1 { font-size:32px; margin:0 0 6px; }
+  h2 { font-size:20px; margin:0 0 4px; }
+  .unter { color:var(--leise); margin:0 0 14px; font-size:14px; }
+  p { margin:0 0 8px; }
+  .intro { color:#cfd1dc; max-width:1250px; margin-bottom:22px; }
+  section { margin-top:30px; }
+  .drei { display:grid; grid-template-columns: repeat(3, 1fr); gap:20px; }
+  .drei > div { background:var(--flaeche); border-radius:12px; padding:12px; }
+  .drei img { display:block; width:100%; border-radius:8px; }
+  .lab { font-weight:700; font-size:13.5px; margin:0 0 8px 2px; }
+  .lab.a { color:var(--a); } .lab.b { color:var(--b); } .lab.c { color:var(--c); }
+  .kopf { display:grid; grid-template-columns: repeat(3, 1fr); gap:20px; margin-top:26px; }
+  .kopf div { border-top:4px solid; padding:10px 4px 0; }
+  .kopf .ka { border-color:var(--a); } .kopf .kb { border-color:var(--b); } .kopf .kc { border-color:var(--c); }
+  .kopf b { font-size:19px; display:block; }
+  .kopf span { color:var(--leise); font-size:13.5px; }
+  table.noten { border-collapse:collapse; width:100%; background:var(--flaeche); border-radius:12px; overflow:hidden; font-size:14px; }
+  .noten th, .noten td { padding:7px 12px; border-bottom:1px solid var(--linie); text-align:left; vertical-align:top; }
+  .noten th { color:var(--leise); font-weight:600; }
+  .noten td.n { text-align:center; font-weight:700; font-size:16px; width:70px; }
+  .noten td.k { color:#c9cbd6; font-size:13px; }
+  .n1 { color:var(--gut); } .n2 { color:#b8dc8e; } .n3 { color:var(--mittel); } .n4 { color:#ffab76; } .n5 { color:var(--schwach); }
+  .noten tr.summe td { font-weight:700; background:#232736; }
+  .streifenreihe { display:grid; grid-template-columns: 150px 1024px 1fr; gap:16px; align-items:center; background:var(--flaeche); border-radius:12px; padding:10px 14px; margin-bottom:10px; }
+  .streifenreihe img { display:block; width:1024px; height:172px; border-radius:6px; }
+  .streifenreihe .t { font-weight:700; }
+  .streifenreihe .bem { color:#c9cbd6; font-size:13px; }
+  .icons { display:flex; align-items:flex-end; gap:22px; background:#3a3d4a; border-radius:10px; padding:18px; }
+  .icons figure { margin:0; text-align:center; color:#d0d2dc; font-size:12px; }
+  .icons img { display:block; margin:0 auto 6px; }
+  .bem2 { color:#c9cbd6; font-size:13px; margin-top:8px; }
+  .sim { display:grid; grid-template-columns: 120px repeat(3, 1fr); gap:10px 20px; align-items:center; background:var(--flaeche); border-radius:12px; padding:14px; }
+  .sim .h { color:var(--leise); font-weight:600; font-size:13px; }
+  .sim img { display:block; width:100%; border-radius:6px; }
+  .sim .name { font-weight:600; font-size:13.5px; }
+  .sim .name small { display:block; color:var(--leise); font-weight:400; }
+  .f-protan { filter:url(#protan); } .f-deutan { filter:url(#deutan); } .f-tritan { filter:url(#tritan); } .f-grau { filter:url(#grau); }
+  .empf { background:var(--flaeche); border-radius:12px; padding:16px 20px; color:#d7d9e3; }
+  .empf ul { margin:6px 0 4px 18px; padding:0; }
+  .empf li { margin-bottom:4px; }
+</style>
+</head>
+<body>
+<!-- Machado, Oliveira & Fernandes (2009), Schweregrad 1,0, im linearen RGB -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="protan" color-interpolation-filters="linearRGB"><feColorMatrix type="matrix" values="0.152286 1.052583 -0.204868 0 0  0.114503 0.786281 0.099216 0 0  -0.003882 -0.048116 1.051998 0 0  0 0 0 1 0"/></filter>
+  <filter id="deutan" color-interpolation-filters="linearRGB"><feColorMatrix type="matrix" values="0.367322 0.860646 -0.227968 0 0  0.280085 0.672501 0.047413 0 0  -0.011820 0.042940 0.968881 0 0  0 0 0 1 0"/></filter>
+  <filter id="tritan" color-interpolation-filters="linearRGB"><feColorMatrix type="matrix" values="1.255528 -0.076749 -0.178779 0 0  -0.078411 0.930809 0.147602 0 0  0.004733 0.691367 0.303900 0 0  0 0 0 1 0"/></filter>
+  <filter id="grau" color-interpolation-filters="linearRGB"><feColorMatrix type="matrix" values="0.2126 0.7152 0.0722 0 0  0.2126 0.7152 0.0722 0 0  0.2126 0.7152 0.0722 0 0  0 0 0 1 0"/></filter>
+</svg>
+<main>
+  <h1>Mau-Mau Flip · drei Entwurfsrichtungen im Vergleich</h1>
+  <p class="intro">Stand 04.10.2026. Die drei Entwürfe sind unverändert. Kartenbogen und Streifentest habe ich als Prüfer aus den Karten-SVGs der Richtungen gerendert, jeweils mit den Schriften der Richtung (<code>_pruefung/</code>, neu erzeugen mit <code>_pruefung/pruefbilder.sh</code>). Begründungen und Verbesserungen stehen in <a href="VERGLEICH.md">VERGLEICH.md</a>, die ausführliche Farbsehschwäche-Ansicht in <a href="farbsehschwaeche.html">farbsehschwaeche.html</a>. Die Wahl trifft der Nutzer.</p>
+
+  <table class="noten">
+    <tr><th>Kriterium (Note 1 = sehr gut … 5 = mangelhaft)</th><th style="text-align:center">A</th><th style="text-align:center">B</th><th style="text-align:center">C</th><th>Kurz begründet</th></tr>
+    <tr><td>Eckindex im Fächer (22 dp, obere Hälfte)</td><td class="n n1">1</td><td class="n n2">2</td><td class="n n1">1</td><td class="k">A und C groß und eindeutig. Bei B ist die Schrift kleiner, das „+“ winzig, und die Joker-Banner wirken unruhig.</td></tr>
+    <tr><td>Farbsehschwäche (Protan, Deutan, Tritan)</td><td class="n n1">1</td><td class="n n2">2</td><td class="n n3">3</td><td class="k">A: Auch die Neontöne folgen der Helligkeitsstaffel. B: Die Banner tragen die Staffel. C: Der Index der dunklen Seite nutzt fast gleich helle Töne, Pink und Türkis fallen bei Protan zusammen.</td></tr>
+    <tr><td>Abstand zum Vorbild</td><td class="n n1">1</td><td class="n n1">1</td><td class="n n2">2</td><td class="k">Alle drei ohne Oval, Schräge, Schlagschatten und fremden Namen. C wirkt im Ganzen am vertrautesten (volle Farbfläche mit weißer Ziffer), der helle Joker mit vier Farbvierteln liegt am nächsten.</td></tr>
+    <tr><td>Katze und Logo: erwachsen, aber süß</td><td class="n n3">3</td><td class="n n2">2</td><td class="n n3">3</td><td class="k">A sauber, aber Comic mit großem Kopf. B erwachsen und schaut wirklich nach oben, der Arm wirkt aber wie eine Röhre. C ist eine klare Marke, die Katze aber plump, mit Schulterbeule und kaum Blick nach oben.</td></tr>
+    <tr><td>App-Symbol bei 48 px</td><td class="n n2">2</td><td class="n n4">4</td><td class="n n2">2</td><td class="k">A und C bleiben als Katzengesicht vor Tag und Nacht erkennbar. B ist dunkel, der eingebaute Goldrahmen kostet Fläche und kollidiert mit Androids Symbolmasken.</td></tr>
+    <tr><td>Animation (Ebenen) und Godot-Import</td><td class="n n3">3</td><td class="n n3">3</td><td class="n n1">1</td><td class="k">Alle haben die sechs Ebenen, alle setzen die Werte als Text. A braucht viel Korn, Glühen und Mischmodi, B viele feine Goldlinien und Glühen. C ist flach und am leichtesten nachzubauen.</td></tr>
+    <tr><td>Kartenfarbe auf einen Blick</td><td class="n n1">1</td><td class="n n3">3</td><td class="n n1">1</td><td class="k">Bei B ist die helle Seite überwiegend elfenbeinfarben mit Pastell. Die Farbe steckt im Banner und im Wert, auf dem Ablagestapel ist sie schwächer.</td></tr>
+    <tr><td>Kartenwirkung hochwertig und erwachsen</td><td class="n n2">2</td><td class="n n1">1</td><td class="n n3">3</td><td class="k">B als Art-déco-Tarot am edelsten und am nächsten an der Referenz. A eigenständiger Siebdruck mit Neon. C ist sauber, wirkt aber wie ein übliches Familienkartenspiel.</td></tr>
+    <tr class="summe"><td>Durchschnitt (ungewichtet)</td><td class="n">1,8</td><td class="n">2,3</td><td class="n">2,0</td><td class="k">Empfehlung: Karten auf Basis von A, Logo-Katze nach B, App-Symbol nach dem Aufbau von A und C (siehe unten).</td></tr>
+  </table>
+
+  <div class="kopf">
+    <div class="ka"><b>A · Papier &amp; Neon</b><span>Siebdruck auf Papier mit Papierlasche für den Index. Nachts dieselbe Landschaft in Neon. Katzenmotive für die Aktionen.</span></div>
+    <div class="kb"><b>B · Art déco / Tarot</b><span>Elfenbein und Gold mit Bogenfenster, Index als hängendes Banner. Nachts Mitternachtsblau mit Neon und Mondphasen.</span></div>
+    <div class="kc"><b>C · Geometrisch &amp; kräftig</b><span>Bauhaus-Formen, volle Farbflächen und große Ziffern in Jost. Nachts Mondsichel und Leuchtrahmen.</span></div>
+  </div>
+
+  <section>
+    <h2>Logo</h2>
+    <p class="unter">logo.png der Richtungen, 1600 × 900</p>
+    <div class="drei">
+      <div><div class="lab a">A · Papier &amp; Neon</div><img src="a-papier-neon/logo.png" alt="Logo A"></div>
+      <div><div class="lab b">B · Art déco / Tarot</div><img src="b-art-deco/logo.png" alt="Logo B"></div>
+      <div><div class="lab c">C · Geometrisch &amp; kräftig</div><img src="c-geometrisch/logo.png" alt="Logo C"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Handansicht im Querformat</h2>
+    <p class="unter">hand.png der Richtungen, 1600 × 720 (Dichte 2, also 800 × 360 dp). Die Streifenbreite haben die Designer selbst gewählt: A 36 dp, B etwa 22 dp, C 22 bis 52 dp.</p>
+    <div class="drei">
+      <div><div class="lab a">A · Papier &amp; Neon</div><img src="a-papier-neon/hand.png" alt="Hand A"></div>
+      <div><div class="lab b">B · Art déco / Tarot</div><img src="b-art-deco/hand.png" alt="Hand B"></div>
+      <div><div class="lab c">C · Geometrisch &amp; kräftig</div><img src="c-geometrisch/hand.png" alt="Hand C"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Kartenbogen</h2>
+    <p class="unter">Die 16 geforderten Karten, je Paar die helle über der dunklen Seite. Aus den Karten-SVGs gerendert.</p>
+    <div class="drei">
+      <div><div class="lab a">A · Papier &amp; Neon</div><img src="_pruefung/kartenbogen_a.png" alt="Kartenbogen A"></div>
+      <div><div class="lab b">B · Art déco / Tarot</div><img src="_pruefung/kartenbogen_b.png" alt="Kartenbogen B"></div>
+      <div><div class="lab c">C · Geometrisch &amp; kräftig</div><img src="_pruefung/kartenbogen_c.png" alt="Kartenbogen C"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Streifentest bei gleichen Bedingungen</h2>
+    <p class="unter">Karte 80 dp breit (160 px bei Dichte 2). Von jeder Karte bleiben 22 dp sichtbar, und man sieht nur die obere Hälfte. Links die helle Hand, rechts die dunkle, nach Farbe sortiert. Gezeigt in Originalgröße.</p>
+    <div class="streifenreihe"><div class="t">A · Papier &amp; Neon</div><img src="_pruefung/streifen_a.png" alt=""><div class="bem">Wert hoch und schmal in Druckschwarz auf der Papierlasche, das Farbfeld direkt darunter. Sehr klar.</div></div>
+    <div class="streifenreihe"><div class="t">B · Art déco</div><img src="_pruefung/streifen_b.png" alt=""><div class="bem">Das Banner liegt ganz im Streifen, die Schrift ist aber kleiner. Das „+“ ist sehr klein, die Joker-Banner wirken unruhig.</div></div>
+    <div class="streifenreihe"><div class="t">C · Geometrisch</div><img src="_pruefung/streifen_c.png" alt=""><div class="bem">Die größten und kräftigsten Ziffern, dazu die volle Farbe. Am besten lesbar.</div></div>
+  </section>
+
+  <section>
+    <h2>App-Symbol</h2>
+    <p class="unter">icon.png der Richtungen, im Browser verkleinert auf 192, 96 und 48 px</p>
+    <div class="drei">
+      <div><div class="lab a">A · Papier &amp; Neon</div><div class="icons"><figure><img src="a-papier-neon/icon.png" width="192" height="192" alt="">512 (verkleinert)</figure><figure><img src="a-papier-neon/icon.png" width="96" height="96" alt="">96 px</figure><figure><img src="a-papier-neon/icon.png" width="48" height="48" alt="">48 px</figure></div><p class="bem2">Das Katzengesicht füllt die Fläche, Sonne und Mond bleiben erkennbar.</p></div>
+      <div><div class="lab b">B · Art déco / Tarot</div><div class="icons"><figure><img src="b-art-deco/icon.png" width="192" height="192" alt="">512 (verkleinert)</figure><figure><img src="b-art-deco/icon.png" width="96" height="96" alt="">96 px</figure><figure><img src="b-art-deco/icon.png" width="48" height="48" alt="">48 px</figure></div><p class="bem2">Bei 48 px ist es dunkel und kleinteilig. Der Goldrahmen würde von Androids Symbolmaske beschnitten.</p></div>
+      <div><div class="lab c">C · Geometrisch &amp; kräftig</div><div class="icons"><figure><img src="c-geometrisch/icon.png" width="192" height="192" alt="">512 (verkleinert)</figure><figure><img src="c-geometrisch/icon.png" width="96" height="96" alt="">96 px</figure><figure><img src="c-geometrisch/icon.png" width="48" height="48" alt="">48 px</figure></div><p class="bem2">Gelb und Nachtblau als Hälften: das stärkste Signal bei kleiner Größe. Das Gesicht wird allerdings klein.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Farbsehschwäche</h2>
+    <p class="unter">Streifentest unter Simulation nach Machado 2009 (Schweregrad 1). Hand und Zahlen dazu: <a href="farbsehschwaeche.html">farbsehschwaeche.html</a> (gerendert als <a href="farbsehschwaeche.png">farbsehschwaeche.png</a>).</p>
+    <div class="sim">
+      <div></div><div class="h">A · Papier &amp; Neon</div><div class="h">B · Art déco</div><div class="h">C · Geometrisch</div>
+      <div class="name">Normal</div><img src="_pruefung/streifen_a.png" alt=""><img src="_pruefung/streifen_b.png" alt=""><img src="_pruefung/streifen_c.png" alt="">
+      <div class="name">Protanopie<small>Rot-Blindheit</small></div><img class="f-protan" src="_pruefung/streifen_a.png" alt=""><img class="f-protan" src="_pruefung/streifen_b.png" alt=""><img class="f-protan" src="_pruefung/streifen_c.png" alt="">
+      <div class="name">Deuteranopie<small>Grün-Blindheit</small></div><img class="f-deutan" src="_pruefung/streifen_a.png" alt=""><img class="f-deutan" src="_pruefung/streifen_b.png" alt=""><img class="f-deutan" src="_pruefung/streifen_c.png" alt="">
+      <div class="name">Tritanopie<small>Blau-Gelb-Blindheit</small></div><img class="f-tritan" src="_pruefung/streifen_a.png" alt=""><img class="f-tritan" src="_pruefung/streifen_b.png" alt=""><img class="f-tritan" src="_pruefung/streifen_c.png" alt="">
+      <div class="name">Ohne Farbe<small>nur Helligkeit</small></div><img class="f-grau" src="_pruefung/streifen_a.png" alt=""><img class="f-grau" src="_pruefung/streifen_b.png" alt=""><img class="f-grau" src="_pruefung/streifen_c.png" alt="">
+    </div>
+    <p class="bem2">Helle Seite: Alle drei nutzen dieselbe Startpalette. Am knappsten sind Grün und Blau bei Tritanopie (0,152), dort trennen Kleeblatt und Kristall. Dunkle Seite: Bei A bleiben die vier Farben getrennt. Bei B tragen die gefüllten Banner die Farbe. Bei C sehen Wert und Symbol von Pink und Türkis im Index bei Protanopie gleich aus (OKLab-Abstand 0,005).</p>
+  </section>
+
+  <section>
+    <h2>Empfehlung (die Wahl trifft der Nutzer)</h2>
+    <div class="empf">
+      <p><b>Vorschlag: Karten von A, Katze von B, App-Symbol nach A und C.</b></p>
+      <ul>
+        <li><b>Karten:</b> A als Grundlage, also Papierlasche, Sonne bzw. Mond über gestreiftem Meer und Neontöne in der Helligkeitsstaffel. Funktional ist das der stärkste Entwurf, und die Silhouette mit der Lasche gehört nur diesem Spiel. Erwachsener wird A mit zwei Anleihen bei B: einer feinen Goldlinie im Rand und ruhigeren Aktionsmotiven. Von C kommen die kräftigeren Ziffern im Index und die flache Bauweise für Godot.</li>
+        <li><b>Logo:</b> die Katze aus B (Smokingkatze mit Blick nach oben und Sonne-Mond-Medaillon), aber in Dreiviertelansicht wie in der Referenz und mit angewinkeltem Arm. Dazu die Bildteilung und der Schriftzug von A: „Mau-Mau“ auf Papier, „Flip“ als Neon in der Nacht.</li>
+        <li><b>App-Symbol:</b> nur der Kopf mit Pfote vor einem hälftig geteilten Tag-und-Nacht-Grund wie bei C, ohne eingebauten Rahmen und als adaptive Ebenen.</li>
+        <li><b>Alternative:</b> Wer den edlen Gesamteindruck über alles stellt, nimmt B. Dann braucht B mehr Farbe auf der hellen Seite, breitere Banner mit größerer Schrift und ein neues App-Symbol.</li>
+      </ul>
+    </div>
+  </section>
+</main>
+</body>
+</html>

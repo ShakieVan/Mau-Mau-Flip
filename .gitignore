@@ -1,0 +1,24 @@
+# Lokale Werkzeuge und Geheimnisse: Godot, Exportvorlagen, Signaturschlüssel samt Passwort – nie veröffentlichen
+.tools/
+game/.godot/
+builds/*
+!builds/README.md
+*.tmp
+
+# Fremdmaterial: urheberrechtlich geschützt, nur lokale Höranalyse/Stilvorlage – nie veröffentlichen, nie ins Spiel übernehmen
+audio/referenz/
+
+# Gradle-Export: Vorlage und eigener Code (Java-Helfer, Manifest, gradle.properties) versionieren, Erzeugtes nicht (wie Draw2Race)
+game/android/build/build/
+game/android/build/.gradle/
+game/android/build/src/main/assets/
+game/android/build/src/instrumented/assets/
+game/android/build/assetPackInstallTime/src/main/assets/
+game/android/build/local.properties
+game/android/build/libs/
+# vom Export je Bauart erzeugt (Manifest mit Berechtigungen aus dem Exportprofil, Symbole, Namen)
+game/android/build/src/debug/
+game/android/build/src/release/
+
+# Browser-Client als Archiv: erzeugt tools/build.ps1 (-Target Web, auch vor Test/Windows/Android) aus webclient/
+game/assets/web.zip

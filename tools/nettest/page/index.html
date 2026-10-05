@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mau-Mau Flip – Netztest</title>
+<link rel="stylesheet" href="style.css?v=1">
+<script src="app.js"></script>
+</head>
+<body>
+<h1>Mau-Mau Flip – Netztest</h1>
+<!-- Browser-Test für Modul D (tools/nettest/browser_test.ps1): Seite, Skript und Stil kommen aus der Test-Zip des Godot-Servers,
+     dann WebSocket auf denselben Port: hello → welcome → lobby, ping → pong, lobby_ready, Logzeile, Trennen und Wiederverbinden
+     mit Token (gleiche id), state mit Umlauten und 70 KB vom Server. Ergebnis in #result (und im Titel) sowie als log an den Server. -->
+<pre id="result">läuft</pre>
+<pre id="steps"></pre>
+<script>
+(async function () {
+  const result = document.getElementById('result');
+  const stepsEl = document.getElementById('steps');
+  const steps = [];
+  function step(text) { steps.push(text); stepsEl.textContent = steps.join('\n'); }
+  // Chrome --dump-dom schreibt das DOM beim load-Ereignis. Ein verstecktes iframe zum „Halter“ (Port + 1, antwortet nie) hält
+  // load auf, bis der Test fertig ist und es entfernt. (--virtual-time-budget taugt nicht: Die virtuelle Zeit wartet nicht auf
+  // WebSocket-Verkehr, und ein offener Abruf, der sie anhält, hielt im Versuch auch die WebSocket-Ereignisse an.)
+  let holder = null;
+  if (location.search.includes('autotest=1')) {
+    holder = document.createElement('iframe');
+    holder.style.display = 'none';
+    holder.src = 'http://' + location.hostname + ':' + (Number(location.port) + 1) + '/halten';
+    document.body.appendChild(holder);
+  }
+  function done(ok) {
+    result.textContent = (ok ? 'RESULT-OK ' : 'RESULT-FAIL ') + steps.join(' | ');
+    document.title = ok ? 'RESULT-OK' : 'RESULT-FAIL';
+    if (holder) { holder.remove(); holder = null; }
+  }
+  function timeout(ms, what) { return new Promise((_, reject) => setTimeout(() => reject(new Error('Zeitgrenze: ' + what)), ms)); }
+  try {
+    step('app.js=' + (window.APP_OK === true));
+    const css = getComputedStyle(document.body).getPropertyValue('--netztest').trim();
+    step('css=' + css);
+    const info = await (await fetch('/info')).json();
+    step('info=' + info.game + ' ' + info.version + ' players=' + info.players);
+    // https auf denselben Port: Der Server schließt beim TLS-Byte sofort, der Abruf muss schnell scheitern.
+    const t1 = performance.now();
+    let tlsMs = -1;
+    try {
+      await fetch('https://' + location.host + '/info', { mode: 'no-cors' });
+      step('https unerwartet erreichbar');
+    } catch (e) {
+      tlsMs = Math.round(performance.now() - t1);
+      step('https abgewiesen in ' + tlsMs + ' ms');
+    }
+    const url = 'ws://' + location.host + '/ws';
+    function open(token) {
+      return new Promise((resolve, reject) => {
+        const ws = new WebSocket(url);
+        window.lastWs = ws;
+        const queue = [];
+        let waiter = null;
+        ws.onmessage = ev => {
+          const m = JSON.parse(ev.data);
+          if (waiter) { const w = waiter; waiter = null; w(m); } else queue.push(m);
+        };
+        ws.next = () => new Promise(r => { if (queue.length) r(queue.shift()); else waiter = r; });
+        ws.nextOf = async t => { for (;;) { const m = await ws.next(); if (m.t === t) return m; } };
+        ws.onopen = () => {
+          const hello = { t: 'hello', proto: 1, game: info.version, name: 'Chrome', kind: 'web' };
+          if (token) hello.token = token;
+          ws.send(JSON.stringify(hello));
+          resolve(ws);
+        };
+        ws.onerror = () => reject(new Error('WebSocket-Fehler'));
+      });
+    }
+    const ws1 = await Promise.race([open(null), timeout(5000, 'open')]);
+    const w1 = await Promise.race([ws1.nextOf('welcome'), timeout(5000, 'welcome')]);
+    step('welcome id=' + w1.id + ' token=' + w1.token.length + ' host=' + w1.host_name);
+    const lob = await Promise.race([ws1.nextOf('lobby'), timeout(5000, 'lobby')]);
+    step('lobby players=' + lob.players.length);
+    const t0 = Date.now();
+    ws1.send(JSON.stringify({ t: 'ping', ts: t0 }));
+    const pong = await Promise.race([ws1.nextOf('pong'), timeout(5000, 'pong')]);
+    step('pong=' + (pong.ts === t0));
+    ws1.send(JSON.stringify({ t: 'lobby_ready', ready: true }));
+    let me = null;
+    for (;;) {
+      const l = await Promise.race([ws1.nextOf('lobby'), timeout(5000, 'lobby ready')]);
+      me = l.players.find(p => p.id === w1.id);
+      if (me && me.ready) break;
+    }
+    step('ready=' + me.ready + ' kind=' + me.kind);
+    ws1.send(JSON.stringify({ t: 'log', text: 'Großer Logeintrag ' + 'x'.repeat(5000) }));
+    await new Promise(r => { ws1.onclose = r; ws1.close(1000, 'Test'); });
+    step('getrennt');
+    const ws2 = await Promise.race([open(w1.token), timeout(5000, 'open 2')]);
+    const w2 = await Promise.race([ws2.nextOf('welcome'), timeout(5000, 'welcome 2')]);
+    step('wieder id=' + w2.id + ' gleich=' + (w2.id === w1.id));
+    const st = await Promise.race([ws2.nextOf('state'), timeout(5000, 'state')]);
+    const utf8 = st.view.text === 'Grüße 🃏 Mau';
+    step('state utf8=' + utf8 + ' gross=' + st.view.big.length + ' int=' + Number.isInteger(st.view.seat));
+    const ok = window.APP_OK === true && css === 'ok' && info.game === 'mau-mau-flip' && pong.ts === t0 && me.ready && me.kind === 'web' &&
+      w2.id === w1.id && utf8 && st.view.big.length === 70000 && tlsMs >= 0 && tlsMs < 2000;
+    ws2.send(JSON.stringify({ t: 'log', text: (ok ? 'BROWSER-OK ' : 'BROWSER-FAIL ') + steps.join(' | ') }));
+    // Erst wenn das Pong da ist, hat der Server auch die Logzeile (gleiche Reihenfolge); dann darf Chrome enden.
+    ws2.send(JSON.stringify({ t: 'ping', ts: 1 }));
+    await Promise.race([ws2.nextOf('pong'), timeout(5000, 'pong 2')]);
+    done(ok);
+  } catch (e) {
+    step('Ausnahme: ' + e.message);
+    try { window.lastWs.send(JSON.stringify({ t: 'log', text: 'BROWSER-FAIL ' + steps.join(' | ') })); } catch (e2) { }
+    done(false);
+  }
+})();
+</script>
+</body>
+</html>

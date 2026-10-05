@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><title>Mau-Mau Flip – Kontrollbogen</title>
+<style>
+@font-face{font-family:'Bricolage Grotesque';src:url('../../game/assets/fonts/BricolageGrotesque.ttf') format('truetype');font-weight:200 800;font-stretch:75% 100%;font-display:block}
+@font-face{font-family:'Fraunces';src:url('../../game/assets/fonts/Fraunces.ttf') format('truetype');font-weight:100 900;font-display:block}
+html,body{margin:0;background:#2B2735;color:#EDE5D6;font-family:'Bricolage Grotesque',sans-serif;overflow:hidden}
+.wrap{padding:22px 24px 28px;width:max-content}
+h1{font:900 34px 'Fraunces',serif;margin:0 0 4px;color:#F4EADA}
+.stat{font-size:15px;color:#BFB4CC;margin-bottom:16px}
+.stat b{color:#9BE3A5}.stat b.schlecht{color:#FF8A7A}
+.reihe{display:flex;gap:10px;margin-bottom:10px}
+.zelle{width:130px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.bild{width:130px;height:202px;position:relative;border-radius:2px;
+  background:conic-gradient(#4A4558 25%,#6A6478 0 50%,#4A4558 0 75%,#6A6478 0) 0 0/10px 10px}
+.bild img{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
+.bild.gross{width:300px;height:466px}
+.zelle.gross{width:300px}
+.fehlt{background:#7A1F2A}
+.fehlt::after{content:'FEHLT';position:absolute;inset:0;display:grid;place-items:center;font-weight:800;color:#fff}
+.k{font-size:11.5px;line-height:1.15;min-height:2.3em;color:#CFC6DA;text-align:center;font-stretch:85%;overflow-wrap:anywhere}
+.k.schlecht{color:#FF8A7A;font-weight:800}
+h2{font:800 18px 'Bricolage Grotesque';margin:18px 0 10px;color:#F4EADA}
+</style></head>
+<body><div class="wrap" id="wrap"></div>
+<script type="text/plain" id="out"></script>
+<script src="mmf.js"></script>
+<script src="karten.js"></script>
+<script>
+// Zeigt alle Kartenbilder aus game/assets/cards (wie sie im Spiel liegen) und prüft Anzahl und Größe 300×466.
+(async () => {
+  const wrap = document.getElementById('wrap');
+  const keys = allKeys();
+  const rows = [];
+  const typen = n => [1, 2, 3, 4, 5, 6, 7, 8, 9].map(String).concat(n);
+  for (const f of HELL_FARBEN) rows.push(typen(['plus1', 'aussetzen', 'richtungswechsel', 'flip']).map(t => `hell_${f}_${t}`));
+  for (const f of DUNKEL_FARBEN) rows.push(typen(['plus5', 'alle_aussetzen', 'richtungswechsel', 'flip']).map(t => `dunkel_${f}_${t}`));
+  rows.push(['hell_wuenscher', 'hell_wuenscher_plus2', 'dunkel_wuenscher', 'dunkel_farbjagd', RUECKSEITE]);
+  const gezeigt = new Set(rows.flat());
+  const vergessen = keys.filter(k => !gezeigt.has(k));
+  if (vergessen.length) rows.push(vergessen);
+  const gross = ['hell_rot_1', 'hell_gelb_6', 'dunkel_lila_9', 'dunkel_pink_plus5', 'hell_wuenscher_plus2', RUECKSEITE];
+  const t = Date.now();
+  const zelle = (k, cls = '') => `<div class="zelle ${cls}"><div class="bild ${cls}"><img data-k="${k}" src="../../game/assets/cards/${k}.png?t=${t}"></div><div class="k" data-k="${k}">${k.replace(/_/g, "_<wbr>")}</div></div>`;
+  wrap.innerHTML = `<h1>Mau-Mau Flip – Kartenbogen</h1><div class="stat" id="stat">lädt …</div>` +
+    rows.map(r => `<div class="reihe">${r.map(k => zelle(k)).join('')}</div>`).join('') +
+    `<h2>Stichprobe in Originalgröße (300 × 466 px)</h2><div class="reihe">${gross.map(k => zelle(k, 'gross')).join('')}</div>`;
+  await document.fonts.ready;
+  const imgs = [...wrap.querySelectorAll('img')];
+  await Promise.all(imgs.map(im => im.complete ? 0 : new Promise(r => { im.onload = r; im.onerror = r; })));
+  const fehlend = new Set(), falsch = new Set();
+  for (const im of imgs) {
+    const k = im.dataset.k;
+    if (!im.naturalWidth) { fehlend.add(k); im.parentElement.classList.add('fehlt'); im.remove(); }
+    else if (im.naturalWidth !== 300 || im.naturalHeight !== 466) falsch.add(k);
+  }
+  for (const el of wrap.querySelectorAll('.k')) if (fehlend.has(el.dataset.k) || falsch.has(el.dataset.k)) el.classList.add('schlecht');
+  const geladen = keys.filter(k => !fehlend.has(k)).length;
+  const ok = !fehlend.size && !falsch.size && keys.length === 109;
+  document.getElementById('stat').innerHTML = `${keys.length} Schlüssel (108 Gesichter + Rückseite) · geladen <b>${geladen}</b> · fehlend <b class="${fehlend.size ? 'schlecht' : ''}">${fehlend.size}</b> · falsche Größe <b class="${falsch.size ? 'schlecht' : ''}">${falsch.size}</b>` +
+    ` · Hintergrund kariert, damit transparente Ecken sichtbar sind · erzeugt ${new Date().toISOString().slice(0, 10)}`;
+  const W = Math.ceil(wrap.getBoundingClientRect().width), H = Math.ceil(wrap.getBoundingClientRect().height);
+  document.getElementById('out').textContent = `\n@@BOGEN ${W} ${H} schluessel=${keys.length} geladen=${geladen} fehlend=${fehlend.size} falsch=${falsch.size} ${ok ? 'OK' : 'FEHLER'}\n` +
+    (fehlend.size ? `@@FEHLEND ${[...fehlend].join(' ')}\n` : '') + (falsch.size ? `@@FALSCH ${[...falsch].join(' ')}\n` : '');
+})();
+</script>
+</body></html>

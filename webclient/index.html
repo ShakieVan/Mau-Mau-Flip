@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0C0F22">
+<meta name="format-detection" content="telephone=no">
+<meta name="color-scheme" content="dark">
+<title>Mau-Mau Flip – Mitspielen</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 rx=%2222%22 fill=%22%230A0D20%22/%3E%3Ctext x=%2250%22 y=%2272%22 font-size=%2264%22 text-anchor=%22middle%22 font-family=%22Georgia,serif%22 font-style=%22italic%22 font-weight=%22900%22 fill=%22%23FF9ECF%22%3EM%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-screen="start">
+<div id="sicher" aria-hidden="true"></div>
+
+<section id="start" class="screen">
+  <div class="start-buehne">
+    <div class="start-logo" aria-label="Mau-Mau Flip">
+      <div class="tag-seite"></div><div class="nacht-seite"></div>
+      <img class="katze" src="bilder/katze.webp" alt="" draggable="false" onerror="this.remove()">
+      <div class="schriftzug"><span class="mau">Mau-Mau</span><span class="flip">Flip</span></div>
+    </div>
+    <form id="start-form" class="start-form" autocomplete="off" novalidate>
+      <h1>Mitspielen</h1>
+      <p id="start-host" class="host"></p>
+      <label for="name">Dein Name</label>
+      <input id="name" name="name" type="text" maxlength="16" autocomplete="nickname" autocapitalize="words" spellcheck="false" enterkeyhint="go" placeholder="z. B. Kim">
+      <button id="beitreten" class="knopf haupt" type="submit">Beitreten</button>
+      <p id="start-fehler" class="fehler" hidden></p>
+      <div id="apk" class="apk" hidden>
+        <a class="knopf neben" href="/apk" download>App installieren (APK)</a>
+        <details>
+          <summary>So geht’s</summary>
+          <ol>
+            <li>Auf „App installieren“ tippen und die Datei laden.</li>
+            <li>Datei öffnen; falls gefragt, „Installation aus dieser Quelle zulassen“.</li>
+            <li>In der App „Im WLAN spielen“ → „Beitreten“ wählen.</li>
+          </ol>
+        </details>
+      </div>
+      <ul class="tipps">
+        <li><b>Bildschirm anlassen:</b> Stell die automatische Sperre für die Partie ab – sonst bricht die Verbindung kurz ab.</li>
+        <li id="tipp-safari" hidden><b>„Kein Internet“ ist normal:</b> Das Spiel läuft nur im WLAN des Gastgebers.</li>
+        <li id="tipp-ios-browser" hidden>Am iPhone klappt es am besten in <b>Safari</b>. In anderen Browsern „Lokales Netzwerk“ erlauben.</li>
+        <li>Am besten <b>quer halten</b>.</li>
+      </ul>
+    </form>
+  </div>
+</section>
+
+<section id="lobby" class="screen">
+  <div class="lobby-rahmen">
+    <header class="lobby-kopf">
+      <div class="mini-logo"><span class="mau">Mau-Mau</span><span class="flip">Flip</span></div>
+      <div class="lobby-titel"><h2>Lobby</h2><p id="lobby-host"></p></div>
+      <span id="lobby-zahl" class="lobby-zahl"></span>
+    </header>
+    <div class="lobby-inhalt">
+      <ol id="lobby-liste" class="lobby-liste"></ol>
+      <aside class="lobby-seite">
+        <button id="bereit" class="knopf haupt">Bereit</button>
+        <p id="lobby-status" class="lobby-status"></p>
+        <p class="lobby-hinweis">Die Sitzordnung legt der Gastgeber fest – so, wie ihr am Tisch sitzt.</p>
+        <details class="regeln-box"><summary>Regeln dieser Partie</summary><ul id="lobby-regeln"></ul></details>
+        <p class="lobby-hinweis klein"><b>Bildschirm anlassen</b> und das Handy quer halten.</p>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<section id="tisch" class="screen"></section>
+
+<section id="ende" class="screen">
+  <div class="ende-karte">
+    <div class="mini-logo"><span class="mau">Mau-Mau</span><span class="flip">Flip</span></div>
+    <p id="ende-text">Der Gastgeber hat das Spiel beendet.</p>
+    <button id="ende-zurueck" class="knopf haupt">Zur Startseite</button>
+  </div>
+</section>
+
+<div id="hilfe" class="modal" hidden>
+  <div class="modal-karte hilfe-karte">
+    <div id="hilfe-karte" class="gross-karte"></div>
+    <div class="hilfe-inhalt"><h3 id="hilfe-titel"></h3><div id="hilfe-text"></div></div>
+    <button class="schliessen rund" aria-label="Schließen">✕</button>
+  </div>
+</div>
+<div id="ansicht" class="modal" hidden>
+  <div class="modal-karte ansicht-karte">
+    <h3 id="ansicht-titel"></h3>
+    <p class="klein">So sieht man die Karten von außen (sortiert).</p>
+    <div id="ansicht-karten" class="ansicht-reihe"></div>
+    <button class="schliessen rund" aria-label="Schließen">✕</button>
+  </div>
+</div>
+<div id="runde" class="modal" hidden>
+  <div class="modal-karte runde-karte">
+    <h3 id="runde-titel"></h3>
+    <p id="runde-sieger" class="sieger"></p>
+    <ol id="runde-liste" class="runde-liste"></ol>
+    <p id="runde-fuss" class="klein"></p>
+    <button class="schliessen rund" aria-label="Schließen">✕</button>
+  </div>
+</div>
+<div id="menue" class="modal" hidden>
+  <div class="modal-karte menue-karte">
+    <h3>Einstellungen</h3>
+    <div class="zeile"><span>Ton</span><div class="seg"><button data-set="ton" data-wert="aus">Aus</button><button data-set="ton" data-wert="leise">Leise</button><button data-set="ton" data-wert="normal">Normal</button></div></div>
+    <div class="zeile"><span>Effekte</span><div class="seg"><button data-set="effekte" data-wert="voll">Voll</button><button data-set="effekte" data-wert="reduziert">Reduziert</button></div></div>
+    <div class="zeile" id="zeile-vibration"><span>Vibration</span><div class="seg"><button data-set="vibration" data-wert="true">An</button><button data-set="vibration" data-wert="false">Aus</button></div></div>
+    <div class="zeile" id="zeile-vollbild"><span>Vollbild</span><div class="seg"><button data-set="vollbild" data-wert="true">An</button><button data-set="vollbild" data-wert="false">Aus</button></div></div>
+    <details class="regeln-box"><summary>Regeln dieser Partie</summary><ul id="menue-regeln"></ul></details>
+    <div class="zeile knoepfe"><button id="menue-neu" class="knopf neben">Neu verbinden</button><button class="knopf haupt schliessen">Weiter</button></div>
+    <p id="menue-info" class="klein"></p>
+  </div>
+</div>
+
+<div id="verbinde" class="verbinde" hidden>
+  <div class="verbinde-karte"><span class="kreisel"></span><b>Verbinde neu …</b><span class="klein">Dein Platz bleibt frei.</span><button id="verbinde-laden" class="knopf neben klein" hidden>Seite neu laden</button></div>
+</div>
+<div id="quer" class="quer" aria-live="polite">
+  <svg viewBox="0 0 120 120" aria-hidden="true"><g class="handy"><rect x="38" y="18" width="44" height="84" rx="9"/><circle cx="60" cy="92" r="3.5"/></g><path class="pfeil" d="M24 66a38 38 0 0 1 22-40M46 26l-11 -1M46 26l-3 10"/></svg>
+  <b>Bitte quer halten</b>
+  <span>Der Tisch braucht die Breite.</span>
+</div>
+<div id="toasts" class="toasts" aria-live="polite"></div>
+<video id="wach" muted playsinline loop preload="none" aria-hidden="true" tabindex="-1"></video>
+
+<script src="karten.js"></script>
+<script src="ton.js"></script>
+<script src="netz.js"></script>
+<script src="hand.js"></script>
+<script src="tisch.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

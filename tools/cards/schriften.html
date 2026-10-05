@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><title>Mau-Mau Flip – Schriftprüfung</title></head>
+<body>
+<script type="text/plain" id="out"></script>
+<script>
+// Prüft die WOFF2-Schriften des Browser-Clients (webclient/fonts/) gegen die TTF des Spiels (game/assets/fonts/):
+// Beide werden per FontFace geladen und mit mehreren Stärken, Breiten und Größen auf ein Canvas gezeichnet. Die Pixel müssen
+// gleich sein (WOFF2 mit Null-Transformation enthält dieselben Tabellen) und sich von einer Ersatzschrift unterscheiden.
+// build_cards.sh liest #out per --dump-dom.
+(async () => {
+  const out = document.getElementById('out');
+  const lines = [];
+  let allOk = true;
+  try {
+    const fonts = [
+      { name: 'BricolageGrotesque', style: 'normal', weights: [200, 500, 800], stretch: ['condensed', 'normal'] },
+      { name: 'Fraunces', style: 'normal', weights: [100, 500, 900], stretch: ['normal'] },
+      { name: 'Fraunces-Italic', style: 'italic', weights: [100, 500, 900], stretch: ['normal'] },
+    ];
+    const TEXT = 'Mau-Mau Flip 0123456789 +?! ÄÖÜäöüß€–„“';
+    const draw = (family, f) => {
+      const c = document.createElement('canvas');
+      c.width = 1400; c.height = 60 + f.weights.length * f.stretch.length * 3 * 130;
+      const g = c.getContext('2d');
+      g.fillStyle = '#000';
+      let y = 0;
+      for (const w of f.weights) for (const st of f.stretch) for (const size of [12, 40, 110]) {
+        g.font = `${f.style} ${w} ${size}px ${family}`;
+        g.fontStretch = st;
+        y += size + 20;
+        g.fillText(TEXT, 10, y);
+      }
+      return g.getImageData(0, 0, c.width, c.height).data;
+    };
+    for (const f of fonts) {
+      const desc = { style: f.style, weight: '100 900', stretch: '75% 100%' };
+      const ttf = new FontFace('T_' + f.name, `url('../../game/assets/fonts/${f.name}.ttf') format('truetype')`, desc);
+      const woff = new FontFace('W_' + f.name, `url('../../webclient/fonts/${f.name}.woff2') format('woff2')`, desc);
+      let err = '';
+      await Promise.all([ttf.load(), woff.load()]).catch(e => { err = String(e); });
+      if (err) { lines.push(`@@SCHRIFT ${f.name} FEHLER Laden: ${err} (ttf=${ttf.status}, woff2=${woff.status})`); allOk = false; continue; }
+      document.fonts.add(ttf); document.fonts.add(woff);
+      const a = draw(`'T_${f.name}'`, f), b = draw(`'W_${f.name}'`, f), m = draw('monospace', f);
+      let diff = 0, ink = 0, other = 0;
+      for (let i = 3; i < a.length; i += 4) {
+        if (a[i] !== b[i]) diff++;
+        if (a[i] > 0) ink++;
+        if (a[i] !== m[i]) other++;
+      }
+      const ok = diff === 0 && ink > 20000 && other > 20000;
+      if (!ok) allOk = false;
+      lines.push(`@@SCHRIFT ${f.name} ${ok ? 'ok' : 'ABWEICHUNG'} abweichend=${diff} deckend=${ink} gegen_ersatz=${other}`);
+    }
+  } catch (e) {
+    lines.push('@@ERROR ' + e);
+    allOk = false;
+  }
+  out.textContent = '\n' + lines.join('\n') + `\n@@SCHRIFTEN ${allOk ? 'ok' : 'FEHLER'}\n`;
+})();
+</script>
+</body></html>
