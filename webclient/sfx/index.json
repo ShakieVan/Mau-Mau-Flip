@@ -1,4 +1,11 @@
 {
 	"mau": "mau.m4a",
-	"mau_mau": "mau_mau.m4a"
+	"mau_mau": "mau_mau.m4a",
+	"karte": "karte.m4a",
+	"ziehen": "ziehen.m4a",
+	"mischen": "mischen.m4a",
+	"flip": "flip.m4a",
+	"dran": "dran.m4a",
+	"fehler": "fehler.m4a",
+	"sieg": "sieg.m4a"
 }

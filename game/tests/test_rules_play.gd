@@ -101,7 +101,7 @@ func find_ev(ev: Array, e_name: String) -> Dictionary:
 func playable_keys(g: MauGame, seat: int) -> Array:
 	var out: Array = []
 	for id in g.view_for(seat).hints.playable:
-		out.append(g._key[g.faces[g.side * 112 + int(id)]])
+		out.append(g._key[g.faces[g.side * g.n_cards + int(id)]])
 	out.sort()
 	return out
 
@@ -396,7 +396,7 @@ func _farbjagd() -> void:
 	var lila: Array = []
 	for pile in [g.discard, g.draw_pile]:
 		for id in pile.duplicate():
-			if g._color[g.faces[112 + int(id)]] == "lila" and id != g.discard.back():
+			if g._color[g.faces[g.n_cards + int(id)]] == "lila" and id != g.discard.back():
 				pile.erase(id)
 				lila.append(id)
 	g.hands[2].append_array(lila)

@@ -67,10 +67,18 @@ static func additive() -> CanvasItemMaterial:
 # ---------------------------------------------------------------- Kartenflug
 
 # Karte fliegt im Bogen von a nach b. opts: flip_to (Schlüssel nach der Wende in der Flugmitte), arc (Bogenhöhe, Standard
-# 18 % der Strecke), delay, on_land (Callable), spin (zusätzliche Drehung), keep (nicht freigeben, Aufrufer übernimmt)
+# 18 % der Strecke), delay, on_land (Callable), spin (zusätzliche Drehung), keep (nicht freigeben, Aufrufer übernimmt),
+# bow_to (Punkt: der Bogen wölbt sich zu ihm hin, z. B. zur Tischmitte; sonst immer nach oben), parent (anderer Elternknoten,
+# Koordinaten dann in dessen System) und below (Geschwisterknoten in parent, unter dem die Karte fliegt, z. B. die oberste Ablagekarte)
 func fly_card(key: String, from_pos: Vector2, from_rot: float, from_w: float, to_pos: Vector2, to_rot: float, to_w: float, dur: float, opts := {}) -> CardView:
 	var c := CardView.new()
-	add_child(c)
+	var parent: Node = opts.get("parent", self)
+	if parent == null or not is_instance_valid(parent):
+		parent = self
+	parent.add_child(c)
+	var below: Variant = opts.get("below", null)
+	if below is Node and is_instance_valid(below) and (below as Node).get_parent() == parent:
+		parent.move_child(c, (below as Node).get_index())
 	var flip_to := str(opts.get("flip_to", ""))
 	c.setup(-1, key, flip_to, true)
 	c.width = from_w
@@ -82,7 +90,11 @@ func fly_card(key: String, from_pos: Vector2, from_rot: float, from_w: float, to
 	var arc := float(opts.get("arc", clampf(dist * 0.18, 20.0, 140.0)))
 	var mid := (from_pos + to_pos) * 0.5
 	var perp := (to_pos - from_pos).orthogonal().normalized()
-	if perp.y > 0.0:
+	var bow: Variant = opts.get("bow_to", null)
+	if bow is Vector2:
+		if perp.dot((bow as Vector2) - mid) < 0.0:
+			perp = -perp                   # Bogen zum Punkt hin (über den Tisch)
+	elif perp.y > 0.0:
 		perp = -perp                       # Bogen immer nach oben
 	var ctrl := mid + perp * arc
 	var spin := float(opts.get("spin", 0.0))
@@ -1082,6 +1094,112 @@ func sun_rays(pos: Vector2, radius: float, color: Color) -> RaysFx:
 	move_child(r, 0)
 	create_tween().tween_property(r, "modulate:a", 1.0, 0.4)
 	return r
+
+
+# ---------------------------------------------------------------- Hausregeln mit Zusatzkarten (Kartentausch, Glücksspiel)
+
+# Verzögerter Aufruf, der mit clear() verfällt (Überspringen bei Rückstand): ein kleiner Hilfsknoten trägt den Zeitgeber.
+func after(delay: float, cb: Callable) -> void:
+	var n := Node.new()
+	add_child(n)
+	var tw := n.create_tween()
+	tw.tween_interval(maxf(delay, 0.001))
+	tw.tween_callback(func() -> void:
+		if cb.is_valid():
+			cb.call())
+	tw.tween_callback(n.queue_free)
+
+
+class SwapArrowsFx:
+	extends Node2D
+	# Kartentausch: zwei Bogenpfeile um die Tischmitte drehen sich in Tauschrichtung (dir +1 = im Uhrzeigersinn auf diesem
+	# Bildschirm). Zeichnet nur während seiner Lebenszeit neu und gibt sich danach frei.
+	var radii := Vector2(104, 74)
+	var dir := 1.0
+	var color := Color.WHITE
+	var dur := 1.3
+	var width := 7.0
+	var age := 0.0
+
+	func _process(delta: float) -> void:
+		age += delta
+		if age >= dur:
+			queue_free()
+			return
+		queue_redraw()
+
+	func _draw() -> void:
+		var t := clampf(age / dur, 0.0, 1.0)
+		var a := clampf(minf(t / 0.14, (1.0 - t) / 0.3), 0.0, 1.0)
+		var u := clampf(t / 0.3, 0.0, 1.0) - 1.0
+		var k := 0.82 + 0.18 * (1.0 + 2.70158 * u * u * u + 1.70158 * u * u)
+		var spin := dir * PI * 1.25 * (1.0 - pow(1.0 - t, 2.0))
+		var span := PI * 0.66
+		for arm in 2:
+			var start := spin + float(arm) * PI - dir * span * 0.5
+			var pts := PackedVector2Array()
+			var steps := 26
+			for i in steps + 1:
+				var ang := start + dir * span * float(i) / steps
+				pts.append(Vector2(cos(ang) * radii.x, sin(ang) * radii.y) * k)
+			var col := Color(color, color.a * a)
+			draw_polyline(pts, Color(col, col.a * 0.28), width * 2.6, true)
+			draw_polyline(pts, col, width, true)
+			# Pfeilspitze an der Spitze in Drehrichtung
+			var head := pts[pts.size() - 1]
+			var tang := (head - pts[pts.size() - 3]).normalized()
+			var nrm := Vector2(-tang.y, tang.x)
+			var hs := width * 2.6
+			draw_colored_polygon(PackedVector2Array([head + tang * hs * 0.9, head - tang * hs * 0.5 + nrm * hs, head - tang * hs * 0.5 - nrm * hs]), col)
+
+
+# Bogenpfeile des Kartentauschs um pos (dir +1 = im Uhrzeigersinn)
+func swap_arrows(pos: Vector2, dir: int, color: Color, dur := 1.3, radii := Vector2(104, 74)) -> SwapArrowsFx:
+	var s := SwapArrowsFx.new()
+	s.position = pos
+	s.dir = 1.0 if dir >= 0 else -1.0
+	s.color = color
+	s.dur = dur
+	s.radii = radii
+	s.material = additive() if night > 0.5 else null
+	add_child(s)
+	return s
+
+
+# Treffer im Glücksspiel: große Zahl mit Strahlenkranz (Neon nachts), Lichtblitz und Ring; darüber klein „Treffer!“.
+func hit_burst(pos: Vector2, number: String, dur := 1.1) -> void:
+	var neon := night > 0.5
+	var glow_col := NEON_PINK if neon else UiPalette.TURN
+	if not reduced:
+		var rays := RaysFx.new()
+		rays.position = pos
+		rays.radius = 240.0
+		rays.count = 16
+		rays.color = Color(glow_col, 0.34 if neon else 0.42)
+		rays.material = additive() if neon else null
+		rays.modulate.a = 0.0
+		add_child(rays)
+		move_child(rays, 0)
+		var rt := rays.create_tween()
+		rt.tween_property(rays, "modulate:a", 1.0, dur * 0.15)
+		rt.tween_interval(dur * 0.45)
+		rt.tween_property(rays, "modulate:a", 0.0, dur * 0.4)
+		rt.tween_callback(rays.queue_free)
+		ring_wave(pos, glow_col, 50.0, 300.0, dur * 0.65, 10.0)
+	glow_flash(pos, 190.0, glow_col, dur * 0.55, 0.85 if neon else 0.6)
+	var f := UiFonts.title(900, true, 100.0)
+	var num := _text(pos + Vector2(0, 12), number, f, 128, NEON_PINK.lerp(Color.WHITE, 0.55) if neon else UiPalette.TURN,
+		Color(NEON_PINK, 0.9) if neon else UiPalette.INK, 14)
+	var cap := _text(pos + Vector2(0, -86), "Treffer!", f, 40, UiPalette.CREAM, Color(UiPalette.INK, 0.9), 7)
+	for t in [num, cap]:
+		var tx := t as TextFx
+		tx.scale = Vector2.ONE * 0.3
+		var tw := tx.create_tween()
+		tw.tween_property(tx, "scale", Vector2.ONE, minf(0.28, dur * 0.3)).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tw.tween_interval(dur * 0.45)
+		tw.tween_property(tx, "modulate:a", 0.0, dur * 0.25)
+		tw.parallel().tween_property(tx, "scale", Vector2.ONE * 1.12, dur * 0.25)
+		tw.tween_callback(tx.queue_free)
 
 
 # Laufende Effekte entfernen (Abgleich auf die Sicht, Überspringen)

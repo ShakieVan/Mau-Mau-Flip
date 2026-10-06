@@ -30,9 +30,9 @@ Hintergrund: `AGENTS.md` (Nutzerentscheidungen), `docs/recherche/` (Recherche), 
 - **Browser-Client „Lite“:** reines HTML/CSS/JS ohne Build-Schritt, vom Gastgeber ausgeliefert, spielt vollständig mit.
 - **App:**
   - Updater (Release- und Beta-Kanal), „App teilen“ (Teilen-Menü) und APK-Download von der Gastgeber-Seite.
-  - Einstellungen: Name, Mau-Ton aus/leise/normal, Vibration, Effekte voll/reduziert, Beta-Kanal.
-  - Regelübersicht und Kartenhilfe.
-- **Töne:** Mau-Ton (aus `audio/entwurf/mau/`) sowie Karte legen, ziehen, mischen, Flip und Sieg, selbst synthetisiert.
+  - Einstellungen: Name, Mau-Ton aus/leise/normal, Spieltöne aus/leise/normal (Standard aus), „Spielbare Karten hervorheben“ (je Gerät, Standard an), Vibration, Effekte voll/reduziert, Beta-Kanal.
+  - Regelübersicht und Kartenhilfe, Regel-Editor mit Abschnitt „Hausregeln mit Zusatzkarten“ (Kartentausch samt Tauschrichtung, Glücksspiel, Farbe mit ablegen) und Kartenzahl 112–124.
+- **Töne:** Mau-Ton und „Mau-Mau!“ sind die Aufnahmen des Nutzers (`audio/aufnahmen/`, AGENTS.md 20) und klingen auf allen Geräten (AGENTS.md 21). Spieltöne Karte legen, ziehen, mischen, Flip, Du bist dran, Fehler und Sieg: KI-erzeugt mit MOSS-SoundEffect v2.0, nachbearbeitet mit `tools/make_sfx_moss.py --spiel` (Katzen-Leitplanke, `audio/sfx_README.md`); App und Browser nutzen dieselben Dateien und Pegel.
 - **Bau und Veröffentlichung:** signierte Release-APK (eigener Schlüssel), Windows-Build zum Testen, GitHub-Release im Beta-Repo.
 
 **Später (nicht in 0.1.1):** Godot-Web-Client (experimentell), Spiel-WLAN per LocalOnlyHotspot mit WLAN-QR, „Update vom Gastgeber“ automatisch, Reinwerfen und 7-Tausch, „Rückseiten wie am echten Tisch“, Musik.
@@ -86,10 +86,10 @@ tools/                        Bau-, Test-, Asset- und Veröffentlichungsskripte
 ### Dateien und Klassen
 
 - **`card_db.gd` (`class_name CardDB`)**
-  - statische Kartenliste (112 Paare von Gesichtern `{side, color, kind, value}`)
+  - statische Kartenliste (112 Paare von Gesichtern `{side, color, kind, value}`), dazu die Zusatzkarten der Hausregeln (Kartentausch +4, Glücksspiel +2, Farbe mit ablegen +6, höchstens 124 Karten und 128 verschiedene Gesichter)
   - `face_key(face) -> String`
   - Punktwerte
-  - `static func faces_light() / faces_dark()`
+  - `static func faces_light() / faces_dark()`, mit Hausregeln `faces_light(with_swap, with_gamble, with_discard)`; ebenso `deck(s, …)`, `card_count(…)`, `point_sum(s, …)`; `all_keys()` = 108 Gesichter des Grunddecks, `all_keys(true)` = alle 128
 - **`rule_config.gd` (`class_name RuleConfig`)**
   - Optionen mit Standardwerten
   - `to_dict()` / `from_dict()`
@@ -121,13 +121,21 @@ tools/                        Bau-, Test-, Asset- und Veröffentlichungsskripte
 | `peek_own_backs` | **true** (eigene Rückseiten ansehen erlaubt) |
 | `two_player_reverse_skips` | **true** |
 | `flip_last_card` | **`execute`** (Flip als letzte Karte wird ausgeführt, Wertung auf neuer Seite) |
+| `swap_cards` | **`off`** / `on` (Hausregel Kartentausch: 4 zusätzliche Karten, also 116; hell je eine `hell_<farbe>_tausch`, dunkel je eine `dunkel_<farbe>_tausch`, 20 Punkte, legbar auf gleiche Farbe oder jeden Kartentausch; alle aktiven Spieler geben ihre ganze Hand an den nächsten aktiven Platz weiter, danach ist der Nächste in Spielrichtung dran; in der Voreinstellung „Familie“ an) |
+| `swap_direction` | **`clockwise`** (Hände wandern immer an Platz + 1) / `play` (in der aktuellen Spielrichtung) |
+| `gamble_cards` | **`off`** / `on` (Hausregel Glücksspiel: 2 zusätzliche Karten, je Seite zweimal der Joker `hell_gluecksspiel` bzw. `dunkel_gluecksspiel`, 50 Punkte; Legen mit Farbwahl, danach Phase `gamble`: Karte verdeckt setzen, Knopf drücken, bis ein Treffer kommt oder die Hand leer ist; in keiner Voreinstellung) |
+| `discard_color` | **`off`** / `on` (Hausregel Farbe mit ablegen: 6 zusätzliche Karten, je Seite `hell_<farbe>_ablegen` je Farbe, 30 Punkte, legbar auf gleiche Farbe oder jede Ablegen-Karte, und zweimal der Joker `hell_ablegen_joker` bzw. `dunkel_ablegen_joker`, 50 Punkte; alle übrigen Handkarten der Farbe außer Jokern kommen ohne Wirkung mit auf die Ablage; in keiner Voreinstellung) |
+
+Kartenzahl je Partie: 112 + 4 (`swap_cards`) + 2 (`gamble_cards`) + 6 (`discard_color`), also 112 bis 124. Prüfsummen je Seite: hell 1280, dunkel 1480, dazu Kartentausch +80, Glücksspiel +100, Farbe mit ablegen +220. Die Kartencodes des Grunddecks und des Kartentauschs bleiben unverändert, die neuen hängen dahinter (Einzelheiten: `docs/module/A.md`).
 
 Startkarte, Flip und Neumischen verhalten sich wie in Abschnitt 1.13 von `docs/recherche/07_regeln_hausregeln.md`.
 
 **Voreinstellungen**
-- **`familie`:** `round_end=last`, `stacking=same`, `wild_restriction=enforce`, `mau_penalty=1`
+- **`familie`:** `round_end=last`, `stacking=same`, `penalty_turn=play`, `wild_restriction=enforce`, `mau_penalty=1`, `swap_cards=on` (Nutzerentscheidung 05.10.2026; also 116 Karten)
 - **`mau_mau`:** `stacking=same`, `wild_restriction=enforce`, `mau_penalty=1`
 - **`klassisch500`:** `scoring=points500`, `wild_counts_for_bluff=false`
+
+**Eigene Regelsätze** gehören nicht zum Regelwerk. Sie sind gespeicherte `RuleConfig.to_dict()` in den Einstellungen des Geräts (`RuleSets`, Abschnitt 9), dazu die Regeln des letzten Gastgebers. `RuleConfig` bleibt dafür unverändert.
 
 ### Schnittstelle `MauGame`
 
@@ -155,9 +163,14 @@ func to_dict() -> Dictionary / static func from_dict(d) -> MauGame   # Speichern
 | `{a:"draw"}` | Ziehen (nach Regel `draw_rule`). |
 | `{a:"keep"}` | Gezogene, spielbare Karte behalten; der Zug endet. |
 | `{a:"challenge"}` / `{a:"accept"}` | Anzweifeln oder annehmen, nur der Betroffene nach +2 bzw. Farbjagd im Modus `bluff`. |
-| `{a:"mau"}` | Mau rufen (gültig ab „2 Karten und am Zug“ bis zum Beginn des nächsten Zugs). |
+| `{a:"mau"}` | Mau rufen (gültig ab „2 Karten und am Zug“ bis zum Beginn des nächsten Zugs; mit Ablegen-Karten auch mit mehr Karten, wenn eine legbare Karte genau 1 übrig lässt; im Glücksspiel mit 2 Karten vor dem Setzen). |
 | `{a:"catch", target:<seat>}` | Erwischen. |
 | `{a:"next_round"}` | Nächste Runde, nur Platz 0 bzw. Gastgeber. |
+| `{a:"stake", card:<id>}` | Glücksspiel: eine beliebige eigene Handkarte verdeckt auf den Einsatz legen (Pflicht vor jedem Druck). |
+| `{a:"press"}` | Glücksspiel: Knopf drücken (erst nach einem `stake`). |
+| `{a:"stop"}` | Glücksspiel: aufhören (immer erlaubt, nach mindestens einem Druck ohne Treffer, also bei `need = "stake"` und Einsatz ≥ 1). Der Einsatz kommt unter die Ablage, der Zug ist vorbei. |
+
+Glücksspiel und Ablegen-Joker werden wie Wünscher mit `{a:"play", card, color}` gelegt.
 
 ### Phasen
 
@@ -166,6 +179,8 @@ func to_dict() -> Dictionary / static func from_dict(d) -> MauGame   # Speichern
 | `turn` | normaler Zug |
 | `drawn` | gezogene Karte: `play` oder `keep` |
 | `challenge` | Betroffener entscheidet `challenge` oder `accept` |
+| `color` | nach einem Flip liegt ein Joker oben: der Flip-Spieler wählt `{a:"color", color}` |
+| `gamble` | Glücksspiel des Legers (`current_seat()`): abwechselnd `stake` und `press`, bis ein Treffer kommt (1–10 Karten ziehen, Einsatz zurück, Zug vorbei) oder bei 0 die Hand leer ist (Einsatz unter die Ablage, fertig); `mau` und `catch` gehen wie sonst |
 | `round_over` | Runde beendet |
 | `game_over` | Partie beendet |
 
@@ -192,19 +207,32 @@ Alle Daten JSON-tauglich: Zahlen als `int`, keine Godot-Typen.
   - leer, wenn `backs_visible=false` oder der Spieler man selbst ist.
 - `hand[].back`: nur gesetzt, wenn `peek_own_backs=true`.
 - `hints`: Der Client braucht keine eigene Regelkenntnis.
+- **Nur mit `gamble_cards=on`** (sonst fehlen die Felder, damit Sichten ohne die Hausregel unverändert bleiben):
+  - `gamble`: während eines Glücksspiels `{seat, stake: Anzahl der Einsatzkarten, need: "stake"|"press", last: letzter Wert 0–10 oder −1}` für alle Plätze, sonst `{}`. Die Trefferquote und die Einsatzgesichter stehen nie in einer Sicht.
+  - `hints.can_stake`: ids der setzbaren Karten (nur der Glücksspieler bei `need = "stake"`, sonst `[]`), `hints.can_press` (bool), `hints.can_stop` (bool, nur mit der Hausregel; sonst fehlt das Feld wie `can_stake`/`can_press`). Hinweistexte: „Leg eine Karte verdeckt auf deinen Einsatz.“, „Noch eine Karte setzen – oder aufhören?“ (bei `can_stop`) bzw. „Drück den Glücksspielknopf!“.
 
 **Ereignisse:** `{e: <name>, seat?, …}`, z. B.:
 - `deal`, `play{seat, card, face}`, `draw{seat, count, faces?}` (`faces` nur für den Ziehenden)
 - `skip{seat}`, `skip_all`, `reverse{dir}`, `color{color}`, `flip{side}`, `pending{amount}`
 - `challenge{seat, success}`, `mau{seat}`, `catch{seat, target}`, `penalty{seat, count}`
 - `shuffle`, `round_over{ranking, scores}`, `game_over`
+- `swap_hands{seat, dir, counts, hand?, backs?}` (Kartentausch): `seat` = Leger, `dir` = Tauschrichtung ±1, `counts` = Kartenzahl je Platz nach dem Tausch; `hand` = nur die eigene neue Hand (`events_for`), `backs` = Rückseiten je Platz sortiert (bei `backs_visible`). Danach liefert `view_for` die neuen Hände. Wer so auf 1 Karte kommt, muss nicht „Mau!“ rufen. Als letzte Karte: Leger fertig, Tausch nur unter den Übrigen bzw. entfällt bei Rundenende (Einzelheiten: `docs/module/A.md`, „Kartentausch“).
+- Glücksspiel (Einzelheiten: `docs/module/A.md`, „Glücksspiel“):
+  - `gamble_start{seat}` nach `play` (und `color`): Phase `gamble` beginnt.
+  - `stake{seat, count, card*, face*, back*}`: Karte verdeckt gesetzt; `count` = Einsatzgröße danach; id, Gesicht und Rückseite (bei `peek_own_backs`) nur für den Spieler selbst.
+  - `gamble_roll{seat, value}`: 0 = kein Treffer, 1–10 = Treffer.
+  - bei einem Treffer `draw{…, reason:"gluecksspiel"}`, dann `stake_back{seat, count, cards*, faces*, backs}` (ganzer Einsatz zurück; Rückseiten wie beim Ziehen), danach `turn` des Nächsten.
+  - bei 0 und leerer Hand `stake_discard{seat, count, cards*, faces*, reason:"empty"}` (Einsatz unter die Ablage), dann `finish` und `round_over` bzw. `turn`.
+  - bei `{a:"stop"}` `stake_discard{seat, count, cards*, faces*, reason:"stop"}`, dann `turn` des Nächsten. Bleibt genau 1 Karte, gilt die normale Mau-Regel: Das Fenster hat schon das Setzen geöffnet (vorher rufen, sonst erwischbar, bis der Nächste handelt).
+- `discard_color{seat, color, cards, faces, count}` (Farbe mit ablegen, nach `play`/`color`): öffentlich, die mitabgelegten Karten liegen unter der Ablegen-Karte, sortiert nach Rang.
 
 ### Prüfungen (Pflicht)
 
-- Kontrollsummen der Punkte (hell 1280, dunkel 1480).
+- Kontrollsummen der Punkte (hell 1280, dunkel 1480; je Deckvariante mit Zusatzkarten, siehe oben).
 - Jede Regel einzeln testen, dazu alle Optionen.
-- 10 000 Bot-Partien ohne Fehler, Kartenzahl immer 112.
-- Lecktest: `view_for(s)` enthält nie fremde Vorderseiten und nie den Seed.
+- 10 000 Bot-Partien ohne Fehler, Kartenzahl immer 112; mit den Hausregeln je ein Dauerlauf mit konstanter Kartenzahl der Variante (alle Hausregeln an: 124).
+- Lecktest: `view_for(s)` enthält nie fremde Vorderseiten und nie den Seed; beim Glücksspiel nie die Trefferquote und nie fremde Einsatzgesichter.
+- Mit allen neuen Hausregeln aus bleibt das Regelwerk bit-gleich (Fingerabdruck über Bot-Partien).
 - Determinismus: gleicher Seed und gleiche Aktionen ergeben denselben Zustand.
 
 ## 5. Netz (Modul D) – `scripts/net/`
@@ -261,7 +289,7 @@ Host → Client:
 - `net_discovery.gd`, `class_name NetDiscovery`: UDP-Port `24692`.
   - Rundruf „MMF?“, Antwort JSON aus `/info`.
   - Gerichtete Rundrufe je Schnittstelle (Lehre aus Draw2Race), Multicast-Sperre über NetAndroid.
-- **Ton:** Den Mau-Ton spielt nur das Gerät, das „Mau!“ gedrückt hat (Katzen-Leitplanke). Alle anderen zeigen nur die Animation.
+- **Ton:** Der Mau-Ton spielt auf allen Geräten, sobald das Ereignis `mau` bzw. `finish` ankommt (AGENTS.md 21, ersetzt „nur das eigene Gerät“), dazu eine animierte Sprechblase beim Rufenden. Wer den Ton abgeschaltet hat, sieht nur die Blase.
 - **Tests:**
   - Gastgeber und mehrere Clients im selben Prozess über 127.0.0.1, eigene Testports 24790+.
   - Handshake, Rahmen (auch fragmentiert und groß), Wiederverbinden, Ablehnungen, TLS-Byte.
@@ -302,9 +330,13 @@ func mode() -> String                                      # "solo" | "pass" | "
   - Update
 - Einrichtung Weitergeben (Namen, Reihenfolge, Computergegner).
 - Lobby (Gastgeber):
-  - Spielerliste mit Ziehen zum Ordnen der Plätze
+  - Spielerliste mit Ziehen zum Ordnen der Plätze (Zeilen 72 px, bei 1600 × 720 fünf Spieler ganz sichtbar, ab sechs wischen; nach „+“ oder einem Pfeil rollt die Liste zum Spieler)
+  - Kopfzeile mit Spielerzahl und Computergegner −/+
   - QR-Code und Adresse (`http://ip:port/`)
-  - Regeln wählen, Computergegner hinzufügen, Start
+  - Regelzeile unter der Liste: Knopf „Regeln“ (Editor mit den Voreinstellungen), daneben z. B. „Familie · 116 Karten“ und eine höchstens zweizeilige Beschreibung; Start
+- Gast-Lobby: Regelkopf fett (z. B. „Familie · 116 Karten · mit Kartentausch“) über dem Regeltext, „Bereit“.
+- Regeln: Voreinstellungen, alle Optionen, Abschnitt „Hausregeln mit Zusatzkarten“ mit Kartenbildern und Schaltern; die Tauschrichtung ist ohne Kartentausch gesperrt.
+- Einstellungen: Abschnitt Ton (Mau-Ton, Spieltöne), Bedienung und Optik („Spielbare Karten hervorheben“ mit Hinweis „Nur auf diesem Gerät …“, Vibration, Effekte), Updates, App teilen, Info.
 - Beitreten: gefundene Spiele, Adresse eingeben.
 - Tisch, Sichtschutz, Rundenende und Wertung, Regeln, Einstellungen.
 
@@ -330,7 +362,8 @@ func mode() -> String                                      # "solo" | "pass" | "
   1. Startseite „Mau-Mau Flip – Mitspielen“: Name eingeben, Knopf „Beitreten“. Der Knopf schaltet zugleich den Ton frei und startet den Video-Trick gegen das Abdunkeln.
   2. Lobby-Ansicht.
   3. Tisch im Querformat, Hinweis „Bitte quer halten“.
-- Spielt vollständig mit: Hand als Fächer bzw. waagerecht wischbar, Antippen hebt an, zweites Tippen oder Wischen nach oben spielt aus, Farbwahl, Ziehen, Behalten, Anzweifeln, Mau, Erwischen.
+- Spielt vollständig mit: Hand als Fächer bzw. waagerecht wischbar, Antippen hebt an, zweites Tippen oder Wischen nach oben spielt aus, Farbwahl, Ziehen, Behalten, Anzweifeln, Mau, Erwischen; dazu die Hausregeln Kartentausch, Glücksspiel (Setzen per Tipp, Kuppelknopf → `press`) und Farbe mit ablegen.
+- Menü: Mau-Ton, Spieltöne (dieselben Dateien und Pegel wie die App), „Spielbare Karten hervorheben“ (je Gerät in `localStorage`, Standard an), Effekte, Vibration, Vollbild; Sortieren über den Knopf am Tisch.
 - Animationen in reduzierter Form (CSS).
 - Wiederverbinden: Token in `localStorage` (mit try/catch abgesichert), bei `visibilitychange` und `pageshow` neu verbinden.
 - Android-Gäste sehen auf der Startseite zusätzlich „App installieren (APK)“ → `/apk`.
@@ -350,6 +383,18 @@ func mode() -> String                                      # "solo" | "pass" | "
   - **Beta-Kanal ist an, wenn die installierte Version nicht auf `.0` endet.**
   - HTTP 403 als „GitHub-Limit erreicht“ melden.
   - Knopf „Im Browser herunterladen“.
+- **Einstellungen** (`AppSettings`, `user://einstellungen.json`, je Gerät, sofort gespeichert; Bildschirm `SettingsScreen`):
+  - `name`, `mau_ton` (aus/leise/**normal**), `toene` (**aus**/leise/normal), `vibration` (**an**), `effekte` (**voll**/reduziert), `beta` (nach installierter Version), `sortierung` (**farbe**/wert/punkte/manuell), `regeln` (RuleConfig als Dictionary, zuletzt benutzte Regeln), `letzte_namen`, `regelsaetze`, `regeln_gastgeber` und `regelsatz_gewaehlt` (siehe unten).
+  - `hervorheben` (bool, **an**): „Spielbare Karten hervorheben“. Persönliche Einstellung je Gerät, nie eine Regel des Gastgebers (AGENTS.md 24); steht nicht in `RuleConfig` und geht nicht übers Netz. Der Tisch liest `App.settings.get_value("hervorheben", true)` und hört auf `changed`. Aus: kein Rand, kein Leuchten, kein Anheben, kein Abdunkeln; eine unpassende Karte springt mit „Die Karte passt nicht.“ zurück (ohne Strafe), und der Hinweis „Du bist dran – nichts passt …“ wird zu „Du bist dran.“. Der Browser-Client hat dieselbe Einstellung unter demselben Namen (`localStorage` `mmf.hervorheben`).
+  - Pegel (`AppSound`): Mau aus/leise/normal −80/−12/−2 dB, Spieltöne −80/−12,5/−4,5 dB.
+  - **Gespeicherte Regelsätze** (Nutzerwunsch 06.10.2026, `scripts/app/rule_sets.gd`, `class_name RuleSets`):
+    - `regelsaetze`: Liste `[{name, regeln}]`, höchstens 12. Name höchstens 20 Zeichen, Zeichen wie beim Spielernamen und zusätzlich `& + ( )`. Gleicher Name ohne Rücksicht auf Groß- und Kleinschreibung gilt als derselbe Satz: Überschreiben nach Rückfrage, der Platz bleibt. Löschen nach Rückfrage (im Regel-Editor: Satz gedrückt halten; das lädt ihn nicht).
+    - `regeln_gastgeber`: `{host, regeln}`, genau ein Platz. Jeder App-Gast merkt sich die Regeln des Gastgebers selbst, sobald gespielt wird: aus jeder Sicht am Tisch (`TableScreen`), nicht schon aus der Lobby (bloßes Beitreten überschreibt den Platz nicht, Prüfung 06.10.2026). Geschrieben wird nur bei einer Änderung; leere Regeln ändern nichts. Gastgeber-, Übungs- und Weitergeben-Partien schreiben nichts. Der Platz zählt nicht zu den 12 Sätzen. Im Regel-Editor heißt er „Zuletzt gespielt bei <Gastgeber>“ und steht vorn. Muss der Gastgeber gehen, eröffnet ein anderer ohne Vorbereitung mit denselben Regeln: „Selbst eröffnen“ in der Leiste „Verbindung zum Gastgeber beendet.“ oder später der Knopf „Regeln von Lena“ (WLAN-Symbol, übernimmt sie) in der Gastgeber-Lobby.
+    - `regelsatz_gewaehlt`: Name des zuletzt geladenen bzw. gespeicherten Satzes (Standard „“). Haben zwei Sätze dieselben Regeln, zeigen Editor, Regelzeile und Lobby überall diesen Namen. Eine Voreinstellung oder der Gastgeber-Platz heben die Wahl auf, Löschen des Satzes ebenso.
+    - Prüfung beim Laden und Setzen: Regeln laufen immer durch `RuleConfig.from_dict(…).to_dict()`. Unbekannte Optionen fallen weg, ungültige Werte werden zum Standard bzw. begrenzt, und fehlende Optionen (Sätze einer älteren Version) bekommen den Standard. Einträge ohne Namen oder Regeln, Doppelte und alles über 12 fallen weg. Eine falsche Art (keine Liste bzw. Gastgeber ohne oder mit leeren Regeln) ergibt den Standard (leer).
+    - Schreibfehler: Lässt sich die Einstellungsdatei nicht schreiben (z. B. Speicher voll), melden `RuleSets.save` (`ERR_WRITE`) und `remove` (false) das, und im Speicher bleibt der alte Stand. Der Speichern-Dialog sagt „Speichern hat nicht geklappt …“ und bleibt offen.
+    - Gleich heißt gleiche Regeln. Ohne Kartentausch zählt die Tauschrichtung nicht, wie bei `RuleConfig.preset_name()`. Den passenden Namen zeigen der Regel-Editor (Hervorhebung, Übersicht „Gespeichert: …“) und die Regelzeile (`RulesBar.title`). Dabei gilt die Reihenfolge Voreinstellung, eigener Satz, Gastgeber-Platz, „Eigene Regeln“. Die Gast-Lobby zeigt fremde Regeln aus Sicht des Gastes: Voreinstellung, sonst ein passender eigener Satz, sonst „Regeln von <Gastgeber>“ (`JoinScreen.lobby_head`).
+    - **Protokoll unverändert:** Der Gast bekommt die Regeln schon vollständig. `lobby.rules` und `view.rules` enthalten jeweils `RuleConfig.to_dict()`. Den Namen des Gastgebers liefern `lobby.players[host_id].name` bzw. `welcome.host_name`. Browser-Gäste können nicht eröffnen und speichern deshalb nichts.
 - **Skripte**
   - `tools/setup.ps1`
   - `tools/build.ps1 -Target Test|Windows|Android|Web|All`; `Web` packt `webclient/` nach `game/assets/web.zip`.
@@ -375,3 +420,10 @@ func mode() -> String                                      # "solo" | "pass" | "
 ## Abweichungen
 
 (von Modulen ergänzt)
+
+- **06.10.2026, Zusammenführung der Hausregel-Oberflächen:**
+  - Ohne „Spielbare Karten hervorheben“ zeigen App und Browser statt „Du bist dran – nichts passt, zieh eine Karte.“ nur „Du bist dran.“ (sonst verriete der Hinweis die Markierung). Nicht ausdrücklich beauftragt, Bestätigung des Nutzers steht aus.
+  - Glücksspiel-Joker und Ablegen-Joker bekommen in der App auf der Ablage die Joker-Strahlen wie die übrigen Joker (`JokerRays.JOKERS`). Bestätigung steht aus.
+  - Die Regie (`director.gd`) zählt Ereignisse ohne Animation (`quiet_events`, z. B. `turn`) nicht mehr zum Rückstand; dadurch läuft sie seltener im doppelten Tempo.
+  - Gastgeber-Lobby: Die Schnellwahl der Voreinstellungen ist in den Regel-Editor gewandert (Knopf „Regeln“), damit fünf Spieler ganz sichtbar sind.
+  - Spieltöne: KI-erzeugt (MOSS-SoundEffect v2.0) statt selbst synthetisiert; Pegel −12,5/−4,5 dB statt −16/−8 dB, im Browser 0,3/0,75 statt 0,2/0,5.

@@ -8,11 +8,83 @@
 
   const K = () => M.Karten;
   const H0 = 720, W_MIN = 1180;
+  const ZEILE = 46;          // Zeilenhöhe im Zahlenwerk des Glücksspiel-Automaten (style.css .walze b)
+  const WECHSEL_MS = 1100;   // Tag/Nacht-Wechsel beim Flip, gleich style.css #tisch --wd
   const AVA_FARBEN = ['#FF9ECF', '#43B05C', '#FFDD33', '#4C7DFF', '#FF8A1F', '#19C6D4', '#8B6BFF', '#FF4D57', '#B0E06A', '#F4EADA'];
   const schlaf = ms => new Promise(r => setTimeout(r, ms));
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   function el(tag, cls, html) { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; }
   function kartenRot(id) { return ((Math.abs(id | 0) * 37) % 23) - 11; }
+
+  // Richtungs-Plattform wie in der App (game/scripts/ui/direction_ring.gd, Variante B „breit“), vereinfacht: dicker Ring
+  // schräg von oben (Superellipse als Loch, Perspektive vorn größer), Ober- und Unterkante als zwei versetzte Kurven, weicher
+  // Schatten, Laufbahn mit Winkeln. Die Winkel stehen fest (HTML, eigene Ebenen) und zeigen den Fluss als Lauflicht
+  // (Deckkraft je Winkel versetzt, wie wandernde Dreiergruppen); .gegen kehrt Lauf und Spitzen um, .dreh glimmt einmal auf.
+  // Ursprung = Tischmitte; nur bei neuer Bühnenbreite neu berechnet.
+  const PL = { lochX: 372, lochY: 136, minX: 326, band: 66, kante: 16, zelle: 38, kipp: 0.70, persp: 0.11, eck: 2.5, dy: 6, seg: 128, gruppe: 5, fluss: 34 };
+  function plattform(W) {
+    const fx = Math.min(330, W * 0.21) / 330;
+    const ai = Math.max(PL.lochX * fx, PL.minX), bi = PL.lochY / PL.kipp;
+    const band = PL.band * Math.min(fx, 1), wall = PL.kante, zref = bi + band, n = PL.seg;
+    const proj = (x, z, drop) => { const s = 1 / (1 - PL.persp * z / zref); return [x * s, (PL.kipp * z + drop) * s]; };
+    const yoff = PL.dy - (proj(0, bi, 0)[1] + proj(0, -bi, 0)[1]) / 2;
+    const innen = [], nrm = [];
+    for (let i = 0; i <= n; i++) {
+      const t = 2 * Math.PI * i / n, c = Math.cos(t), s = Math.sin(t);
+      const q = [ai * Math.sign(c) * Math.pow(Math.abs(c), 2 / PL.eck), bi * Math.sign(s) * Math.pow(Math.abs(s), 2 / PL.eck)];
+      const g = [Math.sign(q[0]) * Math.pow(Math.abs(q[0]) / ai, PL.eck - 1) / ai, Math.sign(q[1]) * Math.pow(Math.abs(q[1]) / bi, PL.eck - 1) / bi];
+      const l = Math.hypot(g[0], g[1]) || 1;
+      innen.push(q); nrm.push([g[0] / l, g[1] / l]);
+    }
+    const welt = (i, off) => [innen[i][0] + nrm[i][0] * off, innen[i][1] + nrm[i][1] * off];
+    const bild = (p, drop) => { const r = proj(p[0], p[1], drop); return [r[0], r[1] + yoff]; };
+    const f1 = v => (Math.round(v * 10) / 10).toString();
+    const kurve = (off, drop, dx, dy) => {
+      let d = '';
+      for (let i = 0; i < n; i++) { const p = bild(welt(i, off), drop); d += (i ? 'L' : 'M') + f1(p[0] + (dx || 0)) + ' ' + f1(p[1] + (dy || 0)); }
+      return d + 'Z';
+    };
+    // Der weiche Schatten (feGaussianBlur) liegt in einem eigenen SVG mit fester Farbe: Beim Flip blendet nur dessen Deckkraft
+    // als eigene Ebene über (Compositor), der teure Weichzeichner wird nicht jedes Bild neu gerechnet.
+    let h = '<svg class="pf pf-sch" viewBox="-480 -290 960 580" aria-hidden="true"><defs>' +
+      '<filter id="pf-weich" x="-15%" y="-25%" width="130%" height="150%"><feGaussianBlur stdDeviation="9"/></filter></defs>' +
+      '<path class="pf-schatten" fill-rule="evenodd" filter="url(#pf-weich)" d="' + kurve(band + 6, wall, 7, 9) + kurve(-4, wall, 7, 9) + '"/></svg>' +
+      '<svg class="pf" viewBox="-480 -290 960 580" aria-hidden="true"><defs>' +
+      '<linearGradient id="pf-glas" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="s1"/><stop offset="1" class="s2"/></linearGradient>' +
+      '<linearGradient id="pf-wand" x1="0" y1="0" x2="0" y2="1"><stop offset=".55" class="s3"/><stop offset="1" class="s4"/></linearGradient></defs>' +
+      '<path class="pf-kante" fill-rule="evenodd" d="' + kurve(band, wall) + kurve(band, 0) + '"/>' +
+      '<path class="pf-fuss" d="' + kurve(band, wall - 1.2) + '"/>' +
+      '<path class="pf-kante-innen" fill-rule="evenodd" d="' + kurve(0, 0) + kurve(0, wall) + '"/>' +
+      '<path class="pf-oben" fill-rule="evenodd" d="' + kurve(band, 0) + kurve(0, 0) + '"/>' +
+      '<path class="pf-bahn" fill-rule="evenodd" d="' + kurve(band * 0.8, 0) + kurve(band * 0.2, 0) + '"/>' +
+      '<path class="pf-glanz" d="' + kurve(band - 2, 0) + '"/>' +
+      '<path class="pf-rand" d="' + kurve(band - 1.4, 0) + '"/>' +
+      '<path class="pf-rand-innen" d="' + kurve(1.2, 0) + '"/></svg>';
+    // Winkel auf der Bandmitte: ganze Zahl von Gruppen, je Winkel eine Matrix (längs, quer) mit der örtlichen Verkürzung
+    const lauf = [0];
+    for (let i = 1; i <= n; i++) {
+      const a = welt(i, band / 2), b = welt(i - 1, band / 2);
+      lauf.push(lauf[i - 1] + Math.hypot(a[0] - b[0], a[1] - b[1]));
+    }
+    const gesamt = lauf[n], zahl = Math.max(PL.gruppe, Math.round(gesamt / (PL.zelle * PL.gruppe)) * PL.gruppe), zl = gesamt / zahl;
+    const periode = PL.gruppe * zl / PL.fluss, takt = periode / PL.gruppe;
+    const VOR = [1, 0, 0, 0.45, 0.72], RUECK = [1, 0.72, 0.45, 0, 0], sek = v => (Math.round(v * 100) / 100) + 's';
+    let j = 1;
+    for (let k = 0; k < zahl; k++) {
+      const ziel = (k + 0.5) * zl;
+      while (j < n && lauf[j] < ziel) j++;
+      const u = (ziel - lauf[j - 1]) / Math.max(lauf[j] - lauf[j - 1], 1e-6);
+      const a = welt(j - 1, band / 2), b = welt(j, band / 2);
+      const p = [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u];
+      const tl = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1, tw = [(b[0] - a[0]) / tl, (b[1] - a[1]) / tl], nw = [tw[1], -tw[0]];
+      const s0 = bild(p, 0), st = bild([p[0] + tw[0], p[1] + tw[1]], 0), sn = bild([p[0] + nw[0], p[1] + nw[1]], 0);
+      const m = [st[0] - s0[0], st[1] - s0[1], sn[0] - s0[0], sn[1] - s0[1], s0[0], s0[1]].map(v => (Math.round(v * 1000) / 1000));
+      const g = k % PL.gruppe;
+      h += '<i class="w" style="transform:matrix(' + m.join(',') + ');--d:' + sek((g - PL.gruppe) * takt) + ';--r:' +
+        sek((((PL.gruppe - g) % PL.gruppe) - PL.gruppe) * takt) + ';--o:' + VOR[g] + ';--or:' + RUECK[g] + ';--p:' + sek(periode) + '"><b></b></i>';
+    }
+    return h;
+  }
   function offenText(p) {
     if (!p || !p.kind) return p && p.amount ? '+' + p.amount : '';
     if (p.kind === 'farbjagd') return 'Jagd!';
@@ -47,15 +119,13 @@
 
     _baue() {
       const r = this.root;
-      this.himmel = el('div', 'himmel', '<div class="tag"></div><div class="nacht"><div class="sterne"></div></div>');
+      // Himmel: Tagebene (Papier, Sonne oben links), Nachtebene (Sterne) und Dämmerung, die nur beim Flip kurz aufscheint
+      this.himmel = el('div', 'himmel', '<div class="tag"><i class="strahlen"></i><i class="sonne"></i></div><div class="nacht"><div class="sterne"></div></div><div class="daemmerung"></div>');
       r.appendChild(this.himmel);
       const b = this.buehne = el('div', 'buehne');
       b.id = 'buehne';
       r.appendChild(b);
-      this.ring = el('div', 'richtung');
-      this.ring.innerHTML = '<svg viewBox="-400 -230 800 460" aria-hidden="true"><g class="pfeile">' +
-        '<path class="bahn" d="M-240 -116A330 170 0 0 1 240 -116"/><path class="spitze" d="M240 -116l-8 -22M240 -116l-24 4"/>' +
-        '<path class="bahn" d="M290 99A330 150 0 0 1 -290 99"/><path class="spitze" d="M-290 99l6 22M-290 99l24 -6"/></g></svg>';
+      this.ring = el('div', 'richtung');   // Richtungs-Plattform, Inhalt aus plattform() in _geometrie (hängt von der Bühnenbreite ab)
       b.appendChild(this.ring);
       this.gegnerBox = el('div', 'gegner-box'); b.appendChild(this.gegnerBox);
       this.stapel = el('div', 'stapel'); b.appendChild(this.stapel);
@@ -84,6 +154,23 @@
       this.knMenue = el('button', 'rund menue-knopf', ICON_MENUE); this.knMenue.setAttribute('aria-label', 'Menü'); b.appendChild(this.knMenue);
       this.knTon = el('button', 'rund ton-knopf', ICON_TON); this.knTon.id = 'ton-knopf'; b.appendChild(this.knTon);
       this.zeigeTon();
+      // Glücksspiel (Hausregel gamble_cards): Automat in der Tischmitte (Kuppelknopf wie auf der Karte, Zahlenwerk 0–10) und der
+      // verdeckte Einsatzstapel mit Zähler am Platz des Glücksspielers. Beides nur während der Phase „gamble“.
+      this.automat = el('div', 'automat',
+        '<div class="schild">Glücksspiel</div>' +
+        '<button class="kuppel" type="button" aria-label="Glücksspielknopf drücken"><span class="frage">Los!</span></button>' +
+        '<div class="sockel"><i class="lampe l1"></i><i class="lampe l2"></i><div class="fenster"><div class="walze"><b>?</b></div></div><i class="lampe l3"></i><i class="lampe l4"></i></div>' +
+        '<div class="unter"></div>' +
+        '<button class="knopf klein aufhoeren" type="button" hidden>Aufhören</button>');
+      this.automat.hidden = true; this.automat.id = 'automat';
+      b.appendChild(this.automat);
+      this.kuppel = this.automat.querySelector('.kuppel'); this.kuppel.id = 'gluecksknopf';
+      this.walze = this.automat.querySelector('.walze');
+      this.automatUnter = this.automat.querySelector('.unter');
+      this.knStop = this.automat.querySelector('.aufhoeren'); this.knStop.id = 'aufhoeren';
+      this.einsatz = el('div', 'einsatz', '<div class="stapelchen"></div><b class="zahl"></b><span class="was">Einsatz</span>');
+      this.einsatz.hidden = true; this.einsatz.id = 'einsatz';
+      b.appendChild(this.einsatz);
       this.flug = el('div', 'flug'); b.appendChild(this.flug);
       this.farbwahl = el('div', 'farbwahl'); this.farbwahl.hidden = true; b.appendChild(this.farbwahl);
       this.knSort.id = 'sortieren'; this.knRueck.id = 'rueckseiten'; this.knMau.id = 'mau'; this.stapel.id = 'stapel'; this.ablage.id = 'ablage';
@@ -95,6 +182,8 @@
       tipp(this.knMenue, () => this.app.menue());
       tipp(this.knTon, () => this.app.tonSchalter());
       tipp(this.stapel, () => this.app.ziehen());
+      tipp(this.kuppel, () => this.app.druecken());
+      tipp(this.knStop, () => this.app.aufhoeren());
       this._halten(this.ablage, () => this.v && this.v.top && this.app.hilfe(this.v.top.face));
       this._halten(this.stapel, () => this.v && this.v.draw_back && this.app.hilfe(this.v.draw_back));
       this.aktionen.addEventListener('click', e => {
@@ -129,6 +218,7 @@
       b.style.width = W + 'px'; b.style.height = H + 'px';
       b.style.transform = 'translate(' + links + 'px,0) scale(' + s + ')';
       b.classList.toggle('eng', s < 0.5);
+      this.root.style.setProperty('--s', s.toFixed(4));   // Bühnenmaßstab für den Himmel (Sonne in Logik-Pixeln)
       this._geometrie();
       if (this.v) this.zeige(this.v, true);
     }
@@ -142,12 +232,16 @@
       this.g = { cx, cy, stapel: { x: cx - 177, y: cy }, ablage: { x: cx + 177, y: cy } };
       const setz = (e, x, y) => { e.style.left = x + 'px'; e.style.top = y + 'px'; };
       setz(this.ring, cx, cy);
+      const pw = Math.round(Math.min(330, W * 0.21));
+      if (this.ring.dataset.w !== String(pw)) { this.ring.innerHTML = plattform(W); this.ring.dataset.w = String(pw); }
       setz(this.stapel, cx - 177, cy);
       setz(this.stapelZahl, cx - 177, cy + 106);
       setz(this.farbe, cx, cy);
       setz(this.ablage, cx + 177, cy);
       setz(this.leiste, cx, H - 212);
       setz(this.farbwahl, cx + 177, cy);
+      setz(this.automat, cx - 2, cy + 10);
+      this.g.einsatz = { x: cx - 335, y: H - 250 };   // eigener Einsatzstapel: über der Hand links neben dem Hinweis (nicht bei den Mitspielern)
       this.knSort.style.top = (H - 160) + 'px';
       this.knRueck.style.top = (H - 88) + 'px';
     }
@@ -166,12 +260,58 @@
       return { x: ocx - Math.sin(phi) * rx, y: ocy + Math.cos(phi) * ry };
     }
 
+    /* ---------- Tag (helle Seite, Papier) und Nacht (dunkle Seite, Neon) ---------- */
+    // Setzt #tisch[data-seite]; style.css blendet Himmel und Plattform über WECHSEL_MS weich über, Schrift, Knöpfe und
+    // Markierungen wechseln auf halbem Weg (.wechselt), dazu scheint die Dämmerung auf (nicht bei reduzierten Effekten).
+    // Ohne Überblenden (.sofort): beim ersten Bild und beim ersten Bild einer neuen Partie (sofort = true, zeige ohne alte Sicht).
+    // Ein zweiter Wechsel, solange einer läuft, startet die Dämmerung nicht neu (sonst spränge sie); die Regie wartet vor einem
+    // Flip ohnehin, bis der vorige fertig ist (wechselRest).
+    setzeSeite(seite, sofort) {
+      seite = seite === 'dunkel' ? 'dunkel' : 'hell';
+      const r = this.root, h = this.himmel, alt = r.dataset.seite;
+      if (!alt || sofort) {
+        if (alt === seite && !r.classList.contains('wechselt')) return;
+        clearTimeout(this._wechselTimer); clearTimeout(this._themaTimer);
+        this._wechselBis = 0;
+        r.classList.add('sofort');
+        r.classList.remove('wechselt', 'halb'); h.classList.remove('wechsel');
+        r.dataset.seite = seite;
+        void r.offsetWidth;
+        requestAnimationFrame(() => requestAnimationFrame(() => r.classList.remove('sofort')));
+        if (this.app.themaFarbe) this.app.themaFarbe();
+        return;
+      }
+      if (alt === seite) return;
+      const laeuft = this.wechselRest() > 0;
+      r.classList.add('wechselt');   // Übergänge nur jetzt (style.css)
+      r.classList.remove('halb');
+      r.dataset.seite = seite;
+      if (!laeuft) {
+        h.classList.remove('wechsel');
+        if (!this.app.effekteReduziert()) { void h.offsetWidth; h.classList.add('wechsel'); }
+      }
+      this._wechselBis = performance.now() + WECHSEL_MS;
+      clearTimeout(this._wechselTimer);
+      this._wechselTimer = setTimeout(() => { h.classList.remove('wechsel'); r.classList.remove('wechselt', 'halb'); this._wechselBis = 0; }, WECHSEL_MS + 300);
+      // Browserleiste wechselt mit der Schrift auf halbem Weg. Ab dort (.halb) wechseln Schrift und Markierungen ohne Übergang: Was
+      // sich erst nach der Mitte ändert (z. B. .gg.dran mit dem Zwischenstand des Flips), steht sofort in der Farbe der neuen Seite,
+      // statt mit einem neuen Übergang erst 0,55 s später umzuspringen.
+      clearTimeout(this._themaTimer);
+      this._themaTimer = setTimeout(() => { r.classList.add('halb'); if (this.app.themaFarbe) this.app.themaFarbe(); }, WECHSEL_MS / 2);
+    }
+    // Restzeit des laufenden Tag/Nacht-Wechsels in ms (0 = keiner)
+    wechselRest() { return Math.max(0, (this._wechselBis || 0) - performance.now()); }
+    // Farbe der Browserleiste passend zum Tisch (Papier am Tag, Nachtblau nachts)
+    themaFarbe() { return this.root.dataset.seite === 'dunkel' ? '#0C0F22' : '#E6D7BC'; }
+
     /* ---------- Abgleich mit der Sicht ---------- */
     zeige(v, nurLayout) {
       const alt = this.v;
       this.v = v;
       const ich = v.seat;
-      this.root.dataset.seite = v.side || 'hell';
+      // Erstes Bild (auch einer neuen Partie) und neue Runde ohne Überblenden. Reine Layout-Aufrufe (Größe, Bilder, Einstellungen)
+      // ändern die Seite nicht: Beim Flip setzt die Regie sie selbst, die angezeigte Sicht trägt dann noch die alte Seite.
+      if (!alt || !nurLayout) this.setzeSeite(v.side, !alt || (typeof v.round === 'number' && typeof alt.round === 'number' && v.round !== alt.round));
       this._zeigeGegner(v);
       this._zeigeStapel(v);
       this._zeigeAblage(v, alt);
@@ -179,9 +319,11 @@
       this.ring.classList.toggle('gegen', v.dir === -1);
       const h = v.hints || {};
       const spielbar = h.playable || [];
-      // Phasen des Gastgebers (MauGame): turn, drawn, challenge, color, round_over, game_over (idle nur vor dem Austeilen)
-      const dran = v.turn === ich && (v.phase === 'turn' || v.phase === 'drawn' || v.phase === 'challenge' || v.phase === 'color');
-      this.hinweis.textContent = h.text || this._hinweisErsatz(v);
+      // Phasen des Gastgebers (MauGame): turn, drawn, challenge, color, gamble, round_over, game_over (idle nur vor dem Austeilen)
+      const dran = v.turn === ich && (v.phase === 'turn' || v.phase === 'drawn' || v.phase === 'challenge' || v.phase === 'color' || v.phase === 'gamble');
+      this._zeigeAutomat(v);
+      if (!this._tauschLaeuft && this.hand.el.getAttribute('style')) this.hand.el.removeAttribute('style');   // Rest einer Tausch-Animation
+      this.hinweis.textContent = this.hinweisText(h.text) || this._hinweisErsatz(v);
       this.hinweis.classList.toggle('dran', v.turn === ich && dran);
       const p = v.pending || {};
       const jagd = p.kind === 'farbjagd';
@@ -204,16 +346,31 @@
       this.knRueck.classList.toggle('aktiv', this.hand.rueck);
       this.knSort.lastChild.textContent = { farbe: 'Farbe', wert: 'Wert', punkte: 'Punkte' }[this.app.sortModus()] || 'Farbe';
       const reihe = K().sortiere(v.hand || [], this.app.sortModus());
-      this.hand.setze(reihe, { spielbar, dran: dran && (v.phase === 'turn' || v.phase === 'drawn' || (v.phase === 'challenge' && spielbar.length > 0)) });
+      // Hervorgehoben werden die legbaren Karten, im eigenen Glücksspiel die setzbaren (hints.can_stake). Die persönliche
+      // Einstellung „Spielbare Karten hervorheben“ (aus) nimmt Leuchten, Anheben und Abdunkeln ganz weg.
+      const setzbar = v.phase === 'gamble' && Array.isArray(h.can_stake) ? h.can_stake : null;
+      const markiert = setzbar || spielbar;
+      const hervor = !this.app.hervorheben || this.app.hervorheben();
+      const aktiv = dran && (v.phase === 'turn' || v.phase === 'drawn' || (v.phase === 'challenge' && spielbar.length > 0) || (setzbar !== null && setzbar.length > 0));
+      this.hand.setze(reihe, { spielbar: hervor ? markiert : [], dran: hervor && aktiv });
       if (!nurLayout && alt && alt.turn !== ich && v.turn === ich && dran) {
         M.Ton.spiele('dran');
         if (this.app.vibrieren) this.app.vibrieren(25);
       }
     }
+    // Hinweis des Gastgebers; ohne „Spielbare Karten hervorheben“ verrät er nicht, dass nichts passt (sonst wäre das die
+    // Markierung) – wie in der App (table_view.gd hint_text).
+    hinweisText(text) {
+      const t = text || '';
+      if (this.app.hervorheben && !this.app.hervorheben() && t.indexOf('Du bist dran – nichts passt') === 0)
+        return 'Du bist dran.' + (/Denk an „Mau!“$/.test(t) ? ' Denk an „Mau!“' : '');
+      return t;
+    }
     _hinweisErsatz(v) {
       const p = (v.players || []).find(x => x.seat === v.turn);
       if (v.phase === 'round_over') return 'Runde vorbei';
       if (v.phase === 'game_over') return 'Partie vorbei';
+      if (v.phase === 'gamble') return v.turn === v.seat ? ((v.hints || {}).can_press ? 'Drück den Glücksspielknopf!' : ((v.hints || {}).can_stop ? 'Noch eine Karte setzen – oder aufhören?' : 'Leg eine Karte verdeckt auf deinen Einsatz.')) : (p ? p.name + ' spielt Glücksspiel' : '');
       if (v.turn === v.seat) return 'Du bist dran';
       return p ? p.name + ' ist dran' : '';
     }
@@ -303,22 +460,176 @@
         this.ablageVerlauf.push({ id: top.id, face: top.face });
         while (this.ablageVerlauf.length > 3) this.ablageVerlauf.shift();
       }
-      const sig = this.ablageVerlauf.map(c => c.id + c.face).join(',');
-      if (this.ablageKarten.dataset.sig !== sig) {
-        this.ablageKarten.dataset.sig = sig;
-        this.ablageKarten.innerHTML = '';
-        this.ablageVerlauf.forEach((c, i) => {
-          const k = K().element(c.face, 124, i === this.ablageVerlauf.length - 1 ? 'top' : 'alt');
-          k.style.transform = 'translate(-50%,-50%) rotate(' + (i === this.ablageVerlauf.length - 1 ? kartenRot(c.id) * 0.4 : kartenRot(c.id)) + 'deg)';
-          this.ablageKarten.appendChild(k);
-        });
-      }
+      this._ablageZeichnen();
       // offene Ziehstrafe: pending {kind, amount, by, victim, color}; Farbjagd hat amount 0 (gezogen wird bis zur Farbe)
       const p = v.pending;
       const txt = offenText(p);
       this.offenEl.textContent = txt;
       this.offenEl.hidden = !txt;
     }
+    _ablageZeichnen() {
+      const sig = this.ablageVerlauf.map(c => c.id + c.face).join(',');
+      if (this.ablageKarten.dataset.sig === sig) return;
+      this.ablageKarten.dataset.sig = sig;
+      this.ablageKarten.innerHTML = '';
+      const n = this.ablageVerlauf.length;
+      this.ablageVerlauf.forEach((c, i) => {
+        const k = K().element(c.face, 124, i === n - 1 ? 'top' : 'alt');
+        // unter der obersten Karte leicht versetzt, damit mitabgelegte Karten hervorschauen
+        const dx = i === n - 1 ? 0 : (i - n + 1) * 12;
+        k.style.transform = 'translate(calc(-50% + ' + dx + 'px),-50%) rotate(' + (i === n - 1 ? kartenRot(c.id) * 0.4 : kartenRot(c.id)) + 'deg)';
+        this.ablageKarten.appendChild(k);
+      });
+    }
+    // Farbe mit ablegen / Einsatz unter die Ablage: Karten landen UNTER der obersten (sie bleibt oben)
+    unterAblage(karten) {
+      const top = this.ablageVerlauf[this.ablageVerlauf.length - 1];
+      const unten = this.ablageVerlauf.slice(0, -1).concat(karten).slice(-3);
+      this.ablageVerlauf = top ? unten.concat([top]) : unten;
+      this._ablageZeichnen();
+    }
+
+    /* ---------- Glücksspiel: Automat (Kuppelknopf, Zahlenwerk 0–10) und Einsatzstapel ---------- */
+    // view.gamble = {seat, stake, need, last} während eines Glücksspiels, {} sonst; fehlt ohne die Hausregel ganz.
+    _gluecksspiel(v) {
+      const g = v && v.gamble;
+      return (v && v.phase === 'gamble' && g && typeof g.seat === 'number' && g.seat >= 0) ? g : null;
+    }
+    _zeigeAutomat(v) {
+      const g = this._gluecksspiel(v);
+      if (!g) { this.automatZu(); this.zeigeEinsatz(-1, 0); return; }
+      this.automatAuf();
+      this.automatStand(g, v);
+      this.zeigeEinsatz(g.seat, g.stake | 0);
+    }
+    automatAuf() {
+      clearTimeout(this._automatTimer);
+      this.root.classList.add('mit-automat');
+      if (this.automatAktiv) return;
+      this.automatAktiv = true;
+      const a = this.automat;
+      a.hidden = false;
+      a.classList.remove('zu', 'treffer', 'niete', 'auf'); void a.offsetWidth; a.classList.add('auf');
+    }
+    automatZu() {
+      if (!this.automatAktiv) return;
+      this.automatAktiv = false;
+      this.automat.classList.add('zu');
+      this.automat.classList.remove('drueckbar');
+      this.knStop.hidden = true;
+      clearTimeout(this._automatTimer);
+      this._automatTimer = setTimeout(() => { if (!this.automatAktiv) { this.automat.hidden = true; this.root.classList.remove('mit-automat'); } }, 700);
+    }
+    // Zustand aus der Sicht: Knopf bereit (hints.can_press), Text darunter, letzter Wert im Zahlenwerk
+    automatStand(g, v) {
+      v = v || this.v;
+      const ich = v && g.seat === v.seat;
+      const h = (v && v.hints) || {};
+      const druck = !!(ich && h.can_press), stop = !!(ich && h.can_stop);
+      this.automat.classList.toggle('drueckbar', druck);
+      this.automat.classList.toggle('meins', !!ich);
+      this.kuppel.disabled = !ich;
+      this.knStop.hidden = !stop;   // „Aufhören“ nur mit hints.can_stop (nach einem Druck ohne Treffer)
+      const n = this.name(g.seat);
+      this.automatUnter.textContent = ich ? (druck ? 'Drück den Knopf!' : (stop ? '' : 'Tipp eine Karte an'))   // mit can_stop steht dort der Knopf, der Hinweis oben fragt
+        : (g.need === 'press' ? n + ' drückt …' : n + ' setzt …');
+      if (!this._walzeLaeuft && typeof g.last === 'number') this.walzeZeige(g.last);   // ohne last: Anzeige bleibt
+    }
+    walzeZeige(wert) {
+      const w = this.walze;
+      w.style.transition = 'none'; w.style.transform = '';
+      w.innerHTML = '<b>' + (wert >= 0 ? wert : '?') + '</b>';
+      this.automat.classList.toggle('treffer', wert > 0);
+      this.automat.classList.toggle('niete', wert === 0);
+    }
+    // Zahlenwerk dreht (Band aus Zufallszahlen) und rastet auf dem Wert ein
+    walzeDreh(wert, dauer) {
+      const w = this.walze;
+      this._walzeLaeuft = true;
+      this.automat.classList.remove('treffer', 'niete');
+      this.automat.classList.add('dreht');
+      const alt = (w.textContent || '?').trim().slice(0, 2);
+      const band = [alt];
+      for (let i = 0; i < 14; i++) band.push(String(Math.floor(Math.random() * 11)));
+      band.push(String(wert));
+      w.innerHTML = band.map(z => '<b>' + z + '</b>').join('');
+      w.style.transition = 'none'; w.style.transform = 'translateY(0)';
+      void w.offsetWidth;
+      w.style.transition = 'transform ' + dauer + 'ms cubic-bezier(.12,.62,.2,1)';
+      w.style.transform = 'translateY(' + (-(band.length - 1) * ZEILE) + 'px)';
+      return schlaf(dauer).then(() => { this._walzeLaeuft = false; this.automat.classList.remove('dreht'); this.walzeZeige(wert); });
+    }
+    // eigener Druck: Knopf federt, bis die Antwort kommt kein zweiter Druck
+    knopfDruck() {
+      const k = this.kuppel;
+      k.classList.remove('druck'); void k.offsetWidth; k.classList.add('druck');
+      this.automat.classList.remove('drueckbar');
+      this.automatUnter.textContent = 'Viel Glück …';
+    }
+    // eigenes Aufhören gesendet: Knopf weg, bis die Antwort kommt
+    stopGesendet() {
+      this.knStop.hidden = true;
+      this.automatUnter.textContent = 'Du hörst auf …';
+    }
+    // Lage des Einsatzstapels: eigener Platz links über der Hand, Mitspieler neben ihrem Fächer (zur Tischmitte hin)
+    einsatzPos(seat) {
+      if (!this.v || seat === this.v.seat) return { x: this.g.einsatz.x, y: this.g.einsatz.y, w: 56 };
+      const g = this.gegnerEls.get(seat);
+      if (!g) return { x: this.g.cx, y: 80, w: 46 };
+      const rechts = g.px <= this.g.cx + 40;
+      return { x: g.px + (rechts ? 1 : -1) * (g.kompakt ? 106 : 130), y: g.py + 30, w: g.kompakt ? 40 : 48 };
+    }
+    zeigeEinsatz(seat, n) {
+      this.einsatzSeat = seat; this.einsatzZahl = n;
+      const e = this.einsatz;
+      if (seat < 0 || !(n > 0)) { e.hidden = true; e.dataset.sig = ''; return; }
+      const p = this.einsatzPos(seat);
+      e.hidden = false;
+      e.style.left = p.x + 'px'; e.style.top = p.y + 'px';
+      const meins = !!(this.v && seat === this.v.seat);
+      e.classList.toggle('meins', meins);
+      e.querySelector('.was').textContent = meins ? 'Dein Einsatz' : 'Einsatz';
+      const sig = seat + ':' + n + ':' + p.w;
+      if (e.dataset.sig === sig) return;
+      e.dataset.sig = sig;
+      const box = e.firstChild;
+      box.innerHTML = '';
+      const sichtbar = Math.min(n, 4), h = Math.round(p.w * K().VERHAELTNIS);
+      box.style.width = (p.w + 3 * 5) + 'px'; box.style.height = (h + 3 * 4) + 'px';
+      for (let i = 0; i < sichtbar; i++) {
+        const k = K().element('rueckseite', p.w, 'mini');
+        k.style.left = (i * 5) + 'px'; k.style.top = ((sichtbar - 1 - i) * 4) + 'px';
+        k.style.transform = 'rotate(' + (kartenRot(i * 11 + seat) * 0.35).toFixed(1) + 'deg)';
+        box.appendChild(k);
+      }
+      e.querySelector('.zahl').textContent = n;
+      e.classList.remove('neu'); void e.offsetWidth; e.classList.add('neu');
+    }
+
+    /* ---------- Kartentausch: eigene Hand wandert zum Nächsten, die neue kommt vom Vorigen ---------- */
+    handWeg(ziel, dauer) {
+      const h = this.hand.el, ox = this.g.cx, oy = this.H - 110;
+      this._tauschLaeuft = true;
+      h.style.transformOrigin = ox + 'px ' + oy + 'px';
+      h.style.transition = 'transform ' + dauer + 'ms cubic-bezier(.5,0,.75,.45), opacity ' + dauer + 'ms ease-in';
+      h.style.transform = 'translate(' + ((ziel.x - ox) * 0.8).toFixed(0) + 'px,' + ((ziel.y - oy) * 0.8).toFixed(0) + 'px) scale(.3)';
+      h.style.opacity = '0';
+    }
+    handRein(reihe, quelle, dauer) {
+      const h = this.hand.el, ox = this.g.cx, oy = this.H - 110;
+      this.hand.waehle(null);
+      this.hand.setze(reihe, { spielbar: [], dran: false });
+      h.style.transition = 'none';
+      h.style.transformOrigin = ox + 'px ' + oy + 'px';
+      h.style.transform = 'translate(' + ((quelle.x - ox) * 0.8).toFixed(0) + 'px,' + ((quelle.y - oy) * 0.8).toFixed(0) + 'px) scale(.3)';
+      h.style.opacity = '0';
+      void h.offsetWidth;
+      h.style.transition = 'transform ' + dauer + 'ms cubic-bezier(.2,.75,.3,1), opacity ' + Math.round(dauer * 0.6) + 'ms ease-out';
+      h.style.transform = 'translate(0,0) scale(1)';
+      h.style.opacity = '1';
+      return schlaf(dauer + 30).then(() => { this._tauschLaeuft = false; h.removeAttribute('style'); });
+    }
+
     _zeigeFarbe(v) {
       const f = v.color;
       const fi = K().FARB_INFO[f];
@@ -338,7 +649,7 @@
       fw.innerHTML = '<div class="schleier"></div>' + farben.map((f, i) => {
         const fi = K().FARB_INFO[f];
         const grund = seite === 'dunkel' ? fi.ring : fi.hex;
-        const hellGrund = f === 'gelb' || f === 'pink';
+        const hellGrund = f === 'gelb' || f === 'gruen' || f === 'pink';   // Druckfarbe (style.css .farbwahl .feld)
         return '<button class="feld f' + i + '" data-farbe="' + f + '" style="--f:' + grund + '">' +
           K().symbolSVG(f, { farbe: hellGrund ? K().INK : K().CREAM, grund }) +
           '<b>' + esc(fi.name) + '</b><i>' + (zaehlung[f] ? zaehlung[f] + '× auf der Hand' : 'keine') + '</i></button>';
@@ -460,9 +771,10 @@
       }
       return blaseLinks ? { x: p.x - 40, y: p.y - 60, seite: 'rechts' } : { x: p.x + 40, y: p.y - 60, seite: 'links' };
     }
-    banner(titel, unter, cls, dauer) {
+    // oben = über dem Glücksspiel-Automaten (der die Tischmitte belegt)
+    banner(titel, unter, cls, dauer, oben) {
       const b = el('div', 'banner ' + (cls || ''), '<b>' + esc(titel) + '</b>' + (unter ? '<span>' + esc(unter) + '</span>' : ''));
-      b.style.left = this.g.cx + 'px'; b.style.top = (this.g.cy - 4) + 'px';
+      b.style.left = this.g.cx + 'px'; b.style.top = (this.g.cy - (oben ? 196 : 4)) + 'px';
       b.style.animationDuration = dauer + 'ms';
       this.flug.appendChild(b);
       setTimeout(() => b.remove(), dauer + 50);
@@ -599,20 +911,26 @@
           await schlaf(d(650));
           break;
         }
-        case 'flip':
+        case 'flip': {
+          // Läuft noch ein Wechsel (zwei Flips kurz nacheinander, Rückstau), erst ihn zu Ende blenden lassen
+          const rest = t.wechselRest();
+          if (rest > 0) await schlaf(rest);
+          // Zwischenstand mit der Seite dieses Flips (bei zwei Flips in einem Paket wäre view.side schon die Endseite)
+          const zwischen = view.side === e.side ? view : Object.assign({}, view, { side: e.side });
           M.Ton.spiele('flip');
           if (!reduziert) {
             t.wende('aus');
-            t.root.dataset.seite = e.side;
+            t.setzeSeite(e.side);   // Himmel, Plattform, Schrift und Knöpfe blenden über (style.css, --wd)
             await schlaf(d(560));
-            t.zeige(view, true);
+            t.zeige(zwischen, true);
             t.wende('ein');
             await schlaf(d(620));
             t.wendeEnde();
-          } else { t.root.dataset.seite = e.side; t.zeige(view, true); }
+          } else { t.setzeSeite(e.side); t.zeige(zwischen, true); }
           t.banner(e.side === 'dunkel' ? 'Nacht!' : 'Tag!', 'Alles gewendet', 'flip', d(1100));
           await schlaf(d(600));
           break;
+        }
         case 'pending':
           t.offenEl.hidden = false; t.offenEl.textContent = offenText(e) || ('+' + (e.amount | 0));
           t.offenEl.classList.remove('puls'); void t.offenEl.offsetWidth; t.offenEl.classList.add('puls');
@@ -668,6 +986,143 @@
           if (e.seat !== ich) t.banner('Farbwahl', t.name(e.seat) + ' wählt die Farbe', 'klein', d(1000));
           await schlaf(d(300));
           break;
+
+        // ---------- Hausregel Kartentausch ----------
+        // {seat, dir, counts, hand (nur die eigene neue Hand), backs?}: Alle aktiven Plätze geben ihre ganze Hand an den nächsten
+        // aktiven Platz in Tauschrichtung. Kleine verdeckte Stapel wandern reihum, die eigene Hand fliegt zum Nächsten und die neue
+        // kommt vom Vorigen herein; danach zeigt die Sicht die neuen Hände.
+        case 'swap_hands': {
+          M.Ton.spiele('mischen');
+          const schritt = e.dir === -1 ? -1 : 1;
+          const aktiv = (view.players || []).filter(p => !(p.place > 0)).map(p => p.seat).sort((a, b) => a - b);
+          const nach = s => aktiv[(aktiv.indexOf(s) + schritt + aktiv.length) % aktiv.length];
+          const von = s => aktiv[(aktiv.indexOf(s) - schritt + aktiv.length) % aktiv.length];
+          t.banner('Kartentausch!', 'Alle Hände wandern ' + (schritt === 1 ? 'im Uhrzeigersinn' : 'gegen den Uhrzeigersinn') + ' weiter', 'tausch', d(1700));
+          if (aktiv.length < 2) { await schlaf(d(900)); break; }
+          const vorher = new Map((t.v.players || []).map(p => [p.seat, p.count | 0]));
+          const ichDabei = aktiv.indexOf(ich) >= 0;
+          aktiv.forEach(s => { const g = t.gegnerEls.get(s); if (g) g.e.classList.add('tauscht'); });
+          const flug = d(reduziert ? 420 : 680);
+          if (ichDabei) t.handWeg(t.platzPos(nach(ich)), flug);
+          const fluege = [];
+          aktiv.forEach((s, i) => {
+            const stapel = Math.min(3, Math.max(1, vorher.get(s) || 1));
+            const a = t.platzPos(s), b = t.platzPos(nach(s));
+            for (let j = 0; j < stapel; j++) {
+              fluege.push(schlaf(d(i * 35 + j * 80)).then(() => t.fliege('rueckseite', { x: a.x, y: a.y, w: s === ich ? 96 : 54, rot: kartenRot(s * 5 + j) },
+                { x: b.x + (j - 1) * 6, y: b.y, w: nach(s) === ich ? 96 : 54, rot: kartenRot(s * 3 + j) * 0.6 }, flug, { ausblenden: nach(s) !== ich })));
+            }
+          });
+          await Promise.all(fluege);
+          // neue Fächer der Mitspieler (Kartenzahl, Rückseiten) und die eigene neue Hand
+          t._zeigeGegner(view);
+          aktiv.forEach(s => { const g = t.gegnerEls.get(s); if (g) g.e.classList.remove('tauscht'); });
+          if (ichDabei) {
+            const neu = Array.isArray(e.hand) ? e.hand : (view.hand || []);
+            await t.handRein(K().sortiere(neu, t.app.sortModus()), t.platzPos(von(ich)), flug);
+            t.app.toast('Deine neuen Karten kommen von ' + t.name(von(ich)) + '.', 'leise', 2600);
+          } else await schlaf(d(300));
+          break;
+        }
+
+        // ---------- Hausregel Glücksspiel ----------
+        case 'gamble_start':    // {seat}: Phase „gamble“ beginnt; der Automat erscheint
+          t.automatAuf();
+          t.automatStand({ seat: e.seat, stake: 0, need: 'stake', last: -1 }, Object.assign({}, t.v, { hints: {} }));
+          t.banner('Glücksspiel!', e.seat === ich ? 'Setz Karte um Karte und drück den Knopf' : t.name(e.seat) + ' spielt Glücksspiel', 'gluecks', d(1500), true);
+          await schlaf(d(1000));
+          break;
+        case 'stake': {         // {seat, count, card*, face*}: eine Karte verdeckt auf den Einsatz
+          M.Ton.spiele('karte');
+          const ziel = t.einsatzPos(e.seat);
+          let von;
+          if (e.seat === ich && e.card !== undefined) {
+            const p = t.hand.position(e.card), he = t.hand.element(e.card);
+            von = p ? { x: p.x, y: p.y, w: p.w * 0.8, rot: p.rot } : { x: t.g.cx, y: t.H - 100, w: 150 };
+            if (he) he.style.visibility = 'hidden';
+          } else von = Object.assign({ rot: -6 }, t.platzPos(e.seat), { w: 54 });
+          await t.fliege('rueckseite', von, Object.assign({ rot: kartenRot((e.count | 0) * 7) * 0.35 }, ziel), d(400));
+          t.zeigeEinsatz(e.seat, e.count | 0);
+          if (t.automatAktiv) t.automatStand({ seat: e.seat, stake: e.count | 0, need: 'press' }, Object.assign({}, t.v, { hints: {} }));
+          await schlaf(d(150));
+          break;
+        }
+        case 'gamble_roll': {   // {seat, value}: 0 = kein Treffer (weiter), 1–10 = Treffer (so viele Karten ziehen, Einsatz zurück)
+          const wert = e.value | 0;
+          t.automatAuf();
+          M.Ton.spiele('mischen');
+          await t.walzeDreh(wert, d(reduziert ? 500 : 1150));
+          const wer = e.seat === ich ? 'Du' : t.name(e.seat);
+          if (wert > 0) {
+            M.Ton.spiele('fehler');
+            t.banner('Treffer: ' + wert + '!', wer + (e.seat === ich ? ' ziehst ' : ' zieht ') + wert + (wert === 1 ? ' Karte' : ' Karten') + ' – der Einsatz geht zurück', 'warn klein', d(1600), true);
+            await schlaf(d(1100));
+          } else {
+            t.banner('0 – Glück gehabt!', e.seat === ich ? 'Kein Treffer, weiter geht’s' : 'Kein Treffer für ' + t.name(e.seat), 'gut klein', d(1300), true);
+            await schlaf(d(800));
+          }
+          break;
+        }
+        case 'stake_back': {    // {seat, count, …}: der ganze Einsatz kommt zurück auf die Hand
+          const a = t.einsatzPos(e.seat), b = t.platzPos(e.seat), n = Math.min(4, Math.max(1, e.count | 0));
+          t.zeigeEinsatz(e.seat, 0);
+          const fluege = [];
+          for (let i = 0; i < n; i++) fluege.push(schlaf(d(i * 80)).then(() => t.fliege('rueckseite', { x: a.x, y: a.y, w: a.w, rot: kartenRot(i * 9) * 0.4 }, Object.assign({ rot: kartenRot(i * 5) * 0.5 }, b), d(380), { ausblenden: e.seat !== ich })));
+          t.abzeichen(e.seat, '+' + (e.count | 0) + ' zurück', 'zieh', d(1200));
+          await Promise.all(fluege);
+          break;
+        }
+        // {seat, count, cards*, faces*, reason}: der Einsatz kommt unter die Ablage. reason "empty": Hand leer und 0 gedrückt, der
+        // Spieler ist fertig; reason "stop": der Spieler hört auf, sein Zug ist vorbei (danach turn des Nächsten)
+        case 'stake_discard': {
+          const a = t.einsatzPos(e.seat), n = Math.min(4, Math.max(1, e.count | 0)), stop = e.reason === 'stop';
+          t.zeigeEinsatz(e.seat, 0);
+          M.Ton.spiele('karte');
+          if (stop) {
+            const k = e.count | 0, was = k + (k === 1 ? ' Karte' : ' Karten');
+            t.banner(e.seat === ich ? 'Aufgehört!' : t.name(e.seat) + ' hört auf!', 'Der Einsatz (' + was + ') kommt unter die Ablage', 'gluecks klein', d(1500), true);
+            if (t.automatAktiv) { t.knStop.hidden = true; t.kuppel.disabled = true; t.automat.classList.remove('drueckbar'); t.automatUnter.textContent = e.seat === ich ? 'Du hörst auf' : t.name(e.seat) + ' hört auf'; }
+          } else t.banner('Alles gesetzt!', 'Der Einsatz kommt unter die Ablage', 'gut klein', d(1500), true);
+          const fluege = [];
+          for (let i = 0; i < n; i++) fluege.push(schlaf(d(i * 80)).then(() => t.fliege('rueckseite', { x: a.x, y: a.y, w: a.w, rot: kartenRot(i * 9) * 0.4 },
+            { x: t.g.ablage.x - 10 + i * 4, y: t.g.ablage.y + 4, w: 124, rot: kartenRot(i * 7) }, d(420))));
+          await Promise.all(fluege);
+          if (Array.isArray(e.faces) && e.faces.length) t.unterAblage(e.faces.slice(-2).map((f, i) => ({ id: (e.cards || [])[i] | 0, face: f })));
+          await schlaf(d(400));
+          break;
+        }
+
+        // ---------- Hausregel Farbe mit ablegen ----------
+        // {seat, color, cards, faces, count} (öffentlich): alle übrigen Karten der Farbe fliegen auf die Ablage, UNTER die Ablegen-Karte
+        case 'discard_color': {
+          const n = e.count | 0, fi = K().FARB_INFO[e.color];
+          const faces = Array.isArray(e.faces) ? e.faces : [], karten = Array.isArray(e.cards) ? e.cards : [];
+          const fname = fi ? fi.name : '';
+          t._zeigeFarbe({ color: e.color });
+          if (n > 0) {
+            M.Ton.spiele('karte');
+            const fluege = [];
+            faces.forEach((f, i) => {
+              let von;
+              if (e.seat === ich) {
+                const p = t.hand.position(karten[i]), he = t.hand.element(karten[i]);
+                von = p ? { x: p.x, y: p.y, w: p.w, rot: p.rot } : { x: t.g.cx, y: t.H - 100, w: 190 };
+                if (he) he.style.visibility = 'hidden';
+              } else von = Object.assign({ rot: -8 }, t.platzPos(e.seat));
+              const ziel = { x: t.g.ablage.x - 16 + (i % 3) * 8, y: t.g.ablage.y + 6, w: 124, rot: kartenRot(karten[i] | 0) };
+              fluege.push(schlaf(d(i * 110)).then(() => t.fliege(f, von, ziel, d(440))));
+            });
+            t.banner('Farbe ablegen', (e.seat === ich ? 'Du legst ' : t.name(e.seat) + ' legt ') + n + (n === 1 ? ' Karte' : ' Karten') + ' in ' + fname + ' mit ab', 'farbe', d(1600));
+            await Promise.all(fluege);
+            t.unterAblage(faces.map((f, i) => ({ id: karten[i] | 0, face: f })));
+            if (n > 1) t.abzeichen(e.seat, '−' + n, 'zieh', d(1000));
+            await schlaf(d(450));
+          } else {
+            t.abzeichen(e.seat, 'Keine weitere ' + fname + '-Karte', 'aussetzen', d(1200));
+            await schlaf(d(500));
+          }
+          break;
+        }
         // round_start, start (Startkarte), turn, keep, accept: nur Zustand, kein eigener Effekt
         default: break;
       }

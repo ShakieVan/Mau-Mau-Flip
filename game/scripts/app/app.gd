@@ -7,6 +7,8 @@ extends Node
 # Die automatische Update-Prüfung (höchstens einmal am Tag) läuft nur in der Android-App, nie in Tests oder am PC: Sonst fragte jeder
 # Testlauf GitHub ab (Limit 60 Abfragen je Stunde und Adresse).
 
+const MOBILE_MAX_FPS := 60
+
 var settings: AppSettings
 var sound: AppSound
 var updater: Updater
@@ -21,6 +23,10 @@ func _init() -> void:
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	if OS.has_feature("mobile"):
+		# Höchstens 60 Bilder/s (Gerätetest 0.1.1, M3): Das S21 lief mit 120 Hz und rechnete jedes Bild doppelt; mit Grenze
+		# gleichmäßiger Takt, halbe Last für Prozessor und GPU, weniger Akku und Wärme.
+		Engine.max_fps = MOBILE_MAX_FPS
 	sound = AppSound.new()
 	sound.name = "Sound"
 	sound.settings = settings

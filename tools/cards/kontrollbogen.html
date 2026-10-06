@@ -9,41 +9,112 @@ h1{font:900 34px 'Fraunces',serif;margin:0 0 4px;color:#F4EADA}
 .stat{font-size:15px;color:#BFB4CC;margin-bottom:16px}
 .stat b{color:#9BE3A5}.stat b.schlecht{color:#FF8A7A}
 .reihe{display:flex;gap:10px;margin-bottom:10px}
+.gruppe{display:flex;gap:6px;padding:6px;border-radius:8px;background:#353042}
 .zelle{width:130px;display:flex;flex-direction:column;align-items:center;gap:4px}
 .bild{width:130px;height:202px;position:relative;border-radius:2px;
   background:conic-gradient(#4A4558 25%,#6A6478 0 50%,#4A4558 0 75%,#6A6478 0) 0 0/10px 10px}
 .bild img{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
 .bild.gross{width:300px;height:466px}
 .zelle.gross{width:300px}
+.zelle.neu .k{color:#FFE08A;font-weight:800}
 .fehlt{background:#7A1F2A}
 .fehlt::after{content:'FEHLT';position:absolute;inset:0;display:grid;place-items:center;font-weight:800;color:#fff}
 .k{font-size:11.5px;line-height:1.15;min-height:2.3em;color:#CFC6DA;text-align:center;font-stretch:85%;overflow-wrap:anywhere}
 .k.schlecht{color:#FF8A7A;font-weight:800}
 h2{font:800 18px 'Bricolage Grotesque';margin:18px 0 10px;color:#F4EADA}
+.hand{display:flex;align-items:flex-start;padding:14px 18px 0;margin-bottom:12px;border-radius:10px;background:linear-gradient(#1B2040,#0A0D20);width:max-content}
+.hand.hell{background:linear-gradient(#3A3350,#24203A)}
+.hk{position:relative;overflow:hidden;border-radius:7px 7px 0 0;box-shadow:-4px 0 8px rgba(0,0,0,.45)}
+.hk img{display:block;width:100%}
+.hk.neu{outline:2px solid #FFE08A;outline-offset:-2px}
+.hinweis{font-size:13px;color:#BFB4CC;margin:-4px 0 8px}
 </style></head>
 <body><div class="wrap" id="wrap"></div>
 <script type="text/plain" id="out"></script>
 <script src="mmf.js"></script>
 <script src="karten.js"></script>
 <script>
-// Zeigt alle Kartenbilder aus game/assets/cards (wie sie im Spiel liegen) und prüft Anzahl und Größe 300×466.
+// Zeigt die Kartenbilder aus game/assets/cards (wie sie im Spiel liegen) und prüft Anzahl und Größe 300×466.
+//   kontrollbogen.html              alle 129 Bilder (128 Gesichter + Rückseite) → docs/module/B_kartenbogen.png
+//   kontrollbogen.html?satz=tausch  die 8 Kartentausch-Gesichter neben Richtungswechsel und Flip derselben Farbe,
+//                                   in Originalgröße und als Hand (nur der obere Teil sichtbar) → docs/module/B_kartentausch.png
+//   kontrollbogen.html?satz=zusatz  die 12 Gesichter von Glücksspiel und Farbe ablegen neben +1/+5, Kartentausch und Wünscher
+//                                   derselben Seite, in Originalgröße und als Hand → docs/module/B_neue_karten.png
 (async () => {
   const wrap = document.getElementById('wrap');
-  const keys = allKeys();
-  const rows = [];
-  const typen = n => [1, 2, 3, 4, 5, 6, 7, 8, 9].map(String).concat(n);
-  for (const f of HELL_FARBEN) rows.push(typen(['plus1', 'aussetzen', 'richtungswechsel', 'flip']).map(t => `hell_${f}_${t}`));
-  for (const f of DUNKEL_FARBEN) rows.push(typen(['plus5', 'alle_aussetzen', 'richtungswechsel', 'flip']).map(t => `dunkel_${f}_${t}`));
-  rows.push(['hell_wuenscher', 'hell_wuenscher_plus2', 'dunkel_wuenscher', 'dunkel_farbjagd', RUECKSEITE]);
-  const gezeigt = new Set(rows.flat());
-  const vergessen = keys.filter(k => !gezeigt.has(k));
-  if (vergessen.length) rows.push(vergessen);
-  const gross = ['hell_rot_1', 'hell_gelb_6', 'dunkel_lila_9', 'dunkel_pink_plus5', 'hell_wuenscher_plus2', RUECKSEITE];
+  const satz = new URLSearchParams(location.search).get('satz') || 'alle';
   const t = Date.now();
-  const zelle = (k, cls = '') => `<div class="zelle ${cls}"><div class="bild ${cls}"><img data-k="${k}" src="../../game/assets/cards/${k}.png?t=${t}"></div><div class="k" data-k="${k}">${k.replace(/_/g, "_<wbr>")}</div></div>`;
-  wrap.innerHTML = `<h1>Mau-Mau Flip – Kartenbogen</h1><div class="stat" id="stat">lädt …</div>` +
-    rows.map(r => `<div class="reihe">${r.map(k => zelle(k)).join('')}</div>`).join('') +
-    `<h2>Stichprobe in Originalgröße (300 × 466 px)</h2><div class="reihe">${gross.map(k => zelle(k, 'gross')).join('')}</div>`;
+  // gelb hervorgehoben: die neuen Gesichter des Satzes (im Gesamtbogen alle Hausregel-Karten)
+  const neu = new Set((satz === 'tausch' ? tauschFaces() : satz === 'zusatz' ? zusatzFaces() : tauschFaces().concat(zusatzFaces())).map(c => c.file));
+  const src = k => `../../game/assets/cards/${k}.png?t=${t}`;
+  const zelle = (k, cls = '') => `<div class="zelle ${cls} ${neu.has(k) ? 'neu' : ''}"><div class="bild ${cls}"><img data-k="${k}" src="${src(k)}"></div><div class="k" data-k="${k}">${k.replace(/_/g, "_<wbr>")}</div></div>`;
+  let keys, titel, html, soll;
+
+  if (satz === 'tausch') {
+    keys = tauschFaces().map(c => c.file);
+    soll = 8;
+    titel = 'Mau-Mau Flip – Kartentausch';
+    const nachbarn = (s, f) => [`${s}_${f}_richtungswechsel`, `${s}_${f}_tausch`, `${s}_${f}_flip`];
+    const gruppenReihe = (s, fs) => `<div class="reihe">${fs.map(f => `<div class="gruppe">${nachbarn(s, f).map(k => zelle(k)).join('')}</div>`).join('')}</div>`;
+    // Hand: überlappend wie im Fächer, nur der obere Teil der Karte sichtbar (Nutzerentscheidung 8: Eckindex trägt)
+    const handKarten = (s, fs) => fs.flatMap(f => [`${s}_${f}_richtungswechsel`, `${s}_${f}_tausch`, `${s}_${f}_flip`,
+      `${s}_${f}_${s === 'hell' ? 'aussetzen' : 'alle_aussetzen'}`, `${s}_${f}_${s === 'hell' ? 'plus1' : 'plus5'}`, `${s}_${f}_7`]);
+    const hand = (s, fs, w) => `<div class="hand ${s}">${handKarten(s, fs).map((k, i, a) =>
+      `<div class="hk ${neu.has(k) ? 'neu' : ''}" style="width:${w}px;height:${Math.round(w * 466 / 300 * 0.5)}px;margin-right:${i < a.length - 1 ? -Math.round(w * 0.56) : 0}px"><img data-k="${k}" src="${src(k)}"></div>`).join('')}</div>`;
+    html = `<h1>${titel}</h1><div class="stat" id="stat">lädt …</div>` +
+      `<h2>Neben Richtungswechsel und Flip derselben Farbe</h2>` +
+      gruppenReihe('hell', HELL_FARBEN) + gruppenReihe('dunkel', DUNKEL_FARBEN) +
+      `<h2>Originalgröße (300 × 466 px)</h2>` +
+      `<div class="reihe">${HELL_FARBEN.map(f => zelle(`hell_${f}_tausch`, 'gross')).join('')}</div>` +
+      `<div class="reihe">${DUNKEL_FARBEN.map(f => zelle(`dunkel_${f}_tausch`, 'gross')).join('')}</div>` +
+      `<h2>In der Hand: nur der obere Teil sichtbar (Karten 150 px und 100 px breit)</h2>` +
+      `<div class="hinweis">Je Farbe: Richtungswechsel, Kartentausch (gelb umrandet), Flip, Aussetzen bzw. Alle aussetzen, +1 bzw. +5, 7</div>` +
+      hand('hell', HELL_FARBEN.slice(0, 2), 150) + hand('dunkel', DUNKEL_FARBEN.slice(0, 2), 150) +
+      hand('hell', HELL_FARBEN, 100) + hand('dunkel', DUNKEL_FARBEN, 100);
+  } else if (satz === 'zusatz') {
+    keys = zusatzFaces().map(c => c.file);
+    soll = 12;
+    titel = 'Mau-Mau Flip – Glücksspiel und Farbe ablegen';
+    const zieh = s => s === 'hell' ? 'plus1' : 'plus5';
+    const gruppe = ks => `<div class="gruppe">${ks.map(k => zelle(k)).join('')}</div>`;
+    const farbReihe = (s, fs) => `<div class="reihe">${fs.map(f => gruppe([`${s}_${f}_${zieh(s)}`, `${s}_${f}_tausch`, `${s}_${f}_ablegen`])).join('')}</div>`;
+    const jokerReihe = `<div class="reihe">${gruppe(['hell_wuenscher', 'hell_wuenscher_plus2', 'hell_gluecksspiel', 'hell_ablegen_joker'])}` +
+      `${gruppe(['dunkel_wuenscher', 'dunkel_farbjagd', 'dunkel_gluecksspiel', 'dunkel_ablegen_joker'])}</div>`;
+    // Hand: überlappend wie im Fächer, nur der obere Teil der Karte sichtbar (Nutzerentscheidung 8: Eckindex trägt)
+    const handKarten = (s, fs) => [`${s}_wuenscher`, `${s}_gluecksspiel`, `${s}_ablegen_joker`].concat(fs.flatMap(f =>
+      [`${s}_${f}_${zieh(s)}`, `${s}_${f}_tausch`, `${s}_${f}_ablegen`, `${s}_${f}_flip`, `${s}_${f}_7`]));
+    const hand = (s, fs, w) => `<div class="hand ${s}">${handKarten(s, fs).map((k, i, a) =>
+      `<div class="hk ${neu.has(k) ? 'neu' : ''}" style="width:${w}px;height:${Math.round(w * 466 / 300 * 0.5)}px;margin-right:${i < a.length - 1 ? -Math.round(w * 0.56) : 0}px"><img data-k="${k}" src="${src(k)}"></div>`).join('')}</div>`;
+    html = `<h1>${titel}</h1><div class="stat" id="stat">lädt …</div>` +
+      `<h2>Farbe ablegen neben +1 bzw. +5 und Kartentausch derselben Farbe</h2>` +
+      farbReihe('hell', HELL_FARBEN) + farbReihe('dunkel', DUNKEL_FARBEN) +
+      `<h2>Joker: Glücksspiel und Farbe ablegen neben Wünscher und Wünscher +2 bzw. Farbjagd</h2>` + jokerReihe +
+      `<h2>Originalgröße (300 × 466 px)</h2>` +
+      `<div class="reihe">${['hell_gluecksspiel', 'hell_ablegen_joker'].concat(HELL_FARBEN.map(f => `hell_${f}_ablegen`)).map(k => zelle(k, 'gross')).join('')}</div>` +
+      `<div class="reihe">${['dunkel_gluecksspiel', 'dunkel_ablegen_joker'].concat(DUNKEL_FARBEN.map(f => `dunkel_${f}_ablegen`)).map(k => zelle(k, 'gross')).join('')}</div>` +
+      `<h2>In der Hand: nur der obere Teil sichtbar (Karten 150 px und 100 px breit)</h2>` +
+      `<div class="hinweis">Wünscher, Glücksspiel, Farbe-ablegen-Joker, dann je Farbe: +1 bzw. +5, Kartentausch, Farbe ablegen, Flip, 7 (neue Karten gelb umrandet)</div>` +
+      hand('hell', HELL_FARBEN.slice(0, 2), 150) + hand('dunkel', DUNKEL_FARBEN.slice(0, 2), 150) +
+      hand('hell', HELL_FARBEN, 100) + hand('dunkel', DUNKEL_FARBEN, 100);
+  } else {
+    keys = allKeys();
+    soll = 129;
+    titel = 'Mau-Mau Flip – Kartenbogen';
+    const rows = [];
+    const typen = n => [1, 2, 3, 4, 5, 6, 7, 8, 9].map(String).concat(n);
+    for (const f of HELL_FARBEN) rows.push(typen(['plus1', 'aussetzen', 'richtungswechsel', 'flip', 'tausch', 'ablegen']).map(t => `hell_${f}_${t}`));
+    for (const f of DUNKEL_FARBEN) rows.push(typen(['plus5', 'alle_aussetzen', 'richtungswechsel', 'flip', 'tausch', 'ablegen']).map(t => `dunkel_${f}_${t}`));
+    rows.push(['hell_wuenscher', 'hell_wuenscher_plus2', 'hell_gluecksspiel', 'hell_ablegen_joker',
+      'dunkel_wuenscher', 'dunkel_farbjagd', 'dunkel_gluecksspiel', 'dunkel_ablegen_joker', RUECKSEITE]);
+    const gezeigt = new Set(rows.flat());
+    const vergessen = keys.filter(k => !gezeigt.has(k));
+    if (vergessen.length) rows.push(vergessen);
+    const gross = ['hell_rot_1', 'hell_gelb_6', 'dunkel_lila_9', 'dunkel_pink_plus5', 'hell_wuenscher_plus2', RUECKSEITE];
+    html = `<h1>${titel}</h1><div class="stat" id="stat">lädt …</div>` +
+      rows.map(r => `<div class="reihe">${r.map(k => zelle(k)).join('')}</div>`).join('') +
+      `<h2>Stichprobe in Originalgröße (300 × 466 px)</h2><div class="reihe">${gross.map(k => zelle(k, 'gross')).join('')}</div>`;
+  }
+  wrap.innerHTML = html;
   await document.fonts.ready;
   const imgs = [...wrap.querySelectorAll('img')];
   await Promise.all(imgs.map(im => im.complete ? 0 : new Promise(r => { im.onload = r; im.onerror = r; })));
@@ -55,8 +126,11 @@ h2{font:800 18px 'Bricolage Grotesque';margin:18px 0 10px;color:#F4EADA}
   }
   for (const el of wrap.querySelectorAll('.k')) if (fehlend.has(el.dataset.k) || falsch.has(el.dataset.k)) el.classList.add('schlecht');
   const geladen = keys.filter(k => !fehlend.has(k)).length;
-  const ok = !fehlend.size && !falsch.size && keys.length === 109;
-  document.getElementById('stat').innerHTML = `${keys.length} Schlüssel (108 Gesichter + Rückseite) · geladen <b>${geladen}</b> · fehlend <b class="${fehlend.size ? 'schlecht' : ''}">${fehlend.size}</b> · falsche Größe <b class="${falsch.size ? 'schlecht' : ''}">${falsch.size}</b>` +
+  const ok = !fehlend.size && !falsch.size && keys.length === soll;
+  const was = satz === 'tausch' ? 'neue Gesichter (Hausregel Kartentausch, swap_cards = "on")'
+    : satz === 'zusatz' ? 'neue Gesichter (Hausregeln Glücksspiel, gamble_cards = "on", und Farbe mit ablegen, discard_color = "on")'
+    : 'Schlüssel (128 Gesichter + Rückseite; gelb: Kartentausch, Glücksspiel und Farbe ablegen, nur mit der jeweiligen Hausregel)';
+  document.getElementById('stat').innerHTML = `${keys.length} ${was} · geladen <b>${geladen}</b> · fehlend <b class="${fehlend.size ? 'schlecht' : ''}">${fehlend.size}</b> · falsche Größe <b class="${falsch.size ? 'schlecht' : ''}">${falsch.size}</b>` +
     ` · Hintergrund kariert, damit transparente Ecken sichtbar sind · erzeugt ${new Date().toISOString().slice(0, 10)}`;
   const W = Math.ceil(wrap.getBoundingClientRect().width), H = Math.ceil(wrap.getBoundingClientRect().height);
   document.getElementById('out').textContent = `\n@@BOGEN ${W} ${H} schluessel=${keys.length} geladen=${geladen} fehlend=${fehlend.size} falsch=${falsch.size} ${ok ? 'OK' : 'FEHLER'}\n` +

@@ -6,8 +6,13 @@ extends SceneTree
 #  2. Bot-Partien mit zufälligen Regeln (MauGame + MauBot): Jede Sicht jedes Platzes hat die Felder und Typen, die der Client nutzt;
 #     jede Phase und jedes Ereignis ist dem Client bekannt; jede Aktion des Clients kennt das Regelwerk; NetProtocol lässt sie durch.
 #  3. NetServer liefert eine aus webclient/ gepackte Zip aus: Seite, alle eingebundenen Skripte, Mau-Töne (mau, mau_mau als m4a/ogg),
-#     Schrift, Kartenbild, Katzenbild – mit passenden MIME-Typen; sfx/index.json ist gültig, nennt „mau“ und „mau_mau“, und jede
-#     genannte Datei liegt vor.
+#     Schrift, Kartenbild, Katzenbild – mit passenden MIME-Typen; sfx/index.json ist gültig, nennt „mau“, „mau_mau“ und die Spieltöne
+#     der App (karte, ziehen, mischen, flip, dran, fehler, sieg), jede genannte Datei liegt vor (m4a fürs iPhone, ogg als Rückfall).
+#  4. Hausregeln (Kartentausch, Glücksspiel, Farbe mit ablegen): Bot-Partien mit allen drei Hausregeln; view.gamble und
+#     hints.can_stake/can_press genau dann, wenn gamble_cards an ist; alle neuen Ereignisse kommen vor und sind dem Client bekannt;
+#     Kartenbilder für alle 128 Gesichter; Kartenhilfe, Mock und die Einstellung „Spielbare Karten hervorheben“ im Client.
+#  5. Tag und Nacht am Tisch (pruefe_tag_nacht): Tag = Papier mit Sonne wie in der App, Plattform und Schrift je Seite,
+#     Schriftkontrast ≥ 4,5:1, weicher Wechsel beim Flip.
 # Der Ende-zu-Ende-Test mit echtem Chrome ist tools/webtest/web_e2e.ps1 (Gastgeber game/tests/web_host.gd).
 
 const PORT := 24875
@@ -71,6 +76,171 @@ func js_type(v) -> String:
 	return "null"
 
 
+# Inhalt des ersten CSS-Blocks, der mit sel beginnt (bis zur schließenden Klammer)
+func css_block(css: String, sel: String) -> String:
+	var i := css.find(sel)
+	if i < 0:
+		return ""
+	return css.substr(i, css.find("}", i) - i)
+
+
+# Wert der CSS-Variablen „--name: …;“ in einem Block
+func css_var(block: String, name: String) -> String:
+	var m := RegEx.create_from_string("--" + name + ":\\s*([^;]+);").search(block)
+	return m.get_string(1).strip_edges() if m != null else ""
+
+
+# Kontrast nach WCAG 2 (relative Luminanz aus linearem sRGB)
+func kontrast(a: Color, b: Color) -> float:
+	var la := a.srgb_to_linear()
+	var lb := b.srgb_to_linear()
+	var ya := 0.2126 * la.r + 0.7152 * la.g + 0.0722 * la.b
+	var yb := 0.2126 * lb.r + 0.7152 * lb.g + 0.0722 * lb.b
+	return (maxf(ya, yb) + 0.05) / (minf(ya, yb) + 0.05)
+
+
+# Tisch im Browser bei Tag (helle Seite) und Nacht wie in der App (Nutzerbefund 06.10.2026: Tag war dunkel): Papier mit Sonne
+# oben links (Farben und Lage aus table_background.gdshader), helle Karton-Plattform mit Druckfarben-Kontur, Schrift in
+# Druckfarbe mit ausreichendem Kontrast, weicher Wechsel beim Flip über tisch.js setzeSeite.
+func pruefe_tag_nacht(css: String, tisch: String) -> void:
+	var shader := FileAccess.get_file_as_string("res://assets/shaders/table_background.gdshader")
+	var tag_grund := RegEx.create_from_string("day = mix\\(vec3\\(([0-9.]+), ([0-9.]+), ([0-9.]+)\\)").search(shader)
+	var css_grund := RegEx.create_from_string("\\.himmel \\.tag \\{ background: radial-gradient\\([^#]*(#[0-9A-Fa-f]{6})").search(css)
+	var gleich := false
+	if tag_grund != null and css_grund != null:
+		var a := Color(float(tag_grund.get_string(1)), float(tag_grund.get_string(2)), float(tag_grund.get_string(3)))
+		var b := Color(css_grund.get_string(1))
+		gleich = absf(a.r - b.r) < 0.01 and absf(a.g - b.g) < 0.01 and absf(a.b - b.b) < 0.01
+	check(gleich, "Tag im Browser = Papier wie in der App (Tischgrund %s, Shader %s)" % [css_grund.get_string(1) if css_grund else "?", tag_grund.get_string(0) if tag_grund else "?"])
+	check(not css.contains("#303C70"), "kein dunkelblauer Tagshimmel mehr (#303C70)")
+	check(tisch.contains("<i class=\"sonne\"></i>") and css.contains(".himmel .sonne { position: absolute; left: 7%; top: 3%;")
+		and shader.contains("vec2 sun = vec2(size.x * 0.07, size.y * (0.03"), "Sonne oben links an derselben Stelle wie in der App")
+	check(css.contains(".himmel .tag::before") and css.contains("repeating-conic-gradient(from 0deg at 7% 3%"), "Sonnenstrahlen gehen von der Sonne aus")
+	# Plattform: Tag heller Karton mit Druckfarben-Kontur und Winkeln in Druckfarbe, Nacht Glas mit Neon (zwei Winkel-Ebenen)
+	check(css.contains(".pf-rand { fill: none; stroke: #211B2C;") and css.contains("#tisch[data-seite=\"dunkel\"] .pf-rand { stroke: #B7A8FF;")
+		and css.contains(".pf .s1 { stop-color: #FFFAEF; }") and css.contains("#tisch[data-seite=\"dunkel\"] .pf .s1 { stop-color: #2C2266; }"),
+		"Plattform: Tag Karton mit Kontur in Druckfarbe, Nacht dunkles Glas mit Neonkante")
+	check(css.contains(".richtung .w b::before") and css.contains("stroke='%23211B2C'") and css.contains("#tisch[data-seite=\"dunkel\"] .richtung .w b::after { opacity: 1; }"),
+		"Plattform-Winkel: Tag in Druckfarbe, Nacht Neon, als zwei überblendete Ebenen")
+	# Schriftfarben und Kontrast (WCAG ≥ 4,5:1) auf Papier (Mitte und Rand des Verlaufs) bzw. Nachtgrund
+	var tag := css_block(css, "#tisch { overflow: hidden;")
+	var nacht := css_block(css, "#tisch[data-seite=\"dunkel\"] {")
+	check(tag != "" and nacht != "" and Color(css_var(tag, "t-text")).is_equal_approx(UiPalette.INK) and Color(css_var(nacht, "t-text")).is_equal_approx(UiPalette.PAPER),
+		"Schrift am Tisch: Tag Druckfarbe, Nacht Papier (UiPalette.INK/PAPER)")
+	var schwach: Array = []
+	for paar in [[tag, ["t-text", "t-muted", "t-zug-ich"], ["#F5ECDC", "#E0CDAF"]], [nacht, ["t-text", "t-muted", "t-zug"], ["#140F36", "#2A1C5E"]]]:
+		for v in paar[1]:
+			for grund in paar[2]:
+				var k := kontrast(Color(css_var(paar[0], v)), Color(grund))
+				if k < 4.5:
+					schwach.append("%s auf %s: %.2f" % [v, grund, k])
+		for p in [["t-dran-fg", "t-dran"], ["t-chip-fg", "t-chip"]]:
+			var k := kontrast(Color(css_var(paar[0], p[0])), Color(css_var(paar[0], p[1])))
+			if k < 4.5:
+				schwach.append("%s auf %s: %.2f" % [p[0], p[1], k])
+	check(schwach.is_empty(), "Schriftkontrast am Tisch mindestens 4,5:1 bei Tag und Nacht %s" % str(schwach))
+	# Wechsel: eine Stelle setzt die Seite, Himmel blendet über (Nacht über Tag, Dämmerung), Schrift und Knöpfe nur beim Wechsel
+	check(tisch.contains("setzeSeite(seite, sofort) {") and tisch.count("t.setzeSeite(e.side)") == 2 and not tisch.contains("dataset.seite = e.side")
+		and tisch.contains("this.setzeSeite(v.side, !alt || (typeof v.round === 'number'"), "tisch.js: Seite nur über setzeSeite (Sicht und Flip), erstes Bild einer Partie und neue Runde sofort")
+	check(css.contains(".himmel .nacht { opacity: 0; transition: opacity") and css.contains("#tisch[data-seite=\"dunkel\"] .himmel .tag { opacity: 0;")
+		and css.contains(".himmel.wechsel .daemmerung") and css.contains("#tisch.wechselt .stapelzahl") and css.contains("#tisch.sofort"),
+		"Flip blendet Himmel, Plattform, Schrift und Knöpfe weich über (erstes Bild ohne Überblenden)")
+	pruefe_flip_lesbar(css, tisch)
+	pruefe_tag_details(css, tisch)
+
+
+# Prüfung 06.10.2026: Schrift war mitten im Flip 0,3–0,4 s lang unlesbar (Himmel dunkelte früh, Schrift folgte einer flachen
+# Kurve). Jetzt: Himmel und Plattform mit derselben symmetrischen S-Kurve, Dämmerung auf halbem Weg am stärksten, Schrift und
+# alles mit eigenen Tagesfarben wechselt genau dort (steps), dazwischen ein Schein in der Gegenfarbe um die Schrift.
+func pruefe_flip_lesbar(css: String, tisch: String) -> void:
+	var tisch_block := css_block(css, "#tisch { overflow: hidden;")
+	var wd := css_var(tisch_block, "wd")
+	var ms := RegEx.create_from_string("const WECHSEL_MS = (\\d+);").search(tisch)
+	check(wd.ends_with("s") and ms != null and absf(float(wd.trim_suffix("s")) * 1000.0 - float(ms.get_string(1))) < 1.0,
+		"Dauer des Wechsels: style.css --wd (%s) = tisch.js WECHSEL_MS (%s)" % [wd, ms.get_string(1) if ms else "?"])
+	check(css_var(tisch_block, "ws") == "steps(2, jump-none)" and css_var(tisch_block, "tr").begins_with("color var(--wd) var(--ws)")
+		and not css.contains("var(--we)"), "Schrift und Knöpfe wechseln auf halbem Weg (steps), nicht über eine flache Kurve")
+	check(css.contains(".himmel .nacht { opacity: 0; transition: opacity var(--wd) var(--wg)") and css.contains(".pf stop { transition: stop-color var(--wd) var(--wg)")
+		and css.contains(".pf path { transition: fill var(--wd) var(--wg)") and css.contains("@keyframes daemmerung { 0%, 100% { opacity: 0; } 50% {"),
+		"Himmel und Plattform mit derselben S-Kurve, Dämmerung auf halbem Weg am stärksten (Mitte = Schriftwechsel)")
+	var schein := true
+	for k in ["scheinZurNacht", "scheinZumTag", "scheinSvgZurNacht", "scheinSvgZumTag"]:
+		var i := css.find("@keyframes %s {" % k)
+		var b := css.substr(i, css.find("} }", i) - i) if i >= 0 else ""
+		schein = schein and b.contains("20%, 49.99% {") and b.contains("50%, 80% {")
+	check(schein and css.contains("#tisch.wechselt .gg .name, #tisch.wechselt .stapelzahl, #tisch.wechselt .farbanzeige span, #tisch.wechselt .pill span")
+		and css.contains("#tisch.wechselt .pill svg, #tisch.wechselt .rund svg"), "Schein in der Gegenfarbe um Schrift und Symbole während der Dämmerung, Wechsel zur Mitte")
+	# Alles, was je Seite eigene Farben hat, wechselt beim Flip mit (sonst springt es zu Beginn auf die neue Seite, z. B. der
+	# Leuchtrand des Stapels): jede Regel #tisch[data-seite="dunkel"] .x gehört zu einem Bauteil mit Regel #tisch.wechselt .x …
+	# oder zu Himmel/Plattform (eigene Übergänge).
+	var mit := {}
+	for m in RegEx.create_from_string("#tisch\\.wechselt (\\.[a-z-]+)").search_all(css):
+		mit[m.get_string(1)] = true
+	var ohne := {}
+	for m in RegEx.create_from_string("#tisch\\[data-seite=\"dunkel\"\\] (\\.[a-z-]+)").search_all(css):
+		var t := m.get_string(1)
+		if not (mit.has(t) or t.begins_with(".himmel") or t.begins_with(".pf") or t == ".richtung"):
+			ohne[t] = true
+	check(mit.size() >= 10 and ohne.is_empty(), "Tag/Nacht-Regeln aller Bauteile wechseln beim Flip mit (ohne Übergang: %s)" % str(ohne.keys()))
+	check(tisch.contains("const rest = t.wechselRest();") and tisch.contains("Object.assign({}, view, { side: e.side })") and tisch.contains("if (!laeuft) {"),
+		"zwei Flips nacheinander: die Regie wartet den Wechsel ab, Zwischenstand mit der Seite des Flips, Dämmerung startet nicht neu")
+	check(tisch.contains("this._themaTimer = setTimeout(") and tisch.contains("WECHSEL_MS / 2)"), "Browserleiste (theme-color) wechselt mit der Schrift auf halbem Weg")
+
+
+# Prüfung 06.10.2026, kleinere Befunde am Tag: Farbwahl ohne dunklen Schleier, Grün in Druckfarbe, Sonnenstrahlen wie in der App,
+# getrennte Mitspieler lesbar, Sternchen der Mau-Blase sichtbar, leiser Hinweis deckend.
+func pruefe_tag_details(css: String, tisch: String) -> void:
+	var karten := read_web("karten.js")
+	var schleier := RegEx.create_from_string("\\n\\.farbwahl \\.schleier \\{[^}]*background: rgba\\((\\d+),").search(css)
+	check(schleier != null and int(schleier.get_string(1)) > 200 and css.contains("#tisch[data-seite=\"dunkel\"] .farbwahl .schleier { background: rgba(5,6,15,.6); }"),
+		"Farbwahl: am Tag heller Schleier (Tisch bleibt hell wie in der App), nachts abgedunkelt")
+	var druck := css_block(css, ".farbwahl .feld[data-farbe=\"gelb\"]")
+	var schwach: Array = []
+	for f in UiPalette.LIGHT_COLORS:
+		var hex := RegEx.create_from_string(f + ": \\{ name: '[^']+', hex: '(#[0-9A-Fa-f]{6})'").search(karten)
+		if hex == null:
+			schwach.append(f + ": keine Farbe in karten.js")
+			continue
+		var schrift := UiPalette.INK if druck.contains("[data-farbe=\"%s\"]" % f) else Color(UiPalette.CREAM)
+		var k := kontrast(schrift, Color(hex.get_string(1)))
+		if k < 4.5:
+			schwach.append("%s: %.2f" % [f, k])
+	check(schwach.is_empty() and druck.contains("color: var(--ink)") and tisch.contains("f === 'gelb' || f === 'gruen' || f === 'pink'"),
+		"Farbwahl am Tag: Schrift auf jedem Farbfeld mindestens 4,5:1 (zu schwach: %s)" % str(schwach))
+	var strahlen := css_block(css, ".himmel .tag::before {")
+	var alpha := 0.0
+	for m in RegEx.create_from_string("rgba\\(255,\\d+,\\d+,(\\.\\d+)\\)").search_all(strahlen):
+		alpha = maxf(alpha, float(m.get_string(1)))
+	var weit := false
+	for m in RegEx.create_from_string("rgba\\(0,0,0,(\\.\\d+)\\) (\\d+)%").search_all(strahlen):
+		if float(m.get_string(1)) >= 0.08 and int(m.get_string(2)) >= 70:
+			weit = true
+	check(alpha >= 0.4 and weit and tisch.contains("<i class=\"strahlen\"></i>"),
+		"Sonnenstrahlen kräftig wie in der App (bis %.2f Gold, reichen bis in die Ecke, zwei Längen)" % alpha)
+	var weg := RegEx.create_from_string("\\.gg \\.marke\\.weg \\{ background: (#[0-9A-Fa-f]{6}); color: (#[0-9A-Fa-f]{6});").search(css)
+	check(not css.contains(".gg.weg { opacity") and css.contains(".gg.weg .name { color: var(--t-muted); }") and weg != null
+		and kontrast(Color(weg.get_string(1)), Color(weg.get_string(2))) >= 4.5,
+		"getrennte Mitspieler: Name in Nebentext-Farbe, Marke voll deckend (keine Deckkraft auf der ganzen Gruppe)")
+	check(css_block(css, ".mau-blase .stern {").contains("color: var(--ink)") and css.contains("#tisch[data-seite=\"dunkel\"] .mau-blase .stern { color: #7CF5FF;"),
+		"Mau-Blase: Sternchen am Tag in Druckfarbe, nachts Neon")
+	var leise := css_block(css, "body.tag .toast.leise {")
+	var leise_nacht := css_block(css, "\n.toast.leise {")
+	check(leise.contains("background: rgba(33,27,44,.95)") and leise.contains("color: var(--cream)") and leise_nacht.contains("color: var(--ink)")
+			and tisch.contains("this.app.themaFarbe") and read_web("app.js").contains("classList.toggle('tag'"),
+		"leiser Hinweis: am Tag deckend in Druckfarbe (verschmilzt nicht mit dem Papier), nachts hell")
+	# Restbefunde 06.10.2026: Aktionsknöpfe am Tag kräftig, Automat am Tag aus Papier (Neon nur nachts), Plattform-Schatten als
+	# eigene Ebene (kein Weichzeichner je Bild beim Flip), nach der Mitte des Flips keine verspätete Schrift
+	check(css.contains(".knopf.klein { opacity: 1; }") and css.contains("#tisch:not([data-seite=\"dunkel\"]) .knopf.klein.warn { background: #C4172A; color: #fff; }")
+			and kontrast(Color("#FFFFFF"), Color("#C4172A")) >= 4.5, "Aktionsknöpfe am Tag voll deckend, „Anzweifeln“ mit kräftigem Rot")
+	check(css_block(css, ".automat .fenster {").contains("background: var(--cream)") and css_block(css, ".automat .walze b {").contains("color: var(--ink)")
+			and css.contains("#tisch[data-seite=\"dunkel\"] .automat .fenster { border-color: var(--pink); background: #0A0D20;")
+			and tisch.contains("<span class=\"frage\">Los!</span>"), "Glücksspiel-Automat: Tag Papier mit Druckfarbe, Nacht Neon")
+	check(tisch.contains("class=\"pf pf-sch\"") and css.contains(".richtung .pf-sch { opacity: .3; transition: opacity var(--wd) var(--wg); will-change: opacity; }")
+			and css.contains(".pf-sch .pf-schatten { fill: #0E0B14; transition: none; }"), "Plattform-Schatten: eigene Ebene, beim Flip nur Deckkraft (kein Weichzeichner je Bild)")
+	check(tisch.contains("r.classList.add('halb')") and css.contains("#tisch.wechselt.halb { --tr: none; }") and tisch.contains("if (!alt || !nurLayout) this.setzeSeite("),
+		"Flip: ab der Mitte stehen Änderungen (z. B. wer dran ist) sofort in den Farben der neuen Seite; Layout-Aufrufe wechseln die Seite nicht")
+
+
 func run() -> void:
 	var t0 := Time.get_ticks_msec()
 	web_dir = ProjectSettings.globalize_path("res://").path_join("../webclient").simplify_path()
@@ -85,14 +255,21 @@ func run() -> void:
 	var hint_typen := js_types(autotest, "HINT_FELDER")
 	var sicht_typen := js_types(autotest, "SICHT_FELDER")
 	var spieler_typen := js_types(autotest, "SPIELER_FELDER")
+	var glueck_hints := js_types(autotest, "HINT_GLUECK")
+	var glueck_sicht := js_types(autotest, "SICHT_GLUECK")
 	check(phasen.size() >= 6 and ereignisse.size() >= 20 and hint_typen.size() >= 10 and sicht_typen.size() >= 15 and spieler_typen.size() >= 8,
 		"Listen in autotest.js gefunden (%d/%d/%d/%d/%d)" % [phasen.size(), ereignisse.size(), hint_typen.size(), sicht_typen.size(), spieler_typen.size()])
+	check(glueck_hints.get("can_stake") == "array" and glueck_hints.get("can_press") == "boolean" and glueck_hints.get("can_stop") == "boolean"
+			and glueck_sicht.get("gamble") == "object",
+		"Glücksspiel-Felder in autotest.js (%s, %s)" % [str(glueck_hints), str(glueck_sicht)])
+	check(phasen.has("gamble"), "Phase „gamble“ ist dem Client bekannt")
 	var effekte := {}
 	for m in RegEx.create_from_string("case '([a-z_]+)'").search_all(tisch):
 		effekte[m.get_string(1)] = true
 	# Ereignisse mit sichtbarem Effekt am Tisch (Rest gleicht die Sicht ab)
 	for e in ["deal", "play", "draw", "skip", "skip_all", "reverse", "color", "flip", "pending", "challenge", "mau", "catch", "penalty",
-			"shuffle", "round_over", "game_over", "finish", "pass", "choose_color"]:
+			"shuffle", "round_over", "game_over", "finish", "pass", "choose_color",
+			"swap_hands", "gamble_start", "stake", "gamble_roll", "stake_back", "stake_discard", "discard_color"]:
 		check(effekte.has(e), "tisch.js spielt Ereignis „%s“ ab" % e)
 	var aktionen := {}
 	for src in [app, tisch]:
@@ -101,7 +278,7 @@ func run() -> void:
 		for m in RegEx.create_from_string("data-a=\"([a-z_]+)\"").search_all(src):
 			aktionen[m.get_string(1)] = true
 	aktionen.erase("wunsch")     # nur im Client: öffnet die Farbwahl, schickt dann {a:"color"}
-	for a in ["play", "draw", "keep", "challenge", "accept", "color", "mau", "catch", "next_round"]:
+	for a in ["play", "draw", "keep", "challenge", "accept", "color", "mau", "catch", "next_round", "stake", "press", "stop"]:
 		check(aktionen.has(a), "Client sendet Aktion „%s“" % a)
 	# Nachrichten des Gastgebers (NetHostSession, HostTable), die der Client auswertet
 	var nachrichten := {}
@@ -125,6 +302,46 @@ func run() -> void:
 	check(css.contains("prefers-reduced-motion") and css.contains(".mau-blase.v-schlicht"), "Mau-Blase: schlichte Variante bei reduzierten Effekten")
 	check(css.contains("#tisch[data-seite=\"dunkel\"] .mau-blase"), "Mau-Blase: nachts Neon")
 
+	# Hausregeln im Client: Kartenhilfe und Regeltexte, Mock, Glücksspiel-Automat, persönliche Einstellung „Spielbare Karten hervorheben“
+	var karten := read_web("karten.js")
+	var mock := read_web("mock.js")
+	var seite := read_web("index.html")
+	for k in ["tausch", "gluecksspiel", "ablegen", "ablegen_joker"]:
+		check(karten.contains("case '%s'" % k), "Kartenhilfe (karten.js) kennt „%s“" % k)
+	for k in ["swap_cards", "swap_direction", "gamble_cards", "discard_color"]:
+		check(karten.contains(k), "Regeltexte (karten.js) kennen die Option „%s“" % k)
+	for k in ["_gluecksspiel", "_ablegen_joker", "_tausch", "'gamble'", "swap_hands", "gamble_start", "gamble_roll", "stake_back", "stake_discard",
+			"discard_color", "can_stake", "can_press", "can_stop", "case 'stake'", "case 'press'", "case 'stop'", "'stop')", "'empty')"]:
+		check(mock.contains(k), "mock.js kennt „%s“" % k)
+	# Glücksspiel aufhören (AGENTS.md Nr. 26): Knopf „Aufhören“ nur mit hints.can_stop, stake_discard mit reason "stop" animiert
+	check(tisch.contains("'aufhoeren'") and tisch.contains("h.can_stop") and tisch.contains("Noch eine Karte setzen – oder aufhören?")
+			and tisch.contains("e.reason === 'stop'") and app.contains("aufhoeren()") and css.contains(".automat .aufhoeren"),
+		"Glücksspiel: Knopf „Aufhören“ (can_stop → {a:\"stop\"}) und stake_discard mit reason „stop“")
+	check(seite.contains("data-set=\"hervorheben\"") and app.contains("Speicher.get('hervorheben', true)") and app.contains("'Die Karte passt nicht.'"),
+		"Einstellung „Spielbare Karten hervorheben“ (je Gerät, Standard an, sonst Hinweis „Die Karte passt nicht.“)")
+	var app_tisch := FileAccess.get_file_as_string("res://scripts/ui/table_view.gd")
+	check(tisch.contains("hinweisText(h.text)") and tisch.contains("'Du bist dran – nichts passt'") and app_tisch.contains("\"Du bist dran – nichts passt\""),
+		"Ohne Hervorheben verrät der Hinweis „nichts passt“ nicht (Browser wie App)")
+	check(css.contains(".automat .kuppel") and css.contains(".einsatz .zahl") and css.contains("#tisch[data-seite=\"dunkel\"] .automat"),
+		"style.css: Glücksspiel-Automat und Einsatzstapel (Tag und Nacht)")
+	pruefe_tag_nacht(css, tisch)
+	# Pegel der Spieltöne relativ zum Mau-Ton (normal) wie in der App (AppSound.TON_DB gegen MAU_DB), auf 0,5 dB genau
+	var stufen := RegEx.create_from_string("STUFEN_SPIEL = \\{ aus: 0, leise: ([0-9.]+), normal: ([0-9.]+) \\}").search(ton)
+	var pegel := []
+	if stufen != null:
+		for i in 2:
+			var stufe: String = ["leise", "normal"][i]
+			var web_db := 20.0 * log(float(stufen.get_string(i + 1))) / log(10.0)
+			var app_db := float(AppSound.TON_DB[stufe]) - float(AppSound.MAU_DB["normal"])
+			if absf(web_db - app_db) < 0.5:
+				pegel.append(stufe)
+	check(ton.contains("SPIEL_TOENE") and pegel.size() == 2, "ton.js: Spieltöne aus sfx/ mit den Pegeln der App (stimmen: %s)" % str(pegel))
+	var fehlend: Array = []
+	for key in CardDB.all_keys(true):
+		if not FileAccess.file_exists(web_dir.path_join("cards/%s.webp" % key)):
+			fehlend.append(key)
+	check(CardDB.all_keys(true).size() == 128 and fehlend.is_empty(), "webclient/cards/ hat alle %d Gesichter (fehlend: %s)" % [CardDB.all_keys(true).size(), str(fehlend)])
+
 	# ---------- 2. Bot-Partien gegen die Sicht des Clients ----------
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 2602
@@ -134,8 +351,16 @@ func run() -> void:
 	var view_checks := 0
 	var bad := {}
 	var max_bytes := 0
-	for gi in 40:
-		var cfg := RulesFixture.random_config(rng) if gi > 0 else RuleConfig.new()
+	# 40 Partien wie bisher, danach Partien mit allen drei Hausregeln, bis jedes neue Ereignis vorkam (höchstens 80)
+	var haus_events := ["swap_hands", "gamble_start", "stake", "gamble_roll", "stake_back", "stake_discard", "discard_color"]
+	var haus_games := 0
+	for gi in 120:
+		var haus := gi >= 40
+		if haus and (haus_games >= 80 or (haus_games >= 12 and haus_events.all(func(e): return seen_events.has(e)) and seen_hints.has("stake_discard.stop"))):
+			break
+		if haus:
+			haus_games += 1
+		var cfg := (RulesFixture.random_config(rng, true, true, true) if haus else RulesFixture.random_config(rng)) if gi > 0 else RuleConfig.new()
 		var n := rng.randi_range(2, 6)
 		var pl := RulesFixture.players(n)
 		pl[0]["host"] = true
@@ -161,6 +386,34 @@ func run() -> void:
 						bad["hints.%s: %s statt %s" % [k, js_type(h.get(k)), hint_typen[k]]] = true
 					elif hint_typen[k] == "boolean" and bool(h[k]):
 						seen_hints[k] = true
+				# Glücksspiel-Felder: genau mit gamble_cards = on (der Client rechnet sonst mit Standardwerten)
+				var glueck := str((v.rules as Dictionary).get("gamble_cards", "off")) == "on"
+				for k in glueck_sicht:
+					if glueck != v.has(k) or (glueck and js_type(v.get(k)) != glueck_sicht[k]):
+						bad["Sicht.%s bei gamble_cards=%s: %s" % [k, glueck, js_type(v.get(k))]] = true
+				for k in glueck_hints:
+					if glueck != h.has(k) or (glueck and js_type(h.get(k)) != glueck_hints[k]):
+						bad["hints.%s bei gamble_cards=%s: %s" % [k, glueck, js_type(h.get(k))]] = true
+				if glueck and v.get("gamble") is Dictionary and not (v.gamble as Dictionary).is_empty():
+					var gv: Dictionary = v.gamble
+					if js_type(gv.get("seat")) != "number" or js_type(gv.get("stake")) != "number" or js_type(gv.get("last")) != "number" \
+							or not str(gv.get("need")) in ["stake", "press"] or gv.has("q") or str(v.phase) != "gamble":
+						bad["view.gamble passt nicht zum Client: " + str(gv)] = true
+					if (h.get("can_stake", []) as Array).size() > 0:
+						seen_hints["can_stake"] = true
+					if bool(h.get("can_press", false)):
+						seen_hints["can_press"] = true
+					if bool(h.get("can_stop", false)):
+						seen_hints["can_stop"] = true
+						if s != int(gv.seat) or str(gv.need) != "stake" or int(gv.stake) < 1:
+							bad["hints.can_stop ohne eigenen Einsatz bei need = stake: " + str(gv)] = true
+				elif glueck and bool(h.get("can_stop", false)):
+					bad["hints.can_stop ohne Glücksspiel"] = true
+				for e in fe:
+					if str(e.get("e", "")) == "stake_discard":
+						if not str(e.get("reason", "")) in ["stop", "empty"]:
+							bad["stake_discard.reason " + str(e.get("reason"))] = true
+						seen_hints["stake_discard." + str(e.get("reason", ""))] = true
 				for p in v.players:
 					for k in spieler_typen:
 						if js_type(p.get(k)) != spieler_typen[k]:
@@ -199,9 +452,12 @@ func run() -> void:
 		check(phasen.has(ph), "Phase „%s“ ist dem Client bekannt" % ph)
 	for e in seen_events:
 		check(ereignisse.has(e), "Ereignis „%s“ ist dem Client bekannt" % e)
-	for k in ["can_draw", "can_keep", "can_challenge", "can_accept", "can_mau", "can_next_round"]:
+	for e in haus_events:
+		check(seen_events.has(e), "Ereignis „%s“ kam in %d Partien mit Hausregeln vor" % [e, haus_games])
+	for k in ["can_draw", "can_keep", "can_challenge", "can_accept", "can_mau", "can_next_round", "can_stake", "can_press", "can_stop"]:
 		check(seen_hints.has(k), "hints.%s kam in den Partien vor" % k)
-	print("Sichten: %d, Phasen: %s, Ereignisse: %d Arten, größte state-Nachricht: %d Byte" % [view_checks, str(seen_phases.keys()), seen_events.size(), max_bytes])
+	check(seen_hints.has("stake_discard.stop"), "stake_discard mit reason „stop“ (Aufhören) kam in den Partien vor")
+	print("Sichten: %d, Phasen: %s, Ereignisse: %d Arten, Partien mit Hausregeln: %d, größte state-Nachricht: %d Byte" % [view_checks, str(seen_phases.keys()), seen_events.size(), haus_games, max_bytes])
 	check(max_bytes < 60000, "state-Nachricht bleibt unter 60 KB (%d)" % max_bytes)
 
 	# Jede Aktion des Clients kennt das Regelwerk (keine „Unbekannte Aktion.“) und übersteht NetProtocol.clean_action
@@ -292,8 +548,13 @@ func sfx_index_check(server: NetServer) -> void:
 	if not parsed is Dictionary:
 		return
 	var liste: Dictionary = parsed
-	for pflicht in ["mau", "mau_mau"]:
+	# Mau-Aufnahmen und die Spieltöne der App (AppSound.NAMES): Der Browser spielt dieselben Dateien, eigener Schalter, Standard aus
+	for pflicht in AppSound.NAMES:
 		check(liste.has(pflicht), "sfx/index.json nennt „%s“ (%s)" % [pflicht, str(liste.keys())])
+		if liste.has(pflicht):
+			var d := str(liste[pflicht])
+			check(d.ends_with(".m4a"), "sfx/index.json: „%s“ als m4a (iPhone-Safari spielt kein ogg): %s" % [pflicht, d])
+			check(FileAccess.file_exists(web_dir.path_join("sfx").path_join(d.get_basename() + ".ogg")), "sfx/%s.ogg als Rückfall vorhanden" % d.get_basename())
 	for name in liste:
 		var datei: Variant = liste[name]
 		check(datei is String and str(datei) != "" and not str(datei).contains("/") and not str(datei).contains(".."),

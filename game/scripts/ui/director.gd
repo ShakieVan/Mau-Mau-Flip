@@ -4,7 +4,9 @@ extends Node
 # Reihe nach ab und gleicht danach mit der mitgeschickten Sicht ab. Die Darstellung verändert nie das Ergebnis: Maßgeblich
 # ist immer die Sicht; Ereignisse sind nur das Drehbuch dorthin.
 # Rückstand: Liegen mehr als 3 Ereignisse an, läuft alles doppelt so schnell; bei mehr als 8 werden die Effekte übersprungen
-# (skip_event je Ereignis) und sofort der Endzustand der letzten Sicht gesetzt.
+# (skip_event je Ereignis) und sofort der Endzustand der letzten Sicht gesetzt. Ereignisse ohne Animation (quiet_events, vom
+# Handler gesetzt, z. B. „turn“) zählen nicht mit; sonst liefe z. B. ein Glücksspiel-Treffer (Wurf, Ziehen, Einsatz zurück,
+# turn) immer im doppelten Tempo.
 # Der Handler (TableView) stellt bereit:
 #   play_event(ev: Dictionary, speed: float) -> float   startet die Animation, liefert ihre Dauer in Sekunden
 #   skip_event(ev: Dictionary) -> void                  Ereignis ohne Animation verbuchen (z. B. laufende Effekte beenden)
@@ -19,6 +21,7 @@ const SKIP_BACKLOG := 8
 const FAST_SPEED := 2.0
 
 var handler: Object = null
+var quiet_events := {}            # Ereignisnamen ohne Animation (z. B. "turn"): zählen nicht zum Rückstand
 var auto_process := true          # false: Zeit nur über step() (Tests)
 var skipped := 0                  # übersprungene Ereignisse (Statistik/Tests)
 var played := 0
@@ -44,11 +47,11 @@ func enqueue(events: Array, view: Dictionary = {}) -> void:
 		_run()
 
 
-# Ereignisse, die noch nicht begonnen haben
+# Ereignisse, die noch nicht begonnen haben (ohne reine Buchungen wie „turn“, die nichts abspielen)
 func backlog() -> int:
 	var n := 0
 	for item in _queue:
-		if item.has("ev"):
+		if item.has("ev") and not quiet_events.has(str((item["ev"] as Dictionary).get("e", ""))):
 			n += 1
 	return n
 

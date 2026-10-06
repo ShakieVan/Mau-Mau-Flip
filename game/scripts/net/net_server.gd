@@ -249,7 +249,16 @@ func _process(_delta: float) -> void:
 		poll()
 
 func _exit_tree() -> void:
-	stop()
+	# Umhängen mit dem Elternknoten (Lobby → Tisch) ist kein Ende: erst am Ende des Frames prüfen (Gerätetest 0.1.1, H1).
+	_stop_if_detached.call_deferred()
+
+func _stop_if_detached() -> void:
+	if not is_inside_tree():
+		stop()
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE:
+		stop()
 
 func _command(cmd: Array) -> void:
 	_mutex.lock()

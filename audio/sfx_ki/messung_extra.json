@@ -1,0 +1,4446 @@
+{
+ "karte_01": {
+  "einsatz_m20db_ms": 4.0,
+  "hoechstwert_ms": 4.9,
+  "einsaetze_s": [
+   0.064,
+   0.117,
+   0.181,
+   0.224
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   2188,
+   533,
+   539,
+   744
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -22.8,
+  "wav": {
+   "spitze_db": -1.322,
+   "rms_db": -27.989,
+   "rauschboden_db": -39.258,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -1.461,
+   "rms_db": -28.038,
+   "rauschboden_db": -39.879,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -1.257,
+   "rms_db": -28.071,
+   "rauschboden_db": -39.111,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 0.298,
+  "dauer_ogg_s": 0.298,
+  "dauer_m4a_s": 0.298,
+  "rauschabstand_roh_db": 75.4
+ },
+ "karte_02": {
+  "einsatz_m20db_ms": 2.0,
+  "hoechstwert_ms": 15.4,
+  "einsaetze_s": [
+   0.032,
+   0.107
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   251,
+   128
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -35.6,
+  "wav": {
+   "spitze_db": -1.106,
+   "rms_db": -23.797,
+   "rauschboden_db": -44.863,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "ogg": {
+   "spitze_db": -1.357,
+   "rms_db": -24.036,
+   "rauschboden_db": -44.246,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "m4a": {
+   "spitze_db": -1.649,
+   "rms_db": -23.652,
+   "rauschboden_db": -44.923,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "dauer_wav_s": 0.259,
+  "dauer_ogg_s": 0.259,
+  "dauer_m4a_s": 0.259,
+  "rauschabstand_roh_db": 66.9
+ },
+ "karte_03": {
+  "einsatz_m20db_ms": 4.0,
+  "hoechstwert_ms": 4.6,
+  "einsaetze_s": [
+   0.107,
+   0.181,
+   0.235,
+   0.288,
+   0.341,
+   0.384
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   1488,
+   1385,
+   911,
+   1412,
+   2206,
+   2285
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -28.4,
+  "puls_15_50": {
+   "hz": 20.3,
+   "schaerfe": 3.8
+  },
+  "wav": {
+   "spitze_db": -1.317,
+   "rms_db": -24.854,
+   "rauschboden_db": -27.336,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 4.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -1.311,
+   "rms_db": -24.958,
+   "rauschboden_db": -27.476,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -1.323,
+   "rms_db": -24.878,
+   "rauschboden_db": -27.408,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "dauer_wav_s": 0.52,
+  "dauer_ogg_s": 0.52,
+  "dauer_m4a_s": 0.52,
+  "rauschabstand_roh_db": 79.4
+ },
+ "karte_04": {
+  "einsatz_m20db_ms": 4.0,
+  "hoechstwert_ms": 8.5,
+  "einsaetze_s": [
+   0.032,
+   0.085,
+   0.224
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   345,
+   181
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -56.8,
+  "wav": {
+   "spitze_db": -1.118,
+   "rms_db": -22.429,
+   "rauschboden_db": -37.655,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -1.027,
+   "rms_db": -22.359,
+   "rauschboden_db": -37.656,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -1.14,
+   "rms_db": -22.481,
+   "rauschboden_db": -37.695,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 0.245,
+  "dauer_ogg_s": 0.245,
+  "dauer_m4a_s": 0.245,
+  "rauschabstand_roh_db": 80.0
+ },
+ "karte_05": {
+  "einsatz_m20db_ms": 2.0,
+  "hoechstwert_ms": 5.9,
+  "einsaetze_s": [
+   0.128,
+   0.192,
+   0.299
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   249,
+   249,
+   128
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -50.1,
+  "puls_15_50": {
+   "hz": 17.7,
+   "schaerfe": 3.5
+  },
+  "wav": {
+   "spitze_db": -1.122,
+   "rms_db": -21.751,
+   "rauschboden_db": -29.168,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 3.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -0.976,
+   "rms_db": -21.695,
+   "rauschboden_db": -29.051,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -1.12,
+   "rms_db": -21.758,
+   "rauschboden_db": -29.2,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 0.44,
+  "dauer_ogg_s": 0.44,
+  "dauer_m4a_s": 0.44,
+  "rauschabstand_roh_db": 57.5
+ },
+ "karte_06": {
+  "einsatz_m20db_ms": 2.0,
+  "hoechstwert_ms": 7.0,
+  "einsaetze_s": [
+   0.085
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   117
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -60.1,
+  "wav": {
+   "spitze_db": -1.106,
+   "rms_db": -18.971,
+   "rauschboden_db": -33.443,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 3.0,
+   "dc": 0.0
+  },
+  "ogg": {
+   "spitze_db": -1.087,
+   "rms_db": -18.891,
+   "rauschboden_db": -33.513,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -1.098,
+   "rms_db": -18.985,
+   "rauschboden_db": -33.52,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "dauer_wav_s": 0.245,
+  "dauer_ogg_s": 0.245,
+  "dauer_m4a_s": 0.245,
+  "rauschabstand_roh_db": 76.4
+ },
+ "karte_07": {
+  "einsatz_m20db_ms": 4.0,
+  "hoechstwert_ms": 4.8,
+  "einsaetze_s": [
+   0.032,
+   0.085
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   348,
+   175
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -34.5,
+  "wav": {
+   "spitze_db": -1.127,
+   "rms_db": -26.082,
+   "rauschboden_db": -37.849,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -1.073,
+   "rms_db": -25.983,
+   "rauschboden_db": -37.759,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "m4a": {
+   "spitze_db": -1.273,
+   "rms_db": -26.078,
+   "rauschboden_db": -37.921,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "dauer_wav_s": 0.163,
+  "dauer_ogg_s": 0.163,
+  "dauer_m4a_s": 0.163,
+  "rauschabstand_roh_db": 79.6
+ },
+ "karte_08": {
+  "einsatz_m20db_ms": 32.0,
+  "hoechstwert_ms": 33.1,
+  "einsaetze_s": [
+   0.043
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   111
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -29.8,
+  "wav": {
+   "spitze_db": -1.158,
+   "rms_db": -29.545,
+   "rauschboden_db": -44.028,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -1.237,
+   "rms_db": -29.562,
+   "rauschboden_db": -42.787,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "m4a": {
+   "spitze_db": -1.173,
+   "rms_db": -29.573,
+   "rauschboden_db": -44.251,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 0.247,
+  "dauer_ogg_s": 0.247,
+  "dauer_m4a_s": 0.247,
+  "rauschabstand_roh_db": 54.2
+ },
+ "karte_09": {
+  "einsatz_m20db_ms": 4.0,
+  "hoechstwert_ms": 5.0,
+  "einsaetze_s": [
+   0.032,
+   0.075
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   1412,
+   1599
+  ],
+  "linien_ueber_5k": [
+   [
+    7598,
+    13.5,
+    -10.9
+   ],
+   [
+    12299,
+    13.0,
+    -28.2
+   ],
+   [
+    12397,
+    13.0,
+    -29.7
+   ],
+   [
+    15597,
+    12.4,
+    -52.1
+   ],
+   [
+    12503,
+    12.1,
+    -31.5
+   ]
+  ],
+  "ueber_6k_nach_tp5k_db": -24.4,
+  "wav": {
+   "spitze_db": -1.177,
+   "rms_db": -26.994,
+   "rauschboden_db": -36.329,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -1.243,
+   "rms_db": -26.943,
+   "rauschboden_db": -36.118,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -1.275,
+   "rms_db": -27.062,
+   "rauschboden_db": -36.428,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 0.123,
+  "dauer_ogg_s": 0.123,
+  "dauer_m4a_s": 0.123,
+  "rauschabstand_roh_db": 79.7
+ },
+ "ziehen_01": {
+  "einsatz_m20db_ms": 4.0,
+  "hoechstwert_ms": 58.4,
+  "einsaetze_s": [
+   0.064,
+   0.117,
+   0.203
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   729,
+   747,
+   791
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -29.5,
+  "wav": {
+   "spitze_db": -1.168,
+   "rms_db": -23.688,
+   "rauschboden_db": -33.076,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "ogg": {
+   "spitze_db": -1.376,
+   "rms_db": -24.031,
+   "rauschboden_db": -60.017,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -1.448,
+   "rms_db": -23.771,
+   "rauschboden_db": -33.113,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "dauer_wav_s": 0.287,
+  "dauer_ogg_s": 0.287,
+  "dauer_m4a_s": 0.287,
+  "rauschabstand_roh_db": 76.2
+ },
+ "ziehen_02": {
+  "einsatz_m20db_ms": 66.0,
+  "hoechstwert_ms": 118.9,
+  "einsaetze_s": [
+   0.064,
+   0.128,
+   0.192,
+   0.256,
+   0.416
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   413,
+   706,
+   2147,
+   246,
+   222
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -28.3,
+  "puls_15_50": {
+   "hz": 16.7,
+   "schaerfe": 3.6
+  },
+  "wav": {
+   "spitze_db": -1.181,
+   "rms_db": -26.126,
+   "rauschboden_db": -55.549,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "ogg": {
+   "spitze_db": -1.213,
+   "rms_db": -26.153,
+   "rauschboden_db": -55.603,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -1.236,
+   "rms_db": -26.153,
+   "rauschboden_db": -55.708,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 0.62,
+  "dauer_ogg_s": 0.62,
+  "dauer_m4a_s": 0.62,
+  "rauschabstand_roh_db": 63.5
+ },
+ "ziehen_03": {
+  "einsatz_m20db_ms": 20.0,
+  "hoechstwert_ms": 239.0,
+  "einsaetze_s": [
+   0.032,
+   0.245,
+   0.288
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   161,
+   1388,
+   82
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -24.6,
+  "puls_15_50": {
+   "hz": 15.0,
+   "schaerfe": 2.1
+  },
+  "wav": {
+   "spitze_db": -1.375,
+   "rms_db": -27.4,
+   "rauschboden_db": -35.616,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 4.0,
+   "dc": 0.0
+  },
+  "ogg": {
+   "spitze_db": -1.427,
+   "rms_db": -27.543,
+   "rauschboden_db": -36.328,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "m4a": {
+   "spitze_db": -1.371,
+   "rms_db": -27.429,
+   "rauschboden_db": -35.679,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "dauer_wav_s": 0.62,
+  "dauer_ogg_s": 0.62,
+  "dauer_m4a_s": 0.62,
+  "rauschabstand_roh_db": 63.0
+ },
+ "ziehen_04": {
+  "einsatz_m20db_ms": 164.0,
+  "hoechstwert_ms": 366.8,
+  "einsaetze_s": [
+   0.032,
+   0.085,
+   0.192,
+   0.256,
+   0.384
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   3114,
+   2557,
+   3585,
+   3413,
+   2258
+  ],
+  "linien_ueber_5k": [
+   [
+    17601,
+    18.9,
+    -35.9
+   ],
+   [
+    17701,
+    17.4,
+    -39.1
+   ],
+   [
+    16001,
+    17.3,
+    -23.1
+   ],
+   [
+    17501,
+    16.6,
+    -36.3
+   ],
+   [
+    16998,
+    15.6,
+    -32.6
+   ]
+  ],
+  "ueber_6k_nach_tp5k_db": -18.8,
+  "puls_15_50": {
+   "hz": 16.5,
+   "schaerfe": 2.0
+  },
+  "wav": {
+   "spitze_db": -1.106,
+   "rms_db": -25.241,
+   "rauschboden_db": -50.138,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "ogg": {
+   "spitze_db": -1.073,
+   "rms_db": -25.503,
+   "rauschboden_db": -48.298,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -1.122,
+   "rms_db": -25.382,
+   "rauschboden_db": -50.003,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 0.62,
+  "dauer_ogg_s": 0.62,
+  "dauer_m4a_s": 0.62,
+  "rauschabstand_roh_db": 72.8
+ },
+ "ziehen_05": {
+  "einsatz_m20db_ms": 174.0,
+  "hoechstwert_ms": 374.5,
+  "einsaetze_s": [
+   0.032,
+   0.192,
+   0.32,
+   0.384,
+   0.501
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   2387,
+   3196,
+   963,
+   1426,
+   1637
+  ],
+  "linien_ueber_5k": [
+   [
+    17601,
+    14.4,
+    -51.1
+   ]
+  ],
+  "ueber_6k_nach_tp5k_db": -20.4,
+  "puls_15_50": {
+   "hz": 16.5,
+   "schaerfe": 5.2
+  },
+  "wav": {
+   "spitze_db": -1.106,
+   "rms_db": -25.195,
+   "rauschboden_db": -36.418,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "ogg": {
+   "spitze_db": -1.768,
+   "rms_db": -25.613,
+   "rauschboden_db": -37.581,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "m4a": {
+   "spitze_db": -1.315,
+   "rms_db": -25.313,
+   "rauschboden_db": -36.391,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "dauer_wav_s": 0.62,
+  "dauer_ogg_s": 0.62,
+  "dauer_m4a_s": 0.62,
+  "rauschabstand_roh_db": 63.3
+ },
+ "ziehen_06": {
+  "einsatz_m20db_ms": 196.0,
+  "hoechstwert_ms": 477.8,
+  "einsaetze_s": [
+   0.032,
+   0.117,
+   0.203,
+   0.277,
+   0.373,
+   0.459,
+   0.491
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   1511,
+   96,
+   82,
+   111,
+   1335,
+   975
+  ],
+  "linien_ueber_5k": [
+   [
+    16001,
+    12.3,
+    -54.0
+   ],
+   [
+    16798,
+    12.3,
+    -55.2
+   ],
+   [
+    13898,
+    12.2,
+    -37.8
+   ],
+   [
+    16500,
+    12.0,
+    -55.4
+   ]
+  ],
+  "ueber_6k_nach_tp5k_db": -34.5,
+  "puls_15_50": {
+   "hz": 20.8,
+   "schaerfe": 3.7
+  },
+  "wav": {
+   "spitze_db": -1.12,
+   "rms_db": -24.212,
+   "rauschboden_db": -37.234,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "ogg": {
+   "spitze_db": -1.49,
+   "rms_db": -24.328,
+   "rauschboden_db": -36.217,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "m4a": {
+   "spitze_db": -1.148,
+   "rms_db": -24.252,
+   "rauschboden_db": -37.176,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "dauer_wav_s": 0.62,
+  "dauer_ogg_s": 0.62,
+  "dauer_m4a_s": 0.62,
+  "rauschabstand_roh_db": 64.9
+ },
+ "ziehen_07": {
+  "einsatz_m20db_ms": 46.0,
+  "hoechstwert_ms": 113.0,
+  "einsaetze_s": [
+   0.032,
+   0.075,
+   0.128,
+   0.256,
+   0.48,
+   0.555
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   3603,
+   3779,
+   3328,
+   84,
+   143,
+   82
+  ],
+  "linien_ueber_5k": [
+   [
+    17601,
+    17.4,
+    -37.1
+   ],
+   [
+    17701,
+    15.0,
+    -41.3
+   ],
+   [
+    16001,
+    14.9,
+    -24.8
+   ],
+   [
+    16798,
+    14.7,
+    -31.5
+   ],
+   [
+    6000,
+    14.2,
+    -2.1
+   ]
+  ],
+  "ueber_6k_nach_tp5k_db": -18.1,
+  "puls_15_50": {
+   "hz": 48.6,
+   "schaerfe": 2.1
+  },
+  "wav": {
+   "spitze_db": -1.503,
+   "rms_db": -25.98,
+   "rauschboden_db": -60.245,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -1.552,
+   "rms_db": -26.3,
+   "rauschboden_db": -59.909,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "m4a": {
+   "spitze_db": -1.511,
+   "rms_db": -26.117,
+   "rauschboden_db": -60.22,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "dauer_wav_s": 0.62,
+  "dauer_ogg_s": 0.62,
+  "dauer_m4a_s": 0.62,
+  "rauschabstand_roh_db": 70.2
+ },
+ "ziehen_08": {
+  "einsatz_m20db_ms": 54.0,
+  "hoechstwert_ms": 372.2,
+  "einsaetze_s": [
+   0.032,
+   0.075,
+   0.107,
+   0.149,
+   0.181,
+   0.267,
+   0.331,
+   0.384,
+   0.544
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   2223,
+   3366,
+   3178,
+   3556,
+   3928,
+   3527
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -21.2,
+  "puls_15_50": {
+   "hz": 16.1,
+   "schaerfe": 4.8
+  },
+  "wav": {
+   "spitze_db": -1.344,
+   "rms_db": -25.14,
+   "rauschboden_db": -52.18,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "ogg": {
+   "spitze_db": -1.3,
+   "rms_db": -25.219,
+   "rauschboden_db": -49.959,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -1.342,
+   "rms_db": -25.281,
+   "rauschboden_db": -52.435,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 0.62,
+  "dauer_ogg_s": 0.62,
+  "dauer_m4a_s": 0.62,
+  "rauschabstand_roh_db": 52.3
+ },
+ "ziehen_09": {
+  "einsatz_m20db_ms": 22.0,
+  "hoechstwert_ms": 240.3,
+  "einsaetze_s": [
+   0.032,
+   0.149,
+   0.245,
+   0.288,
+   0.544
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   84,
+   93,
+   2475,
+   82,
+   82
+  ],
+  "linien_ueber_5k": [
+   [
+    18000,
+    15.5,
+    -54.8
+   ],
+   [
+    16898,
+    14.1,
+    -40.2
+   ],
+   [
+    17501,
+    13.8,
+    -44.1
+   ],
+   [
+    17601,
+    13.7,
+    -45.5
+   ],
+   [
+    16552,
+    13.6,
+    -39.0
+   ]
+  ],
+  "ueber_6k_nach_tp5k_db": -16.0,
+  "puls_15_50": {
+   "hz": 15.0,
+   "schaerfe": 2.7
+  },
+  "wav": {
+   "spitze_db": -1.562,
+   "rms_db": -26.157,
+   "rauschboden_db": -28.289,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 4.0,
+   "dc": 0.0
+  },
+  "ogg": {
+   "spitze_db": -1.651,
+   "rms_db": -26.395,
+   "rauschboden_db": -28.688,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "m4a": {
+   "spitze_db": -1.585,
+   "rms_db": -26.254,
+   "rauschboden_db": -28.59,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "dauer_wav_s": 0.62,
+  "dauer_ogg_s": 0.62,
+  "dauer_m4a_s": 0.62,
+  "rauschabstand_roh_db": 56.6
+ },
+ "mischen_01": {
+  "einsatz_m20db_ms": 10.0,
+  "hoechstwert_ms": 43.1,
+  "einsaetze_s": [
+   0.032,
+   0.117,
+   0.373,
+   0.597,
+   0.715,
+   0.907,
+   1.109,
+   1.141
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   2528,
+   2250,
+   2094,
+   123,
+   3966,
+   82
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -16.2,
+  "puls_15_50": {
+   "hz": 24.5,
+   "schaerfe": 2.7
+  },
+  "wav": {
+   "spitze_db": -1.106,
+   "rms_db": -29.087,
+   "rauschboden_db": -62.725,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -1.178,
+   "rms_db": -29.147,
+   "rauschboden_db": -63.537,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -1.187,
+   "rms_db": -29.153,
+   "rauschboden_db": -62.884,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 1.22,
+  "dauer_ogg_s": 1.22,
+  "dauer_m4a_s": 1.22,
+  "rauschabstand_roh_db": 77.3
+ },
+ "mischen_02": {
+  "einsatz_m20db_ms": 14.0,
+  "hoechstwert_ms": 697.6,
+  "einsaetze_s": [
+   0.032,
+   0.139,
+   0.256,
+   0.448,
+   0.48,
+   0.512,
+   0.629,
+   0.715,
+   0.789,
+   0.843,
+   1.056
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   2414,
+   99,
+   3606,
+   3706,
+   2537,
+   3500
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -16.5,
+  "puls_15_50": {
+   "hz": 49.8,
+   "schaerfe": 2.3
+  },
+  "wav": {
+   "spitze_db": -1.305,
+   "rms_db": -31.569,
+   "rauschboden_db": -48.083,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "ogg": {
+   "spitze_db": -1.364,
+   "rms_db": -31.687,
+   "rauschboden_db": -47.05,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "m4a": {
+   "spitze_db": -1.337,
+   "rms_db": -31.611,
+   "rauschboden_db": -47.798,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "dauer_wav_s": 1.192,
+  "dauer_ogg_s": 1.192,
+  "dauer_m4a_s": 1.192,
+  "rauschabstand_roh_db": 65.8
+ },
+ "mischen_03": {
+  "einsatz_m20db_ms": 4.0,
+  "hoechstwert_ms": 874.6,
+  "einsaetze_s": [
+   0.192,
+   0.32,
+   0.459,
+   0.587,
+   0.64,
+   0.683,
+   0.8,
+   0.885,
+   0.928,
+   1.035
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   3035,
+   3802,
+   2452,
+   2364,
+   2346,
+   2642
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -17.8,
+  "puls_15_50": {
+   "hz": 29.2,
+   "schaerfe": 2.7
+  },
+  "wav": {
+   "spitze_db": -1.527,
+   "rms_db": -31.961,
+   "rauschboden_db": -67.56,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "ogg": {
+   "spitze_db": -1.582,
+   "rms_db": -32.049,
+   "rauschboden_db": -67.951,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "m4a": {
+   "spitze_db": -1.541,
+   "rms_db": -31.988,
+   "rauschboden_db": -67.705,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 1.22,
+  "dauer_ogg_s": 1.22,
+  "dauer_m4a_s": 1.22,
+  "rauschabstand_roh_db": 69.0
+ },
+ "mischen_04": {
+  "einsatz_m20db_ms": 2.0,
+  "hoechstwert_ms": 16.5,
+  "einsaetze_s": [
+   0.032,
+   0.117,
+   0.256,
+   0.373,
+   0.427,
+   0.576,
+   0.8,
+   0.853,
+   0.907,
+   0.981,
+   1.024,
+   1.109
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   2812,
+   2642,
+   82,
+   90,
+   82,
+   105
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -17.6,
+  "puls_15_50": {
+   "hz": 26.5,
+   "schaerfe": 2.7
+  },
+  "wav": {
+   "spitze_db": -1.106,
+   "rms_db": -33.2,
+   "rauschboden_db": -54.842,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -1.151,
+   "rms_db": -33.266,
+   "rauschboden_db": -55.261,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -1.301,
+   "rms_db": -33.304,
+   "rauschboden_db": -54.863,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 1.22,
+  "dauer_ogg_s": 1.22,
+  "dauer_m4a_s": 1.22,
+  "rauschabstand_roh_db": 77.1
+ },
+ "mischen_05": {
+  "einsatz_m20db_ms": 12.0,
+  "hoechstwert_ms": 1031.2,
+  "einsaetze_s": [
+   0.032,
+   0.128,
+   0.235,
+   0.469,
+   0.629,
+   0.683,
+   0.715,
+   0.821,
+   0.949,
+   1.013,
+   1.045
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   82,
+   82,
+   111,
+   114,
+   140,
+   120
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -16.8,
+  "puls_15_50": {
+   "hz": 24.7,
+   "schaerfe": 2.7
+  },
+  "wav": {
+   "spitze_db": -1.106,
+   "rms_db": -27.522,
+   "rauschboden_db": -48.127,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -1.325,
+   "rms_db": -27.66,
+   "rauschboden_db": -49.369,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -1.138,
+   "rms_db": -27.585,
+   "rauschboden_db": -48.2,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 1.22,
+  "dauer_ogg_s": 1.22,
+  "dauer_m4a_s": 1.22,
+  "rauschabstand_roh_db": 74.6
+ },
+ "mischen_06": {
+  "einsatz_m20db_ms": 8.0,
+  "hoechstwert_ms": 405.5,
+  "einsaetze_s": [
+   0.032,
+   0.064,
+   0.181,
+   0.277,
+   0.405,
+   0.64,
+   0.779,
+   0.864,
+   0.939,
+   1.003
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   2334,
+   2619,
+   1693,
+   99,
+   3351,
+   2235
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -18.3,
+  "puls_15_50": {
+   "hz": 24.7,
+   "schaerfe": 3.0
+  },
+  "wav": {
+   "spitze_db": -1.912,
+   "rms_db": -25.091,
+   "rauschboden_db": -37.06,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 6.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -1.909,
+   "rms_db": -25.281,
+   "rauschboden_db": -36.009,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -1.898,
+   "rms_db": -25.162,
+   "rauschboden_db": -37.139,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 1.22,
+  "dauer_ogg_s": 1.22,
+  "dauer_m4a_s": 1.22,
+  "rauschabstand_roh_db": 63.8
+ },
+ "mischen_07": {
+  "einsatz_m20db_ms": 4.0,
+  "hoechstwert_ms": 383.0,
+  "einsaetze_s": [
+   0.032,
+   0.181,
+   0.331,
+   0.448,
+   0.512,
+   0.555,
+   0.661,
+   0.757,
+   0.8,
+   0.843,
+   0.875,
+   1.024
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   3237,
+   3764,
+   3975,
+   1502,
+   3673,
+   3603
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -16.1,
+  "puls_15_50": {
+   "hz": 28.8,
+   "schaerfe": 3.5
+  },
+  "wav": {
+   "spitze_db": -1.106,
+   "rms_db": -29.32,
+   "rauschboden_db": -50.857,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "ogg": {
+   "spitze_db": -1.379,
+   "rms_db": -29.45,
+   "rauschboden_db": -50.744,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "m4a": {
+   "spitze_db": -1.131,
+   "rms_db": -29.396,
+   "rauschboden_db": -50.966,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 1.22,
+  "dauer_ogg_s": 1.22,
+  "dauer_m4a_s": 1.22,
+  "rauschabstand_roh_db": 75.0
+ },
+ "mischen_08": {
+  "einsatz_m20db_ms": 42.0,
+  "hoechstwert_ms": 144.5,
+  "einsaetze_s": [
+   0.032,
+   0.128,
+   0.16,
+   0.224,
+   0.277,
+   0.32,
+   0.373,
+   0.491,
+   0.555,
+   0.683,
+   0.736,
+   0.864
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   90,
+   82,
+   82,
+   82,
+   105,
+   82
+  ],
+  "linien_ueber_5k": [
+   [
+    16599,
+    12.6,
+    -51.0
+   ],
+   [
+    16998,
+    12.3,
+    -56.3
+   ]
+  ],
+  "ueber_6k_nach_tp5k_db": -20.6,
+  "puls_15_50": {
+   "hz": 17.2,
+   "schaerfe": 7.4
+  },
+  "wav": {
+   "spitze_db": -1.175,
+   "rms_db": -22.715,
+   "rauschboden_db": -34.453,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "ogg": {
+   "spitze_db": -1.308,
+   "rms_db": -22.886,
+   "rauschboden_db": -34.89,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "m4a": {
+   "spitze_db": -1.238,
+   "rms_db": -22.791,
+   "rauschboden_db": -34.697,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "dauer_wav_s": 1.22,
+  "dauer_ogg_s": 1.22,
+  "dauer_m4a_s": 1.22,
+  "rauschabstand_roh_db": 72.1
+ },
+ "flip_01": {
+  "einsatz_m20db_ms": 88.0,
+  "hoechstwert_ms": 239.8,
+  "einsaetze_s": [
+   0.032,
+   0.117,
+   0.16,
+   0.213,
+   0.267,
+   0.309,
+   0.363,
+   0.416,
+   0.512,
+   0.565,
+   0.661,
+   0.715
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   1297,
+   3972,
+   2047,
+   3914,
+   3829,
+   3873
+  ],
+  "linien_ueber_5k": [
+   [
+    16001,
+    24.8,
+    -5.2
+   ],
+   [
+    17601,
+    19.1,
+    -24.9
+   ],
+   [
+    18000,
+    18.8,
+    -31.6
+   ],
+   [
+    17197,
+    14.9,
+    -26.6
+   ],
+   [
+    16798,
+    14.2,
+    -24.8
+   ]
+  ],
+  "ueber_6k_nach_tp5k_db": -10.3,
+  "puls_15_50": {
+   "hz": 20.0,
+   "schaerfe": 12.2
+  },
+  "wav": {
+   "spitze_db": -1.204,
+   "rms_db": -25.056,
+   "rauschboden_db": -54.366,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -2.408,
+   "rms_db": -25.466,
+   "rauschboden_db": -54.701,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "m4a": {
+   "spitze_db": -1.405,
+   "rms_db": -25.19,
+   "rauschboden_db": -54.614,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 1.42,
+  "dauer_ogg_s": 1.42,
+  "dauer_m4a_s": 1.42,
+  "rauschabstand_roh_db": 78.4
+ },
+ "flip_02": {
+  "einsatz_m20db_ms": 62.0,
+  "hoechstwert_ms": 673.9,
+  "einsaetze_s": [
+   0.032,
+   0.096,
+   0.235,
+   0.715,
+   1.12
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   166,
+   96,
+   99,
+   3922,
+   3878
+  ],
+  "linien_ueber_5k": [
+   [
+    16001,
+    17.8,
+    -39.2
+   ],
+   [
+    16798,
+    17.8,
+    -44.3
+   ],
+   [
+    17601,
+    17.6,
+    -49.3
+   ],
+   [
+    16998,
+    17.5,
+    -46.8
+   ],
+   [
+    18000,
+    17.4,
+    -57.0
+   ]
+  ],
+  "ueber_6k_nach_tp5k_db": -25.0,
+  "puls_15_50": {
+   "hz": 15.0,
+   "schaerfe": 3.6
+  },
+  "wav": {
+   "spitze_db": -3.859,
+   "rms_db": -21.565,
+   "rauschboden_db": -54.336,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "ogg": {
+   "spitze_db": -3.768,
+   "rms_db": -21.728,
+   "rauschboden_db": -52.981,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -4.046,
+   "rms_db": -21.622,
+   "rauschboden_db": -54.347,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "dauer_wav_s": 1.42,
+  "dauer_ogg_s": 1.42,
+  "dauer_m4a_s": 1.42,
+  "rauschabstand_roh_db": 81.7
+ },
+ "flip_03": {
+  "einsatz_m20db_ms": 50.0,
+  "hoechstwert_ms": 247.6,
+  "einsaetze_s": [
+   0.032
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   3984
+  ],
+  "linien_ueber_5k": [
+   [
+    16001,
+    25.1,
+    -21.1
+   ],
+   [
+    17601,
+    20.8,
+    -44.4
+   ],
+   [
+    17197,
+    17.0,
+    -44.8
+   ],
+   [
+    16400,
+    15.9,
+    -32.6
+   ],
+   [
+    18000,
+    15.2,
+    -58.8
+   ]
+  ],
+  "ueber_6k_nach_tp5k_db": -10.4,
+  "puls_15_50": {
+   "hz": 49.9,
+   "schaerfe": 2.8
+  },
+  "wav": {
+   "spitze_db": -7.442,
+   "rms_db": -25.277,
+   "rauschboden_db": -61.305,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -8.9,
+   "rms_db": -25.657,
+   "rauschboden_db": -63.007,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "m4a": {
+   "spitze_db": -7.648,
+   "rms_db": -25.358,
+   "rauschboden_db": -61.277,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "dauer_wav_s": 1.42,
+  "dauer_ogg_s": 1.42,
+  "dauer_m4a_s": 1.42,
+  "rauschabstand_roh_db": 77.6
+ },
+ "flip_04": {
+  "einsatz_m20db_ms": 378.0,
+  "hoechstwert_ms": 647.7,
+  "einsaetze_s": [
+   0.032,
+   0.277,
+   0.981
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   3398,
+   389,
+   111
+  ],
+  "linien_ueber_5k": [
+   [
+    18000,
+    20.5,
+    -43.9
+   ],
+   [
+    17601,
+    20.3,
+    -35.1
+   ],
+   [
+    16552,
+    19.2,
+    -32.2
+   ],
+   [
+    16898,
+    19.2,
+    -33.7
+   ],
+   [
+    16001,
+    18.4,
+    -29.3
+   ]
+  ],
+  "ueber_6k_nach_tp5k_db": -22.0,
+  "puls_15_50": {
+   "hz": 15.0,
+   "schaerfe": 2.9
+  },
+  "wav": {
+   "spitze_db": -4.187,
+   "rms_db": -23.16,
+   "rauschboden_db": -53.716,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "ogg": {
+   "spitze_db": -4.076,
+   "rms_db": -23.338,
+   "rauschboden_db": -54.36,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "m4a": {
+   "spitze_db": -4.375,
+   "rms_db": -23.262,
+   "rauschboden_db": -52.908,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 1.42,
+  "dauer_ogg_s": 1.42,
+  "dauer_m4a_s": 1.42,
+  "rauschabstand_roh_db": 36.4
+ },
+ "flip_05": {
+  "einsatz_m20db_ms": 70.0,
+  "hoechstwert_ms": 396.9,
+  "einsaetze_s": [
+   0.032,
+   0.064,
+   0.32,
+   0.384,
+   0.48
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   134,
+   93,
+   93,
+   82,
+   82
+  ],
+  "linien_ueber_5k": [
+   [
+    12298,
+    14.2,
+    -55.7
+   ],
+   [
+    11501,
+    13.6,
+    -52.6
+   ]
+  ],
+  "ueber_6k_nach_tp5k_db": -51.5,
+  "puls_15_50": {
+   "hz": 15.5,
+   "schaerfe": 4.6
+  },
+  "wav": {
+   "spitze_db": -1.106,
+   "rms_db": -18.075,
+   "rauschboden_db": -49.076,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.001
+  },
+  "ogg": {
+   "spitze_db": -1.078,
+   "rms_db": -17.997,
+   "rauschboden_db": -47.629,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.001
+  },
+  "m4a": {
+   "spitze_db": -1.11,
+   "rms_db": -18.078,
+   "rauschboden_db": -49.125,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.001
+  },
+  "dauer_wav_s": 0.548,
+  "dauer_ogg_s": 0.548,
+  "dauer_m4a_s": 0.548,
+  "rauschabstand_roh_db": 80.2
+ },
+ "flip_06": {
+  "einsatz_m20db_ms": 304.0,
+  "hoechstwert_ms": 326.7,
+  "einsaetze_s": [
+   0.032,
+   0.32
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   518,
+   82
+  ],
+  "linien_ueber_5k": [
+   [
+    13101,
+    14.7,
+    -45.7
+   ],
+   [
+    13998,
+    14.7,
+    -51.2
+   ],
+   [
+    11501,
+    14.1,
+    -32.7
+   ],
+   [
+    13447,
+    13.5,
+    -48.4
+   ],
+   [
+    13898,
+    13.4,
+    -51.7
+   ]
+  ],
+  "ueber_6k_nach_tp5k_db": -38.5,
+  "puls_15_50": {
+   "hz": 15.0,
+   "schaerfe": 4.1
+  },
+  "wav": {
+   "spitze_db": -1.112,
+   "rms_db": -19.926,
+   "rauschboden_db": -47.735,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.001
+  },
+  "ogg": {
+   "spitze_db": -1.037,
+   "rms_db": -19.926,
+   "rauschboden_db": -39.941,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.001
+  },
+  "m4a": {
+   "spitze_db": -1.119,
+   "rms_db": -19.935,
+   "rauschboden_db": -47.691,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.001
+  },
+  "dauer_wav_s": 0.77,
+  "dauer_ogg_s": 0.77,
+  "dauer_m4a_s": 0.77,
+  "rauschabstand_roh_db": 66.7
+ },
+ "flip_07": {
+  "einsatz_m20db_ms": 56.0,
+  "hoechstwert_ms": 1121.7,
+  "einsaetze_s": [
+   0.032,
+   0.096,
+   0.235,
+   0.405,
+   0.747,
+   0.875,
+   0.949,
+   1.131,
+   1.227,
+   1.323
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   2296,
+   3919,
+   2320,
+   1625,
+   2235,
+   2830
+  ],
+  "linien_ueber_5k": [
+   [
+    17601,
+    15.4,
+    -40.0
+   ],
+   [
+    16898,
+    14.5,
+    -36.1
+   ],
+   [
+    17501,
+    14.1,
+    -40.3
+   ],
+   [
+    16998,
+    13.9,
+    -38.3
+   ],
+   [
+    18000,
+    13.6,
+    -51.6
+   ]
+  ],
+  "ueber_6k_nach_tp5k_db": -18.3,
+  "puls_15_50": {
+   "hz": 20.4,
+   "schaerfe": 3.5
+  },
+  "wav": {
+   "spitze_db": -1.347,
+   "rms_db": -29.036,
+   "rauschboden_db": -52.816,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "ogg": {
+   "spitze_db": -1.52,
+   "rms_db": -29.27,
+   "rauschboden_db": -52.707,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "m4a": {
+   "spitze_db": -1.387,
+   "rms_db": -29.159,
+   "rauschboden_db": -52.902,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 1.42,
+  "dauer_ogg_s": 1.42,
+  "dauer_m4a_s": 1.42,
+  "rauschabstand_roh_db": 68.8
+ },
+ "flip_08": {
+  "einsatz_m20db_ms": 6.0,
+  "hoechstwert_ms": 133.7,
+  "einsaetze_s": [
+   0.032,
+   0.117,
+   0.149,
+   0.267,
+   0.416,
+   0.501,
+   0.533,
+   0.64,
+   0.693,
+   0.864
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   2689,
+   90,
+   82,
+   82,
+   90,
+   1640
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -19.8,
+  "puls_15_50": {
+   "hz": 36.1,
+   "schaerfe": 1.5
+  },
+  "wav": {
+   "spitze_db": -1.106,
+   "rms_db": -37.394,
+   "rauschboden_db": -73.107,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "ogg": {
+   "spitze_db": -1.196,
+   "rms_db": -37.522,
+   "rauschboden_db": -72.792,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "m4a": {
+   "spitze_db": -1.105,
+   "rms_db": -37.423,
+   "rauschboden_db": -73.337,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 0.952,
+  "dauer_ogg_s": 0.952,
+  "dauer_m4a_s": 0.952,
+  "rauschabstand_roh_db": 78.3
+ },
+ "flip_09": {
+  "einsatz_m20db_ms": 188.0,
+  "hoechstwert_ms": 389.5,
+  "einsaetze_s": [
+   0.053,
+   0.192,
+   0.352,
+   0.555,
+   0.651,
+   0.789,
+   0.875
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   178,
+   887,
+   2487,
+   111,
+   82,
+   1142
+  ],
+  "linien_ueber_5k": [
+   [
+    13998,
+    12.7,
+    -50.6
+   ]
+  ],
+  "ueber_6k_nach_tp5k_db": -37.4,
+  "puls_15_50": {
+   "hz": 15.3,
+   "schaerfe": 4.2
+  },
+  "wav": {
+   "spitze_db": -1.149,
+   "rms_db": -24.19,
+   "rauschboden_db": -56.577,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 3.0,
+   "dc": 0.0
+  },
+  "ogg": {
+   "spitze_db": -1.044,
+   "rms_db": -24.287,
+   "rauschboden_db": -56.361,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "m4a": {
+   "spitze_db": -1.085,
+   "rms_db": -24.228,
+   "rauschboden_db": -56.74,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "dauer_wav_s": 1.075,
+  "dauer_ogg_s": 1.075,
+  "dauer_m4a_s": 1.075,
+  "rauschabstand_roh_db": 68.9
+ },
+ "flip_10": {
+  "einsatz_m20db_ms": 116.0,
+  "hoechstwert_ms": 329.1,
+  "einsaetze_s": [
+   0.053,
+   0.085,
+   0.128,
+   0.224,
+   0.331,
+   0.48,
+   0.629,
+   0.992,
+   1.109,
+   1.376
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   3884,
+   3878,
+   1857,
+   2692,
+   82,
+   2258
+  ],
+  "linien_ueber_5k": [
+   [
+    17601,
+    15.0,
+    -42.3
+   ],
+   [
+    18000,
+    14.7,
+    -52.2
+   ],
+   [
+    17501,
+    14.5,
+    -42.8
+   ],
+   [
+    16898,
+    14.2,
+    -38.9
+   ],
+   [
+    16699,
+    13.6,
+    -38.3
+   ]
+  ],
+  "ueber_6k_nach_tp5k_db": -20.0,
+  "puls_15_50": {
+   "hz": 27.2,
+   "schaerfe": 2.4
+  },
+  "wav": {
+   "spitze_db": -1.267,
+   "rms_db": -31.339,
+   "rauschboden_db": -64.486,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -1.373,
+   "rms_db": -31.605,
+   "rauschboden_db": -65.514,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -1.263,
+   "rms_db": -31.442,
+   "rauschboden_db": -64.454,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 1.42,
+  "dauer_ogg_s": 1.42,
+  "dauer_m4a_s": 1.42,
+  "rauschabstand_roh_db": 64.7
+ },
+ "flip_11": {
+  "einsatz_m20db_ms": 144.0,
+  "hoechstwert_ms": 160.9,
+  "einsaetze_s": [
+   0.149,
+   0.363,
+   0.427,
+   0.587,
+   0.907
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   99,
+   82,
+   82,
+   2648,
+   137
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -30.9,
+  "puls_15_50": {
+   "hz": 15.1,
+   "schaerfe": 6.8
+  },
+  "wav": {
+   "spitze_db": -1.118,
+   "rms_db": -24.041,
+   "rauschboden_db": -69.316,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "ogg": {
+   "spitze_db": -1.089,
+   "rms_db": -24.001,
+   "rauschboden_db": -69.651,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -1.282,
+   "rms_db": -24.103,
+   "rauschboden_db": -69.391,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "dauer_wav_s": 1.04,
+  "dauer_ogg_s": 1.04,
+  "dauer_m4a_s": 1.04,
+  "rauschabstand_roh_db": 79.1
+ },
+ "flip_12": {
+  "einsatz_m20db_ms": 60.0,
+  "hoechstwert_ms": 170.6,
+  "einsaetze_s": [
+   0.032,
+   0.128,
+   0.16,
+   0.245,
+   0.384
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   1992,
+   1661,
+   1104,
+   1215,
+   82
+  ],
+  "linien_ueber_5k": [
+   [
+    17501,
+    13.4,
+    -46.0
+   ],
+   [
+    16001,
+    12.6,
+    -38.8
+   ]
+  ],
+  "ueber_6k_nach_tp5k_db": -21.4,
+  "puls_15_50": {
+   "hz": 15.0,
+   "schaerfe": 5.4
+  },
+  "wav": {
+   "spitze_db": -1.178,
+   "rms_db": -29.311,
+   "rauschboden_db": -75.104,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 3.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -1.961,
+   "rms_db": -29.666,
+   "rauschboden_db": -75.754,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "m4a": {
+   "spitze_db": -1.224,
+   "rms_db": -29.44,
+   "rauschboden_db": -75.073,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "dauer_wav_s": 1.42,
+  "dauer_ogg_s": 1.42,
+  "dauer_m4a_s": 1.42,
+  "rauschabstand_roh_db": 71.5
+ },
+ "sieg_01": {
+  "einsatz_m20db_ms": 4.0,
+  "hoechstwert_ms": 292.1,
+  "einsaetze_s": [
+   0.032,
+   0.267,
+   0.512,
+   0.768
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   295,
+   416,
+   369,
+   1327
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -59.1,
+  "puls_15_50": {
+   "hz": 39.7,
+   "schaerfe": 4.8
+  },
+  "wav": {
+   "spitze_db": -5.515,
+   "rms_db": -18.402,
+   "rauschboden_db": -65.024,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -5.428,
+   "rms_db": -18.371,
+   "rauschboden_db": -65.281,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -5.511,
+   "rms_db": -18.408,
+   "rauschboden_db": -64.997,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 1.454,
+  "dauer_ogg_s": 1.454,
+  "dauer_m4a_s": 1.454,
+  "rauschabstand_roh_db": 86.3
+ },
+ "sieg_02": {
+  "einsatz_m20db_ms": 4.0,
+  "hoechstwert_ms": 7.5,
+  "einsaetze_s": [
+   0.032,
+   0.267,
+   0.512,
+   0.768,
+   1.013
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   662,
+   588,
+   700,
+   700,
+   588
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -59.7,
+  "puls_15_50": {
+   "hz": 16.1,
+   "schaerfe": 4.5
+  },
+  "wav": {
+   "spitze_db": -4.66,
+   "rms_db": -18.502,
+   "rauschboden_db": -59.991,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "ogg": {
+   "spitze_db": -4.579,
+   "rms_db": -18.448,
+   "rauschboden_db": -59.82,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -4.68,
+   "rms_db": -18.506,
+   "rauschboden_db": -60.024,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 1.498,
+  "dauer_ogg_s": 1.498,
+  "dauer_m4a_s": 1.498,
+  "rauschabstand_roh_db": 81.7
+ },
+ "sieg_03": {
+  "einsatz_m20db_ms": 2.0,
+  "hoechstwert_ms": 505.7,
+  "einsaetze_s": [
+   0.245,
+   0.501,
+   0.661,
+   0.747,
+   0.885,
+   1.024,
+   1.056,
+   1.163
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   249,
+   331,
+   395,
+   495,
+   527,
+   665
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -50.6,
+  "puls_15_50": {
+   "hz": 33.6,
+   "schaerfe": 4.7
+  },
+  "wav": {
+   "spitze_db": -7.073,
+   "rms_db": -19.415,
+   "rauschboden_db": -60.451,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -7.09,
+   "rms_db": -19.352,
+   "rauschboden_db": -60.397,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -7.085,
+   "rms_db": -19.42,
+   "rauschboden_db": -60.618,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 1.783,
+  "dauer_ogg_s": 1.783,
+  "dauer_m4a_s": 1.783,
+  "rauschabstand_roh_db": 84.5
+ },
+ "sieg_04": {
+  "einsatz_m20db_ms": 8.0,
+  "hoechstwert_ms": 777.4,
+  "einsaetze_s": [
+   0.032,
+   0.128,
+   0.245,
+   0.395,
+   0.523,
+   0.757,
+   0.8,
+   1.056,
+   1.355,
+   1.547,
+   1.589,
+   1.643
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   410,
+   521,
+   597,
+   621,
+   621,
+   670
+  ],
+  "linien_ueber_5k": [
+   [
+    16001,
+    15.1,
+    -58.3
+   ]
+  ],
+  "ueber_6k_nach_tp5k_db": -38.8,
+  "puls_15_50": {
+   "hz": 15.0,
+   "schaerfe": 4.3
+  },
+  "wav": {
+   "spitze_db": -8.498,
+   "rms_db": -19.385,
+   "rauschboden_db": -34.534,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -8.472,
+   "rms_db": -19.397,
+   "rauschboden_db": -33.561,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "m4a": {
+   "spitze_db": -8.538,
+   "rms_db": -19.399,
+   "rauschboden_db": -34.491,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 2.007,
+  "dauer_ogg_s": 2.007,
+  "dauer_m4a_s": 2.007,
+  "rauschabstand_roh_db": 86.1
+ },
+ "sieg_05": {
+  "einsatz_m20db_ms": 22.0,
+  "hoechstwert_ms": 1019.3,
+  "einsaetze_s": [
+   0.032,
+   0.245,
+   0.288,
+   0.352,
+   0.405,
+   0.512,
+   0.544,
+   0.597,
+   0.672,
+   0.747,
+   0.789,
+   0.885
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   662,
+   489,
+   547,
+   544,
+   541,
+   457
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -40.6,
+  "puls_15_50": {
+   "hz": 40.2,
+   "schaerfe": 2.8
+  },
+  "wav": {
+   "spitze_db": -3.767,
+   "rms_db": -19.864,
+   "rauschboden_db": -39.926,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "ogg": {
+   "spitze_db": -3.87,
+   "rms_db": -19.907,
+   "rauschboden_db": -39.268,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "m4a": {
+   "spitze_db": -3.853,
+   "rms_db": -19.878,
+   "rauschboden_db": -40.226,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "dauer_wav_s": 2.02,
+  "dauer_ogg_s": 2.02,
+  "dauer_m4a_s": 2.02,
+  "rauschabstand_roh_db": 83.0
+ },
+ "sieg_06": {
+  "einsatz_m20db_ms": 78.0,
+  "hoechstwert_ms": 971.2,
+  "einsaetze_s": [
+   0.107,
+   0.256,
+   0.395,
+   0.544,
+   0.597,
+   0.853,
+   0.981,
+   1.248,
+   1.312,
+   1.344,
+   1.419,
+   1.536
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   585,
+   647,
+   618,
+   632,
+   641,
+   527
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -40.3,
+  "puls_15_50": {
+   "hz": 43.0,
+   "schaerfe": 1.7
+  },
+  "wav": {
+   "spitze_db": -5.106,
+   "rms_db": -18.687,
+   "rauschboden_db": -52.12,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -4.994,
+   "rms_db": -18.665,
+   "rauschboden_db": -51.588,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "m4a": {
+   "spitze_db": -5.129,
+   "rms_db": -18.698,
+   "rauschboden_db": -52.29,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "dauer_wav_s": 1.976,
+  "dauer_ogg_s": 1.976,
+  "dauer_m4a_s": 1.976,
+  "rauschabstand_roh_db": 84.6
+ },
+ "sieg_07": {
+  "einsatz_m20db_ms": 4.0,
+  "hoechstwert_ms": 558.8,
+  "einsaetze_s": [
+   0.032,
+   0.149,
+   0.267,
+   0.405,
+   0.544
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   292,
+   395,
+   416,
+   1760,
+   369
+  ],
+  "linien_ueber_5k": [
+   [
+    15597,
+    25.6,
+    -42.2
+   ],
+   [
+    9199,
+    22.3,
+    -20.3
+   ],
+   [
+    10001,
+    18.4,
+    -22.1
+   ],
+   [
+    16001,
+    17.6,
+    -52.5
+   ],
+   [
+    8800,
+    14.9,
+    -34.8
+   ]
+  ],
+  "ueber_6k_nach_tp5k_db": -39.8,
+  "puls_15_50": {
+   "hz": 39.2,
+   "schaerfe": 3.8
+  },
+  "wav": {
+   "spitze_db": -7.039,
+   "rms_db": -19.564,
+   "rauschboden_db": -62.421,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -7.032,
+   "rms_db": -19.528,
+   "rauschboden_db": -62.166,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -7.052,
+   "rms_db": -19.571,
+   "rauschboden_db": -62.345,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 1.468,
+  "dauer_ogg_s": 1.468,
+  "dauer_m4a_s": 1.468,
+  "rauschabstand_roh_db": 85.7
+ },
+ "sieg_08": {
+  "einsatz_m20db_ms": 4.0,
+  "hoechstwert_ms": 6.4,
+  "einsaetze_s": [
+   0.032,
+   0.267,
+   0.512,
+   0.768,
+   1.013
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   662,
+   588,
+   662,
+   588,
+   588
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -67.9,
+  "puls_15_50": {
+   "hz": 16.1,
+   "schaerfe": 8.9
+  },
+  "wav": {
+   "spitze_db": -5.383,
+   "rms_db": -19.173,
+   "rauschboden_db": -61.147,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "ogg": {
+   "spitze_db": -5.298,
+   "rms_db": -19.113,
+   "rauschboden_db": -61.113,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -5.39,
+   "rms_db": -19.168,
+   "rauschboden_db": -61.227,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 1.532,
+  "dauer_ogg_s": 1.532,
+  "dauer_m4a_s": 1.532,
+  "rauschabstand_roh_db": 81.0
+ },
+ "sieg_09": {
+  "einsatz_m20db_ms": 0.0,
+  "hoechstwert_ms": 734.3,
+  "einsaetze_s": [
+   0.107,
+   0.245,
+   0.352,
+   0.405,
+   0.48,
+   0.597,
+   0.715,
+   0.747,
+   0.853,
+   0.907
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   987,
+   987,
+   987,
+   987,
+   987,
+   987
+  ],
+  "linien_ueber_5k": [
+   [
+    14402,
+    24.1,
+    -38.5
+   ],
+   [
+    6849,
+    15.5,
+    -12.0
+   ],
+   [
+    10400,
+    14.7,
+    -34.3
+   ],
+   [
+    14378,
+    14.6,
+    -49.0
+   ],
+   [
+    11595,
+    13.3,
+    -47.9
+   ]
+  ],
+  "ueber_6k_nach_tp5k_db": -22.2,
+  "puls_15_50": {
+   "hz": 15.1,
+   "schaerfe": 3.2
+  },
+  "wav": {
+   "spitze_db": -5.359,
+   "rms_db": -19.492,
+   "rauschboden_db": -60.122,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -5.46,
+   "rms_db": -19.465,
+   "rauschboden_db": -60.289,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -5.346,
+   "rms_db": -19.504,
+   "rauschboden_db": -60.132,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 1.625,
+  "dauer_ogg_s": 1.625,
+  "dauer_m4a_s": 1.625,
+  "rauschabstand_roh_db": 82.2
+ },
+ "fehler_01": {
+  "einsatz_m20db_ms": 22.0,
+  "hoechstwert_ms": 25.2,
+  "einsaetze_s": [
+   0.032,
+   0.373
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   84,
+   117
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -81.8,
+  "puls_15_50": {
+   "hz": 28.9,
+   "schaerfe": 7.7
+  },
+  "wav": {
+   "spitze_db": -1.106,
+   "rms_db": -17.411,
+   "rauschboden_db": -42.389,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -1.166,
+   "rms_db": -17.312,
+   "rauschboden_db": -42.45,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "m4a": {
+   "spitze_db": -1.382,
+   "rms_db": -17.46,
+   "rauschboden_db": -42.453,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 0.42,
+  "dauer_ogg_s": 0.42,
+  "dauer_m4a_s": 0.42,
+  "rauschabstand_roh_db": 73.8
+ },
+ "fehler_02": {
+  "einsatz_m20db_ms": 4.0,
+  "hoechstwert_ms": 12.2,
+  "einsaetze_s": [
+   0.032
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   93
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -78.5,
+  "wav": {
+   "spitze_db": -1.106,
+   "rms_db": -17.871,
+   "rauschboden_db": -39.052,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 3.0,
+   "dc": -0.002
+  },
+  "ogg": {
+   "spitze_db": -0.985,
+   "rms_db": -17.812,
+   "rauschboden_db": -39.043,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.002
+  },
+  "m4a": {
+   "spitze_db": -1.118,
+   "rms_db": -17.939,
+   "rauschboden_db": -39.09,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.002
+  },
+  "dauer_wav_s": 0.217,
+  "dauer_ogg_s": 0.217,
+  "dauer_m4a_s": 0.217,
+  "rauschabstand_roh_db": 72.7
+ },
+ "fehler_03": {
+  "einsatz_m20db_ms": 6.0,
+  "hoechstwert_ms": 27.9,
+  "einsaetze_s": [
+   0.032
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   184
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -104.4,
+  "puls_15_50": {
+   "hz": 19.7,
+   "schaerfe": 6.7
+  },
+  "wav": {
+   "spitze_db": -3.123,
+   "rms_db": -18.067,
+   "rauschboden_db": -39.125,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -3.102,
+   "rms_db": -17.994,
+   "rauschboden_db": -35.613,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "m4a": {
+   "spitze_db": -3.146,
+   "rms_db": -18.076,
+   "rauschboden_db": -39.133,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 0.42,
+  "dauer_ogg_s": 0.42,
+  "dauer_m4a_s": 0.42,
+  "rauschabstand_roh_db": 87.4
+ },
+ "fehler_04": {
+  "einsatz_m20db_ms": 8.0,
+  "hoechstwert_ms": 22.2,
+  "einsaetze_s": [
+   0.032
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   117
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -95.0,
+  "puls_15_50": {
+   "hz": 49.9,
+   "schaerfe": 4.2
+  },
+  "wav": {
+   "spitze_db": -7.147,
+   "rms_db": -17.655,
+   "rauschboden_db": -49.71,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -7.085,
+   "rms_db": -17.55,
+   "rauschboden_db": -48.549,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -7.146,
+   "rms_db": -17.665,
+   "rauschboden_db": -49.724,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 0.417,
+  "dauer_ogg_s": 0.417,
+  "dauer_m4a_s": 0.417,
+  "rauschabstand_roh_db": 87.2
+ },
+ "fehler_05": {
+  "einsatz_m20db_ms": 2.0,
+  "hoechstwert_ms": 3.9,
+  "einsaetze_s": [
+   0.032,
+   0.064
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   84,
+   87
+  ],
+  "linien_ueber_5k": [
+   [
+    5755,
+    12.5,
+    -55.4
+   ]
+  ],
+  "ueber_6k_nach_tp5k_db": -64.9,
+  "wav": {
+   "spitze_db": -1.13,
+   "rms_db": -21.059,
+   "rauschboden_db": -36.269,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "ogg": {
+   "spitze_db": -1.051,
+   "rms_db": -20.977,
+   "rauschboden_db": -32.386,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "m4a": {
+   "spitze_db": -1.132,
+   "rms_db": -21.126,
+   "rauschboden_db": -36.292,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 0.129,
+  "dauer_ogg_s": 0.129,
+  "dauer_m4a_s": 0.129,
+  "rauschabstand_roh_db": 65.7
+ },
+ "fehler_06": {
+  "einsatz_m20db_ms": 10.0,
+  "hoechstwert_ms": 41.6,
+  "einsaetze_s": [
+   0.053,
+   0.085
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   155,
+   213
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -85.6,
+  "puls_15_50": {
+   "hz": 18.8,
+   "schaerfe": 3.7
+  },
+  "wav": {
+   "spitze_db": -3.835,
+   "rms_db": -18.005,
+   "rauschboden_db": -45.263,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "ogg": {
+   "spitze_db": -3.938,
+   "rms_db": -17.94,
+   "rauschboden_db": -45.14,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "m4a": {
+   "spitze_db": -3.84,
+   "rms_db": -18.004,
+   "rauschboden_db": -45.234,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "dauer_wav_s": 0.42,
+  "dauer_ogg_s": 0.42,
+  "dauer_m4a_s": 0.42,
+  "rauschabstand_roh_db": 88.5
+ },
+ "fehler_07": {
+  "einsatz_m20db_ms": 8.0,
+  "hoechstwert_ms": 36.4,
+  "einsaetze_s": [
+   0.032
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   111
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -91.1,
+  "wav": {
+   "spitze_db": -2.206,
+   "rms_db": -14.02,
+   "rauschboden_db": -43.25,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -2.213,
+   "rms_db": -13.917,
+   "rauschboden_db": -43.337,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.001
+  },
+  "m4a": {
+   "spitze_db": -2.215,
+   "rms_db": -14.026,
+   "rauschboden_db": -43.322,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 0.244,
+  "dauer_ogg_s": 0.244,
+  "dauer_m4a_s": 0.244,
+  "rauschabstand_roh_db": 76.6
+ },
+ "fehler_08": {
+  "einsatz_m20db_ms": 26.0,
+  "hoechstwert_ms": 36.7,
+  "einsaetze_s": [
+   0.032
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   99
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -87.8,
+  "puls_15_50": {
+   "hz": 18.9,
+   "schaerfe": 4.3
+  },
+  "wav": {
+   "spitze_db": -1.106,
+   "rms_db": -18.096,
+   "rauschboden_db": -43.766,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "ogg": {
+   "spitze_db": -1.004,
+   "rms_db": -17.979,
+   "rauschboden_db": -43.851,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -1.157,
+   "rms_db": -18.116,
+   "rauschboden_db": -43.821,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "dauer_wav_s": 0.314,
+  "dauer_ogg_s": 0.314,
+  "dauer_m4a_s": 0.314,
+  "rauschabstand_roh_db": 70.2
+ },
+ "fehler_09": {
+  "einsatz_m20db_ms": 6.0,
+  "hoechstwert_ms": 12.1,
+  "einsaetze_s": [
+   0.032
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   181
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -85.4,
+  "wav": {
+   "spitze_db": -1.106,
+   "rms_db": -19.878,
+   "rauschboden_db": -43.956,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.001
+  },
+  "ogg": {
+   "spitze_db": -1.202,
+   "rms_db": -19.845,
+   "rauschboden_db": -44.379,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -0.943,
+   "rms_db": -19.827,
+   "rauschboden_db": -43.951,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.001
+  },
+  "dauer_wav_s": 0.268,
+  "dauer_ogg_s": 0.268,
+  "dauer_m4a_s": 0.268,
+  "rauschabstand_roh_db": 88.0
+ },
+ "fehler_10": {
+  "einsatz_m20db_ms": 4.0,
+  "hoechstwert_ms": 7.7,
+  "einsaetze_s": [
+   0.032
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   120
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -77.6,
+  "puls_15_50": {
+   "hz": 19.2,
+   "schaerfe": 5.5
+  },
+  "wav": {
+   "spitze_db": -1.106,
+   "rms_db": -18.966,
+   "rauschboden_db": -42.354,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -1.089,
+   "rms_db": -19.11,
+   "rauschboden_db": -62.384,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -1.109,
+   "rms_db": -18.974,
+   "rauschboden_db": -42.433,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 0.405,
+  "dauer_ogg_s": 0.405,
+  "dauer_m4a_s": 0.405,
+  "rauschabstand_roh_db": 84.7
+ },
+ "fehler_11": {
+  "einsatz_m20db_ms": 4.0,
+  "hoechstwert_ms": 10.6,
+  "einsaetze_s": [
+   0.032,
+   0.16
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   363,
+   372
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -87.7,
+  "puls_15_50": {
+   "hz": 15.0,
+   "schaerfe": 4.9
+  },
+  "wav": {
+   "spitze_db": -2.432,
+   "rms_db": -17.232,
+   "rauschboden_db": -48.729,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -2.485,
+   "rms_db": -17.147,
+   "rauschboden_db": -48.73,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "m4a": {
+   "spitze_db": -2.368,
+   "rms_db": -17.246,
+   "rauschboden_db": -48.756,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 0.312,
+  "dauer_ogg_s": 0.312,
+  "dauer_m4a_s": 0.312,
+  "rauschabstand_roh_db": 86.7
+ },
+ "fehler_12": {
+  "einsatz_m20db_ms": 4.0,
+  "hoechstwert_ms": 8.1,
+  "einsaetze_s": [
+   0.032
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   172
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -74.1,
+  "puls_15_50": {
+   "hz": 15.0,
+   "schaerfe": 10.1
+  },
+  "wav": {
+   "spitze_db": -1.106,
+   "rms_db": -19.622,
+   "rauschboden_db": -29.482,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "ogg": {
+   "spitze_db": -0.98,
+   "rms_db": -19.523,
+   "rauschboden_db": -29.494,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "m4a": {
+   "spitze_db": -1.113,
+   "rms_db": -19.632,
+   "rauschboden_db": -29.511,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "dauer_wav_s": 0.42,
+  "dauer_ogg_s": 0.42,
+  "dauer_m4a_s": 0.42,
+  "rauschabstand_roh_db": 83.3
+ },
+ "dran_01": {
+  "einsatz_m20db_ms": 0.0,
+  "hoechstwert_ms": 27.9,
+  "einsaetze_s": [
+   0.032
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   439
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -66.5,
+  "puls_15_50": {
+   "hz": 40.0,
+   "schaerfe": 4.0
+  },
+  "wav": {
+   "spitze_db": -10.342,
+   "rms_db": -18.999,
+   "rauschboden_db": -27.399,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -10.284,
+   "rms_db": -18.912,
+   "rauschboden_db": -27.262,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -10.382,
+   "rms_db": -18.998,
+   "rauschboden_db": -27.385,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 0.62,
+  "dauer_ogg_s": 0.62,
+  "dauer_m4a_s": 0.62,
+  "rauschabstand_roh_db": 86.1
+ },
+ "dran_02": {
+  "einsatz_m20db_ms": 0.0,
+  "hoechstwert_ms": 77.2,
+  "einsaetze_s": [
+   0.032,
+   0.075,
+   0.288,
+   0.331,
+   0.405
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   1174,
+   1174,
+   1171,
+   1171,
+   1171
+  ],
+  "linien_ueber_5k": [
+   [
+    6345,
+    21.2,
+    -51.0
+   ],
+   [
+    6375,
+    16.8,
+    -55.4
+   ],
+   [
+    6398,
+    12.5,
+    -59.4
+   ],
+   [
+    6457,
+    12.5,
+    -59.5
+   ]
+  ],
+  "ueber_6k_nach_tp5k_db": -54.4,
+  "puls_15_50": {
+   "hz": 22.9,
+   "schaerfe": 7.0
+  },
+  "wav": {
+   "spitze_db": -11.894,
+   "rms_db": -20.314,
+   "rauschboden_db": -48.937,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -11.831,
+   "rms_db": -20.232,
+   "rauschboden_db": -47.71,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -11.897,
+   "rms_db": -20.315,
+   "rauschboden_db": -48.988,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 0.62,
+  "dauer_ogg_s": 0.62,
+  "dauer_m4a_s": 0.62,
+  "rauschabstand_roh_db": 67.9
+ },
+ "dran_03": {
+  "einsatz_m20db_ms": 0.0,
+  "hoechstwert_ms": 116.9,
+  "einsaetze_s": [
+   0.107,
+   0.192,
+   0.448
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   524,
+   524,
+   260
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -99.7,
+  "puls_15_50": {
+   "hz": 15.1,
+   "schaerfe": 3.1
+  },
+  "wav": {
+   "spitze_db": -10.246,
+   "rms_db": -18.472,
+   "rauschboden_db": -23.688,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -10.135,
+   "rms_db": -18.389,
+   "rauschboden_db": -20.418,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -10.244,
+   "rms_db": -18.476,
+   "rauschboden_db": -23.699,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 0.62,
+  "dauer_ogg_s": 0.62,
+  "dauer_m4a_s": 0.62,
+  "rauschabstand_roh_db": 81.7
+ },
+ "dran_04": {
+  "einsatz_m20db_ms": 2.0,
+  "hoechstwert_ms": 7.5,
+  "einsaetze_s": [
+   0.256,
+   0.512
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   585,
+   881
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -47.6,
+  "puls_15_50": {
+   "hz": 15.9,
+   "schaerfe": 6.9
+  },
+  "wav": {
+   "spitze_db": -3.605,
+   "rms_db": -18.92,
+   "rauschboden_db": -33.375,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -3.72,
+   "rms_db": -18.86,
+   "rauschboden_db": -33.307,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -3.568,
+   "rms_db": -19.07,
+   "rauschboden_db": -33.396,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 0.62,
+  "dauer_ogg_s": 0.62,
+  "dauer_m4a_s": 0.62,
+  "rauschabstand_roh_db": 83.1
+ },
+ "dran_05": {
+  "einsatz_m20db_ms": 6.0,
+  "hoechstwert_ms": 274.0,
+  "einsaetze_s": [
+   0.032,
+   0.139,
+   0.267
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   834,
+   624,
+   703
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -49.3,
+  "puls_15_50": {
+   "hz": 15.0,
+   "schaerfe": 2.7
+  },
+  "wav": {
+   "spitze_db": -6.218,
+   "rms_db": -19.288,
+   "rauschboden_db": -36.624,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -6.206,
+   "rms_db": -19.224,
+   "rauschboden_db": -36.738,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "m4a": {
+   "spitze_db": -6.216,
+   "rms_db": -19.291,
+   "rauschboden_db": -36.619,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 0.62,
+  "dauer_ogg_s": 0.62,
+  "dauer_m4a_s": 0.62,
+  "rauschabstand_roh_db": 85.9
+ },
+ "dran_06": {
+  "einsatz_m20db_ms": 4.0,
+  "hoechstwert_ms": 38.2,
+  "einsaetze_s": [
+   0.032,
+   0.139,
+   0.256,
+   0.437
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   439,
+   465,
+   442,
+   442
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -64.3,
+  "puls_15_50": {
+   "hz": 24.4,
+   "schaerfe": 16.6
+  },
+  "wav": {
+   "spitze_db": -8.417,
+   "rms_db": -18.142,
+   "rauschboden_db": -28.686,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -8.331,
+   "rms_db": -18.047,
+   "rauschboden_db": -27.502,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -8.394,
+   "rms_db": -18.148,
+   "rauschboden_db": -28.681,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "dauer_wav_s": 0.62,
+  "dauer_ogg_s": 0.62,
+  "dauer_m4a_s": 0.62,
+  "rauschabstand_roh_db": 70.1
+ },
+ "dran_07": {
+  "einsatz_m20db_ms": 0.0,
+  "hoechstwert_ms": 15.7,
+  "einsaetze_s": [
+   0.032,
+   0.064,
+   0.107,
+   0.203,
+   0.267,
+   0.299,
+   0.523
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   439,
+   439,
+   439,
+   439,
+   439,
+   439
+  ],
+  "linien_ueber_5k": [
+   [
+    7119,
+    15.0,
+    -47.2
+   ],
+   [
+    7183,
+    13.9,
+    -48.5
+   ],
+   [
+    7283,
+    13.1,
+    -52.5
+   ]
+  ],
+  "ueber_6k_nach_tp5k_db": -47.9,
+  "puls_15_50": {
+   "hz": 40.6,
+   "schaerfe": 5.3
+  },
+  "wav": {
+   "spitze_db": -6.2,
+   "rms_db": -19.297,
+   "rauschboden_db": -35.889,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -6.23,
+   "rms_db": -19.198,
+   "rauschboden_db": -34.625,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -6.22,
+   "rms_db": -19.331,
+   "rauschboden_db": -35.906,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 0.62,
+  "dauer_ogg_s": 0.62,
+  "dauer_m4a_s": 0.62,
+  "rauschabstand_roh_db": 80.4
+ },
+ "dran_08": {
+  "einsatz_m20db_ms": 0.0,
+  "hoechstwert_ms": 2.5,
+  "einsaetze_s": [
+   0.064,
+   0.139,
+   0.203,
+   0.277,
+   0.352,
+   0.405,
+   0.544
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   624,
+   624,
+   624,
+   624,
+   624,
+   624
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -58.5,
+  "puls_15_50": {
+   "hz": 26.0,
+   "schaerfe": 7.6
+  },
+  "wav": {
+   "spitze_db": -7.272,
+   "rms_db": -19.236,
+   "rauschboden_db": -40.634,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -7.319,
+   "rms_db": -19.128,
+   "rauschboden_db": -38.962,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -7.293,
+   "rms_db": -19.239,
+   "rauschboden_db": -40.677,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 0.62,
+  "dauer_ogg_s": 0.62,
+  "dauer_m4a_s": 0.62,
+  "rauschabstand_roh_db": 89.1
+ },
+ "dran_09": {
+  "einsatz_m20db_ms": 0.0,
+  "hoechstwert_ms": 144.9,
+  "einsaetze_s": [
+   0.117
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   524
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -90.4,
+  "puls_15_50": {
+   "hz": 27.8,
+   "schaerfe": 6.1
+  },
+  "wav": {
+   "spitze_db": -9.91,
+   "rms_db": -19.641,
+   "rauschboden_db": -33.1,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -9.842,
+   "rms_db": -19.572,
+   "rauschboden_db": -32.82,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -9.911,
+   "rms_db": -19.646,
+   "rauschboden_db": -33.158,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 0.62,
+  "dauer_ogg_s": 0.62,
+  "dauer_m4a_s": 0.62,
+  "rauschabstand_roh_db": 84.3
+ },
+ "dran_10": {
+  "einsatz_m20db_ms": 4.0,
+  "hoechstwert_ms": 10.5,
+  "einsaetze_s": [
+   0.032,
+   0.181
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   439,
+   439
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -81.2,
+  "puls_15_50": {
+   "hz": 32.2,
+   "schaerfe": 3.4
+  },
+  "wav": {
+   "spitze_db": -9.444,
+   "rms_db": -19.168,
+   "rauschboden_db": -35.971,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -9.487,
+   "rms_db": -19.068,
+   "rauschboden_db": -34.123,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -9.162,
+   "rms_db": -19.167,
+   "rauschboden_db": -36.001,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "dauer_wav_s": 0.62,
+  "dauer_ogg_s": 0.62,
+  "dauer_m4a_s": 0.62,
+  "rauschabstand_roh_db": 70.8
+ },
+ "dran_11": {
+  "einsatz_m20db_ms": 4.0,
+  "hoechstwert_ms": 45.9,
+  "einsaetze_s": [
+   0.032,
+   0.064,
+   0.107,
+   0.192,
+   0.331
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   624,
+   624,
+   624,
+   624,
+   624
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -80.4,
+  "puls_15_50": {
+   "hz": 15.0,
+   "schaerfe": 2.5
+  },
+  "wav": {
+   "spitze_db": -7.019,
+   "rms_db": -19.308,
+   "rauschboden_db": -44.36,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -6.909,
+   "rms_db": -19.217,
+   "rauschboden_db": -41.698,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "m4a": {
+   "spitze_db": -7.027,
+   "rms_db": -19.311,
+   "rauschboden_db": -44.352,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 0.62,
+  "dauer_ogg_s": 0.62,
+  "dauer_m4a_s": 0.62,
+  "rauschabstand_roh_db": 80.3
+ },
+ "dran_12": {
+  "einsatz_m20db_ms": 0.0,
+  "hoechstwert_ms": 36.4,
+  "einsaetze_s": [
+   0.032,
+   0.085,
+   0.117,
+   0.171,
+   0.213,
+   0.341,
+   0.416,
+   0.448,
+   0.501
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   521,
+   524,
+   524,
+   524,
+   524,
+   524
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -81.6,
+  "puls_15_50": {
+   "hz": 23.7,
+   "schaerfe": 8.3
+  },
+  "wav": {
+   "spitze_db": -9.186,
+   "rms_db": -19.101,
+   "rauschboden_db": -31.783,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -9.35,
+   "rms_db": -19.008,
+   "rauschboden_db": -30.101,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -9.187,
+   "rms_db": -19.104,
+   "rauschboden_db": -31.805,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 0.62,
+  "dauer_ogg_s": 0.62,
+  "dauer_m4a_s": 0.62,
+  "rauschabstand_roh_db": 41.2
+ },
+ "stapel_01": {
+  "einsatz_m20db_ms": 4.0,
+  "hoechstwert_ms": 5.8,
+  "einsaetze_s": [
+   0.192,
+   0.32,
+   0.437,
+   0.555,
+   0.672,
+   0.715
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   3474,
+   3931,
+   902,
+   934,
+   3008,
+   1133
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -16.7,
+  "puls_15_50": {
+   "hz": 16.6,
+   "schaerfe": 2.2
+  },
+  "wav": {
+   "spitze_db": -1.106,
+   "rms_db": -35.865,
+   "rauschboden_db": -89.438,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "ogg": {
+   "spitze_db": -1.158,
+   "rms_db": -35.915,
+   "rauschboden_db": -86.295,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "m4a": {
+   "spitze_db": -0.996,
+   "rms_db": -35.893,
+   "rauschboden_db": -89.635,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "dauer_wav_s": 0.82,
+  "dauer_ogg_s": 0.82,
+  "dauer_m4a_s": 0.82,
+  "rauschabstand_roh_db": 85.3
+ },
+ "stapel_02": {
+  "einsatz_m20db_ms": 4.0,
+  "hoechstwert_ms": 5.2,
+  "einsaetze_s": [
+   0.117,
+   0.181,
+   0.363,
+   0.437
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   2542,
+   1330,
+   2118,
+   963
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -28.5,
+  "puls_15_50": {
+   "hz": 16.2,
+   "schaerfe": 2.2
+  },
+  "wav": {
+   "spitze_db": -1.237,
+   "rms_db": -26.275,
+   "rauschboden_db": -40.475,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "ogg": {
+   "spitze_db": -1.185,
+   "rms_db": -26.288,
+   "rauschboden_db": -40.842,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "m4a": {
+   "spitze_db": -1.354,
+   "rms_db": -26.306,
+   "rauschboden_db": -40.444,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "dauer_wav_s": 0.531,
+  "dauer_ogg_s": 0.531,
+  "dauer_m4a_s": 0.531,
+  "rauschabstand_roh_db": 78.4
+ },
+ "stapel_03": {
+  "einsatz_m20db_ms": 4.0,
+  "hoechstwert_ms": 313.8,
+  "einsaetze_s": [
+   0.32,
+   0.491
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   3105,
+   1139
+  ],
+  "linien_ueber_5k": [
+   [
+    17601,
+    13.0,
+    -53.0
+   ]
+  ],
+  "ueber_6k_nach_tp5k_db": -23.0,
+  "puls_15_50": {
+   "hz": 42.2,
+   "schaerfe": 2.9
+  },
+  "wav": {
+   "spitze_db": -1.609,
+   "rms_db": -30.461,
+   "rauschboden_db": -62.506,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -1.792,
+   "rms_db": -30.515,
+   "rauschboden_db": -62.855,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -1.643,
+   "rms_db": -30.529,
+   "rauschboden_db": -62.845,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 0.82,
+  "dauer_ogg_s": 0.82,
+  "dauer_m4a_s": 0.82,
+  "rauschabstand_roh_db": 78.8
+ },
+ "stapel_04": {
+  "einsatz_m20db_ms": 4.0,
+  "hoechstwert_ms": 399.0,
+  "einsaetze_s": [
+   0.064,
+   0.117,
+   0.181,
+   0.299,
+   0.384,
+   0.469,
+   0.555,
+   0.608
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   2153,
+   2200,
+   2583,
+   1936,
+   3635,
+   2460
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -14.6,
+  "puls_15_50": {
+   "hz": 16.0,
+   "schaerfe": 2.6
+  },
+  "wav": {
+   "spitze_db": -1.106,
+   "rms_db": -29.449,
+   "rauschboden_db": -72.867,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -1.117,
+   "rms_db": -29.523,
+   "rauschboden_db": -69.247,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -1.13,
+   "rms_db": -29.501,
+   "rauschboden_db": -73.008,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 0.82,
+  "dauer_ogg_s": 0.82,
+  "dauer_m4a_s": 0.82,
+  "rauschabstand_roh_db": 77.0
+ },
+ "stapel_05": {
+  "einsatz_m20db_ms": 4.0,
+  "hoechstwert_ms": 6.7,
+  "einsaetze_s": [
+   0.576,
+   0.693
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   697,
+   670
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -41.5,
+  "puls_15_50": {
+   "hz": 44.2,
+   "schaerfe": 2.8
+  },
+  "wav": {
+   "spitze_db": -1.108,
+   "rms_db": -23.26,
+   "rauschboden_db": -80.445,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -1.158,
+   "rms_db": -23.251,
+   "rauschboden_db": -81.036,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -1.1,
+   "rms_db": -23.271,
+   "rauschboden_db": -80.605,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 0.82,
+  "dauer_ogg_s": 0.82,
+  "dauer_m4a_s": 0.82,
+  "rauschabstand_roh_db": 79.7
+ },
+ "stapel_06": {
+  "einsatz_m20db_ms": 4.0,
+  "hoechstwert_ms": 5.6,
+  "einsaetze_s": [
+   0.277
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   251
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -65.0,
+  "puls_15_50": {
+   "hz": 15.0,
+   "schaerfe": 3.0
+  },
+  "wav": {
+   "spitze_db": -1.108,
+   "rms_db": -23.135,
+   "rauschboden_db": -62.605,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "ogg": {
+   "spitze_db": -1.012,
+   "rms_db": -23.104,
+   "rauschboden_db": -56.196,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "m4a": {
+   "spitze_db": -1.106,
+   "rms_db": -23.144,
+   "rauschboden_db": -62.575,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": 0.0
+  },
+  "dauer_wav_s": 0.446,
+  "dauer_ogg_s": 0.446,
+  "dauer_m4a_s": 0.446,
+  "rauschabstand_roh_db": 84.6
+ },
+ "stapel_07": {
+  "einsatz_m20db_ms": 4.0,
+  "hoechstwert_ms": 4.8,
+  "einsaetze_s": [
+   0.032,
+   0.064,
+   0.096,
+   0.352
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   1183,
+   1157,
+   858,
+   357
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -42.6,
+  "puls_15_50": {
+   "hz": 43.5,
+   "schaerfe": 2.3
+  },
+  "wav": {
+   "spitze_db": -1.106,
+   "rms_db": -31.258,
+   "rauschboden_db": -87.252,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -1.021,
+   "rms_db": -31.216,
+   "rauschboden_db": -85.326,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -1.13,
+   "rms_db": -31.289,
+   "rauschboden_db": -87.396,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 0.82,
+  "dauer_ogg_s": 0.82,
+  "dauer_m4a_s": 0.82,
+  "rauschabstand_roh_db": 85.6
+ },
+ "stapel_08": {
+  "einsatz_m20db_ms": 4.0,
+  "hoechstwert_ms": 5.2,
+  "einsaetze_s": [
+   0.128,
+   0.299,
+   0.469,
+   0.555,
+   0.608,
+   0.651
+  ],
+  "staerkste_frequenz_je_einsatz_hz": [
+   93,
+   90,
+   87,
+   90,
+   90,
+   93
+  ],
+  "linien_ueber_5k": [],
+  "ueber_6k_nach_tp5k_db": -25.5,
+  "puls_15_50": {
+   "hz": 16.4,
+   "schaerfe": 5.0
+  },
+  "wav": {
+   "spitze_db": -1.209,
+   "rms_db": -24.85,
+   "rauschboden_db": -46.945,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "ogg": {
+   "spitze_db": -1.165,
+   "rms_db": -24.854,
+   "rauschboden_db": -41.701,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "m4a": {
+   "spitze_db": -1.386,
+   "rms_db": -24.878,
+   "rauschboden_db": -46.942,
+   "flat_factor": 0.0,
+   "spitzen_anzahl": 2.0,
+   "dc": -0.0
+  },
+  "dauer_wav_s": 0.779,
+  "dauer_ogg_s": 0.779,
+  "dauer_m4a_s": 0.779,
+  "rauschabstand_roh_db": 76.2
+ }
+}

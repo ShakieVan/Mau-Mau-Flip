@@ -6,9 +6,21 @@ extends Control
 
 const FADE_IN := 0.18
 const FADE_OUT := 0.12
+const BACK_REPEAT_MS := 650         # Zurück-Taste: Meldungen desselben Drucks zusammenfassen (back_pressed)
+
+const KB_GAP := 16.0                # Abstand des Eingabefelds zur Oberkante der Bildschirmtastatur
+
+# Bildschirmtastatur (Nutzerbefund 06.10.2026: im Querformat verdeckte sie Namensfelder). Tests: Höhe in Einheiten des Viewports
+# vorgeben (≥ 0), -1 = DisplayServer.virtual_keyboard_get_height().
+static var keyboard_height_override := -1.0
 
 var stack: Array[AppScreen] = []
 var autostart := true               # Tests: false = ohne Hauptmenü starten
+var _last_back_ms := -1
+var _kb := 0.0                      # zuletzt angewandte Tastaturhöhe (Viewport-Einheiten)
+var _kb_screen: AppScreen           # Bildschirm, der gerade gestaucht ist
+var _kb_field: Control              # Eingabefeld, das sichtbar gehalten wird
+var _kb_busy := false
 
 var _bg: TableBackground
 var _layer: Control
@@ -57,6 +69,104 @@ func _ready() -> void:
 
 func _on_resized() -> void:
 	_bg.table_center = Vector2(size.x * 0.5, size.y * 0.45)
+
+
+# ----------------------------------------------------------------- Bildschirmtastatur
+# Solange die Tastatur offen ist und ein Eingabefeld des obersten Bildschirms (auch in dessen Dialogen) den Fokus hat, endet der
+# Bildschirm an der Tastaturkante: Bildläufe schrumpfen auf die freie Höhe, der nächste Bildlauf über dem Feld blättert es ins
+# Bild (ensure_control_visible). Passt es dann noch nicht (Bildschirm ohne Bildlauf bzw. Mindesthöhe größer als der freie Platz),
+# rückt der ganze Bildschirm so weit nach oben, dass das Feld knapp über der Tastatur steht. Tastatur zu = alles zurück.
+func _process(_delta: float) -> void:
+	_track_keyboard()
+
+
+# Höhe der Bildschirmtastatur in Einheiten des Viewports (0 = zu)
+func keyboard_height() -> float:
+	if keyboard_height_override >= 0.0:
+		return keyboard_height_override
+	if not DisplayServer.has_feature(DisplayServer.FEATURE_VIRTUAL_KEYBOARD):
+		return 0.0
+	var px := DisplayServer.virtual_keyboard_get_height()
+	var win := DisplayServer.window_get_size()
+	if px <= 0 or win.y <= 0:
+		return 0.0
+	return float(px) * get_viewport().get_visible_rect().size.y / float(win.y)
+
+
+# Eingabefeld mit Fokus im obersten Bildschirm (null = keins)
+func _focused_field() -> Control:
+	var f := get_viewport().gui_get_focus_owner()
+	var t := top()
+	if f == null or t == null or not (f is LineEdit or f is TextEdit) or not t.is_ancestor_of(f) or not f.is_visible_in_tree():
+		return null
+	return f
+
+
+func _track_keyboard() -> void:
+	if _kb_busy:
+		return
+	var field := _focused_field()
+	var kb := keyboard_height() if field != null else 0.0
+	if kb < 1.0:
+		kb = 0.0
+	var screen: AppScreen = top() if kb > 0.0 else null
+	if absf(kb - _kb) < 1.0 and field == _kb_field and _kb_screen == screen:
+		return
+	_apply_keyboard(kb, field if kb > 0.0 else null)
+
+
+func _apply_keyboard(kb: float, field: Control) -> void:
+	_kb = kb
+	_kb_field = field
+	if _kb_screen != null and is_instance_valid(_kb_screen) and (field == null or _kb_screen != top()):
+		_set_screen_bottom(_kb_screen, 0.0, 0.0)
+	_kb_screen = null
+	if field == null:
+		return
+	var s := top()
+	_kb_screen = s
+	_set_screen_bottom(s, kb, 0.0)
+	_kb_busy = true
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var sc := _scroll_of(field) if is_instance_valid(field) and field.is_inside_tree() else null
+	if sc != null:
+		sc.ensure_control_visible(field)
+		await get_tree().process_frame
+	if is_instance_valid(field) and field.is_inside_tree() and is_instance_valid(s) and _kb_screen == s:
+		var r := field.get_global_rect()
+		var free := get_viewport().get_visible_rect().size.y - kb - KB_GAP
+		var lift := clampf(r.end.y - free, 0.0, maxf(0.0, r.position.y - KB_GAP))
+		if lift > 0.0:
+			_set_screen_bottom(s, kb, lift)
+	_kb_busy = false
+
+
+func _set_screen_bottom(s: AppScreen, kb: float, lift: float) -> void:
+	s.offset_top = -lift
+	s.offset_bottom = -kb - lift
+
+
+# Nächster Bildlauf über dem Feld, der senkrecht blättern kann
+func _scroll_of(c: Control) -> ScrollContainer:
+	var n := c.get_parent()
+	while n != null and n != self:
+		if n is ScrollContainer and (n as ScrollContainer).vertical_scroll_mode != ScrollContainer.SCROLL_MODE_DISABLED:
+			return n
+		n = n.get_parent()
+	return null
+
+
+# Tests: Feld ganz oberhalb der Tastatur und im sichtbaren Teil seines Bildlaufs?
+func field_visible(field: Control) -> bool:
+	var r := field.get_global_rect()
+	var free := get_viewport().get_visible_rect().size.y - keyboard_height()
+	var sc := _scroll_of(field)
+	if sc != null:
+		var sr := sc.get_global_rect()
+		if r.position.y < sr.position.y - 1.0 or r.end.y > sr.end.y + 1.0:
+			return false
+	return r.position.y >= -1.0 and r.end.y <= free + 1.0
 
 
 func top() -> AppScreen:
@@ -165,11 +275,26 @@ func _block(on: bool) -> void:
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
-		go_back()
+		back_pressed()
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	var k := event as InputEventKey
 	if k != null and k.pressed and not k.echo and (k.keycode == KEY_ESCAPE or k.keycode == KEY_BACK):
 		get_viewport().set_input_as_handled()
-		go_back()
+		back_pressed()
+
+
+# Zurück-Taste des Geräts bzw. Esc. Android meldet einen Druck mehrfach: die Taste KEY_BACK und 1 ms später
+# NOTIFICATION_WM_GO_BACK_REQUEST, beim Halten nach gut 0,5 s weitere Benachrichtigungen im Takt der Tastenwiederholung (am S21
+# gemessen). Eine Meldung innerhalb von BACK_REPEAT_MS nach der vorigen gehört zum selben Druck; das Fenster gleitet mit, damit
+# auch langes Halten nur einen Schritt auslöst (Gerätetest 0.1.1, M1: sonst schloss ein Druck aus den Regeln die App, und
+# Rückfragen gingen auf und sofort wieder zu). Der Zurück-Knopf auf dem Bildschirm ruft go_back() direkt.
+func back_pressed() -> bool:
+	var now := Time.get_ticks_msec()
+	var same := _last_back_ms >= 0 and now - _last_back_ms < BACK_REPEAT_MS
+	_last_back_ms = now
+	if same:
+		return false
+	go_back()
+	return true

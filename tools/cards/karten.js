@@ -1,7 +1,10 @@
 /* Mau-Mau Flip – Produktionssatz der Karten (docs/BETA1_PLAN.md Abschnitt 3)
- * Alle 108 Gesichter mit den exakten Schlüsseln plus die neutrale Rückseite "rueckseite".
- * Die Gesichter zeichnet unverändert cardSVG() aus mmf.js (Entwurf A, Nutzerwunsch: Karten nicht ändern).
- * Neu ist nur die Rückseite: diagonal geteilt Tag/Nacht, Sonne und Mond, kleine Wortmarke. Ohne Spielinformation.
+ * Alle 128 Gesichter mit den exakten Schlüsseln plus die neutrale Rückseite "rueckseite":
+ * die 108 Grundgesichter, die 8 Kartentausch-Gesichter der Hausregel swap_cards (Deck 116), die 2 Glücksspiel-Gesichter
+ * der Hausregel gamble_cards (+2 Karten) und die 10 Gesichter der Hausregel discard_color „Farbe mit ablegen“ (+6 Karten).
+ * Die Gesichter zeichnet cardSVG() aus mmf.js (Entwurf A, Nutzerwunsch: Karten nicht ändern).
+ * Neu sind die Rückseite (diagonal geteilt Tag/Nacht, Sonne und Mond, kleine Wortmarke, ohne Spielinformation)
+ * und die Symbole der Hausregel-Karten (tauschPrims(), gluecksPrims(), ablegenPrims() in mmf.js).
  */
 'use strict';
 
@@ -9,8 +12,8 @@ const HELL_FARBEN = ['rot', 'gelb', 'gruen', 'blau'];
 const DUNKEL_FARBEN = ['pink', 'tuerkis', 'orange', 'lila'];
 const RUECKSEITE = 'rueckseite';
 
-/* Alle 108 Gesichter, Reihenfolge: hell je Farbe 1–9, +1, Aussetzen, Richtungswechsel, Flip, dann Joker; dunkel ebenso */
-function deckFaces() {
+/* Die 108 Grundgesichter, Reihenfolge: hell je Farbe 1–9, +1, Aussetzen, Richtungswechsel, Flip, dann Joker; dunkel ebenso */
+function baseFaces() {
   const out = [];
   for (const f of HELL_FARBEN) {
     for (let n = 1; n <= 9; n++) out.push({ file: `hell_${f}_${n}`, side: 'hell', color: f, type: 'num', v: String(n) });
@@ -33,8 +36,35 @@ function deckFaces() {
   return out;
 }
 
-/* Alle 109 Schlüssel (108 Gesichter + Rückseite) */
-function allKeys() { return deckFaces().map(c => c.file).concat([RUECKSEITE]); }
+/* Die 8 Kartentausch-Gesichter (Hausregel swap_cards="on"): je Farbe eines, hell und dunkel */
+function tauschFaces() {
+  return HELL_FARBEN.map(f => ({ file: `hell_${f}_tausch`, side: 'hell', color: f, type: 'tausch' }))
+    .concat(DUNKEL_FARBEN.map(f => ({ file: `dunkel_${f}_tausch`, side: 'dunkel', color: f, type: 'tausch' })));
+}
+
+/* Die 2 Glücksspiel-Gesichter (Hausregel gamble_cards="on"): bunter Joker, je Seite eines (im Deck zweimal) */
+function gluecksFaces() {
+  return [{ file: 'hell_gluecksspiel', side: 'hell', type: 'gluecks' }, { file: 'dunkel_gluecksspiel', side: 'dunkel', type: 'gluecks' }];
+}
+
+/* Die 10 „Farbe mit ablegen“-Gesichter (Hausregel discard_color="on"): je Seite eines je Farbe und ein bunter Joker */
+function ablegenFaces() {
+  return HELL_FARBEN.map(f => ({ file: `hell_${f}_ablegen`, side: 'hell', color: f, type: 'ablegen' }))
+    .concat([{ file: 'hell_ablegen_joker', side: 'hell', type: 'ablegenj' }])
+    .concat(DUNKEL_FARBEN.map(f => ({ file: `dunkel_${f}_ablegen`, side: 'dunkel', color: f, type: 'ablegen' })))
+    .concat([{ file: 'dunkel_ablegen_joker', side: 'dunkel', type: 'ablegenj' }]);
+}
+
+/* Die 12 Gesichter der Hausregeln Glücksspiel und Farbe mit ablegen (eigener Bogen "zusatz") */
+function zusatzFaces() { return gluecksFaces().concat(ablegenFaces()); }
+
+/* Alle 128 Gesichter */
+function deckFaces() { return baseFaces().concat(tauschFaces(), zusatzFaces()); }
+
+/* Alle 129 Schlüssel (128 Gesichter + Rückseite): Grundgesichter, Rückseite, Kartentausch, dann Glücksspiel und Farbe ablegen.
+ * render.html zeichnet die ersten 109 auf den Bogen "karten" (unverändert seit Beta 0.1.1), die 8 Kartentausch-Gesichter auf den
+ * Bogen "tausch" und die 12 Gesichter von Glücksspiel und Farbe ablegen auf den Bogen "zusatz". */
+function allKeys() { return baseFaces().map(c => c.file).concat([RUECKSEITE], tauschFaces().map(c => c.file), zusatzFaces().map(c => c.file)); }
 
 /* ------------------------------------------------------------------ */
 /* Neutrale Rückseite                                                  */
@@ -124,4 +154,5 @@ function faceSVG(key, opt = {}) {
   return cardSVG(c, opt);
 }
 
-if (typeof window !== 'undefined') { window.deckFaces = deckFaces; window.allKeys = allKeys; window.backSVG = backSVG; window.faceSVG = faceSVG; }
+if (typeof window !== 'undefined') { window.deckFaces = deckFaces; window.baseFaces = baseFaces; window.tauschFaces = tauschFaces;
+  window.gluecksFaces = gluecksFaces; window.ablegenFaces = ablegenFaces; window.zusatzFaces = zusatzFaces; window.allKeys = allKeys; window.backSVG = backSVG; window.faceSVG = faceSVG; }

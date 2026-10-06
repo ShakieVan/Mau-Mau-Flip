@@ -16,7 +16,10 @@ extends SceneTree
 #           WEB_RUNDEN (nach so vielen Rundenenden keine neue Runde, 1), WEB_HALTER (1: Port+1 nimmt an und antwortet nie,
 #           für Chrome --dump-dom), WEB_ERWARTE_OK (1), WEB_ZIP ("" = aus webclient/ packen),
 #           WEB_NACH_BERICHT (ms; >= 0: Sitzung endet so lange nach dem Selbsttest-Bericht, auch wenn der Browser bleibt – Handy; -1 aus).
-#           WEB_SZENE ("farbwahl": gebaute Lage mit 3 Plätzen, der Browser muss nach seinem Flip die Farbe wählen).
+#           WEB_SZENE ("farbwahl": gebaute Lage mit 3 Plätzen, der Browser muss nach seinem Flip die Farbe wählen;
+#           "hausregeln": 3 Plätze, mit WEB_REGELN {"swap_cards":"on","gamble_cards":"on","discard_color":"on"} legt der Browser
+#           nacheinander Rot ablegen, das Glücksspiel (Drucke 0 und 2 vorgegeben) und Blau Kartentausch; Browser-URL mit
+#           &pflicht=ablegen,gluecksspiel,tausch prüft, dass alles gespielt wurde).
 # Aufruf über tools/webtest/web_e2e.ps1 (startet diesen Gastgeber im Hintergrund und Chrome dazu).
 
 const THINK_MIN := 0.6
@@ -207,18 +210,35 @@ func _start_game(game_seed: int) -> void:
 		print("FAIL: host.start() abgelehnt")
 		return
 	var szene := OS.get_environment("WEB_SZENE")
-	if szene == "farbwahl" and host.seats.size() == 3 and str(host.seats[2].kind) == "human" and host.host_seat == 0:
+	var spec := {}
+	if szene == "farbwahl":
 		# Platz 2 (Browser) hat nur den Flip passend; nach dem Flip liegt ein Joker oben → Phase „color“, Aktion {a:"color"}
-		var g := RulesFixture.build(cfg, 3, {"side": "hell", "current": 2, "color": "rot", "top": "hell_rot_5",
+		spec = {"side": "hell", "current": 2, "color": "rot", "top": "hell_rot_5",
 			"discard": ["hell_gelb_9/dunkel_wuenscher"],
 			"hands": [["hell_blau_1", "hell_gelb_2", "hell_gruen_3", "hell_blau_7", "hell_gelb_8"],
 				["hell_gruen_1", "hell_blau_2", "hell_gelb_3", "hell_gruen_7", "hell_blau_8"],
-				["hell_rot_flip", "hell_blau_3", "hell_gelb_4", "hell_gruen_2"]]}, game_seed)
+				["hell_rot_flip", "hell_blau_3", "hell_gelb_4", "hell_gruen_2"]]}
+	elif szene == "hausregeln" and cfg.swap_cards == "on" and cfg.gamble_cards == "on" and cfg.discard_color == "on":
+		# Hausregeln (WEB_REGELN mit swap_cards, gamble_cards, discard_color = on). Der Selbsttest legt Hausregel-Karten bevorzugt:
+		# 1. Zug: Rot ablegen (Rot 2 und Rot 7 kommen mit). Lena und der Computer haben nur je eine rote Karte passend.
+		# 2. Zug: nur das Glücksspiel passt; Farbwahl Blau (meiste Karten). Drucke vorgegeben: 0, dann Treffer 2 (zieht Grün 5 und
+		#    Gelb 6, Einsatz zurück). Lena und der Computer bleiben bei Blau (keine gleichen Zahlen in anderen Farben).
+		# 3. Zug: Blau Kartentausch passt → alle Hände wandern im Uhrzeigersinn; danach normal bis zum Rundenende.
+		spec = {"side": "hell", "current": 2, "color": "rot", "top": "hell_rot_5", "draw": ["hell_gruen_5", "hell_gelb_6"],
+			"hands": [["hell_rot_9", "hell_blau_1", "hell_blau_6", "hell_blau_8", "hell_gruen_1", "hell_gelb_2", "hell_gruen_3"],
+				["hell_rot_4", "hell_blau_2", "hell_blau_5", "hell_blau_7", "hell_gelb_3", "hell_gruen_2", "hell_gelb_5"],
+				["hell_rot_ablegen", "hell_rot_2", "hell_rot_7", "hell_gluecksspiel", "hell_blau_tausch", "hell_blau_3", "hell_gelb_9"]]}
+	if not spec.is_empty() and host.seats.size() == 3 and str(host.seats[2].kind) == "human" and host.host_seat == 0:
+		var g := RulesFixture.build(cfg, 3, spec, game_seed)
+		if szene == "hausregeln":
+			g.force_rolls([0, 2])
 		for s in 3:
 			g.players[s] = (host.seats[s] as Dictionary).duplicate()
 			g.set_connected(s, bool(host.session.player(host._seat_ids[s]).connected))
 		host.game = g
 		host._changed([])
+	elif szene != "":
+		print("Hinweis: Szene „%s“ passt nicht (3 Plätze, Browser auf Platz 2, Regeln) – normale Partie" % szene)
 	var names := PackedStringArray()
 	for p in host.seats:
 		names.append("%s (%s)" % [p.name, p.kind])

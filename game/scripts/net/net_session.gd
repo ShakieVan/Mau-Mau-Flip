@@ -134,7 +134,17 @@ func _process(_delta: float) -> void:
 		poll()
 
 func _exit_tree() -> void:
-	stop()
+	# Umhängen (reparent, z. B. Lobby → Tisch) verlässt den Baum nur kurz. Erst am Ende des Frames prüfen, ob die Sitzung wirklich
+	# draußen ist; sonst ginge der Server mitten im Spielstart aus (Gerätetest 0.1.1, H1). Beim Freigeben stoppt NOTIFICATION_PREDELETE.
+	_stop_if_detached.call_deferred()
+
+func _stop_if_detached() -> void:
+	if not is_inside_tree():
+		stop()
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE:
+		stop()
 
 func poll() -> void:
 	if server == null:

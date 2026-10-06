@@ -3,7 +3,7 @@
 # Quelle: tools/cards/*.js (Entwurf A „Papier & Neon“), Chrome ohne Fenster rendert Bögen, ffmpeg schneidet aus.
 # Aufruf (Git Bash mit perl und brotli, Chrome, ffmpeg ab 7; Schriften in game/assets/fonts/):
 #   bash tools/cards/build_cards.sh                 alles
-#   bash tools/cards/build_cards.sh karten bogen    nur einzelne Schritte (karten symbole app logo splash schriften bogen)
+#   bash tools/cards/build_cards.sh karten bogen    nur einzelne Schritte (karten symbole app logo splash schriften bogen tauschbogen zusatzbogen)
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
@@ -12,6 +12,7 @@ WORK="$(cygpath -u "${TEMP:-/tmp}")/mmf_build_cards"        # Zwischendateien au
 UDD="$(cygpath -m "$WORK")/chrome_profil"                   # eigenes Chrome-Profil für den Lauf ohne Fenster
 URL="file:///$(cygpath -m "$HERE" | sed 's/ /%20/g')"
 CARDS="$ROOT/game/assets/cards"; UI="$ROOT/game/assets/ui"; WEB="$ROOT/webclient/cards"; DOCS="$ROOT/docs/module"
+STAGE="$WORK/neu"                                           # Zwischenordner für Kartenbilder (siehe uebernehmen)
 mkdir -p "$WORK" "$CARDS" "$UI/farben" "$WEB" "$DOCS"
 for f in BricolageGrotesque.ttf Fraunces.ttf Fraunces-Italic.ttf; do
   [ -s "$ROOT/game/assets/fonts/$f" ] || { echo "Schrift fehlt: game/assets/fonts/$f"; exit 1; }
@@ -39,7 +40,7 @@ bogen() {
   [ "$got" = "${W}x${H}" ] || { echo "Bogen $name: Screenshot $got statt ${W}x${H}"; exit 1; }
   # Der Screenshot ist ein zweiter Chrome-Lauf: render.html fügt die Bilder nur ein, wenn die Schriften geladen sind.
   # Ein leerer Bogen fiele beim Schneiden nicht auf, deshalb hier die Deckung jedes Bildes prüfen (Karten fast voll deckend).
-  local min=8; [ "$name" = karten ] && min=240
+  local min=8; case "$name" in karten|tausch|zusatz) min=240 ;; esac
   deckung "$name" "$min"
   echo "Bogen $name: ${W}x${H}, $(grep -c '^@@ITEM' "$man") Bilder"
 }
@@ -95,7 +96,26 @@ schneiden() {
   echo "Bogen $name: $n Dateien geschrieben"
 }
 
-regel_karten()  { echo "png|$CARDS/$1.png"; echo "webp|$WEB/$1.webp|200|311"; }
+# Kartenbilder gehen erst in einen Zwischenordner, dann übernimmt sie uebernehmen() (siehe unten).
+regel_karten()  { echo "png|$STAGE/cards/$1.png"; echo "webp|$STAGE/web/$1.webp|200|311"; }
+
+# uebernehmen <von> <nach>: Kartenbilder aus dem Zwischenordner übernehmen, ohne vorhandene Gesichter still zu verändern.
+# Neue Datei → schreiben. Byte-gleich → nichts tun. Abweichend → alte Datei behalten und melden; nur mit MMF_ERSETZEN=1 ersetzen.
+# (Gesichter nur nach Rücksprache ändern; eine andere Chrome- oder ffmpeg-Version soll die alten Bilder nicht unbemerkt umschreiben.)
+uebernehmen() {
+  local von="$1" nach="$2" f name neu=0 gleich=0 ersetzt=0 behalten=0
+  local -a abw=()
+  for f in "$von"/*; do
+    name="$(basename "$f")"
+    if [ ! -e "$nach/$name" ]; then cp "$f" "$nach/$name"; neu=$((neu + 1))
+    elif cmp -s "$f" "$nach/$name"; then gleich=$((gleich + 1))
+    elif [ "${MMF_ERSETZEN:-0}" = 1 ]; then cp "$f" "$nach/$name"; ersetzt=$((ersetzt + 1))
+    else abw+=("$name"); behalten=$((behalten + 1))
+    fi
+  done
+  echo "Übernahme nach ${nach#"$ROOT"/}: $neu neu, $gleich byte-gleich, $ersetzt ersetzt, $behalten abweichend und behalten"
+  [ "$behalten" -eq 0 ] || echo "  abweichend (alte Datei bleibt, MMF_ERSETZEN=1 ersetzt sie): ${abw[*]}"
+}
 regel_symbole() {
   case "$1" in
     ui_*)    echo "png|$UI/${1#ui_}.png" ;;
@@ -126,23 +146,34 @@ schriften() {
   grep -q '^@@SCHRIFTEN ok' "$dom" || { echo "Schriftprüfung: WOFF2 fehlt oder weicht von der TTF ab"; exit 1; }
 }
 
-# Kontrollbogen aller 109 Kartenbilder aus game/assets/cards → docs/module/B_kartenbogen.png
+# kontrollbogen <satz> <ziel>: Kontrollbogen der Kartenbilder aus game/assets/cards als Screenshot nach docs/module/<ziel>
+#   alle   → B_kartenbogen.png: alle 129 Bilder (128 Gesichter + Rückseite)
+#   tausch → B_kartentausch.png: die 8 Kartentausch-Gesichter neben Richtungswechsel und Flip, Originalgröße, Hand
+#   zusatz → B_neue_karten.png: die 12 Gesichter von Glücksspiel und Farbe ablegen neben Wünscher, Kartentausch und +1/+5,
+#            Originalgröße, Hand
 kontrollbogen() {
-  local dom="$WORK/bogen.dom" W H
-  chrome --dump-dom "$URL/kontrollbogen.html" | tr -d '\r' > "$dom" || true
-  grep -q '^@@BOGEN' "$dom" || { echo "Kontrollbogen: keine Ausgabe"; exit 1; }
+  local satz="$1" ziel="$2" dom="$WORK/bogen_$1.dom" W H
+  chrome --dump-dom "$URL/kontrollbogen.html?satz=$satz" | tr -d '\r' > "$dom" || true
+  grep -q '^@@BOGEN' "$dom" || { echo "Kontrollbogen $satz: keine Ausgabe"; exit 1; }
   grep '^@@' "$dom"
   read -r _ W H _ < <(grep '^@@BOGEN' "$dom")
-  chrome --window-size="$W,$H" --screenshot="$(win "$DOCS/B_kartenbogen.png")" "$URL/kontrollbogen.html" > /dev/null || true
-  grep -q '^@@BOGEN .* OK$' "$dom" || { echo "Kontrollbogen: Bilder fehlen oder haben die falsche Größe"; exit 1; }
+  chrome --window-size="$W,$H" --screenshot="$(win "$DOCS/$ziel")" "$URL/kontrollbogen.html?satz=$satz" > /dev/null || true
+  grep -q '^@@BOGEN .* OK$' "$dom" || { echo "Kontrollbogen $satz: Bilder fehlen oder haben die falsche Größe"; exit 1; }
 }
 
-schritte=("$@"); [ ${#schritte[@]} -gt 0 ] || schritte=(karten symbole app logo splash schriften bogen)
+schritte=("$@"); [ ${#schritte[@]} -gt 0 ] || schritte=(karten symbole app logo splash schriften bogen tauschbogen zusatzbogen)
 for s in "${schritte[@]}"; do
   case "$s" in
-    karten|symbole|app|logo|splash) bogen "$s"; schneiden "$s" "regel_$s" ;;
+    karten) rm -rf "$STAGE"; mkdir -p "$STAGE/cards" "$STAGE/web"
+            bogen karten; schneiden karten regel_karten          # 108 Grundgesichter + Rückseite
+            bogen tausch; schneiden tausch regel_karten          # 8 Kartentausch-Gesichter (eigener Bogen, siehe render.html)
+            bogen zusatz; schneiden zusatz regel_karten          # 12 Gesichter Glücksspiel und Farbe ablegen (dritter Bogen)
+            uebernehmen "$STAGE/cards" "$CARDS"; uebernehmen "$STAGE/web" "$WEB" ;;
+    symbole|app|logo|splash) bogen "$s"; schneiden "$s" "regel_$s" ;;
     schriften) schriften ;;
-    bogen) kontrollbogen ;;
+    bogen) kontrollbogen alle B_kartenbogen.png ;;
+    tauschbogen) kontrollbogen tausch B_kartentausch.png ;;
+    zusatzbogen) kontrollbogen zusatz B_neue_karten.png ;;
     *) echo "Unbekannter Schritt: $s"; exit 1 ;;
   esac
 done

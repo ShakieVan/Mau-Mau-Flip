@@ -5,6 +5,7 @@
     [string]$Regeln = '',                # JSON für RuleConfig.apply_dict, z. B. '{"stacking":"same"}'
     [int]$Bots = 2,
     [string]$Szene = '',                 # gebaute Lage im Gastgeber, z. B. "farbwahl" (Phase color, dazu -Bots 1)
+    [string]$Zusatz = '',                # weitere Parameter für den Selbsttest, z. B. '&pflicht=ablegen,gluecksspiel,tausch'
     [string]$Adb = '',                   # Seriennummer: Gerätetest im Chrome des Handys statt Chrome headless
     [switch]$Lan,                        # mit -Adb: über die WLAN-Adresse des PCs statt adb reverse (Windows-Firewall!)
     [string]$Chrome = 'C:\Program Files\Google\Chrome\Application\chrome.exe',
@@ -84,7 +85,7 @@ if (-not (Warte-Server)) {
     } else {
         & $adbT @('-s', $Adb, 'reverse', "tcp:$Port", "tcp:$Port") | Out-Null
     }
-    $url = $basis + '?autotest=1&tempo=2'
+    $url = $basis + '?autotest=1&tempo=2' + $Zusatz
     Write-Output "Handy $Adb öffnet $url"
     & $adbT @('-s', $Adb, 'shell', 'am', 'start', '-a', 'android.intent.action.VIEW', '-d', "'$url'", 'com.android.chrome') | Out-Null
     foreach ($i in 1..8) {
@@ -99,7 +100,7 @@ if (-not (Warte-Server)) {
     # ---------- 1. Selbsttest mit --dump-dom ----------
     $profileDir = Join-Path $env:TEMP ('mmf_e2e_' + [guid]::NewGuid().ToString('N'))
     $domFile = Join-Path $env:TEMP ('mmf_e2e_dom_' + [guid]::NewGuid().ToString('N') + '.html')
-    $url = $basis + "?autotest=1&halter=$($Port + 1)&tempo=3&trennen=1"
+    $url = $basis + "?autotest=1&halter=$($Port + 1)&tempo=3&trennen=1" + $Zusatz
     $chromeArgs = @('--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check', '--disable-extensions', '--mute-audio',
         '--autoplay-policy=no-user-gesture-required', "--user-data-dir=`"$profileDir`"", '--window-size=870,490', "--timeout=$(($Seconds - 40) * 1000)", '--dump-dom', $url)
     Write-Output "Chrome headless: $url"

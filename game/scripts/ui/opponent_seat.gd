@@ -144,6 +144,31 @@ func add_card(key: String) -> void:
 	tw.tween_property(self, "_bump", 0.0, 0.35)
 
 
+# Kartentausch: die angezeigten Fächerkarten in globalen Koordinaten [{pos, rot, width, key}] (Abzeichen ohne Fächer: leer)
+func fan_cards() -> Array:
+	var out: Array = []
+	for c in _cards:
+		out.append({"pos": c.global_position, "rot": c.global_rotation, "width": c.width * c.global_scale.x, "key": c.current_key()})
+	return out
+
+
+# Kartentausch: die ganze Hand geht weg – Fächer leer, Kartenzahl 0, bis die neue Hand ankommt (receive_hand)
+func give_away() -> void:
+	keys = []
+	player["count"] = 0
+	_rebuild()
+
+
+# Kartentausch: neue Hand angekommen (Rückseiten bzw. neutrale Rückseiten), Kartenzahl, kleiner Hüpfer
+func receive_hand(new_keys: Array[String]) -> void:
+	keys = new_keys.duplicate()
+	player["count"] = keys.size()
+	_rebuild()
+	_bump = 1.0
+	var tw := create_tween()
+	tw.tween_property(self, "_bump", 0.0, 0.35)
+
+
 # Flip-Welle über den Fächer: jede Karte wendet zur neuen Seite (new_keys aus der Zielsicht, gleiche Anzahl)
 func flip_wave(new_keys: Array[String], delay: float, step := 0.02, dur := 0.2) -> void:
 	for i in _cards.size():

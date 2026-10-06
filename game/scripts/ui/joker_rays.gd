@@ -12,7 +12,8 @@ extends Node2D
 
 const SAMPLE_STEP := 9.0          # px zwischen zwei Konturproben (120 px breite Karte ≈ 70 Proben)
 const CORNER := 40.0 / 560.0      # Eckradius relativ zur Breite (Kartenentwurf viewBox 560×870, r 40)
-const JOKERS := ["hell_wuenscher", "hell_wuenscher_plus2", "dunkel_wuenscher", "dunkel_farbjagd"]
+const JOKERS := ["hell_wuenscher", "hell_wuenscher_plus2", "dunkel_wuenscher", "dunkel_farbjagd",
+	"hell_gluecksspiel", "dunkel_gluecksspiel", "hell_ablegen_joker", "dunkel_ablegen_joker"]   # dazu die Joker der Hausregeln
 
 var card: CardView
 var above: Array = []

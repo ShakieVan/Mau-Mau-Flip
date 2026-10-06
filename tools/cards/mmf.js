@@ -214,9 +214,104 @@ function iconPrims(name, opt = {}) {
       { d: 'M48 20a11 14 6 1 0 22 0a11 14 6 1 0 -22 0Z', role: 'toe3' },
       { d: 'M68 34a10 13 20 1 0 20 6a10 13 20 1 0 -20 -6Z', role: 'toe4' },
     ];
+    case 'tausch': return tauschPrims();
+    case 'gluecks': return gluecksPrims(opt);
+    case 'ablegen': return ablegenPrims(opt);
     case 'frage': return [];
   }
   return [];
+}
+
+/* Kartentausch (Hausregel swap_cards, nicht im Entwurf): drei aufrechte Karten im Dreieck wie drei Plätze am Tisch,
+ * dazwischen drei kräftige Bogenpfeile im Uhrzeigersinn – jeder gibt seine Hand an den nächsten Platz weiter.
+ * Unterscheidbar vom Richtungswechsel (zwei gestreifte Bogenpfeile ohne Inhalt) und vom Flip (geteilte Scheibe).
+ * Die Karten tragen einen Trennrand (front, ringW 6) in Grund- bzw. Konturfarbe, damit sie sich klein von den Pfeilen lösen.
+ * Rolle panel: Innenfeld der kleinen Karten (groß: tiefe Kartenfarbe; im Eckindex nicht gesetzt, also voll in der Wertfarbe). */
+function rrPath(x, y, w, h, r) {
+  return `M${f1(x + r)} ${f1(y)}H${f1(x + w - r)}A${f1(r)} ${f1(r)} 0 0 1 ${f1(x + w)} ${f1(y + r)}V${f1(y + h - r)}A${f1(r)} ${f1(r)} 0 0 1 ${f1(x + w - r)} ${f1(y + h)}` +
+    `H${f1(x + r)}A${f1(r)} ${f1(r)} 0 0 1 ${f1(x)} ${f1(y + h - r)}V${f1(y + r)}A${f1(r)} ${f1(r)} 0 0 1 ${f1(x + r)} ${f1(y)}Z`;
+}
+function tauschPrims() {
+  const C = { x: 50, y: 53 }, RK = 30, RP = 36, KW = 23, KH = 32;
+  const kipp = { 0: 0, 120: 14, 240: -14 };                 // obere Karte gerade, untere leicht nach außen gekippt
+  const p = [];
+  for (const a of [0, 120, 240]) p.push(...arcArrow(C.x, C.y, RP, a + 26, a + 96, 12, 19).filter(q => q.role !== 'stripe'));
+  for (const a of [0, 120, 240]) {
+    const [x, y] = polar(C.x, C.y, RK, a);
+    const tf = `rotate(${kipp[a]} ${f1(x)} ${f1(y)})`, i = KW * 0.17;
+    p.push({ d: rrPath(x - KW / 2, y - KH / 2, KW, KH, KW * 0.18), tf, role: 'main', front: true, ringW: 6 });
+    p.push({ d: rrPath(x - KW / 2 + i, y - KH / 2 + i, KW - 2 * i, KH - 2 * i, KW * 0.09), tf, role: 'panel' });
+  }
+  return p;
+}
+
+/* Glücksspiel (Hausregel gamble_cards, nicht im Entwurf): ein großer runder Glücksspielknopf (Buzzer) mit Fragezeichen auf einem
+ * flachen Sockel, vorn ein kleines Zahlenwerk „0–10“ zwischen vier Lampen in den Farben der Seite, daneben zwei Glücksfunkel.
+ * Rollen: main Sockel und Funkel, dome Knopf, shine Glanz, qmark Fragezeichen (kind text), edge Vorderkante der Sockelplatte,
+ * display Zahlenfenster, digits Ziffern (kind text), toe1–4 Lampen. Im Eckindex (opt.index) ohne Zahlenwerk und Lampen. */
+function gluecksPrims(opt = {}) {
+  const ix = !!opt.index;
+  // Geometrie im 100er-Feld: Sockel (PX0, PT oben, PB unten, PRY Ellipsenhöhe), Kuppel (DX0, DT oben, DRY), Fragezeichen Q, Funkel F [x, y, r]
+  const G = ix ? { PX0: 6, PT: 64, PB: 84, PRY: 10, DX0: 17, DT: 27, DRY: 8, Q: 36, F: [[13, 20, 12], [88, 15, 9]] }
+    : { PX0: 6, PT: 62, PB: 85, PRY: 11, DX0: 19, DT: 30, DRY: 8, Q: 31, F: [[14, 24, 10], [86, 16, 7.5], [91, 36, 4.5]] };
+  const p = [];
+  const PX1 = 100 - G.PX0, PRX = 50 - G.PX0, PT = G.PT, PB = G.PB;
+  for (const [x, y, r] of G.F) p.push({ d: sparkle(x, y, r, 0.26), role: 'main', join: 2 });   // Glücksfunkel
+  // Sockel: flacher Zylinder mit Deckplatte (Ellipse) und Seitenband
+  p.push({ d: `M${G.PX0} ${PT}A${PRX} ${G.PRY} 0 0 1 ${PX1} ${PT}V${PB}A${PRX} ${G.PRY} 0 0 1 ${G.PX0} ${PB}Z`, role: 'main' });
+  p.push({ d: `M${G.PX0} ${PT}A${PRX} ${G.PRY} 0 0 0 ${PX1} ${PT}`, kind: 'line', w: ix ? 4 : 3, role: 'edge' });
+  // Knopf: flache Kuppel auf der Deckplatte
+  const DX0 = G.DX0, DX1 = 100 - DX0, DY = PT - 2, DT = G.DT, DRX = (DX1 - DX0) / 2;
+  p.push({ d: `M${DX0} ${DY}C${DX0} ${DT + 8} ${DX0 + 12} ${DT} 50 ${DT}C${DX1 - 12} ${DT} ${DX1} ${DT + 8} ${DX1} ${DY}A${DRX} ${G.DRY} 0 0 1 ${DX0} ${DY}Z`, role: 'dome' });
+  // Glanz oben links auf dem Knopf, Fragezeichen in der Mitte (Ausgang ungewiss)
+  p.push({ d: `M${DX0 + 7} ${DY - 6}C${DX0 + 7} ${DT + 11} ${DX0 + 15} ${DT + 5} ${DX0 + 24} ${DT + 4}C${DX0 + 17} ${DT + 8} ${DX0 + 12} ${DT + 14} ${DX0 + 12} ${DY - 6}Z`, role: 'shine' });
+  p.push({ kind: 'text', txt: '?', x: 52, y: DY - 3, size: G.Q, role: 'qmark' });
+  if (!ix) {
+    // Zahlenwerk vorn auf dem Sockel, links und rechts je zwei Lampen
+    const DT2 = PT + 9;
+    p.push({ d: rrPath(32, DT2, 36, 13.5, 3.5), role: 'display' });
+    p.push({ kind: 'text', txt: '0–10', x: 50, y: DT2 + 10.6, size: 12, role: 'digits' });
+    const lamp = (x, y) => `M${f1(x - 3.8)} ${f1(y)}a3.8 3.8 0 1 0 7.6 0a3.8 3.8 0 1 0 -7.6 0Z`;
+    [[13.5, PT + 12.5], [23.5, PT + 15.5], [76.5, PT + 15.5], [86.5, PT + 12.5]].forEach(([x, y], i) => p.push({ d: lamp(x, y), role: 'toe' + (i + 1) }));
+  }
+  return p;
+}
+
+/* Farbe mit ablegen (Hausregel discard_color, nicht im Entwurf): oben ein flacher Handfächer, aus dem die Karten der einen Farbe
+ * nach unten herausrutschen (Lücke im Fächer mit Bewegungsstrichen), darunter ein kräftiger Pfeil nach unten auf den Ablagestapel.
+ * Unterscheidbar von +1/+5 (drei große Karten hinter der Zahl), Kartentausch (drei Karten im Kreis mit Bogenpfeilen),
+ * Richtungswechsel (zwei gestreifte Bogenpfeile) und Flip (geteilte Scheibe).
+ * Rollen: main abrutschende Karten und Pfeil, ncard/npanel die übrigen Handkarten (neutral), panel Innenfeld der abrutschenden Karten,
+ * cardsym deren Farbsymbol (opt.sym), speed Bewegungsstriche. Beim Joker (opt.joker) statt Innenfeld und Symbol vier Farbstreifen
+ * toe1–4. Alle Karten tragen einen Trennrand (front). Im Eckindex (opt.index) drei Karten, die mittlere rutscht, ohne Farbsymbole. */
+function ablegenCard(p, opt, x, y, KW, KH, tf, colored) {
+  const i = KW * 0.16;
+  p.push({ d: rrPath(x, y, KW, KH, KW * 0.17), tf, role: colored ? 'main' : 'ncard', front: true, ringW: 6 });
+  if (!colored) { p.push({ d: rrPath(x + i, y + i, KW - 2 * i, KH - 2 * i, KW * 0.08), tf, role: 'npanel' }); return; }
+  if (opt.joker) {
+    const hx = x + i, hy = y + i, hw = KW - 2 * i, hh = (KH - 2 * i) / 4;
+    for (let k = 0; k < 4; k++) p.push({ d: rrPath(hx, hy + k * hh, hw, hh + (k < 3 ? 0.4 : 0), k === 0 || k === 3 ? KW * 0.06 : 0.01), tf, role: 'toe' + (k + 1) });
+    return;
+  }
+  p.push({ d: rrPath(x + i, y + i, KW - 2 * i, KH - 2 * i, KW * 0.08), tf, role: 'panel' });
+  if (opt.sym && !opt.index) {
+    const s = KW * 0.62, cx = x + KW / 2, cy = y + KH / 2;
+    for (const q of symbolPrims(opt.sym)) p.push({ ...q, tf: `${tf} translate(${f1(cx - s / 2)} ${f1(cy - s / 2)}) scale(${(s / 100).toFixed(4)})${q.tf ? ' ' + q.tf : ''}`, role: q.role === 'cut' ? 'panel' : 'cardsym' });
+  }
+}
+function ablegenPrims(opt = {}) {
+  const ix = !!opt.index, p = [];
+  // Fächer aus n Karten (KW × KH, Winkelschritt step) um den Drehpunkt (50, PVY), Oberkante TOP; die Karten drop rutschen um DROP
+  // nach unten. Pfeil: Schaft AT–AM (halbe Breite AW), Spitze bis AB (halbe Breite HW).
+  const G = ix ? { n: 3, step: 22, KW: 25, KH: 33, PVY: 112, TOP: 2, DROP: 22, drop: [1], AT: 60, AM: 74, AB: 96, AW: 7, HW: 17 }
+    : { n: 5, step: 13, KW: 21, KH: 30, PVY: 116, TOP: 3, DROP: 26, drop: [1, 3], AT: 69, AM: 81, AB: 97, AW: 6, HW: 14 };
+  const tfOf = a => `rotate(${a} 50 ${G.PVY})`;
+  const angs = [...Array(G.n)].map((_, k) => (k - (G.n - 1) / 2) * G.step);
+  angs.forEach((a, k) => { if (!G.drop.includes(k)) ablegenCard(p, opt, 50 - G.KW / 2, G.TOP, G.KW, G.KH, tfOf(a), false); });
+  if (!ix) for (const k of G.drop) p.push({ d: `M${f1(50 - G.KW * 0.2)} ${G.TOP + 5}V${G.TOP + G.DROP - 3}M${f1(50 + G.KW * 0.2)} ${G.TOP + 10}V${G.TOP + G.DROP - 3}`, tf: tfOf(angs[k]), kind: 'line', w: 3.5, role: 'speed', nosil: true });
+  for (const k of G.drop) ablegenCard(p, opt, 50 - G.KW / 2, G.TOP + G.DROP, G.KW, G.KH, tfOf(angs[k]), true);
+  p.push({ d: `M${50 - G.AW} ${G.AT}H${50 + G.AW}V${G.AM}H${50 + G.HW}L50 ${G.AB}L${50 - G.HW} ${G.AM}H${50 - G.AW}Z`, role: 'main', join: 3 });
+  return p;
 }
 
 /* Rendert Primitive. colors: {main, cut, dark, sun, toe1..4}; mode 'sil' = Kontur-Silhouette */
@@ -224,6 +319,11 @@ function renderPrims(prims, colors, mode = 'fill', outline = 0) {
   let out = '';
   for (const p of prims) {
     if (p.role === 'none') continue;
+    if (p.kind === 'text') {   // Schrift im Symbol (Glücksspiel-Zahlenwerk), nicht in der Silhouette
+      if (mode !== 'sil') out += valueText({ x: p.x, y: p.y, size: p.size, txt: p.txt, fill: colors[p.role] || colors.main, stretch: 75, extra: p.tf ? ` transform="${p.tf}"` : '' });
+      continue;
+    }
+    if (p.nosil && mode === 'sil') continue;   // ohne Kontur (Bewegungsstriche)
     if (p.role === 'stripe' && (mode === 'sil' || !colors.stripe)) continue;
     if (p.role === 'ring' && (mode === 'sil' || !colors.ring)) continue;
     const tf = p.tf ? ` transform="${p.tf}"` : '';
@@ -237,7 +337,7 @@ function renderPrims(prims, colors, mode = 'fill', outline = 0) {
     let col = colors[p.role] || colors.main;
     if (p.front && colors.frontRing) {
       // vordere Figur mit Trennrand
-      out += `<path d="${p.d}"${tf} fill="none" stroke="${colors.frontRing}" stroke-width="${p.kind === 'line' ? 0 : 9}" stroke-linejoin="round"/>`;
+      out += `<path d="${p.d}"${tf} fill="none" stroke="${colors.frontRing}" stroke-width="${p.kind === 'line' ? 0 : (p.ringW || 9)}" stroke-linejoin="round"/>`;
     }
     if (p.kind === 'line') out += `<path d="${p.d}"${tf} fill="none" stroke="${col}" stroke-width="${p.w}" stroke-linecap="${p.cap || 'round'}" stroke-linejoin="round"${p.dash ? ` stroke-dasharray="${p.dash}" stroke-dashoffset="${p.dashOff || 0}"` : ''}/>`;
     else if (p.join) out += `<path d="${p.d}"${tf} fill="${col}" stroke="${col}" stroke-width="${p.join}" stroke-linejoin="round"/>`;
@@ -269,7 +369,8 @@ function panelPath(d = 0) {
 }
 const ROT180 = `rotate(180 ${CW / 2} ${CH / 2})`;
 
-/* Kartenliste: type: num|zieh|aussetzen|alle|wende|flip|wunsch|wunsch2|jagd */
+/* Kartenliste: type: num|zieh|aussetzen|alle|wende|flip|wunsch|wunsch2|jagd (nur Produktion, Hausregeln: tausch Kartentausch, gluecks Glücksspiel,
+ * ablegen Farbe mit ablegen, ablegenj dessen Joker) */
 const CARD_LIST = [
   { file: 'hell_rot_7', side: 'hell', color: 'rot', type: 'num', v: '7' },
   { file: 'hell_gelb_plus1', side: 'hell', color: 'gelb', type: 'zieh', v: '+1' },
@@ -288,7 +389,15 @@ const CARD_LIST = [
   { file: 'dunkel_farbjagd', side: 'dunkel', type: 'jagd', v: '?' },
   { file: 'dunkel_lila_6', side: 'dunkel', color: 'lila', type: 'num', v: '6' },
 ];
-const TYPE_NAMES = { num: '', zieh: 'Zieh', aussetzen: 'Aussetzen', alle: 'Alle aussetzen', wende: 'Richtungswechsel', flip: 'Flip', wunsch: 'Wünscher', wunsch2: 'Wünscher +2', jagd: 'Farbjagd' };
+const TYPE_NAMES = { num: '', zieh: 'Zieh', aussetzen: 'Aussetzen', alle: 'Alle aussetzen', wende: 'Richtungswechsel', flip: 'Flip', wunsch: 'Wünscher', wunsch2: 'Wünscher +2', jagd: 'Farbjagd', tausch: 'Kartentausch',
+  gluecks: 'Glücksspiel', ablegen: 'Farbe ablegen', ablegenj: 'Farbe ablegen (Joker)' };
+/* Piktogramm je Kartentyp (Index und Mitte); gluecks, ablegen und ablegenj nur in der Produktion (Hausregeln, nicht im Entwurf) */
+const ICON_OF = { aussetzen: 'schlaf', alle: 'schlaf3', wende: 'wende', flip: 'flip', wunsch: 'pfote', tausch: 'tausch', gluecks: 'gluecks', ablegen: 'ablegen', ablegenj: 'ablegen' };
+// Zusatzangaben für die Piktogramme der Hausregel-Karten: Joker-Fassung und Farbsymbol der Karte (für die Karten im Ablegen-Fächer)
+function iconOpt(c, index) {
+  const sym = c.color ? (c.side === 'hell' ? LIGHT : DARK)[c.color].sym : null;
+  return { index, joker: c.type === 'ablegenj', sym };
+}
 function cardTitle(c) {
   const side = c.side === 'hell' ? 'Helle Seite' : 'Dunkle Seite';
   const col = c.color ? (c.side === 'hell' ? LIGHT : DARK)[c.color].name + ' ' : '';
@@ -340,8 +449,8 @@ function indexContent(c, look) {
     if (txt === '6' || txt === '9') val += `<rect x="${X - 40}" y="${base + 12}" width="80" height="15" rx="7.5" fill="${look.valFill}"/>`;
     val += `</g>`;
   } else {
-    const ic = { aussetzen: 'schlaf', alle: 'schlaf3', wende: 'wende', flip: 'flip', wunsch: 'pfote' }[c.type];
-    const prims = iconPrims(ic);
+    const ic = ICON_OF[c.type];
+    const prims = iconPrims(ic, iconOpt(c, true));
     val += `<g${glowAttr}>` + place(renderPrims(prims, look.iconColors(c)), X, 120, 118) + `</g>`;
   }
   // Farbsymbol bzw. Joker-Pfote
@@ -453,7 +562,8 @@ function lightCard(c, P, id, opt) {
   /* Index */
   const look = {
     valFill: INK,
-    iconColors: c => ({ main: c.type === 'flip' ? PAPER : INK, ring: INK, cut: PAPER, dark: INK, sun: INK, toe1: LIGHT.rot.hex, toe2: LIGHT.gelb.hex, toe3: LIGHT.gruen.hex, toe4: LIGHT.blau.hex, frontRing: PAPER }),
+    iconColors: c => ({ main: c.type === 'flip' ? PAPER : INK, ring: INK, cut: PAPER, dark: INK, sun: INK, toe1: LIGHT.rot.hex, toe2: LIGHT.gelb.hex, toe3: LIGHT.gruen.hex, toe4: LIGHT.blau.hex, frontRing: PAPER,
+      shine: PAPER, edge: PAPER, npanel: PAPER, qmark: PAPER }),
     symName: c => LIGHT[c.color].sym,
     symColors: c => ({ main: LIGHT[c.color].hex, cut: PAPER, outline: INK, outlineW: 3.2 }),
     jokerPaw: () => ({ main: INK, toe1: LIGHT.rot.hex, toe2: LIGHT.gelb.hex, toe3: LIGHT.gruen.hex, toe4: LIGHT.blau.hex }),
@@ -489,12 +599,14 @@ function lightValue(c, id) {
     st += valueText({ x: X, y: 600, size: 330, txt: c.v, fill, stroke, sw: ol * 2 });
     return st;
   }
-  const map = { aussetzen: 'schlaf', alle: 'schlaf3', wende: 'wende', flip: 'flip', wunsch: 'pfote' };
-  const prims = iconPrims(map[c.type]);
+  const prims = iconPrims(ICON_OF[c.type], iconOpt(c, false));
   const cols = { main: CREAM, cut: INK, dark: INK, sun: INK, sil: INK, toe1: LIGHT.rot.hex, toe2: LIGHT.gelb.hex, toe3: LIGHT.gruen.hex, toe4: LIGHT.blau.hex, frontRing: INK };
   if (c.type === 'flip') { cols.cut = CREAM; cols.sun = LIGHT.gelb.hex; }
   if (c.type === 'wunsch') { cols.main = INK; }
   if (c.type === 'wende') cols.stripe = LIGHT[c.color].deep;
+  if (c.type === 'tausch') cols.panel = LIGHT[c.color].deep;
+  if (c.type === 'gluecks') Object.assign(cols, { dome: INK, shine: CREAM, edge: INK, display: INK, digits: LIGHT.gelb.hex, qmark: CREAM });
+  if (c.type === 'ablegen' || c.type === 'ablegenj') Object.assign(cols, { panel: c.color ? LIGHT[c.color].deep : INK, cardsym: CREAM, ncard: CREAM, npanel: mix(CREAM, INK, 0.14), speed: c.color ? LIGHT[c.color].deep : mix(INK, CREAM, 0.3) });
   const size = c.type === 'wunsch' ? 300 : 330;
   let s = place(renderPrims(prims, cols, 'sil', 3.2) + renderPrims(prims, cols), X, 452, size);
   if (c.type === 'aussetzen') s += zzz(X + 118, 300, INK, CREAM);
@@ -585,7 +697,8 @@ function darkCard(c, P, id, opt) {
   const jokerCols = [DARK.pink.neon, DARK.tuerkis.neon, DARK.orange.neon, DARK.lila.neon];
   const look = {
     valFill: tint, valGlow: id('glutklein'),
-    iconColors: () => ({ main: tint, cut: NIGHT, dark: NIGHT, sun: tint, toe1: DARK.pink.neon, toe2: DARK.orange.neon, toe3: DARK.tuerkis.neon, toe4: DARK.lila.neon, frontRing: NIGHT }),
+    iconColors: () => ({ main: tint, cut: NIGHT, dark: NIGHT, sun: tint, toe1: DARK.pink.neon, toe2: DARK.orange.neon, toe3: DARK.tuerkis.neon, toe4: DARK.lila.neon, frontRing: NIGHT,
+      shine: NIGHT, edge: NIGHT, npanel: NIGHT, qmark: NIGHT }),
     symName: c => DARK[c.color].sym,
     symColors: c => ({ main: DARK[c.color].neon, cut: NIGHT }),
     symGlow: id('glutklein'),
@@ -615,12 +728,14 @@ function darkValue(c, id, k) {
     st += `<g${glow}>` + valueText({ x: X, y: 590, size: 300, txt: c.v, fill: k.tint, stroke: NIGHT, sw: 16 }) + '</g>';
     return st;
   }
-  const map = { aussetzen: 'schlaf', alle: 'schlaf3', wende: 'wende', flip: 'flip', wunsch: 'pfote' };
-  const prims = iconPrims(map[c.type]);
+  const prims = iconPrims(ICON_OF[c.type], iconOpt(c, false));
   const cols = { main: k.tint, cut: NIGHT, dark: NIGHT, sun: k.neon, sil: NIGHT, toe1: DARK.pink.neon, toe2: DARK.orange.neon, toe3: DARK.tuerkis.neon, toe4: DARK.lila.neon, frontRing: NIGHT };
   if (c.type === 'flip') { cols.dark = mix(NIGHT, k.neon, 0.25); cols.cut = k.tint; cols.sun = k.neon; }
   if (c.type === 'wunsch') cols.main = MOON;
   if (c.type === 'wende') cols.stripe = mix(k.panel, k.neon, 0.55);
+  if (c.type === 'tausch') cols.panel = mix(k.panel, k.neon, 0.55);
+  if (c.type === 'gluecks') Object.assign(cols, { dome: `url(#${id('regenbogen')})`, shine: MOON, edge: NIGHT, display: NIGHT, digits: DARK.tuerkis.neon, qmark: NIGHT });
+  if (c.type === 'ablegen' || c.type === 'ablegenj') Object.assign(cols, { panel: mix(k.panel, k.neon, 0.55), cardsym: k.tint, ncard: k.tint, npanel: mix(k.panel, k.tint, 0.3), speed: k.neon });
   const size = c.type === 'wunsch' ? 300 : 330;
   let s = `<g${glow}>` + place(renderPrims(prims, cols, 'sil', 3.2) + renderPrims(prims, cols), X, 452, size) + '</g>';
   if (c.type === 'alle') s += zzz(X + 150, 290, NIGHT, k.tint, glow);

@@ -5,9 +5,13 @@ extends SceneTree
 # empfangenen Nachrichten, Fehlaktionen (nicht dran, fremde Karte, next_round vom Gast), Trennen und Wiederkommen mit Token
 # (Spiel wartet, Hinweis an alle), Ersatz-Bot, nächste Runde durch den Gastgeber, Versionsablehnung mit /apk-Hinweis,
 # Speicherstand und Fortsetzen samt Token, Ende mit „bye“.
+# Hausregeln (TCP 24892): Familie mit Kartentausch, dazu Glücksspiel und Farbe ablegen (124 Karten), zwei App-Gäste, Gastgeber und
+# Computergegner spielen ganze Runden; nach jedem Schritt Kartenerhaltung beim Gastgeber (Hände + Stapel + Ablage + Einsatz),
+# Lecktest auch für Kartentausch und Einsätze, die Gäste spielen das Glücksspiel selbst (stake/press über das Netz).
 
 const PORT := 24890
 const PORT2 := 24891
+const PORT3 := 24892
 const SAVE := "user://test_game_netz.json"
 
 var failures := 0
@@ -22,6 +26,7 @@ var rng := RandomNumberGenerator.new()
 var acted := {}                          # Tisch -> view_rev der letzten eigenen Aktion
 var acted_ms := {}                       # Tisch -> Zeitpunkt der letzten eigenen Aktion
 var host_states := 0
+var house_seen := {}                     # Ereignisname -> Anzahl (bei den Gästen empfangen)
 
 
 func check(ok: bool, message: String) -> void:
@@ -36,6 +41,7 @@ func _initialize() -> void:
 	TableSource.clear_saved(SAVE)
 	test_game()
 	test_resume()
+	test_house_game()
 	for c in tables:
 		c.leave()
 		c.free()
@@ -121,12 +127,25 @@ func check_message(c: ClientTable, events: Array, view: Dictionary) -> void:
 			bad = "fremde Hand/eigene Rückseiten in players"
 	for e in events:
 		var d: Dictionary = e
-		if str(d.get("e", "")) == "draw" and int(d.seat) != seat and (d.has("faces") or d.has("cards")):
+		var k := str(d.get("e", ""))
+		house_seen[k] = int(house_seen.get(k, 0)) + 1
+		var foreign := int(d.get("seat", -1)) != seat
+		if k == "draw" and foreign and (d.has("faces") or d.has("cards")):
 			bad = "fremde gezogene Karten"
-		if str(d.get("e", "")) == "challenge" and int(d.seat) != seat and d.has("hand"):
+		if k == "challenge" and foreign and d.has("hand"):
 			bad = "fremde Hand beim Anzweifeln"
+		# Hausregeln: beim Kartentausch nur die eigene neue Hand, fremde Einsätze und Einsatzrückgaben verdeckt
+		if k == "swap_hands" and d.has("hands"):
+			bad = "alle Hände beim Kartentausch"
+		if k == "stake" and foreign and (d.has("card") or d.has("face") or d.has("back")):
+			bad = "fremder Einsatz offen"
+		if (k == "stake_back" or k == "stake_discard") and foreign and (d.has("cards") or d.has("faces")):
+			bad = "fremde Einsatzkarten offen"
+	var gv: Variant = view.get("gamble", {})
+	if gv is Dictionary and (gv as Dictionary).has("q"):
+		bad = "Trefferquote in der Sicht"
 	var text := JSON.stringify(view) + JSON.stringify(events)
-	if text.contains("rng_state") or text.contains("\"snap\"") or text.contains("\"seed\""):
+	if text.contains("rng_state") or text.contains("\"snap\"") or text.contains("\"seed\"") or text.contains("\"q\""):
 		bad = "Seed/Zufallszustand"
 	# Ist der Stand aktuell (gleiche rev wie beim Gastgeber), muss die Hand genau der echten entsprechen.
 	if host != null and host.game != null and c.last_rev == host.rev and seat >= 0 and seat < host.game.hands.size():
@@ -382,6 +401,171 @@ func test_resume() -> void:
 		OS.delay_msec(1)
 	check(waited and host.is_bot(ben_seat), "Auto-Ersatz: nach der Wartezeit spielt ein Bot für Ben")
 	host.autosave = false
+	host.leave()
+	host.free()
+	host = null
+
+
+
+# ---------- Hausregeln über das Netz ----------
+
+# Hände + Nachziehstapel + Ablage + Einsatz des Glücksspiels
+func house_total(g: MauGame) -> int:
+	var n := g.draw_pile.size() + g.discard.size() + (g.gamble.get("stake", []) as Array).size()
+	for h in g.hands:
+		n += (h as Array).size()
+	return n
+
+
+# Kartenerhaltung beim Gastgeber; "" = in Ordnung
+func house_cards(g: MauGame) -> String:
+	var err := RulesFixture.card_check(g)
+	if err == "" and house_total(g) != g.config.card_count():
+		err = "%d statt %d Karten" % [house_total(g), g.config.card_count()]
+	return err
+
+
+func face_kind(g: MauGame, id: int) -> String:
+	return str(g._kind[g.faces[g.side * g.n_cards + id]])
+
+
+# Holt eine Karte der Art kind auf die Hand von seat (vom Nachziehstapel, sonst aus einer anderen Hand gegen die oberste
+# Stapelkarte). Die Kartenzahl bleibt gleich. Liefert die id oder -1.
+func give_card(g: MauGame, seat: int, kind: String) -> int:
+	for id in g.hands[seat]:
+		if face_kind(g, int(id)) == kind:
+			return int(id)
+	for i in g.draw_pile.size():
+		var id := int(g.draw_pile[i])
+		if face_kind(g, id) == kind:
+			g.draw_pile.remove_at(i)
+			(g.hands[seat] as Array).append(id)
+			return id
+	for s in g.hands.size():
+		if s == seat:
+			continue
+		for x in g.hands[s]:
+			var id := int(x)
+			if face_kind(g, id) == kind:
+				(g.hands[s] as Array).erase(id)
+				(g.hands[s] as Array).append(g.draw_pile.pop_back())
+				(g.hands[seat] as Array).append(id)
+				return id
+	return -1
+
+
+# Spielt, bis seat am Zug ist (normaler Zug ohne offene Strafe, noch im Spiel); dieser Gast handelt solange nicht.
+func await_own_turn(c: ClientTable, ms := 30000) -> bool:
+	var seat := seat_of(c)
+	var t_end := Time.get_ticks_msec() + ms
+	while Time.get_ticks_msec() < t_end:
+		var g := host.game
+		if g.phase() == "round_over":
+			host.act({"a": "next_round"})
+		if g.current_seat() == seat and g.phase() == "turn" and g.pending.is_empty() and int(g.place[seat]) == 0 \
+				and (g.hands[seat] as Array).size() >= 3:
+			return true
+		play_step(null if g.current_seat() == seat else c)    # am Zug, aber gerade nicht passend: normal weiterspielen
+	return false
+
+
+func test_house_game() -> void:
+	house_seen.clear()
+	leaks.clear()
+	var cfg := RuleConfig.preset("familie")
+	cfg.gamble_cards = "on"
+	cfg.discard_color = "on"
+	host = new_host(PORT3)
+	host.autosave = false
+	host.add_bot()
+	var cara := new_client("Cara", PORT3)
+	var dino := new_client("Dino", PORT3)
+	check(wait_until(func(): return cara.connection_state() == "open" and dino.connection_state() == "open" and host.session.players.size() == 4),
+		"Hausregeln: zwei Gäste und ein Computergegner in der Lobby")
+	host.set_rules(cfg)
+	check(wait_until(func(): return RuleConfig.from_dict(cara.lobby.get("rules", {})).card_count() == 124),
+		"Hausregeln: Gäste sehen die Regeln mit 124 Karten")
+	check(host.start(4242), "Hausregeln: Start")
+	check(host.game.n_cards == 124 and house_cards(host.game) == "", "Hausregeln: 124 Karten ausgeteilt (%s)" % house_cards(host.game))
+	check(wait_until(func(): return received[cara] > 0 and received[dino] > 0), "Hausregeln: Gäste bekommen ihre Sicht")
+	# Freies Spiel: ganze Runden (bis zum Letzten), Kartenerhaltung nach jedem Schritt
+	var cards_err := ""
+	var rounds := 0
+	var steps := 0
+	var t0 := Time.get_ticks_msec()
+	var t_end := t0 + 180000
+	while Time.get_ticks_msec() < t_end:
+		steps += 1
+		play_step()
+		if cards_err == "":
+			cards_err = house_cards(host.game)
+		if host.game.phase() == "round_over":
+			rounds += 1
+			var all_seen := int(house_seen.get("swap_hands", 0)) > 0 and int(house_seen.get("discard_color", 0)) > 0 \
+				and int(house_seen.get("gamble_start", 0)) > 0
+			if all_seen or rounds >= 2:
+				break
+			wait_until(func(): return cara.last_rev == host.rev and dino.last_rev == host.rev, 2000)
+			host.act({"a": "next_round"})
+	check(rounds >= 1, "Hausregeln: ganze Runde über das Netz gespielt (%d Runden, %d Schritte, %d ms)" % [rounds, steps, Time.get_ticks_msec() - t0])
+	check(cards_err == "", "Hausregeln: Kartenerhaltung beim Gastgeber nach jedem Schritt (%s)" % cards_err)
+	print("  Hausregeln frei: Kartentausch %d, Glücksspiel %d, Farbe ablegen %d (bei den Gästen empfangen)" % [int(house_seen.get("swap_hands", 0)),
+		int(house_seen.get("gamble_start", 0)), int(house_seen.get("discard_color", 0))])
+	if host.game.phase() == "round_over":
+		host.act({"a": "next_round"})
+	# Erzwungen: Dino legt einen Kartentausch (jeder Gast bekommt nur seine neue Hand)
+	check(await_own_turn(dino), "Hausregeln: Dino ist dran")
+	var g := host.game
+	var dseat := seat_of(dino)
+	var sid := give_card(g, dseat, MauGame.SWAP)
+	if sid >= 0:
+		g.color = str(g._color[g.faces[g.side * g.n_cards + sid]])
+		g.wished = false
+	host._changed([])                     # frische Sichten an alle (die Karte liegt jetzt auf Dinos Hand)
+	check(sid >= 0 and house_cards(g) == "", "Hausregeln: Kartentausch auf Dinos Hand (%s)" % house_cards(g))
+	check(wait_until(func(): return dino.last_rev == host.rev and ((dino.current_view().get("hints", {}) as Dictionary).get("playable", []) as Array).has(float(sid)) \
+		or ((dino.current_view().get("hints", {}) as Dictionary).get("playable", []) as Array).has(sid)), "Hausregeln: Dino sieht den Kartentausch als spielbar")
+	var swaps_before := int(house_seen.get("swap_hands", 0))
+	dino.act({"a": "play", "card": sid})
+	check(wait_until(func(): return int(house_seen.get("swap_hands", 0)) >= swaps_before + 2 and cara.last_rev == host.rev and dino.last_rev == host.rev),
+		"Hausregeln: beide Gäste bekommen den Kartentausch")
+	var hand_ok := true
+	for c in [cara, dino]:
+		var mine: Array = []
+		for item in c.current_view().get("hand", []):
+			mine.append(int(item.id))
+		mine.sort()
+		if mine != sorted_ints(g.hands[seat_of(c)]):
+			hand_ok = false
+	check(hand_ok and house_cards(g) == "", "Hausregeln: nach dem Kartentausch hat jeder Gast genau seine neue Hand")
+	# Erzwungen: Cara spielt Glücksspiel über das Netz (0, dann Treffer 2)
+	check(await_own_turn(cara), "Hausregeln: Cara ist dran")
+	g = host.game
+	var cseat := seat_of(cara)
+	var gid := give_card(g, cseat, MauGame.GAMBLE)
+	g.force_rolls([0, 2])
+	host._changed([])
+	check(gid >= 0 and house_cards(g) == "", "Hausregeln: Glücksspiel auf Caras Hand")
+	check(wait_until(func(): return cara.last_rev == host.rev), "Hausregeln: Cara hat den neuen Stand")
+	var stakes_before := int(house_seen.get("stake", 0))
+	var hand_before := (g.hands[cseat] as Array).size()
+	var col := str(((cara.current_view().get("colors", ["rot"])) as Array)[0])
+	cara.act({"a": "play", "card": gid, "color": col})
+	check(wait_until(func(): return g.phase() == "gamble" and int(g.gamble.get("seat", -1)) == cseat), "Hausregeln: Caras Glücksspiel läuft")
+	var gamble_cards := ""
+	var t_g := Time.get_ticks_msec() + 15000
+	while Time.get_ticks_msec() < t_g and g.phase() == "gamble":
+		play_step()
+		if gamble_cards == "":
+			gamble_cards = house_cards(g)
+	check(g.phase() != "gamble" and g.gamble.is_empty(), "Hausregeln: Caras Glücksspiel endet mit dem Treffer")
+	check(gamble_cards == "" and house_cards(g) == "", "Hausregeln: Kartenerhaltung mit Einsatz (%s)" % gamble_cards)
+	check((g.hands[cseat] as Array).size() == hand_before - 1 + 2, "Hausregeln: Cara zieht 2 und bekommt den Einsatz zurück (%d Karten)" % (g.hands[cseat] as Array).size())
+	check(wait_until(func(): return int(house_seen.get("stake", 0)) >= stakes_before + 4 and cara.last_rev == host.rev and dino.last_rev == host.rev),
+		"Hausregeln: beide Gäste sehen zwei Einsätze (%d)" % (int(house_seen.get("stake", 0)) - stakes_before))
+	check(leaks.is_empty(), "Hausregeln: Lecktest auf allen Nachrichten (%s)" % str(leaks.slice(0, 3)))
+	host.session.finish("Der Gastgeber hat das Spiel beendet.")
+	wait_until(func(): return cara.connection_state() == "closed" and dino.connection_state() == "closed", 3000)
 	host.leave()
 	host.free()
 	host = null

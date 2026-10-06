@@ -141,11 +141,128 @@ body[data-screen="tisch"] #tisch { display: block; }
 .ende-karte .knopf.haupt { background: var(--cream); color: var(--ink); }
 
 /* ---------------- Tisch ---------------- */
-#tisch { overflow: hidden; background: #0C0F22; }
-.himmel, .himmel .tag, .himmel .nacht { position: absolute; top: 0; right: 0; bottom: 0; left: 0; }
-.himmel .tag { background: radial-gradient(ellipse 72% 64% at 50% 46%, #303C70 0%, #1A2047 55%, #0C1027 100%); }
-.himmel .tag::after { content: ''; position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: radial-gradient(circle at 12% -10%, rgba(255,214,140,.16), transparent 45%); }
-.himmel .nacht { opacity: 0; transition: opacity 1.1s ease; background: radial-gradient(ellipse 72% 64% at 50% 46%, #2A1C5E 0%, #140F36 55%, #06050F 100%); }
+/* Tag = helle Seite = Papier (Standard), Nacht = dunkle Seite = Neon (#tisch[data-seite="dunkel"]), wie in der App
+   (game/scripts/ui/ui_palette.gd, table_background.gdshader, direction_platform.gdshader). Farben, die mit der Seite wechseln,
+   stehen als --t-* am Tisch. Flip (tisch.js setzeSeite, .wechselt): Himmel und Plattform blenden über --wd mit derselben
+   symmetrischen S-Kurve --wg über (wie im Shader: smoothstep über eine Sinuskurve), die Dämmerung ist auf halbem Weg am
+   stärksten. Schrift, Knöpfe und Markierungen wechseln genau dort schlagartig (--ws), wo der Grund die Mitte durchläuft – wie
+   UiPalette.ui_mix (smoothstep 0,4…0,6, in der App rund 0,07 s): Sie stehen nie grau auf Dämmerungsgrund, und nichts springt
+   schon zu Beginn auf die neue Seite. .sofort beim ersten Bild einer Partie (ohne Überblenden). */
+#tisch { overflow: hidden; background: #E6D7BC; color: var(--t-text);
+  --wd: 1.1s; --wg: cubic-bezier(.6,0,.4,1); --ws: steps(2, jump-none);
+  --tr: color var(--wd) var(--ws), background-color var(--wd) var(--ws), border-color var(--wd) var(--ws), text-shadow var(--wd) var(--ws),
+    box-shadow var(--wd) var(--ws), filter var(--wd) var(--ws);
+  --t-text: #211B2C; --t-muted: #5E5169; --t-fill: rgba(33,27,44,.06); --t-line: rgba(33,27,44,.3); --t-line2: rgba(33,27,44,.3);
+  --t-schatten: 0 1px 0 rgba(255,247,232,.6); --t-chip: #211B2C; --t-chip-fg: #F4EADA; --t-marke: #211B2C; --t-marke-rand: #211B2C;
+  --t-hinweis: rgba(251,245,234,.88); --t-hinweis-rand: rgba(33,27,44,.26); --t-dran: #211B2C; --t-dran-fg: #FFF7E8;
+  --t-zug: #211B2C; --t-zug-ich: #6B4A00; }
+#tisch[data-seite="dunkel"] { background: #0C0F22;
+  --t-text: #F4EADA; --t-muted: #C9C3E8; --t-fill: rgba(244,234,218,.1); --t-line: rgba(244,234,218,.35); --t-line2: rgba(244,234,218,.3);
+  --t-schatten: 0 2px 6px rgba(0,0,0,.5); --t-chip: #F4EADA; --t-chip-fg: #211B2C; --t-marke: rgba(12,15,34,.7); --t-marke-rand: rgba(244,234,218,.3);
+  --t-hinweis: rgba(12,15,34,.55); --t-hinweis-rand: rgba(244,234,218,.22); --t-dran: #FFF7E8; --t-dran-fg: #211B2C;
+  --t-zug: #FFE9A8; --t-zug-ich: #FFE9A8; }
+#tisch.sofort, #tisch.sofort *, #tisch.sofort *::before, #tisch.sofort *::after { transition: none !important; }
+/* Die Übergänge gelten nur während des Wechsels (.wechselt), sonst bleiben Zustandswechsel (z. B. „Du bist dran“) sofort wie
+   bisher. Alles, was je Seite eigene Farben hat, steht hier: Schrift, Pillen und runde Knöpfe, Mitspieler, Stapel (Leuchtrand),
+   Handkarten (Markierungen), Glücksspiel-Automat und Einsatz, Mau-Blase, Farbwahl. */
+#tisch.wechselt .stapelzahl, #tisch.wechselt .pill, #tisch.wechselt .rund, #tisch.wechselt .gg .name, #tisch.wechselt .gg .zahl,
+#tisch.wechselt .gg .marke, #tisch.wechselt .hinweis, #tisch.wechselt .automat .unter, #tisch.wechselt .stapel .leer,
+#tisch.wechselt .stapel .oben::after, #tisch.wechselt .hk .vorn, #tisch.wechselt .hk .vorn::after,
+#tisch.wechselt .automat .schild, #tisch.wechselt .automat .frage, #tisch.wechselt .automat .sockel,
+#tisch.wechselt .automat .lampe, #tisch.wechselt .automat .fenster, #tisch.wechselt .einsatz .zahl,
+#tisch.wechselt .mau-blase .koerper, #tisch.wechselt .mau-blase .txt, #tisch.wechselt .mau-blase .schwanz, #tisch.wechselt .mau-blase .ohr,
+#tisch.wechselt .mau-blase .ohr::after, #tisch.wechselt .mau-blase .ring, #tisch.wechselt .mau-blase .stern,
+#tisch.wechselt .farbwahl .schleier, #tisch.wechselt .farbwahl .frage, #tisch.wechselt .automat .walze b,
+#tisch.wechselt .knopf.klein { transition: var(--tr); }
+#tisch.wechselt .farbanzeige { transition: opacity .3s, color var(--wd) var(--ws), text-shadow var(--wd) var(--ws); }
+#tisch.wechselt .gg .ava { transition: box-shadow .3s, border-color var(--wd) var(--ws); }
+#tisch.wechselt .automat .kuppel { transition: transform .12s, box-shadow .3s, color var(--wd) var(--ws), border-color var(--wd) var(--ws); }
+#tisch.wechselt .automat .kuppel::before { transition: opacity var(--wd) var(--ws); }
+/* Ab der Mitte des Wechsels (.halb, tisch.js setzeSeite) ohne Übergang: Ändert sich danach noch etwas (z. B. wer dran ist), steht
+   es sofort in der Farbe der neuen Seite. Himmel und Plattform blenden weiter (eigene Übergänge mit --wg). */
+#tisch.wechselt.halb { --tr: none; }
+#tisch.wechselt.halb .farbanzeige { transition: opacity .3s; }
+#tisch.wechselt.halb .gg .ava { transition: box-shadow .3s; }
+#tisch.wechselt.halb .automat .kuppel { transition: transform .12s, box-shadow .3s; }
+#tisch.wechselt.halb .automat .kuppel::before { transition: none; }
+/* Schein um die Schrift auf dem bloßen Tisch, solange der Grund durch die Dämmerung geht (20–80 %): erst Papierschein um die
+   Druckfarbe, ab der Mitte (gleichzeitig mit dem Farbwechsel) Nachtschein um die Papierschrift bzw. umgekehrt. So hebt sich die
+   Schrift auf jedem Zwischenton ab, auch unten, wo die Dämmerung dunkler ist als oben. Symbole (SVG) über filter. */
+#tisch.wechselt .gg .name, #tisch.wechselt .stapelzahl, #tisch.wechselt .farbanzeige span, #tisch.wechselt .pill span,
+#tisch.wechselt .automat .unter { animation: scheinZurNacht var(--wd) linear; }
+#tisch.wechselt[data-seite="hell"] .gg .name, #tisch.wechselt[data-seite="hell"] .stapelzahl, #tisch.wechselt[data-seite="hell"] .farbanzeige span,
+#tisch.wechselt[data-seite="hell"] .pill span, #tisch.wechselt[data-seite="hell"] .automat .unter { animation-name: scheinZumTag; }
+#tisch.wechselt .pill svg, #tisch.wechselt .rund svg { animation: scheinSvgZurNacht var(--wd) linear; }
+#tisch.wechselt[data-seite="hell"] .pill svg, #tisch.wechselt[data-seite="hell"] .rund svg { animation-name: scheinSvgZumTag; }
+@keyframes scheinZurNacht {
+  0% { text-shadow: 0 0 0 rgba(255,247,232,0), 0 0 0 rgba(255,247,232,0), 0 0 0 rgba(255,247,232,0); }
+  20%, 49.99% { text-shadow: 0 0 2px rgba(255,247,232,.95), 0 0 5px rgba(255,247,232,.85), 0 0 12px rgba(255,247,232,.5); }
+  50%, 80% { text-shadow: 0 0 2px rgba(14,10,36,.95), 0 0 5px rgba(14,10,36,.85), 0 0 12px rgba(14,10,36,.5); }
+  100% { text-shadow: 0 0 0 rgba(14,10,36,0), 0 0 0 rgba(14,10,36,0), 0 0 0 rgba(14,10,36,0); } }
+@keyframes scheinZumTag {
+  0% { text-shadow: 0 0 0 rgba(14,10,36,0), 0 0 0 rgba(14,10,36,0), 0 0 0 rgba(14,10,36,0); }
+  20%, 49.99% { text-shadow: 0 0 2px rgba(14,10,36,.95), 0 0 5px rgba(14,10,36,.85), 0 0 12px rgba(14,10,36,.5); }
+  50%, 80% { text-shadow: 0 0 2px rgba(255,247,232,.95), 0 0 5px rgba(255,247,232,.85), 0 0 12px rgba(255,247,232,.5); }
+  100% { text-shadow: 0 0 0 rgba(255,247,232,0), 0 0 0 rgba(255,247,232,0), 0 0 0 rgba(255,247,232,0); } }
+@keyframes scheinSvgZurNacht {
+  0% { filter: drop-shadow(0 0 0 rgba(255,247,232,0)) drop-shadow(0 0 0 rgba(255,247,232,0)); }
+  20%, 49.99% { filter: drop-shadow(0 0 1.5px rgba(255,247,232,.95)) drop-shadow(0 0 4px rgba(255,247,232,.8)); }
+  50%, 80% { filter: drop-shadow(0 0 1.5px rgba(14,10,36,.95)) drop-shadow(0 0 4px rgba(14,10,36,.8)); }
+  100% { filter: drop-shadow(0 0 0 rgba(14,10,36,0)) drop-shadow(0 0 0 rgba(14,10,36,0)); } }
+@keyframes scheinSvgZumTag {
+  0% { filter: drop-shadow(0 0 0 rgba(14,10,36,0)) drop-shadow(0 0 0 rgba(14,10,36,0)); }
+  20%, 49.99% { filter: drop-shadow(0 0 1.5px rgba(14,10,36,.95)) drop-shadow(0 0 4px rgba(14,10,36,.8)); }
+  50%, 80% { filter: drop-shadow(0 0 1.5px rgba(255,247,232,.95)) drop-shadow(0 0 4px rgba(255,247,232,.8)); }
+  100% { filter: drop-shadow(0 0 0 rgba(255,247,232,0)) drop-shadow(0 0 0 rgba(255,247,232,0)); } }
+.himmel, .himmel > div { position: absolute; top: 0; right: 0; bottom: 0; left: 0; }
+.himmel { overflow: hidden; }
+/* Tag: warmes Papier, zum Rand dunkler (Verlauf wie im Shader), Sonne oben links mit weichem Lichthof, sehr dezente Strahlen
+   und feines Korn. Zur Nacht sinkt die Sonne hinter den Tisch; die Tagebene blendet erst aus, wenn die Nacht sie deckt
+   (kein Durchscheinen), und kommt am Morgen sofort unter der ausblendenden Nacht hervor. */
+.himmel .tag { background: radial-gradient(ellipse 62% 78% at 50% 44.6%, #F5ECDC 20%, #F0E5D1 50%, #E8D9C0 75%, #E0CDAF 100%, #DCC8A8 125%);
+  transition: opacity .35s ease, visibility 0s; }
+#tisch[data-seite="dunkel"] .himmel .tag { opacity: 0; visibility: hidden; transition: opacity .4s ease .7s, visibility 0s 1.1s; }
+.himmel .sonne { position: absolute; left: 7%; top: 3%; width: calc(132px * var(--s, 1)); height: calc(132px * var(--s, 1));
+  margin: calc(-66px * var(--s, 1)) 0 0 calc(-66px * var(--s, 1)); border-radius: 50%;
+  background: radial-gradient(circle closest-side, #FFDE7A 0, #FFD966 56%, #FFC934 80%, #FFC934 96%, rgba(255,201,52,0) 100%);
+  box-shadow: 0 0 0 calc(2px * var(--s, 1)) rgba(255,226,140,.6), 0 0 calc(16px * var(--s, 1)) rgba(255,196,50,.34), 0 0 calc(130px * var(--s, 1)) calc(30px * var(--s, 1)) rgba(255,204,56,.18);
+  transition: transform var(--wd) cubic-bezier(.45,0,.55,1); }
+#tisch[data-seite="dunkel"] .himmel .sonne { transform: translateY(calc(var(--vh) * 1.08)); }
+/* Sonnenstrahlen („Licht durch Dunst“ wie in der App, table_background.gdshader: bis zu 50 % Gold, Strahlen mit eigener Länge,
+   die weich in die Papierfarbe auslaufen): zwei Ebenen aus der Sonnenmitte. Die lange (::before, Teilung 13° und 23°) reicht
+   bis in die Ecke unten links, die kürzere (.strahlen, Teilung 11°, versetzt) endet früher – so sind Breite, Helligkeit und
+   Länge der Strahlen verschieden. Bewegung nur als sehr langsames Atmen gegeneinander (nichts dreht sich). */
+.himmel .tag::before, .himmel .strahlen { content: ''; position: absolute; top: 0; right: 0; bottom: 0; left: 0; pointer-events: none;
+  animation: strahlenAtmen 15s ease-in-out infinite alternate; }
+.himmel .tag::before {
+  background:
+    repeating-conic-gradient(from 0deg at 7% 3%, rgba(255,214,110,0) 0deg, rgba(255,214,110,.5) 4deg, rgba(255,214,110,.42) 6deg, rgba(255,214,110,0) 10deg 13deg),
+    repeating-conic-gradient(from 8deg at 7% 3%, rgba(255,228,150,0) 0deg, rgba(255,228,150,.4) 6deg, rgba(255,228,150,0) 13deg 23deg);
+  -webkit-mask-image: radial-gradient(circle at 7% 3%, transparent 3.5%, rgba(0,0,0,.7) 9%, #000 14%, rgba(0,0,0,.82) 24%, rgba(0,0,0,.6) 38%, rgba(0,0,0,.4) 54%, rgba(0,0,0,.22) 72%, rgba(0,0,0,.08) 92%);
+  mask-image: radial-gradient(circle at 7% 3%, transparent 3.5%, rgba(0,0,0,.7) 9%, #000 14%, rgba(0,0,0,.82) 24%, rgba(0,0,0,.6) 38%, rgba(0,0,0,.4) 54%, rgba(0,0,0,.22) 72%, rgba(0,0,0,.08) 92%); }
+.himmel .strahlen { animation-direction: alternate-reverse;
+  background: repeating-conic-gradient(from 4deg at 7% 3%, rgba(255,196,84,0) 0deg, rgba(255,196,84,.36) 3deg, rgba(255,196,84,0) 6.5deg 11deg);
+  -webkit-mask-image: radial-gradient(circle at 7% 3%, transparent 3.5%, #000 12%, rgba(0,0,0,.6) 24%, rgba(0,0,0,.22) 40%, transparent 56%);
+  mask-image: radial-gradient(circle at 7% 3%, transparent 3.5%, #000 12%, rgba(0,0,0,.6) 24%, rgba(0,0,0,.22) 40%, transparent 56%); }
+/* Lichthof der Sonne und Papierkorn (SVG-Rauschen als Kachel, liegt im Client) */
+.himmel .tag::after { content: ''; position: absolute; top: 0; right: 0; bottom: 0; left: 0; pointer-events: none;
+  background: radial-gradient(circle at 7% 3%, rgba(255,200,70,.24) 0, rgba(255,200,70,.09) 14%, rgba(255,200,70,0) 34%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='k'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .2  0 0 0 0 .14  0 0 0 0 .08  0 0 0 .25 -.09'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23k)'/%3E%3C/svg%3E") 0 0 / 180px 180px; }
+@keyframes strahlenAtmen { from { opacity: .8; } to { opacity: 1; } }
+body.reduziert .himmel .tag::before, body.reduziert .himmel .strahlen { animation: none; }
+#tisch[data-seite="dunkel"] .himmel .tag::before, #tisch[data-seite="dunkel"] .himmel .strahlen { animation-play-state: paused; }
+/* Dämmerung: nur während des Flips (tisch.js setzeSeite → .wechsel), auf halbem Weg am stärksten, wie im Shader. Ein zweiter
+   Wechsel, solange sie läuft, startet sie nicht neu (kein Sprung). */
+.himmel .daemmerung { opacity: 0; pointer-events: none;
+  background: radial-gradient(ellipse 62% 78% at 50% 44.6%, rgba(24,12,40,0) 0, rgba(24,12,40,.3) 100%), linear-gradient(180deg, #F29973 0%, #A36C78 45%, #544078 87%); }
+.himmel.wechsel .daemmerung { animation: daemmerung var(--wd) ease-in-out; }
+@keyframes daemmerung { 0%, 100% { opacity: 0; } 50% { opacity: .5; } }
+body.reduziert .himmel .daemmerung { display: none; }
+/* reduzierte Effekte: die Sonne bleibt stehen und blendet nur mit der Tagebene aus */
+body.reduziert #tisch[data-seite="dunkel"] .himmel .sonne { transform: none; }
+@media (prefers-reduced-motion: reduce) { #tisch[data-seite="dunkel"] .himmel .sonne { transform: none; } }
+/* Nacht wie bisher; blendet mit der S-Kurve über (ihre Mitte fällt mit der Dämmerung und dem Schriftwechsel zusammen) */
+.himmel .nacht { opacity: 0; transition: opacity var(--wd) var(--wg); background: radial-gradient(ellipse 72% 64% at 50% 46%, #2A1C5E 0%, #140F36 55%, #06050F 100%); }
 .himmel .nacht::after { content: ''; position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: radial-gradient(circle at 88% -6%, rgba(200,190,255,.2), transparent 40%); }
 .himmel .sterne { position: absolute; top: 0; right: 0; bottom: 0; left: 0; opacity: .9;
   background-image: radial-gradient(1.6px 1.6px at 10% 20%, #fff 50%, transparent 51%), radial-gradient(1.2px 1.2px at 22% 64%, #fff 50%, transparent 51%),
@@ -160,16 +277,54 @@ body[data-screen="tisch"] #tisch { display: block; }
 .karte > img, .karte > svg, .seite > img, .seite > svg { display: block; width: 100%; height: 100%; pointer-events: none; }
 .buehne .karte { box-shadow: 0 6px 12px rgba(0,0,0,.42); }
 
-/* Richtungsring */
-.richtung { width: 800px; height: 460px; transform: translate(-50%, -50%); pointer-events: none; }
-.richtung svg { width: 100%; height: 100%; overflow: visible; transition: transform .3s; }
-.richtung.gegen svg { transform: scaleX(-1); }
-.richtung .bahn, .richtung .spitze { fill: none; stroke: var(--lila); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; opacity: .6; }
-.richtung .bahn { stroke-dasharray: 16 12; animation: fluss 1.4s linear infinite; }
-.richtung .pfeile { filter: drop-shadow(0 0 5px rgba(154,134,255,.8)); }
-.richtung.dreh { animation: richtungDreh .7s ease-in-out; }
-@keyframes fluss { to { stroke-dashoffset: -28; } }
-@keyframes richtungDreh { 0% { transform: translate(-50%,-50%) scale(1, 1); } 45% { transform: translate(-50%,-50%) scale(.08, 1.08); } 100% { transform: translate(-50%,-50%) scale(1, 1); } }
+/* Richtungs-Plattform (wie DirectionRing in der App, vereinfacht; Formen aus plattform() in tisch.js): dicker Ring schräg von
+   oben, Kante und Schatten aus versetzten Kurven, Laufbahn mit Winkeln als Lauflicht (Deckkraft je Winkel versetzt).
+   Tag: dicker Karton in Creme mit Druckfarben-Kontur, vertiefter Laufbahn in Sand und geprägten Winkeln in Druckfarbe.
+   Nacht: dunkles Glas mit Neonkante und leuchtenden Winkeln. Farben blenden beim Flip über (Winkel: zwei Ebenen).
+   .gegen kehrt Lauf und Spitzen um (Spitzen klappen mit Überschwinger), .dreh glimmt einmal auf. Keine Dauer-Filter. */
+.richtung { width: 0; height: 0; pointer-events: none; }
+.richtung .pf { position: absolute; left: -480px; top: -290px; width: 960px; height: 580px; overflow: visible; }
+.pf stop { transition: stop-color var(--wd) var(--wg); }
+.pf path { transition: fill var(--wd) var(--wg), stroke var(--wd) var(--wg), stroke-width var(--wd) var(--wg), opacity var(--wd) var(--wg); }
+.pf .s1 { stop-color: #FFFAEF; } .pf .s2 { stop-color: #F2E3C7; } .pf .s3 { stop-color: #DDC497; } .pf .s4 { stop-color: #AF9468; }
+#tisch[data-seite="dunkel"] .pf .s1 { stop-color: #2C2266; } #tisch[data-seite="dunkel"] .pf .s2 { stop-color: #150F38; }
+#tisch[data-seite="dunkel"] .pf .s3 { stop-color: #1C1546; } #tisch[data-seite="dunkel"] .pf .s4 { stop-color: #08061A; }
+/* Schatten: eigenes SVG (.pf-sch) mit fester Farbe, beim Flip blendet nur die Deckkraft der Ebene (kein Neuzeichnen des Weichzeichners) */
+.richtung .pf-sch { opacity: .3; transition: opacity var(--wd) var(--wg); will-change: opacity; }
+#tisch[data-seite="dunkel"] .richtung .pf-sch { opacity: .55; }
+.pf-sch .pf-schatten { fill: #0E0B14; transition: none; }
+.pf-kante { fill: url(#pf-wand); }
+.pf-fuss { fill: none; stroke: #211B2C; stroke-width: 1.8; opacity: .8; }
+.pf-kante-innen { fill: #B79D74; }
+.pf-oben { fill: url(#pf-glas); opacity: 1; }
+.pf-bahn { fill: rgba(186,120,30,.24); stroke: rgba(33,27,44,.28); stroke-width: 1.2; }
+.pf-glanz { fill: none; stroke: #F2B53A; stroke-width: 12; opacity: .14; }
+.pf-rand { fill: none; stroke: #211B2C; stroke-width: 2.2; }
+.pf-rand-innen { fill: none; stroke: #211B2C; stroke-width: 1.7; opacity: .8; }
+#tisch[data-seite="dunkel"] .pf-fuss { stroke: var(--lila); stroke-width: 1.4; opacity: .35; }
+#tisch[data-seite="dunkel"] .pf-kante-innen { fill: #0A0D26; }
+#tisch[data-seite="dunkel"] .pf-oben { opacity: .96; }
+#tisch[data-seite="dunkel"] .pf-bahn { fill: rgba(5, 7, 24, .5); stroke: rgba(154, 134, 255, .3); stroke-width: 1; }
+#tisch[data-seite="dunkel"] .pf-glanz { stroke: var(--lila); }
+#tisch[data-seite="dunkel"] .pf-rand { stroke: #B7A8FF; stroke-width: 2.4; }
+#tisch[data-seite="dunkel"] .pf-rand-innen { stroke: var(--lila); stroke-width: 1.6; opacity: .7; }
+.richtung .w { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; opacity: var(--o);
+  animation: pfeilLauf var(--p) linear infinite; animation-delay: var(--d); }
+.richtung.gegen .w { opacity: var(--or); animation-delay: var(--r); }
+.richtung .w b { position: absolute; left: -20px; top: -20px; width: 40px; height: 40px; transition: transform .6s cubic-bezier(.34, 1.56, .64, 1); }
+.richtung .w b::before, .richtung .w b::after { content: ''; position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: center / 100% 100% no-repeat; transition: opacity var(--wd) var(--wg); }
+/* Tag: Winkel in Druckfarbe mit heller Prägekante */
+.richtung .w b::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-20 -20 40 40'%3E%3Cg fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M-6-16L6 0-6 16' stroke='%23FFFAEF' stroke-opacity='.85' stroke-width='11.5'/%3E%3Cpath d='M-6-16L6 0-6 16' stroke='%23211B2C' stroke-width='6.2'/%3E%3C/g%3E%3C/svg%3E"); }
+/* Nacht: Neon-Winkel */
+.richtung .w b::after { opacity: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-20 -20 40 40'%3E%3Cg fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M-6-16L6 0-6 16' stroke='%239A86FF' stroke-opacity='.45' stroke-width='14'/%3E%3Cpath d='M-6-16L6 0-6 16' stroke='%23D2C8FF' stroke-width='6.6'/%3E%3C/g%3E%3C/svg%3E"); }
+#tisch[data-seite="dunkel"] .richtung .w b::before { opacity: 0; }
+#tisch[data-seite="dunkel"] .richtung .w b::after { opacity: 1; }
+.richtung.gegen .w b { transform: scaleX(-1); }
+.richtung.dreh .pf-glanz { animation: pfBlitz 1s ease-out; }
+@keyframes pfeilLauf { 0% { opacity: 1; } 20% { opacity: .72; } 40% { opacity: .45; } 52%, 90% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes pfBlitz { 0% { opacity: .14; } 30% { opacity: .75; } 100% { opacity: .14; } }
 
 /* Stapel, Farbe, Ablage */
 .stapel { width: 118px; height: 184px; transform: translate(-50%, -50%); cursor: pointer; z-index: 5; }
@@ -177,14 +332,20 @@ body[data-screen="tisch"] #tisch { display: block; }
 .stapel .u2 { transform: translate(8px, 10px) rotate(-3deg); filter: brightness(.5); }
 .stapel .u1 { transform: translate(4px, 5px) rotate(-1deg); filter: brightness(.7); }
 .stapel .oben { transform: rotate(1.5deg); }
-.stapel.ziehbar .oben { box-shadow: 0 0 0 4px rgba(255,247,232,.6), 0 0 26px rgba(255,247,232,.5), 0 6px 12px rgba(0,0,0,.42); animation: atmen 1.6s ease-in-out infinite; }
-.stapel .leer { display: none; position: absolute; top: 0; right: 0; bottom: 0; left: 0; border: 3px dashed rgba(244,234,218,.3); border-radius: 12px; }
+/* ziehbar: Leuchtrand als eigene Ebene (::after), die nur atmet (Deckkraft); die Farbe hängt an der Seite und wechselt beim
+   Flip auf halbem Weg mit (.wechselt). Am Tag Bernstein (Creme verschwände auf dem Papier), nachts Cremeschein. */
+.stapel .oben::after { content: ''; position: absolute; top: 0; right: 0; bottom: 0; left: 0; border-radius: inherit; pointer-events: none; opacity: 0;
+  box-shadow: 0 0 0 4px rgba(232,133,0,.8), 0 0 26px rgba(255,176,40,.7); }
+#tisch[data-seite="dunkel"] .stapel .oben::after { box-shadow: 0 0 0 4px rgba(255,247,232,.65), 0 0 28px rgba(255,247,232,.55); }
+.stapel.ziehbar .oben::after { opacity: 1; animation: atmen 1.6s ease-in-out infinite; }
+.stapel .leer { display: none; position: absolute; top: 0; right: 0; bottom: 0; left: 0; border: 3px dashed var(--t-line2); border-radius: 12px; }
 .stapel.leer .leer { display: block; }
 .stapel.mischen { animation: mischen .6s ease-in-out; }
-@keyframes atmen { 0%,100% { box-shadow: 0 0 0 3px rgba(255,247,232,.45), 0 0 18px rgba(255,247,232,.35), 0 6px 12px rgba(0,0,0,.42); } 50% { box-shadow: 0 0 0 5px rgba(255,247,232,.75), 0 0 34px rgba(255,247,232,.6), 0 6px 12px rgba(0,0,0,.42); } }
+@keyframes atmen { 0%,100% { opacity: .62; transform: scale(1); } 50% { opacity: 1; transform: scale(1.025); } }
 @keyframes mischen { 0%,100% { transform: translate(-50%,-50%); } 25% { transform: translate(-56%,-50%) rotate(-4deg); } 50% { transform: translate(-44%,-50%) rotate(4deg); } 75% { transform: translate(-53%,-50%) rotate(-2deg); } }
-.stapelzahl { transform: translateX(-50%); font: 700 20px var(--f-ui); color: #C9C3E8; white-space: nowrap; font-variation-settings: 'opsz' 12; }
-.farbanzeige { transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 6px; font: 800 25px var(--f-ui); color: var(--paper); text-shadow: 0 2px 8px rgba(0,0,0,.5); pointer-events: none; }
+.stapelzahl { transform: translateX(-50%); font: 700 20px var(--f-ui); color: var(--t-muted); white-space: nowrap; font-variation-settings: 'opsz' 12; }
+.farbanzeige { transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 6px; font: 800 25px var(--f-ui); color: var(--t-text); text-shadow: 0 1px 0 rgba(255,247,232,.7); pointer-events: none; }
+#tisch[data-seite="dunkel"] .farbanzeige { text-shadow: 0 2px 8px rgba(0,0,0,.5); }
 .farbanzeige .sym { width: 50px; height: 50px; display: block; }
 .ablage { width: 0; height: 0; z-index: 5; }
 .ablage .karten .karte { position: absolute; left: 0; top: 0; }
@@ -197,13 +358,19 @@ body[data-screen="tisch"] #tisch { display: block; }
 
 /* Hinweis und Aktionen */
 .leiste { transform: translate(-50%, -50%); display: flex; align-items: center; gap: 12px; white-space: nowrap; z-index: 50; }
-.hinweis { font: 700 21px var(--f-ui); padding: 9px 20px; border-radius: 30px; background: rgba(12,15,34,.55); border: 2px solid rgba(244,234,218,.22); color: var(--paper); max-width: 760px; overflow: hidden; text-overflow: ellipsis; }
+.hinweis { font: 700 21px var(--f-ui); padding: 9px 20px; border-radius: 30px; background: var(--t-hinweis); border: 2px solid var(--t-hinweis-rand); color: var(--t-text); max-width: 760px; overflow: hidden; text-overflow: ellipsis; }
 .hinweis:empty { display: none; }
-.hinweis.dran { background: var(--cream); color: var(--ink); border-color: transparent; box-shadow: 0 4px 14px rgba(0,0,0,.35), 0 0 0 4px rgba(255,214,90,.3); }
+/* „Du bist dran“: am Tag Druckfarbe auf Papier umgekehrt (dunkle Pille), nachts Creme */
+.hinweis.dran { background: var(--t-dran); color: var(--t-dran-fg); border-color: transparent; box-shadow: 0 4px 14px rgba(0,0,0,.35), 0 0 0 4px rgba(255,214,90,.3); }
+#tisch:not([data-seite="dunkel"]) .hinweis.dran { box-shadow: 0 4px 12px rgba(33,27,44,.25), 0 0 0 4px rgba(255,200,60,.55); }
 .aktionen { display: flex; gap: 10px; }
 .aktionen:empty { display: none; }
 .knopf.klein { font-size: 20px; padding: 11px 20px; border-radius: 26px; background: var(--ink); color: var(--cream); border: 2.5px solid var(--cream); box-shadow: 0 6px 16px rgba(0,0,0,.4); }
 .knopf.klein.warn { background: var(--rot); }
+/* .klein (Hilfsklasse) macht Text blasser – Knöpfe bleiben voll deckend; am Tag Druckfarbe mit Druckrand, „Anzweifeln“ kräftiges Rot */
+.knopf.klein { opacity: 1; }
+#tisch:not([data-seite="dunkel"]) .knopf.klein { border-color: var(--ink); box-shadow: 0 4px 0 #0B0811, 0 8px 16px rgba(33,27,44,.28); }
+#tisch:not([data-seite="dunkel"]) .knopf.klein.warn { background: #C4172A; color: #fff; }
 
 /* Hand */
 #hand-zone { left: 0; bottom: 0; width: 100%; height: 270px; z-index: 30; touch-action: none; }
@@ -215,9 +382,14 @@ body[data-screen="tisch"] #tisch { display: block; }
 #hand.rueck .hk .innen { transform: rotateY(180deg); }
 .hk .seite { position: absolute; top: 0; right: 0; bottom: 0; left: 0; border-radius: 7.1% / 4.6%; -webkit-backface-visibility: hidden; backface-visibility: hidden; box-shadow: 0 6px 14px rgba(0,0,0,.45); }
 .hk .hinten { transform: rotateY(180deg); }
-.hk.spielbar .vorn { box-shadow: 0 0 16px rgba(255,247,232,.6), 0 6px 14px rgba(0,0,0,.45); }
-.hk.gewaehlt .vorn { box-shadow: 0 0 0 4px var(--gold), 0 0 28px rgba(255,214,90,.9), 0 10px 18px rgba(0,0,0,.5); }
-.hk.matt .vorn::after { content: ""; position: absolute; top: 0; right: 0; bottom: 0; left: 0; border-radius: inherit; background: rgba(10,13,32,.4); }
+/* Tag wie die App (card_view.gd): spielbar = feiner Rand in Druckfarbe, gewählt = kräftiges Bernstein, matt = leicht abgedunkelt;
+   nachts Cremeschein, Gold und stärkeres Abdunkeln */
+.hk.spielbar .vorn { box-shadow: 0 0 14px rgba(33,27,44,.45), 0 6px 14px rgba(0,0,0,.4); }
+#tisch[data-seite="dunkel"] .hk.spielbar .vorn { box-shadow: 0 0 16px rgba(255,247,232,.6), 0 6px 14px rgba(0,0,0,.45); }
+.hk.gewaehlt .vorn { box-shadow: 0 0 0 4px #E88500, 0 0 26px rgba(232,133,0,.8), 0 10px 18px rgba(0,0,0,.45); }
+#tisch[data-seite="dunkel"] .hk.gewaehlt .vorn { box-shadow: 0 0 0 4px var(--gold), 0 0 28px rgba(255,214,90,.9), 0 10px 18px rgba(0,0,0,.5); }
+.hk.matt .vorn::after { content: ""; position: absolute; top: 0; right: 0; bottom: 0; left: 0; border-radius: inherit; background: rgba(33,27,44,.24); }
+#tisch[data-seite="dunkel"] .hk.matt .vorn::after { background: rgba(10,13,32,.4); }
 .hk.neu .vorn { animation: neu 2.4s ease-out; }
 @keyframes neu { 0%, 45% { box-shadow: 0 0 0 4px #7CF5FF, 0 0 30px #7CF5FF, 0 6px 14px rgba(0,0,0,.45); } 100% { box-shadow: 0 6px 14px rgba(0,0,0,.45); } }
 .wackeln { animation: wackeln .4s ease; }
@@ -225,9 +397,9 @@ body[data-screen="tisch"] #tisch { display: block; }
 
 /* Knöpfe am Tisch */
 .pill { left: 46px; display: flex; align-items: center; gap: 10px; padding: 12px 20px; border-radius: 40px; font: 700 21px var(--f-ui);
-  background: rgba(244,234,218,.1); border: 2px solid rgba(244,234,218,.35); color: var(--paper); z-index: 60; -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+  background: var(--t-fill); border: 2px solid var(--t-line); color: var(--t-text); z-index: 60; -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
 .pill svg { width: 26px; height: 26px; }
-.pill.aktiv { background: var(--paper); color: var(--ink); }
+.pill.aktiv { background: var(--t-chip); color: var(--t-chip-fg); }
 .mau-knopf { right: 46px; bottom: 40px; width: 150px; height: 150px; border-radius: 50%; background: var(--cream); border: 5px solid var(--ink); color: var(--ink); z-index: 60; padding: 0;
   box-shadow: 0 0 0 6px rgba(255,127,207,.3), 0 10px 30px rgba(0,0,0,.5); display: grid; place-items: center; transition: box-shadow .3s; }
 .mau-knopf span { font: italic 900 46px/1 var(--f-brand); font-variation-settings: 'SOFT' 100, 'WONK' 1, 'opsz' 72; letter-spacing: -.01em; }
@@ -236,7 +408,8 @@ body[data-screen="tisch"] #tisch { display: block; }
 .mau-knopf.drueck span { animation: drueck .32s ease; display: inline-block; }
 @keyframes mauPuls { 0%,100% { box-shadow: 0 0 0 7px rgba(255,127,207,.6), 0 0 26px rgba(255,127,207,.55), 0 10px 30px rgba(0,0,0,.5); } 50% { box-shadow: 0 0 0 12px rgba(255,127,207,.9), 0 0 50px rgba(255,127,207,.85), 0 10px 30px rgba(0,0,0,.5); } }
 @keyframes drueck { 0% { transform: scale(1); } 40% { transform: scale(.82) rotate(-6deg); } 100% { transform: scale(1); } }
-.rund { border-radius: 50%; background: rgba(244,234,218,.1); border: 2px solid rgba(244,234,218,.3); color: var(--paper); display: grid; place-items: center; padding: 0; }
+/* runde Knöpfe: am Tisch Druckfarbe auf Papier bzw. Papier auf Nacht (--t-*); außerhalb (Fenster) setzen sie eigene Farben */
+.rund { border-radius: 50%; background: var(--t-fill, rgba(244,234,218,.1)); border: 2px solid var(--t-line2, rgba(244,234,218,.3)); color: var(--t-text, var(--paper)); display: grid; place-items: center; padding: 0; }
 .menue-knopf { left: 34px; top: 26px; width: 66px; height: 66px; z-index: 60; }
 .menue-knopf svg { width: 30px; height: 30px; }
 .ton-knopf { right: 34px; top: 26px; width: 66px; height: 66px; z-index: 60; }
@@ -249,23 +422,26 @@ body[data-screen="tisch"] #tisch { display: block; }
 .gegner-box { left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; z-index: 35; }
 .gg { position: absolute; width: 240px; margin-left: -120px; margin-top: -74px; display: flex; flex-direction: column; align-items: center; gap: 4px; pointer-events: auto; cursor: pointer; }
 .gg .kopf { display: flex; align-items: center; gap: 12px; max-width: 100%; }
-.gg .ava { flex: none; width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; font: 800 25px var(--f-ui); color: var(--ink); border: 3px solid var(--paper); transition: box-shadow .3s; }
-.gg .name { font: 700 22px var(--f-ui); max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 2px 6px rgba(0,0,0,.5); }
-.gg .zahl { font: 800 16px var(--f-ui); background: var(--paper); color: var(--ink); border-radius: 20px; padding: 2px 10px; font-variation-settings: 'opsz' 12; }
+.gg .ava { flex: none; width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; font: 800 25px var(--f-ui); color: var(--ink); border: 3px solid var(--t-chip); transition: box-shadow .3s; }
+.gg .name { font: 700 22px var(--f-ui); max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--t-text); text-shadow: var(--t-schatten); }
+.gg .zahl { font: 800 16px var(--f-ui); background: var(--t-chip); color: var(--t-chip-fg); border-radius: 20px; padding: 2px 10px; font-variation-settings: 'opsz' 12; }
 .gg .faecher { position: relative; width: 200px; height: 100px; }
 .gg .faecher .karte { position: absolute; top: 4px; transform-origin: 50% 160%; box-shadow: 0 3px 6px rgba(0,0,0,.5); }
-.gg .faecher .mehr { position: absolute; right: -10px; bottom: 4px; font: 800 15px var(--f-ui); background: var(--ink); border: 2px solid var(--paper); border-radius: 14px; padding: 1px 8px; }
+.gg .faecher .mehr { position: absolute; right: -10px; bottom: 4px; font: 800 15px var(--f-ui); color: var(--paper); background: var(--ink); border: 2px solid var(--paper); border-radius: 14px; padding: 1px 8px; }
 .gg .marken { position: relative; z-index: 2; display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
 .gg .marken:empty { display: none; }
-.gg .marke { background: rgba(12,15,34,.7); color: var(--paper); border: 1.5px solid rgba(244,234,218,.3); font-size: 14px; }
+.gg .marke { background: var(--t-marke); color: var(--paper); border: 1.5px solid var(--t-marke-rand); font-size: 14px; }
 .gg .marke.mau { background: var(--pink); color: var(--ink); border-color: transparent; font: italic 900 15px var(--f-brand); }
 .gg .marke.platz { background: var(--gold); color: var(--ink); border-color: transparent; }
 .gg .marke.weg { background: #5A1E2A; color: #FFD0D4; }
 .gg .marke svg { width: 14px; height: 14px; }
 .gg.dran .ava { box-shadow: 0 0 0 5px var(--gold), 0 0 24px rgba(255,214,90,.75); animation: dranPuls 1.2s ease-in-out infinite; }
-.gg.dran .name { color: #FFE9A8; }
-.gg.weg { opacity: .55; }
+.gg.dran .name { color: var(--t-zug); }
+/* getrennt: Bild und Fächer blassen aus, Schrift bleibt lesbar (Nebentext-Farbe, ≥ 4,5:1 bei Tag und Nacht), Marke voll */
+.gg.weg .ava, .gg.weg .faecher { opacity: .5; }
 .gg.weg .ava { filter: grayscale(1); }
+.gg.weg .name { color: var(--t-muted); }
+.gg.weg .zahl { background: var(--t-muted); }
 .gg .erwischen { display: none; position: relative; margin-top: 2px; background: var(--rot); color: #fff; font: 800 19px var(--f-ui); padding: 8px 16px; border-radius: 22px; border: 3px solid var(--cream); box-shadow: 0 0 22px rgba(255,77,87,.8); z-index: 2; }
 .gg.fangbar .erwischen { display: block; animation: schubs 1s ease-in-out infinite; }
 .gg.kompakt { width: 180px; margin-left: -90px; margin-top: -56px; }
@@ -277,19 +453,23 @@ body[data-screen="tisch"] #tisch { display: block; }
 
 /* Farbwahl um die Ablage */
 .farbwahl { width: 0; height: 0; z-index: 400; }
-.farbwahl .schleier { position: absolute; left: -4000px; top: -4000px; width: 8000px; height: 8000px; background: rgba(5,6,15,.6); }
+/* Schleier: am Tag ein heller Papierhauch (der Tisch bleibt hell wie in der App), nachts abgedunkelt wie bisher */
+.farbwahl .schleier { position: absolute; left: -4000px; top: -4000px; width: 8000px; height: 8000px; background: rgba(250,244,232,.42); }
+#tisch[data-seite="dunkel"] .farbwahl .schleier { background: rgba(5,6,15,.6); }
 .farbwahl .feld { position: absolute; width: 150px; height: 150px; transform: translate(-50%, -50%); border-radius: 28px; background: var(--f); border: 4px solid var(--cream);
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: var(--cream); box-shadow: 0 12px 28px rgba(0,0,0,.55); padding: 0; }
 .farbwahl .feld .sym { width: 58px; height: 58px; }
 .farbwahl .feld b { font: 800 23px var(--f-ui); }
 .farbwahl .feld i { font: 700 14px var(--f-ui); font-style: normal; opacity: .85; }
-.farbwahl .feld[data-farbe="gelb"], .farbwahl .feld[data-farbe="pink"] { color: var(--ink); }
+/* Druckfarbe auf hellen Feldern (Gelb, Grün, Pink: Creme hätte dort unter 4,5:1) */
+.farbwahl .feld[data-farbe="gelb"], .farbwahl .feld[data-farbe="gruen"], .farbwahl .feld[data-farbe="pink"] { color: var(--ink); }
 .farbwahl .f0 { left: -84px; top: -84px; } .farbwahl .f1 { left: 84px; top: -84px; } .farbwahl .f2 { left: -84px; top: 84px; } .farbwahl .f3 { left: 84px; top: 84px; }
 .farbwahl.auf .feld { animation: auffaechern .3s cubic-bezier(.2,1.4,.4,1) both; }
 .farbwahl.auf .f1 { animation-delay: .03s; } .farbwahl.auf .f2 { animation-delay: .06s; } .farbwahl.auf .f3 { animation-delay: .09s; }
 @keyframes auffaechern { from { left: 0; top: 0; transform: translate(-50%,-50%) scale(.3); opacity: 0; } }
-.farbwahl .abbrechen { position: absolute; left: -32px; top: 176px; width: 64px; height: 64px; font-size: 26px; background: rgba(12,15,34,.8); }
-.farbwahl .frage { position: absolute; left: 0; top: -214px; transform: translateX(-50%); font: 800 30px var(--f-ui); white-space: nowrap; color: var(--cream); text-shadow: 0 2px 10px rgba(0,0,0,.6); }
+.farbwahl .abbrechen { position: absolute; left: -32px; top: 176px; width: 64px; height: 64px; font-size: 26px; background: rgba(12,15,34,.8); color: var(--paper); border-color: rgba(244,234,218,.3); }
+.farbwahl .frage { position: absolute; left: 0; top: -214px; transform: translateX(-50%); font: 800 30px var(--f-ui); white-space: nowrap; color: var(--ink); text-shadow: 0 1px 0 rgba(255,247,232,.9), 0 0 14px rgba(255,247,232,.95); }
+#tisch[data-seite="dunkel"] .farbwahl .frage { color: var(--cream); text-shadow: 0 2px 10px rgba(0,0,0,.6); }
 
 /* Flüge und Effekte */
 .flug { left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; z-index: 300; }
@@ -325,8 +505,10 @@ body[data-screen="tisch"] #tisch { display: block; }
 .mau-blase .ohr::after { content: ''; position: absolute; left: 5px; top: 5px; width: 13px; height: 13px; background: var(--pink); border-radius: 4px 0 0 0; }
 .mau-blase .ohr.l { left: calc(24% - 17px); }
 .mau-blase .ohr.r { right: calc(24% - 17px); }
-.mau-blase .stern { position: absolute; font: 900 24px/1 var(--f-ui); font-style: normal; color: var(--gold); text-shadow: 0 0 8px rgba(255,214,90,.9), 0 2px 0 var(--ink); transform: translate(-50%,-50%) scale(0);
+/* Sternchen am Tag in Druckfarbe (auf Papier sichtbar wie in der App), jedes dritte golden mit Druckfarben-Kontur; nachts Neon */
+.mau-blase .stern { position: absolute; font: 900 24px/1 var(--f-ui); font-style: normal; color: var(--ink); text-shadow: 0 0 6px rgba(255,214,90,.75), 0 1px 0 rgba(255,247,232,.8); transform: translate(-50%,-50%) scale(0);
   animation: sternFunkeln 1.5s calc(.25s + var(--i) * 140ms) ease-out infinite; }
+.mau-blase .stern:nth-child(3n) { color: var(--gold); -webkit-text-stroke: 1.5px var(--ink); text-shadow: 0 2px 0 var(--ink); }
 .mau-blase .ring { position: absolute; left: var(--ox); top: var(--oy); width: 64px; height: 64px; margin: -32px 0 0 -32px; border-radius: 50%; border: 4px solid var(--pink); opacity: 0;
   animation: schallring 1.3s ease-out infinite; }
 .mau-blase .ring.r2 { animation-delay: .43s; }
@@ -341,7 +523,7 @@ body[data-screen="tisch"] #tisch { display: block; }
 #tisch[data-seite="dunkel"] .mau-blase .schwanz, #tisch[data-seite="dunkel"] .mau-blase .ohr { border-color: var(--pink); }
 #tisch[data-seite="dunkel"] .mau-blase .ohr::after { background: #7CF5FF; }
 #tisch[data-seite="dunkel"] .mau-blase .ring { border-color: #7CF5FF; box-shadow: 0 0 12px #7CF5FF, inset 0 0 8px #7CF5FF; }
-#tisch[data-seite="dunkel"] .mau-blase .stern { color: #7CF5FF; text-shadow: 0 0 8px #7CF5FF, 0 0 16px rgba(124,245,255,.7); }
+#tisch[data-seite="dunkel"] .mau-blase .stern { color: #7CF5FF; -webkit-text-stroke: 0 transparent; text-shadow: 0 0 8px #7CF5FF, 0 0 16px rgba(124,245,255,.7); }
 /* Varianten: erst „Ein“ (fill both), dann eine Schleife ohne fill (sonst überdeckte sie das Ein während ihrer Verzögerung) */
 .mau-blase.v-plopp .koerper { animation: ploppEin .72s cubic-bezier(.3,.8,.4,1) both, ploppWackel 1.5s .72s ease-in-out infinite; }
 @keyframes ploppEin { 0% { transform: scale(0) rotate(-14deg); opacity: 0; } 25% { opacity: 1; } 42% { transform: scale(1.32) rotate(7deg); } 58% { transform: scale(.86) rotate(-6deg); }
@@ -400,6 +582,83 @@ body[data-screen="tisch"] #tisch { display: block; }
 @keyframes wendeAus { to { transform: scaleX(0); } }
 @keyframes wendeEin { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 
+/* ---------------- Hausregeln: Glücksspiel, Kartentausch, Farbe ablegen ---------------- */
+/* Glücksspiel-Automat in der Tischmitte (tisch.js): Kuppelknopf wie auf der Glücksspiel-Karte, Sockel mit vier Lampen und
+   Zahlenwerk 0–10. Tag = Papier, Nacht = Neon. .drueckbar: eigener Zug, Knopf frei; .dreht: Zahlenwerk läuft;
+   .treffer (1–10, rot) bzw. .niete (0, grün). Die Farbanzeige weicht so lange (#tisch.mit-automat). */
+.automat { width: 216px; height: 240px; transform: translate(-50%, -50%); z-index: 8; display: flex; flex-direction: column; align-items: center; pointer-events: none; }
+.automat > * { flex: none; }
+.automat .schild { position: relative; z-index: 2; margin-bottom: -8px; font: 800 16px/1.2 var(--f-ui); letter-spacing: .06em; text-transform: uppercase; color: var(--ink);
+  background: var(--gold); border: 3px solid var(--ink); border-radius: 13px; padding: 2px 12px; box-shadow: 0 4px 10px rgba(0,0,0,.35); }
+.automat .kuppel { position: relative; width: 156px; height: 88px; padding: 0; border: 5px solid var(--ink); border-bottom: 0; border-radius: 78px 78px 6px 6px / 88px 88px 6px 6px;
+  background: radial-gradient(ellipse 34% 30% at 34% 30%, rgba(255,255,255,.9), rgba(255,255,255,0) 70%), linear-gradient(180deg, #FFF7E8 0%, #EADCC1 90%);
+  color: var(--ink); display: grid; place-items: center; transform-origin: 50% 100%; transition: transform .12s, box-shadow .3s; pointer-events: auto; cursor: default; }
+.automat .kuppel:disabled { opacity: 1; }
+/* Nachtfarben der Kuppel als eigene Ebene: ein Verlauf lässt sich nicht überblenden, die Ebene wechselt beim Flip mit (.wechselt) */
+.automat .kuppel::before { content: ''; position: absolute; top: 0; right: 0; bottom: 0; left: 0; border-radius: 73px 73px 1px 1px / 83px 83px 6px 6px; opacity: 0; pointer-events: none;
+  background: radial-gradient(ellipse 34% 30% at 34% 30%, rgba(255,255,255,.5), rgba(255,255,255,0) 70%), linear-gradient(135deg, #FF9ECF 0%, #FF8A1F 30%, #19C6D4 65%, #8B6BFF 100%); }
+#tisch[data-seite="dunkel"] .automat .kuppel::before { opacity: 1; }
+.automat .frage { position: relative; margin-top: 14px; font: 900 36px/1 var(--f-ui); font-variation-settings: 'opsz' 12; text-shadow: 0 2px 0 rgba(255,255,255,.7); }
+.automat .sockel { position: relative; width: 198px; height: 66px; margin-top: -1px; display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--cream); border: 5px solid var(--ink); border-radius: 16px; box-shadow: 0 10px 22px rgba(0,0,0,.45); }
+.automat .lampe { width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--ink); background: var(--l); box-shadow: 0 0 6px var(--l); }
+.automat .l1 { --l: #FF4D57; } .automat .l2 { --l: #FFDD33; } .automat .l3 { --l: #43B05C; } .automat .l4 { --l: #4C7DFF; }
+.automat .fenster { width: 94px; height: 46px; overflow: hidden; border-radius: 9px; background: var(--cream); border: 3px solid var(--ink); box-shadow: inset 0 2px 6px rgba(33,27,44,.3); }
+.automat .walze { will-change: transform; }
+.automat .walze b { display: block; height: 46px; text-align: center; font: 800 36px/42px var(--f-ui); font-variation-settings: 'opsz' 12; color: var(--ink); text-shadow: none; }
+.automat .unter { margin-top: 10px; font: 800 19px var(--f-ui); color: var(--t-text); white-space: nowrap; text-shadow: 0 1px 0 rgba(255,247,232,.7); }
+#tisch[data-seite="dunkel"] .automat .unter { text-shadow: 0 2px 6px rgba(0,0,0,.65); }
+.automat.meins .unter { color: var(--t-zug-ich); }
+.automat.treffer .walze b { color: #C4172A; }
+.automat.niete .walze b { color: #1C7A36; }
+/* „Aufhören“ (hints.can_stop) unter dem Automaten */
+.automat .aufhoeren { margin-top: 8px; pointer-events: auto; font-size: 18px; padding: 7px 18px; }
+.automat .unter:empty { display: none; }
+.automat.drueckbar .kuppel { cursor: pointer; box-shadow: 0 0 0 6px rgba(255,214,90,.75), 0 0 34px rgba(255,214,90,.85); animation: kuppelPuls 1.05s ease-in-out infinite; }
+.automat .kuppel.druck { animation: kuppelDruck .32s ease !important; }
+.automat.dreht .lampe { animation: lampe .36s steps(2, jump-none) infinite; }
+.automat.dreht .l2 { animation-delay: .09s; } .automat.dreht .l3 { animation-delay: .18s; } .automat.dreht .l4 { animation-delay: .27s; }
+.automat.auf { animation: automatAuf .5s cubic-bezier(.2,1.4,.4,1) both; }
+.automat.zu { animation: automatZu .6s ease-in forwards; }
+#tisch.mit-automat .farbanzeige { opacity: 0; }
+.farbanzeige { transition: opacity .3s; }
+@keyframes kuppelPuls { 0%, 100% { box-shadow: 0 0 0 5px rgba(255,214,90,.6), 0 0 22px rgba(255,214,90,.6); } 50% { box-shadow: 0 0 0 10px rgba(255,214,90,.9), 0 0 44px rgba(255,214,90,.95); } }
+@keyframes kuppelDruck { 0% { transform: none; } 40% { transform: translateY(7px) scale(1.04, .86); } 100% { transform: none; } }
+@keyframes lampe { 0% { filter: brightness(.45); box-shadow: none; } 100% { filter: brightness(1.4); } }
+@keyframes automatAuf { from { transform: translate(-50%, -50%) scale(.3); opacity: 0; } to { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
+@keyframes automatZu { to { transform: translate(-50%, -50%) scale(.6); opacity: 0; } }
+/* nachts: Neon wie die dunkle Glücksspiel-Karte */
+#tisch[data-seite="dunkel"] .automat .schild { background: #170E36; color: #FFF2FB; border-color: var(--pink); box-shadow: 0 0 10px rgba(255,127,207,.7); }
+#tisch[data-seite="dunkel"] .automat .kuppel { border-color: var(--pink); color: #170E36; }
+#tisch[data-seite="dunkel"] .automat .frage { text-shadow: 0 2px 0 rgba(255,255,255,.35); }
+#tisch[data-seite="dunkel"] .automat .sockel { background: #170E36; border-color: var(--pink); box-shadow: 0 0 12px rgba(255,127,207,.65), 0 10px 22px rgba(0,0,0,.45); }
+#tisch[data-seite="dunkel"] .automat .lampe { border-color: #170E36; }
+#tisch[data-seite="dunkel"] .automat .l1 { --l: #FF9ECF; } #tisch[data-seite="dunkel"] .automat .l2 { --l: #19C6D4; }
+#tisch[data-seite="dunkel"] .automat .l3 { --l: #FF8A1F; } #tisch[data-seite="dunkel"] .automat .l4 { --l: #8B6BFF; }
+#tisch[data-seite="dunkel"] .automat .fenster { border-color: var(--pink); background: #0A0D20; box-shadow: inset 0 0 14px rgba(124,245,255,.28); }
+#tisch[data-seite="dunkel"] .automat .walze b { color: #7CF5FF; text-shadow: 0 0 8px rgba(124,245,255,.85); }
+#tisch[data-seite="dunkel"] .automat.treffer .walze b { color: #FF6B73; text-shadow: 0 0 10px rgba(255,77,87,.95); }
+#tisch[data-seite="dunkel"] .automat.niete .walze b { color: #6CF08A; text-shadow: 0 0 10px rgba(79,211,110,.95); }
+/* verdeckter Einsatzstapel mit Zähler am Platz des Glücksspielers */
+.einsatz { transform: translate(-50%, -50%); z-index: 7; display: flex; flex-direction: column; align-items: center; gap: 4px; pointer-events: none; }
+.einsatz .stapelchen { position: relative; }
+.einsatz .stapelchen .karte { position: absolute; box-shadow: 0 3px 7px rgba(0,0,0,.55); }
+.einsatz .zahl { position: absolute; right: -16px; top: -12px; z-index: 2; min-width: 32px; height: 32px; padding: 0 7px; border-radius: 16px; background: var(--gold); color: var(--ink);
+  border: 3px solid var(--ink); font: 800 18px/26px var(--f-ui); text-align: center; font-variation-settings: 'opsz' 12; }
+.einsatz .was { font: 800 14px/1.3 var(--f-ui); letter-spacing: .05em; text-transform: uppercase; color: var(--paper); background: rgba(12,15,34,.78); border: 1.5px solid rgba(244,234,218,.3); border-radius: 10px; padding: 1px 8px; }
+.einsatz.meins .zahl { min-width: 38px; height: 38px; border-radius: 19px; font-size: 21px; line-height: 32px; }
+.einsatz.neu .zahl { animation: puls .45s ease-out; }
+#tisch[data-seite="dunkel"] .einsatz .zahl { background: var(--pink); }
+.buehne.eng .einsatz .was { font-size: 17px; }
+.buehne.eng .automat .unter { font-size: 23px; }
+/* Kartentausch: Fächer der Mitspieler blenden aus, während die Hände wandern */
+.gg .faecher { transition: opacity .35s, transform .35s; }
+.gg.tauscht .faecher { opacity: .12; transform: scale(.82); }
+.banner.tausch b { text-shadow: 0 4px 0 var(--ink), 0 0 30px rgba(124,245,255,.95); }
+.banner.gluecks b { text-shadow: 0 4px 0 var(--ink), 0 0 30px rgba(255,214,90,.95); }
+body.reduziert .automat.drueckbar .kuppel, body.reduziert .automat.dreht .lampe { animation: none; }
+@media (prefers-reduced-motion: reduce) { .automat.drueckbar .kuppel, .automat.dreht .lampe { animation: none; } }
+
 /* ---------------- Fenster ---------------- */
 .modal { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; background: rgba(5,6,15,.62);
   padding: max(10px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); }
@@ -424,6 +683,7 @@ body[data-screen="tisch"] #tisch { display: block; }
 .runde-liste .pk, .runde-liste .ges { font-variation-settings: 'opsz' 12; }
 .runde-liste .ges { min-width: 54px; text-align: right; padding: 2px 8px; border-radius: 8px; background: var(--ink); color: var(--cream); }
 .menue-karte .zeile { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin: 10px 0; font-weight: 800; font-size: 18px; }
+.menue-karte .zeile > span small { display: block; font: 600 13px/1.2 var(--f-ui); opacity: .65; }
 .seg { display: flex; background: rgba(33,27,44,.08); border-radius: 14px; padding: 3px; }
 .seg button { border: 0; background: transparent; padding: 8px 14px; border-radius: 11px; font: 700 16px var(--f-ui); color: var(--ink); }
 .seg button.an { background: var(--ink); color: var(--cream); }
@@ -453,18 +713,21 @@ body.hoch[data-screen="tisch"] .quer { display: flex; }
 .toasts { position: fixed; left: 50%; top: max(10px, env(safe-area-inset-top)); transform: translateX(-50%); z-index: 2500; display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; width: max-content; max-width: 92vw; }
 .toast { background: var(--cream); color: var(--ink); font: 700 16px/1.3 var(--f-ui); padding: 10px 18px; border-radius: 22px; box-shadow: 0 8px 24px rgba(0,0,0,.45); text-align: center; animation: toastAuf .25s ease-out; transition: opacity .3s, transform .3s; }
 .toast.fehler { background: var(--rot); color: #fff; }
-.toast.leise { background: rgba(244,234,218,.92); }
+/* leise Hinweise: Druckfarbe mit Papierrand (deckend; auf dem Papiertisch hebt sich ein heller Hinweis nicht ab) */
+.toast.leise { background: rgba(255,247,232,.92); color: var(--ink); box-shadow: 0 8px 24px rgba(0,0,0,.45); }
+body.tag .toast.leise { background: rgba(33,27,44,.95); color: var(--cream); box-shadow: 0 0 0 2px rgba(244,234,218,.3), 0 8px 24px rgba(0,0,0,.4); }
 .toast.weg { opacity: 0; transform: translateY(-8px); }
 @keyframes toastAuf { from { opacity: 0; transform: translateY(-10px); } }
 #wach { position: fixed; left: 0; bottom: 0; width: 2px; height: 2px; opacity: .01; pointer-events: none; z-index: -1; }
 
 /* Effekte reduziert bzw. Kontrollbilder ohne Bewegung */
-body.reduziert .richtung .bahn, body.reduziert .stapel.ziehbar .oben, body.reduziert .gg.dran .ava, body.reduziert .mau-knopf.bereit, body.reduziert .gg.fangbar .erwischen { animation: none; }
-@media (prefers-reduced-motion: reduce) { .richtung .bahn, .quer .handy { animation: none; } }
+body.reduziert .richtung .w, body.reduziert .stapel.ziehbar .oben::after, body.reduziert .gg.dran .ava, body.reduziert .mau-knopf.bereit, body.reduziert .gg.fangbar .erwischen { animation: none; }
+@media (prefers-reduced-motion: reduce) { .richtung .w, .quer .handy { animation: none; } }
 body.ruhig *, body.ruhig *::before, body.ruhig *::after { animation: none !important; transition: none !important; }
 
 /* Flip-Welle: Schatten mit ausblenden, sonst bleiben dunkle Rechtecke stehen */
 .wende-aus, .wende-ein, .wende-aus .seite, .wende-ein .seite { box-shadow: none !important; }
+.wende-aus::after, .wende-ein::after { opacity: 0 !important; }
 /* ältere Safari ohne aspect-ratio */
 @supports not (aspect-ratio: 1 / 1) {
   .start-logo { height: calc(min(46vw, 520px) * 11 / 16); }

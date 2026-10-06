@@ -33,8 +33,11 @@ package com.godot.game;
 import org.godotengine.godot.Godot;
 import org.godotengine.godot.GodotActivity;
 
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.view.ViewGroup;
 
 import androidx.activity.EdgeToEdge;
 import androidx.core.splashscreen.SplashScreen;
@@ -63,7 +66,29 @@ public class GodotApp extends GodotActivity {
 			godot.enableEdgeToEdge(godot.isInEdgeToEdgeMode(), true);
 			godot.setSystemBarsAppearance();
 		}
+		if (getWindow() != null) {
+			disableFocusHighlight(getWindow().getDecorView());
+		}
 	};
+
+	// Mau-Mau Flip (Gerätetest 0.1.1, Nachtest 1, N5 „Grauschleier“): Eine Taste, die kein Bildschirmtipp ist (Enter einer Hardware-
+	// Tastatur, adb „input keyevent 66“), beendet den Touch-Modus des Fensters. Schließt Godot danach die Bildschirmtastatur, geht der
+	// Fokus zurück an die Spielfläche, und Android zeichnet über sie seine Standard-Fokusmarkierung: ein halbdurchsichtiges Grau über
+	// dem ganzen Bildschirm, das bis zum nächsten Fokuswechsel bleibt. Die App zeigt den Fokus selbst; diese Markierung ist hier aus.
+	private static void disableFocusHighlight(View view) {
+		if (view == null) {
+			return;
+		}
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+			view.setDefaultFocusHighlightEnabled(false);
+		}
+		if (view instanceof ViewGroup) {
+			ViewGroup group = (ViewGroup) view;
+			for (int i = 0; i < group.getChildCount(); i++) {
+				disableFocusHighlight(group.getChildAt(i));
+			}
+		}
+	}
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {

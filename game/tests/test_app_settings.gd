@@ -19,6 +19,10 @@ func _init() -> void:
 		and s.get_value("sortierung") == "farbe" and s.get_value("beta") == beta_default and s.get_value("regeln") == {}
 		and s.get_value("letzte_namen") == [] and s.get_value("name") == "", "Standardwerte")
 	check(s.get_value("gibt_es_nicht", 7) == 7 and s.get_value("mau_ton", "aus") == "normal", "Vorgabe des Aufrufers nur für unbekannte Schlüssel")
+	check(s.get_value("regelsaetze") == [] and s.get_value("regeln_gastgeber") == {} and AppSettings.sanitize("regelsaetze", "x") == null
+		and AppSettings.sanitize("regeln_gastgeber", {"host": "Lena"}) == null, "Regelsätze und Gastgeber-Regeln: Standard leer, Prüfung (Einzelheiten: test_rule_sets)")
+	check(s.get_value("regelsatz_gewaehlt") == "" and AppSettings.sanitize("regelsatz_gewaehlt", 3) == null
+		and AppSettings.sanitize("regeln_gastgeber", {"host": "Lena", "regeln": {}}) == null, "zuletzt gewählter Satz: Standard leer; Gastgeber ohne Regeln ungültig")
 	check(not FileAccess.file_exists(path), "ohne Änderung keine Datei")
 	# Sofort gespeichert und beim nächsten Start wieder geladen; JSON-Zahlen kommen als float zurück.
 	check(s.set_value("mau_ton", "leise") and FileAccess.file_exists(path), "set_value speichert sofort")
@@ -47,6 +51,27 @@ func _init() -> void:
 	check(AppSettings.new(path).get_value("beta") == (not beta_default), "Beta-Kanal umgeschaltet und gespeichert")
 	t.reset("beta")
 	check(AppSettings.new(path).get_value("beta") == beta_default and not AppSettings.new(path).has_value("beta"), "reset: wieder Standardwert")
+	# „Spielbare Karten hervorheben“: persönliche Einstellung (bool, Standard an), Signal changed für den Tisch (HandView).
+	check(t.get_value("hervorheben") == true and AppSettings.defaults().get("hervorheben") == true and t.get_value("hervorheben", false) == true,
+		"hervorheben: Standard an (auch mit anderer Vorgabe des Aufrufers)")
+	var hl := []
+	var on_hl := func(key: String, value: Variant) -> void:
+		if key == "hervorheben":
+			hl.append(value)
+	t.changed.connect(on_hl)
+	check(t.set_value("hervorheben", false) and AppSettings.new(path).get_value("hervorheben") == false and hl == [false],
+		"hervorheben aus: gespeichert, Signal changed")
+	check(not t.set_value("hervorheben", "nein") and not t.set_value("hervorheben", 0) and t.get_value("hervorheben") == false and hl == [false],
+		"hervorheben: nur bool, Ablehnung ändert nichts")
+	t.set_value("hervorheben", true)
+	check(AppSettings.new(path).get_value("hervorheben") == true and hl == [false, true], "hervorheben wieder an")
+	t.changed.disconnect(on_hl)
+	var hf := FileAccess.open(path + ".hl", FileAccess.WRITE)
+	hf.store_string(JSON.stringify({"version": 1, "hervorheben": "ja"}))
+	hf.close()
+	check(AppSettings.new(path + ".hl").get_value("hervorheben") == true and not AppSettings.new(path + ".hl").has_value("hervorheben"),
+		"hervorheben: ungültiger Eintrag in der Datei → Standard an")
+	DirAccess.remove_absolute(path + ".hl")
 	# Mehrere Werte, ein Speichervorgang; Signal je Schlüssel.
 	var seen := []
 	t.changed.connect(func(key: String, _value: Variant) -> void: seen.append(key))

@@ -77,6 +77,7 @@ Erwartete Fehlpfade melden sich deshalb als `WARNING`, z. B. `MauGame.create` mi
 | Mau für alle | `test_ui_mau` (Ton bei jedem Ereignis, Sprechblasen-Varianten, Entprellung) | 73 |
 | F2 Bildschirme | `test_screens_flow` | 46 |
 | E Browser-Vertrag | `test_web_contract` (Sichten, Ereignisse, Aktionen, Auslieferung, `sfx/index.json`, Mau-Blasen im Browser) | 174 |
+| Gerätetest-Nachbesserung | `test_screens_device_fixes` (Lobby → Tisch mit echtem Server und App-Gast, Zurück-Taste doppelt/gehalten, Wischen über Karten und Knöpfe, „Bereit“ sichtbar, Hintergrund-Zwischenbild) | 53 |
 
 Dauer des Laufs: etwa 8 Minuten, davon 4¾ Minuten `test_rules_bots_long` und knapp 1 Minute `test_rules_views_long`. Ausgaben ohne `ERROR:` und ohne „resources still in use“. Erwartete `WARNING`-Zeilen gibt es nur in `test_app_settings` (abgelehnte Werte) und `test_rules_play` (ungültige Spielerzahl).
 
@@ -85,6 +86,16 @@ Am 05.10. behoben, damit alle Läufe grün sind:
 - `test_screens_flow`, `test_ui_table_smoke`, `test_ui_table_view`: sauberes Beenden über `clean_exit.gd`. Ursache war ein beim `quit()` noch laufender Ton (Sieg, Flip).
 - `test_web_contract`, `test_app_sound`: `webclient/sfx/index.json` gibt es jetzt verbindlich. Es nennt mindestens `mau` und `mau_mau`, und jede genannte Datei liegt vor.
 - `test_app_services`, `test_app_sound`, `test_screens_flow`: an die Nutzerentscheidungen 20/21 angepasst. Dazu gehören Mau-Lautstärke −2/−12 dB, Spieltöne ab Werk aus, keine Gerätesperre mehr und Entprellung je Platz.
+
+Nachbesserung nach dem Gerätetest (06.10., `docs/geraetetest/0.1.1/BERICHT.md`, Abschnitt „Nachbesserung“):
+- **H1, WLAN-Start:** `NetServer`, `NetHostSession`, `NetDiscovery` und `NetClient` stoppen nicht mehr in `_exit_tree`. Das löste auch das Umhängen der Spielsteuerung von der Lobby an den Tisch aus. Jetzt stoppen sie erst, wenn sie am Ende des Frames noch draußen sind, oder beim Freigeben (`NOTIFICATION_PREDELETE`).
+- **M1, Zurück-Taste:** Android meldet einen Druck als `KEY_BACK` und 1 ms später als `NOTIFICATION_WM_GO_BACK_REQUEST`, beim Halten wiederholt. `ScreenNav.back_pressed()` fasst Meldungen im gleitenden Fenster von 650 ms zusammen. Eine offene Lobby-Rückfrage schließt mit Zurück.
+- **M2, Wischen:** `ScreenKit.scroller()` liefert `ScreenKit.TouchScroll`. Karten, Zeilen und Knöpfe darin reichen die Geste weiter (`MOUSE_FILTER_PASS`), die Totzone beträgt 14 px.
+- **M3, Bildrate:**
+  - `TableBackground` rechnet den Shader in ein Zwischenbild in Basisauflösung, 20-mal pro Sekunde und bei Änderungen sofort.
+  - Mobil gilt `Engine.max_fps = 60` (`App.MOBILE_MAX_FPS`).
+  - Messung im Ruhezustand: `tests/perf_table.gd` (mit Renderer, kein Test).
+- **N1:** Der Regeltext in der Gast-Lobby blättert für sich, „Bereit“ bleibt sichtbar.
 
 **Weitere Prüfungen außerhalb des Testlaufs**
 - **Kontrollbilder** mit echtem Renderer (`tools/godot_run.ps1` ohne `-Headless`):
@@ -98,7 +109,7 @@ Am 05.10. behoben, damit alle Läufe grün sind:
 
 ## Bekannte offene Punkte
 
-- **Gerätetest im WLAN** mit S21 als Gastgeber, S10 per App und Chrome steht aus; ebenso iPhone-Gäste (über Freunde bzw. Cloud-Geräte). Die Gerätetests liefen bisher über `adb reverse`.
+- **Gerätetest im WLAN:** Der erste Gerätetest vom 05.10. fand H1, M1–M3 und N1/N2; siehe Nachbesserung oben und `docs/geraetetest/0.1.1/BERICHT.md`. iPhone-Gäste stehen aus (über Freunde bzw. Cloud-Geräte).
 - **„Partie fortsetzen“** fehlt in der Oberfläche. Speicherstand und `resume()` sind in Modul G fertig und getestet.
 - **Hörtest am Handy** für die aufbereiteten Mau-Aufnahmen und die Spieltöne steht aus.
 - **Nicht in 0.1.1** (Plan Abschnitt 1, „Später“): Godot-Web-Client, Spiel-WLAN per LocalOnlyHotspot mit WLAN-QR, automatisches „Update vom Gastgeber“, Reinwerfen und 7-Tausch, „Rückseiten wie am echten Tisch“, Musik.

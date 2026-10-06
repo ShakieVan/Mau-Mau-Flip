@@ -28,10 +28,17 @@ Mau-Mau mit Wendekarten für Android. Jede Karte hat eine **helle Seite** (Rot, 
 - **Sortieren:** Farbe, Wert, Punkte oder von Hand (Karte halten und seitlich ziehen).
 - **Rückseiten:** Knopf gedrückt halten, um die eigenen Rückseiten zu sehen. Tipp auf die Karten eines Mitspielers zeigt dessen Rückseiten groß.
 - **„Mau!“** rufen, wenn man nur noch eine Karte hat – sonst können die anderen „Erwischt!“ drücken.
+- **Spielbare Karten hervorheben** lässt sich in den Einstellungen abschalten – nur für das eigene Gerät.
 
 ## Regeln und Hausregeln
 
-Voreinstellungen „Offiziell“, „Familie“, „Mau-Mau-Tradition“ und „Klassisch 500“; dazu lassen sich einzeln einstellen: bis zum Letzten spielen, Ziehkarten stapeln, Bluff mit Anzweifeln oder von der App erzwungen, Ziehen bis spielbar, Mau-Ansage (Erwischen, automatisch, nur Erinnerung), Rückseiten der Mitspieler sichtbar oder verdeckt, Punkte bis 500.
+Voreinstellungen „Offiziell“, „Familie“, „Mau-Mau-Tradition“ und „Klassisch 500“; dazu lassen sich einzeln einstellen: bis zum Letzten spielen, Ziehkarten stapeln, nach dem Strafziehen weiterspielen, Bluff mit Anzweifeln oder von der App erzwungen, Ziehen bis spielbar, Mau-Ansage (Erwischen, automatisch, nur Erinnerung), Rückseiten der Mitspieler sichtbar oder verdeckt, Punkte bis 500. Eigene Einstellungen lassen sich unter einem Namen speichern; App-Mitspieler merken sich die Regeln des Gastgebers und können damit selbst ein Spiel eröffnen.
+
+### Zusatzkarten (Hausregeln)
+
+- **Kartentausch:** Alle geben ihre ganze Hand an den Nachbarn weiter – im Uhrzeigersinn oder in Spielrichtung. In „Familie“ an.
+- **Glücksspiel:** Joker mit Glücksspielknopf. Wer ihn legt, setzt reihum eine Karte verdeckt und drückt den Knopf. Nach jeder Niete heißt es: noch eine Karte riskieren oder aufhören? Wer aufhört, wird den Einsatz los; ein Treffer bringt 1–10 Karten und den Einsatz zurück auf die Hand.
+- **Farbe mit ablegen:** Alle eigenen Karten dieser Farbe kommen mit auf die Ablage (als Joker: Farbe wählen). Mitabgelegte Aktionskarten wirken nicht.
 
 ## Selbst bauen
 
@@ -49,7 +56,7 @@ Android benötigt zusätzlich JDK 17, das Android-SDK und den Signaturschlüssel
 - [Bauplan der Beta](docs/BETA1_PLAN.md) und [Module](docs/module/)
 - [Recherche](docs/recherche/README.md): Regeln, Netz ohne Internet, Browser-Gäste, Hand und Effekte
 - [Gestaltung „Papier & Neon“](art/entwurf/a-papier-neon/README.md)
-- [Mau-Ton und Katzen](audio/entwurf/mau/README.md)
+- [Mau-Ton und Katzen](audio/entwurf/mau/README.md), [Spieltöne](audio/sfx_README.md)
 
 ## Herkunft und Lizenzen
 
@@ -59,4 +66,5 @@ Mau-Mau Flip steht unter **[CC BY-NC 4.0](LICENSE)**: Teilen und Verändern mit 
 - **Engine:** [Godot Engine](https://godotengine.org) (MIT).
 - **Schriften:** Bricolage Grotesque und Fraunces (SIL Open Font License 1.1), `game/assets/fonts/OFL.txt`.
 - **Katze in Logo und App-Symbol:** KI-Illustration, vom Autor erzeugt.
-- **Töne:** synthetisch mit eigenen Skripten erzeugt (`tools/make_mau_sounds.py`, `tools/make_sfx.py`).
+- **„Mau!“ und „Mau-Mau!“:** Aufnahmen des Autors, aufbereitet mit `tools/make_mau_aufnahmen.sh`.
+- **Spieltöne:** KI-erzeugt mit [MOSS-SoundEffect v2.0](https://huggingface.co/OpenMOSS-Team/MOSS-SoundEffect-v2.0) (Apache 2.0), nachbearbeitet mit `tools/make_sfx_moss.py`; Einzelheiten in `audio/sfx_README.md`.

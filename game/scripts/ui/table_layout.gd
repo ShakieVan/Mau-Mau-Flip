@@ -50,6 +50,11 @@ static func hand_pos(size: Vector2) -> Vector2:
 	return Vector2(size.x * 0.5, size.y - 90.0)
 
 
+# Eigener Einsatzstapel im Glücksspiel: vor der Hand links, zwischen den Knöpfen und dem Hinweis (Mitte der untersten Karte)
+static func own_stake_pos(size: Vector2) -> Vector2:
+	return Vector2(clampf(size.x * 0.5 - 505.0, 235.0, size.x * 0.5 - 200.0), size.y - 268.0)
+
+
 static func seat_radii(size: Vector2, n: int) -> Vector2:
 	var margin := 150.0 if not compact(n) else 115.0
 	return Vector2(size.x * 0.5 - margin, size.y * 0.445 - (62.0 if not compact(n) else 66.0))

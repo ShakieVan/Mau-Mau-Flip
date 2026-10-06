@@ -22,3 +22,18 @@ game/android/build/src/release/
 
 # Browser-Client als Archiv: erzeugt tools/build.ps1 (-Target Web, auch vor Test/Windows/Android) aus webclient/
 game/assets/web.zip
+
+# Bildschirmfotos echter Handys aus den Gerätetests: zeigen Gerätenamen und Statusleisten – nur lokal, die Berichte selbst sind im Repo
+docs/geraetetest/**/*.jpg
+docs/geraetetest/**/*.png
+
+# KI-Ton-Kandidaten (groß, nur zum Auswählen): Rohfassungen, Spektrogramme, Kandidaten – im Repo bleiben README, Favoriten und Skripte
+audio/sfx_ki/roh/
+audio/sfx_ki/spektrogramme/
+audio/sfx_ki/*.wav
+audio/sfx_ki/*.ogg
+audio/sfx_ki/*.m4a
+tools/__pycache__/
+
+# Recherche-Originale mit Quellen-Links, die den Namen des Originalspiels enthalten (AGENTS.md 2) – nur lokal
+docs/recherche/_lokal/

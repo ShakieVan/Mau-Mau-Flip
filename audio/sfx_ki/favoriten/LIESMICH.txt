@@ -1,0 +1,12 @@
+Favoriten je Ton (Kopien der Kandidaten, ungefiltert bis 12 kHz). Herkunft: KI-erzeugt mit MOSS-SoundEffect
+v2.0, Apache 2.0. Die Fassungen im Spiel (gefiltert, Katzen-Leitplanke) liegen in ../spiel/.
+Von niemandem im Team gehört. Auswahl und Gründe: ../README.md und ../hoeren.html
+
+karte: karte_02
+ziehen: ziehen_07
+mischen: mischen_06
+flip: flip_02
+dran: dran_04
+fehler: fehler_09
+sieg: sieg_03
+stapel: stapel_02

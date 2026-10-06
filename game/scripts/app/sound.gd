@@ -12,18 +12,20 @@ extends Node
 #     Handy-Lautsprecher ausgesteuert (Spitze -1 dBTP, etwa -12/-10 LUFS); -2 dB lässt Luft, falls ein Spielton gleichzeitig klingt.
 #   - Die Töne spielen auf JEDEM Gerät am Tisch (Ereignis „mau“ bzw. „finish“). Doppelte Auslöser fängt der Aufrufer ab
 #     (MauSound: 1 s je Platz); hier gibt es keine Gerätesperre mehr.
-# Übrige Töne (synthetisch, tools/make_sfx.py): Einstellung „toene“ (aus | leise | normal, Standard aus → still; leise -16 dB,
-# normal -8 dB); mau_ton wirkt nicht auf sie. Derselbe Ton wird innerhalb von 40 ms nur einmal gestartet (z. B. mehrere Karten im
-# selben Bild).
+# Übrige Töne (KI-erzeugt mit MOSS-SoundEffect v2.0, tools/make_sfx_moss.py --spiel, audio/sfx_README.md): Einstellung „toene“
+# (aus | leise | normal, Standard aus → still; leise -12.5 dB, normal -4.5 dB); mau_ton wirkt nicht auf sie. Der Abgleich der Töne
+# untereinander steckt in den Dateien (karte dezent, dran und sieg am lautesten). Die Stufen liegen 2.5 dB bzw. 10.5 dB unter Mau
+# „normal“; im Browser-Client (webclient/ton.js STUFEN_SPIEL) entspricht das 0.75 bzw. 0.3 bei Mau 1.0, damit beide gleich klingen.
+# Derselbe Ton wird innerhalb von 40 ms nur einmal gestartet (z. B. mehrere Karten im selben Bild).
 
 const DIR := "res://assets/sfx/"
 const NAMES := ["mau", "mau_mau", "karte", "ziehen", "mischen", "flip", "sieg", "fehler", "dran"]
 const MAU_NAMES := ["mau", "mau_mau"]
 const MAU_DB := {"aus": -80.0, "leise": -12.0, "normal": -2.0}
-const TON_DB := {"aus": -80.0, "leise": -16.0, "normal": -8.0}
+const TON_DB := {"aus": -80.0, "leise": -12.5, "normal": -4.5}
 const MAU_TON_STANDARD := "normal"
 const TOENE_STANDARD := "aus"              # Spieltöne sind ab Werk aus (Nutzerwunsch 05.10.2026)
-const TRIM_DB := {}                        # Feinabgleich je Ton in dB (leer: Dateien sind schon abgeglichen, audio/sfx_README.md)
+const TRIM_DB := {}                        # Feinabgleich je Ton in dB (leer: Dateien sind abgeglichen, audio/sfx_README.md; der Browser kennt keinen)
 const RETRIGGER_MS := 40
 const VOICES := 6
 

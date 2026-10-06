@@ -96,7 +96,25 @@ func _process(_delta: float) -> void:
 		poll()
 
 func _exit_tree() -> void:
-	close()
+	# Umhängen (Beitreten → Tisch hängt ClientTable samt NetClient um) ist kein Ende: erst am Ende des Frames prüfen, ob der Knoten
+	# wirklich draußen ist (Gerätetest 0.1.1, H1).
+	_close_if_detached.call_deferred()
+
+func _close_if_detached() -> void:
+	if not is_inside_tree():
+		close()
+
+func _notification(what: int) -> void:
+	# Freigeben: Verbindung still schließen – keine Signale mehr an Knoten, die gerade mit abgebaut werden.
+	if what == NOTIFICATION_PREDELETE:
+		if _ws != null and _ws.get_ready_state() == WebSocketPeer.STATE_OPEN:
+			_ws.close(NetWs.CLOSE_NORMAL, "Verlassen")
+		_ws = null
+		_closing = null
+		_retry_at = -1
+		if state != "idle" and state != "closed":
+			NetAddresses.release("join")
+			state = "closed"
 
 func poll() -> void:
 	var now := Time.get_ticks_msec()

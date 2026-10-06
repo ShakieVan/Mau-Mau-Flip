@@ -18,6 +18,9 @@ extends Node2D
 # Der Tisch (Modul F1b/F2) setzt Karten, spielbare Karten und Ablage; Ausspielen ist optimistisch: Die Karte verlässt die Hand
 # sofort, cancel_play(id) holt sie zurück (Host lehnt ab), take_card(id) übergibt den Knoten an die Regie, set_cards ohne sie
 # blendet aus. Neue Runde (view.round) und Spielerwechsel (view.seat bzw. reset_for_player) räumen die Hand sofort.
+# Persönliche Einstellung „Spielbare Karten hervorheben“ (App.settings "hervorheben", Standard an, live über settings.changed;
+# AGENTS.md Nr. 24): aus = kein Rand, kein Leuchten, kein Anheben, kein Abdunkeln; jede Karte lässt sich hochziehen, eine
+# unpassende springt schüttelnd zurück (play_denied, keine Strafe). Gilt für jede Hand auf diesem Gerät, auch beim Weitergeben.
 
 signal play_requested(id: int, drop_global: Vector2)
 signal help_requested(id: int, face: String)
@@ -75,6 +78,8 @@ var haptics := true
 var reduced := false: set = set_reduced # Effektstufe „reduziert“: kein Glanzstreifen, keine Neigung, keine Bögen
 var night := -1.0: set = set_night      # −1 = automatisch nach der aktiven Seite (hell = Tag); sonst 0 = Tag … 1 = Nacht
 var color_rim := true                   # spielbare Karten mit Rand in der aktuellen Farbe (apply_view: view.color)
+var highlight := true: set = set_highlight   # persönliche Einstellung „Spielbare Karten hervorheben“ (App.settings "hervorheben")
+var show_playable := true: set = set_show_playable   # Tisch: aus, wenn ohnehin jede Karte geht (Einsatz im Glücksspiel)
 var accent := Color(0, 0, 0, 0)         # aktuelle Farbe für den Rand (Alpha 0 = Standardglühen)
 var clock_ms := -1.0                    # Testuhr (≥ 0 ersetzt Time.get_ticks_msec)
 var dp := DP                            # Pixel je dp für Gestenschwellen (aus der Bildschirmdichte)
@@ -164,6 +169,7 @@ func _ready() -> void:
 	dp = _compute_dp()
 	_gesture.dp = dp
 	reduced = UiApp.reduced_effects()
+	highlight = truthy(UiApp.setting("hervorheben", true))
 	var app := UiApp.app()
 	var st: Variant = app.get("settings") if app != null else null
 	if st is Object and (st as Object).has_signal("changed"):
@@ -183,6 +189,32 @@ func _notification(what: int) -> void:
 func _on_setting_changed(key: String, value: Variant) -> void:
 	if key == "effekte":
 		reduced = str(value) == "reduziert"
+	elif key == "hervorheben":
+		highlight = truthy(value)
+
+
+# Einstellungswert als Schalter (bool; zur Sicherheit auch „an“/„true“/1 aus JSON)
+static func truthy(v: Variant) -> bool:
+	if v is bool:
+		return v
+	if v is int or v is float:
+		return v != 0
+	return str(v).to_lower() in ["true", "an", "ja", "1"]
+
+
+# „Spielbare Karten hervorheben“ aus: kein Rand, kein Leuchten, kein Anheben, kein Abdunkeln. Ausspielen bleibt geprüft: Eine
+# unpassende Karte lässt sich trotzdem hochziehen und loslassen; sie springt mit kurzem Schütteln zurück (play_denied).
+func set_highlight(on: bool) -> void:
+	highlight = on
+
+
+func set_show_playable(on: bool) -> void:
+	show_playable = on
+
+
+# Spielbare Karten sichtbar markieren?
+func marks_playable() -> bool:
+	return highlight and show_playable
 
 
 # ---------------------------------------------------------------- Schnittstelle
@@ -862,10 +894,11 @@ func _end_play_drag(played: bool) -> void:
 	drag_ended.emit(id, g, ok)
 
 
-# Scharf = Loslassen spielt aus (nur spielbare Karten; nicht spielbare würden abgelehnt).
+# Scharf = Loslassen spielt aus (nur spielbare Karten; nicht spielbare würden abgelehnt). Ohne Hervorheben verrät auch das
+# Geisterbild nichts: Jede Karte wird scharf, eine unpassende springt beim Loslassen schüttelnd zurück.
 func _update_armed() -> void:
 	var on := _drag_kind == "play" and _drag_id != -1 and _gesture.play_armed and not _peek \
-		and (not enforce_playable or _playable.has(_drag_id))
+		and (not enforce_playable or not highlight or _playable.has(_drag_id))
 	_set_armed(_drag_id if on else -1)
 
 
@@ -1074,6 +1107,7 @@ func _update_cards(dt: float) -> void:
 	var size := layout_rect.size
 	var xfs := HandLayout.layout(n, _scroll, _focus if _drag_id == -1 else -1.0, _mode, size.x, size.y, _gaps)
 	var any_playable := false
+	var marks := marks_playable()
 	for id in _order:
 		if _playable.has(id):
 			any_playable = true
@@ -1088,7 +1122,7 @@ func _update_cards(dt: float) -> void:
 		var rot := xf.get_rotation()
 		var scl := xf.get_scale().x
 		var lift := 0.0
-		if _playable.has(s.id) and not _peek:
+		if marks and _playable.has(s.id) and not _peek:
 			lift += LIFT_PLAYABLE
 		if s.id == _selected:
 			lift += LIFT_SELECTED
@@ -1131,14 +1165,14 @@ func _update_cards(dt: float) -> void:
 				key = n * 2 + 2
 			if s.id == _selected:
 				elev = 0.6
-			elif _playable.has(s.id):
+			elif marks and _playable.has(s.id):
 				elev = 0.25
 		s.target = t
 		s.has_target = true
 		s.key = key
 		_spring_slot(s, t, omega, zeta, dt)
 		var shade := HandLayout.shade(n, _scroll, _mode, i)
-		if dim_unplayable and any_playable and not _playable.has(s.id) and not _peek and s.id != _big_id:
+		if marks and dim_unplayable and any_playable and not _playable.has(s.id) and not _peek and s.id != _big_id:
 			shade *= 0.92 if is_day else 0.84
 		s.view.day = is_day
 		s.view.playable_tint = accent
@@ -1170,7 +1204,7 @@ func _apply_view(s: Slot, shade: float, elev: float) -> void:
 	var st := CardView.State.NORMAL
 	if s.id == _selected or (s.id == _drag_id and _drag_kind == "play" and _gesture.play_armed):
 		st = CardView.State.SELECTED
-	elif _playable.has(s.id) and not _peek:
+	elif _playable.has(s.id) and not _peek and marks_playable():
 		st = CardView.State.PLAYABLE
 	if v.state != st:
 		v.state = st

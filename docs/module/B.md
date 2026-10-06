@@ -2,7 +2,101 @@
 
 Stand 04.10.2026, Nachtschicht, nach der Nachbesserung (siehe unten). Alle Teilaufgaben sind erledigt. Ein Aufruf baut alles neu: `bash tools/cards/build_cards.sh` (etwa 30 s). Zwei Läufe hintereinander liefern byte-gleiche Dateien.
 
-Kontrollbogen aller 109 Bilder: `docs/module/B_kartenbogen.png`
+Kontrollbogen aller 129 Bilder (128 Gesichter + Rückseite): `docs/module/B_kartenbogen.png`; nur Kartentausch: `docs/module/B_kartentausch.png`; nur Glücksspiel und Farbe ablegen: `docs/module/B_neue_karten.png`
+
+## Glücksspiel und Farbe ablegen (Hausregeln, 05.10.2026)
+
+Für die Hausregeln `gamble_cards = "on"` (+2 Karten) und `discard_color = "on"` (+6 Karten, siehe `docs/module/A.md`) gibt es 12 neue Gesichter. Die Schlüssel stimmen mit `CardDB.gamble_keys()` und `CardDB.discard_keys()` überein:
+
+- Glücksspiel (Joker): `hell_gluecksspiel`, `dunkel_gluecksspiel`
+- Farbe ablegen: `hell_rot_ablegen`, `hell_gelb_ablegen`, `hell_gruen_ablegen`, `hell_blau_ablegen`, `dunkel_pink_ablegen`, `dunkel_tuerkis_ablegen`, `dunkel_orange_ablegen`, `dunkel_lila_ablegen`
+- Ablegen-Joker: `hell_ablegen_joker`, `dunkel_ablegen_joker`
+
+Kontrollbogen: `docs/module/B_neue_karten.png`. Er zeigt
+- jede farbige Ablegen-Karte neben +1 bzw. +5 und dem Kartentausch derselben Farbe,
+- die beiden Joker neben Wünscher und Wünscher +2 bzw. Farbjagd,
+- alle 12 in Originalgröße
+- und je eine Hand, in der nur der obere Kartenteil sichtbar ist (150 und 100 px breit).
+
+**Glücksspiel** (bunter Joker wie der Wünscher; eigener Entwurf):
+
+- Ein großer runder Glücksspielknopf mit Fragezeichen auf einem flachen Sockel. Vorn auf dem Sockel sitzt das Zahlenwerk „0–10“ zwischen vier Lampen in den vier Farben der Seite, daneben Glücksfunkel.
+- Hell: Knopf in Druckfarbe mit Glanz, Sockel in Creme, Ziffern gelb auf Druckfarbe, Hintergrund der Sonnenkranz des Jokers. Dunkel: Knopf im Regenbogenverlauf der dunklen Joker-Kontur, Ziffern türkis.
+- Eckindex: Knopf mit Fragezeichen, Sockel und zwei Funkel, ohne Zahlenwerk und Lampen; darunter die bunte Pfote wie bei Wünscher +2 und Farbjagd.
+- Abgrenzung: Der Wünscher zeigt die Pfote, die Farbjagd ein „?“ als Wert. Eine erste Fassung mit Drückstrichen über einer hohen Kuppel sah im Index wie eine Alarmsirene aus; deshalb ist die Kuppel jetzt flach und statt der Striche gibt es Funkel.
+
+**Farbe ablegen** (Aktionskarte, eigener Entwurf):
+
+- Ein flacher Handfächer aus fünf Karten, aus dem die zweite und vierte Karte nach unten herausrutschen. Die Lücke im Fächer zeigt Bewegungsstriche, darunter steht ein kräftiger Pfeil nach unten auf den Ablagestapel.
+- Die abrutschenden Karten tragen die tiefe Kartenfarbe mit dem Farbsymbol (hell) bzw. gedämpftes Neon mit Symbol (dunkel). Die übrigen Handkarten sind neutral (hell ein Grauton, dunkel gedämpft), damit klar ist: nur diese Farbe geht.
+- Joker: dieselbe Zeichnung, die abrutschenden Karten haben vier Farbstreifen. Hintergrund und Kontur sind die des Wünschers (Sonnenkranz bzw. Regenbogen).
+- Eckindex: drei Karten, die äußeren als Umriss, die mittlere voll (beim Joker mit Farbstreifen) nach unten verschoben, darunter der Pfeil.
+- Abgrenzung:
+  - +1/+5: drei große Karten hinter der Zahl, der Index zeigt die Zahl
+  - Kartentausch: drei Karten im Kreis mit Bogenpfeilen
+  - Richtungswechsel: gestreifte Bogenpfeile
+  - Flip: geteilte Scheibe
+  - Nur die Ablegen-Karte hat einen geraden Pfeil nach unten.
+- Rahmen, Index-Laschen, Farbsymbole, Spiegelungen und Papierkorn sind dieselben wie bei allen anderen Karten derselben Seite.
+
+**Bau:**
+
+- Die 12 Gesichter liegen auf einem dritten Bogen `zusatz` (Grund wie beim Kartentausch: Chrome rastert die Glut kachelweise). `bash tools/cards/build_cards.sh` erzeugt alle 128 Gesichter und die Rückseite. Der Schritt `zusatzbogen` erzeugt den Kontrollbogen.
+- `mmf.js`: `gluecksPrims()`, `ablegenPrims()`, `ablegenCard()`, Typen `gluecks`, `ablegen`, `ablegenj` in `TYPE_NAMES` und `ICON_OF`. Neu sind außerdem Schrift im Symbol (`kind: 'text'`) und Formen ohne Kontur (`nosil`) in `renderPrims()`, alles rein additiv.
+- Geprüft per SHA-256:
+  - alle 117 alten PNG und alle 125 alten WebP (117 Karten, 8 Farbsymbole) byte-gleich
+  - Bediensymbole, App-Symbole, Logo, Startbild, Schriften und `B_kartentausch.png` nach vollem Neubau unverändert
+  - die 20 Entwurfs-SVGs, `logo.svg` und `icon.svg` aus `art/entwurf/a-papier-neon/` entstehen mit dem erweiterten `mmf.js` byte-gleich
+  - ein zweiter Lauf: 129 von 129 byte-gleich
+- Import: `.import` wie bei den anderen Karten (WebP verlustbehaftet 0,9, Mipmaps), vor dem ersten Import angelegt. Zusammen etwa 0,5 MB in der APK, WebP 116 KB.
+- Verlustbehafteter Import der neuen Karten mindestens 35,4 dB gegen das Quellbild (`hell_gelb_ablegen`). WebP gegen PNG wie bei den Nachbarkarten: hell etwa 28 dB, dunkel 34–36 dB.
+
+**Test:** `test_b_assets.gd` prüft jetzt alle 129 Bilder (128 Gesichter + Rückseite). Erledigt ist damit auch der offene Punkt aus dem Kartentausch (der Test prüfte bisher nur 109).
+- Die Schlüssel kommen aus einer eigenen Liste. Der Vertrag mit Modul A gleicht sie ab mit
+  - `CardDB.all_keys()` (108),
+  - `CardDB.all_keys(true)` (128),
+  - `swap_keys()` (8), `gamble_keys()` (2) und `discard_keys()` (10).
+- Das Regelwerk liefert bereits alle Varianten; eine Abweichung meldet der Test getrennt nach „ohne Bild“ und „ohne Karte im Regelwerk“.
+- Alle Zusatzkarten (20) gehen zusätzlich in die Stichprobe des verlustbehafteten Imports.
+- Ergebnis: **RESULT: 125 ok**.
+
+**Hinweis an Oberfläche und Browser-Client:** Die Bilder liegen unter den Schlüsseln aus `CardDB.face_key()`, also ohne Sonderfälle. Das Ablegen-Symbol zeigt immer zwei abrutschende Karten; wie viele tatsächlich mitgehen, steht im Ereignis `discard_color` (`count`, `faces`).
+
+## Kartentausch (Hausregel, 05.10.2026)
+
+Für die Hausregel `swap_cards = "on"` (Deck 116, siehe `docs/module/A.md`) gibt es 8 neue Gesichter:
+
+- `hell_rot_tausch`, `hell_gelb_tausch`, `hell_gruen_tausch`, `hell_blau_tausch`
+- `dunkel_pink_tausch`, `dunkel_tuerkis_tausch`, `dunkel_orange_tausch`, `dunkel_lila_tausch`
+
+Kontrollbogen: `docs/module/B_kartentausch.png`. Er zeigt jede neue Karte zwischen Richtungswechsel und Flip derselben Farbe, alle 8 in Originalgröße und je eine Hand, in der nur der obere Kartenteil sichtbar ist (Karten 150 und 100 px breit).
+
+**Symbol** (eigener Entwurf):
+
+- Drei aufrechte kleine Karten im Dreieck wie drei Plätze am Tisch. Dazwischen drei kräftige Bogenpfeile im Uhrzeigersinn: Jeder gibt seine Hand an den nächsten Platz.
+- Abgrenzung:
+  - Richtungswechsel: zwei gestreifte Bogenpfeile ohne Inhalt
+  - Flip: geteilte Scheibe
+  - Alle aussetzen: drei Katzenköpfe, zwei oben und einer unten; beim Kartentausch steht eine Karte oben, zwei unten.
+- Im Eckindex dasselbe Symbol in klein. Die Karten sind dort voll in der Wertfarbe und durch einen schmalen Rand in Papier- bzw. Nachtfarbe von den Pfeilen getrennt.
+- Groß haben die kleinen Karten ein Innenfeld in der tiefen Kartenfarbe (hell) bzw. in gedämpftem Neon (dunkel). Die Pfeile sind ungestreift.
+- Rahmen, Index-Laschen, Farbsymbole, Spiegelungen und Papierkorn sind dieselben wie bei allen anderen Aktionskarten.
+- Die Pfeile zeigen immer im Uhrzeigersinn (Standard `swap_direction = "clockwise"`). Bei `"play"` steht die tatsächliche Richtung im Ereignis `swap_hands` (`dir`); die Oberfläche sollte sie beim Tausch zeigen (Hinweis an Modul F bzw. E).
+
+**Bau:**
+
+- Ein Neubau (`bash tools/cards/build_cards.sh`) erzeugt alle 116 Gesichter und die Rückseite.
+- Die 8 neuen Gesichter liegen auf einem eigenen Bogen `tausch`. Im gemeinsamen Bogen hätte Chrome vier dunkle Lila-Karten um einzelne Farbstufen verändert (42–49 dB), weil es die Glut kachelweise rastert.
+- Kartenbilder gehen erst in einen Zwischenordner. Eine abweichende vorhandene Datei bleibt erhalten und wird gemeldet; nur `MMF_ERSETZEN=1` ersetzt sie.
+- Geprüft per SHA-256:
+  - alle 109 alten PNG und alle 117 alten WebP (109 Karten, 8 Farbsymbole) byte-gleich
+  - Bediensymbole, App-Symbole, Logo und Startbild nach Neubau unverändert
+  - die 20 Entwurfs-SVGs aus `art/entwurf/a-papier-neon/cards/` byte-gleich mit dem erweiterten `mmf.js`
+  - ein zweiter Lauf: 117 von 117 byte-gleich
+- Import: `.import` wie bei den anderen Karten (WebP verlustbehaftet 0,9, Mipmaps), zusammen etwa 0,3 MB in der APK. `test_b_assets.gd`: weiterhin 120 ok.
+- Die neuen Bilder haben je 300 × 466 bzw. 200 × 311 Pixel, transparente Ecken und eine deckende Mitte. WebP gegen PNG liegt so gut wie bei den Nachbarkarten (hell etwa 28 dB, dunkel 32–38 dB, gleiche Messung).
+
+**Erledigt** (mit Glücksspiel und Farbe ablegen, siehe oben): `test_b_assets.gd` prüft alle Bilder einschließlich der 8 Kartentausch-Gesichter gegen `CardDB.all_keys(true)`.
 
 ## Umgesetzt
 
@@ -76,7 +170,7 @@ Kontrollbogen aller 109 Bilder: `docs/module/B_kartenbogen.png`
 
 | Pfad | Inhalt |
 |---|---|
-| `res://assets/cards/<schlüssel>.png` | 108 Gesichter + `rueckseite`, 300 × 466, RGBA |
+| `res://assets/cards/<schlüssel>.png` | 108 Gesichter + `rueckseite`, 300 × 466, RGBA; dazu die 20 Gesichter der Hausregeln: `<seite>_<farbe>_tausch`, `<seite>_<farbe>_ablegen`, `<seite>_gluecksspiel`, `<seite>_ablegen_joker` |
 | `webclient/cards/<schlüssel>.webp` | dieselben, 200 × 311 |
 | `webclient/cards/farbe_<farbe>.webp` | Farbsymbole 96 × 96 |
 | `res://assets/fonts/BricolageGrotesque.ttf`, `Fraunces.ttf`, `Fraunces-Italic.ttf`, `OFL.txt` | Schriften |
@@ -110,15 +204,15 @@ Werte für Schriften in Godot über `FontVariation.variation_opentype`, Schlüss
 
 ## Tests
 
-**`game/tests/test_b_assets.gd`: RESULT: 120 ok** (headless, nach `tools/godot_import.ps1`, etwa 6 s). Geprüft wird:
+**`game/tests/test_b_assets.gd`: RESULT: 125 ok** (headless, nach `tools/godot_import.ps1`, etwa 6 s). Geprüft wird:
 
-- **Vertrag mit Modul A:** dieselben 108 Schlüssel wie `CardDB.all_keys()`, ohne `rueckseite`. Fehlt `card_db.gd`, wird der Abgleich übersprungen.
+- **Vertrag mit Modul A:** dieselben 108 Schlüssel wie `CardDB.all_keys()`, dieselben 128 wie `CardDB.all_keys(true)` und dieselben Gesichter je Hausregel wie `swap_keys()`, `gamble_keys()`, `discard_keys()`; ohne `rueckseite`. Fehlt `card_db.gd`, wird der Abgleich übersprungen.
 - **Kartenbilder:**
-  - alle 109 vorhanden, alle 300 × 466
+  - alle 129 vorhanden (108 Grundgesichter, 20 Gesichter der Hausregeln, Rückseite), alle 300 × 466
   - Ecken transparent, Rand und Mitte deckend
   - alle Bilder verschieden
   - hell mit Papierrand, dunkel mit Nachtrand
-  - Kartenfarbe aus dem Bild stimmt mit dem Schlüssel überein (104 farbige Karten)
+  - Kartenfarbe aus dem Bild stimmt mit dem Schlüssel überein (120 farbige Karten)
   - alle von Godot importiert
 - **Import:**
   - alle Karten mit `compress/mode=1`, Qualität 0,9 und Mipmaps
@@ -126,7 +220,7 @@ Werte für Schriften in Godot über `FontVariation.variation_opentype`, Schlüss
   - Stichprobe von 13 Karten: Textur mit Mipmaps, gegen das Quellbild mindestens 32 dB (gemessen 35,7 dB; über alle Karten mindestens 34,8 dB)
   - Bediensymbole, Farbsymbole und `logo_klein` mit Mipmaps
 - **Browser-Bilder:**
-  - alle 109 WebP 200 × 311 mit Alpha, 8 Farbsymbole
+  - alle 129 WebP 200 × 311 mit Alpha, 8 Farbsymbole
   - jede WebP passt zum PNG desselben Schlüssels: mindestens 24 dB und 3 dB besser als der Nachbarschlüssel. Gemessen: schlechtestes Paar 30,6 dB, ähnlichster Nachbar 18,6 dB.
 - **Schriften:**
   - `webclient/fonts` byte-gleich mit dem Spiel

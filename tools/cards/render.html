@@ -17,7 +17,7 @@ html,body{margin:0;padding:0;background:transparent;overflow:hidden}
 <script src="karten.js"></script>
 <script src="symbole.js"></script>
 <script>
-// Rendert einen Bogen (?blatt=karten|symbole|app|logo|splash) und schreibt die Lage jedes Bildes nach #out.
+// Rendert einen Bogen (?blatt=karten|tausch|zusatz|symbole|app|logo|splash) und schreibt die Lage jedes Bildes nach #out.
 // build_cards.sh liest #out per --dump-dom, macht einen Screenshot in genau dieser Größe und schneidet die Bilder mit ffmpeg aus.
 (async () => {
   const out = document.getElementById('out');
@@ -32,8 +32,15 @@ html,body{margin:0;padding:0;background:transparent;overflow:hidden}
     if (!fontsOk) throw new Error('Schriften nicht geladen: ' + fontState);
 
     let items = [], gap = 4, maxW = 3700;
-    if (blatt === 'karten') {
-      items = allKeys().map((k, i) => ({ key: k, w: 300, h: 466, cls: 'karte', svg: faceSVG(k, { prefix: `k${i}-`, width: 300 }).replace('<svg ', '<svg preserveAspectRatio="none" ') }));
+    if (blatt === 'karten' || blatt === 'tausch' || blatt === 'zusatz') {
+      // karten: die 108 Grundgesichter und die Rückseite, unverändert seit Beta 0.1.1 (gleiche Lage, gleiche Präfixe).
+      // tausch: die 8 Kartentausch-Gesichter auf einem eigenen Bogen. Chrome rastert Glut-Filter kachelweise; neue Bilder
+      // im selben Bogen verschieben die Ränder der Nachbarkarten um einzelne Stufen. Getrennt bleiben die alten Bilder byte-gleich.
+      // zusatz: die 12 Gesichter der Hausregeln Glücksspiel und Farbe mit ablegen, aus demselben Grund auf einem dritten Bogen.
+      const keys = blatt === 'karten' ? baseFaces().map(c => c.file).concat([RUECKSEITE])
+        : blatt === 'tausch' ? tauschFaces().map(c => c.file) : zusatzFaces().map(c => c.file);
+      const pre = { karten: 'k', tausch: 't', zusatz: 'z' }[blatt];
+      items = keys.map((k, i) => ({ key: k, w: 300, h: 466, cls: 'karte', svg: faceSVG(k, { prefix: `${pre}${i}-`, width: 300 }).replace('<svg ', '<svg preserveAspectRatio="none" ') }));
     } else if (blatt === 'symbole') {
       gap = 8; maxW = 1300;
       items = UI_ICON_NAMES.map(n => ({ key: 'ui_' + n, w: 96, h: 96, svg: uiIconSVG(n) }))

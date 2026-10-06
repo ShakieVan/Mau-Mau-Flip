@@ -6,6 +6,8 @@ extends RefCounted
 # alles andere kommt aus den Standardwerten. So folgt z. B. der Beta-Kanal der installierten Version, bis jemand ihn umschaltet.
 # Reihenfolge in get_value: gespeicherter Wert → Standardwert dieser Datei → Vorgabe des Aufrufers.
 # JSON kennt nur Kommazahlen: Zahlen in "regeln" kommen als float zurück (RuleConfig.from_dict wandelt mit int()).
+# Gespeicherte Regelsätze ("regelsaetze"), die Regeln des letzten Gastgebers ("regeln_gastgeber") und den zuletzt gewählten Satz
+# ("regelsatz_gewaehlt") verwaltet RuleSets; beim Laden werden ihre Regeln über RuleConfig vereinheitlicht (Zahlen wieder int).
 
 signal changed(key: String, value: Variant)
 
@@ -43,9 +45,11 @@ func _init(save_path := PATH) -> void:
 
 static func defaults() -> Dictionary:
 	# Standardwerte. Beta-Kanal: an, wenn die installierte Version keine reguläre ist (X.Y.Z mit Z ≠ 0).
-	# Mau-Ton (Aufnahmen „Mao“/„Mao-Mao“) ab Werk normal, die übrigen synthetischen Spieltöne ab Werk aus (Nutzerwunsch 05.10.2026).
+	# Mau-Ton (Aufnahmen „Mao“/„Mao-Mao“) ab Werk normal, die übrigen Spieltöne ab Werk aus (Nutzerwunsch 05.10.2026).
+	# hervorheben: spielbare Karten der eigenen Hand hervorheben – persönliche Einstellung je Gerät, nie eine Regel (AGENTS.md 24).
 	return {"name": "", "mau_ton": "normal", "toene": "aus", "vibration": true, "effekte": "voll", "beta": not app_version().ends_with(".0"),
-		"sortierung": "farbe", "regeln": {}, "letzte_namen": []}
+		"sortierung": "farbe", "hervorheben": true, "regeln": {}, "letzte_namen": [], "regelsaetze": [], "regeln_gastgeber": {},
+		"regelsatz_gewaehlt": ""}
 
 static func app_version() -> String:
 	return str(ProjectSettings.get_setting("application/config/version", "0.0.0"))
@@ -64,10 +68,16 @@ static func sanitize(key: String, value: Variant) -> Variant:
 			return value if value is String and EFFEKTE.has(value) else null
 		"sortierung":
 			return value if value is String and SORTIERUNG.has(value) else null
-		"vibration", "beta":
+		"vibration", "beta", "hervorheben":
 			return value if value is bool else null
 		"regeln":
 			return value if value is Dictionary else null
+		"regelsaetze":                    # gespeicherte Regelsätze [{name, regeln}, …], siehe RuleSets
+			return RuleSets.sanitize_sets(value)
+		"regeln_gastgeber":               # Regeln des letzten Gastgebers {host, regeln}, siehe RuleSets
+			return RuleSets.sanitize_host(value)
+		"regelsatz_gewaehlt":             # Name des zuletzt gewählten Regelsatzes ("" = keiner), siehe RuleSets
+			return RuleSets.clean_name(value) if value is String else null
 		"letzte_namen":
 			if not value is Array:
 				return null

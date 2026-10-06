@@ -1,0 +1,531 @@
+{
+ "stand": "2026-10-06",
+ "modell": "OpenMOSS-Team/MOSS-SoundEffect-v2.0",
+ "lizenz_modell": "Apache-2.0",
+ "lizenz_dateien": "CC BY-NC 4.0 (Projektlizenz)",
+ "leitplanke": {
+  "ueber_hz": 6000.0,
+  "hoechstens_db": -30.0,
+  "suche_hz": [
+   6000.0,
+   4000.0,
+   50.0
+  ],
+  "weitere": [
+   [
+    10000.0,
+    -50.0
+   ],
+   [
+    12000.0,
+    -60.0
+   ]
+  ]
+ },
+ "kodierung": {
+  "ogg": "Vorbis q6, mono, 48 kHz",
+  "m4a": "aac -b:a 192k -cutoff 8000, mono, 48 kHz"
+ },
+ "stufe_normal_db": {
+  "toene": -4.5,
+  "mau_ton": -2.0
+ },
+ "bezug": {
+  "mau": {
+   "dauer_s": 0.516,
+   "dauer_ueber_m40db_s": 0.392,
+   "spitze_dbtp": -1.0,
+   "lufs_momentan_max": -11.4,
+   "rms_dbfs": -11.9,
+   "schwerpunkt_hz": 419,
+   "ueber_8k_db": -83.9,
+   "ueber_6k_db": -74.2,
+   "ueber_12k_db": -88.8,
+   "anteil_3_4k_db": -57.1,
+   "spitze_3_4k_db": -65.0,
+   "einsaetze": 1,
+   "handy_db": -7.3,
+   "ueber_10k_db": -86.5,
+   "handy_lufs": -18.7,
+   "linien_2_6k": [
+    [
+     2232,
+     18.8,
+     -31.2
+    ]
+   ]
+  },
+  "mau_mau": {
+   "dauer_s": 0.582,
+   "dauer_ueber_m40db_s": 0.464,
+   "spitze_dbtp": -0.9,
+   "lufs_momentan_max": -9.7,
+   "rms_dbfs": -10.6,
+   "schwerpunkt_hz": 359,
+   "ueber_8k_db": -86.2,
+   "ueber_6k_db": -74.8,
+   "ueber_12k_db": -92.3,
+   "anteil_3_4k_db": -48.8,
+   "spitze_3_4k_db": -51.7,
+   "einsaetze": 1,
+   "handy_db": -9.5,
+   "ueber_10k_db": -89.5,
+   "handy_lufs": -19.2,
+   "linien_2_6k": []
+  }
+ },
+ "toene": {
+  "karte": {
+   "dauer_s": 0.239,
+   "dauer_ueber_m40db_s": 0.177,
+   "spitze_dbtp": -1.1,
+   "lufs_momentan_max": -25.2,
+   "rms_dbfs": -25.4,
+   "schwerpunkt_hz": 2508,
+   "ueber_8k_db": -69.1,
+   "ueber_6k_db": -30.3,
+   "ueber_12k_db": -93.2,
+   "anteil_3_4k_db": -4.4,
+   "spitze_3_4k_db": -2.4,
+   "einsaetze": 1,
+   "handy_db": -0.4,
+   "ueber_10k_db": -90.1,
+   "handy_lufs": -25.6,
+   "linien_2_6k": [],
+   "start_s": 1.652,
+   "anker_s": 1.667,
+   "hoechstwert_s": 1.667,
+   "natuerliche_dauer_s": 0.239,
+   "gekuerzt": false,
+   "begrenzer_db": 1.1,
+   "nach_begrenzer_abgesenkt_db": 0.0,
+   "tiefpass_hz": 5850.0,
+   "tiefpass": "Butterworth 4. Ordnung vor- und rückwärts (sosfiltfilt)",
+   "ueber_6k_suche": [
+    [
+     5950.0,
+     -29.6
+    ],
+    [
+     5900.0,
+     -30.0
+    ],
+    [
+     5850.0,
+     -30.3
+    ]
+   ],
+   "ueber_6k_bei_6000_hz_db": -29.2,
+   "kandidat": "karte_02",
+   "ziel_lufs": -24.5,
+   "datei_s": 0.259,
+   "ogg": {
+    "lufs_momentan_max": -25.3,
+    "spitze_dbtp": -1.2,
+    "ueber_6k_db": -30.3,
+    "ueber_10k_db": -92.9,
+    "ueber_12k_db": -94.9,
+    "spitze_3_4k_db": -2.7,
+    "handy_db": -0.4,
+    "bytes": 6124
+   },
+   "m4a": {
+    "lufs_momentan_max": -25.2,
+    "spitze_dbtp": -1.1,
+    "ueber_6k_db": -30.4,
+    "ueber_10k_db": -68.9,
+    "ueber_12k_db": -73.3,
+    "spitze_3_4k_db": -2.4,
+    "handy_db": -0.4,
+    "bytes": 5202
+   },
+   "im_spiel_lufs": -29.7,
+   "gegen_mau_db": -16.3
+  },
+  "ziehen": {
+   "dauer_s": 0.6,
+   "dauer_ueber_m40db_s": 0.253,
+   "spitze_dbtp": -2.2,
+   "lufs_momentan_max": -24.5,
+   "rms_dbfs": -29.0,
+   "schwerpunkt_hz": 2928,
+   "ueber_8k_db": -46.8,
+   "ueber_6k_db": -30.6,
+   "ueber_12k_db": -86.8,
+   "anteil_3_4k_db": -4.7,
+   "spitze_3_4k_db": 0.0,
+   "einsaetze": 1,
+   "handy_db": -0.1,
+   "ueber_10k_db": -69.0,
+   "handy_lufs": -24.6,
+   "linien_2_6k": [],
+   "start_s": 0.821,
+   "anker_s": 0.868,
+   "hoechstwert_s": 1.06,
+   "natuerliche_dauer_s": 0.602,
+   "gekuerzt": true,
+   "begrenzer_db": 0.0,
+   "nach_begrenzer_abgesenkt_db": 0.0,
+   "tiefpass_hz": 5050.0,
+   "tiefpass": "Butterworth 4. Ordnung vor- und rückwärts (sosfiltfilt)",
+   "ueber_6k_suche": [
+    [
+     5150.0,
+     -29.4
+    ],
+    [
+     5100.0,
+     -30.0
+    ],
+    [
+     5050.0,
+     -30.6
+    ]
+   ],
+   "ueber_6k_bei_6000_hz_db": -20.4,
+   "kerben_hz": [
+    6000.0
+   ],
+   "kandidat": "ziehen_07",
+   "ziel_lufs": -24.5,
+   "datei_s": 0.62,
+   "ogg": {
+    "lufs_momentan_max": -25.0,
+    "spitze_dbtp": -2.3,
+    "ueber_6k_db": -30.5,
+    "ueber_10k_db": -69.0,
+    "ueber_12k_db": -87.1,
+    "spitze_3_4k_db": 0.0,
+    "handy_db": -0.1,
+    "bytes": 9625
+   },
+   "m4a": {
+    "lufs_momentan_max": -24.5,
+    "spitze_dbtp": -2.2,
+    "ueber_6k_db": -30.8,
+    "ueber_10k_db": -76.1,
+    "ueber_12k_db": -80.5,
+    "spitze_3_4k_db": 0.0,
+    "handy_db": -0.1,
+    "bytes": 11375
+   },
+   "im_spiel_lufs": -29.0,
+   "gegen_mau_db": -15.6
+  },
+  "mischen": {
+   "dauer_s": 1.2,
+   "dauer_ueber_m40db_s": 1.192,
+   "spitze_dbtp": -5.0,
+   "lufs_momentan_max": -22.5,
+   "rms_dbfs": -27.5,
+   "schwerpunkt_hz": 2594,
+   "ueber_8k_db": -54.9,
+   "ueber_6k_db": -30.3,
+   "ueber_12k_db": -99.6,
+   "anteil_3_4k_db": -6.0,
+   "spitze_3_4k_db": -2.0,
+   "einsaetze": 4,
+   "handy_db": -0.1,
+   "ueber_10k_db": -76.1,
+   "handy_lufs": -22.6,
+   "linien_2_6k": [],
+   "start_s": 0.803,
+   "anker_s": 0.929,
+   "hoechstwert_s": 1.653,
+   "natuerliche_dauer_s": 1.424,
+   "gekuerzt": true,
+   "begrenzer_db": 0.0,
+   "nach_begrenzer_abgesenkt_db": 0.0,
+   "tiefpass_hz": 4750.0,
+   "tiefpass": "Butterworth 4. Ordnung vor- und rückwärts (sosfiltfilt)",
+   "ueber_6k_suche": [
+    [
+     4850.0,
+     -29.0
+    ],
+    [
+     4800.0,
+     -29.7
+    ],
+    [
+     4750.0,
+     -30.3
+    ]
+   ],
+   "ueber_6k_bei_6000_hz_db": -17.5,
+   "kandidat": "mischen_06",
+   "ziel_lufs": -22.5,
+   "datei_s": 1.22,
+   "ogg": {
+    "lufs_momentan_max": -22.7,
+    "spitze_dbtp": -5.1,
+    "ueber_6k_db": -30.4,
+    "ueber_10k_db": -76.0,
+    "ueber_12k_db": -98.6,
+    "spitze_3_4k_db": -2.2,
+    "handy_db": -0.1,
+    "bytes": 16463
+   },
+   "m4a": {
+    "lufs_momentan_max": -22.5,
+    "spitze_dbtp": -5.0,
+    "ueber_6k_db": -30.4,
+    "ueber_10k_db": -69.3,
+    "ueber_12k_db": -73.4,
+    "spitze_3_4k_db": -2.0,
+    "handy_db": -0.1,
+    "bytes": 21188
+   },
+   "im_spiel_lufs": -27.0,
+   "gegen_mau_db": -13.6
+  },
+  "flip": {
+   "dauer_s": 1.4,
+   "dauer_ueber_m40db_s": 1.247,
+   "spitze_dbtp": -7.1,
+   "lufs_momentan_max": -20.5,
+   "rms_dbfs": -24.8,
+   "schwerpunkt_hz": 728,
+   "ueber_8k_db": -51.6,
+   "ueber_6k_db": -30.5,
+   "ueber_12k_db": -95.5,
+   "anteil_3_4k_db": -17.4,
+   "spitze_3_4k_db": -18.9,
+   "einsaetze": 1,
+   "handy_db": -3.4,
+   "ueber_10k_db": -73.5,
+   "handy_lufs": -23.9,
+   "linien_2_6k": [],
+   "start_s": 0.033,
+   "anker_s": 0.096,
+   "hoechstwert_s": 0.404,
+   "natuerliche_dauer_s": 1.407,
+   "gekuerzt": true,
+   "begrenzer_db": 0.0,
+   "nach_begrenzer_abgesenkt_db": 0.0,
+   "tiefpass_hz": 5350.0,
+   "tiefpass": "Butterworth 4. Ordnung vor- und rückwärts (sosfiltfilt)",
+   "ueber_6k_suche": [
+    [
+     5450.0,
+     -29.4
+    ],
+    [
+     5400.0,
+     -29.9
+    ],
+    [
+     5350.0,
+     -30.5
+    ]
+   ],
+   "ueber_6k_bei_6000_hz_db": -24.2,
+   "kandidat": "flip_02",
+   "ziel_lufs": -20.5,
+   "datei_s": 1.42,
+   "ogg": {
+    "lufs_momentan_max": -20.7,
+    "spitze_dbtp": -7.5,
+    "ueber_6k_db": -30.7,
+    "ueber_10k_db": -73.5,
+    "ueber_12k_db": -96.1,
+    "spitze_3_4k_db": -19.0,
+    "handy_db": -3.6,
+    "bytes": 15101
+   },
+   "m4a": {
+    "lufs_momentan_max": -20.5,
+    "spitze_dbtp": -7.1,
+    "ueber_6k_db": -30.6,
+    "ueber_10k_db": -107.7,
+    "ueber_12k_db": -109.1,
+    "spitze_3_4k_db": -18.9,
+    "handy_db": -3.5,
+    "bytes": 23496
+   },
+   "im_spiel_lufs": -25.0,
+   "gegen_mau_db": -11.6
+  },
+  "dran": {
+   "dauer_s": 0.6,
+   "dauer_ueber_m40db_s": 0.589,
+   "spitze_dbtp": -3.2,
+   "lufs_momentan_max": -17.5,
+   "rms_dbfs": -18.3,
+   "schwerpunkt_hz": 817,
+   "ueber_8k_db": -74.6,
+   "ueber_6k_db": -48.1,
+   "ueber_12k_db": -126.5,
+   "anteil_3_4k_db": -34.5,
+   "spitze_3_4k_db": -41.9,
+   "einsaetze": 2,
+   "handy_db": -2.6,
+   "ueber_10k_db": -105.4,
+   "handy_lufs": -20.1,
+   "linien_2_6k": [],
+   "start_s": 0.0,
+   "anker_s": 0.001,
+   "hoechstwert_s": 0.004,
+   "natuerliche_dauer_s": 0.941,
+   "gekuerzt": true,
+   "begrenzer_db": 0.0,
+   "nach_begrenzer_abgesenkt_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "tiefpass": "Butterworth 4. Ordnung vor- und rückwärts (sosfiltfilt)",
+   "ueber_6k_suche": [
+    [
+     6000.0,
+     -48.1
+    ]
+   ],
+   "ueber_6k_bei_6000_hz_db": -48.1,
+   "kandidat": "dran_04",
+   "ziel_lufs": -17.5,
+   "datei_s": 0.62,
+   "ogg": {
+    "lufs_momentan_max": -17.5,
+    "spitze_dbtp": -3.8,
+    "ueber_6k_db": -48.5,
+    "ueber_10k_db": -105.0,
+    "ueber_12k_db": -115.0,
+    "spitze_3_4k_db": -41.8,
+    "handy_db": -2.6,
+    "bytes": 8542
+   },
+   "m4a": {
+    "lufs_momentan_max": -17.5,
+    "spitze_dbtp": -3.1,
+    "ueber_6k_db": -48.1,
+    "ueber_10k_db": -73.9,
+    "ueber_12k_db": -77.5,
+    "spitze_3_4k_db": -41.9,
+    "handy_db": -2.6,
+    "bytes": 11911
+   },
+   "im_spiel_lufs": -22.0,
+   "gegen_mau_db": -8.6
+  },
+  "fehler": {
+   "dauer_s": 0.248,
+   "dauer_ueber_m40db_s": 0.21,
+   "spitze_dbtp": -1.1,
+   "lufs_momentan_max": -21.7,
+   "rms_dbfs": -19.1,
+   "schwerpunkt_hz": 485,
+   "ueber_8k_db": -101.2,
+   "ueber_6k_db": -80.8,
+   "ueber_12k_db": -108.7,
+   "anteil_3_4k_db": -67.8,
+   "spitze_3_4k_db": -71.1,
+   "einsaetze": 1,
+   "handy_db": -5.3,
+   "ueber_10k_db": -105.6,
+   "handy_lufs": -27.0,
+   "linien_2_6k": [],
+   "start_s": 1.541,
+   "anker_s": 1.556,
+   "hoechstwert_s": 1.556,
+   "natuerliche_dauer_s": 0.248,
+   "gekuerzt": false,
+   "begrenzer_db": 5.9,
+   "nach_begrenzer_abgesenkt_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "tiefpass": "Butterworth 4. Ordnung vor- und rückwärts (sosfiltfilt)",
+   "ueber_6k_suche": [
+    [
+     6000.0,
+     -80.8
+    ]
+   ],
+   "ueber_6k_bei_6000_hz_db": -80.8,
+   "tiefen_kuhschwanz": {
+    "hz": 300.0,
+    "db": -6.0
+   },
+   "kandidat": "fehler_09",
+   "ziel_lufs": -16.5,
+   "datei_s": 0.268,
+   "ogg": {
+    "lufs_momentan_max": -21.8,
+    "spitze_dbtp": -1.1,
+    "ueber_6k_db": -80.6,
+    "ueber_10k_db": -110.5,
+    "ueber_12k_db": -114.2,
+    "spitze_3_4k_db": -70.4,
+    "handy_db": -5.4,
+    "bytes": 5647
+   },
+   "m4a": {
+    "lufs_momentan_max": -21.7,
+    "spitze_dbtp": -1.1,
+    "ueber_6k_db": -68.9,
+    "ueber_10k_db": -72.4,
+    "ueber_12k_db": -75.9,
+    "spitze_3_4k_db": -70.5,
+    "handy_db": -5.3,
+    "bytes": 5380
+   },
+   "im_spiel_lufs": -26.2,
+   "gegen_mau_db": -12.8
+  },
+  "sieg": {
+   "dauer_s": 1.763,
+   "dauer_ueber_m40db_s": 1.69,
+   "spitze_dbtp": -7.6,
+   "lufs_momentan_max": -16.5,
+   "rms_dbfs": -19.9,
+   "schwerpunkt_hz": 564,
+   "ueber_8k_db": -80.0,
+   "ueber_6k_db": -48.9,
+   "ueber_12k_db": -135.5,
+   "anteil_3_4k_db": -36.7,
+   "spitze_3_4k_db": -42.0,
+   "einsaetze": 1,
+   "handy_db": -6.3,
+   "ueber_10k_db": -106.7,
+   "handy_lufs": -22.8,
+   "linien_2_6k": [],
+   "start_s": 0.0,
+   "anker_s": 0.001,
+   "hoechstwert_s": 0.768,
+   "natuerliche_dauer_s": 1.763,
+   "gekuerzt": false,
+   "begrenzer_db": 0.0,
+   "nach_begrenzer_abgesenkt_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "tiefpass": "Butterworth 4. Ordnung vor- und rückwärts (sosfiltfilt)",
+   "ueber_6k_suche": [
+    [
+     6000.0,
+     -48.9
+    ]
+   ],
+   "ueber_6k_bei_6000_hz_db": -48.9,
+   "kandidat": "sieg_03",
+   "ziel_lufs": -16.5,
+   "datei_s": 1.783,
+   "ogg": {
+    "lufs_momentan_max": -16.5,
+    "spitze_dbtp": -7.6,
+    "ueber_6k_db": -49.1,
+    "ueber_10k_db": -107.8,
+    "ueber_12k_db": -116.7,
+    "spitze_3_4k_db": -42.4,
+    "handy_db": -6.4,
+    "bytes": 17108
+   },
+   "m4a": {
+    "lufs_momentan_max": -16.5,
+    "spitze_dbtp": -7.6,
+    "ueber_6k_db": -49.0,
+    "ueber_10k_db": -84.3,
+    "ueber_12k_db": -87.8,
+    "spitze_3_4k_db": -42.0,
+    "handy_db": -6.3,
+    "bytes": 29706
+   },
+   "im_spiel_lufs": -21.0,
+   "gegen_mau_db": -7.6
+  }
+ }
+}

@@ -1,6 +1,8 @@
 extends SceneTree
 # Modul B: Kartenbilder, Browser-Bilder, Schriften und UI-Grafiken prüfen (docs/BETA1_PLAN.md Abschnitt 3).
 # Liest die Quelldateien direkt (Image.load_from_file), prüft zusätzlich, dass Godot die Karten importiert hat.
+# Kartenbilder: alle 128 Gesichter (Grunddeck und Zusatzkarten der Hausregeln Kartentausch, Glücksspiel, Farbe mit ablegen)
+# plus Rückseite, abgeglichen mit CardDB.all_keys(true) und den Schlüsseln je Hausregel.
 
 const LIGHT := ["rot", "gelb", "gruen", "blau"]
 const DARK := ["pink", "tuerkis", "orange", "lila"]
@@ -21,22 +23,44 @@ func check(cond: bool, text: String) -> void:
 		print("FAIL: " + text)
 
 
-# Alle 108 Gesichter laut Plan plus Rückseite
+# Zusatzkarten der Hausregeln (docs/module/A.md): farbige Arten je Farbe, Joker je Seite
+const EXTRA_COLORED := ["tausch", "ablegen"]              # Kartentausch (swap_cards), Farbe mit ablegen (discard_color)
+const EXTRA_WILD := ["gluecksspiel", "ablegen_joker"]     # Glücksspiel (gamble_cards), Ablegen-Joker (discard_color)
+const BASE_FACES := 108
+const ALL_FACES := 128
+
+
+# Alle 128 Gesichter (108 Grundgesichter laut Plan + 20 Gesichter der Hausregeln) plus Rückseite, eigene Liste
 static func all_keys() -> Array[String]:
 	var keys: Array[String] = []
 	for c: String in LIGHT:
 		for n in range(1, 10):
 			keys.append("hell_%s_%d" % [c, n])
-		for t: String in ["plus1", "aussetzen", "richtungswechsel", "flip"]:
+		for t: String in ["plus1", "aussetzen", "richtungswechsel", "flip"] + EXTRA_COLORED:
 			keys.append("hell_%s_%s" % [c, t])
-	keys.append_array(["hell_wuenscher", "hell_wuenscher_plus2"])
+	for t: String in ["wuenscher", "wuenscher_plus2"] + EXTRA_WILD:
+		keys.append("hell_" + t)
 	for c: String in DARK:
 		for n in range(1, 10):
 			keys.append("dunkel_%s_%d" % [c, n])
-		for t: String in ["plus5", "alle_aussetzen", "richtungswechsel", "flip"]:
+		for t: String in ["plus5", "alle_aussetzen", "richtungswechsel", "flip"] + EXTRA_COLORED:
 			keys.append("dunkel_%s_%s" % [c, t])
-	keys.append_array(["dunkel_wuenscher", "dunkel_farbjagd", "rueckseite"])
+	for t: String in ["wuenscher", "farbjagd"] + EXTRA_WILD:
+		keys.append("dunkel_" + t)
+	keys.append("rueckseite")
 	return keys
+
+
+static func ends_with_any(key: String, kinds: Array) -> bool:
+	for t: String in kinds:
+		if key.ends_with("_" + t):
+			return true
+	return false
+
+
+# Gesicht einer Hausregel-Zusatzkarte (nicht im Grunddeck)?
+static func is_extra(key: String) -> bool:
+	return ends_with_any(key, EXTRA_COLORED + EXTRA_WILD)
 
 
 static func load_image(res_path: String) -> Image:
@@ -60,7 +84,8 @@ static func nearest(col: Color, names: Array) -> String:
 
 func _init() -> void:
 	var keys := all_keys()
-	check(keys.size() == 109, "109 Schlüssel erwartet, %d" % keys.size())
+	check(keys.size() == ALL_FACES + 1, "%d Schlüssel erwartet, %d" % [ALL_FACES + 1, keys.size()])
+	check(keys.filter(func(k: String) -> bool: return not is_extra(k)).size() == BASE_FACES + 1, "Grunddeck: 109 Schlüssel erwartet")
 	_check_carddb(keys)
 	_check_cards(keys)
 	_check_import(keys)
@@ -108,15 +133,8 @@ static func contrast(a: Color, b: Color) -> float:
 	return (maxf(la, lb) + 0.05) / (minf(la, lb) + 0.05)
 
 
-# Vertrag mit Modul A: dieselben 108 Gesichtsschlüssel wie CardDB (falls vorhanden)
-func _check_carddb(keys: Array[String]) -> void:
-	if not ResourceLoader.exists("res://scripts/rules/card_db.gd"):
-		print("  Hinweis: CardDB fehlt, Abgleich übersprungen")
-		return
-	var db: Script = load("res://scripts/rules/card_db.gd")
-	var theirs: PackedStringArray = db.call("all_keys")
-	var mine := keys.duplicate()
-	mine.erase("rueckseite")
+# Unterschied zweier Schlüssellisten als Text ("" = gleich)
+static func key_diff(theirs: PackedStringArray, mine: Array[String]) -> String:
 	var missing: Array[String] = []
 	for k in theirs:
 		if not mine.has(k):
@@ -125,9 +143,43 @@ func _check_carddb(keys: Array[String]) -> void:
 	for k in mine:
 		if not theirs.has(k):
 			extra.append(k)
-	check(theirs.size() == 108 and missing.is_empty() and extra.is_empty(),
-		"Schlüssel weichen von CardDB ab: fehlen %s, überzählig %s" % [str(missing), str(extra)])
+	if missing.is_empty() and extra.is_empty() and theirs.size() == mine.size():
+		return ""
+	return "ohne Bild %s, ohne Karte im Regelwerk %s (%d gegen %d)" % [str(missing), str(extra), theirs.size(), mine.size()]
+
+
+# Vertrag mit Modul A: dieselben Gesichtsschlüssel wie CardDB (falls vorhanden).
+# all_keys() = 108 Grundgesichter, all_keys(true) = alle 128 mit den Zusatzkarten der Hausregeln (Kartentausch, Glücksspiel,
+# Farbe mit ablegen); swap_keys(), gamble_keys(), discard_keys() = die Gesichter je Hausregel.
+func _check_carddb(keys: Array[String]) -> void:
+	if not ResourceLoader.exists("res://scripts/rules/card_db.gd"):
+		print("  Hinweis: CardDB fehlt, Abgleich übersprungen")
+		return
+	var db: Script = load("res://scripts/rules/card_db.gd")
+	var mine: Array[String] = []
+	mine.assign(keys)
+	mine.erase("rueckseite")
+	var base: Array[String] = []
+	base.assign(mine.filter(func(k: String) -> bool: return not is_extra(k)))
+	var d := key_diff(db.call("all_keys"), base)
+	check(d == "", "Grundgesichter weichen von CardDB.all_keys() ab: " + d)
+	var theirs: PackedStringArray = db.call("all_keys", true)
+	d = key_diff(theirs, mine)
+	check(d == "", "Gesichter weichen von CardDB.all_keys(true) ab: " + d)
 	check(not theirs.has("rueckseite"), "CardDB führt rueckseite als Gesicht")
+	# Gesichter je Hausregel: Endungen wie in EXTRA_COLORED/EXTRA_WILD
+	var groups := {"swap_keys": ["tausch"], "gamble_keys": ["gluecksspiel"], "discard_keys": ["ablegen", "ablegen_joker"]}
+	var methods := db.get_script_method_list().map(func(m: Dictionary) -> String: return str(m.name))
+	for f: String in groups:
+		if not methods.has(f):
+			check(false, "CardDB.%s() fehlt" % f)
+			continue
+		var want: Array[String] = []
+		for k in mine:
+			if ends_with_any(k, groups[f]):
+				want.append(k)
+		d = key_diff(db.call(f), want)
+		check(d == "", "CardDB.%s() weicht ab: %s" % [f, d])
 
 
 # Import: Karten verlustbehaftet (WebP 0,9) mit Mipmaps, Bediensymbole mit Mipmaps, Projektfilter nutzt Mipmaps.
@@ -147,8 +199,12 @@ func _check_import(keys: Array[String]) -> void:
 	var worst := 99.0
 	var worst_key := ""
 	var no_mip := 0
-	for i in range(0, keys.size(), 9):
-		var key := keys[i]
+	# Stichprobe: jede neunte Karte und alle Zusatzkarten der Hausregeln
+	var sample: Array[String] = []
+	for i in keys.size():
+		if i % 9 == 0 or is_extra(keys[i]):
+			sample.append(keys[i])
+	for key in sample:
 		var tex := load("res://assets/cards/%s.png" % key) as Texture2D
 		var src := load_image("res://assets/cards/%s.png" % key)
 		if tex == null or src == null:

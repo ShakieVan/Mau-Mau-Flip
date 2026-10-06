@@ -5,6 +5,8 @@ extends Control
 signal answered(yes: bool)
 
 var _card: PanelContainer
+var _box: VBoxContainer
+var _row: HBoxContainer
 
 
 static func ask(parent: Node, title_text: String, text: String, yes_text: String, no_text: String) -> ConfirmBox:
@@ -31,10 +33,12 @@ func _build(title_text: String, text: String, yes_text: String, no_text: String)
 	center.add_child(_card)
 	var v := ScreenKit.vbox(18)
 	_card.add_child(v)
+	_box = v
 	v.add_child(ScreenKit.heading(title_text, 40))
 	if text != "":
 		v.add_child(ScreenKit.text_block(text, 22))
 	var row := ScreenKit.hbox(16)
+	_row = row
 	v.add_child(row)
 	var no := ScreenKit.button(no_text, "")
 	no.name = "Nein"
@@ -60,6 +64,21 @@ func _gui_input(event: InputEvent) -> void:
 		if not _card.get_global_rect().has_point(get_global_transform() * mb.position):
 			_answer(false)
 		accept_event()
+
+
+# Zusätzliche Wahl über den beiden Antworten (ganze Breite, Papier-Knopf), z. B. „Regeln speichern“ im Spielmenü des Gastes. Der
+# Aufrufer verbindet pressed; die Rückfrage bleibt dabei offen, bis er sie schließt (cancel()).
+func add_option(text: String, icon_name := "") -> Button:
+	var b := ScreenKit.button(text, "GhostButton", icon_name)
+	b.name = "Wahl%d" % _box.get_child_count()
+	_box.add_child(b)
+	_box.move_child(b, _row.get_index())
+	return b
+
+
+# Wie „Nein“ (z. B. Zurück-Taste bei offener Rückfrage)
+func cancel() -> void:
+	_answer(false)
 
 
 func _answer(yes: bool) -> void:

@@ -2,6 +2,13 @@
 
 Stand 05.10.2026 (Nachtschicht Beta 0.1.1). Erzeugt die Spieltöne und erweitert `AppSound` um Mau-Klang, Sperre, Probehören und eigene Lautstärke der übrigen Töne.
 
+**Nachtrag 06.10.2026 (gilt vor dem Text darunter):**
+- **Spieltöne** sind jetzt die KI-Töne aus MOSS-SoundEffect v2.0 (`tools/make_sfx_moss.py --spiel`, Herkunft, Lizenz, Bearbeitung und Messwerte in `audio/sfx_README.md`). `tools/make_sfx.py` (Synthese) ist abgelöst; die alten Töne liegen in `audio/sfx_ki/alt/`.
+- **Mau-Töne** sind die Aufnahmen des Nutzers (`mau`, `mau_mau`, AGENTS.md 20). Klangwahl (`mau_klang`) und Probe-Klänge entfallen.
+- **Mau für alle** (AGENTS.md 21): Der Ton spielt auf jedem Gerät am Tisch. Die 3-s-Gerätesperre entfällt; doppelte Auslöser fängt `MauSound` ab (1 s je Platz).
+- **Pegel** (`sound.gd`): Mau aus / leise / normal = −80 / −12 / −2 dB; Spieltöne (`toene`, Standard **aus**) aus / leise / normal = −80 / −12,5 / −4,5 dB, also 10,5 bzw. 2,5 dB unter Mau „normal“. Der Browser-Client nutzt dieselben Abstände (`webclient/ton.js` `STUFEN_SPIEL` leise 0,3, normal 0,75 bei Mau 1,0); `test_web_contract` prüft das gegen `AppSound`.
+- Tests: `test_app_sound.gd` 157 ok.
+
 ## Dateien
 
 | Datei | Inhalt |
@@ -32,9 +39,9 @@ Einstellungen (in `App.settings`; `AppSettings` übernimmt unbekannte Schlüssel
 
 | Schlüssel | Werte | Wirkung |
 |---|---|---|
-| `mau_ton` | aus / leise / normal | Mau-Ton −80 / −14 / −6 dB (wie bisher) |
+| `mau_ton` | aus / leise / normal | Mau-Ton −80 / −12 / −2 dB (Stand 06.10.2026) |
 | `mau_klang` | stimme / gesungen / blubb / spieluhr / kalimba | Datei `mau_<klang>.ogg`; Unbekanntes oder fehlende Datei → `mau_stimme`, dann `mau.ogg` |
-| `toene` | aus / leise / normal | **neu, optional:** übrige Töne −80 / −16 / −8 dB; Standard normal. `mau_ton` wirkt nicht auf sie |
+| `toene` | aus / leise / normal | übrige Töne −80 / −12,5 / −4,5 dB (Stand 06.10.2026); Standard **aus**. `mau_ton` wirkt nicht auf sie |
 
 Verhalten:
 

@@ -133,7 +133,11 @@ func _on_welcomed(id: int, _host_name: String) -> void:
 func _on_message(msg: Dictionary) -> void:
 	match str(msg.get("t", "")):
 		"lobby":
+			# Lobby-Stände verteilt der Gastgeber nur ohne laufende Partie: Ein alter Stand gilt nicht mehr (sonst zeigte ein neuer
+			# Tisch kurz die vorige Partie).
 			lobby = msg
+			_view = {}
+			_seat = -1
 			lobby_changed.emit(msg)
 		"start":
 			_seat = int(msg.get("seat", -1))

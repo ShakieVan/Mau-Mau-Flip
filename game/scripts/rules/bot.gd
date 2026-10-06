@@ -7,6 +7,13 @@ extends RefCounted
 # passen; Joker aufsparen; Flip nach eigenen Rückseiten und den sichtbaren Rückseiten der Gegner; Wunschfarbe nach Handmehrheit;
 # „Mau!“ immer rufen, aber nur, wenn er im selben Zug auf 1 Karte kommt (kein blinder Ruf); erwischen, wenn möglich; nie
 # bluffen (Stufe 2); anzweifeln bei Verdacht, also wenn der Leger viele Karten hält und daher wahrscheinlich eine passende hatte. Gegen Zufallsbots gewinnt Stufe 2 zu dritt etwa 42 % statt 33 %.
+# Kartentausch (Hausregel): nach swap_value() aus den öffentlichen Kartenzahlen; lohnt er nicht und ist er das Einzige, was
+# passt, zieht der Bot lieber (bzw. behält ihn nach dem Ziehen). Vor einem Kartentausch ruft er kein „Mau!“.
+# Glücksspiel (Hausregel): Den Joker spielt er gern mit kleiner Hand (höchstens 4 Karten) oder wenn sonst nichts passt; gezogen
+# behält er ihn bei großer Hand. Gesetzt werden zuerst Karten mit hohen Punkten bzw. schwer spielbare, Joker zuletzt; gedrückt
+# wird sofort. „Mau!“ ruft er vor dem Setzen der vorletzten Karte.
+# Farbe mit ablegen (Hausregel): bevorzugt, wenn die Karte mindestens 2 weitere mitnimmt oder die Hand leert; der Ablegen-Joker
+# wählt die Farbe mit den meisten Karten. „Mau!“ ruft er vor jedem Legen, nach dem genau 1 Karte bleibt.
 # Liefert {} wenn der Platz nichts zu tun hat; die Spielsteuerung fragt Bots daher auch außerhalb ihres Zugs (Erwischen).
 
 const COLOR_SHARE := 26.0 / 112.0    # Anteil der Karten einer Farbe (je Seite)
@@ -21,7 +28,7 @@ static func choose(view: Dictionary, rng_seed: int, level := 1) -> Dictionary:
 	var me := int(view.get("seat", -1))
 	var state := str(view.get("phase", ""))
 	var hints: Dictionary = view.get("hints", {})
-	if me < 0 or not state in ["turn", "drawn", "challenge", "color"]:
+	if me < 0 or not state in ["turn", "drawn", "challenge", "color", "gamble"]:
 		return {}
 	var catch_list: Array = hints.get("catch", [])
 	if not catch_list.is_empty() and (level > 0 or rng.randf() < 0.5):
@@ -38,11 +45,82 @@ static func choose(view: Dictionary, rng_seed: int, level := 1) -> Dictionary:
 			act = _drawn(view, hints, rng, level)
 		"turn":
 			act = _turn(view, hints, rng, level)
-	# „Mau!“ nur, wenn der Bot in diesem Zug auf 1 Karte kommt (er legt gleich), oder nachträglich, wenn er schon 1 Karte hat
-	# (z. B. Zusatzzug nach Aussetzen zu zweit: Seine nächste Handlung schlösse sonst das eigene Fenster).
-	if bool(hints.get("can_mau", false)) and (str(act.get("a", "")) == "play" or (view.get("hand", []) as Array).size() == 1):
+		"gamble":
+			act = _gamble(view, hints, rng, level)
+	# „Mau!“ nur, wenn der Bot mit dieser Handlung auf genau 1 Karte kommt (er legt bzw. setzt gleich), oder nachträglich, wenn er
+	# schon höchstens 1 Karte hat (z. B. Zusatzzug nach Aussetzen zu zweit: Seine nächste Handlung schlösse sonst das eigene
+	# Fenster). Vor einem Kartentausch nicht: Die Hand wandert weiter, der Ruf verfällt ohnehin.
+	var hand_size := (view.get("hand", []) as Array).size()
+	var a := str(act.get("a", ""))
+	var call := ((a == "play" or a == "stake") and left_after(view, act) == 1) or hand_size <= 1
+	if call and hand_size == 2 and a == "play" and _is_swap(_code_of_id(view, int(act.get("card", -1)))):
+		call = false
+	if bool(hints.get("can_mau", false)) and call:
 		return {"a": "mau"}
 	return act
+
+
+# Karten auf der Hand nach dieser Aktion (play: die Karte, bei Ablegen-Karten dazu die übrigen ihrer Farbe ohne Joker; stake: eine
+# Karte); andere Aktionen ändern die Hand hier nicht.
+static func left_after(view: Dictionary, act: Dictionary) -> int:
+	var hand: Array = view.get("hand", [])
+	var a := str(act.get("a", ""))
+	if a == "stake":
+		return hand.size() - 1
+	if a != "play":
+		return hand.size()
+	var id := int(act.get("card", -1))
+	var code := _code_of_id(view, id)
+	if code < 0:
+		return hand.size() - 1
+	var kind := CardDB.kind_table()[code]
+	if kind == CardDB.DISCARD:
+		return hand.size() - 1 - _color_count(view, CardDB.color_table()[code], id)
+	if kind == CardDB.DISCARD_WILD:
+		return hand.size() - 1 - _color_count(view, str(act.get("color", "")), id)
+	return hand.size() - 1
+
+
+# Karten der Farbe col auf der eigenen Hand ohne die Karte skip_id (Joker haben keine Farbe).
+static func _color_count(view: Dictionary, col: String, skip_id: int) -> int:
+	var n := 0
+	var ctab := CardDB.color_table()
+	for item in view.get("hand", []):
+		if int(item.id) == skip_id:
+			continue
+		var code := CardDB.code_of(str(item.face))
+		if code >= 0 and ctab[code] == col:
+			n += 1
+	return n
+
+
+# Farbe mit den meisten Karten der Hand (ohne skip_id und ohne Joker), bei Gleichstand die mit mehr Punkten, dann zufällig.
+static func most_color(view: Dictionary, skip_id: int, rng: RandomNumberGenerator) -> String:
+	var colors: Array = view.get("colors", [])
+	var ctab := CardDB.color_table()
+	var ptab := CardDB.points_table()
+	var cnt := {}
+	var pts := {}
+	for item in view.get("hand", []):
+		if int(item.id) == skip_id:
+			continue
+		var code := CardDB.code_of(str(item.face))
+		if code < 0 or ctab[code] == "":
+			continue
+		cnt[ctab[code]] = int(cnt.get(ctab[code], 0)) + 1
+		pts[ctab[code]] = int(pts.get(ctab[code], 0)) + ptab[code]
+	var best: Array = []
+	var top := [-1, -1]
+	for c in colors:
+		var k := [int(cnt.get(c, 0)), int(pts.get(c, 0))]
+		if k[0] > top[0] or (k[0] == top[0] and k[1] > top[1]):
+			top = k
+			best = [c]
+		elif k[0] == top[0] and k[1] == top[1]:
+			best.append(c)
+	if best.is_empty():
+		return str(colors[0]) if not colors.is_empty() else ""
+	return str(best[rng.randi_range(0, best.size() - 1)])
 
 
 # Wunschfarbe: Farbe mit den meisten (bzw. wertvollsten) Karten der Resthand; bei Gleichstand zufällig.
@@ -80,8 +158,71 @@ static func _play(view: Dictionary, id: int, rng: RandomNumberGenerator) -> Dict
 	var act := {"a": "play", "card": id}
 	var code := _code_of_id(view, id)
 	if code >= 0 and CardDB.wild_table()[code] == 1:
-		act["color"] = best_color(view, id, rng)
+		if CardDB.kind_table()[code] == CardDB.DISCARD_WILD:
+			act["color"] = most_color(view, id, rng)       # Ablegen-Joker: die Farbe, die am meisten Karten mitnimmt
+		else:
+			act["color"] = best_color(view, id, rng)
 	return act
+
+
+# Glücksspiel: drücken, sobald es geht; sonst vielleicht aufhören (stop_chance), sonst setzen – zuerst Karten mit hohen Punkten bzw. schwer spielbare (wenige Karten ihrer
+# Farbe), Joker zuletzt. (Bei einem Treffer kommt der Einsatz ohnehin zurück; bei einem Fertigwerden ist alles weg.)
+static func _gamble(view: Dictionary, hints: Dictionary, rng: RandomNumberGenerator, level: int) -> Dictionary:
+	if bool(hints.get("can_press", false)):
+		return {"a": "press"}
+	var can: Array = hints.get("can_stake", [])
+	if can.is_empty():
+		return {}
+	if bool(hints.get("can_stop", false)) and rng.randf() < stop_chance(view, level):
+		return {"a": "stop"}
+	if level <= 0:
+		return {"a": "stake", "card": int(can[rng.randi_range(0, can.size() - 1)])}
+	var ctab := CardDB.color_table()
+	var ptab := CardDB.points_table()
+	var best_id := int(can[0])
+	var best := -INF
+	for pid in can:
+		var id := int(pid)
+		var code := _code_of_id(view, id)
+		if code < 0:
+			continue
+		var s := float(ptab[code])
+		if ctab[code] == "":
+			s -= 100.0
+		else:
+			s += 12.0 / float(1 + _color_count(view, ctab[code], id))
+		if level == 1:
+			s += rng.randf()
+		if s > best:
+			best = s
+			best_id = id
+	return {"a": "stake", "card": best_id}
+
+
+# Wahrscheinlichkeit, beim Glücksspiel aufzuhören (die Trefferquote kennt der Bot nicht): Je größer der Einsatz, desto eher
+# aufhören (ein Treffer brächte alles zurück und dazu bis zu 10 Karten); mit nur noch 1 Karte weiter (kein Treffer = fertig), mit 2
+# eher weiter. Einfacher Bot: fester Wurf.
+static func stop_chance(view: Dictionary, level: int) -> float:
+	var hand := (view.get("hand", []) as Array).size()
+	if hand <= 1 or (hand == 2 and _said_mau(view)):      # „Mau!“ gerufen heißt: Die vorletzte Karte wird gesetzt
+		return 0.0
+	if level <= 0:
+		return 0.3
+	var stake := int((view.get("gamble", {}) as Dictionary).get("stake", 0))
+	var p := 0.1 + 0.18 * float(stake - 1)
+	if hand == 2:
+		p -= 0.2
+	return clampf(p, 0.0, 0.9)
+
+
+# Wert einer Ablegen-Karte, die n weitere Karten mitnimmt, bei hand Karten auf der Hand: leert sie die Hand, sehr hoch; nimmt sie
+# mindestens 2 mit, hoch; sonst niedrig (aufsparen für später). low = Wert ohne Nutzen.
+static func _discard_value(n: int, hand: int, low: float) -> float:
+	if n + 1 >= hand:
+		return 60.0
+	if n >= 2:
+		return 20.0 + 5.0 * n
+	return low + 2.0 * n
 
 
 static func _code_of_id(view: Dictionary, id: int) -> int:
@@ -131,16 +272,43 @@ static func _players_by_seat(view: Dictionary) -> Dictionary:
 
 # Nächster bzw. voriger aktiver Platz in Spielrichtung.
 static func _neighbour(view: Dictionary, step: int) -> Dictionary:
+	return _neighbour_dir(view, int(view.get("dir", 1)) * step)
+
+
+# Nächster aktiver Platz (außer mir) in fester Richtung d (±1, +1 = Uhrzeigersinn); {} wenn es keinen gibt.
+static func _neighbour_dir(view: Dictionary, d: int) -> Dictionary:
 	var pl: Array = view.get("players", [])
 	var n := pl.size()
 	var me := int(view.get("seat", 0))
-	var d := int(view.get("dir", 1)) * step
 	var s := me
 	for i in n:
 		s = posmod(s + d, n)
 		if int(pl[s].place) == 0 and s != me:
 			return pl[s]
 	return {}
+
+
+static func _is_swap(code: int) -> bool:
+	return code >= 0 and CardDB.kind_table()[code] == CardDB.SWAP
+
+
+# Kartentausch aus der eigenen Sicht (Kartenzahlen sind öffentlich): Meine Resthand geht an den Nächsten in Tauschrichtung,
+# ich bekomme die Hand des Vorigen. Lohnt, wenn ich deutlich mehr abgebe als ich bekomme, oder wenn der Empfänger kurz vor dem
+# Ende ist (er bekommt meine große Hand); nicht, wenn ich selbst kurz vor dem Ende bin. Positiv = lohnt.
+static func swap_value(view: Dictionary) -> float:
+	var keep := (view.get("hand", []) as Array).size() - 1
+	if keep <= 0:
+		return 30.0                                   # letzte Karte: fertig
+	var rules: Dictionary = view.get("rules", {})
+	var step := 1 if str(rules.get("swap_direction", "clockwise")) == "clockwise" or int(view.get("dir", 1)) >= 0 else -1
+	var got := int(_neighbour_dir(view, -step).get("count", keep))       # dessen Hand bekomme ich
+	var receiver := int(_neighbour_dir(view, step).get("count", keep))   # bekommt meine Resthand
+	var v := 4.0 * (keep - got) - 2.0
+	if receiver <= 2 and keep >= receiver + 2:
+		v += 16.0
+	if keep <= 2 and got >= keep:
+		v -= 30.0
+	return v
 
 
 # Stärke eines Gesichts auf der Hand für die Flip-Abwägung: Joker und Ziehkarten sind viel wert, Zahlen nichts.
@@ -160,6 +328,10 @@ static func power(code: int) -> float:
 			return 1.5
 		"richtungswechsel", "flip":
 			return 1.0
+		"ablegen_joker":
+			return 3.0
+		"gluecksspiel", "ablegen":
+			return 2.0
 	return 0.0
 
 
@@ -189,6 +361,12 @@ static func _turn(view: Dictionary, hints: Dictionary, rng: RandomNumberGenerato
 	var can_draw := bool(hints.get("can_draw", false))
 	if playable.is_empty():
 		return {"a": "draw"} if can_draw else {}
+	# Schon „Mau!“ gerufen und mehr als 2 Karten (vor einer Ablegen-Karte): bei der Karte bleiben, nach der 1 Karte übrig ist.
+	if _said_mau(view) and (view.get("hand", []) as Array).size() > 2:
+		for pid in playable:
+			var act := _play(view, int(pid), rng)
+			if left_after(view, act) == 1:
+				return act
 	var bluff_mode := str((view.get("rules", {}) as Dictionary).get("wild_restriction", "bluff")) == "bluff"
 	if not (view.get("pending", {}) as Dictionary).is_empty():
 		# Stapeln: lieber weitergeben als ziehen; geblufft wird nur selten.
@@ -255,8 +433,22 @@ static func _turn(view: Dictionary, hints: Dictionary, rng: RandomNumberGenerato
 				s = 12.0 + (danger if next_count <= 3 else 0.0)
 				if bluff_mode and not _wild_legal(view, id):
 					s -= 40.0 if level >= 2 else 25.0
-		# Beweglichkeit: wie viele Restkarten danach (bei gleicher Farbe) noch passen würden.
-		if wtab[code] == 0:
+			"tausch":
+				s = 8.0 + swap_value(view)
+			"gluecksspiel":
+				# Mit kleiner Hand ist die Chance aufs Fertigwerden gut (bei 3 Restkarten fast 50 %); sonst aufsparen – passt
+				# nichts anderes, wird er trotzdem gelegt (statt zu ziehen).
+				s = 2.0 + (30.0 if hand.size() <= 4 else (8.0 if hand.size() <= 6 else 0.0))
+			"ablegen":
+				s = _discard_value(_color_count(view, ctab[code], id), hand.size(), 5.0)
+			"ablegen_joker":
+				var most := 0
+				for c in view.get("colors", []):
+					most = maxi(most, _color_count(view, str(c), id))
+				s = _discard_value(most, hand.size(), 1.0)
+		# Beweglichkeit: wie viele Restkarten danach (bei gleicher Farbe) noch passen würden (beim Kartentausch egal: Die Resthand
+		# wandert weiter; beim Ablegen geht die Farbe mit).
+		if wtab[code] == 0 and kind != CardDB.SWAP and kind != CardDB.DISCARD:
 			var mobile := 0
 			for other_id in code_by_id:
 				if int(other_id) == id:
@@ -273,6 +465,9 @@ static func _turn(view: Dictionary, hints: Dictionary, rng: RandomNumberGenerato
 			best_id = id
 	if best_id < 0:
 		best_id = int(playable[0])
+	# Bleibt nur ein Kartentausch, der viel mehr Karten bringt als er abgibt: lieber ziehen.
+	if can_draw and _is_swap(int(code_by_id.get(best_id, -1))) and swap_value(view) < -6.0:
+		return {"a": "draw"}
 	return _play(view, best_id, rng)
 
 
@@ -290,6 +485,21 @@ static func _drawn(view: Dictionary, hints: Dictionary, rng: RandomNumberGenerat
 		if code >= 0 and CardDB.kind_table()[code] == "wuenscher" and (view.get("hand", []) as Array).size() > 4 \
 				and rng.randf() < 0.5:
 			return {"a": "keep"}       # Joker aufsparen
+		if _is_swap(code) and swap_value(view) < 0.0:
+			return {"a": "keep"}       # Kartentausch lohnt gerade nicht
+		if code >= 0:
+			var size := (view.get("hand", []) as Array).size()
+			var kind := CardDB.kind_table()[code]
+			if kind == CardDB.GAMBLE and size > 6:
+				return {"a": "keep"}           # Glücksspiel mit großer Hand: aufsparen
+			if kind == CardDB.DISCARD and _discard_value(_color_count(view, CardDB.color_table()[code], id), size, 0.0) < 10.0:
+				return {"a": "keep"}           # nimmt zu wenig mit: aufsparen
+			if kind == CardDB.DISCARD_WILD:
+				var most := 0
+				for c in view.get("colors", []):
+					most = maxi(most, _color_count(view, str(c), id))
+				if _discard_value(most, size, 0.0) < 10.0:
+					return {"a": "keep"}
 	return _play(view, id, rng)
 
 

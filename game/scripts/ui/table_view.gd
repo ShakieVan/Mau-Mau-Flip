@@ -18,6 +18,9 @@ extends Control
 # Effektstufe „reduziert“ (App.settings "effekte"): kürzere Abläufe, weniger Teilchen, kein Wackeln, kein Zoom.
 # Mau (AGENTS.md Nr. 21): Ereignis „mau“ → Ton "mau" auf jedem Gerät (MauSound, außer Mau-Ton aus) und eine zufällig gewählte,
 # animierte Sprechblase beim Rufenden (show_mau); „finish“ → Ton "mau_mau" und die große Doppelblase „Mau-Mau!“.
+# Hausregeln mit Zusatzkarten (TableHouseRules): Kartentausch (swap_hands), Glücksspiel (Automat GambleMachine in der Mitte,
+# Einsatzstapel StakePile am Platz; Setzen über die Hand, Knopf-Tipp → action press) und Farbe mit ablegen (discard_color).
+# „Spielbare Karten hervorheben“ aus (App.settings "hervorheben"): die Hand markiert nichts, der Hinweis verrät nicht „nichts passt“.
 
 signal action(a: Dictionary)
 signal sort_pressed
@@ -27,6 +30,12 @@ signal seat_tapped(seat: int)
 const CARD_W := 116.0                 # Stapel und Ablage
 const HAND_CARD_W := 150.0            # Ersatzbreite, wenn keine Hand angeschlossen ist
 const DISCARD_KEEP := 3               # sichtbare Karten auf der Ablage
+const DISCARD_UNDER_MAX := 7          # zusätzlich höchstens so viele mitabgelegte Karten unter der obersten (Farbe mit ablegen)
+# Bausteine der Hausregeln per preload (laufen so auch, bevor ein Import den Klassen-Cache erneuert hat)
+const GambleMachineScript := preload("res://scripts/ui/gamble_machine.gd")
+const StakePileScript := preload("res://scripts/ui/stake_pile.gd")
+const HouseRulesScript := preload("res://scripts/ui/table_house_rules.gd")
+const HINT_NOTHING_FITS := "Du bist dran – nichts passt"
 
 var reduced := false: set = set_reduced
 var hand: Node = null
@@ -48,6 +57,10 @@ var help_popup: HelpPopup
 var backs_viewer: BacksViewer
 var round_end: RoundEndView
 var handover: HandoverScreen
+var gamble_machine: GambleMachineScript   # Glücksspiel-Automat (nur während eines Glücksspiels sichtbar)
+var stake_pile: StakePileScript           # Einsatzstapel des Glücksspielers
+var staking := false                  # eigener Einsatz fällig: ausgespielte Handkarten gehen auf den Einsatz
+var highlight := true                 # „Spielbare Karten hervorheben“ (persönliche Einstellung)
 
 var _bg: TableBackground
 var _world: Node2D
@@ -82,6 +95,7 @@ var _round_key := ""
 var mau_variant_override := ""       # Tests/Kontrollbilder: feste Variante der Mau-Blase ("" = zufällig)
 var _mau_rng := RandomNumberGenerator.new()
 var _mau_last := ""
+var _house: HouseRulesScript
 
 var _center := Vector2(800, 320)
 var _draw_pos := Vector2(623, 320)
@@ -96,6 +110,9 @@ func _init() -> void:
 	_mau_rng.randomize()
 	director = Director.new()
 	director.handler = self
+	# reine Buchungen ohne Animation: zählen nicht zum Rückstand (sonst doppeltes Tempo z. B. bei jedem Glücksspiel-Treffer)
+	director.quiet_events = {"turn": true, "keep": true, "accept": true, "choose_color": true, "pass": true, "round_start": true,
+		"start": true}
 	add_child(director)
 	_bg = TableBackground.new()
 	add_child(_bg)
@@ -113,6 +130,13 @@ func _init() -> void:
 	_world.add_child(_discard_layer)
 	_color_mark = ColorMark.new()
 	_world.add_child(_color_mark)
+	stake_pile = StakePileScript.new()
+	stake_pile.name = "Einsatz"
+	_world.add_child(stake_pile)
+	gamble_machine = GambleMachineScript.new()
+	gamble_machine.name = "Gluecksspiel"
+	_world.add_child(gamble_machine)
+	_house = HouseRulesScript.new(self)
 	hand_layer = Node2D.new()
 	hand_layer.name = "Hand"
 	_world.add_child(hand_layer)
@@ -177,6 +201,7 @@ func _init() -> void:
 
 func _ready() -> void:
 	reduced = UiApp.reduced_effects()
+	highlight = HandView.truthy(UiApp.setting("hervorheben", true))
 	var app := UiApp.app()
 	var st: Variant = app.get("settings") if app != null else null
 	if st is Object and (st as Object).has_signal("changed"):
@@ -185,10 +210,14 @@ func _ready() -> void:
 	set_night(night)
 
 
-# Effektstufe live umschalten (Einstellungen)
+# Effektstufe und Hervorheben live umschalten (Einstellungen; die Hand hört selbst auf „hervorheben“)
 func _on_setting_changed(key: String, value: Variant) -> void:
 	if key == "effekte":
 		reduced = str(value) == "reduziert"
+	elif key == "hervorheben":
+		highlight = HandView.truthy(value)
+		if not view.is_empty():
+			_apply_hints(view.get("hints", {}), int(view.get("turn", -1)))
 
 
 func _pill(text: String, icon: String) -> PillButton:
@@ -201,6 +230,8 @@ func _pill(text: String, icon: String) -> PillButton:
 
 func set_reduced(on: bool) -> void:
 	reduced = on
+	if gamble_machine:
+		gamble_machine.reduced = on
 	if fx:
 		fx.reduced = on
 		fx_top.reduced = on
@@ -227,6 +258,7 @@ func _layout() -> void:
 	_color_ring.position = _discard_pos
 	_discard_layer.position = _discard_pos
 	_color_mark.position = _center
+	gamble_machine.position = _center
 	wish_picker.position = _discard_pos
 	wish_picker.wheel_center = Vector2(sz.x * 0.5, sz.y * 0.47) - _discard_pos
 	_sort_btn.size = Vector2(_sort_btn.preferred_width(), PillButton.TOUCH_MIN)
@@ -243,6 +275,9 @@ func _layout() -> void:
 		b.position = Vector2(x, sz.y - 300.0)
 		x -= 10.0
 	_place_seats(false)
+	if _house != null:
+		_house.place_pile()
+	update_hand_target()
 
 
 func table_center() -> Vector2:
@@ -267,6 +302,81 @@ func discard_cards() -> Array[CardView]:
 
 func pile_top() -> CardView:
 	return _pile.top
+
+
+# Oberste bzw. unterste angezeigte Ablagekarte (null = Ablage leer) und ihre Ebene (Flüge unter die oberste Karte)
+func discard_top() -> CardView:
+	return _discard[-1] if not _discard.is_empty() else null
+
+
+func discard_bottom() -> CardView:
+	return _discard[0] if not _discard.is_empty() else null
+
+
+func discard_layer() -> Node2D:
+	return _discard_layer
+
+
+# Mitabgelegte Karte (Farbe mit ablegen) wird Teil der Ablage, direkt unter der obersten Karte
+func adopt_under_top(c: CardView) -> void:
+	if c == null or not is_instance_valid(c):
+		return
+	if c.get_parent() != _discard_layer:
+		c.reparent(_discard_layer)
+	if _discard.is_empty():
+		_discard.append(c)
+		return
+	var top: CardView = _discard[-1]
+	if c.get_index() > top.get_index():
+		_discard_layer.move_child(c, top.get_index())
+	_discard.insert(_discard.size() - 1, c)
+	while _discard.size() > DISCARD_KEEP + DISCARD_UNDER_MAX:
+		var old: CardView = _discard.pop_front()
+		old.queue_free()
+
+
+# Glücksspiel: Einsatzstapel eines Platzes (Tischkoordinaten). Eigener Platz: vor der Hand links; Gegner: neben dem Fächer zur
+# Tischmitte hin (oben sitzende rechts daneben), immer im Bild.
+func stake_point(seat: int) -> Vector2:
+	var sz := size if size.x > 10.0 else TableLayout.BASE
+	var node := seat_node(seat)
+	if node == null or (seat == my_seat and int(view.get("seat", -1)) >= 0):
+		return TableLayout.own_stake_pos(sz)
+	var side := 1.0 if node.position.x <= _center.x + 40.0 else -1.0
+	var half := (OpponentSeat.BAR_W if node.compact else node.fan_max_w) * 0.5
+	var w := stake_card_w(seat)
+	var y := node.header_height() * 0.5 + 10.0 + (24.0 if node.compact else node.card_w * 0.78)
+	var p := node.position + Vector2(side * (half + w * 0.6 + 16.0), y)
+	var h := w * CardView.ASPECT
+	return Vector2(clampf(p.x, w * 0.6 + 8.0, sz.x - w * 0.6 - 8.0), clampf(p.y, h * 0.5 + 8.0, sz.y - h * 0.5 - 40.0))
+
+
+func stake_card_w(seat: int) -> float:
+	var node := seat_node(seat)
+	if node == null or (seat == my_seat and int(view.get("seat", -1)) >= 0):
+		return 70.0
+	return clampf(node.card_w, 48.0, 64.0)
+
+
+# Aktuelle Farbe in der Mitte ein/aus (während eines Glücksspiels steht dort der Automat; der Farbring zeigt die Farbe weiter)
+func set_color_mark_visible(on: bool) -> void:
+	_color_mark.visible = on
+
+
+# Ziel der Hand: ausgespielte Karten fliegen zur Ablage bzw. beim eigenen Einsatz auf den Einsatzstapel; neue kommen vom Stapel
+func update_hand_target() -> void:
+	if hand == null or not ("play_target" in hand):
+		return
+	var xf := get_global_transform()
+	if staking:
+		hand.set("play_target", xf * stake_pile.position)
+		var cw := HandLayout.card_width(float((hand.get("layout_rect") as Rect2).size.y)) if "layout_rect" in hand else HAND_CARD_W
+		hand.set("play_target_scale", stake_pile.card_w / maxf(cw, 1.0))
+	else:
+		hand.set("play_target", xf * _discard_pos)
+		hand.set("play_target_scale", 0.66)
+	if "spawn_from" in hand:
+		hand.set("spawn_from", xf * _draw_pos)
 
 
 # ================================================================= Abgleich mit der Sicht
@@ -329,13 +439,14 @@ func apply_view(v: Dictionary) -> void:
 	_color_ring.queue_redraw()
 	# Zug, Hinweise, Knöpfe
 	var turn := int(v.get("turn", -1))
-	var dir := int(v.get("dir", 1))
+	var next := next_seat(players, turn, int(v.get("dir", 1)))
 	for s in _seats:
 		var node: OpponentSeat = _seats[s]
-		node.set_turn(s == turn, _n > 2 and s == posmod(turn + dir, maxi(_n, 1)))
+		node.set_turn(s == turn, s == next)
 	_apply_hints(v.get("hints", {}), turn)
 	if hand != null and hand.has_method("apply_view"):
 		hand.call("apply_view", v)
+	_house.apply_view(v)
 	# Rundenende
 	var phase := str(v.get("phase", "turn"))
 	if phase == "round_over" or phase == "game_over":
@@ -349,9 +460,32 @@ func apply_view(v: Dictionary) -> void:
 		input_locked = false
 
 
+# „gleich dran“: der nächste Platz in Spielrichtung, der noch mitspielt (place 0). Fertige Spieler („bis zum Letzten“) überspringt
+# das Spiel, also auch die Anzeige (Nachtest 1, N3). Mit nur zwei Spielern im Spiel sagt die Marke nichts: -1. Ein Aussetzen steht
+# erst fest, wenn die Karte liegt; dann kommt ohnehin eine neue Sicht.
+static func next_seat(players: Array, turn: int, dir: int) -> int:
+	var n := players.size()
+	if turn < 0 or turn >= n:
+		return -1
+	var active := {}
+	for i in n:
+		var p: Dictionary = players[i]
+		if int(p.get("place", 0)) == 0:
+			active[int(p.get("seat", i))] = true
+	if active.size() <= 2:
+		return -1
+	var step := -1 if dir < 0 else 1
+	var s := turn
+	for i in n - 1:
+		s = posmod(s + step, n)
+		if active.has(s):
+			return s
+	return -1
+
+
 func _apply_hints(h: Dictionary, turn: int) -> void:
 	var me_turn := turn == my_seat and int(view.get("seat", 0)) >= 0
-	hint_bar.show_hint(str(h.get("text", "Du bist dran." if me_turn else "")), me_turn)
+	hint_bar.show_hint(hint_text(str(h.get("text", "Du bist dran." if me_turn else ""))), me_turn)
 	var me_player := _player(my_seat)
 	if bool(h.get("can_mau", false)):
 		mau_button.mode = MauButton.Mode.READY
@@ -369,6 +503,13 @@ func _apply_hints(h: Dictionary, turn: int) -> void:
 	if bool(h.get("need_color", false)) and not wish_picker.is_open():
 		open_color_wheel()
 	_layout_action_buttons()
+
+
+# Hinweistext für die Leiste: Ohne „Spielbare Karten hervorheben“ verrät er nicht, dass nichts passt (sonst wäre das die Markierung).
+func hint_text(text: String) -> String:
+	if not highlight and text.begins_with(HINT_NOTHING_FITS):
+		return "Du bist dran." + (" Denk an „Mau!“" if text.ends_with("Denk an „Mau!“") else "")
+	return text
 
 
 func _layout_action_buttons() -> void:
@@ -481,6 +622,8 @@ func set_night(v: float) -> void:
 		return
 	_bg.tageszeit = night
 	_ring.color = UiPalette.ring_color(night)
+	gamble_machine.night = night
+	stake_pile.night = night
 	for s in _seats:
 		(_seats[s] as OpponentSeat).night = night
 	_sort_btn.night = night
@@ -566,7 +709,10 @@ func _gui_input(event: InputEvent) -> void:
 	if mb.pressed:
 		_pressing = true
 		_press_pos = mb.position
+		if _gamble_pressable() and gamble_machine.hit(get_global_transform() * mb.position):
+			gamble_machine.set_down(true)
 		return
+	gamble_machine.set_down(false)
 	if not _pressing:
 		return
 	_pressing = false
@@ -585,6 +731,13 @@ func _tap(p: Vector2) -> bool:
 		if node.hit_catch(g):
 			_emit_action({"a": "catch", "target": s})
 			return true
+	if gamble_machine.hit_stop(g):
+		stop_gamble()
+		return true
+	if gamble_machine.hit(g):
+		if _gamble_pressable():
+			press_gamble()
+		return true
 	if Rect2(_draw_pos - Vector2(CARD_W, CARD_W * 1.6) * 0.62, Vector2(CARD_W, CARD_W * 1.6) * 1.24).has_point(wp):
 		if _pile.highlight and not input_locked:
 			_emit_action({"a": "draw"})
@@ -600,6 +753,33 @@ func _tap(p: Vector2) -> bool:
 	return false
 
 
+# Glücksspielknopf: nur der Glücksspieler, nur wenn der Druck fällig ist, und nur einmal bis zur nächsten Sicht
+func _gamble_pressable() -> bool:
+	return gamble_machine.active and gamble_machine.can_press and not gamble_machine.press_sent and not input_locked
+
+
+func press_gamble() -> bool:
+	if not _gamble_pressable():
+		return false
+	gamble_machine.press_sent = true
+	gamble_machine.press_anim()
+	UiApp.vibrate(30, 0.6)
+	_emit_action({"a": "press"})
+	return true
+
+
+# „Aufhören“: nur der Glücksspieler, nur bei hints.can_stop, einmal bis zur nächsten Sicht
+func stop_gamble() -> bool:
+	var m := gamble_machine
+	if not m.active or not m.can_stop or m.press_sent or input_locked:
+		return false
+	m.press_sent = true
+	m.queue_redraw()
+	UiApp.vibrate(20, 0.4)
+	_emit_action({"a": "stop"})
+	return true
+
+
 # ================================================================= Tischregie
 
 func _d(t: float) -> float:
@@ -610,6 +790,7 @@ func skip_event(ev: Dictionary) -> void:
 	fx.clear()
 	if str(ev.get("e", "")) == "flip":
 		_flip_running = false
+	_house.skip(ev)
 
 
 func play_event(ev: Dictionary, speed: float) -> float:
@@ -650,6 +831,20 @@ func play_event(ev: Dictionary, speed: float) -> float:
 			return _ev_round_over(ev, false)
 		"game_over":
 			return _ev_round_over(ev, true)
+		"swap_hands":
+			return _house.ev_swap(ev)
+		"gamble_start":
+			return _house.ev_gamble_start(ev)
+		"stake":
+			return _house.ev_stake(ev)
+		"gamble_roll":
+			return _house.ev_roll(ev)
+		"stake_back":
+			return _house.ev_stake_back(ev)
+		"stake_discard":
+			return _house.ev_stake_discard(ev)
+		"discard_color":
+			return _house.ev_discard_color(ev)
 	return 0.0
 
 
@@ -767,7 +962,8 @@ func _ev_draw(ev: Dictionary, penalty: bool) -> float:
 		for c in view.get("hand", []):
 			have[int(c.get("id", -1))] = true
 		for c in target.get("hand", []):
-			if not have.has(int(c.get("id", -1))):
+			var cid := int(c.get("id", -1))
+			if not have.has(cid) and not _house.is_reserved(cid):    # eigene Einsatzkarten kommen gleich mit stake_back
 				my_new.append(c)
 	# Sichtbare Seite jeder gezogenen Karte: zuerst die oberste Stapelseite, dann die übrigen neuen Rückseiten
 	var pool: Array[String] = []

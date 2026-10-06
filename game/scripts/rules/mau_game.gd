@@ -5,7 +5,9 @@ extends RefCounted
 # events_for() filtert die Ereignisse eines apply() je Empfänger. Zufall nur aus dem eigenen RandomNumberGenerator, der ganze
 # Zustand steckt in to_dict() (JSON-tauglich).
 #
-# Karten: ids 0–111. faces[s * 112 + id] = Gesichtscode (CardDB) der Seite s (0 hell, 1 dunkel). Paarung hell↔dunkel und
+# Karten: ids 0 bis n_cards − 1 (112, mit den Hausregeln Kartentausch +4, Glücksspiel +2, Farbe mit ablegen +6; n_cards folgt
+# aus config.card_count()).
+# faces[s * n_cards + id] = Gesichtscode (CardDB) der Seite s (0 hell, 1 dunkel). Paarung hell↔dunkel und
 # ids werden je Runde aus dem Seed neu gemischt. Stapel sind Arrays, oben = letztes Element. Alle Karten liegen gleich
 # ausgerichtet: Ein Flip kehrt beide Stapel um und schaltet die aktive Seite; Hände wenden sich dadurch von selbst.
 #
@@ -25,11 +27,28 @@ extends RefCounted
 #   (bei ignore nie, auch nicht, wenn die Runde bei round_end=last weiterläuft).
 # - Ende ohne Sieger durch Legen: Passen alle reihum (beide Stapel leer) oder wiederholt sich bei fast leeren Stapeln dieselbe
 #   Lage zum dritten Mal (_stalled), endet die Runde als „blockiert“; vorn liegt, wer die wenigsten Karten hat.
+# - Kartentausch (swap_cards = on): Alle aktiven Spieler geben ihre ganze Hand gleichzeitig an den nächsten aktiven Platz in
+#   Tauschrichtung weiter (Ereignis swap_hands), danach ist der Nächste in Spielrichtung dran. Mau-Fenster und Rufe verfallen.
+#   Als letzte Karte: fertig wie sonst; der Tausch läuft nur unter den Übrigen und entfällt, wenn die Runde damit endet.
+# - Glücksspiel (gamble_cards = on): Joker mit Farbwahl, danach Phase "gamble" für den Leger. Je Glücksspiel wird geheim eine
+#   Trefferquote q (1–10) gelost (nur in to_dict, nie in Sicht oder Ereignissen). Reihum {a:"stake"} (eine Handkarte verdeckt auf
+#   den Einsatz) und {a:"press"}: Treffer (Wahrscheinlichkeit 1/q) → 1–10 Karten ziehen, Einsatz zurück, Zug vorbei; sonst 0 →
+#   ist die Hand leer, kommt der Einsatz unter die Ablage und der Spieler ist fertig, sonst der nächste Einsatz.
+#   {a:"stop"} (Aufhören, immer erlaubt): nach mindestens einem Druck ohne Treffer statt weiterzusetzen. Der Einsatz kommt unter
+#   die Ablage (stake_discard mit reason "stop"; bei leerer Hand reason "empty"), der Zug ist vorbei. Bleibt 1 Karte, gilt die
+#   normale Mau-Regel: Das Fenster hat schon das Setzen geöffnet (vorher rufen, sonst erwischbar).
+# - Farbe mit ablegen (discard_color = on): Die übrigen Handkarten in der Farbe der Karte (Ablegen-Joker: gewählte Farbe), außer
+#   Jokern, kommen unter der Ablegen-Karte mit auf die Ablage und wirken nicht (Ereignis discard_color).
+# - Ein „Mau!“-Ruf verfällt, wenn nach dem Legen bzw. Setzen mehr als eine Karte bleibt. Vor dem Legen darf rufen, wer eine Karte
+#   legen kann, nach der genau 1 Karte bleibt (ohne Ablegen-Karten heißt das: 2 Karten auf der Hand).
 
 const FORMAT := 1
-const N_CARDS := 112
+const SWAP := "tausch"
+const GAMBLE := "gluecksspiel"
+const DISCARD := "ablegen"
+const DISCARD_WILD := "ablegen_joker"
 const SIDES: Array[String] = ["hell", "dunkel"]
-const PLAY_PHASES := ["turn", "drawn", "challenge", "color"]
+const PLAY_PHASES := ["turn", "drawn", "challenge", "color", "gamble"]
 const JAGD := "farbjagd"
 const PLUS2 := "wuenscher_plus2"
 const MIN_PLAYERS := 2
@@ -43,7 +62,8 @@ var connected: Array = []        # bool je Platz; setzt die Spielsteuerung (set_
 var round_no := 0
 var dealer := 0
 var side := 0                    # aktive Seite: 0 hell, 1 dunkel
-var faces := PackedInt32Array()  # 224 Gesichtscodes (s * 112 + id)
+var n_cards := CardDB.CARD_COUNT # Kartenzahl der Partie: 112 bis 124 je nach Hausregeln (aus config, fest je Partie)
+var faces := PackedInt32Array()  # 2 × n_cards Gesichtscodes (s * n_cards + id)
 var draw_pile: Array = []        # ids, oben = letztes Element
 var discard: Array = []          # ids, oben = letztes Element
 var hands: Array = []            # je Platz die ids in Besitzerreihenfolge
@@ -51,7 +71,7 @@ var current := -1
 var dir := 1                     # 1 = Uhrzeigersinn (Platz + 1)
 var color := ""                  # aktuelle Farbe (Kartenfarbe oder Wunsch)
 var wished := false
-var state := "idle"              # idle, turn, drawn, challenge, color, round_over, game_over
+var state := "idle"              # idle, turn, drawn, challenge, color, gamble, round_over, game_over
 var pending := {}                # offene Strafe {kind, amount, by, victim, color, legal, snap, finisher}
 var drawn_id := -1
 var mau_said: Array = []
@@ -63,8 +83,10 @@ var scores: Array = []           # Punkte (points500) bzw. Rundensiege
 var result := {}                 # Ergebnis der letzten Runde
 var pass_streak := 0             # aufeinanderfolgende Züge ohne Karte (beide Stapel leer)
 var seen := {}                   # Lagen bei fast leeren Stapeln → Anzahl (Stillstandsregel, _stalled)
+var gamble := {}                 # laufendes Glücksspiel {seat, q (geheim, 1–10), stake: [ids], need: "stake"|"press", last}
 
 var _valid := true              # false bei ungültiger Spielerzahl: start_round() und apply() lehnen ab
+var _forced_rolls: Array = []   # Testhaken (force_rolls): vorgegebene Ergebnisse der nächsten Drucke, nicht gespeichert
 var _seed := 0
 var _rng := RandomNumberGenerator.new()
 var _key: PackedStringArray
@@ -109,7 +131,8 @@ static func create(cfg: RuleConfig, player_list: Array, rng_seed: int) -> MauGam
 		g.scores.append(0)
 	g._seed = rng_seed
 	g._rng.seed = rng_seed
-	g.faces.resize(N_CARDS * 2)
+	g.n_cards = g.config.card_count()
+	g.faces.resize(g.n_cards * 2)
 	return g
 
 
@@ -187,6 +210,12 @@ func apply(seat: int, action: Dictionary) -> Dictionary:
 			why = _act_decide(seat, false, ev)
 		"color":
 			why = _act_color(seat, action, ev)
+		"stake":
+			why = _act_stake(seat, action, ev)
+		"press":
+			why = _act_press(seat, ev)
+		"stop":
+			why = _act_stop(seat, ev)
 		"mau":
 			why = _act_mau(seat, ev)
 		"catch":
@@ -214,7 +243,20 @@ func _phase_reason() -> String:
 			return "Du hast schon gezogen – legen oder behalten."
 		"challenge":
 			return "Erst anzweifeln oder annehmen."
+		"gamble":
+			if str(gamble.get("need", "")) == "press":
+				return "Erst den Glücksspielknopf drücken."
+			return "Erst eine Karte verdeckt auf den Einsatz legen."
 	return "Das geht gerade nicht."
+
+
+# Begründung für stake/press außerhalb eines Glücksspiels.
+func _no_gamble_reason() -> String:
+	if config.gamble_cards != "on":
+		return "Glücksspiel gibt es in diesen Regeln nicht."
+	if state in PLAY_PHASES:
+		return "Gerade läuft kein Glücksspiel."
+	return _phase_reason()
 
 
 # Ganzzahliges Aktionsfeld (aus JSON kommen Zahlen als float): int oder ganzzahliger, endlicher float. Fehlt das Feld: fallback;
@@ -258,7 +300,7 @@ func _act_play(seat: int, action: Dictionary, ev: Array) -> String:
 		return "Diese Karte hast du nicht."
 	if not _playable(seat, id):
 		return _why_not(seat, id)
-	var f := faces[side * N_CARDS + id]
+	var f := faces[side * n_cards + id]
 	var wish := ""
 	if _wild[f] == 1:
 		wish = _str_field(action, "color")
@@ -286,7 +328,7 @@ func _act_draw(seat: int, ev: Array) -> String:
 	if not pending.is_empty():
 		_begin_turn(ev)
 		_take_pending(seat, ev)
-		_advance(seat, false, ev)
+		_after_penalty(seat, ev)
 		return ""
 	if not _can_draw_free(seat):
 		return "Der Stapel ist leer – lege eine passende Karte."
@@ -300,7 +342,7 @@ func _act_draw(seat: int, ev: Array) -> String:
 		_pass(seat, ev)
 		return ""
 	var id: int = got.back()
-	var f := faces[side * N_CARDS + id]
+	var f := faces[side * n_cards + id]
 	if config.drawn_card != "may_not" and _matches(f) and _restriction_ok(seat, id, f):
 		drawn_id = id
 		state = "drawn"
@@ -338,7 +380,7 @@ func _act_decide(seat: int, challenge: bool, ev: Array) -> String:
 		var legal := bool(pending.legal)
 		var shown: Array = []
 		for id in pending.snap:
-			shown.append(_key[faces[side * N_CARDS + int(id)]])
+			shown.append(_key[faces[side * n_cards + int(id)]])
 		ev.append({"e": "challenge", "seat": seat, "target": by, "success": not legal, "hand": shown})
 		pending = {}
 		if not legal:
@@ -355,7 +397,8 @@ func _act_decide(seat: int, challenge: bool, ev: Array) -> String:
 			_draw(seat, 2, "strafe", ev)
 		else:
 			_draw(seat, amount + 2, "strafe", ev)
-		ev.append({"e": "skip", "seat": seat})
+		if config.penalty_turn == "skip":
+			ev.append({"e": "skip", "seat": seat})
 	else:
 		ev.append({"e": "accept", "seat": seat})
 		_take_pending(seat, ev)
@@ -365,7 +408,7 @@ func _act_decide(seat: int, challenge: bool, ev: Array) -> String:
 		if _round_should_end():
 			_end_round("fertig", ev)
 			return ""
-	_advance(seat, false, ev)
+	_after_penalty(seat, ev)
 	return ""
 
 
@@ -384,6 +427,122 @@ func _act_color(seat: int, action: Dictionary, ev: Array) -> String:
 	return ""
 
 
+# Glücksspiel: eine beliebige Handkarte verdeckt auf den Einsatz legen (Pflicht vor jedem Druck). Wer dadurch auf 1 Karte kommt,
+# ohne gerufen zu haben, öffnet das Mau-Fenster wie beim Legen.
+func _act_stake(seat: int, action: Dictionary, ev: Array) -> String:
+	if state != "gamble":
+		return _no_gamble_reason()
+	if seat != current:
+		return "Du bist nicht dran."
+	if str(gamble.need) != "stake":
+		return "Erst den Glücksspielknopf drücken."
+	var id := _int_field(action, "card")
+	if id == BAD_FIELD:
+		return "Ungültige Aktion."
+	if not (hands[seat] as Array).has(id):
+		return "Diese Karte hast du nicht."
+	(hands[seat] as Array).erase(id)
+	(gamble.stake as Array).append(id)
+	gamble.need = "press"
+	ev.append({"e": "stake", "seat": seat, "count": (gamble.stake as Array).size(), "card": id,
+		"face": _key[faces[side * n_cards + id]], "back": _key[faces[(1 - side) * n_cards + id]]})
+	_after_hand_shrinks(seat)
+	return ""
+
+
+# Glücksspiel: Knopf drücken. Treffer: so viele Karten ziehen, wie der Generator zeigt, den ganzen Einsatz zurücknehmen, Zug
+# vorbei. Kein Treffer (0): Ist die Hand leer, kommt der Einsatz unter die Ablage und der Spieler ist fertig; sonst der nächste
+# Einsatz oder Aufhören (_act_stop).
+func _act_press(seat: int, ev: Array) -> String:
+	if state != "gamble":
+		return _no_gamble_reason()
+	if seat != current:
+		return "Du bist nicht dran."
+	if str(gamble.need) != "press":
+		return "Leg erst eine Karte verdeckt auf deinen Einsatz."
+	var value := _roll()
+	gamble.last = value
+	ev.append({"e": "gamble_roll", "seat": seat, "value": value})
+	var stake: Array = gamble.stake
+	if value > 0:
+		_draw(seat, value, "gluecksspiel", ev)
+		gamble = {}
+		(hands[seat] as Array).append_array(stake)
+		var keys: Array = []
+		var backs: Array = []
+		for id in stake:
+			keys.append(_key[faces[side * n_cards + int(id)]])
+			backs.append(_key[faces[(1 - side) * n_cards + int(id)]])
+		ev.append({"e": "stake_back", "seat": seat, "count": stake.size(), "cards": stake.duplicate(), "faces": keys,
+			"backs": backs})
+		# Wer Karten zurückbekommt, muss neu rufen; ein offenes Fenster des Spielers ist damit erledigt.
+		mau_said[seat] = false
+		if mau_open == seat:
+			mau_open = -1
+		_advance(seat, false, ev)
+		return ""
+	if (hands[seat] as Array).is_empty():
+		_stake_under(seat, "empty", ev)
+		_finish(seat, ev)
+		if _round_should_end():
+			_end_round("fertig", ev)
+			return ""
+		_advance(seat, false, ev)
+		return ""
+	gamble.need = "stake"
+	return ""
+
+
+# Glücksspiel: aufhören (immer erlaubt, nach mindestens einem Druck ohne Treffer, also wenn wieder gesetzt werden müsste). Der
+# Einsatz kommt unter die Ablage, der Zug ist vorbei. Mau-Fenster und Ruf bleiben, wie das Setzen sie hinterlassen hat.
+func _act_stop(seat: int, ev: Array) -> String:
+	if state != "gamble":
+		return _no_gamble_reason()
+	if seat != current:
+		return "Du bist nicht dran."
+	if not _can_stop(seat):
+		if str(gamble.need) == "press":
+			return "Erst den Glücksspielknopf drücken."
+		return "Aufhören geht erst nach dem ersten Druck."
+	_stake_under(seat, "stop", ev)
+	_advance(seat, false, ev)
+	return ""
+
+
+func _can_stop(seat: int) -> bool:
+	return state == "gamble" and seat == current and str(gamble.get("need", "")) == "stake" \
+		and (gamble.get("stake", []) as Array).size() >= 1
+
+
+# Einsatz unter die Ablage legen und das Glücksspiel beenden (Ereignis stake_discard).
+func _stake_under(seat: int, reason: String, ev: Array) -> void:
+	var stake: Array = gamble.stake
+	gamble = {}
+	var keys: Array = []
+	for id in stake:
+		keys.append(_key[faces[side * n_cards + int(id)]])
+	var under := stake.duplicate()
+	under.append_array(discard)
+	discard = under
+	ev.append({"e": "stake_discard", "seat": seat, "count": stake.size(), "cards": stake.duplicate(), "faces": keys,
+		"reason": reason})
+
+
+# Testhaken: Die nächsten Drucke liefern diese Ergebnisse (0 = kein Treffer, 1–10 = Treffer) statt des Zufalls. Wird nicht
+# gespeichert (nur für gebaute Testfälle).
+func force_rolls(values: Array) -> void:
+	_forced_rolls = values.duplicate()
+
+
+# Ergebnis eines Drucks: Treffer mit Wahrscheinlichkeit 1/q, dann 1–10 gleich wahrscheinlich; sonst 0.
+func _roll() -> int:
+	if not _forced_rolls.is_empty():
+		return clampi(int(_forced_rolls.pop_front()), 0, 10)
+	if _rng.randi_range(1, int(gamble.q)) != 1:
+		return 0
+	return _rng.randi_range(1, 10)
+
+
 func _act_mau(seat: int, ev: Array) -> String:
 	if config.mau_call == "off":
 		return "„Mau!“ ist in diesen Regeln ausgeschaltet."
@@ -393,7 +552,11 @@ func _act_mau(seat: int, ev: Array) -> String:
 		if mau_said[seat]:
 			return "Du hast schon „Mau!“ gerufen."
 		if seat == current and (hands[seat] as Array).size() == 2 and state in ["turn", "drawn", "challenge"]:
+			if _has_playable(seat):
+				return "Damit legst du alles auf einmal ab – „Mau!“ brauchst du nicht."
 			return "„Mau!“ rufst du, wenn du deine vorletzte Karte legen kannst – gerade passt keine."
+		if seat == current and (hands[seat] as Array).size() == 2 and state == "gamble":
+			return "„Mau!“ rufst du, bevor du deine vorletzte Karte auf den Einsatz legst."
 		return "„Mau!“ geht erst, wenn du mit 2 Karten dran bist."
 	mau_said[seat] = true
 	if mau_open == seat:
@@ -444,20 +607,21 @@ func _start(ev: Array) -> void:
 	seen = {}
 	finished = []
 	result = {}
+	gamble = {}
 	for s in n:
 		mau_said[s] = false
 		place[s] = 0
 		hands[s] = []
 	# Paarung hell↔dunkel und ids neu mischen: id → zufälliges helles und zufälliges dunkles Gesicht.
-	var light := _shuffled_range(N_CARDS)
-	var dark := _shuffled_range(N_CARDS)
-	var dl := CardDB.deck(0)
-	var dd := CardDB.deck(1)
-	faces.resize(N_CARDS * 2)
-	for id in N_CARDS:
+	var light := _shuffled_range(n_cards)
+	var dark := _shuffled_range(n_cards)
+	var dl := config.deck(0)
+	var dd := config.deck(1)
+	faces.resize(n_cards * 2)
+	for id in n_cards:
 		faces[id] = dl[light[id]]
-		faces[N_CARDS + id] = dd[dark[id]]
-	draw_pile = _shuffled_range(N_CARDS)
+		faces[n_cards + id] = dd[dark[id]]
+	draw_pile = _shuffled_range(n_cards)
 	discard = []
 	ev.append({"e": "round_start", "round": round_no, "dealer": dealer})
 	for k in config.hand_size:
@@ -473,12 +637,12 @@ func _reveal_start_card(ev: Array) -> void:
 	while not draw_pile.is_empty():
 		var id: int = draw_pile.pop_back()
 		discard.append(id)
-		var f := faces[side * N_CARDS + id]
+		var f := faces[side * n_cards + id]
 		var number := _kind[f] == "zahl"
 		ev.append({"e": "start", "card": id, "face": _key[f], "ignored": not number})
 		if number:
 			break
-	var top := faces[side * N_CARDS + int(discard.back())]
+	var top := faces[side * n_cards + int(discard.back())]
 	color = _color[top]
 	wished = false
 	if color == "":         # Notfall: keine Zahl mehr im Stapel und oben ein Joker
@@ -528,10 +692,15 @@ func _advance(from: int, skip: bool, ev: Array) -> void:
 
 
 func _next_active(from: int) -> int:
+	return _next_in(from, dir)
+
+
+# Nächster aktiver Platz nach from in Richtung step (±1); from selbst, wenn kein anderer aktiv ist.
+func _next_in(from: int, step: int) -> int:
 	var n := players.size()
 	var s := from
 	for i in n:
-		s = posmod(s + dir, n)
+		s = posmod(s + step, n)
 		if place[s] == 0:
 			return s
 	return from
@@ -564,7 +733,7 @@ func _mau_penalty(seat: int, ev: Array) -> void:
 
 # legal/snap: Regelgerechtheit und Resthand zum Zeitpunkt der Entscheidung (siehe _act_play).
 func _play(p: int, id: int, wish: String, legal: bool, snap: Array, ev: Array) -> void:
-	var f := faces[side * N_CARDS + id]
+	var f := faces[side * n_cards + id]
 	var kind := _kind[f]
 	var challengeable := (kind == PLUS2 or kind == JAGD) and config.wild_restriction == "bluff"
 	(hands[p] as Array).erase(id)
@@ -579,10 +748,10 @@ func _play(p: int, id: int, wish: String, legal: bool, snap: Array, ev: Array) -
 	else:
 		color = _color[f]
 		wished = false
+	if kind == DISCARD or kind == DISCARD_WILD:
+		_discard_color(p, id, ev)
 	var left := (hands[p] as Array).size()
-	# Fenster für den nachträglichen Ruf; erwischen nur bei catch, Strafe nur bei auto (siehe _act_catch, _begin_turn).
-	if left == 1 and not mau_said[p] and config.mau_call != "off":
-		mau_open = p
+	_after_hand_shrinks(p)
 	var finishing := left == 0
 	if finishing and not challengeable:
 		_finish(p, ev)
@@ -617,8 +786,61 @@ func _play(p: int, id: int, wish: String, legal: bool, snap: Array, ev: Array) -
 				_advance(p, false, ev)
 		"plus1", "plus5", PLUS2, JAGD:
 			_start_pending(p, kind, legal, snap, finishing, ev)
+		SWAP:
+			_swap_hands(p, ev)
+			_advance(p, false, ev)
+		GAMBLE:
+			if place[p] != 0:
+				_advance(p, false, ev)             # als letzte Karte: fertig, ohne Glücksspiel (es gibt nichts zu setzen)
+			else:
+				_start_gamble(p, ev)
 		_:
 			_advance(p, false, ev)
+
+
+# Nach Legen oder Setzen: Bleibt mehr als eine Karte, verfällt ein früher Ruf (z. B. vor einem Ablegen-Joker, der dann eine
+# andere Farbe nimmt); bleibt genau eine ohne Ruf, öffnet sich das Fenster für den nachträglichen Ruf (erwischen nur bei catch,
+# Strafe nur bei auto, siehe _act_catch und _begin_turn).
+func _after_hand_shrinks(p: int) -> void:
+	var left := (hands[p] as Array).size()
+	if left > 1:
+		mau_said[p] = false
+	elif left == 1 and not mau_said[p] and config.mau_call != "off":
+		mau_open = p
+
+
+# Glücksspiel beginnt: geheime Trefferquote 1:q (q = 1–10 gleich wahrscheinlich) aus dem Spielzufall, Phase "gamble" für den Leger.
+func _start_gamble(p: int, ev: Array) -> void:
+	gamble = {"seat": p, "q": _rng.randi_range(1, 10), "stake": [], "need": "stake", "last": -1}
+	state = "gamble"
+	current = p
+	drawn_id = -1
+	ev.append({"e": "gamble_start", "seat": p})
+
+
+# Farbe mit ablegen: Alle übrigen Handkarten in der geltenden Farbe (Ablegen-Karte: ihre Farbe, Ablegen-Joker: die gewählte, beides
+# steht schon in color) kommen mit auf die Ablage, unter die Ablegen-Karte, die oben bleibt. Joker (Farbe "") bleiben auf der Hand.
+# Die Karten wirken nicht. Reihenfolge nach Rang (nie Besitzerreihenfolge); die Gesichter liegen offen, das Ereignis ist öffentlich.
+func _discard_color(p: int, id: int, ev: Array) -> void:
+	var col := color
+	var rank := CardDB.rank_table()
+	var items: Array = []
+	for c in hands[p]:
+		var fc := faces[side * n_cards + int(c)]
+		if _color[fc] == col:
+			items.append([rank[fc], int(c)])
+	items.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0] or (a[0] == b[0] and a[1] < b[1]))
+	var ids: Array = []
+	var keys: Array = []
+	for it in items:
+		var c: int = it[1]
+		ids.append(c)
+		keys.append(_key[faces[side * n_cards + c]])
+		(hands[p] as Array).erase(c)
+	discard.pop_back()
+	discard.append_array(ids)
+	discard.append(id)
+	ev.append({"e": "discard_color", "seat": p, "color": col, "cards": ids, "faces": keys, "count": ids.size()})
 
 
 func _start_pending(p: int, kind: String, legal: bool, snap: Array, finishing: bool, ev: Array) -> void:
@@ -639,10 +861,10 @@ func _start_pending(p: int, kind: String, legal: bool, snap: Array, finishing: b
 		_new_turn(victim, ev)
 	else:
 		_take_pending(victim, ev)
-		_advance(victim, false, ev)
+		_after_penalty(victim, ev)
 
 
-# Opfer nimmt die offene Strafe: zieht und setzt aus (der Zug geht danach weiter, siehe Aufrufer).
+# Opfer nimmt die offene Strafe: zieht (und setzt aus, wenn penalty_turn = skip; wie es weitergeht, entscheidet _after_penalty).
 func _take_pending(seat: int, ev: Array) -> void:
 	var kind := str(pending.kind)
 	if kind == JAGD:
@@ -651,7 +873,17 @@ func _take_pending(seat: int, ev: Array) -> void:
 		_draw(seat, int(pending.amount), "strafe", ev)
 	pending = {}
 	pass_streak = 0
-	ev.append({"e": "skip", "seat": seat})
+	if config.penalty_turn == "skip":
+		ev.append({"e": "skip", "seat": seat})
+
+
+# Nach dem Strafziehen: offiziell setzt das Opfer aus (der Nächste ist dran); mit der Hausregel penalty_turn = play ist das
+# Opfer danach ganz normal am Zug (legen oder, wenn nichts passt, wie üblich ziehen).
+func _after_penalty(seat: int, ev: Array) -> void:
+	if config.penalty_turn == "play":
+		_new_turn(seat, ev)
+	else:
+		_advance(seat, false, ev)
 
 
 # Letzte Karte, Runde endet: Ziehkarten wirken noch, ein Flip nach flip_last_card.
@@ -679,9 +911,55 @@ func _do_flip(ev: Array) -> void:
 	side = 1 - side
 	wished = false
 	var top: int = discard.back()
-	var f := faces[side * N_CARDS + top]
+	var f := faces[side * n_cards + top]
 	color = _color[f]
 	ev.append({"e": "flip", "side": SIDES[side], "card": top, "face": _key[f], "draw_back": _draw_back()})
+
+
+# Kartentausch: Jeder aktive Platz gibt seine ganze Hand gleichzeitig an den nächsten aktiven Platz in Tauschrichtung
+# (config.swap_step: Uhrzeigersinn oder aktuelle Spielrichtung). Fertige (round_end=last) und ein eben fertig gewordener
+# Leger nehmen nicht teil. Wer dadurch auf 1 Karte kommt, muss nicht „Mau!“ rufen: Fenster und alle Rufe verfallen.
+# Ereignis (ungefiltert, privat): hands = je Platz [{id, face, back}] nach dem Tausch, backs = je Platz die Rückseiten sortiert;
+# events_for() gibt jedem nur die eigene neue Hand (hand) und die Rückseiten der anderen.
+func _swap_hands(p: int, ev: Array) -> void:
+	var n := players.size()
+	var step := config.swap_step(dir)
+	if _active_count() < 2:
+		return
+	var old: Array = hands.duplicate()
+	for s in n:
+		if place[s] == 0:
+			hands[_next_in(s, step)] = old[s]
+	mau_open = -1
+	for s in n:
+		mau_said[s] = false
+	var counts: Array = []
+	var items: Array = []
+	var backs: Array = []
+	for s in n:
+		counts.append((hands[s] as Array).size())
+		var hand_items: Array = []
+		for id in hands[s]:
+			hand_items.append({"id": int(id), "face": _key[faces[side * n_cards + int(id)]],
+				"back": _key[faces[(1 - side) * n_cards + int(id)]]})
+		items.append(hand_items)
+		backs.append(_sorted_backs(s))
+	ev.append({"e": "swap_hands", "seat": p, "dir": step, "counts": counts, "hands": items, "backs": backs})
+
+
+# Rückseiten (Gegenseite) der Hand eines Platzes, sortiert nach Seite, Farbe, Art und Wert (nie in Besitzerreihenfolge).
+func _sorted_backs(s: int) -> Array:
+	var rank := CardDB.rank_table()
+	var order := CardDB.order_table()
+	var other := 1 - side
+	var ranks := PackedInt32Array()
+	for id in hands[s]:
+		ranks.append(rank[faces[other * n_cards + int(id)]])
+	ranks.sort()
+	var out: Array = []
+	for r in ranks:
+		out.append(_key[order[r]])
+	return out
 
 
 func _finish(p: int, ev: Array) -> void:
@@ -749,11 +1027,12 @@ func _end_round(reason: String, ev: Array) -> void:
 	for s in n:
 		var keys: Array = []
 		for id in hands[s]:
-			keys.append(_key[faces[side * N_CARDS + int(id)]])
+			keys.append(_key[faces[side * n_cards + int(id)]])
 		shown.append(keys)
 	pending = {}
 	mau_open = -1
 	drawn_id = -1
+	gamble = {}
 	result = {"ranking": ranking, "points": pts, "gains": gains, "scores": scores.duplicate(), "hands": shown,
 		"reason": reason, "side": SIDES[side], "round": round_no}
 	ev.append({"e": "round_over", "ranking": ranking.duplicate(), "scores": scores.duplicate(), "points": pts.duplicate(),
@@ -767,7 +1046,7 @@ func _end_round(reason: String, ev: Array) -> void:
 func _hand_points(s: int) -> int:
 	var sum := 0
 	for id in hands[s]:
-		sum += _points[faces[side * N_CARDS + int(id)]]
+		sum += _points[faces[side * n_cards + int(id)]]
 	return sum
 
 
@@ -806,7 +1085,7 @@ func _draw_until(seat: int, mode: String, col: String, reason: String, ev: Array
 		hands[seat].append(id)
 		got.append(id)
 		all.append(id)
-		var f := faces[side * N_CARDS + id]
+		var f := faces[side * n_cards + id]
 		if mode == "color":
 			if _color[f] == col or (config.jagd_wild_stops and _wild[f] == 1):
 				break
@@ -824,8 +1103,8 @@ func _flush_draw(seat: int, got: Array, reason: String, ev: Array) -> void:
 	var keys: Array = []
 	var backs: Array = []
 	for id in got:
-		keys.append(_key[faces[side * N_CARDS + int(id)]])
-		backs.append(_key[faces[(1 - side) * N_CARDS + int(id)]])
+		keys.append(_key[faces[side * n_cards + int(id)]])
+		backs.append(_key[faces[(1 - side) * n_cards + int(id)]])
 	ev.append({"e": "draw", "seat": seat, "count": got.size(), "reason": reason, "cards": got.duplicate(), "faces": keys,
 		"backs": backs})
 
@@ -862,7 +1141,7 @@ func _matches(f: int) -> bool:
 		return true
 	if discard.is_empty():
 		return false
-	var t := faces[side * N_CARDS + int(discard.back())]
+	var t := faces[side * n_cards + int(discard.back())]
 	if _wild[t] == 1 or _kind[f] != _kind[t]:
 		return false
 	return _kind[f] != "zahl" or _value[f] == _value[t]
@@ -873,7 +1152,7 @@ func _wild_legal(seat: int, skip_id: int) -> bool:
 	for id in hands[seat]:
 		if id == skip_id:
 			continue
-		var f := faces[side * N_CARDS + int(id)]
+		var f := faces[side * n_cards + int(id)]
 		if _color[f] == color or (config.wild_counts_for_bluff and _wild[f] == 1):
 			return false
 	return true
@@ -887,7 +1166,7 @@ func _restriction_ok(seat: int, id: int, f: int) -> bool:
 
 
 func _playable(seat: int, id: int) -> bool:
-	var f := faces[side * N_CARDS + id]
+	var f := faces[side * n_cards + id]
 	match state:
 		"drawn":
 			return id == drawn_id and config.drawn_card != "may_not" and _matches(f) and _restriction_ok(seat, id, f)
@@ -917,13 +1196,49 @@ func _can_mau(seat: int) -> bool:
 		return false
 	if mau_open == seat:
 		return true
-	# Vor dem Legen nur, wenn eine Karte legbar ist (sonst zieht man und hätte 3 Karten: kein „blinder“ Ruf).
-	return seat == current and (hands[seat] as Array).size() == 2 and state in ["turn", "drawn", "challenge"] \
-		and _has_playable(seat)
+	if seat != current:
+		return false
+	var size := (hands[seat] as Array).size()
+	if state == "gamble":
+		return str(gamble.need) == "stake" and size == 2       # vor dem Setzen der vorletzten Karte
+	if not state in ["turn", "drawn", "challenge"]:
+		return false
+	# Vor dem Legen nur, wenn eine Karte legbar ist (sonst zieht man und hätte 3 Karten: kein „blinder“ Ruf), nach der genau
+	# 1 Karte bleibt. Ohne Ablegen-Karten heißt das: 2 Karten und irgendeine legbar.
+	if config.discard_color != "on":
+		return size == 2 and _has_playable(seat)
+	for id in hands[seat]:
+		if _playable(seat, int(id)) and _can_leave_one(seat, int(id)):
+			return true
+	return false
+
+
+# Kann das Legen dieser Karte genau 1 Karte übrig lassen? Normal bei 2 Karten; eine Ablegen-Karte nimmt die übrigen Karten ihrer
+# Farbe mit, ein Ablegen-Joker die einer wählbaren Farbe (Joker bleiben).
+func _can_leave_one(seat: int, id: int) -> bool:
+	var size := (hands[seat] as Array).size()
+	var f := faces[side * n_cards + id]
+	if _kind[f] == DISCARD:
+		return size - 1 - _color_count(seat, _color[f], id) == 1
+	if _kind[f] == DISCARD_WILD:
+		for c in CardDB.COLORS[SIDES[side]]:
+			if size - 1 - _color_count(seat, str(c), id) == 1:
+				return true
+		return false
+	return size == 2
+
+
+# Karten der Farbe col auf der Hand eines Platzes, ohne die Karte skip (Joker haben keine Farbe und zählen nie).
+func _color_count(seat: int, col: String, skip: int) -> int:
+	var n := 0
+	for c in hands[seat]:
+		if int(c) != skip and _color[faces[side * n_cards + int(c)]] == col:
+			n += 1
+	return n
 
 
 func _why_not(seat: int, id: int) -> String:
-	var f := faces[side * N_CARDS + id]
+	var f := faces[side * n_cards + id]
 	if state == "drawn":
 		if config.drawn_card == "may_not":
 			return "Die gezogene Karte darfst du erst im nächsten Zug legen."
@@ -942,14 +1257,14 @@ func _why_not(seat: int, id: int) -> String:
 
 
 func _lay_phrase() -> String:
-	var t := faces[side * N_CARDS + int(discard.back())] if not discard.is_empty() else -1
+	var t := faces[side * n_cards + int(discard.back())] if not discard.is_empty() else -1
 	if t < 0 or _wild[t] == 1:
 		return "lege %s" % RulesText.color_name(color)
 	return "lege %s oder %s" % [RulesText.color_name(color), RulesText.match_phrase(_key[t])]
 
 
 func _draw_back() -> String:
-	return "" if draw_pile.is_empty() else _key[faces[(1 - side) * N_CARDS + int(draw_pile.back())]]
+	return "" if draw_pile.is_empty() else _key[faces[(1 - side) * n_cards + int(draw_pile.back())]]
 
 
 # --- Sichten ---
@@ -962,24 +1277,19 @@ func view_for(seat: int) -> Dictionary:
 	for i in n:
 		var backs: Array = []
 		if config.backs_visible and i != me:
-			var codes := PackedInt32Array()
-			for id in hands[i]:
-				codes.append(faces[other * N_CARDS + int(id)])
-			codes.sort()
-			for c in codes:
-				backs.append(_key[c])
+			backs = _sorted_backs(i)
 		pl.append({"seat": i, "name": players[i].name, "kind": players[i].kind, "count": (hands[i] as Array).size(),
 			"backs": backs, "place": place[i], "mau": mau_said[i], "connected": connected[i], "score": scores[i]})
 	var hand: Array = []
 	if me >= 0:
 		for id in hands[me]:
-			var item := {"id": id, "face": _key[faces[side * N_CARDS + int(id)]]}
+			var item := {"id": id, "face": _key[faces[side * n_cards + int(id)]]}
 			if config.peek_own_backs:
-				item["back"] = _key[faces[other * N_CARDS + int(id)]]
+				item["back"] = _key[faces[other * n_cards + int(id)]]
 			hand.append(item)
 	var top := {}
 	if not discard.is_empty():
-		top = {"id": discard.back(), "face": _key[faces[side * N_CARDS + int(discard.back())]]}
+		top = {"id": discard.back(), "face": _key[faces[side * n_cards + int(discard.back())]]}
 	var pend := {}
 	if not pending.is_empty():
 		pend = {"kind": pending.kind, "amount": pending.amount, "by": pending.by, "victim": pending.victim,
@@ -995,21 +1305,33 @@ func view_for(seat: int) -> Dictionary:
 	if state == "round_over" or state == "game_over":
 		v.ranking = (result.get("ranking", []) as Array).duplicate()
 		v.result = result.duplicate(true)
+	# Glücksspiel (nur mit der Hausregel, damit die Sicht ohne sie unverändert bleibt): öffentlich sind Platz, Einsatzgröße, nächster
+	# Schritt und letzter Wert; die Quote und die Einsatzgesichter nie.
+	if config.gamble_cards == "on":
+		var gv := {}
+		if not gamble.is_empty():
+			gv = {"seat": int(gamble.seat), "stake": (gamble.stake as Array).size(), "need": str(gamble.need),
+				"last": int(gamble.last)}
+		v["gamble"] = gv
 	return v
 
 
 func _hints(me: int) -> Dictionary:
 	var h := {"playable": [], "wild": [], "can_draw": false, "can_keep": false, "can_challenge": false,
 		"can_accept": false, "can_mau": false, "catch": [], "need_color": false, "can_next_round": false, "text": ""}
+	if config.gamble_cards == "on":
+		h["can_stake"] = []
+		h["can_press"] = false
+		h["can_stop"] = false
 	if me >= 0 and state in PLAY_PHASES:
 		if me == current:
 			var playable: Array = []
 			var wild: Array = []
-			if state != "color":
+			if state != "color" and state != "gamble":
 				for id in hands[me]:
 					if _playable(me, int(id)):
 						playable.append(id)
-						if _wild[faces[side * N_CARDS + int(id)]] == 1:
+						if _wild[faces[side * n_cards + int(id)]] == 1:
 							wild.append(id)
 			h.playable = playable
 			h.wild = wild
@@ -1024,6 +1346,12 @@ func _hints(me: int) -> Dictionary:
 					h.can_accept = true
 				"color":
 					h.need_color = true
+				"gamble":
+					if str(gamble.need) == "stake":
+						h.can_stake = (hands[me] as Array).duplicate()
+						h.can_stop = _can_stop(me)
+					else:
+						h.can_press = true
 		h.can_mau = _can_mau(me)
 		if config.mau_call == "catch" and mau_open >= 0 and mau_open != me and not mau_said[mau_open]:
 			h.catch = [mau_open]
@@ -1066,11 +1394,21 @@ func _hint_text(me: int, h: Dictionary) -> String:
 				return t + "%s überlegt: anzweifeln oder ziehen?" % who
 			"color":
 				return t + "%s wählt eine Farbe." % who
+			"gamble":
+				var n := (gamble.stake as Array).size()
+				return t + "%s spielt Glücksspiel – Einsatz: %d %s." % [who, n, "Karte" if n == 1 else "Karten"]
 		return t + "%s ist dran." % who
 	var text := ""
 	match state:
 		"color":
 			text = "Nach dem Flip liegt ein Joker oben – wähle die neue Farbe."
+		"gamble":
+			if str(gamble.need) != "stake":
+				text = "Drück den Glücksspielknopf!"
+			elif bool(h.get("can_stop", false)):
+				text = "Noch eine Karte setzen – oder aufhören?"
+			else:
+				text = "Leg eine Karte verdeckt auf deinen Einsatz."
 		"challenge":
 			var by := _name(int(pending.by))
 			var col := RulesText.color_name(str(pending.color))
@@ -1100,13 +1438,16 @@ func _hint_text(me: int, h: Dictionary) -> String:
 				if wished:
 					text += " (Wunschfarbe)"
 				text += "."
-	if bool(h.can_mau) and config.mau_call != "off" and (hands[me] as Array).size() == 2:
+	# Erinnerung vor dem Legen bzw. Setzen (mit 2 Karten; mit Ablegen-Karten auch mit mehr, wenn danach 1 Karte bleiben kann).
+	var size := (hands[me] as Array).size()
+	if bool(h.can_mau) and config.mau_call != "off" and (size == 2 or (size > 2 and mau_open != me)):
 		text += " Denk an „Mau!“"
 	return text
 
 
 # Filtert Ereignisse für einen Empfänger: gezogene Gesichter und ids nur für den Ziehenden, die Hand beim Anzweifeln nur für den
-# Herausforderer. Andere sehen Anzahl und – wenn Rückseiten sichtbar sind – die Rückseiten sortiert.
+# Herausforderer, beim Kartentausch nur die eigene neue Hand, beim Glücksspiel die Einsatzkarten nur für den Spieler selbst.
+# Andere sehen Anzahl und – wenn Rückseiten sichtbar sind – die Rückseiten sortiert. Die Trefferquote steht nie in Ereignissen.
 func events_for(seat: int, events: Array) -> Array:
 	var out: Array = []
 	for e in events:
@@ -1126,6 +1467,46 @@ func events_for(seat: int, events: Array) -> Array:
 			"challenge":
 				if int(d.seat) != seat:
 					c.erase("hand")
+			"swap_hands":
+				# Nur die eigene neue Hand (wie view_for.hand), dazu die sortierten Rückseiten der anderen.
+				var all_hands: Array = d.get("hands", [])
+				c.erase("hands")
+				var own: Array = []
+				if seat >= 0 and seat < all_hands.size():
+					own = (all_hands[seat] as Array).duplicate(true)
+					if not config.peek_own_backs:
+						for item in own:
+							(item as Dictionary).erase("back")
+				c["hand"] = own
+				if config.backs_visible:
+					var b: Array = c.get("backs", [])
+					if seat >= 0 and seat < b.size():
+						b[seat] = []
+				else:
+					c.erase("backs")
+			"stake":
+				# Verdeckt gesetzt: id, Gesicht (und Rückseite bei peek_own_backs) nur für den Besitzer.
+				if int(d.seat) != seat:
+					c.erase("card")
+					c.erase("face")
+					c.erase("back")
+				elif not config.peek_own_backs:
+					c.erase("back")
+			"stake_back":
+				# Wie ein Ziehereignis: Gesichter nur für den Besitzer, Rückseiten für andere sortiert (bei backs_visible).
+				if int(d.seat) != seat:
+					c.erase("cards")
+					c.erase("faces")
+					if config.backs_visible:
+						c["backs"] = CardDB.sort_keys(d.get("backs", []))
+					else:
+						c.erase("backs")
+				elif not config.peek_own_backs:
+					c.erase("backs")
+			"stake_discard":
+				if int(d.seat) != seat:
+					c.erase("cards")
+					c.erase("faces")
 		out.append(c)
 	return out
 
@@ -1133,7 +1514,7 @@ func events_for(seat: int, events: Array) -> Array:
 # --- Speichern ---
 
 func to_dict() -> Dictionary:
-	return {
+	var d := {
 		"format": FORMAT, "config": config.to_dict(), "players": players.duplicate(true), "host": host, "connected": connected.duplicate(),
 		"seed": str(_seed), "rng_state": str(_rng.state), "round": round_no, "dealer": dealer, "side": side,
 		"faces": Array(faces), "draw": draw_pile.duplicate(), "discard": discard.duplicate(), "hands": hands.duplicate(true),
@@ -1142,6 +1523,10 @@ func to_dict() -> Dictionary:
 		"place": place.duplicate(), "finished": finished.duplicate(), "scores": scores.duplicate(),
 		"result": result.duplicate(true), "pass_streak": pass_streak, "seen": _seen_list(),
 	}
+	# Laufendes Glücksspiel samt geheimer Quote (nur mit der Hausregel; ohne sie bleibt der Spielstand wie bisher).
+	if config.gamble_cards == "on":
+		d["gamble"] = gamble.duplicate(true)
+	return d
 
 
 static func from_dict(d: Dictionary) -> MauGame:
@@ -1159,8 +1544,9 @@ static func from_dict(d: Dictionary) -> MauGame:
 	g.round_no = int(d.get("round", 0))
 	g.dealer = int(d.get("dealer", 0))
 	g.side = int(d.get("side", 0))
+	g.n_cards = g.config.card_count()
 	g.faces = PackedInt32Array(_ints(d.get("faces", [])))
-	g.faces.resize(N_CARDS * 2)
+	g.faces.resize(g.n_cards * 2)
 	g.draw_pile = _ints(d.get("draw", []))
 	g.discard = _ints(d.get("discard", []))
 	g.hands = []
@@ -1199,6 +1585,11 @@ static func from_dict(d: Dictionary) -> MauGame:
 	for pair in d.get("seen", []):
 		if pair is Array and (pair as Array).size() == 2:
 			g.seen[int(pair[0])] = int(pair[1])
+	var gb: Dictionary = d.get("gamble", {}) if d.get("gamble", {}) is Dictionary else {}
+	g.gamble = {}
+	if not gb.is_empty():
+		g.gamble = {"seat": int(gb.get("seat", 0)), "q": clampi(int(gb.get("q", 1)), 1, 10), "stake": _ints(gb.get("stake", [])),
+			"need": str(gb.get("need", "stake")), "last": int(gb.get("last", -1))}
 	return g
 
 

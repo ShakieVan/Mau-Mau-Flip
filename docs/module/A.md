@@ -1,12 +1,12 @@
 # Modul A – Regelwerk
 
-Stand 05.10.2026, Nachtschicht (Nachbesserung nach der Prüfung, siehe Abschnitt „Nachbesserung“ am Ende). Das Regelwerk ist vollständig umgesetzt und getestet: reine Logik ohne Nodes in `game/scripts/rules/`, deterministisch aus einem Seed. Alle Pflichtprüfungen aus BETA1_PLAN Abschnitt 4 laufen headless und sind grün.
+Stand 05.10.2026, Nachtschicht (Nachbesserung nach der Prüfung, siehe Abschnitt „Nachbesserung“; danach die Hausregeln Kartentausch, Glücksspiel und Farbe mit ablegen, siehe die Abschnitte am Ende). Das Regelwerk ist vollständig umgesetzt und getestet: reine Logik ohne Nodes in `game/scripts/rules/`, deterministisch aus einem Seed. Alle Pflichtprüfungen aus BETA1_PLAN Abschnitt 4 laufen headless und sind grün.
 
 ## Umgesetzt
 
 | Datei | Klasse | Inhalt |
 |---|---|---|
-| `card_db.gd` | `CardDB` | 112 Karten je Seite, 108 Gesichter, Schlüssel, Punkte, Sortierung |
+| `card_db.gd` | `CardDB` | 112 Karten je Seite, 108 Gesichter (mit Zusatzkarten der Hausregeln bis 124 Karten, 128 Gesichter), Schlüssel, Punkte, Sortierung |
 | `rule_config.gd` | `RuleConfig` | alle Optionen aus dem Plan, Voreinstellungen, `to_dict`/`from_dict`, `describe()` |
 | `mau_game.gd` | `MauGame` | Zustandsmaschine: Aktionen, Sichten, Ereignisfilter, Speichern |
 | `bot.gd` | `MauBot` | Computergegner auf der Sicht eines Platzes |
@@ -124,7 +124,7 @@ Alle Aktionen aus dem Plan, dazu:
 
 ### Phasen
 
-`idle` (vor `start_round`), `turn`, `drawn`, `challenge`, `color`, `round_over`, `game_over`. `current_seat()` ist −1 außerhalb von `turn`, `drawn`, `challenge` und `color`.
+`idle` (vor `start_round`), `turn`, `drawn`, `challenge`, `color`, `gamble` (Hausregel Glücksspiel), `round_over`, `game_over`. `current_seat()` ist −1 außerhalb von `turn`, `drawn`, `challenge`, `color` und `gamble` (`MauGame.PLAY_PHASES`).
 
 ### Sicht
 
@@ -215,12 +215,15 @@ Alle headless, über `tools/godot_run.ps1`:
 
 | Test | Inhalt | Ergebnis |
 |---|---|---|
-| `test_rules_cards.gd` | CardDB: Anzahlen, Kontrollsummen, 108 Gesichter, Schlüssel, Punkte, Sortierung. RuleConfig: Standard, Voreinstellungen, JSON-Rundreise, Grenzen, `describe`. RulesText: alle 108 Gesichter, optionsabhängige Sätze, Übersicht | 655 ok |
+| `test_rules_cards.gd` | CardDB: Anzahlen, Kontrollsummen, 108 Gesichter, Schlüssel, Punkte, Sortierung. RuleConfig: Standard, Voreinstellungen, JSON-Rundreise, Grenzen, `describe`. RulesText: alle 108 Gesichter, optionsabhängige Sätze, Übersicht | 660 ok |
 | `test_rules_play.gd` | Jede Karte, Regel und Option in gebauten Situationen, je mit Prüfung der 112 Karten. Abgelehnte Aktionen lassen den Zustand byte-gleich. Dazu der Rundenstart über 200 Seeds, kaputte Aktionen, Gastgeber-Platz, Spielerzahl | 1 053 ok |
 | `test_rules_views.gd` (Standardlauf) | siehe unten | 66 ok |
 | `test_rules_views_long.gd` | volle Partienzahlen, gleiche Prüfungen | 66 ok |
 | `test_rules_bots.gd` (Standardlauf) | siehe unten | 190 ok |
 | `test_rules_bots_long.gd` | 10 000 Partien, Stärketest 3 000, gleiche Prüfungen | siehe unten |
+| `test_rules_swap.gd` | Hausregel Kartentausch (116 Karten), siehe Abschnitt „Kartentausch“ | 900 ok |
+| `test_rules_gamble.gd` | Hausregel Glücksspiel, alle Deckvarianten, Dauerlauf mit allen Hausregeln, siehe Abschnitt „Glücksspiel“ | siehe dort |
+| `test_rules_discard.gd` | Hausregel Farbe mit ablegen, siehe Abschnitt „Farbe mit ablegen“ | siehe dort |
 
 **Laufzeiten** (in Godot gemessen, ohne Start und ohne Warten auf die Godot-Sperre): cards und play je unter 1 s, views 13 s, bots 10 s, zusammen also etwa 25 s plus viermal Godot-Start. Lange Läufe: views_long 55 s, bots_long siehe unten. Die Wanduhr ist bei parallel arbeitenden Agenten oft viel höher, weil `godot_run.ps1` auf die Sperre wartet.
 
@@ -297,3 +300,246 @@ Grundlage: Befunde des Prüfers in `docs/module/A_pruefung.json`. Die Schnittste
 - `test_rules_play.gd`: `_broken_actions` (null, Array, Dictionary, Text, 1.5, bool, INF/NaN als `card`/`target`/`a`/`color`; JSON-float wird angenommen), `_host_seat` (Markierung, JSON-Zahl, Speichern, alter Stand, nur Gastgeber startet, Hinweistext, `set_host`, Spielerzahl 1/11 ungültig, 2/10 gültig, 10 × 10 Karten), `_fixes` (kein blinder Ruf, Opfer mit/ohne Stapeln, Flip-ignore bei `last`, auto-Strafe in `bluff`/`enforce`, `reminder`, Fenster nach automatischem Ziehen, Übersicht `may_not`). Ein bestehender Fall nutzte einen blinden Ruf und legt jetzt eine passende Karte bereit.
 - `test_rules_bots.gd`: `_mau_decisions` für alle Stufen, Zählung blinder Rufe im Dauerlauf (muss 0 sein).
 - Die zwei `ERROR: MauGame: 2 bis 10 Spieler nötig …` in der Ausgabe von `test_rules_play.gd` sind beabsichtigt (Prüfung der Spielerzahl).
+
+## Kartentausch (Hausregel, 05.10.2026)
+
+Nutzerwunsch: eine „Kartentausch“-Karte, mit der alle ihre Karten im Uhrzeigersinn weitergeben, wahlweise in Spielrichtung. Festlegung des Koordinators, umgesetzt im Regelwerk; Oberfläche und Browser-Client bauen dagegen.
+
+### Regeln
+
+- **Optionen** (`RuleConfig`):
+  - `swap_cards`: **`off`** (offiziell, keine Kartentausch-Karten) / `on`
+  - `swap_direction`: **`clockwise`** (immer Platz + 1) / `play` (aktuelle Spielrichtung `dir`)
+  - Seit der Nutzerentscheidung vom 05.10.2026 in der Voreinstellung „Familie“ an (mit `clockwise`), sonst in keiner. `preset_name()` übergeht `swap_direction`, solange `swap_cards=off` ist (die Richtung allein macht noch keine „eigenen Regeln“).
+- **Karten:** Bei `on` kommen 4 doppelseitige Karten dazu, also **116**. Hell je eine Kartentausch-Karte in Rot, Gelb, Grün, Blau, dunkel je eine in Pink, Türkis, Orange, Lila. Die Paarung hell↔dunkel wird wie bei allen Karten je Runde aus dem Seed gebildet.
+  - Gesichtsschlüssel `hell_<farbe>_tausch` bzw. `dunkel_<farbe>_tausch`, Art `tausch`, 20 Punkte.
+  - Prüfsummen mit Kartentausch: hell 1360, dunkel 1560 (ohne: 1280/1480).
+- **Passen:** auf die gleiche Farbe oder auf jeden anderen Kartentausch, wie eine Aktionskarte. Als Startkarte bleibt sie liegen (wie jede Aktion). Unter einer offenen Stapelstrafe ist sie nicht legbar.
+- **Wirkung:** Alle aktiven Spieler (noch nicht fertig) geben gleichzeitig ihre **ganze Hand** an den nächsten aktiven Platz in Tauschrichtung. Danach ist ganz normal der Nächste in **Spielrichtung** dran. Zu zweit tauschen die beiden ihre Hände. Fertige (`round_end=last`) werden übersprungen.
+- **Mau:** Wer durch den Tausch auf 1 Karte kommt, muss nicht „Mau!“ rufen. Das offene Mau-Fenster schließt (`mau_open = −1`), alle Rufe verfallen (`mau_said` überall `false`); niemand kann dafür erwischt werden, bei `auto` gibt es keine Strafe. Der Bot ruft vor einem Kartentausch kein „Mau!“.
+- **Letzte Karte:** Der Leger ist fertig wie bei jeder letzten Karte. Endet damit die Runde (`round_end=first`, oder bei `last` bleibt nur einer übrig), entfällt der Tausch. Läuft die Runde weiter (`last`), tauschen nur die übrigen aktiven Spieler; danach ist der Nächste nach dem Leger dran.
+- **Flip danach:** Die getauschten Karten wenden sich wie alle (Hände sind ids, das Gesicht folgt der aktiven Seite).
+
+### Schnittstelle
+
+- **`CardDB`:**
+  - `deck(s, with_swap := false)`, `faces_light(with_swap)`, `faces_dark(with_swap)`, `card_count(with_swap)` (112/116)
+  - `all_keys()` bleibt bei den **108** Gesichtern des Grunddecks (Vertrag mit den Kartenbildern, `test_b_assets.gd`); `all_keys(true)` liefert alle Gesichter aller Hausregeln (seit Glücksspiel und Farbe mit ablegen **128**), `swap_keys()` die 8 des Kartentauschs
+  - `SWAP = "tausch"`, `is_swap(face)`, Konstanten `CARD_COUNT_SWAP`, `FACE_COUNT_SWAP`, `SUM_LIGHT_SWAP`, `SUM_DARK_SWAP`
+  - **Codes:** Die Gesichtscodes 0–107 sind unverändert, die 8 neuen hängen dahinter (108–115). Gespeicherte Partien (`to_dict().faces`) bleiben damit gültig. Weil die Codes nicht mehr die Sortierreihenfolge sind, sortieren `sort_keys` und die Rückseiten in der Sicht über `rank_table()`/`order_table()`. Der Kartentausch steht in seiner Farbe hinter dem Flip.
+- **`RuleConfig`:** `card_count()`, `swap_step(dir)` (±1), `swap_direction_text()`; `describe()` hat bei `on` eine Zeile „Kartentausch: …“.
+- **`MauGame`:**
+  - Die Konstante `N_CARDS` entfällt. Stattdessen `g.n_cards` (112 bzw. 116, aus `config.card_count()`, fest je Partie, auch in `from_dict`). `faces` hat `2 × n_cards` Einträge (`faces[s * n_cards + id]`), ids sind 0 bis `n_cards − 1`.
+  - Alte Spielstände ohne `swap_cards` laden als `off` mit 112 Karten.
+- **Ereignis `swap_hands`** (nach `play`, vor `turn`; bei der letzten Karte nach `finish`):
+
+| Feld | Bedeutung |
+|---|---|
+| `seat` | Leger |
+| `dir` | Tauschrichtung: +1 = Uhrzeigersinn (Hand an Platz + 1), −1 = gegen den Uhrzeigersinn |
+| `counts` | Kartenzahl je Platz **nach** dem Tausch |
+| `hand`* | nur nach `events_for(seat)`: die eigene neue Hand wie `view.hand`, also `[{id, face, back?}]` (`back` nur bei `peek_own_backs`); Zuschauer (−1) bekommen `[]` |
+| `backs` | nur bei `backs_visible`: je Platz die Rückseiten sortiert; der eigene Eintrag ist leer |
+
+Ungefiltert enthält das Ereignis `hands` (alle Hände mit Gesichtern); `events_for()` nimmt das immer heraus. Danach liefert `view_for()` die neuen Hände wie gewohnt: jeder nur seine eigene, Rückseiten der anderen sortiert.
+
+### Computergegner
+
+`MauBot.swap_value(view)` bewertet den Kartentausch nur aus der eigenen Sicht (Kartenzahlen sind öffentlich): Resthand `keep` gegen die Hand `got` des Vorigen in Tauschrichtung, die man bekommt.
+
+- Wert `4 · (keep − got) − 2`, dazu +16, wenn der Empfänger höchstens 2 Karten hat und mindestens 2 weniger als `keep`, und −30, wenn man selbst höchstens 2 Karten behielte und nicht weniger bekäme. Als letzte Karte immer.
+- Im Zug geht der Wert in die übliche Kartenwahl ein (Basis 8). Bleibt nur ein Kartentausch mit Wert < −6, zieht der Bot lieber. Ein gezogener Kartentausch mit negativem Wert wird behalten.
+- **Stärke** zu dritt gegen zwei Zufallsbots mit Kartentausch: 252 von 600 Partien (42 %), wie ohne.
+
+### Texte
+
+- `card_help` für `*_tausch`:
+  - Wirkung mit Richtung („immer im Uhrzeigersinn“ bzw. „in der aktuellen Spielrichtung“ samt „andersherum“-Hinweis)
+  - Passen, zu zweit, letzte Karte (je nach `round_end`), Mau-Hinweis (nicht bei `mau_call=off`), Punkte
+  - ohne Hausregel der Zusatz „gerade nicht im Spiel“
+- `overview`: Absatz „Kartentausch“, „116 Karten …“ im Absatz Karten und Kartentausch in der Punkteliste, jeweils nur bei `on`. Ohne die Hausregel sind alle Texte unverändert.
+- Namen: `kind_name("tausch")` „Kartentausch“, `face_title` „Rot Kartentausch“, `match_phrase` „einen Kartentausch“.
+
+### Tests
+
+**`test_rules_swap.gd`** (900 ok seit Glücksspiel und Farbe ablegen, etwa 92 s, davon 75 s Dauerlauf) erweitert `test_rules_views.gd` mit `swap_mode() = true`.
+
+- **Gebaute Fälle:**
+  - Kartendaten: 112/116, Prüfsummen 1280/1480 bzw. 1360/1560, je Farbe ein Kartentausch, unveränderte Codes 0–107, Sortierung
+  - Optionen und Texte, Rundenstart über 60 Seeds und Runde 2
+  - Tausch im Uhrzeigersinn; nach einem Richtungswechsel in beiden Modi; zu zweit; mit Fertigem in beiden Richtungen
+  - letzte Karte bei `first`, bei `last` und bei `last` mit nur einem Übrigen
+  - Mau-Fenster bei `catch` und `auto`: niemand erwischbar, keine Strafe, Fertigwerden ohne Ruf
+  - Flip danach; dunkle Seite
+  - Lecktest an gebauten Lagen für alle Kombinationen aus `backs_visible` und `peek_own_backs`: Gesichter im gefilterten Ereignis exakt als Multimenge
+  - to_dict/from_dict mit 116 Karten nach einem Tausch, gleich weitergespielt; alter Stand ohne die Option lädt mit 112
+  - Passen, Startkarte, Punkte, Bot-Entscheidungen (auch auf JSON-Sicht)
+- **Zufallsprüfungen** aus `test_rules_views.gd` mit Kartentausch: JSON, Lecktest (26 696 Sichten, davon 588 Kartentausch-Ereignisse geprüft), Hinweise = Regeln (17 420 Versuche; seit den Glücksspiel-Aktionen in der Prüfung 23 292), Rundreise.
+- **Stärketest** (600 Partien) und **Dauerlauf:** 2000 Partien mit zufälligen Regeln, 2–10 Spielern und Stufen 0–2, Kartenzahl immer 116, `deck_check` je Runde, Zugobergrenze 5000. Ergebnis: 3 460 Runden, 780 836 Aktionen, 15 478 Tausche (3 891 gegen den Uhrzeigersinn, 248 als letzte Karte), 0 blinde Mau-Rufe. Anzahl per `-EnvPairs 'RULES_SWAP_GAMES=200'`.
+
+**Ohne Hausregel bit-gleich:** Ein Fingerabdruck (SHA-256 über 120 Bot-Partien mit zufälligen Regeln: alle Sichten ohne `rules`, alle gefilterten Ereignisse, Aktionen, Endzustand ohne `config`; 1,84 Mio. Teile) ist für HEAD und den neuen Stand identisch. Der Stärketest in `test_rules_bots.gd` liefert weiter genau 241 von 600.
+
+- `RulesFixture.random_config(rng)` zieht dieselben Zufallszahlen wie vorher (Kartentausch aus); `random_config(rng, true)` schaltet ihn ein und zieht die Richtung zuletzt.
+- `RulesFixture.card_check` prüft gegen `g.n_cards`; neu ist `RulesFixture.deck_check(g)`: Gesichter je Seite = Deck der Variante.
+
+### Hinweise für andere Module
+
+- **Kartenbilder (B/F):** Die 8 Gesichter `hell_{rot,gelb,gruen,blau}_tausch` und `dunkel_{pink,tuerkis,orange,lila}_tausch` brauchen Bilder. `test_b_assets.gd` vergleicht mit `CardDB.all_keys()` (weiter 108). Kommen die Bilder dazu, dort auf `all_keys(true)` und 116 umstellen.
+- **Oberfläche und Browser-Client:**
+  - Optionen `swap_cards`/`swap_direction` im Regelbildschirm (die Liste in `rules_screen.gd` ist handgepflegt).
+  - Ereignis `swap_hands` animieren und danach die Hand aus `hand` bzw. der neuen Sicht übernehmen; eine manuelle Handsortierung gilt für die alte Hand nicht mehr.
+  - Hilfetexte kommen aus `RulesText`.
+- **Spielsteuerung (G):** nichts zu tun. `test_game_local.gd` prüft fest auf 112 Karten; das stimmt, solange dort ohne Kartentausch gespielt wird (sonst `t.game.n_cards`).
+- **`webclient/mock.js`** rechnet mit 112 Karten (Sache des Browser-Clients).
+
+## Glücksspiel (Hausregel, 05.10.2026)
+
+Nutzerwunsch (AGENTS.md Nr. 26), Festlegung des Koordinators, umgesetzt im Regelwerk im selben Muster wie der Kartentausch; Oberfläche und Browser-Client bauen dagegen.
+
+### Regeln
+
+- **Option** `gamble_cards`: **`off`** / `on`, in keiner Voreinstellung.
+- **Karten:** 2 zusätzliche doppelseitige Karten, je Seite zweimal `hell_gluecksspiel` bzw. `dunkel_gluecksspiel` (Art `gluecksspiel`, Joker, 50 Punkte). Deck 114, mit allen Hausregeln 124. Prüfsummen je Seite +100.
+- **Legen:** `{a:"play", card, color}` wie ein Wünscher; die gewählte Farbe gilt nach dem Glücksspiel.
+  - Passt immer, außer unter einer offenen Ziehstrafe (Stapeln) und beim Anzweifeln, wie jeder Joker. Zählt bei `wild_counts_for_bluff` als „anderer Joker“.
+  - Als Startkarte bleibt es liegen. Liegt es nach einem Flip oben, wählt der Flip-Spieler nur die Farbe (Phase `color`); ein Glücksspiel gibt es dann nicht.
+  - **Als letzte Karte** ist der Spieler fertig wie bei jeder letzten Karte; es gibt kein Glücksspiel, weil nichts zu setzen ist.
+- **Ablauf:** Danach ist der Leger in der Phase **`gamble`** (`current_seat()` bleibt der Leger).
+  - Je Glücksspiel wird geheim eine **Trefferquote q** (1–10, gleich wahrscheinlich) aus dem Spielzufall gelost. Sie steht in `to_dict()`, nie in einer Sicht oder einem Ereignis.
+  - `{a:"stake", card}`: eine beliebige eigene Handkarte verdeckt auf den Einsatz (Pflicht vor jedem Druck), dann `{a:"press"}`.
+  - **Treffer** (Wahrscheinlichkeit 1/q): Wert 1–10, gleich wahrscheinlich. Der Spieler zieht so viele Karten (übliches Ziehen, Grund `gluecksspiel`; leerer Nachziehstapel → Ablage mischen, der Einsatz nicht; sind beide Stapel leer, entfällt das Ziehen), nimmt den ganzen Einsatz zurück (hinten an die Hand), und der Zug ist vorbei: Nächster in Spielrichtung.
+  - **Kein Treffer** (Wert 0): Ist die Hand leer, kommt der Einsatz unter die Ablage (die zuerst gesetzte Karte ganz unten) und der Spieler ist fertig wie bei einer letzten Karte (Rundenende bzw. Platzierung bei `round_end=last`). Sonst folgt der nächste Einsatz – oder der Spieler hört auf.
+  - **Aufhören** (06.10.2026, AGENTS.md Nr. 26, immer erlaubt, keine Option): Nach mindestens einem Druck ohne Treffer (`need = "stake"`, Einsatz ≥ 1) darf der Spieler statt weiterzusetzen `{a:"stop"}` schicken. Der ganze Einsatz kommt unter die Ablage (wie bei leerer Hand), der Zug ist vorbei: Nächster in Spielrichtung. Bleibt genau 1 Karte, gilt die normale Mau-Regel: Das Fenster hat das Setzen geöffnet (vorher rufen, sonst erwischbar, bis der Nächste handelt); ein Ruf bleibt gültig.
+  - Einsatzkarten wirken nie (auch Flip, Kartentausch, Ablegen). Während des Glücksspiels gibt es keinen Flip; die Seite bleibt.
+  - Das Glücksspiel endet immer: Jeder Druck trifft mit mindestens 10 %, jeder Fehlschuss kostet eine Handkarte. Eine künstliche Grenze gibt es nicht.
+- **Mau:**
+  - Sinkt die Hand durch Legen des Glücksspiels oder durch einen Einsatz auf 1 Karte ohne Ruf, öffnet sich das Mau-Fenster wie üblich. Andere dürfen während des Glücksspiels erwischen, bis der Nächste handelt, auch wenn die Hand schon leer ist (Ruf bei 1 Karte vergessen). Die Strafkarten kommen auf die Hand, das Glücksspiel geht weiter.
+  - Ruf vorher: in der Phase `gamble` mit 2 Karten vor dem Setzen (`hints.can_mau`, Erinnerung „Denk an „Mau!““). Beim Drücken gibt es keinen Ruf.
+  - Bei einem Treffer verfällt der Ruf, und ein offenes Fenster des Spielers schließt (er bekommt Karten zurück).
+  - `auto`: Die Strafe käme erst beim Fensterende. Weil das Glücksspiel immer mit Fertigwerden oder Zurücknehmen endet, gibt es im Glücksspiel keine automatische Strafe.
+
+### Schnittstelle
+
+- **Phase** `gamble` (in `MauGame.PLAY_PHASES`). Erlaubt sind dort nur `stake`, `press` und `stop` (Glücksspieler) sowie `mau` und `catch`.
+- **Aktionen:** `{a:"stake", card:<id>}` (`card` typgeprüft wie bei `play`), `{a:"press"}` und `{a:"stop"}`. Begründungen beim Ablehnen:
+  - „Leg erst eine Karte verdeckt auf deinen Einsatz.“ (`press` vor dem Setzen)
+  - „Erst den Glücksspielknopf drücken.“ (zweites `stake`; `play`/`draw`/`keep`/`stop` vor dem Drücken)
+  - „Aufhören geht erst nach dem ersten Druck.“ (`stop` vor dem ersten Einsatz)
+  - „Erst eine Karte verdeckt auf den Einsatz legen.“ (`play`/`draw`/`keep` vor dem Setzen)
+  - „Gerade läuft kein Glücksspiel.“, „Glücksspiel gibt es in diesen Regeln nicht.“, „Du bist nicht dran.“, „Diese Karte hast du nicht.“, „Ungültige Aktion.“
+  - Mau mit 2 Karten beim Drücken: „„Mau!“ rufst du, bevor du deine vorletzte Karte auf den Einsatz legst.“
+- **Ereignisse:**
+
+| Ereignis | Felder |
+|---|---|
+| `gamble_start` | `{seat}`, nach `play` und `color` |
+| `stake` | `{seat, count, card*, face*, back*}`; `count` = Einsatzgröße danach; `card`, `face` und `back` (nur bei `peek_own_backs`) nur für den Spieler selbst |
+| `gamble_roll` | `{seat, value}`; 0 = kein Treffer, 1–10 = Treffer |
+| `draw` | bei einem Treffer wie sonst, `reason:"gluecksspiel"` |
+| `stake_back` | `{seat, count, cards*, faces*, backs}`: ganzer Einsatz zurück; Rückseiten wie beim Ziehen (für andere sortiert bei `backs_visible`, für den Spieler bei `peek_own_backs`); danach `turn` |
+| `stake_discard` | `{seat, count, cards*, faces*, reason}`: Einsatz unter die Ablage; `reason:"empty"` (0 bei leerer Hand, danach `finish` und `round_over` bzw. `turn`) oder `reason:"stop"` (Aufhören, danach `turn`) |
+
+`*` = nach `events_for()` nur für den Spieler selbst. Die Quote steht in keinem Ereignis.
+
+- **Sicht** (Felder **nur bei `gamble_cards=on`**; ohne die Hausregel fehlen sie, damit die Sicht bit-gleich bleibt – Clients lesen mit Standardwert):
+  - `gamble`: `{seat, stake, need, last}` während eines Glücksspiels für alle Plätze (auch −1), sonst `{}`. `stake` = Anzahl der Einsatzkarten, `need` = `"stake"` oder `"press"`, `last` = letzter Wert (0–10) bzw. −1 vor dem ersten Druck.
+  - `hints.can_stake`: ids der setzbaren Karten (nur der Glücksspieler bei `need="stake"`, sonst `[]`); `hints.can_press` (bool); `hints.can_stop` (bool, nur mit der Hausregel). `hints.playable` ist in der Phase leer, `can_draw` falsch.
+  - Hinweistexte des Spielers: „Leg eine Karte verdeckt auf deinen Einsatz.“, nach einer 0 „Noch eine Karte setzen – oder aufhören?“ bzw. „Drück den Glücksspielknopf!“. Andere: z. B. „Anna spielt Glücksspiel – Einsatz: 2 Karten.“
+- **Spielstand:** `to_dict()` hat bei `gamble_cards=on` zusätzlich `gamble` = `{seat, q, stake: [ids], need, last}` (`{}` außerhalb). Ohne die Hausregel fehlt der Schlüssel; alte Stände laden ohne Glücksspiel.
+- **Testhaken:** `g.force_rolls([0, 0, 4])` gibt die nächsten Druckergebnisse vor (ohne Zufallszahlen, nicht gespeichert). `RulesFixture.build(…, {"gamble": {q, stake: [Schlüssel], need, last}})` baut ein laufendes Glücksspiel des Platzes `current` (Phase `gamble`).
+- **`CardDB`:** `GAMBLE = "gluecksspiel"`, `gamble_keys()`, `is_gamble(face)`; dazu „Gemeinsame Änderungen“.
+- **`RuleConfig`:** `gamble_cards`; `describe()` hat bei `on` eine Zeile „Glücksspiel: …“.
+
+### Computergegner
+
+- Legt den Glücksspiel-Joker gern mit kleiner Hand (höchstens 4 Karten: Wert 32, bis 6 Karten 10, sonst 2) und immer, wenn sonst nichts passt (statt zu ziehen). Gezogen behält er ihn bei mehr als 6 Karten.
+- Setzt zuerst Karten mit hohen Punkten bzw. schwer spielbare (Punkte + 12 / (1 + weitere Karten derselben Farbe)), Joker zuletzt; drückt sofort.
+- **Aufhören** (`MauBot.stop_chance`, ohne Kenntnis der Quote, Zufall aus dem übergebenen Seed): Stufe 0 mit 30 %, sonst 10 % + 18 % je weiterer Einsatzkarte (höchstens 90 %), mit 2 Karten 20 % weniger; mit 1 Karte nie (kein Treffer = fertig), nach einem „Mau!“-Ruf mit 2 Karten auch nicht (er setzt dann die vorletzte Karte).
+- Ruft „Mau!“ vor dem Setzen der vorletzten Karte (und vor dem Glücksspiel als vorletzte Karte).
+- **Stärke** zu dritt gegen zwei Zufallsbots mit Glücksspiel: 257 von 600 Partien (43 %), Schwelle im Test 36 %.
+
+### Texte
+
+- `card_help` für `*_gluecksspiel`: Joker und Farbe, Ablauf, Quote 1:1 bis 1:10, Treffer 1 bis 10, Ende bei leerer Hand (je nach `round_end`), Aufhören nach einer 0, Einsatzkarten wirken nicht, Mau-Hinweis (nicht bei `mau_call=off`), Ziehstrafe (bei `stacking=same`), letzte Karte, Punkte; ohne Hausregel der Zusatz „gerade nicht im Spiel“.
+- `overview`: Absatz „Glücksspiel“ (mit Aufhören), im Absatz Karten „zwei Glücksspiel-Joker“, in der Punkteliste „… Glücksspiel … 50“, jeweils nur bei `on`. Ist eine der Hausregeln mit Zusatzkarten aus, stellt der Absatz „Weitere besondere Karten“ deren Karten kurz vor (Nutzerwunsch: Anleitung „Regeln“ mit allen besonderen Karten).
+- Namen: `kind_name("gluecksspiel")` und `face_title` „Glücksspiel“, `match_phrase` „ein Glücksspiel“.
+
+### Tests
+
+**`test_rules_gamble.gd`** (721 ok, etwa 77 s, davon 41 s Dauerlauf) erweitert `test_rules_views.gd` mit `gamble_mode() = true`.
+
+- **Gebaute Fälle:** Kartendaten aller 8 Deckvarianten (Kartenzahl, Gesichter, Prüfsummen, Grunddeck vorn, feste Codes 0–127, Sortierung); Optionen und Texte; Rundenstart über 60 Seeds (114 bzw. 124 Karten); Legen, Phase, Sicht und alle Ablehnungen (Zustand byte-gleich); Treffer in beiden Richtungen; Fertigwerden bei `first` (mit Wertung) und `last` (auch mit nur einem Übrigen und zu zweit); letzte Karte; Mau in allen Lagen (Fenster nach Legen und Setzen, Erwischen mit 1 und 0 Karten, Ruf vorher, Treffer, `auto`, `off`); offene Stapelstrafe, Anzweifeln, `enforce`, Startkarte; gesetzter Flip ohne Wirkung und unter der Ablage, Glücksspiel oben nach einem Flip, dunkle Seite; leere Stapel (Mischen ohne Einsatz, beide leer); mit Kartentausch; Zufall (Quote gleichverteilt über 5000 Lose, Trefferrate 1/q für q = 1, 2, 5, 10, Werte 1–10 gleichverteilt, gleicher Seed = gleiche Würfe); Lecktest für alle Kombinationen aus `backs_visible` und `peek_own_backs` (Einsatzgesichter als Multimenge nur beim Besitzer, keine Quote); Rundreise mitten im Glücksspiel (auch aus Bot-Partien) und alter Stand; Bot-Entscheidungen (auch auf JSON-Sicht).
+- **Zufallsprüfungen** aus `test_rules_views.gd` mit Glücksspiel: JSON, Lecktest (87 878 Sichten, davon 6 512 Einsatz-Ereignisse und 1 276 Quotenprüfungen), Hinweise = Regeln (17 359 Versuche, darunter jedes `stake` und `press`), Rundreise. In jeder Glücksspiel-Lage des Lecktests werden alle Sichten mit einer anderen Quote verglichen; sie müssen gleich bleiben.
+- **Dauerlauf mit allen Hausregeln** (Kartentausch, Glücksspiel, Farbe mit ablegen): 2000 Partien mit zufälligen Regeln, 2–10 Spielern und Stufen 0–2; Kartenzahl immer 124, `deck_check` je Runde, Invarianten nach jeder Aktion, Zugobergrenze 5000 je Runde. Ergebnis: 3 196 Runden, 414 379 Aktionen, 6 993 Glücksspiele (20 647 Drucke, 4 425 Treffer, 2 568-mal damit fertig, das längste mit 51 Aktionen), 175-mal im Glücksspiel erwischt, 17 588-mal Farbe abgelegt (41 626 Karten mit), 6 358 Kartentausche; jedes Glücksspiel endet, 0 blinde Mau-Rufe (19-mal folgte einem Ruf eines Zufallsbots ein Kartentausch, der alle Rufe löscht; das zählt wie im Kartentausch-Test nicht). Anzahl per `-EnvPairs 'RULES_GAMBLE_GAMES=200'`.
+
+## Farbe mit ablegen (Hausregel, 05.10.2026)
+
+Nutzerwunsch (AGENTS.md Nr. 27), Festlegung des Koordinators.
+
+### Regeln
+
+- **Option** `discard_color`: **`off`** / `on`, in keiner Voreinstellung.
+- **Karten:** 6 zusätzliche doppelseitige Karten. Je Seite eine farbige Ablegen-Karte je Farbe (`hell_<farbe>_ablegen` bzw. `dunkel_<farbe>_ablegen`, Art `ablegen`, 30 Punkte) und zweimal den Ablegen-Joker (`hell_ablegen_joker` bzw. `dunkel_ablegen_joker`, Art `ablegen_joker`, 50 Punkte). Deck 118, mit allen Hausregeln 124. Prüfsummen je Seite +220.
+- **Passen:** Die farbige Karte passt auf ihre Farbe und auf jede andere farbige Ablegen-Karte (gleiches Symbol), der Ablegen-Joker immer (`{a:"play", card, color}`). Auf einem Joker zählt wie immer nur die Wunschfarbe. Unter einer offenen Ziehstrafe und beim Anzweifeln nicht legbar; als Startkarte bleiben beide liegen. Der Ablegen-Joker zählt bei `wild_counts_for_bluff` als „anderer Joker“.
+- **Wirkung:** Alle übrigen Karten der Hand in der Farbe der Karte (beim Joker in der gewählten Farbe) kommen mit auf die Ablage, **unter** die Ablegen-Karte, die oben bleibt; deren Farbe bzw. die Wunschfarbe gilt.
+  - Joker aller Art (Wünscher, Wünscher +2, Farbjagd, Glücksspiel, Ablegen-Joker) bleiben auf der Hand.
+  - Mitabgelegte Aktionskarten wirken nicht (kein Aussetzen, keine Strafe, kein Richtungswechsel, kein Flip, kein Kartentausch), auch nicht als letzte Karten.
+  - Reihenfolge in der Ablage nach Rang (nie Besitzerreihenfolge); nach einem späteren Flip kommen sie wie jede Ablagekarte nach oben.
+  - Danach ist der Nächste dran; die Ablegen-Karte selbst hat keine weitere Wirkung.
+- **Mau:** Bleibt 1 Karte ohne Ruf, öffnet sich das Fenster wie üblich (erwischen, `auto`-Strafe beim Fensterende). Bleibt keine, ist der Spieler fertig (Rundenende bzw. Platz). Zum Ruf vorher siehe „Gemeinsame Änderungen“.
+
+### Schnittstelle
+
+- **Ereignis** `discard_color` `{seat, color, cards, faces, count}` nach `play` (und `color`), vor `finish`/`turn`. Öffentlich (die Karten liegen offen); `cards`/`faces` in der Reihenfolge, in der sie unter der Ablegen-Karte liegen (unten zuerst). Auch mit `count` 0, wenn nichts weiter abzulegen war.
+- Begründungen wie gewohnt, z. B. „Passt nicht – lege Gelb oder eine Ablegen-Karte.“
+- **`CardDB`:** `DISCARD = "ablegen"`, `DISCARD_WILD = "ablegen_joker"`, `discard_keys()`, `is_discard(face)`.
+- **`RuleConfig`:** `discard_color`; `describe()` hat bei `on` eine Zeile „Farbe ablegen: …“.
+
+### Computergegner
+
+- Bevorzugt die Ablegen-Karte, wenn sie mindestens 2 weitere Karten mitnimmt (Wert 20 + 5 je Karte) oder die Hand leert (60); sonst spart er sie auf (niedriger Wert, der Ablegen-Joker wie ein Wünscher). Gezogen behält er sie, wenn sie weniger als 2 mitnimmt und die Hand nicht leert.
+- Der Ablegen-Joker wählt die Farbe mit den meisten Karten (`MauBot.most_color`; bei Gleichstand die mit mehr Punkten, dann zufällig).
+- Ruft „Mau!“ vor jedem Legen, nach dem genau 1 Karte bleibt (`MauBot.left_after(view, act)`), und bleibt nach dem Ruf bei so einer Karte.
+
+### Texte
+
+- `card_help` für `*_ablegen` und `*_ablegen_joker`: Wirkung, Passen, Joker bleiben, Aktionskarten wirken nicht, Mau bzw. Fertigwerden (je nach `round_end` und `mau_call`), Punkte; ohne Hausregel „gerade nicht im Spiel“.
+- `overview`: Absatz „Farbe ablegen“, im Absatz Karten „vier Ablegen-Karten (eine je Farbe) und zwei Ablegen-Joker“, in der Punkteliste „Alle aussetzen und Farbe ablegen 30“ und „… Ablegen-Joker 50“, jeweils nur bei `on`.
+- Namen: `kind_name("ablegen")` „Farbe ablegen“, `face_title("hell_rot_ablegen")` „Rot ablegen“, Joker „Ablegen-Joker“, `match_phrase` „eine Ablegen-Karte“ bzw. „einen Ablegen-Joker“.
+
+### Tests
+
+**`test_rules_discard.gd`** (255 ok, etwa 32 s, davon 22 s Dauerlauf) erweitert `test_rules_views.gd` mit `discard_mode() = true`.
+
+- **Gebaute Fälle:** Kartendaten (Schlüssel, Punkte, je Farbe eine, 2 Joker, Prüfsummen 1500/1700, Sortierung, Namen); Optionen und Texte; Rundenstart über 40 Seeds; Passen (Farbe, jede Ablegen-Karte, auf dem Joker nur die Wunschfarbe, Begründungen, Startkarte); Wirkung mit Jokern und allen Aktionskarten der Farbe auf der Hand (keine Wirkung, Reihenfolge unter der Karte, öffentliches Ereignis), ohne weitere Karten (`count` 0); Ablegen-Joker (Farbwahl, andere Joker bleiben, Richtungswechsel ohne Wirkung); Mau (Fenster bei 1 Karte, Erwischen, Ruf vorher mit 4 Karten, Ruf verfällt bei mehr, Joker mit passender und unpassender Farbe, kein Ruf, wenn keine Karte 1 übrig lässt, alles auf einmal ohne Ruf, `auto`, `off`); Fertigwerden bei `first` (Punkte 30/50) und `last`; offene Stapelstrafe, `enforce`, Anzweifeln; dunkle Seite (Farbjagd bleibt, +5 und Alle aussetzen wirken nicht) und Flip danach; mit Kartentausch und Glücksspiel; Rundreise; Bot-Entscheidungen.
+- **Zufallsprüfungen** aus `test_rules_views.gd` mit „Farbe ablegen“: JSON, Lecktest (24 494 Sichten, davon 1 166 „Farbe ablegen“-Ereignisse), Hinweise = Regeln (29 583 Versuche), Rundreise.
+- **Dauerlauf:** 1000 Partien mit zufälligen Regeln, Kartentausch bei jeder zweiten, Glücksspiel bei jeder dritten; Kartenzahl der Variante konstant, Zugobergrenze 5000. Ergebnis: 1 753 Runden, 225 763 Aktionen, 10 190-mal abgelegt (22 720 Karten mit), 753-mal damit fertig, 525 Rufe mit mehr als 2 Karten vor dem Ablegen, 0 blinde Rufe. Anzahl per `-EnvPairs 'RULES_DISCARD_GAMES=200'`.
+
+## Gemeinsame Änderungen (Glücksspiel und Farbe mit ablegen)
+
+- **Kartencodes** (fest, Spielstände speichern sie): 0–107 Grunddeck, 108–115 Kartentausch, 116 `hell_gluecksspiel`, 117 `dunkel_gluecksspiel`, 118–121 `hell_{rot,gelb,gruen,blau}_ablegen`, 122 `hell_ablegen_joker`, 123–126 `dunkel_{pink,tuerkis,orange,lila}_ablegen`, 127 `dunkel_ablegen_joker`. Im Deck einer Partie steht das Grunddeck vorn, dahinter Kartentausch, Glücksspiel, Ablegen (soweit eingeschaltet); so bleiben Paarung und ids aus dem Seed für die bisherigen Varianten gleich.
+- **Rang** (Sortierung von Hand und Rückseiten): in ihrer Farbe Zahlen, Aktionen, Kartentausch, Ablegen-Karte; unter den Jokern der Seite Wünscher, Wünscher +2 bzw. Farbjagd, Glücksspiel, Ablegen-Joker.
+- **`CardDB`:** `deck(s, with_swap, with_gamble, with_discard)`, `faces_light/dark(…)`, `card_count(…)`, `face_count(…)`, `point_sum(s, …)`, `variant(…)` (Bitmaske 1/2/4); Konstanten `EXTRA_CARDS`, `EXTRA_FACES`, `EXTRA_POINTS`, `CARD_COUNT_ALL` 124, `FACE_COUNT_ALL` 128, `SUM_LIGHT_ALL` 1680, `SUM_DARK_ALL` 1880. `all_keys(true)` liefert alle 128 Gesichter, `all_keys()` weiter die 108 des Grunddecks.
+- **`RuleConfig`:** `card_count()` (112–124), `deck(s)`, `has_extra_cards()`. In `describe()` steht bei genau einer Hausregel mit Zusatzkarten die Kartenzahl in ihrer Zeile (Kartentausch unverändert „(116)“), bei mehreren in einer eigenen Zeile „Gespielt wird mit N Karten.“
+- **Voreinstellung „Familie“ mit Kartentausch** (Nutzerentscheidung, AGENTS.md Nr. 25): `swap_cards=on`, also 116 Karten. Glücksspiel und Farbe ablegen sind in keiner Voreinstellung.
+- **`RulesFixture`:** `random_config(rng, with_swap, with_gamble, with_discard)` (ohne Schalter dieselben Zufallszahlen wie vorher), `card_check` zählt den Einsatz mit, `deck_check` nimmt das Deck der Regeln, `invariants` prüft die Phase `gamble`, `spec.gamble`.
+- **`test_rules_views.gd`** (gemeinsame Zufallsprüfungen): `gamble_mode()`/`discard_mode()` wie `swap_mode()`; Lecktest prüft Einsatz-Ereignisse (`_leak_stake`), `discard_color` (öffentlich, Farbe stimmt), Glücksspiel-Felder der Sicht und die Quote (`_quota_check`); die Hinweisprüfung probiert zusätzlich jedes `stake` und `press`.
+- **Mau-Regel, verallgemeinert:**
+  - Vor dem Legen darf rufen, wer am Zug ist und eine Karte legen kann, nach der genau 1 Karte bleibt. Ohne Ablegen-Karten heißt das wie bisher: 2 Karten und eine legbar. Eine Ablegen-Karte lässt „Hand − 1 − übrige Karten ihrer Farbe“ übrig, ein Ablegen-Joker zählt, wenn irgendeine Farbe 1 übrig lässt. Im Glücksspiel: 2 Karten vor dem Setzen.
+  - Ein Ruf verfällt, wenn nach dem Legen bzw. Setzen mehr als 1 Karte bleibt (z. B. Ruf vor dem Ablegen-Joker, dann eine Farbe mit wenigen Karten). Ohne die neuen Karten kam das nie vor.
+  - Die Erinnerung „Denk an „Mau!““ erscheint auch mit mehr als 2 Karten, wenn so ein Ruf möglich ist.
+  - Mit 2 Karten, wenn die einzige legbare Karte die Hand leert: „Damit legst du alles auf einmal ab – „Mau!“ brauchst du nicht.“
+- **Bot:** `MauBot.left_after(view, act)` und `MauBot.most_color(view, skip_id, rng)`; Ruf nur, wenn die gewählte Aktion genau 1 Karte übrig lässt oder er höchstens 1 Karte hat. Die Dauerläufe zählen „blinde“ Rufe (Ruf mit mindestens 2 Karten, danach bleiben mehr als 1; ein Erwischen dazwischen zählt nicht als Handlung): 0.
+- **Ohne die neuen Hausregeln bit-gleich:** Ein Fingerabdruck (SHA-256 über 120 Bot-Partien mit zufälligen Regeln ohne Hausregelkarten und drei Voreinstellungen: alle Sichten ohne `rules`, alle gefilterten Ereignisse, Aktionen und Antworten, Endzustand ohne `config`, dazu `describe`, `overview`, `card_help` der 108 Gesichter und die Codetabelle 0–115; 1,31 Mio. Teile) ist vor und nach der Änderung gleich: `8e2e91de…0d08`. Auch mit Kartentausch bleibt alles gleich: Der Dauerlauf in `test_rules_swap.gd` liefert genau die dokumentierten Zahlen (3 460 Runden, 780 836 Aktionen, 15 478 Tausche), der Stärketest 252 von 600. Der Stärketest in `test_rules_bots.gd` liefert weiter 241 von 600.
+
+### Hinweise für andere Module
+
+- **Kartenbilder (B/F):** neue Gesichter `hell_gluecksspiel`, `dunkel_gluecksspiel`, `hell_{rot,gelb,gruen,blau}_ablegen`, `dunkel_{pink,tuerkis,orange,lila}_ablegen`, `hell_ablegen_joker`, `dunkel_ablegen_joker` (Listen: `CardDB.gamble_keys()`, `CardDB.discard_keys()`). `test_b_assets.gd` vergleicht weiter mit `CardDB.all_keys()` (108); `all_keys(true)` hat jetzt 128.
+- **Oberfläche und Browser-Client:**
+  - Optionen `gamble_cards` und `discard_color` im Regelbildschirm (die Liste in `rules_screen.gd` ist handgepflegt); „Familie“ schaltet jetzt den Kartentausch ein.
+  - Phase `gamble`: Einsatz-Stapel (`view.gamble.stake`), Knopf „Glücksspiel“ bei `hints.can_press`, setzbare Karten aus `hints.can_stake` (→ `{a:"stake", card}`), Wert aus `gamble_roll.value` bzw. `view.gamble.last`. Die Felder fehlen ohne die Hausregel.
+  - `discard_color` animieren: Karten aus `cards` von der Hand unter die Ablegen-Karte; die Gesichter sind für alle offen.
+  - Der Mau-Knopf kann jetzt auch mit mehr als 2 Karten erscheinen (`hints.can_mau`).
+  - Handsortierung: Rang aus `CardDB.rank_table()` kennt die neuen Gesichter, Punkte aus `points_table()`.
+- **Spielsteuerung (G):** nichts zu tun; Bots liefern in der Phase `gamble` über `MauBot.choose` `stake`/`press`. `test_game_local.gd` zählt Karten nur in Stapeln und Händen; mit Glücksspiel müsste der Einsatz (`game.gamble.stake`) mitgezählt werden. „Familie“ spielt dort jetzt mit 116 Karten (der Test prüft die Kartenzahl nur in „Offiziell“).
+- **`webclient/mock.js`** kennt die neuen Karten und die Phase nicht (Sache des Browser-Clients).

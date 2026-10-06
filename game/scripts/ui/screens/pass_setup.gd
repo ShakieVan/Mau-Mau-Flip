@@ -82,6 +82,11 @@ func on_enter() -> void:
 		_rules.refresh()
 
 
+# Zurück schließt zuerst die Auswahl „Gespeicherte Regeln“
+func on_back() -> bool:
+	return _rules != null and _rules.close_picker()
+
+
 func _add(kind: String) -> void:
 	if entries.size() >= MAX:
 		return

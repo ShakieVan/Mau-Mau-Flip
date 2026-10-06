@@ -8,8 +8,20 @@ extends AppScreen
 #   TableView.action → source.act (ziehen, behalten, anzweifeln, annehmen, erwischen, nächste Runde, Farbwahl)
 #   Mau-Knopf → act mau (ohne Ton); Ton und Sprechblase kommen mit dem Ereignis „mau“ auf allen Geräten (TableView, MauSound)
 #   help_requested → Kartenhilfe (RulesText zur aktiven RuleConfig aus view.rules)
+#   Glücksspiel (eigener Einsatz fällig): Ausspielen einer Handkarte → act stake (ohne Farbwahl, Ziel ist der Einsatzstapel);
+#                             der Knopf in der Tischmitte schickt press über TableView.action
+#   „Spielbare Karten hervorheben“ aus: eine unpassende Karte springt zurück, Hinweis „Die Karte passt nicht.“
 #   Sortierknopf → HandView.set_sort_mode + App.settings "sortierung"; Rückseiten-Knopf: halten = eigene Rückseiten
 #   handover → Sichtschutz (HandoverScreen), Aufdecken → source.reveal(); notice → Meldung; connection_changed → „Verbinde neu …“
+#   App-Gast: jede Sicht merkt sich view.rules als Regeln des Gastgebers (RuleSets.remember_host, schreibt nur bei Änderung;
+#             nur hier, nicht schon in der Lobby). „Regeln speichern“ im Spielmenü („Partie verlassen?“ bleibt dabei offen) und in
+#             der Leiste „Verbindung zum Gastgeber beendet.“; beide zeigen „Gespeichert: …“, wenn die Regeln schon einem Satz
+#             entsprechen. Die Leiste sagt dazu, dass die Regeln gemerkt sind, und bietet „Selbst eröffnen“: neue Gastgeber-Lobby
+#             mit genau diesen Regeln (Übernahme, wenn der Gastgeber gehen musste). Ein Speichern-Dialog, der in der Lobby offen war,
+#             kommt mit an den Tisch (adopt_save_box).
+#             Kommt am Tisch eine Lobby an, ist diese Partie vorbei: Der Gastgeber hat eine neue Runde eröffnet, und der Gast hat
+#             sich (z. B. nach einem Funkloch, ohne „bye“) dorthin neu verbunden. Dann geht es mit derselben Verbindung in die Lobby
+#             (JoinScreen.with_client) statt am alten Tisch stehen zu bleiben (Nachtest 1, Nachbesserung; wie der Browser-Client).
 # Schichtung: Die Overlays der TableView (Farbwahl, Hilfe, Sichtschutz, Rundenende, Großansicht) liegen in einem CanvasLayer
 # über der Hand (layer 5), eigene Knöpfe und Rückfragen darüber (layer 6). So kann keine Karte der Hand sie überdecken.
 
@@ -33,9 +45,14 @@ var _menu_btn: Button
 var _round_menu: Button
 var _conn: PanelContainer
 var _conn_label: Label
+var _conn_sub: Label                 # App-Gast: „Die Regeln von Lena sind gemerkt …“
 var _conn_menu: Button
+var _conn_save: Button               # App-Gast: „Regeln speichern“, wenn die Verbindung zum Gastgeber beendet ist
+var _conn_host: Button               # App-Gast: „Selbst eröffnen“ mit den Regeln dieser Partie
+var _save_opt: Button                # Spielmenü des App-Gasts: „Regeln dieser Partie speichern“
 var _confirm: ConfirmBox
-var _wild_drag := -1                 # Wünscher, der gerade gezogen wird (Farbfelder offen)
+var _save_box: RuleSetSaveBox
+var _wild_drag := -1                # Wünscher, der gerade gezogen wird (Farbfelder offen)
 var _pending_wild := -1              # Wünscher wartet auf das Farbrad
 var _last_play := -1                 # optimistisch ausgespielt, Antwort steht aus
 var _last_seat := -1                 # zuletzt gezeigter Platz (Sichtschutz: von wem kommt das Handy)
@@ -119,6 +136,8 @@ func build() -> void:
 		source.notice.connect(_on_notice)
 		source.handover.connect(_on_handover)
 		source.connection_changed.connect(_on_connection)
+		if source.mode() == "client":
+			source.lobby_changed.connect(_on_client_lobby)
 		if source is GameTable:
 			(source as GameTable).busy_check = _ui_busy
 		var v := source.current_view()
@@ -147,9 +166,28 @@ func _build_top() -> void:
 	_top.add_child(_conn)
 	var row := ScreenKit.hbox(18)
 	_conn.add_child(row)
+	var texts := ScreenKit.vbox(2)
+	texts.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(texts)
 	_conn_label = ScreenKit.label("Verbinde neu …", "NightLabel", 24)
 	_conn_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	row.add_child(_conn_label)
+	texts.add_child(_conn_label)
+	_conn_sub = ScreenKit.label("", "NightLabel", 18)
+	_conn_sub.name = "Gemerkt"
+	_conn_sub.modulate.a = 0.8
+	_conn_sub.visible = false
+	texts.add_child(_conn_sub)
+	_conn_host = ScreenKit.button("Selbst eröffnen", "PrimaryButton", "qr")
+	_conn_host.name = "SelbstEroeffnen"
+	_conn_host.tooltip_text = "Neues Spiel mit den Regeln dieser Partie eröffnen"
+	_conn_host.visible = false
+	_conn_host.pressed.connect(open_own_game)
+	row.add_child(_conn_host)
+	_conn_save = ScreenKit.button("Regeln speichern", "DarkButton")
+	_conn_save.name = "RegelnSpeichern"
+	_conn_save.visible = false
+	_conn_save.pressed.connect(save_host_rules)
+	row.add_child(_conn_save)
 	_conn_menu = ScreenKit.button("Zum Menü", "DarkButton")
 	_conn_menu.visible = false
 	_conn_menu.pressed.connect(_leave_now)
@@ -178,9 +216,7 @@ static func _keep_screen(on: bool) -> void:
 func _layout() -> void:
 	var sz := size if size.x > 10.0 else Vector2(1600, 720)
 	hand.layout_rect = Rect2(270.0, sz.y - 220.0, maxf(sz.x - 540.0, 400.0), 220.0)
-	var xf := table.get_global_transform()
-	hand.play_target = xf * table.discard_position()
-	hand.spawn_from = xf * table.draw_pile_position()
+	table.update_hand_target()          # Ablage bzw. Einsatzstapel (Glücksspiel), neue Karten vom Nachziehstapel
 	_round_menu.size = Vector2(_round_menu.get_combined_minimum_size().x + 20.0, ScreenKit.TOUCH)
 	_round_menu.position = Vector2(sz.x - _round_menu.size.x - 22.0, 14.0)
 	_conn.reset_size()
@@ -207,7 +243,8 @@ func _on_state(events: Array, v: Dictionary) -> void:
 	var hints: Dictionary = v.get("hints", {})
 	if hints.has("can_next_round"):
 		table.can_next_round = 1 if bool(hints.get("can_next_round", false)) else 0
-	var rules: Dictionary = v.get("rules", {})
+	var raw_rules: Variant = v.get("rules", {})
+	var rules: Dictionary = raw_rules if raw_rules is Dictionary else {}
 	var peek_ok := bool(rules.get("peek_own_backs", true)) and int(v.get("seat", -1)) >= 0
 	var backs_btn: Control = table.get("_backs_btn")
 	if backs_btn != null:
@@ -219,6 +256,8 @@ func _on_state(events: Array, v: Dictionary) -> void:
 		_last_seat = seat
 	if _handover_pending and seat >= 0:
 		_handover_pending = false
+	if source != null and source.mode() == "client" and not rules.is_empty():
+		RuleSets.remember_host(rules, _host_name())
 	table.handle_state(events, v)
 
 
@@ -231,6 +270,8 @@ func _on_notice(text: String) -> void:
 	if _last_play >= 0:
 		hand.cancel_play(_last_play)
 		_last_play = -1
+	table.gamble_machine.press_sent = false
+	table.gamble_machine.queue_redraw()      # „Aufhören“ wieder zeigen
 	table.show_notice(text, "warn")
 
 
@@ -259,12 +300,40 @@ func _on_connection(state: String) -> void:
 		"connecting":
 			_conn_label.text = "Verbinde neu …"
 			_conn_menu.visible = false
+			_conn_save.visible = false
+			_conn_host.visible = false
+			_conn_sub.visible = false
 			_conn.visible = true
 		"closed", "rejected":
 			_conn_label.text = "Verbindung zum Gastgeber beendet."
 			_conn_menu.visible = true
+			var guest := _guest_rules() != null
+			_conn_save.visible = guest
+			_conn_host.visible = guest
+			_conn_sub.visible = guest
+			_conn_sub.text = "Die Regeln von %s sind gemerkt. Eröffne selbst, dann spielt ihr mit ihnen weiter." % _host_name()
+			_refresh_saved_state()
 			_conn.visible = true
 	_layout()
+
+
+# App-Gast: Lobby am Tisch = neue Runde des Gastgebers. Verbindung an die Lobby übergeben, dieser Tisch ist zu Ende.
+func _on_client_lobby(l: Dictionary) -> void:
+	if leaving or nav == null or not source is ClientTable or (l.get("players", []) as Array).is_empty():
+		return
+	leaving = true
+	var ct := source as ClientTable
+	for c in [[ct.state_changed, _on_state], [ct.notice, _on_notice], [ct.handover, _on_handover],
+			[ct.connection_changed, _on_connection], [ct.lobby_changed, _on_client_lobby]]:
+		if (c[0] as Signal).is_connected(c[1]):
+			(c[0] as Signal).disconnect(c[1])
+	source = null
+	if _confirm != null and is_instance_valid(_confirm):
+		_confirm.queue_free()
+		_confirm = null
+	var js := JoinScreen.with_client(ct)
+	nav.replace(js)
+	nav.toast("Diese Partie ist vorbei. Der Gastgeber hat eine neue Runde eröffnet.")
 
 
 # ================================================================= Oberfläche → Quelle
@@ -300,7 +369,21 @@ func _is_wild(id: int, face: String) -> bool:
 	return JokerRays.is_joker(face)
 
 
+# Glücksspiel: Der eigene Einsatz ist fällig (Handkarten gehen verdeckt auf den Einsatzstapel)
+func _staking() -> bool:
+	var raw: Variant = view.get("gamble", {})
+	if not raw is Dictionary or (raw as Dictionary).is_empty():
+		return false
+	var gb: Dictionary = raw
+	var me := int(view.get("seat", -1))
+	return me >= 0 and int(gb.get("seat", -2)) == me and str(gb.get("need", "")) == "stake"
+
+
 func _on_play_requested(id: int, drop_global: Vector2) -> void:
+	if _staking():
+		_last_play = id
+		_act({"a": "stake", "card": id})
+		return
 	var face := _card_face(id)
 	if _is_wild(id, face):
 		var col := ""
@@ -320,6 +403,8 @@ func _on_play_requested(id: int, drop_global: Vector2) -> void:
 
 
 func _on_drag_started(id: int, face: String) -> void:
+	if _staking():
+		return
 	var playable: Array = (view.get("hints", {}) as Dictionary).get("playable", [])
 	if _is_wild(id, face) and (playable.has(id) or playable.has(float(id))):
 		_wild_drag = id
@@ -357,9 +442,12 @@ func _on_play_denied(_id: int) -> void:
 	var me := int(view.get("seat", -1))
 	if turn != me:
 		table.show_notice("Du bist gerade nicht dran.")
+	elif not hand.highlight and str(view.get("phase", "")) in ["turn", "drawn", "challenge"]:
+		# ohne Hervorheben: die Karte springt zurück, ein kurzer Hinweis, keine Strafe
+		table.show_notice("Die Karte passt nicht.")
 	else:
 		var hints: Dictionary = view.get("hints", {})
-		var t := str(hints.get("text", ""))
+		var t := table.hint_text(str(hints.get("text", "")))
 		table.show_notice("Diese Karte passt gerade nicht." if t == "" or t == "Du bist dran." else t)
 
 
@@ -438,6 +526,10 @@ func on_back() -> bool:
 	if hand != null and hand.is_big_view_open():
 		hand.close_big_view()
 		return true
+	if _save_box != null and is_instance_valid(_save_box):
+		_save_box.cancel()
+		_save_box = null
+		return true
 	if _confirm != null and is_instance_valid(_confirm):
 		_confirm.queue_free()
 		_confirm = null
@@ -452,7 +544,93 @@ func on_back() -> bool:
 		_confirm = null
 		if yes:
 			_leave_now())
+	if _guest_rules() != null:
+		# Die Rückfrage bleibt offen: Wer gehen wollte, geht nach dem Speichern mit „Verlassen“.
+		_save_opt = _confirm.add_option("Regeln dieser Partie speichern", "regeln")
+		_save_opt.name = "RegelnSpeichern"
+		_save_opt.pressed.connect(save_host_rules)
+		_refresh_saved_state()
 	return true
+
+
+# App-Gast: Regeln des Gastgebers aus der Sicht (null = kein Gast oder noch keine Sicht)
+func _guest_rules() -> RuleConfig:
+	if source == null or source.mode() != "client":
+		return null
+	var rules: Variant = view.get("rules", {})
+	if not rules is Dictionary or (rules as Dictionary).is_empty():
+		return null
+	return RuleConfig.from_dict(rules)
+
+
+# Name des Gastgebers: Lobby (Spieler mit host_id), sonst die Begrüßung, sonst „Gastgeber“
+func _host_name() -> String:
+	var ct := source as ClientTable
+	if ct == null:
+		return "Gastgeber"
+	var welcomed := ct.client.host_name if ct.client != null else ""
+	return RuleSets.host_name_in_lobby(ct.lobby, welcomed if welcomed != "" else "Gastgeber")
+
+
+# „Regeln speichern“ (Spielmenü bzw. Verbindungsleiste des App-Gasts): Regeln der Partie als eigenen Satz ablegen. Der Dialog
+# liegt über einer offenen Rückfrage; die bleibt stehen.
+func save_host_rules() -> void:
+	var cfg := _guest_rules()
+	if cfg == null or (_save_box != null and is_instance_valid(_save_box)):
+		return
+	var who := _host_name()
+	var suggestion := RuleSets.match_name(cfg)
+	if suggestion == "":
+		suggestion = RuleSets.suggestion_for_host(who)
+	_wire_save_box(RuleSetSaveBox.ask(_top, cfg, suggestion, who))
+
+
+# Speichern-Dialog aus der Lobby übernehmen (die Partie hat begonnen, während er offen war); getippter Name bleibt
+func adopt_save_box(box: RuleSetSaveBox) -> void:
+	if box == null or not is_instance_valid(box) or box.is_queued_for_deletion():
+		return
+	if _save_box != null and is_instance_valid(_save_box):
+		box.queue_free()
+		return
+	if box.get_parent() != _top:
+		box.reparent(_top, false)
+	box.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_wire_save_box(box)
+	box._focus_field.call_deferred()
+
+
+func _wire_save_box(box: RuleSetSaveBox) -> void:
+	_save_box = box
+	box.saved.connect(func(n: String) -> void:
+		_save_box = null
+		_refresh_saved_state()
+		if _confirm == null or not is_instance_valid(_confirm):
+			table.show_notice("Gespeichert: „%s“" % n))
+	box.cancelled.connect(func() -> void: _save_box = null)
+
+
+# „Regeln speichern“ zeigt „Gespeichert: …“, wenn die Regeln der Partie schon einem eigenen Satz entsprechen (Leiste und Spielmenü)
+func _refresh_saved_state() -> void:
+	var cfg := _guest_rules()
+	var saved := RuleSets.match_name(cfg) if cfg != null else ""
+	if _conn_save != null:
+		_conn_save.text = ("Gespeichert: „%s“" % saved) if saved != "" else "Regeln speichern"
+	if _save_opt != null and is_instance_valid(_save_opt):
+		_save_opt.text = ("Gespeichert als „%s“" % saved) if saved != "" else "Regeln dieser Partie speichern"
+	if _conn != null and _conn.visible:
+		_layout()
+
+
+# „Selbst eröffnen“ (App-Gast, Verbindung beendet): mit genau den Regeln dieser Partie eine neue Gastgeber-Lobby öffnen
+func open_own_game() -> void:
+	var cfg := _guest_rules()
+	if cfg == null or leaving or nav == null:
+		return
+	leaving = true
+	RulesBar.store(cfg)
+	if source != null:
+		source.leave()
+	nav.replace(HostLobbyScreen.new())
 
 
 func _leave_now() -> void:

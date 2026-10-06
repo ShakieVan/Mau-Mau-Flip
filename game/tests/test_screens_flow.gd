@@ -2,6 +2,9 @@ extends SceneTree
 # Modul F2, headless: Bildschirmwechsel (Hauptmenü ↔ alle Unterseiten, Zurück), Übungspartie mit echter LocalTable startet und
 # läuft ein paar Züge, Verlassen mit Rückfrage, Weitergeben zeigt vor jedem Menschenwechsel den Sichtschutz (nie eine fremde Hand),
 # Regel-Editor speichert, Einstellungen schreiben, Mau-Töne (Aufnahmen) mit Entprellung je Platz.
+# Weitergeben mit Hausregeln (AGENTS.md 15): Nach einem Kartentausch und nach einem Glücksspiel erscheint der Sichtschutz ohne
+# jede Karte (Hand leer, keine Kartenansicht im Sichtschutz, keine neue Sicht bis zum Aufdecken); während des Glücksspiels kommt
+# kein Sichtschutz.
 #   godot_run.ps1 -Script res://tests/test_screens_flow.gd -Headless -Timeout 300
 
 const CleanExit := preload("res://tests/clean_exit.gd")
@@ -68,6 +71,7 @@ func run() -> void:
 	await wait(0.25)
 	await solo_game()
 	await pass_game()
+	await pass_house_rules()
 	await rules_editor()
 	await mau_lock()
 	var app := UiApp.app()
@@ -246,6 +250,131 @@ func pass_game() -> void:
 	ts._leave_now()
 	await wait(0.4)
 	check(nav.top() is MainMenuScreen, "Weitergeben verlassen")
+
+
+# Weitergeben mit Hausregeln: zwei Menschen; erst ein Kartentausch, dann ein Glücksspiel (feste Drucke 0, 3). Die Karten werden
+# hinter dem Sichtschutz in die Hand gelegt (Kartenzahl bleibt gleich).
+func pass_house_rules() -> void:
+	var cfg := RuleConfig.preset("familie")
+	cfg.gamble_cards = "on"
+	cfg.discard_color = "on"
+	RulesBar.store(cfg)
+	press("Weitergeben")
+	await wait(0.25)
+	var setup := nav.top() as PassSetupScreen
+	setup.entries = [{"name": "Anna", "kind": "human"}, {"name": "Ben", "kind": "human"}]
+	setup._rebuild()
+	press("Start")
+	await wait(0.4)
+	var ts := nav.top() as TableScreen
+	check(ts != null and ts.source is LocalTable and ts.source.mode() == "pass", "Hausregeln Weitergeben: Tisch")
+	if ts == null or not ts.source is LocalTable:
+		return
+	var src := ts.source as LocalTable
+	var g := src.game
+	check(g != null and g.n_cards == 124, "Hausregeln Weitergeben: 124 Karten")
+	var views := []
+	src.state_changed.connect(func(_e: Array, v: Dictionary) -> void: views.append(int(v.get("seat", -1))))
+	# erster Sichtschutz
+	var first := await _await_handover(ts)
+	check(first >= 0, "Hausregeln Weitergeben: Sichtschutz vor dem ersten Zug")
+	if first < 0:
+		ts._leave_now()
+		await wait(0.4)
+		return
+	_check_cover(ts, "erster Sichtschutz")
+	var other := 1 - first
+	var sid := _give(g, first, MauGame.SWAP)
+	if sid >= 0:
+		g.color = str(g._color[g.faces[g.side * g.n_cards + sid]])
+		g.wished = false
+	_reveal(ts)
+	await _settle(ts)
+	check(int(ts.view.get("seat", -1)) == first and (ts.view.hints.playable as Array).has(sid), "Hausregeln Weitergeben: Kartentausch spielbar")
+	var n_views := views.size()
+	ts._act({"a": "play", "card": sid})
+	var second := await _await_handover(ts)
+	check(second == other, "Hausregeln Weitergeben: nach dem Kartentausch Sichtschutz für den anderen (%d)" % second)
+	_check_cover(ts, "nach dem Kartentausch")
+	check(views.slice(n_views).filter(func(s): return s == other).is_empty(), "nach dem Kartentausch keine fremde Sicht vor dem Aufdecken")
+	# Glücksspiel des anderen
+	var gid := _give(g, other, MauGame.GAMBLE)
+	g.force_rolls([0, 3])
+	_reveal(ts)
+	await _settle(ts)
+	check(int(ts.view.get("seat", -1)) == other and (ts.view.hints.playable as Array).has(gid), "Hausregeln Weitergeben: Glücksspiel spielbar")
+	ts._act({"a": "play", "card": gid, "color": str((ts.view.get("colors", ["rot"]) as Array)[0])})
+	var covered_during := false
+	var deadline := Time.get_ticks_msec() + 15000
+	while g.phase() == "gamble" and Time.get_ticks_msec() < deadline:
+		await wait(0.1)
+		if ts.table.handover.visible:
+			covered_during = true
+		if ts.table.director.is_busy():
+			continue
+		var h: Dictionary = ts.view.get("hints", {})
+		if not (h.get("can_stake", []) as Array).is_empty():
+			ts._act({"a": "stake", "card": int(h.can_stake[0])})
+		elif bool(h.get("can_press", false)):
+			ts._act({"a": "press"})
+	check(g.phase() != "gamble" and not covered_during, "Hausregeln Weitergeben: Glücksspiel ohne Sichtschutz zu Ende gespielt (%s)" % g.phase())
+	n_views = views.size()
+	var third := await _await_handover(ts)
+	check(third == first, "Hausregeln Weitergeben: nach dem Glücksspiel Sichtschutz (%d)" % third)
+	_check_cover(ts, "nach dem Glücksspiel")
+	check(views.slice(n_views).filter(func(s): return s == first).is_empty(), "nach dem Glücksspiel keine fremde Sicht vor dem Aufdecken")
+	check(RulesFixture.card_check(g) == "", "Hausregeln Weitergeben: Karten vollständig (%s)" % RulesFixture.card_check(g))
+	ts._leave_now()
+	await wait(0.4)
+	check(nav.top() is MainMenuScreen, "Hausregeln Weitergeben verlassen")
+
+
+# Wartet, bis der Sichtschutz erscheint; Platz, auf den er wartet (-1: keiner)
+func _await_handover(ts: TableScreen) -> int:
+	var deadline := Time.get_ticks_msec() + 8000
+	while Time.get_ticks_msec() < deadline:
+		await wait(0.05)
+		var src := ts.source as LocalTable
+		if ts.table.handover.visible and src.pending_handover() >= 0:
+			await wait(0.3)
+			return src.pending_handover()
+	return -1
+
+
+# Sichtschutz (AGENTS.md 15): deckt alles ab, zeigt keine Karte, auch keine Rückseite; die Hand darunter ist leer
+func _check_cover(ts: TableScreen, what: String) -> void:
+	var cover := ts.table.handover
+	var screen := Rect2(Vector2.ZERO, ts.get_viewport_rect().size)
+	check(cover.visible and cover.get_global_rect().encloses(screen.grow(-1.0)), "Sichtschutz %s deckt den Bildschirm ab" % what)
+	check(cover.find_children("*", "CardView", true, false).is_empty() and cover.find_children("*", "TextureRect", true, false).is_empty(),
+		"Sichtschutz %s zeigt keine Karten" % what)
+	check(ts.hand.get_order().size() == 0, "Sichtschutz %s: Hand leer" % what)
+
+
+func _reveal(ts: TableScreen) -> void:
+	ts.table.handover.visible = false
+	ts.table.handover.revealed.emit()
+
+
+func _settle(ts: TableScreen) -> void:
+	await wait(0.2)
+	var deadline := Time.get_ticks_msec() + 5000
+	while ts.table.director.is_busy() and Time.get_ticks_msec() < deadline:
+		await wait(0.05)
+
+
+# Legt eine Karte der Art kind (aktive Seite) auf die Hand von seat; Kartenzahl bleibt gleich. -1: keine gefunden
+func _give(g: MauGame, seat: int, kind: String) -> int:
+	for id in g.hands[seat]:
+		if str(g._kind[g.faces[g.side * g.n_cards + int(id)]]) == kind:
+			return int(id)
+	for i in g.draw_pile.size():
+		var id := int(g.draw_pile[i])
+		if str(g._kind[g.faces[g.side * g.n_cards + id]]) == kind:
+			g.draw_pile.remove_at(i)
+			(g.hands[seat] as Array).append(id)
+			return id
+	return -1
 
 
 # Regel-Editor: Voreinstellung und Einzeloption landen in App.settings "regeln"

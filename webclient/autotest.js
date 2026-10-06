@@ -1,7 +1,11 @@
 /* Mau-Mau Flip – Browser-Client „Lite“: Selbsttest (index.html?mock=1&autotest=1, später auch gegen einen echten Gastgeber).
  * Spielt über die echte Oberfläche (synthetische Zeigerereignisse auf der Hand, Klicks auf Knöpfe), prüft nach jedem
  * Abgleich DOM gegen Sicht und schreibt das Ergebnis nach #autotest-result (data-ok="1"/"0"), auswertbar mit --dump-dom.
- * Parameter: zuege=N (eigene Züge, Standard 14), runden=N (Abbruch nach N Rundenenden, Standard 2).
+ * Parameter: zuege=N (eigene Züge, Standard 14), runden=N (Abbruch nach N Rundenenden, Standard 2),
+ * pflicht=tausch,ablegen,gluecksspiel (diese Hausregel-Karten muss der Test selbst gespielt haben; Glücksspiel samt Setzen und Drücken).
+ * Hausregeln: bevorzugt Kartentausch, Ablegen-Karten und Glücksspiel, setzt im Glücksspiel per Antippen und drückt den Knopf; prüft
+ * Automat, Einsatzstapel und Zahlenwerk gegen view.gamble sowie die Einstellung „Spielbare Karten hervorheben“ (aus: Hinweis
+ * „Die Karte passt nicht.“) und im Mock den gesperrten Speicher.
  */
 (function (M) {
   'use strict';
@@ -21,16 +25,23 @@
   }
 
   // Erwartete Form der Sicht (game/scripts/rules/mau_game.gd view_for/_hints) – Prüfung Feld für Feld gegen den echten Gastgeber
-  const PHASEN = ['idle', 'turn', 'drawn', 'challenge', 'color', 'round_over', 'game_over'];
+  const PHASEN = ['idle', 'turn', 'drawn', 'challenge', 'color', 'gamble', 'round_over', 'game_over'];
   const HINT_FELDER = { playable: 'array', wild: 'array', can_draw: 'boolean', can_keep: 'boolean', can_challenge: 'boolean', can_accept: 'boolean',
     can_mau: 'boolean', catch: 'array', need_color: 'boolean', can_next_round: 'boolean', text: 'string' };
   const SICHT_FELDER = { seat: 'number', side: 'string', phase: 'string', turn: 'number', dir: 'number', color: 'string', players: 'array', hand: 'array',
     top: 'object', draw_back: 'string', draw_count: 'number', pending: 'object', hints: 'object', round: 'number', ranking: 'array', rules: 'object', result: 'object' };
   const SPIELER_FELDER = { seat: 'number', name: 'string', kind: 'string', count: 'number', backs: 'array', place: 'number', mau: 'boolean', connected: 'boolean', score: 'number' };
+  // Nur mit der Hausregel Glücksspiel (rules.gamble_cards = "on"); ohne sie fehlen die Felder (der Client rechnet mit Standardwerten)
+  const HINT_GLUECK = { can_stake: 'array', can_press: 'boolean', can_stop: 'boolean' };
+  const SICHT_GLUECK = { gamble: 'object' };
+  const GLUECK_FELDER = { seat: 'number', stake: 'number', need: 'string', last: 'number' };
   const art = x => Array.isArray(x) ? 'array' : (x === null ? 'null' : typeof x);
   // Ereignisse, die der Client kennt (Effekt in tisch.js oder bewusst ohne Effekt)
   const EREIGNISSE = ['deal', 'play', 'draw', 'skip', 'skip_all', 'reverse', 'color', 'flip', 'pending', 'challenge', 'mau', 'catch', 'penalty', 'shuffle',
-    'round_over', 'game_over', 'finish', 'pass', 'choose_color', 'round_start', 'start', 'turn', 'keep', 'accept'];
+    'round_over', 'game_over', 'finish', 'pass', 'choose_color', 'round_start', 'start', 'turn', 'keep', 'accept',
+    'swap_hands', 'gamble_start', 'stake', 'gamble_roll', 'stake_back', 'stake_discard', 'discard_color'];
+  // Hausregel-Karten, die der Selbsttest bevorzugt legt (damit Kartentausch, Farbe ablegen und Glücksspiel sicher vorkommen)
+  const VORRANG = { tausch: 1, ablegen: 2, ablegen_joker: 3, gluecksspiel: 4 };
 
   const T = {
     start(app) {
@@ -38,6 +49,7 @@
       this.t0 = Date.now();
       this.zuege = 0; this.runden = 0; this.states = 0; this.errs = 0; this.ereignisse = {};
       this.fehler = []; this.notizen = [];
+      this.haus = { tausch: 0, ablegen: 0, ablegen_joker: 0, gluecksspiel: 0, gesetzt: 0, gedrueckt: 0, aufgehoert: 0 };
       this.mock = !!M.param('mock');
       // gegen den echten Gastgeber: bis zum ersten Rundenende spielen
       this.ziel = +(M.param('zuege') || (this.mock ? 14 : 400));
@@ -60,13 +72,47 @@
       if ((h.wild || []).some(id => (h.playable || []).indexOf(id) < 0)) this.fail('hints.wild nicht in playable');
       if ((v.phase === 'round_over' || v.phase === 'game_over') && !(v.result && Array.isArray(v.result.ranking) && v.result.ranking.length === (v.players || []).length)) this.fail('result.ranking fehlt');
     },
+    // Glücksspiel-Felder (auch gegen das Mock): da genau mit der Hausregel, Form wie docs/BETA1_PLAN.md Abschnitt 4
+    vertragGlueck(v) {
+      if (!v) return;
+      const h = v.hints || {}, an = !!(v.rules && v.rules.gamble_cards === 'on');
+      Object.keys(SICHT_GLUECK).forEach(k => { if (an ? art(v[k]) !== SICHT_GLUECK[k] : v[k] !== undefined) this.fail('Sicht.' + k + (an ? ': ' + art(v[k]) : ' ohne Hausregel')); });
+      Object.keys(HINT_GLUECK).forEach(k => { if (an ? art(h[k]) !== HINT_GLUECK[k] : h[k] !== undefined) this.fail('hints.' + k + (an ? ': ' + art(h[k]) : ' ohne Hausregel')); });
+      const g = v.gamble;
+      if (!an || !g || art(g) !== 'object') return;
+      const laeuft = Object.keys(g).length > 0;
+      if (laeuft !== (v.phase === 'gamble')) this.fail('gamble ' + JSON.stringify(g) + ' in Phase ' + v.phase);
+      if (laeuft) {
+        Object.keys(GLUECK_FELDER).forEach(k => { if (art(g[k]) !== GLUECK_FELDER[k]) this.fail('gamble.' + k + ': ' + art(g[k])); });
+        if (['stake', 'press'].indexOf(g.need) < 0) this.fail('gamble.need ' + g.need);
+        if (g.seat !== v.turn) this.fail('gamble.seat ≠ turn');
+        if (g.q !== undefined) this.fail('Trefferquote in der Sicht');
+        const ich = g.seat === v.seat;
+        const ids = new Set((v.hand || []).map(c => c.id));
+        if ((h.can_stake || []).some(id => !ids.has(id))) this.fail('can_stake nicht in der Hand');
+        if (ich && g.need === 'stake' && (h.can_stake || []).length !== (v.hand || []).length) this.fail('can_stake ≠ ganze Hand');
+        if ((!ich || g.need !== 'stake') && (h.can_stake || []).length) this.fail('can_stake außerhalb des eigenen Setzens');
+        if (!!h.can_press !== (ich && g.need === 'press')) this.fail('can_press passt nicht zu gamble.need');
+        if (!!h.can_stop !== (ich && g.need === 'stake' && (g.stake | 0) >= 1)) this.fail('can_stop passt nicht zu gamble.need/stake');
+        if ((h.playable || []).length || h.can_draw) this.fail('playable/can_draw im Glücksspiel');
+      } else if ((h.can_stake || []).length || h.can_press || h.can_stop) this.fail('can_stake/can_press/can_stop ohne Glücksspiel');
+    },
+    // &protokoll=1: Ablauf (Stände, eigene Entscheidungen) ans Ergebnis hängen, zur Fehlersuche
+    prot(t) { if (M.param('protokoll')) { (this._prot = this._prot || []).push(t); if (this._prot.length > 60) this._prot.shift(); } },
     zustand(m) {
       this.states++;
+      if (m.view) this.prot('S t' + m.view.turn + ' ' + m.view.phase + ' [' + (m.events || []).map(e => e.e + (e.seat !== undefined ? e.seat : '')).join(',') + '] h' + (m.view.hand || []).length);
       (m.events || []).forEach(e => {
         this.ereignisse[e.e] = (this.ereignisse[e.e] || 0) + 1;
         if (!this.mock && EREIGNISSE.indexOf(e.e) < 0) this.fail('unbekanntes Ereignis ' + e.e);
+        // verdeckte Information: fremde Einsatzkarten nie, die eigene neue Hand nach dem Tausch nur selbst
+        if (e.e === 'stake' && m.view && e.seat !== m.view.seat && (e.face !== undefined || e.card !== undefined)) this.fail('fremde Einsatzkarte sichtbar');
+        if (e.e === 'stake_discard' && ['stop', 'empty'].indexOf(e.reason) < 0) this.fail('stake_discard.reason ' + e.reason);
+        if (e.e === 'gamble_roll' && !(e.value >= 0 && e.value <= 10)) this.fail('gamble_roll.value ' + e.value);
+        if (e.e === 'swap_hands' && !Array.isArray(e.counts)) this.fail('swap_hands ohne counts');
+        if (e.e === 'discard_color' && (!Array.isArray(e.faces) || e.faces.length !== (e.count | 0))) this.fail('discard_color: faces ≠ count');
       });
-      try { this.vertrag(m.view); } catch (e) { this.fail('Vertrag: ' + e); }
+      try { this.vertrag(m.view); this.vertragGlueck(m.view); } catch (e) { this.fail('Vertrag: ' + e); }
     },
     fehlerNachricht(m) { this.errs++; this.notiz('err vom Gastgeber: ' + m.text); },
     notiz(t) { this.notizen.push(t); },
@@ -82,7 +128,7 @@
       const v = this.v;
       if (!v || !this.ruhig()) return false;
       const h = v.hints || {};
-      return (v.turn === v.seat && (v.phase === 'turn' || v.phase === 'drawn' || v.phase === 'challenge')) || !!h.need_color || !!h.can_challenge;
+      return (v.turn === v.seat && (v.phase === 'turn' || v.phase === 'drawn' || v.phase === 'challenge' || v.phase === 'gamble')) || !!h.need_color || !!h.can_challenge;
     },
     rundeVorbei() { const v = this.v; return !!v && (v.phase === 'round_over' || v.phase === 'game_over') && this.ruhig(); },
 
@@ -125,6 +171,7 @@
     async tippe(id) {
       await this.sichtbar(id);
       const p = this.punkt(id);
+      this.prot('tipp ' + id + (p ? '' : ' (nicht sichtbar)') + ' g' + this.app.tisch.hand.gewaehlt + ' t' + (this.v && this.v.turn));
       if (!p) throw new Error('Karte ' + id + ' nicht antippbar');
       this.zeiger('pointerdown', p.x, p.y); await schlaf(60); this.zeiger('pointerup', p.x, p.y);
       await schlaf(80);
@@ -146,10 +193,14 @@
       await schlaf(80);
     },
     klick(sel) { const e = typeof sel === 'string' ? $(sel) : sel; if (!e) throw new Error('fehlt: ' + sel); e.click(); },
+    // Farbe mit den meisten Karten auf der Hand (wichtig für den Ablegen-Joker), bei Gleichstand reihum
     async farbeWaehlen() {
       await this.warte(() => this.app.tisch.farbwahlOffen, 3000, 'Farbwahl');
-      const felder = this.app.tisch.farbwahl.querySelectorAll('.feld');
-      this.klick(felder[this.zuege % felder.length]);
+      const felder = Array.from(this.app.tisch.farbwahl.querySelectorAll('.feld'));
+      const anzahl = f => parseInt((f.querySelector('i') || {}).textContent, 10) || 0;
+      const max = Math.max.apply(null, felder.map(anzahl));
+      const beste = felder.filter(f => anzahl(f) === max);
+      this.klick(beste[this.zuege % beste.length]);
     },
 
     /* ---------- Prüfungen DOM gegen Sicht ---------- */
@@ -171,9 +222,24 @@
       const oben = t.ablageKarten.lastElementChild;
       if (v.top && (!oben || oben.dataset.face !== v.top.face)) this.fail('Ablage zeigt ' + (oben && oben.dataset.face) + ' statt ' + v.top.face);
       if (t.stapelZahl.textContent.indexOf(String(v.draw_count)) < 0) this.fail('Stapelzahl falsch');
-      if (v.hints && v.hints.text && t.hinweis.textContent !== v.hints.text) this.fail('Hinweistext weicht ab');
+      if (v.hints && v.hints.text && t.hinweis.textContent !== t.hinweisText(v.hints.text)) this.fail('Hinweistext weicht ab');
+      if (!this.app.hervorheben() && t.hinweis.textContent.indexOf('nichts passt') >= 0) this.fail('Hinweis verrät „nichts passt“ trotz Hervorheben aus');
       if (t.root.dataset.seite !== v.side) this.fail('Seite ' + t.root.dataset.seite + ' statt ' + v.side);
       if (this.app.fehler.length) this.app.fehler.forEach(f => this.fail('JS-Fehler: ' + f));
+      if (t.hand.el.getAttribute('style')) this.fail('Hand bleibt nach dem Kartentausch verschoben');
+      // Glücksspiel: Automat, Zahlenwerk und Einsatzstapel folgen der Sicht
+      const g = v.phase === 'gamble' && v.gamble && typeof v.gamble.seat === 'number' ? v.gamble : null;
+      if (g) {
+        if (t.automat.hidden || !t.automatAktiv) this.fail('Glücksspiel-Automat fehlt');
+        if ((g.stake | 0) > 0) {
+          if (t.einsatz.hidden) this.fail('Einsatzstapel fehlt');
+          else if (t.einsatz.querySelector('.zahl').textContent !== String(g.stake)) this.fail('Einsatz zeigt ' + t.einsatz.querySelector('.zahl').textContent + ' statt ' + g.stake);
+        } else if (!t.einsatz.hidden) this.fail('Einsatzstapel ohne Einsatz');
+        if (g.last >= 0 && t.walze.textContent.trim() !== String(g.last)) this.fail('Zahlenwerk zeigt ' + t.walze.textContent + ' statt ' + g.last);
+        if (t.automat.classList.contains('drueckbar') !== !!(v.hints || {}).can_press) this.fail('Glücksspielknopf-Zustand passt nicht zu can_press');
+      } else if (t.automatAktiv || !t.einsatz.hidden) this.fail('Automat oder Einsatz bleibt nach dem Glücksspiel');
+      // persönliche Einstellung: ohne Hervorhebung weder Leuchten noch Abdunkeln
+      if (!this.app.hervorheben() && t.hand.el.querySelector('.hk.spielbar, .hk.matt')) this.fail('Hervorhebung trotz Einstellung „aus“');
     },
 
     /* ---------- Ablauf ---------- */
@@ -257,8 +323,13 @@
         const p = erg[n];
         if (n.indexOf('datei:') === 0) {
           teile.push(n + '=' + p.spitze + '/' + p.dauer + 's');
-          if (!(p.spitze >= 0.5 && p.spitze <= 1.0)) this.fail('Aufnahme ' + n + ': Spitze ' + p.spitze);
-          if (!(p.dauer >= 0.25 && p.dauer <= 2.0)) this.fail('Aufnahme ' + n + ': Dauer ' + p.dauer + ' s');
+          if (M.Ton.istMau(n.slice(6))) {   // Aufnahmen des Nutzers: laut ausgesteuert
+            if (!(p.spitze >= 0.5 && p.spitze <= 1.0)) this.fail('Aufnahme ' + n + ': Spitze ' + p.spitze);
+            if (!(p.dauer >= 0.25 && p.dauer <= 2.0)) this.fail('Aufnahme ' + n + ': Dauer ' + p.dauer + ' s');
+          } else {                          // Spieltöne aus sfx/: hörbar, ohne Übersteuerung, kurz
+            if (!(p.spitze >= 0.05 && p.spitze <= 1.0)) this.fail('Spielton ' + n + ': Spitze ' + p.spitze);
+            if (!(p.dauer >= 0.05 && p.dauer <= 3.0)) this.fail('Spielton ' + n + ': Dauer ' + p.dauer + ' s');
+          }
           return;
         }
         teile.push(n + '=' + p);
@@ -303,13 +374,21 @@
       this.klick('#ton-knopf'); await schlaf(40);
       if (M.Ton.stumm || t.knTon.classList.contains('stumm')) this.fail('Ton-Knopf schaltet nicht wieder an');
       if (M.Ton.spiele('karte')) this.fail('Spieltöne spielen, obwohl sie aus sind');
-      // Aufnahmen (sfx/mau.* und sfx/mau_mau.*) über http geladen und dekodiert
+      // Aufnahmen (sfx/mau.* und sfx/mau_mau.*) und Spieltöne (alle Einträge aus sfx/index.json) über http geladen und dekodiert
       if (/^https?:/.test(location.protocol)) {
+        let liste = null;
+        try { liste = await fetch('sfx/index.json', { cache: 'no-store' }).then(r => r.json()); } catch (e) { this.fail('sfx/index.json nicht lesbar'); }
+        const namen = Object.keys(liste || {});
+        M.Ton.MAU_TOENE.concat(M.Ton.SPIEL_TOENE).forEach(n => { if (namen.indexOf(n) < 0) this.fail('sfx/index.json nennt „' + n + '“ nicht'); });
         const ende = Date.now() + 8000;
-        while (Date.now() < ende && !(M.Ton.dateien.indexOf('mau') >= 0 && M.Ton.dateien.indexOf('mau_mau') >= 0)) await schlaf(100);
+        while (Date.now() < ende && namen.some(n => M.Ton.dateien.indexOf(n) < 0)) await schlaf(100);
         const fehlt = M.Ton.MAU_TOENE.filter(n => M.Ton.dateien.indexOf(n) < 0);
         if (fehlt.length) this.fail('Mau-Aufnahmen nicht geladen: ' + fehlt.join(', ') + (M.Ton.bereit ? '' : ' (Web Audio nicht freigeschaltet)'));
         else { this.dateienGeladen = true; this.notiz('Mau-Aufnahmen geladen'); }
+        const spiel = namen.filter(n => !M.Ton.istMau(n));
+        const fehltSpiel = spiel.filter(n => M.Ton.dateien.indexOf(n) < 0);
+        if (fehltSpiel.length) this.fail('Spieltöne nicht geladen: ' + fehltSpiel.join(', '));
+        else this.notiz('Spieltöne geladen: ' + spiel.length);
       }
       const vorher = this.app.einstellungen.sort;
       for (let i = 0; i < 3; i++) { this.klick('#sortieren'); await schlaf(60); }
@@ -328,7 +407,20 @@
       if (t.hand.gewaehlt !== null) t.hand.waehle(null);
       this.klick(t.knMenue); await schlaf(50);
       if ($('#menue').hidden) this.fail('Menü öffnet nicht');
+      // „Spielbare Karten hervorheben“: persönliche Einstellung (Standard an); hier ausschalten, den Hinweis „Die Karte passt nicht.“
+      // prüft der nächste passende eigene Zug (zug), danach wieder an
+      const an = $('#menue button[data-set="hervorheben"][data-wert="true"]'), aus = $('#menue button[data-set="hervorheben"][data-wert="false"]');
+      if (!an || !aus) this.fail('Einstellung „Spielbare Karten hervorheben“ fehlt im Menü');
+      else {
+        if (M.Speicher.get('hervorheben', null) === null && (!app.hervorheben() || !an.classList.contains('an'))) this.fail('Hervorheben ist nicht standardmäßig an');
+        this.klick(aus); await schlaf(60);
+        if (app.hervorheben() || !aus.classList.contains('an')) this.fail('Hervorheben lässt sich nicht ausschalten');
+        if (t.hand.el.querySelector('.hk.spielbar, .hk.matt')) this.fail('Hervorhebung bleibt nach „Aus“');
+        if (M.Speicher.get('hervorheben', null) !== false) this.notiz('Speicher nicht verfügbar – Einstellung gilt bis zum Neuladen');
+        this.ohneHervorheben = true;
+      }
       this.klick('#menue .knopf.haupt.schliessen'); await schlaf(50);
+      if (this.mock) this.ohneSpeicher();
       const g = t.gegnerBox.querySelector('.gg');
       if (g) {
         const p = (this.v.players || []).find(x => x.seat === +g.dataset.seat);
@@ -343,13 +435,33 @@
       }
       await schlaf(50);
     },
+    // Gesperrter Speicher (privater Modus, blockierte Website-Daten): localStorage wirft → Standardwerte, Einstellen klappt trotzdem
+    ohneSpeicher() {
+      const eigen = Object.getOwnPropertyDescriptor(window, 'localStorage');
+      try { Object.defineProperty(window, 'localStorage', { configurable: true, get() { throw new Error('gesperrt'); } }); } catch (e) { this.notiz('localStorage nicht ersetzbar'); return; }
+      try {
+        if (M.Speicher.get('hervorheben', 'standard') !== 'standard') this.fail('Speicher liefert ohne localStorage nicht den Standardwert');
+        M.Speicher.set('hervorheben', true);
+        const vorher = this.app.einstellungen.hervorheben;
+        this.app.einstellen('hervorheben', String(!vorher));
+        if (this.app.einstellungen.hervorheben === vorher) this.fail('Einstellen ohne localStorage wirkt nicht');
+        this.app.einstellen('hervorheben', String(vorher));
+        this.app.schliesse('menue');
+        this.notiz('ohne localStorage ok');
+      } catch (e) { this.fail('Ohne localStorage: ' + e.message); } finally {
+        if (eigen) Object.defineProperty(window, 'localStorage', eigen); else delete window.localStorage;
+      }
+      try { window.localStorage.getItem('mmf.x'); } catch (e) { this.fail('localStorage nach dem Test nicht wiederhergestellt'); }
+    },
     async wiederverbinden() {
       const app = this.app;
       const id = app.meineId, n = this.v.hand.length;
       app.verbindung.trennen(1200);
       await this.warte(() => !$('#verbinde').hidden, 3000, 'Anzeige „Verbinde neu“');
+      const s0 = this.states;
       await this.warte(() => $('#verbinde').hidden && app.verbindung.offen, 8000, 'Wiederverbindung');
-      await this.warte(() => this.ruhig(), 5000, 'Regie nach Wiederverbindung');
+      // erst den frischen Stand des Gastgebers abwarten (kommt kurz nach dem Öffnen), sonst hielte der nächste Zug ihn für seine Antwort
+      await this.warte(() => this.states > s0 && !!this.v && this.ruhig(), 8000, 'Stand nach Wiederverbindung');
       if (app.meineId !== id) this.fail('Nach Wiederverbindung andere Spieler-Kennung');
       if (this.v.hand.length !== n) this.fail('Nach Wiederverbindung andere Hand');
       if (document.body.dataset.screen !== 'tisch') this.fail('Nach Wiederverbindung nicht am Tisch');
@@ -357,6 +469,7 @@
     },
     async zug() {
       const app = this.app, v = this.v, h = v.hints || {};
+      this.prot('ZUG t' + v.turn + ' ' + v.phase + ' sp' + JSON.stringify(h.playable) + ' g' + app.tisch.hand.gewaehlt);
       const s0 = this.states, e0 = this.errs;
       const antwort = () => this.warte(() => this.states > s0 || this.errs > e0, 8000, 'Antwort auf Zug');
       if (h.need_color) { app.aktion({ a: 'wunsch' }); await this.farbeWaehlen(); await antwort(); this.zuege++; return; }
@@ -389,16 +502,58 @@
         if (!k) this.fail('Erwischen-Knopf fehlt');
         else { this.klick(k); await antwort(); return; }
       }
+      // Glücksspiel: Karte antippen = verdeckt setzen, dann den Kuppelknopf des Automaten drücken
+      if (v.phase === 'gamble' && v.turn === v.seat) {
+        const t = app.tisch;
+        if (h.can_press) {
+          if (t.automat.hidden || !t.automat.classList.contains('drueckbar')) this.fail('Glücksspielknopf nicht bereit');
+          this.klick('#gluecksknopf'); await antwort();
+          if (this.errs > e0) this.fail('Drücken abgelehnt'); else this.haus.gedrueckt++;
+          this.zuege++; return;
+        }
+        // Knopf „Aufhören“ genau mit can_stop; manchmal aufhören (immer erlaubt nach einem Druck ohne Treffer)
+        const stopK = t.automat.querySelector('.aufhoeren');
+        if (!stopK || stopK.hidden === !!h.can_stop) this.fail('Aufhören-Knopf passt nicht zu can_stop');
+        if (h.can_stop && stopK && (this.zuege % 3 === 1 || ((v.gamble && v.gamble.stake) | 0) >= 3)) {
+          this.klick(stopK); await antwort();
+          if (this.errs > e0) this.fail('Aufhören abgelehnt'); else this.haus.aufgehoert++;
+          this.zuege++; return;
+        }
+        const setzbar = h.can_stake || [];
+        if (setzbar.length) {
+          const n0 = (v.gamble && v.gamble.stake) | 0;
+          await this.tippe(setzbar[this.zuege % setzbar.length]); await antwort();
+          if (this.errs > e0) this.fail('Setzen abgelehnt');
+          else {
+            this.haus.gesetzt++;
+            await this.warte(() => this.ruhig(), 8000, 'Regie nach dem Setzen');
+            const z = this.app.tisch.einsatz.querySelector('.zahl').textContent;
+            if (this.v.phase === 'gamble' && z !== String(n0 + 1)) this.fail('Einsatzstapel zeigt ' + z + ' statt ' + (n0 + 1));
+          }
+          this.zuege++; return;
+        }
+      }
+      // ohne Hervorhebung: unpassende Karte zweimal antippen → nur der Hinweis, nichts wird gesendet
+      if (this.ohneHervorheben && v.phase === 'turn' && !(v.pending && v.pending.kind)) {
+        const unpassend = (v.hand || []).find(c => (h.playable || []).indexOf(c.id) < 0);
+        if (unpassend) { await this.passtNichtTest(unpassend.id); return; }
+      }
       const spielbar = h.playable || [];
       if (spielbar.length) {
-        const id = spielbar[this.zuege % spielbar.length];
+        // Hausregel-Karten zuerst (Kartentausch, Farbe ablegen, Ablegen-Joker, Glücksspiel), sonst reihum
+        const artVon = x => M.Karten.zerlege((v.hand.find(c => c.id === x) || {}).face).art;
+        const haus = spielbar.filter(x => VORRANG[artVon(x)]).sort((a, b) => VORRANG[artVon(a)] - VORRANG[artVon(b)]);
+        const id = haus.length ? haus[0] : spielbar[this.zuege % spielbar.length];
         const c = v.hand.find(x => x.id === id);
         if (this.zuege % 3 === 1) await this.wischHoch(id);
         else { await this.tippe(id); if (app.tisch.hand.gewaehlt !== id) this.fail('Antippen hebt die Karte nicht an'); await this.tippe(id); }
         if (Array.isArray(h.wild) ? h.wild.indexOf(id) >= 0 : M.Karten.istJoker(c.face)) await this.farbeWaehlen();
         await antwort();
         if (this.errs > e0) this.fail('Zug abgelehnt: ' + c.face);
-        else this.ereignisse.eigeneKarte = (this.ereignisse.eigeneKarte || 0) + 1;
+        else {
+          this.ereignisse.eigeneKarte = (this.ereignisse.eigeneKarte || 0) + 1;
+          if (this.haus[artVon(id)] !== undefined) this.haus[artVon(id)]++;
+        }
         this.zuege++;
         return;
       }
@@ -407,9 +562,32 @@
       this.fail('Am Zug, aber keine Möglichkeit: ' + JSON.stringify(h));
       throw new Error('festgefahren');
     },
+    // ohne Hervorhebung: unpassende Karte zweimal antippen → Hinweis „Die Karte passt nicht.“, keine Aktion; danach wieder an
+    async passtNichtTest(id) {
+      const app = this.app, t = app.tisch, seq0 = app.seq;
+      this.ohneHervorheben = false;
+      if (t.hand.el.querySelector('.hk.spielbar, .hk.matt')) this.fail('Hervorhebung trotz Einstellung „aus“');
+      await this.tippe(id); await this.tippe(id); await schlaf(120);
+      if (app.seq !== seq0) this.fail('Unpassende Karte wurde trotzdem gesendet');
+      const texte = Array.from(document.querySelectorAll('.toast')).map(x => x.textContent);
+      if (texte.indexOf('Die Karte passt nicht.') < 0) this.fail('Kein Hinweis „Die Karte passt nicht.“ (' + texte.join(' / ') + ')');
+      else this.notiz('ohne Hervorhebung: „Die Karte passt nicht.“');
+      if (t.hand.gewaehlt !== null) t.hand.waehle(null);
+      app.einstellen('hervorheben', 'true'); app.schliesse('menue');
+      await schlaf(60);
+      if (((this.v.hints || {}).playable || []).length && !t.hand.el.querySelector('.hk.spielbar')) this.fail('Hervorhebung kommt nach „An“ nicht zurück');
+    },
     ende() {
       if (this._fertig) return;
       this._fertig = true;
+      if (this.ohneHervorheben) { this.ohneHervorheben = false; this.notiz('„Die Karte passt nicht.“ nicht geprüft (kein passender Zug)'); this.app.einstellen('hervorheben', 'true'); this.app.schliesse('menue'); }
+      const hs = Object.keys(this.haus).filter(k => this.haus[k]).map(k => k + '=' + this.haus[k]).join(' ');
+      if (hs) this.notiz('Hausregeln: ' + hs);
+      // &pflicht=tausch,ablegen,gluecksspiel: diese Hausregel-Karten muss der Selbsttest selbst gespielt haben (gebaute Lage)
+      String(M.param('pflicht') || '').split(',').filter(Boolean).forEach(p => {
+        const n = p === 'gluecksspiel' ? Math.min(this.haus.gluecksspiel, this.haus.gesetzt, this.haus.gedrueckt) : (this.haus[p] | 0);
+        if (!n) this.fail('Pflicht „' + p + '“ nicht gespielt');
+      });
       const ok = !this.fehler.length;
       if (this.wischte) this.notiz('Band gewischt: ' + this.wischte);
       const ev = Object.keys(this.ereignisse).sort().map(k => k + '=' + this.ereignisse[k]).join(' ');
@@ -424,6 +602,7 @@
       if (!this.mock && this.app.verbindung && this.app.verbindung.offen) this.app.sende({ t: 'log', text: 'AUTOTEST ' + text.slice(0, 1500) });
       if (halter) setTimeout(() => { if (halter) { halter.remove(); halter = null; } }, 300);
       r.style.cssText = 'position:fixed;left:8px;bottom:8px;z-index:9999;max-width:90vw;white-space:pre-wrap;font:12px monospace;background:' + (ok ? '#CFF1D7' : '#FFE1E3') + ';color:#211B2C;padding:6px 8px;border-radius:8px;pointer-events:none;';
+      if (this._prot) r.textContent += ' | PROTOKOLL: ' + this._prot.join(' / ');
       if (window.console) console.log('AUTOTEST ' + text);
     },
   };

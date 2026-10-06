@@ -122,6 +122,8 @@ signal App.settings.changed(key, value)
 |---|---|
 | `name` | `""` |
 | `mau_ton` | `"normal"` |
+| `toene` | `"aus"` (Spieltöne aus / leise / normal) |
+| `hervorheben` | `true` („Spielbare Karten hervorheben“, nur dieses Gerät, AGENTS.md 24) |
 | `vibration` | `true` |
 | `effekte` | `"voll"` |
 | `beta` | `true`, wenn die Version nicht auf `.0` endet |
@@ -133,7 +135,7 @@ signal App.settings.changed(key, value)
 - `beta` wird erst gespeichert, wenn jemand den Kanal umschaltet. Bis dahin folgt er der installierten Version.
 
 ```gdscript
-App.sound.play(name) -> bool        # "mau" nach mau_ton (aus/-14/-6 dB), sonst -8 dB; res://assets/sfx/<name>.ogg|.wav
+App.sound.play(name) -> bool        # "mau"/"mau_mau" nach mau_ton (aus/-12/-2 dB), sonst nach toene (aus/-12.5/-4.5 dB, Standard aus); res://assets/sfx/<name>.ogg|.wav
 App.vibrate(ms, strength = -1.0)    # nur mit Einstellung vibration, nur Handy
 App.set_keep_screen_on(on) / App.keep_screen_on()
 App.version() -> String / App.is_android() -> bool

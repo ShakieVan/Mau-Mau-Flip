@@ -2,7 +2,8 @@ extends SceneTree
 # Modul S / T2: Töne – Mau-Töne sind die Aufnahmen des Nutzers ("mau" = „Mao“, "mau_mau" = „Mao-Mao“, AGENTS.md Nr. 20), Lautstärke
 # nach mau_ton, übrige Töne nach toene (Standard aus), keine Gerätesperre mehr (Entprellung je Platz macht MauSound), Probehören,
 # fehlende Dateien bleiben still, Vorladen, mehrere Töne gleichzeitig, Dateien für Godot und Browser-Client, synthetische
-# Mau-Varianten entfernt.
+# Mau-Varianten entfernt. Spieltöne: KI-Fassungen (MOSS-SoundEffect v2.0, tools/make_sfx_moss.py --spiel) mit Katzen-Leitplanke
+# laut audio/sfx_ki/spiel/messwerte.json (über 6/10/12 kHz höchstens −30/−50/−60 dB in WAV, OGG und M4A).
 # Aufruf headless mit Dummy-Audio:  tools/godot_run.ps1 -Script res://tests/test_app_sound.gd -Headless -Extra '--audio-driver','Dummy'
 
 var ok := 0
@@ -26,9 +27,9 @@ func _run() -> void:
 	sound.now_override = 100000
 	root.add_child(sound)
 
-	# Dateien: alle Töne vorhanden und vorgeladen, Längen wie entworfen bzw. aufgenommen.
-	var lengths := {"mau": [0.35, 0.7], "mau_mau": [0.45, 0.8], "karte": [0.08, 0.20], "ziehen": [0.20, 0.36], "mischen": [0.35, 0.46],
-		"flip": [0.55, 0.66], "sieg": [1.10, 1.28], "fehler": [0.12, 0.22], "dran": [0.22, 0.32]}
+	# Dateien: alle Töne vorhanden und vorgeladen, Längen wie geschnitten bzw. aufgenommen (Spieltöne mit 20 ms Endstille).
+	var lengths := {"mau": [0.35, 0.7], "mau_mau": [0.45, 0.8], "karte": [0.20, 0.32], "ziehen": [0.50, 0.70], "mischen": [1.05, 1.30],
+		"flip": [1.25, 1.50], "sieg": [1.60, 1.90], "fehler": [0.20, 0.32], "dran": [0.50, 0.70]}
 	for sound_name in lengths:
 		var s: AudioStream = sound.stream(sound_name)
 		var span: Array = lengths[sound_name]
@@ -41,6 +42,38 @@ func _run() -> void:
 	var web := ProjectSettings.globalize_path("res://").path_join("../webclient/sfx/")
 	for sound_name in lengths:
 		check(FileAccess.file_exists(web + sound_name + ".ogg") and FileAccess.file_exists(web + sound_name + ".m4a"), "Browser-Client: %s.ogg/.m4a" % sound_name)
+	# Spieltöne: App und Browser spielen dieselbe Fassung (OGG gleich, M4A ist AAC im MP4-Behälter), Messwerte halten die Leitplanke.
+	var game_sfx := ProjectSettings.globalize_path("res://assets/sfx/")
+	var fav := {"karte": "karte_02", "ziehen": "ziehen_07", "mischen": "mischen_06", "flip": "flip_02", "dran": "dran_04",
+		"fehler": "fehler_09", "sieg": "sieg_03"}
+	var report: Variant = JSON.parse_string(FileAccess.get_file_as_string(
+		ProjectSettings.globalize_path("res://").path_join("../audio/sfx_ki/spiel/messwerte.json")))
+	check(report is Dictionary and report.get("toene") is Dictionary, "audio/sfx_ki/spiel/messwerte.json vorhanden")
+	var tones: Dictionary = report.get("toene", {}) if report is Dictionary else {}
+	for sound_name in fav:
+		var ogg_game := FileAccess.get_file_as_bytes(game_sfx + sound_name + ".ogg")
+		check(ogg_game.size() > 1000 and ogg_game == FileAccess.get_file_as_bytes(web + sound_name + ".ogg"), "%s.ogg: App und Browser gleich" % sound_name)
+		var m4a := FileAccess.get_file_as_bytes(web + sound_name + ".m4a")
+		check(m4a.size() > 1000 and m4a.slice(4, 8).get_string_from_ascii() == "ftyp", "%s.m4a ist MP4/AAC" % sound_name)
+		var m: Dictionary = tones.get(sound_name, {})
+		check(str(m.get("kandidat", "")) == fav[sound_name], "%s: Favorit %s im Spiel" % [sound_name, fav[sound_name]])
+		var fc := float(m.get("tiefpass_hz", 0.0))
+		check(fc >= 4000.0 and fc <= 6000.0, "%s: Tiefpass zwischen 4 und 6 kHz (%.0f Hz)" % [sound_name, fc])
+		for part in [m, m.get("ogg", {}), m.get("m4a", {})]:
+			var d: Dictionary = part
+			check(d.has("ueber_6k_db") and float(d["ueber_6k_db"]) <= -30.0 and float(d.get("ueber_10k_db", 0.0)) <= -50.0
+				and float(d.get("ueber_12k_db", 0.0)) <= -60.0, "%s: Katzen-Leitplanke (%s / %s / %s dB)" % [sound_name,
+				d.get("ueber_6k_db"), d.get("ueber_10k_db"), d.get("ueber_12k_db")])
+			check(float(d.get("spitze_dbtp", 0.0)) <= -0.7, "%s: Spitze %s dBTP" % [sound_name, d.get("spitze_dbtp")])
+	# Abgleich: Karte legen bleibt dezent (leiser als dran, sieg, flip), sieg und dran am lautesten, alle unter dem Mau-Ton.
+	if tones.size() == fav.size():
+		var lufs := func(n: String) -> float: return float(tones[n].get("lufs_momentan_max", 0.0))
+		check(lufs.call("karte") < lufs.call("flip") and lufs.call("karte") < lufs.call("dran") and lufs.call("karte") < lufs.call("sieg"), "Karte legen leiser als flip, dran, sieg")
+		check(lufs.call("sieg") >= lufs.call("mischen") and lufs.call("dran") >= lufs.call("mischen"), "dran und sieg lauter als mischen")
+		var mau_lufs := float(report.get("bezug", {}).get("mau", {}).get("lufs_momentan_max", 0.0))
+		for sound_name in fav:
+			check(float(tones[sound_name].get("gegen_mau_db", 0.0)) <= -6.0, "%s im Spiel mindestens 6 dB unter dem Mau-Ton (%s dB)" % [sound_name, tones[sound_name].get("gegen_mau_db")])
+			check(lufs.call(sound_name) + float(AppSound.TON_DB["normal"]) < mau_lufs + float(AppSound.MAU_DB["normal"]), "%s leiser als Mau" % sound_name)
 	# sfx/index.json (Browser-Client, Modul E): nennt mindestens die Aufnahmen; jede genannte Datei liegt daneben.
 	var index: Variant = JSON.parse_string(FileAccess.get_file_as_string(web + "index.json"))
 	check(index is Dictionary and str(index.get("mau", "")) == "mau.m4a" and str(index.get("mau_mau", "")) == "mau_mau.m4a", "Browser-Client: sfx/index.json nennt die Aufnahmen")
@@ -58,12 +91,13 @@ func _run() -> void:
 
 	# Lautstärke: Mau nach mau_ton, übrige Töne nach toene (unabhängig voneinander).
 	settings.set_value("toene", "normal")
-	check(is_equal_approx(sound.volume_db("karte"), -8.0) and is_equal_approx(sound.volume_db("mau"), -2.0), "toene normal: Karte -8 dB, Mau unverändert")
+	check(is_equal_approx(sound.volume_db("karte"), -4.5) and is_equal_approx(sound.volume_db("mau"), -2.0), "toene normal: Karte -4,5 dB, Mau unverändert")
 	settings.set_value("mau_ton", "leise")
-	check(is_equal_approx(sound.volume_db("mau"), -12.0) and is_equal_approx(sound.volume_db("mau_mau"), -12.0) and is_equal_approx(sound.volume_db("karte"), -8.0), "mau_ton leise wirkt nur auf die Mau-Töne")
+	check(is_equal_approx(sound.volume_db("mau"), -12.0) and is_equal_approx(sound.volume_db("mau_mau"), -12.0) and is_equal_approx(sound.volume_db("karte"), -4.5), "mau_ton leise wirkt nur auf die Mau-Töne")
 	settings.set_value("toene", "leise")
-	check(is_equal_approx(sound.volume_db("karte"), -16.0) and is_equal_approx(sound.volume_db("mau"), -12.0), "toene leise wirkt nur auf die übrigen Töne")
-	check(not settings.set_value("toene", "laut") and is_equal_approx(sound.volume_db("karte"), -16.0), "toene: ungültiger Wert abgelehnt")
+	check(is_equal_approx(sound.volume_db("karte"), -12.5) and is_equal_approx(sound.volume_db("mau"), -12.0), "toene leise wirkt nur auf die übrigen Töne")
+	check(not settings.set_value("toene", "laut") and is_equal_approx(sound.volume_db("karte"), -12.5), "toene: ungültiger Wert abgelehnt")
+	check(AppSound.TRIM_DB.is_empty(), "kein Feinabgleich je Ton: der Abgleich steckt in den Dateien (der Browser hat keinen)")
 	settings.data["toene"] = "laut"
 	check(sound.level("toene") == "aus", "toene: ungültiger gespeicherter Wert → aus")
 	settings.set_value("toene", "aus")

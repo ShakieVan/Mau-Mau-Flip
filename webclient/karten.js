@@ -19,13 +19,24 @@
     orange: { name: 'Orange', hex: '#FF6F00', tief: '#B84F00', neon: '#FF7F14', ring: '#FF8A1F', sym: 'laterne' },
     lila: { name: 'Lila', hex: '#4527A0', tief: '#2E1A6B', neon: '#5E3BD8', ring: '#8B6BFF', sym: 'stern' },
   };
+  // Hausregel-Karten (docs/module/A.md): Kartentausch „tausch“ (farbig), Glücksspiel „gluecksspiel“ (Joker), Farbe ablegen
+  // „ablegen“ (farbig) und „ablegen_joker“ (Joker). Namen wie RulesText.face_title: „Rot Kartentausch“, „Rot ablegen“.
   const ART_NAME = {
     plus1: '+1', plus5: '+5', aussetzen: 'Aussetzen', alle_aussetzen: 'Alle aussetzen', richtungswechsel: 'Richtungswechsel',
     flip: 'Flip', wuenscher: 'Wünscher', wuenscher_plus2: 'Wünscher +2', farbjagd: 'Farbjagd', rueckseite: 'Rückseite',
+    tausch: 'Kartentausch', gluecksspiel: 'Glücksspiel', ablegen: 'ablegen', ablegen_joker: 'Ablegen-Joker',
   };
-  const PUNKTE = { plus1: 10, plus5: 20, aussetzen: 20, alle_aussetzen: 30, richtungswechsel: 20, flip: 20, wuenscher: 40, wuenscher_plus2: 50, farbjagd: 60 };
-  const ART_REIHE = ['plus1', 'plus5', 'aussetzen', 'alle_aussetzen', 'richtungswechsel', 'flip', 'wuenscher', 'wuenscher_plus2', 'farbjagd'];
-  const JOKER = { wuenscher: 1, wuenscher_plus2: 1, farbjagd: 1 };
+  // Wie man auf eine Karte antwortet („… oder eine +1“), wie RulesText.KIND_WITH_ARTICLE
+  const ART_PASSEND = {
+    plus1: 'eine +1', plus5: 'eine +5', aussetzen: 'ein Aussetzen', alle_aussetzen: 'ein Alle aussetzen', richtungswechsel: 'einen Richtungswechsel',
+    flip: 'einen Flip', tausch: 'einen Kartentausch', ablegen: 'eine Ablegen-Karte',
+  };
+  const PUNKTE = { plus1: 10, plus5: 20, aussetzen: 20, alle_aussetzen: 30, richtungswechsel: 20, flip: 20, wuenscher: 40, wuenscher_plus2: 50, farbjagd: 60,
+    tausch: 20, gluecksspiel: 50, ablegen: 30, ablegen_joker: 50 };
+  // Rang wie CardDB.rank_table: in der Farbe Zahlen, Aktionen, Kartentausch, Ablegen-Karte; Joker: Wünscher, +2/Farbjagd, Glücksspiel, Ablegen-Joker
+  const ART_REIHE = ['plus1', 'plus5', 'aussetzen', 'alle_aussetzen', 'richtungswechsel', 'flip', 'tausch', 'ablegen', 'wuenscher', 'wuenscher_plus2', 'farbjagd', 'gluecksspiel', 'ablegen_joker'];
+  const JOKER = { wuenscher: 1, wuenscher_plus2: 1, farbjagd: 1, gluecksspiel: 1, ablegen_joker: 1 };
+  const HAUS_KARTEN = { tausch: 4, gluecksspiel: 2, ablegen: 6 };   // zusätzliche Karten je Hausregel (Grunddeck 112)
 
   /* ---------------- Schlüssel ---------------- */
   const _zerlegt = new Map();
@@ -54,6 +65,17 @@
     if (k.art === 'zahl') return farbName(k.farbe) + ' ' + k.wert;
     if (!k.farbe) return ART_NAME[k.art] || k.art;
     return farbName(k.farbe) + ' ' + (ART_NAME[k.art] || k.art);
+  }
+  // „eine 7“, „ein Aussetzen“, „eine Ablegen-Karte“ (für „Passt nicht – gefragt ist Rot oder …“)
+  function passendText(key) {
+    const k = zerlege(key);
+    if (k.art === 'zahl') return 'eine ' + k.wert;
+    return ART_PASSEND[k.art] || '';
+  }
+  // Zahl der Karten einer Partie nach den Hausregeln (112 bis 124)
+  function kartenZahl(r) {
+    r = r || {};
+    return 112 + (r.swap_cards === 'on' ? HAUS_KARTEN.tausch : 0) + (r.gamble_cards === 'on' ? HAUS_KARTEN.gluecksspiel : 0) + (r.discard_color === 'on' ? HAUS_KARTEN.ablegen : 0);
   }
   // kurzer Wert für Index und Ersatzdarstellung
   function kurzWert(k) {
@@ -91,11 +113,13 @@
     const f = farbName(k.farbe);
     const z = [];
     const stapeln = r.stacking === 'same';
+    // Hausregel penalty_turn: nach dem Strafziehen aussetzen (offiziell) oder gleich weiterspielen
+    const ende = r.penalty_turn === 'play' ? ' und ist danach trotzdem dran.' : ' und setzt aus.';
     switch (k.art) {
       case 'zahl': z.push('Passt auf ' + f + ' oder auf jede ' + k.wert + '.'); break;
       case 'plus1': case 'plus5': {
         const n = k.art === 'plus1' ? 1 : 5;
-        z.push('Der Nächste zieht ' + n + (n === 1 ? ' Karte' : ' Karten') + ' und setzt aus.');
+        z.push('Der Nächste zieht ' + n + (n === 1 ? ' Karte' : ' Karten') + ende);
         z.push('Passt auf ' + f + ' oder auf jede +' + n + '.');
         if (stapeln) z.push('Stapeln ist an: Wer selbst eine +' + n + ' hat, gibt weiter, und die Summe wächst.');
         break;
@@ -113,19 +137,52 @@
         break;
       case 'wuenscher': z.push('Passt immer. Du wünschst dir eine Farbe – auch die bisherige.'); break;
       case 'wuenscher_plus2':
-        z.push('Du wünschst dir eine Farbe. Der Nächste zieht 2 Karten und setzt aus.', bluffText(r));
+        z.push('Du wünschst dir eine Farbe. Der Nächste zieht 2 Karten' + ende, bluffText(r));
         if (stapeln) z.push('Stapeln ist an: Ein Wünscher +2 darf mit einem Wünscher +2 beantwortet werden.');
         break;
       case 'farbjagd':
-        z.push('Du wünschst dir eine Farbe. Der Nächste zieht so lange, bis er eine Karte dieser Farbe hat, behält alle und setzt aus.');
+        z.push('Du wünschst dir eine Farbe. Der Nächste zieht so lange, bis er eine Karte dieser Farbe hat, behält alle' + ende);
         z.push(r.jagd_wild_stops ? 'Ein gezogener Joker beendet das Ziehen.' : 'Ein gezogener Joker beendet das Ziehen nicht.');
         z.push(bluffText(r));
         break;
+      // Hausregel-Karten (Texte wie RulesText._swap_lines/_gamble_lines/_discard_lines)
+      case 'tausch':
+        z.push('Alle geben gleichzeitig ihre ganze Hand an den Nächsten weiter, ' + tauschRichtung(r) + '. Danach ist ganz normal der Nächste in Spielrichtung dran.');
+        if (r.swap_direction === 'play') z.push('Nach einem Richtungswechsel wandern die Hände also andersherum.');
+        z.push('Passt auf ' + f + ' und auf jeden Kartentausch.', 'Zu zweit tauscht ihr einfach eure Hände.');
+        z.push(r.round_end === 'last' ? 'Auch als letzte Karte: Du bist fertig, die anderen tauschen trotzdem untereinander.'
+          : 'Auch als letzte Karte: Du bist fertig und gewinnst die Runde; getauscht wird dann nicht mehr.');
+        if (r.mau_call !== 'off') z.push('Wer durch den Tausch nur noch 1 Karte hat, muss nicht „Mau!“ rufen.');
+        if (r.swap_cards !== 'on') z.push('Gehört zur Hausregel Kartentausch (gerade nicht im Spiel).');
+        break;
+      case 'gluecksspiel':
+        z.push('Joker: passt immer. Du wünschst eine Farbe; sie gilt nach dem Glücksspiel.');
+        z.push('Dann spielst du um dein Glück: Leg eine beliebige Karte verdeckt auf deinen Einsatz und drück den Glücksspielknopf. Zeigt er 0, setzt du die nächste Karte.');
+        z.push('Aufhören darfst du immer nach einem Druck ohne Treffer: Dein Einsatz kommt unter den Ablagestapel, dein Zug ist vorbei.');
+        z.push('Für jedes Glücksspiel wird geheim eine Trefferquote zwischen 1:1 und 1:10 ausgelost.');
+        z.push('Treffer: Der Knopf zeigt 1 bis 10. So viele Karten ziehst du, nimmst deinen ganzen Einsatz zurück, und dein Zug ist vorbei.');
+        z.push('Zeigt er 0 und deine Hand ist leer, kommt der Einsatz unter den Ablagestapel und du bist fertig' + (r.round_end === 'last' ? '.' : ' – du gewinnst die Runde.'));
+        z.push('Die Einsatzkarten liegen verdeckt und wirken nicht, auch kein Flip.');
+        if (r.mau_call !== 'off') z.push('Bleibt dir nach dem Setzen nur noch 1 Karte, ruf „Mau!“ – wie beim Legen, auch wenn du danach aufhörst.');
+        if (stapeln) z.push('Liegt eine Ziehstrafe auf dir, passt das Glücksspiel nicht (wie jeder andere Joker).');
+        z.push('Als letzte Karte bist du einfach fertig; dann gibt es kein Glücksspiel.');
+        if (r.gamble_cards !== 'on') z.push('Gehört zur Hausregel Glücksspiel (gerade nicht im Spiel).');
+        break;
+      case 'ablegen': case 'ablegen_joker': {
+        if (k.art === 'ablegen') z.push('Du legst alle anderen Karten in ' + f + ' mit ab; sie kommen unter diese Karte, die oben bleibt.', 'Passt auf ' + f + ' und auf jede andere Ablegen-Karte.');
+        else z.push('Joker: passt immer. Du wünschst eine Farbe und legst alle deine Karten dieser Farbe mit ab; sie kommen unter den Joker, die Farbe gilt.');
+        z.push('Joker auf deiner Hand bleiben dort. Mitabgelegte Aktionskarten wirken nicht.');
+        const ende = r.round_end === 'last' ? 'bist du fertig' : 'gewinnst du die Runde';
+        z.push(r.mau_call !== 'off' ? 'Bleibt dir danach 1 Karte, ruf „Mau!“ (auch schon vorher erlaubt); bleibt keine, ' + ende + '.' : 'Bleibt dir danach keine Karte, ' + ende + '.');
+        if (r.discard_color !== 'on') z.push('Gehört zur Hausregel Farbe ablegen (gerade nicht im Spiel).');
+        break;
+      }
       default: z.push('Die Gegenseite einer Karte. Welche Seite gilt, entscheidet der letzte Flip.');
     }
     if (k.art !== 'rueckseite') z.push('Wert bei der Abrechnung: ' + punkte(key) + ' Punkte.');
     return { titel: kartenName(key), zeilen: z };
   }
+  const tauschRichtung = r => (r && r.swap_direction === 'play' ? 'in der aktuellen Spielrichtung' : 'immer im Uhrzeigersinn');
   // Regelübersicht (Lobby, Menü)
   function regelnText(regeln) {
     const r = regeln || {};
@@ -136,10 +193,16 @@
     z.push(r.draw_rule === 'until_playable' ? 'Ziehen: so lange, bis eine Karte passt.' : 'Ziehen: eine Karte.');
     z.push({ must: 'Eine passende gezogene Karte muss gelegt werden.', may_not: 'Eine gezogene Karte darf nicht sofort gelegt werden.' }[r.drawn_card] || 'Eine passende gezogene Karte darf sofort gelegt werden.');
     if (r.stacking === 'same') z.push('Gleiche Ziehkarten dürfen gestapelt werden.');
+    if (r.penalty_turn === 'play') z.push('Nach dem Strafziehen bist du trotzdem dran und darfst legen.');
     z.push({ enforce: 'Wünscher +2 und Farbjagd nur ohne Karte der aktuellen Farbe.', free: 'Wünscher +2 und Farbjagd sind immer erlaubt.' }[r.wild_restriction] || 'Wünscher +2 und Farbjagd: Bluffen erlaubt, der Nächste darf anzweifeln.');
     const pen = r.mau_penalty || 2;
     z.push({ auto: 'Vergessenes „Mau!“ kostet sofort ' + pen + ' Karten.', reminder: '„Mau!“ wird nur angezeigt, ohne Strafe.', off: 'Ohne „Mau!“-Ansage.' }[r.mau_call] || 'Wer „Mau!“ vergisst, kann erwischt werden (' + pen + ' Strafkarten).');
     if (r.backs_visible === false) z.push('Rückseiten der Mitspieler sind verdeckt.');
+    // Hausregeln mit Zusatzkarten (wie RuleConfig.describe)
+    if (r.swap_cards === 'on') z.push('Kartentausch: Wer einen legt, lässt alle ihre ganze Hand an den Nächsten weitergeben, ' + tauschRichtung(r) + '.');
+    if (r.gamble_cards === 'on') z.push('Glücksspiel: Wer den Joker legt, setzt Karte um Karte verdeckt und drückt den Glücksspielknopf – bis ein Treffer kommt (1 bis 10 Karten ziehen, Einsatz zurück) oder die Hand leer ist. Nach einem Druck ohne Treffer darf er aufhören; der Einsatz kommt dann unter die Ablage.');
+    if (r.discard_color === 'on') z.push('Farbe ablegen: Wer eine Ablegen-Karte legt, legt alle eigenen Karten dieser Farbe mit ab; Joker bleiben auf der Hand.');
+    if (kartenZahl(r) > 112) z.push('Gespielt wird mit ' + kartenZahl(r) + ' Karten.');
     return z;
   }
 
@@ -218,6 +281,15 @@
         { d: 'M81.1 18.9A44 44 0 0 1 18.9 81.1Z', role: 'dark' },
         { d: 'M74 50a15 15 0 1 1 -16 22a12 12 0 1 0 16 -22Z', role: 'cut' },
         { d: 'M36 39a9 9 0 1 0 0.01 0Z', role: 'sun' }];
+      // Ersatzsymbole der Hausregel-Karten (nur ohne Kartenbilder): Karte im Pfeilkreis, Kartenfächer mit Pfeil, Knopf mit Anzeige
+      case 'tausch': return arcArrow(50, 50, 38, 236, 30, 9, 14).concat(arcArrow(50, 50, 38, 56, 210, 9, 14),
+        [{ d: 'M38 30h24v40h-24Z', role: 'main', join: 6 }, { d: 'M43 36h14v28h-14Z', role: 'cut' }]);
+      case 'ablegen': return [
+        { d: 'M14 16h20v30h-20Z', role: 'main', join: 5 }, { d: 'M40 10h20v30h-20Z', role: 'main', join: 5 }, { d: 'M66 16h20v30h-20Z', role: 'main', join: 5 },
+        { d: 'M50 50V74', kind: 'line', w: 11, role: 'main' }, { d: 'M32 68L50 92L68 68Z', role: 'main', join: 4 }];
+      case 'gluecksspiel': return [
+        { d: 'M20 60a30 30 0 0 1 60 0Z', role: 'main' }, { d: 'M8 60h84v26h-84Z', role: 'main', join: 6 },
+        { d: 'M30 66h40v14h-40Z', role: 'cut' }, { d: 'M43 40a7 7 0 1 1 10 6v4', kind: 'line', w: 4.5, role: 'cut' }];
       case 'pfote': return [
         { d: 'M50 50C64 50 80 64 80 78C80 89 72 94 64 94C57 94 54 90 50 90C46 90 43 94 36 94C28 94 20 89 20 78C20 64 36 50 50 50Z', role: 'main' },
         { d: 'M12 40a10 13 -20 1 0 20 -6a10 13 -20 1 0 -20 6Z', role: 'toe1' },
@@ -266,7 +338,8 @@
 
   /* ---------------- Ersatzkarte als SVG (Format 56:87, viewBox 560×870) ---------------- */
   const CW = 560, CH = 870, M0 = 30, TW = 158, TH = 262;
-  const ICON_ART = { aussetzen: 'schlaf', alle_aussetzen: 'schlaf3', richtungswechsel: 'wende', flip: 'flip', wuenscher: 'pfote' };
+  const ICON_ART = { aussetzen: 'schlaf', alle_aussetzen: 'schlaf3', richtungswechsel: 'wende', flip: 'flip', wuenscher: 'pfote',
+    tausch: 'tausch', ablegen: 'ablegen', ablegen_joker: 'ablegen', gluecksspiel: 'gluecksspiel' };
   function hexRgb(h) { h = h.replace('#', ''); return [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16)); }
   function mix(a, b, t) { const A = hexRgb(a), B = hexRgb(b); return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, '0')).join(''); }
   // Farbfeld mit Laschen oben links und unten rechts (eingerückt, runde Ecken über Kontur)
@@ -431,7 +504,7 @@
 
   M.Karten = {
     INK, PAPER, CREAM, NIGHT, MOON, FARBEN, FARB_INFO, VERHAELTNIS: CH / CW,
-    zerlege, istJoker, punkte, farbName, kartenName, sortiere, hilfe, regelnText,
+    zerlege, istJoker, punkte, farbName, kartenName, passendText, kartenZahl, sortiere, hilfe, regelnText,
     symbolSVG, iconSVG, karteSVG, gesichtHTML, farbSymbolHTML, element, setzeGesicht, pruefeBilder, Bilder, mix,
   };
 })(window.MMF = window.MMF || {});

@@ -39,6 +39,11 @@ if [ "$MODUS" != "--nur-bilder" ]; then
 	autotest zwei "&gegner=1&seed=7"
 	autotest sieben "&gegner=6&seed=11&karten=18"
 	autotest dunkel "&seite=dunkel&seed=5&zuege=10"
+	# Hausregeln mit Zusatzkarten (Kartentausch, Glücksspiel, Farbe mit ablegen; mock.js haus=1 bzw. Szenen)
+	autotest haus "&haus=1&seed=9"
+	autotest haus_spielrichtung "&haus=1&gegner=5&richtung=spiel&seed=13"
+	autotest gluecksspiel "&szene=gluecksspiel&seed=3"
+	autotest einsatz "&szene=einsatz&seed=4"
 fi
 
 # ---------- 2. Kontrollbilder ----------

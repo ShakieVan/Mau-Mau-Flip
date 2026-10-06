@@ -16,11 +16,33 @@ var checks := 0
 var leak_errors := 0
 var leak_views := 0
 var leak_events := 0
+var leak_swaps := 0              # geprüfte Kartentausch-Ereignisse (nur mit swap_mode)
+var leak_stakes := 0             # geprüfte Einsatz-Ereignisse des Glücksspiels (stake, stake_back, stake_discard)
+var leak_discards := 0           # geprüfte Ereignisse „Farbe ablegen“
+var leak_quota := 0              # Sichten im Glücksspiel, bei denen eine andere Quote nichts ändern darf
 
 
 # Anzahl für einen Teil des Tests (test_rules_views_long.gd überschreibt counts()).
 func counts() -> Dictionary:
 	return COUNTS
+
+
+# Zufallsregeln mit Kartentausch-Karten (116)? Hier nie (Läufe wie vor der Hausregel); test_rules_swap.gd überschreibt das.
+func swap_mode() -> bool:
+	return false
+
+
+# Zufallsregeln mit Glücksspiel bzw. „Farbe mit ablegen“? Hier nie; test_rules_gamble.gd bzw. test_rules_discard.gd überschreiben das.
+func gamble_mode() -> bool:
+	return false
+
+
+func discard_mode() -> bool:
+	return false
+
+
+func rand_cfg(rng: RandomNumberGenerator) -> RuleConfig:
+	return RulesFixture.random_config(rng, swap_mode(), gamble_mode(), discard_mode())
 
 
 func count(key: String) -> int:
@@ -129,7 +151,7 @@ func _json_views() -> void:
 	rng.seed = 77
 	var bad := ""
 	for i in count("RULES_JSON_GAMES"):
-		var g := MauGame.create(RulesFixture.random_config(rng), RulesFixture.players(rng.randi_range(2, 10), "bot"), rng.randi())
+		var g := MauGame.create(rand_cfg(rng), RulesFixture.players(rng.randi_range(2, 10), "bot"), rng.randi())
 		g.start_round()
 		for step in 400:
 			if not g.state in MauGame.PLAY_PHASES:
@@ -194,8 +216,8 @@ func _events_filter() -> void:
 # Lecktest: Jede Sicht enthält genau die erlaubten Gesichter (als Multimenge) und nie den Seed oder den Zufallszustand.
 func _expected_keys(g: MauGame, s: int) -> Dictionary:
 	var want := {}
-	var act := g.side * MauGame.N_CARDS
-	var oth := (1 - g.side) * MauGame.N_CARDS
+	var act := g.side * g.n_cards
+	var oth := (1 - g.side) * g.n_cards
 	if s >= 0:
 		for id in g.hands[s]:
 			_add(want, g._key[g.faces[act + int(id)]])
@@ -243,8 +265,28 @@ func _leak_view(g: MauGame, s: int, secrets: Array) -> String:
 	var want := _expected_keys(g, s)
 	if got != want:
 		return "Platz %d: Gesichter in der Sicht weichen ab (zu viel: %s)" % [s, str(_diff(got, want))]
-	if v.size() != VIEW_KEYS.size():
+	# Glücksspiel-Felder nur mit der Hausregel (ohne sie bleibt die Sicht wie vorher).
+	var gamble_on := g.config.gamble_cards == "on"
+	if v.size() != VIEW_KEYS.size() + (1 if gamble_on else 0) or v.has("gamble") != gamble_on:
 		return "Platz %d: zusätzliche Felder" % s
+	if v.hints.has("can_stake") != gamble_on or v.hints.has("can_press") != gamble_on:
+		return "Platz %d: Glücksspiel-Hinweise ohne die Hausregel bzw. fehlend" % s
+	if gamble_on:
+		var gv: Dictionary = v.gamble
+		if g.gamble.is_empty() != gv.is_empty():
+			return "Platz %d: view.gamble passt nicht zum Zustand" % s
+		if not gv.is_empty():
+			var gk: Array = gv.keys()
+			gk.sort()
+			if gk != ["last", "need", "seat", "stake"]:
+				return "Platz %d: view.gamble mit Feldern %s" % [s, str(gv.keys())]
+			if int(gv.stake) != (g.gamble.stake as Array).size() or int(gv.seat) != int(g.gamble.seat):
+				return "Platz %d: view.gamble falsch" % s
+		for id in v.hints.can_stake:
+			if s < 0 or not (g.hands[s] as Array).has(int(id)):
+				return "can_stake mit fremder id"
+		if (not (v.hints.can_stake as Array).is_empty() or bool(v.hints.can_press)) and (s != g.current or g.state != "gamble"):
+			return "Glücksspiel-Hinweise für Platz %d außerhalb des eigenen Glücksspiels" % s
 	for p in v.players:
 		if p.size() != PLAYER_KEYS.size():
 			return "Platz %d: Spielerfelder %s" % [s, str(p.keys())]
@@ -301,10 +343,120 @@ func _leak_events(g: MauGame, events: Array, s: int, secrets: Array) -> String:
 			"challenge":
 				if out.has("hand") != (int(src.seat) == s):
 					return "Hand beim Anzweifeln falsch verteilt (Platz %d)" % s
+			"swap_hands":
+				var e := _leak_swap(g, src, out, s)
+				if e != "":
+					return e
+			"stake", "stake_back", "stake_discard":
+				var e := _leak_stake(g, src, out, s)
+				if e != "":
+					return e
+			"gamble_start", "gamble_roll":
+				var allowed := ["e", "seat", "value"]
+				for k in src:
+					if not allowed.has(str(k)):
+						return "Glücksspiel-Ereignis mit Feld %s" % str(k)
+			"discard_color":
+				leak_discards += 1
+				if JSON.stringify(out) != JSON.stringify(src):
+					return "„Farbe ablegen“ ist öffentlich und darf nicht gefiltert werden"
+				if (out.faces as Array).size() != int(out.count) or (out.cards as Array).size() != int(out.count):
+					return "„Farbe ablegen“: count passt nicht"
+				for k in out.faces:
+					if str(CardDB.parse_key(str(k)).get("color", "")) != str(out.color):
+						return "„Farbe ablegen“: Karte %s hat nicht die Farbe %s" % [str(k), str(out.color)]
 	var js := JSON.stringify(f)
 	for sec in secrets:
 		if js.contains(sec):
 			return "Geheimnis im Ereignis"
+	if js.contains("\"q\""):
+		return "Trefferquote im Ereignis"
+	return ""
+
+
+# Glücksspiel-Einsatz: Gesichter, ids und Rückseiten nur für den Spieler selbst (Rückseiten nur bei peek_own_backs); andere sehen
+# Platz und Anzahl, beim Zurücknehmen dazu die sortierten Rückseiten (bei backs_visible, wie beim Ziehen).
+func _leak_stake(g: MauGame, src: Dictionary, out: Dictionary, s: int) -> String:
+	leak_stakes += 1
+	var ev := str(src.e)
+	var own := int(src.seat) == s
+	var private_keys := ["card", "face", "cards", "faces"]
+	for k in private_keys:
+		if out.has(k) != (own and src.has(k)):
+			return "%s: Feld %s für Platz %d falsch verteilt" % [ev, k, s]
+	if own:
+		if out.get("face", "") != src.get("face", "") or out.get("faces", []) != src.get("faces", []):
+			return "%s: eigene Gesichter fehlen" % ev
+		var back_key := "back" if ev == "stake" else "backs"
+		if src.has(back_key) and out.has(back_key) != g.config.peek_own_backs:
+			return "%s: eigene Rückseite trotz peek_own_backs=%s" % [ev, str(g.config.peek_own_backs)]
+	else:
+		if out.has("back"):
+			return "stake: Rückseite der gesetzten Karte für andere"
+		if ev == "stake_back":
+			if g.config.backs_visible:
+				if out.get("backs", []) != CardDB.sort_keys(src.backs):
+					return "stake_back: Rückseiten für andere unsortiert"
+			elif out.has("backs"):
+				return "stake_back: Rückseiten trotz backs_visible=false"
+		elif out.has("backs"):
+			return "%s: Rückseiten für andere" % ev
+	if int(out.get("count", -1)) != int(src.count) or int(out.get("seat", -9)) != int(src.seat):
+		return "%s: seat/count fehlen" % ev
+	return ""
+
+
+# Die geheime Trefferquote darf keine Sicht ändern: alle Sichten mit einer anderen Quote müssen gleich bleiben.
+func _quota_check(g: MauGame) -> String:
+	if g.gamble.is_empty():
+		return ""
+	leak_quota += 1
+	var q := int(g.gamble.q)
+	var before: Array = []
+	for s in range(-1, g.players.size()):
+		before.append(JSON.stringify(g.view_for(s)))
+	g.gamble.q = 1 + (q % 10)
+	var after: Array = []
+	for s in range(-1, g.players.size()):
+		after.append(JSON.stringify(g.view_for(s)))
+	g.gamble.q = q
+	return "" if before == after else "Sicht hängt von der Trefferquote ab"
+
+
+# Kartentausch: Jeder bekommt nur seine eigene neue Hand (genau wie im ungefilterten Ereignis, ohne Rückseiten bei
+# peek_own_backs=false), die anderen nur als Anzahl und – bei backs_visible – als sortierte Rückseiten.
+func _leak_swap(g: MauGame, src: Dictionary, out: Dictionary, s: int) -> String:
+	leak_swaps += 1
+	if out.has("hands"):
+		return "Kartentausch: alle Hände für Platz %d sichtbar" % s
+	var want: Array = []
+	if s >= 0:
+		want = (src.hands[s] as Array).duplicate(true)
+		if not g.config.peek_own_backs:
+			for item in want:
+				item.erase("back")
+	if out.get("hand", null) != want:
+		return "Kartentausch: eigene neue Hand für Platz %d falsch" % s
+	for item in want:
+		if str(item.face).get_slice("_", 0) != g.side_name():
+			return "Kartentausch: Handkarte nicht von der aktiven Seite"
+	if out.get("counts", []) != src.counts or int(out.get("seat", -9)) != int(src.seat) or int(out.get("dir", 0)) != int(src.dir):
+		return "Kartentausch: seat/dir/counts fehlen"
+	if g.config.backs_visible:
+		var b: Array = out.get("backs", [])
+		if b.size() != g.players.size():
+			return "Kartentausch: Rückseiten fehlen"
+		for i in b.size():
+			if i == s:
+				if not (b[i] as Array).is_empty():
+					return "Kartentausch: eigene Rückseiten unter backs"
+			elif b[i] != CardDB.sort_keys(src.backs[i]) or (b[i] as Array).size() != int(src.counts[i]):
+				return "Kartentausch: Rückseiten von Platz %d unsortiert oder unvollständig" % i
+			for k in b[i]:
+				if str(k).get_slice("_", 0) == g.side_name():
+					return "Kartentausch: Rückseite von der aktiven Seite"
+	elif out.has("backs"):
+		return "Kartentausch: Rückseiten trotz backs_visible=false"
 	return ""
 
 
@@ -313,7 +465,7 @@ func _leak_runs() -> void:
 	rng.seed = 4242
 	var first := ""
 	for i in count("RULES_LEAK_GAMES"):
-		var cfg := RulesFixture.random_config(rng)
+		var cfg := rand_cfg(rng)
 		if i % 3 == 0:
 			cfg.backs_visible = true
 			cfg.mau_call = "catch"
@@ -345,6 +497,9 @@ func _leak_runs() -> void:
 				var e := _leak_view(g, s, secrets)
 				if e != "" and first == "":
 					first = "Partie %d Schritt %d: %s" % [i, steps, e]
+			var qe := _quota_check(g)
+			if qe != "" and first == "":
+				first = "Partie %d Schritt %d: %s" % [i, steps, qe]
 			# Erwischen gelegentlich durch einen anderen Platz
 			if g.mau_open >= 0 and rng.randf() < 0.5:
 				var o := rng.randi_range(0, n - 1)
@@ -375,6 +530,15 @@ func _leak_runs() -> void:
 				first = "Endsicht: " + e
 	check(first == "", "Lecktest über %d Sichten und %d Ereignislisten: %s" % [leak_views, leak_events, first])
 	print("Lecktest: %d Sichten und %d gefilterte Ereignislisten geprüft" % [leak_views, leak_events])
+	if swap_mode():
+		print("Lecktest: davon %d gefilterte Kartentausch-Ereignisse" % leak_swaps)
+		check(leak_swaps > 0, "Lecktest prüft Kartentausch-Ereignisse (%d)" % leak_swaps)
+	if gamble_mode():
+		print("Lecktest: davon %d gefilterte Einsatz-Ereignisse, %d Quotenprüfungen" % [leak_stakes, leak_quota])
+		check(leak_stakes > 0 and leak_quota > 0, "Lecktest prüft Glücksspiel-Ereignisse und die Quote (%d/%d)" % [leak_stakes, leak_quota])
+	if discard_mode():
+		print("Lecktest: davon %d „Farbe ablegen“-Ereignisse" % leak_discards)
+		check(leak_discards > 0, "Lecktest prüft „Farbe ablegen“-Ereignisse (%d)" % leak_discards)
 
 
 # Hinweise sagen genau voraus, was apply() annimmt (der Client braucht keine eigene Regelkenntnis): jede Handkarte, Ziehen,
@@ -385,7 +549,7 @@ func _hint_consistency() -> void:
 	var first := ""
 	var trials := 0
 	for i in count("RULES_HINT_GAMES"):
-		var cfg := RulesFixture.random_config(rng)
+		var cfg := rand_cfg(rng)
 		if i % 2 == 0:
 			cfg.mau_call = "catch"
 		var n := rng.randi_range(2, 6)
@@ -409,9 +573,16 @@ func _hint_consistency() -> void:
 			tries.append([seat, {"a": "challenge"}, bool(h.can_challenge), "challenge"])
 			tries.append([seat, {"a": "accept"}, bool(h.can_accept), "accept"])
 			tries.append([seat, {"a": "color", "color": v.colors[0]}, bool(h.need_color), "color"])
+			# Glücksspiel: jede Handkarte setzen, drücken (Hinweise fehlen ohne die Hausregel = nicht erlaubt)
+			for item in v.hand:
+				tries.append([seat, {"a": "stake", "card": int(item.id)}, (h.get("can_stake", []) as Array).has(int(item.id)),
+					"stake " + str(item.face)])
+			tries.append([seat, {"a": "press"}, bool(h.get("can_press", false)), "press"])
 			for o in n:
 				var ho: Dictionary = g.view_for(o).hints
 				tries.append([o, {"a": "mau"}, bool(ho.can_mau), "mau von %d" % o])
+				if o != seat:
+					tries.append([o, {"a": "press"}, false, "press von %d" % o])
 				for t in n:
 					if t != o:
 						tries.append([o, {"a": "catch", "target": t}, (ho.catch as Array).has(t), "catch %d→%d" % [o, t]])
@@ -477,8 +648,8 @@ func _determinism() -> void:
 	check(g1.faces != pair1, "Paarung und ids in Runde 2 neu gemischt")
 	# Paarung ist zufällig: nicht immer gleiche Zuordnung von Gesicht zu Gesicht
 	var same_pairs := 0
-	for id in 112:
-		if g1.faces[112 + id] == pair1[112 + id] and g1.faces[id] == pair1[id]:
+	for id in g1.n_cards:
+		if g1.faces[g1.n_cards + id] == pair1[g1.n_cards + id] and g1.faces[id] == pair1[id]:
 			same_pairs += 1
 	check(same_pairs < 20, "ids je Runde neu verteilt (%d gleich)" % same_pairs)
 	# Keine globale Zufallsquelle: globaler Seed ändert nichts
@@ -496,7 +667,7 @@ func _round_trip() -> void:
 	var bad := ""
 	var trips := count("RULES_TRIP_GAMES")
 	for i in trips:
-		var cfg := RulesFixture.random_config(rng)
+		var cfg := rand_cfg(rng)
 		var n := rng.randi_range(2, 10)
 		var g := MauGame.create(cfg, RulesFixture.players(n, "bot"), 5_000_000_000 + i)
 		g.start_round()

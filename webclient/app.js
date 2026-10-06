@@ -46,8 +46,9 @@
     tisch: null,
     fehler: [],
     logPuffer: [],
-    // ton = Mau-Ton (Aufnahmen, Standard normal), toene = übrige Spieltöne (synthetisch, Standard aus), stumm = Ton-Knopf in der Ecke
-    einstellungen: { ton: 'normal', toene: 'aus', stumm: false, effekte: 'voll', sort: 'farbe', vibration: true, vollbild: true },
+    // ton = Mau-Ton (Aufnahmen, Standard normal), toene = übrige Spieltöne (Dateien aus sfx/, sonst synthetisch; Standard aus), stumm = Ton-Knopf in der Ecke
+    // hervorheben = spielbare Karten hervorheben (persönliche Einstellung je Gerät, AGENTS.md Nr. 24; Standard an)
+    einstellungen: { ton: 'normal', toene: 'aus', stumm: false, effekte: 'voll', sort: 'farbe', vibration: true, vollbild: true, hervorheben: true },
     _mauZuletzt: {},       // „art:Platz“ → Zeitpunkt des letzten Mau-Tons (Entprellung)
 
     /* ---------------- Start ---------------- */
@@ -61,6 +62,7 @@
       e.sort = Speicher.get('sort', 'farbe');
       e.vibration = Speicher.get('vibration', true);
       e.vollbild = Speicher.get('vollbild', true);
+      e.hervorheben = Speicher.get('hervorheben', true) !== false;
       M.Ton.setzeStufe(e.ton);
       M.Ton.setzeToene(e.toene);
       M.Ton.setzeStumm(e.stumm);
@@ -155,6 +157,14 @@
         this.groesse();
       }
       if (name !== 'tisch') ['hilfe', 'ansicht', 'runde'].forEach(id => this.schliesse(id));
+      this.themaFarbe();
+    },
+    // Browserleiste (theme-color): am Tisch nach Tag/Nacht (Tisch.themaFarbe), sonst Nachtblau wie Start und Lobby
+    themaFarbe() {
+      const m = document.querySelector('meta[name="theme-color"]');
+      const f = this.screen === 'tisch' && this.tisch && this.tisch.root.dataset.seite ? this.tisch.themaFarbe() : '#0C0F22';
+      if (m && m.getAttribute('content') !== f) m.setAttribute('content', f);
+      document.body.classList.toggle('tag', f === '#E6D7BC');   // leise Hinweise: am Tag dunkel, nachts hell (style.css .toast.leise)
     },
 
     /* ---------------- Verbindung ---------------- */
@@ -301,6 +311,7 @@
           M.Ton.spiele('fehler');
           this.vibrieren([20, 50, 20]);
           if (this.schwebend !== null && this.tisch) { this.tisch.hand.schwebe(this.schwebend, false); this.tisch.hand.wackeln(this.schwebend); this.schwebend = null; }
+          if (this.tisch && this.view && this.view.phase === 'gamble' && this.tisch.regie.leer) this.tisch.zeige(this.view, true);   // Glücksspielknopf wieder frei
           if (M.Autotest && M.Autotest.fehlerNachricht) M.Autotest.fehlerNachricht(m);
           break;
         case 'notice':     // Hinweis des Gastgebers an alle (HostTable), z. B. „Kim ist getrennt – warte …“
@@ -388,6 +399,8 @@
       if (!t) return;
       if (t.hand.rueck) { this.rueckseiten(); return; }
       if (id === null) { if (t.hand.gewaehlt !== null) t.hand.waehle(null); return; }
+      // Glücksspiel: Im eigenen Glücksspiel setzt ein Tipp die Karte verdeckt (welche, ist fast egal: alle kommen zurück oder unter die Ablage)
+      if (this.imGluecksspiel()) { this.setzen(id); return; }
       if (t.hand.gewaehlt === id) { this.spielen(id); return; }
       t.hand.waehle(id);
     },
@@ -397,6 +410,7 @@
       if (t.hand.rueck) { this.rueckseiten(); return; }
       const c = (v.hand || []).find(h => h.id === id);
       if (!c) return;
+      if (this.imGluecksspiel()) { this.setzen(id); return; }
       const h = v.hints || {};
       // Legen geht in „turn“ und „drawn“, mit Stapeln (stacking=same) auch in „challenge“ (dann steht die Karte in hints.playable)
       const legbar = v.turn === v.seat && (v.phase === 'turn' || v.phase === 'drawn' || (v.phase === 'challenge' && (h.playable || []).length > 0));
@@ -438,12 +452,59 @@
       if (v.phase === 'drawn') return 'Jetzt geht nur die gezogene Karte – oder „Behalten“.';
       if (v.phase === 'challenge') return 'Jetzt geht nur die gleiche Ziehkarte zum Weitergeben – oder anzweifeln bzw. annehmen.';
       if (v.pending && v.pending.kind) return 'Erst die Strafe: ' + ((v.hints || {}).text || 'ziehen oder weitergeben.');
+      // Ohne Hervorhebung (persönliche Einstellung) nur der schlichte Hinweis, ohne Tipp, was stattdessen passt
+      if (!this.hervorheben()) return 'Die Karte passt nicht.';
       if (K.istJoker(c.face)) return 'Diesen Joker darfst du gerade nicht legen – du hast noch ' + K.farbName(v.color) + '.';
       const top = v.top ? K.zerlege(v.top.face) : null;
       let was = K.farbName(v.color);
-      if (top && top.art === 'zahl') was += ' oder eine ' + top.wert;
-      else if (top && !K.istJoker(top.key)) was += ' oder ' + K.kartenName(top.key).replace(K.farbName(top.farbe) + ' ', '');
+      const passend = top && !K.istJoker(top.key) ? K.passendText(top.key) : '';
+      if (passend) was += ' oder ' + passend;
       return 'Passt nicht – gefragt ist ' + was + '.';
+    },
+    hervorheben() { return this.einstellungen.hervorheben !== false; },
+    // eigenes Glücksspiel läuft (Phase gamble, ich bin dran)
+    imGluecksspiel() { const v = this.view; return !!(v && v.phase === 'gamble' && v.turn === v.seat && v.seat >= 0); },
+    // Glücksspiel: Karte verdeckt auf den Einsatz ({a:"stake", card}), nur mit hints.can_stake
+    setzen(id) {
+      const v = this.view, t = this.tisch;
+      if (!v || !t) return;
+      const h = v.hints || {};
+      if ((Array.isArray(h.can_stake) ? h.can_stake : []).indexOf(id) < 0) {
+        t.hand.wackeln(id);
+        this.toast(h.can_press ? 'Erst den Glücksspielknopf drücken.' : 'Warte, bis du dran bist.');
+        return;
+      }
+      if (this.offen) return;
+      if (!this._sendeAkt({ a: 'stake', card: id })) return;
+      t.hand.gewaehlt = null;
+      t.hand.schwebe(id, true);
+      this.schwebend = id;
+      this.vibrieren(15);
+    },
+    // Glücksspielknopf ({a:"press"}), nur mit hints.can_press
+    druecken() {
+      const v = this.view;
+      if (!v || !this.tisch) return;
+      const h = v.hints || {};
+      if (h.can_press) {
+        if (this.offen) return;
+        this.tisch.knopfDruck();
+        this.vibrieren(35);
+        this._sendeAkt({ a: 'press' });
+        return;
+      }
+      if (this.imGluecksspiel()) this.toast(h.can_stop ? 'Leg erst eine Karte verdeckt auf deinen Einsatz – oder hör auf.' : 'Leg erst eine Karte verdeckt auf deinen Einsatz – tipp sie an.');
+      else this.toast('Den Knopf drückt, wer gerade Glücksspiel spielt.');
+    },
+    // Glücksspiel aufhören ({a:"stop"}), nur mit hints.can_stop (nach mindestens einem Druck ohne Treffer)
+    aufhoeren() {
+      const v = this.view;
+      if (!v || !this.tisch) return;
+      if (!(v.hints || {}).can_stop) { this.toast('Aufhören geht erst nach einem Druck ohne Treffer.'); return; }
+      if (this.offen) return;
+      if (!this._sendeAkt({ a: 'stop' })) return;
+      this.tisch.stopGesendet();
+      this.vibrieren(20);
     },
     zaehleFarben(v, ohne) {
       const z = {};
@@ -460,7 +521,8 @@
       if (!v) return;
       const h = v.hints || {};
       if (h.can_draw) { if (!this.offen) this._sendeAkt({ a: 'draw' }); return; }
-      if (v.turn === v.seat && v.phase === 'drawn') this.toast('Leg die gezogene Karte oder tippe auf „Behalten“.');
+      if (this.imGluecksspiel()) this.toast(h.can_press ? 'Im Glücksspiel wird nicht gezogen – drück den Knopf.' : 'Im Glücksspiel wird nicht gezogen – setz eine Karte.');
+      else if (v.turn === v.seat && v.phase === 'drawn') this.toast('Leg die gezogene Karte oder tippe auf „Behalten“.');
       else if (v.turn === v.seat && h.can_challenge) this.toast('Erst anzweifeln oder annehmen.');
       else if (v.turn !== v.seat) this.toast('Warte, bis du dran bist.');
     },
@@ -473,7 +535,7 @@
         // Kein Ton hier: Er kommt mit dem Ereignis „mau“ vom Gastgeber – auf allen Geräten gleichzeitig und nie doppelt.
         this.vibrieren(40);
         this._sendeAkt({ a: 'mau' });
-      } else this.toast('„Mau!“ rufst du, wenn du nur noch zwei Karten hast und dran bist.');
+      } else this.toast('„Mau!“ rufst du, wenn du dran bist und dir nach dem Legen nur noch eine Karte bleibt.');
     },
     // Mau-Ton zum Ereignis (AGENTS.md Nr. 21: auf allen Geräten, außer der Ton ist hier aus). art = 'mau' | 'mau_mau'.
     // Entprellung je Platz und Art: höchstens ein Ton pro Sekunde (z. B. wenn ein Stand doppelt ankommt).
@@ -549,6 +611,11 @@
         else if (s === 'menue') this.menue();
         else if (s === 'gegner') { const p = (v.players || []).find(x => x.seat !== v.seat); if (p) this.gegnerAnsicht(p.seat); }
         else if (s === 'gewaehlt' || s === 'tisch') { const id = (v.hints.playable || [])[0]; if (id !== undefined && s === 'gewaehlt') this.tisch.hand.waehle(id); }
+        else if (s === 'tausch' || s === 'ablegen') {
+          const passt = c => K.zerlege(c.face).art === s && (v.hints.playable || []).indexOf(c.id) >= 0;
+          const c = hand.find(passt) || hand.find(c => K.zerlege(c.face).art === s);
+          if (c) this.spielen(c.id);
+        }
         else if (s === 'blasen') {
           // alle Varianten der Mau-Blase auf einmal (eigener Platz zuerst; der letzte Gegner ruft „Mau-Mau!“); &variante= erzwingt eine
           const reihe = ['plopp', 'ohren', 'huepf', 'ballon', 'gummi', 'schlicht'];
@@ -629,7 +696,7 @@
     },
     einstellen(k, wert) {
       const e = this.einstellungen;
-      if (k === 'vibration' || k === 'vollbild') wert = wert === 'true';
+      if (k === 'vibration' || k === 'vollbild' || k === 'hervorheben') wert = wert === 'true';
       if (k === 'vollbild') { this.vollbild(wert); if (wert) setTimeout(() => this._querSperren(), 300); }
       e[k] = wert;
       Speicher.set(k, wert);
@@ -641,6 +708,7 @@
       if (k === 'ton') { M.Ton.setzeStufe(wert); M.Ton.spiele('mau'); }        // Probehören: die Aufnahme
       if (k === 'toene') { M.Ton.setzeToene(wert); M.Ton.spiele('karte'); }
       if (k === 'effekte') document.body.classList.toggle('reduziert', wert === 'reduziert');
+      if (k === 'hervorheben' && this.tisch && this.view) this.tisch.zeige(this.view, true);
       this.menue();
     },
     toast(text, art, dauer) {

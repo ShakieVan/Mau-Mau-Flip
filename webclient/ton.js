@@ -1,21 +1,26 @@
 /* Mau-Mau Flip – Browser-Client „Lite“: Töne über Web Audio (ohne AudioWorklet, also auch ohne Secure Context).
- * Zwei Gruppen mit eigener Lautstärke (wie in der App):
+ * Zwei Gruppen mit eigener Lautstärke (wie in der App, game/scripts/app/sound.gd):
  *  - Mau-Töne „mau“ und „mau_mau“: die Aufnahmen des Nutzers (sfx/mau.m4a bzw. .ogg, sfx/mau_mau.*). Sie spielen auf JEDEM
  *    Gerät, sobald das Ereignis vom Gastgeber kommt (AGENTS.md Nr. 21), Stufe aus/leise/normal (Standard normal).
- *  - Spieltöne (karte, ziehen, mischen, flip, sieg, fehler, dran): synthetisch, Standard AUS (der Nutzer fand sie nicht gut).
+ *  - Spieltöne (karte, ziehen, mischen, flip, sieg, fehler, dran): dieselben Dateien wie in der App (sfx/<name>.m4a bzw. .ogg),
+ *    eigener Schalter „Spieltöne“, Standard AUS (Nutzerwunsch 05.10.2026). Fehlt eine Datei, klingt ein synthetischer Ersatz.
+ *    Pegel wie in der App: dort Mau normal −2 dB, Spieltöne normal −4,5 dB und leise −12,5 dB, also 2,5 bzw. 10,5 dB unter dem Mau-Ton.
  * Darüber ein Stummschalter (Ton-Knopf in der Ecke). sfx/index.json ({"mau":"mau.m4a", …}) nennt die Dateien; je Browser wird
- * m4a (AAC, Safari) oder ogg bevorzugt und bei Bedarf auf die andere Endung ausgewichen.
+ * m4a (AAC, iPhone-Safari) oder ogg bevorzugt und bei Bedarf auf die andere Endung ausgewichen.
  * Freischalten nur aus einem Tipp heraus (Beitreten-Knopf).
  */
 (function (M) {
   'use strict';
 
   const MAU_TOENE = ['mau', 'mau_mau'];
+  const SPIEL_TOENE = ['karte', 'ziehen', 'mischen', 'flip', 'dran', 'fehler', 'sieg'];
   // Pegel je Stufe: Die Aufnahmen sind auf −1 dBTP ausgesteuert und verdichtet → „normal“ = volle Lautstärke (Handy-Lautsprecher)
   const STUFEN_MAU = { aus: 0, leise: 0.4, normal: 1.0 };
-  const STUFEN_SPIEL = { aus: 0, leise: 0.3, normal: 0.75 };
-  const STANDARD_DATEIEN = { mau: 'mau.m4a', mau_mau: 'mau_mau.m4a' };   // falls sfx/index.json fehlt
-  let ctx = null, master = null, busMau = null, busSpiel = null, rausch = null;
+  const STUFEN_SPIEL = { aus: 0, leise: 0.3, normal: 0.75 };      // −10,5 bzw. −2,5 dB unter dem Mau-Ton (wie in der App, sound.gd TON_DB)
+  const SYNTH_PEGEL = 1.0;     // synthetischer Ersatz: bleibt so laut wie bisher (0,3 bzw. 0,75)
+  const STANDARD_DATEIEN = {};  // falls sfx/index.json fehlt: alle Töne als m4a (Rückfall ogg)
+  MAU_TOENE.concat(SPIEL_TOENE).forEach(n => { STANDARD_DATEIEN[n] = n + '.m4a'; });
+  let ctx = null, master = null, busMau = null, busSpiel = null, busSynth = null, rausch = null;
   let stufeMau = 'normal', stufeSpiel = 'aus', stumm = false;
   const dateien = {};      // Name → AudioBuffer aus sfx/
   const zaehler = {};      // Name → wie oft wirklich abgespielt (Selbsttest)
@@ -34,6 +39,7 @@
         master.connect(ctx.destination);
         busMau = ctx.createGain(); busMau.gain.value = STUFEN_MAU[stufeMau]; busMau.connect(master);
         busSpiel = ctx.createGain(); busSpiel.gain.value = STUFEN_SPIEL[stufeSpiel]; busSpiel.connect(master);
+        busSynth = ctx.createGain(); busSynth.gain.value = SYNTH_PEGEL; busSynth.connect(busSpiel);
         // stummer Puffer schaltet iOS frei
         const b = ctx.createBuffer(1, 1, 22050);
         const q = ctx.createBufferSource();
@@ -123,7 +129,7 @@
   let synthZiel = null;
   function gain(ziel) { const g = ctx.createGain(); g.connect(ziel || synthZiel); return g; }
 
-  // Spieltöne (synthetisch, Standard aus). Keinen synthetischen Mau-Ton mehr: Mau kommt nur aus den Aufnahmen.
+  // Synthetischer Ersatz der Spieltöne (nur wenn eine Datei in sfx/ fehlt). Keinen synthetischen Mau-Ton: Mau kommt nur aus den Aufnahmen.
   const SYNTH = {
     karte(t) {   // Karte legen: kurzes Klatschen
       const g = gain(); huelle(g, t, 0.55, 0.003, 0.01, 0.09);
@@ -190,7 +196,7 @@
       if (dateien[name]) {
         const s = ctx.createBufferSource(); s.buffer = dateien[name]; s.connect(bus); s.start(t);
       } else if (!mau && SYNTH[name]) {
-        synthZiel = bus;
+        synthZiel = busSynth;
         SYNTH[name](t);
       } else return false;
       zaehler[name] = (zaehler[name] || 0) + 1;
@@ -206,7 +212,7 @@
     return Object.keys(SYNTH).reduce((kette, name) => kette.then(erg => {
       const off = new OAC(1, 44100 * 1.8, 44100);
       const alt = [ctx, synthZiel, rausch];
-      ctx = off; synthZiel = off.createGain(); synthZiel.gain.value = STUFEN_SPIEL.normal; synthZiel.connect(off.destination); rausch = rauschPuffer();
+      ctx = off; synthZiel = off.createGain(); synthZiel.gain.value = STUFEN_SPIEL.normal * SYNTH_PEGEL; synthZiel.connect(off.destination); rausch = rauschPuffer();
       let fehler = null;
       try { SYNTH[name](0.01); } catch (e) { fehler = e; }
       [ctx, synthZiel, rausch] = alt;
@@ -234,6 +240,6 @@
     geladen() { return ladeVersprechen || Promise.resolve([]); },
     get stufe() { return stufeMau; }, get toene() { return stufeSpiel; }, get stumm() { return stumm; },
     get bereit() { return !!ctx; }, get dateien() { return Object.keys(dateien); }, get zaehler() { return zaehler; },
-    MAU_TOENE,
+    MAU_TOENE, SPIEL_TOENE, STUFEN_SPIEL,
   };
 })(window.MMF = window.MMF || {});

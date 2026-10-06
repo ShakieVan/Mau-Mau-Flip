@@ -97,6 +97,21 @@ func _init() -> void:
 	m.log.clear()
 	d.enqueue(_evs(3), {"n": 11})
 	check(m.log == ["play:e0", "play:e1", "play:e2", "view:11"], "Ereignisse ohne Animation laufen durch")
+	# Buchungen ohne Animation (quiet_events) zählen nicht zum Rückstand: 3 echte + „turn“ bleibt normales Tempo
+	m.dur = 0.5
+	m.log.clear()
+	m.speeds.clear()
+	d.quiet_events = {"turn": true}
+	d.enqueue([{"e": "gamble_roll"}, {"e": "draw"}, {"e": "stake_back"}, {"e": "turn"}], {"n": 12})
+	check(m.speeds[0] == 1.0, "„turn“ zählt nicht zum Rückstand: %s" % [m.speeds])
+	for i in 6:
+		d.step(0.5)
+	check(m.log[-1] == "view:12", "Abgleich danach")
+	d.quiet_events = {}
+	m.speeds.clear()
+	d.enqueue([{"e": "gamble_roll"}, {"e": "draw"}, {"e": "stake_back"}, {"e": "turn"}], {"n": 13})
+	check(m.speeds[0] == Director.FAST_SPEED, "ohne quiet_events doppelt so schnell")
+	d.flush()
 	d.free()
 	print("RESULT: %d ok" % ok)
 	quit(0 if fails == 0 else 1)

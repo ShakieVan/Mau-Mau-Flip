@@ -1,7 +1,7 @@
 class_name SettingsScreen
 extends AppScreen
 # Einstellungen: Name, Ton (Mau-Ton aus/leise/normal mit Probehören der Aufnahmen „Mau!“ und „Mau-Mau!“, Spieltöne
-# aus/leise/normal, Standard aus), Vibration, Effekte, Updates (Beta-Kanal,
+# aus/leise/normal, Standard aus), Spielbare Karten hervorheben (nur dieses Gerät), Vibration, Effekte, Updates (Beta-Kanal,
 # Jetzt prüfen, Fortschritt, Installieren, Im Browser herunterladen), App teilen, Info (Version, Lizenz, Schriften).
 # Alles wird sofort in App.settings gespeichert.
 
@@ -65,7 +65,10 @@ func build() -> void:
 	toene.name = "Toene"
 	sound.add_child(ScreenKit.row("Spieltöne", toene, 150.0, "Karte, Ziehen, Mischen, Flip, Sieg"))
 	var look := _section(left, "Bedienung und Optik")
-	look.add_child(ScreenKit.switch("Vibration", bool(UiApp.setting("vibration", true)), func(on: bool) -> void: _store("vibration", on)))
+	# Persönliche Hilfe, nie eine Regel des Gastgebers (AGENTS.md 24); der Tisch (HandView) hört auf App.settings.changed.
+	look.add_child(ScreenKit.switch_row("Spielbare Karten hervorheben", "Nur auf diesem Gerät: Karten, die du gerade legen kannst, werden in deiner Hand hervorgehoben.",
+		bool(UiApp.setting("hervorheben", true)), func(on: bool) -> void: _store("hervorheben", on), "Hervorheben"))
+	look.add_child(ScreenKit.switch_row("Vibration", "", bool(UiApp.setting("vibration", true)), func(on: bool) -> void: _store("vibration", on), "Vibration"))
 	var fx := ScreenKit.choice([["voll", "Voll"], ["reduziert", "Reduziert"]], str(UiApp.setting("effekte", "voll")), func(v: String) -> void: _store("effekte", v), 21)
 	fx.name = "Effekte"
 	look.add_child(ScreenKit.row("Effekte", fx, 150.0, "Reduziert: kürzer, weniger Teilchen"))

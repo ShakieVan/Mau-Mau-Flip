@@ -200,8 +200,63 @@ static func switch(text: String, on: bool, on_change: Callable) -> CheckButton:
 	c.focus_mode = Control.FOCUS_NONE
 	c.custom_minimum_size = Vector2(0, TOUCH)
 	c.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	style_switch(c)
 	c.toggled.connect(func(v: bool) -> void: on_change.call(v))
 	return c
+
+
+# Schalterzeile mit fetter Bezeichnung und Erklärung darunter (links), Schalter rechts; der Schalter heißt switch_name
+static func switch_row(text: String, sub: String, on: bool, on_change: Callable, switch_name := "") -> HBoxContainer:
+	var c := CheckButton.new()
+	c.button_pressed = on
+	c.focus_mode = Control.FOCUS_NONE
+	c.custom_minimum_size = Vector2(TOUCH * 1.4, TOUCH)
+	c.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	if switch_name != "":
+		c.name = switch_name
+	style_switch(c)
+	c.toggled.connect(func(v: bool) -> void: on_change.call(v))
+	var r := row(text, c, 0.0, sub)
+	(r.get_child(0) as Control).size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	return r
+
+
+# Großer Schalter im Stil Papier & Neon statt des kleinen Standardsymbols (auf den Bildschirmfotos der Beta kaum zu treffen):
+# aus = Papierkante mit Knopf links, an = Sonnengelb mit Knopf rechts; ausgegraut halb durchsichtig.
+const SWITCH_SIZE := Vector2i(88, 48)
+
+static func style_switch(c: CheckButton) -> void:
+	for on in [true, false]:
+		for dis in [false, true]:
+			var tex := switch_icon(on, dis)
+			var base := ("checked" if on else "unchecked") + ("_disabled" if dis else "")
+			c.add_theme_icon_override(base, tex)
+			c.add_theme_icon_override(base + "_mirrored", tex)
+
+
+static func switch_icon(on: bool, disabled := false) -> Texture2D:
+	var key := "schalter|%s|%s" % [on, disabled]
+	if _icons.has(key):
+		return _icons[key]
+	var w := SWITCH_SIZE.x
+	var h := SWITCH_SIZE.y
+	var a := 0.45 if disabled else 1.0
+	var r := h * 0.5
+	var track: Color = UiPalette.FILL["gelb"] if on else UiPalette.PAPER_D
+	var ink := UiPalette.INK.to_html(false)
+	var svg := "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"%d\" height=\"%d\" viewBox=\"0 0 %d %d\">" % [w, h, w, h]
+	svg += "<rect x=\"2\" y=\"2\" width=\"%d\" height=\"%d\" rx=\"%.1f\" fill=\"#%s\" fill-opacity=\"%.2f\" stroke=\"#%s\" stroke-opacity=\"%.2f\" stroke-width=\"3\"/>" \
+		% [w - 4, h - 4, r - 2.0, track.to_html(false), a, ink, (0.9 if on else 0.45) * a]
+	var kx := w - r if on else r
+	svg += "<circle cx=\"%.1f\" cy=\"%.1f\" r=\"%.1f\" fill=\"#%s\" fill-opacity=\"%.2f\" stroke=\"#%s\" stroke-opacity=\"%.2f\" stroke-width=\"3\"/>" \
+		% [kx, r, r - 8.0, UiPalette.CREAM.to_html(false), a, ink, (0.9 if on else 0.55) * a]
+	svg += "</svg>"
+	var img := Image.new()
+	var tex: Texture2D = null
+	if img.load_svg_from_string(svg, 1.0) == OK:
+		tex = ImageTexture.create_from_image(img)
+	_icons[key] = tex
+	return tex
 
 
 # Beschriftete Zeile: links Text (fester Anteil), rechts das Bedienelement
@@ -231,13 +286,59 @@ static func avatar(seat: int, name: String, kind := "human", diameter := 52.0) -
 	return a
 
 
-# Bildlauf mit großem Griff, nur senkrecht
+# Bildlauf mit großem Griff, nur senkrecht; am Touchscreen auch per Wischen über den Inhalt (TouchScroll)
 static func scroller() -> ScrollContainer:
-	var s := ScrollContainer.new()
+	var s := TouchScroll.new()
 	s.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	s.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	s.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return s
+
+
+# Ein Bedienelement im Bildlauf reicht Druck und Bewegung an den ScrollContainer weiter (MOUSE_FILTER_PASS), damit er die
+# Wischgeste bekommt. Betrifft Karten (PanelContainer hält sonst alles fest), Zeilen und Knöpfe. Ein Knopf löst nicht aus, sobald
+# der Bildlauf begonnen hat (Godot meldet NOTIFICATION_SCROLL_BEGIN, BaseButton bricht den Druck ab). Eingabefelder,
+# Schieberegler und innere Bildläufe behalten ihre eigenen Gesten.
+static func let_scroll(c: Control) -> void:
+	if c.mouse_filter != Control.MOUSE_FILTER_STOP:
+		return
+	if c is LineEdit or c is TextEdit or c is Range or c is ScrollContainer or c is ItemList or c is Tree or c is GraphEdit:
+		return
+	if c is Container or c is Panel or c is BaseButton or c is ColorRect or c is TextureRect or c is Label or c is RichTextLabel:
+		c.mouse_filter = Control.MOUSE_FILTER_PASS
+
+
+class TouchScroll:
+	extends ScrollContainer
+	# ScrollContainer, der am Touchscreen auch per Wischen über Karten und Knöpfe blättert (Gerätetest 0.1.1, M2: vorher nur über
+	# den schmalen Scrollbalken). Alles, was in ihm landet – auch später, etwa neu aufgebaute Spielerlisten –, bekommt
+	# ScreenKit.let_scroll. Die Totzone verhindert, dass ein leicht zitternder Tipp schon als Wischen gilt und den Knopf abbricht.
+	const DEADZONE := 14
+
+	func _init() -> void:
+		scroll_deadzone = DEADZONE
+
+	func _enter_tree() -> void:
+		var tree := get_tree()
+		if not tree.node_added.is_connected(_on_node_added):
+			tree.node_added.connect(_on_node_added)
+		_adopt(self)
+
+	func _exit_tree() -> void:
+		var tree := get_tree()
+		if tree != null and tree.node_added.is_connected(_on_node_added):
+			tree.node_added.disconnect(_on_node_added)
+
+	func _on_node_added(n: Node) -> void:
+		if n is Control and is_ancestor_of(n):
+			ScreenKit.let_scroll(n as Control)
+
+	func _adopt(n: Node) -> void:
+		for c in n.get_children():
+			if c is Control:
+				ScreenKit.let_scroll(c as Control)
+				if not (c is ScrollContainer):
+					_adopt(c)
 
 
 class AvatarDot:
