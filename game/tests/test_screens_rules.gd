@@ -87,6 +87,8 @@ func house(swap := true, gamble := true, discard := true, base := "familie") -> 
 	cfg.swap_cards = "on" if swap else "off"
 	cfg.gamble_cards = "on" if gamble else "off"
 	cfg.discard_color = "on" if discard else "off"
+	cfg.flip_surprise = "off"             # 0.1.4: so bleibt „alle Hausregeln“ von der neuen Familie verschieden
+	cfg.swap_direction = "clockwise"
 	return cfg
 
 
@@ -122,7 +124,7 @@ func summaries() -> void:
 	var off := RuleConfig.preset("offiziell")
 	var s := RulesBar.summary(off)
 	check(not s.contains("mit ") and s.contains("7 Handkarten") and not s.contains("Karten)"), "Offiziell: keine Zusatzkarten (%s)" % s)
-	check(RulesBar.summary(RuleConfig.preset("familie")).ends_with("mit Kartentausch (116 Karten)"), "Familie: mit Kartentausch (116 Karten)")
+	check(RulesBar.summary(RuleConfig.preset("familie")).ends_with("mit Kartentausch, Glücksspiel und Farbe ablegen (124 Karten)"), "Familie: alle Zusatzkarten (124 Karten)")
 	var all := house()
 	check(RulesBar.summary(all).ends_with("mit Kartentausch, Glücksspiel und Farbe ablegen (124 Karten)"), "alle Hausregeln mit 124 Karten (%s)" % RulesBar.summary(all))
 	check(RulesBar.summary(house(false, true, false, "offiziell")).ends_with("mit Glücksspiel (114 Karten)"), "nur Glücksspiel: 114 Karten")
@@ -132,11 +134,11 @@ func summaries() -> void:
 		"Lobby-Fassung: Hausregeln vorn, ohne Kartenzahl (%s)" % first)
 	check(RulesBar.extras_text(off) == "" and RulesBar.extra_names(all) == ["Kartentausch", "Glücksspiel", "Farbe ablegen"], "extra_names")
 	check(RulesBar.preset_title(RuleConfig.preset("familie")) == "Familie" and RulesBar.preset_title(all) == "Eigene Regeln", "preset_title")
-	check(JoinScreen.lobby_head(RuleConfig.preset("familie")) == "Familie · 116 Karten · mit Kartentausch", "Gast-Lobby: Familie")
+	check(JoinScreen.lobby_head(RuleConfig.preset("familie")) == "Familie · 124 Karten · mit Kartentausch, Glücksspiel und Farbe ablegen", "Gast-Lobby: Familie")
 	check(JoinScreen.lobby_head(off) == "Offiziell · 112 Karten", "Gast-Lobby: Offiziell")
 	check(JoinScreen.lobby_head(all) == "Eigene Regeln · 124 Karten · mit Kartentausch, Glücksspiel und Farbe ablegen", "Gast-Lobby: alle Hausregeln")
 	check(JoinScreen.lobby_head(all, "Lena") == "Regeln von Lena · 124 Karten · mit Kartentausch, Glücksspiel und Farbe ablegen"
-		and JoinScreen.lobby_head(RuleConfig.preset("familie"), "Lena") == "Familie · 116 Karten · mit Kartentausch", "Gast-Lobby: eigene Regeln des Gastgebers heißen „Regeln von Lena“")
+		and JoinScreen.lobby_head(RuleConfig.preset("familie"), "Lena") == "Familie · 124 Karten · mit Kartentausch, Glücksspiel und Farbe ablegen", "Gast-Lobby: eigene Regeln des Gastgebers heißen „Regeln von Lena“")
 	# Regeltext der Gast-Lobby (RuleConfig.describe) nennt jede Hausregel
 	var lines := "\n".join(PackedStringArray(all.describe()))
 	check(lines.contains("Kartentausch:") and lines.contains("Glücksspiel:") and lines.contains("Farbe ablegen:") and lines.contains("124 Karten"),
@@ -237,23 +239,24 @@ func rules_editor() -> void:
 			if not CardTextures.has_image(str(k)):
 				keys_ok = false
 	check(keys_ok, "Kartenbilder: 4 Zeilen, alle Bilder vorhanden (%d)" % thumbs.size())
-	# Voreinstellung Familie: Kartentausch an, 116 Karten
+	# Voreinstellung Familie (0.1.4): alle Zusatzkarten an, 124 Karten, Tausch in Spielrichtung
 	choice_button(rs._preset_row, "familie").pressed.emit()
 	await frames(1)
-	check(sw.button_pressed and RulesBar.current().swap_cards == "on" and count.call() == "116 Karten" and not locked(dir), "Familie: Kartentausch an, 116 Karten, Richtung bedienbar")
+	check(sw.button_pressed and ga.button_pressed and dc.button_pressed and RulesBar.current().swap_cards == "on" and count.call() == "124 Karten"
+		and not locked(dir) and chosen(dir) == "play", "Familie: Zusatzkarten an, 124 Karten, Richtung bedienbar")
 	check(chosen(rs._preset_row) == "familie" and RulesBar.current().preset_name() == "familie", "Familie erkannt")
 	# Kartentausch aus: eigene Regeln; wieder an: Familie
 	sw.button_pressed = false
 	await frames(1)
 	check(RulesBar.current().swap_cards == "off" and RulesBar.current().preset_name() == "" and chosen(rs._preset_row) == "", "Familie ohne Kartentausch = eigene Regeln")
-	check(locked(dir) and count.call() == "112 Karten", "ohne Kartentausch: Richtung gesperrt, 112 Karten")
+	check(locked(dir) and count.call() == "120 Karten", "ohne Kartentausch: Richtung gesperrt, 120 Karten")
 	sw.button_pressed = true
 	await frames(1)
 	check(RulesBar.current().preset_name() == "familie" and chosen(rs._preset_row) == "familie", "Kartentausch wieder an: Familie")
-	# Richtung in Spielrichtung: eigene Regeln; zurück: Familie
-	choice_button(dir, "play").pressed.emit()
+	# Richtung im Uhrzeigersinn: eigene Regeln; zurück in Spielrichtung: Familie
+	choice_button(dir, "clockwise").pressed.emit()
 	await frames(1)
-	check(RulesBar.current().swap_direction == "play" and chosen(rs._preset_row) == "" and chosen(dir) == "play", "In Spielrichtung: eigene Regeln")
+	check(RulesBar.current().swap_direction == "clockwise" and chosen(rs._preset_row) == "" and chosen(dir) == "clockwise", "Im Uhrzeigersinn: eigene Regeln")
 	# 0.1.3: vier Richtungen, umbrechend in der Zeile
 	var keys: Array = []
 	for b in dir.get_children():
@@ -269,9 +272,9 @@ func rules_editor() -> void:
 		choice_button(dir, k).pressed.emit()
 		await frames(1)
 		check(RulesBar.current().swap_direction == k and chosen(dir) == k, "Tauschrichtung %s" % k)
-	choice_button(dir, "clockwise").pressed.emit()
+	choice_button(dir, "play").pressed.emit()
 	await frames(1)
-	check(chosen(rs._preset_row) == "familie", "Im Uhrzeigersinn: wieder Familie")
+	check(chosen(rs._preset_row) == "familie", "In Spielrichtung: wieder Familie")
 	# Offiziell mit Richtung „in Spielrichtung“ und Kartentausch aus bleibt Offiziell (die Richtung zählt dann nicht)
 	choice_button(rs._preset_row, "offiziell").pressed.emit()
 	sw.button_pressed = true
@@ -292,10 +295,14 @@ func rules_editor() -> void:
 	sw.button_pressed = true
 	await frames(1)
 	check(RulesBar.current().card_count() == 124 and count.call() == "124 Karten" and chosen(rs._preset_row) == "", "alle drei: 124 Karten, eigene Regeln")
-	# Familie setzt Glücksspiel und Farbe ablegen zurück
+	# Offiziell setzt die Zusatzkarten zurück, Familie schaltet sie wieder ein
+	rs.apply_preset("offiziell")
+	await frames(1)
+	check(not ga.button_pressed and not dc.button_pressed and not sw.button_pressed and count.call() == "112 Karten", "Voreinstellung setzt die Schalter")
 	rs.apply_preset("familie")
 	await frames(1)
-	check(not ga.button_pressed and not dc.button_pressed and sw.button_pressed and count.call() == "116 Karten", "Voreinstellung setzt die Schalter")
+	check(ga.button_pressed and dc.button_pressed and sw.button_pressed and count.call() == "124 Karten" and RulesBar.current().flip_surprise == "on",
+		"Familie: Schalter an, Flip-Überraschung an")
 	# Übersicht
 	RulesBar.store(house())
 	rs.cfg = RulesBar.current()
@@ -307,7 +314,7 @@ func rules_editor() -> void:
 	RulesBar.store(RuleConfig.preset("familie"))
 	rs.cfg = RulesBar.current()
 	rs._show_tab("uebersicht")
-	check(rs._overview_text.text.contains("Voreinstellung: Familie · 116 Karten · Hausregeln: Kartentausch"), "Übersicht: Familie mit 116 Karten")
+	check(rs._overview_text.text.contains("Voreinstellung: Familie · 124 Karten · Hausregeln: Kartentausch, Glücksspiel und Farbe ablegen"), "Übersicht: Familie mit 124 Karten")
 	nav.go_back()
 	await wait(0.3)
 
@@ -360,7 +367,7 @@ func lobbies() -> void:
 	if host == null or host.port() <= 0:
 		return
 	host.autosave = false                 # einen gespeicherten Spielstand der App nicht anrühren
-	check(lobby._rules.compact and lobby._rules._head.text == "Familie · 116 Karten", "Lobby: Regeln kompakt mit Kartenzahl (%s)" % lobby._rules._head.text)
+	check(lobby._rules.compact and lobby._rules._head.text == "Familie · 124 Karten","Lobby: Regeln kompakt mit Kartenzahl (%s)" % lobby._rules._head.text)
 	check(lobby._rules._summary.text.begins_with("Mit Kartentausch"), "Lobby: Hausregeln vorn in der Kurzbeschreibung")
 	# App-Gast über „Beitreten“
 	nav2 = ScreenNav.new()
@@ -403,7 +410,7 @@ func lobbies() -> void:
 			g_in = false
 	check(g_in, "Gast-Lobby 1600 × 720: alle 5 Spieler sichtbar (%d, Liste %s, Zeilen %s)" % [grows.size(), str(garea), str(g_rects)])
 	check(join._ready_btn.is_visible_in_tree() and inside(join._ready_btn.get_global_rect(), screen), "Gast-Lobby: „Bereit“ im Bild (%s)" % str(join._ready_btn.get_global_rect()))
-	check(join._lobby_head.text == "Familie · 116 Karten · mit Kartentausch" and inside(join._lobby_head.get_global_rect(), screen),
+	check(join._lobby_head.text == "Familie · 124 Karten · mit Kartentausch, Glücksspiel und Farbe ablegen" and inside(join._lobby_head.get_global_rect(), screen),
 		"Gast-Lobby: Regelkopf sichtbar (%s)" % join._lobby_head.text)
 	# Regeländerung des Gastgebers kommt beim Gast an
 	var all := house()
@@ -411,7 +418,7 @@ func lobbies() -> void:
 	lobby._rules.refresh()
 	host.set_rules(all)
 	deadline = Time.get_ticks_msec() + 3000
-	while not join._lobby_head.text.contains("124") and Time.get_ticks_msec() < deadline:
+	while not join._lobby_head.text.begins_with("Regeln von ") and Time.get_ticks_msec() < deadline:
 		await frames(1)
 	check(join._lobby_head.text.begins_with("Regeln von ") and join._lobby_head.text.ends_with(" · 124 Karten · mit Kartentausch, Glücksspiel und Farbe ablegen"),
 		"Gast-Lobby: neue Regeln, aus Sicht des Gastes „Regeln von …“ (%s)" % join._lobby_head.text)

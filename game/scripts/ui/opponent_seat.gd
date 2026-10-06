@@ -20,6 +20,10 @@ var fan_max_w := 210.0
 var show_score := false
 var catchable := false: set = set_catchable
 var keys: Array[String] = []            # angezeigte Rückseiten (Fächerreihenfolge)
+var header_only := false                # eigener Platz (0.1.4): nur Kopfzeile mit Name und Kartenzahl, kein Fächer
+var reduced := false: set = set_reduced
+const THINK_AFTER := 5.0                # Denkblase, wenn der Spieler am Zug so lange nichts tut
+const TurnHaloScript := preload("res://scripts/ui/turn_halo.gd")
 
 var _fan: Node2D
 var _top: Node2D
@@ -31,9 +35,14 @@ var _sleep := 0.0
 var _time := 0.0
 var _bump := 0.0
 var _header_w := 200.0
+var _halo: TurnHaloScript
+var _think := 0.0
 
 
 func _init() -> void:
+	# Strahlenkranz (0.1.4) hinter Kopfzeile und Fächer
+	_halo = TurnHaloScript.new()
+	add_child(_halo)
 	_fan = Node2D.new()
 	add_child(_fan)
 	# Über dem Fächer: „Erwischt!“-Knopf und „+n“
@@ -44,6 +53,8 @@ func _init() -> void:
 
 func _process(delta: float) -> void:
 	_time += delta
+	if _turn:
+		_think += delta
 	if _turn or catchable or _sleep > 0.0 or _bump > 0.0:
 		queue_redraw()
 	if catchable:
@@ -52,7 +63,15 @@ func _process(delta: float) -> void:
 
 func set_night(v: float) -> void:
 	night = clampf(v, 0.0, 1.0)
+	if _halo:
+		_halo.night = night
 	queue_redraw()
+
+
+func set_reduced(on: bool) -> void:
+	reduced = on
+	if _halo:
+		_halo.motion = not on
 
 
 func set_catchable(on: bool) -> void:
@@ -63,9 +82,44 @@ func set_catchable(on: bool) -> void:
 
 
 func set_turn(on: bool, next := false) -> void:
+	if on and not _turn:
+		_think = 0.0
 	_turn = on
 	_next = next and not on
+	_halo.set_active(on)
 	queue_redraw()
+
+
+func is_turn() -> bool:
+	return _turn
+
+
+# Der Spieler hat gehandelt: Denkblase weg, Uhr neu
+func poke() -> void:
+	_think = 0.0
+	queue_redraw()
+
+
+# Nebenzeile unter dem Namen: vertreten („Computer spielt“, 0.1.4) / getrennt / gleich dran, dazu die Punkte
+func status_text() -> String:
+	var sub := ""
+	if bool(player.get("substituted", false)):
+		sub = "Computer spielt"
+	elif not bool(player.get("connected", true)):
+		sub = "getrennt"
+	elif _next:
+		sub = "gleich dran"
+	if show_score:
+		sub = (sub + " · " if sub != "" else "") + "%d P" % int(player.get("score", 0))
+	return sub
+
+
+func thinking() -> bool:
+	return _turn and _think >= THINK_AFTER
+
+
+func halo() -> TurnHaloScript:
+	return _halo
 
 
 func player_name() -> String:
@@ -214,7 +268,7 @@ func _rebuild() -> void:
 	var xfs: Array[Transform2D] = []
 	var w := card_w
 	_more = 0
-	if compact and not (n == 1 and backs_visible()):
+	if header_only or (compact and not (n == 1 and backs_visible())):
 		n = 0
 	elif n == 1:
 		# letzte Karte groß (auch im Abzeichen)
@@ -250,12 +304,39 @@ func _rebuild() -> void:
 		c.modulate = Color.WHITE
 	queue_redraw()
 	_top.queue_redraw()
+	_update_halo()
+
+
+# Kasten des Strahlenkranzes: Kopfzeile plus Fächer (bzw. Abzeichen-Balken)
+func _update_halo() -> void:
+	if _halo == null:
+		return
+	var ar := AVATAR_R_COMPACT if compact else AVATAR_R
+	var r := Rect2(_header_x0() - 6.0, -ar - 6.0, _header_w + 12.0, ar * 2.0 + 12.0)
+	for c in _cards:
+		var h := c.width * 466.0 / 300.0
+		var cc := _fan.position + c.position
+		r = r.merge(Rect2(cc - Vector2(c.width, h) * 0.5, Vector2(c.width, h)))
+	if compact and _cards.is_empty() and not header_only:
+		r = r.merge(Rect2(-BAR_W * 0.5, ar + 10.0, BAR_W, BAR_H))
+	_halo.reach = 52.0 if header_only or compact else 84.0
+	if r != _halo.box:
+		_halo.set_box(r, 46.0)
 
 
 # ---------------------------------------------------------------- Zeichnen
 
 func _avatar_center() -> Vector2:
-	return Vector2(-_header_w * 0.5 + (AVATAR_R_COMPACT if compact else AVATAR_R), 0.0)
+	return Vector2(_header_x0() + (AVATAR_R_COMPACT if compact else AVATAR_R), 0.0)
+
+
+# Linker Rand der Kopfzeile: mittig um den Ursprung, beim eigenen Platz (header_only) linksbündig ab dem Ursprung
+func _header_x0() -> float:
+	return 0.0 if header_only else -_header_w * 0.5
+
+
+func header_width() -> float:
+	return _header_w
 
 
 func _draw() -> void:
@@ -270,9 +351,13 @@ func _draw() -> void:
 	var cnt := str(count())
 	var name_w := name_font.get_string_size(nm, HORIZONTAL_ALIGNMENT_LEFT, -1, name_size).x
 	var cnt_w := maxf(num_font.get_string_size(cnt, HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x + 16.0, 26.0)
-	_header_w = ar * 2.0 + 12.0 + name_w + 10.0 + cnt_w
+	var hw := ar * 2.0 + 12.0 + name_w + 10.0 + cnt_w
+	if hw != _header_w:
+		_header_w = hw
+		_update_halo()
 	var ac := _avatar_center()
-	var connected := bool(player.get("connected", true))
+	var substituted := bool(player.get("substituted", false))
+	var connected := bool(player.get("connected", true)) or substituted
 	# Zugmarke: warmer, pulsierender Ring
 	if _turn:
 		var pulse := 0.5 + 0.5 * sin(_time * 4.0)
@@ -304,6 +389,9 @@ func _draw() -> void:
 		draw_texture_rect(cat, Rect2(ac + Vector2(-20, -ar - 44), Vector2(40, 40)), false)
 	# Name
 	var nx := ac.x + ar + 12.0
+	# Kontur in der Gegenfarbe (Nutzerwunsch 06.10.2026): bleibt auf dem hellen Schein am Zug und vor der Sonne lesbar
+	var halo_ink := UiPalette.INK if night > 0.5 else UiPalette.PAPER
+	draw_string_outline(name_font, Vector2(nx, name_size * 0.36), nm, HORIZONTAL_ALIGNMENT_LEFT, -1, name_size, 6, Color(halo_ink, 0.9 if connected else 0.5))
 	draw_string(name_font, Vector2(nx, name_size * 0.36), nm, HORIZONTAL_ALIGNMENT_LEFT, -1, name_size, Color(ink, 1.0 if connected else 0.55))
 	# Kartenzahl als Pille
 	var cx := nx + name_w + 10.0
@@ -314,15 +402,10 @@ func _draw() -> void:
 	var tw := num_font.get_string_size(cnt, HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x
 	draw_string(num_font, Vector2(cx + (cnt_w - tw) * 0.5, 5.5), cnt, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, pill_fg)
 	# Nebenzeile: gleich dran / getrennt / Punkte / Mau
-	var sub := ""
-	if not connected:
-		sub = "getrennt"
-	elif _next:
-		sub = "gleich dran"
-	if show_score:
-		sub = (sub + " · " if sub != "" else "") + "%d P" % int(player.get("score", 0))
+	var sub := status_text()
 	var sub_font := UiFonts.text(600, 90.0)
 	if sub != "" and not compact:
+		draw_string_outline(sub_font, Vector2(nx, name_size * 0.36 + 19.0), sub, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, 5, Color(halo_ink, 0.85))
 		draw_string(sub_font, Vector2(nx, name_size * 0.36 + 19.0), sub, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, UiPalette.ui_muted(night))
 	if bool(player.get("mau", false)):
 		_draw_mau_tag(ac + Vector2(-ar - 4.0, -ar - 2.0))
@@ -333,8 +416,28 @@ func _draw() -> void:
 		var pt := "%d." % place
 		var pw := num_font.get_string_size(pt, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x
 		draw_string(num_font, mc + Vector2(-pw * 0.5, 5.0), pt, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, UiPalette.INK)
-	if compact and _cards.is_empty():
+	if compact and _cards.is_empty() and not header_only:
 		_draw_bar(Vector2(-BAR_W * 0.5, ar + 10.0))
+	if thinking():
+		_draw_think(ac, ar)
+
+
+# Denkblase (0.1.4): Wolke über dem Avatar mit drei wandernden Pünktchen, blendet nach THINK_AFTER Sekunden ein
+func _draw_think(ac: Vector2, ar: float) -> void:
+	var k := clampf((_think - THINK_AFTER) / 0.25, 0.0, 1.0)
+	var bg := UiPalette.CREAM
+	var line := Color(UiPalette.INK, 0.85 * k)
+	var c := ac + Vector2(ar + 30.0, -ar - 24.0)
+	var sz := Vector2(66.0, 34.0) * (0.6 + 0.4 * k)
+	for t in [[Vector2(ar * 0.55, -ar * 0.95), 4.5], [Vector2(ar * 0.95, -ar * 1.25), 6.5]]:
+		draw_circle(ac + (t[0] as Vector2), float(t[1]) * k, line)
+		draw_circle(ac + (t[0] as Vector2), (float(t[1]) - 1.5) * k, Color(bg, k))
+	var sb := UiTheme.box(Color(bg, k), line, 2, int(sz.y * 0.5))
+	draw_style_box(sb, Rect2(c - sz * 0.5, sz))
+	for i in 3:
+		var bob := maxf(sin(_time * 5.0 - i * 0.9), 0.0)
+		var dp := c + Vector2((i - 1) * 15.0 * (0.6 + 0.4 * k), -5.0 * bob)
+		draw_circle(dp, 4.2 * k, Color(UiPalette.INK, (0.45 + 0.55 * bob) * k))
 
 
 func _draw_top() -> void:

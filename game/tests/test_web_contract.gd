@@ -102,6 +102,25 @@ func kontrast(a: Color, b: Color) -> float:
 # Tisch im Browser bei Tag (helle Seite) und Nacht wie in der App (Nutzerbefund 06.10.2026: Tag war dunkel): Papier mit Sonne
 # oben links (Farben und Lage aus table_background.gdshader), helle Karton-Plattform mit Druckfarben-Kontur, Schrift in
 # Druckfarbe mit ausreichendem Kontrast, weicher Wechsel beim Flip über tisch.js setzeSeite.
+# 0.1.4 (Browser): volles Logo, Rahmen statt „Bitte quer halten“, Mond, Strahlenkranz und Denkblase, eigene Kartenzahl,
+# Strahlen am Rundenende, Flip-Überraschung (Regeltext, Kartenhilfe, Stempel, Mock, Selbsttest)
+func pruefe_014(css: String, tisch: String, karten: String, mock: String, autotest: String, app: String, seite: String) -> void:
+	check(seite.contains("bilder/logo.webp") and FileAccess.file_exists(web_dir.path_join("bilder/logo.webp")) and css.contains(".start-logo.mit-bild"),
+		"Startseite zeigt das volle Logo (Karten und „Mau!“-Blase)")
+	check(app.contains("classList.toggle('rahmen'") and css.contains("body.rahmen #tisch") and css.contains("body.rahmen-hinweis[data-screen=\"tisch\"] .quer")
+			and not css.contains("body.hoch[data-screen=\"tisch\"] .quer"),
+		"Unpassendes Fenster: Tisch im Rahmen, Hinweis nur im Überstand")
+	check(tisch.contains("class=\"mond\"") and css.contains("#tisch[data-seite=\"dunkel\"] .himmel .mond"), "Mond oben rechts auf der dunklen Seite")
+	check(tisch.contains("class=\"kranz\"") and css.contains(".gg.dran .kranz") and css.contains("#tisch[data-seite=\"dunkel\"] { --kr-kern")
+			and css.contains(".gg.dran .denk") and css.contains(" 5s both") and css.contains("body.reduziert .gg.dran .kranz"),
+		"Wer dran ist: Strahlenkranz (Tag/Nacht), Denkblase nach 5 s, reduziert ohne Drehen")
+	check(tisch.contains("ichZahl") and css.contains(".ich-zahl") and css.contains(".ich-kranz.an"), "Eigene Kartenzahl und Strahlen hinter der eigenen Hand")
+	check(css.contains("#runde::before") and css.contains("body.reduziert #runde::before"), "Rundenende mit sanften Strahlen (voll und reduziert)")
+	check(karten.contains("flip_surprise") and karten.contains("Flip-Überraschung") and tisch.contains("case 'flip_surprise'") and tisch.contains("stempel(")
+			and css.contains(".stempel") and mock.contains("e: 'flip_surprise'") and js_list(autotest, "EREIGNISSE").has("flip_surprise"),
+		"Flip-Überraschung: Regeltext, Kartenhilfe, Stempel, Mock und Selbsttest")
+
+
 func pruefe_tag_nacht(css: String, tisch: String) -> void:
 	var shader := FileAccess.get_file_as_string("res://assets/shaders/table_background.gdshader")
 	var tag_grund := RegEx.create_from_string("day = mix\\(vec3\\(([0-9.]+), ([0-9.]+), ([0-9.]+)\\)").search(shader)
@@ -269,7 +288,7 @@ func run() -> void:
 	# Ereignisse mit sichtbarem Effekt am Tisch (Rest gleicht die Sicht ab)
 	for e in ["deal", "play", "draw", "skip", "skip_all", "reverse", "color", "flip", "pending", "challenge", "mau", "catch", "penalty",
 			"shuffle", "round_over", "game_over", "finish", "pass", "choose_color",
-			"swap_hands", "gamble_start", "stake", "gamble_roll", "stake_back", "stake_discard", "discard_color", "discard_pick"]:
+			"swap_hands", "gamble_start", "stake", "gamble_roll", "stake_back", "stake_discard", "discard_color", "discard_pick", "flip_surprise"]:
 		check(effekte.has(e), "tisch.js spielt Ereignis „%s“ ab" % e)
 	var aktionen := {}
 	for src in [app, tisch]:
@@ -339,6 +358,7 @@ func run() -> void:
 	check(css.contains(".automat .kuppel") and css.contains(".einsatz .zahl") and css.contains("#tisch[data-seite=\"dunkel\"] .automat"),
 		"style.css: Glücksspiel-Automat und Einsatzstapel (Tag und Nacht)")
 	pruefe_tag_nacht(css, tisch)
+	pruefe_014(css, tisch, karten, mock, autotest, app, seite)
 	# Pegel der Spieltöne relativ zum Mau-Ton (normal) wie in der App (AppSound.TON_DB gegen MAU_DB), auf 0,5 dB genau
 	var stufen := RegEx.create_from_string("STUFEN_SPIEL = \\{ aus: 0, leise: ([0-9.]+), normal: ([0-9.]+) \\}").search(ton)
 	var pegel := []
@@ -439,6 +459,8 @@ func run() -> void:
 					if bool(h.get("pick_color", false)):
 						seen_hints["pick_color"] = true
 				for e in fe:
+					if str(e.get("e", "")) == "flip_surprise" and (js_type(e.get("seat")) != "number" or js_type(e.get("face")) != "string"):
+						bad["flip_surprise ohne seat/face: " + str(e)] = true
 					if str(e.get("e", "")) == "stake_discard":
 						if not str(e.get("reason", "")) in ["stop", "empty"]:
 							bad["stake_discard.reason " + str(e.get("reason"))] = true
@@ -555,7 +577,7 @@ func serve_check() -> void:
 			woff = f
 			break
 	for pair in [["sfx/mau.m4a", "audio/mp4"], ["sfx/mau.ogg", "audio/ogg"], ["sfx/mau_mau.m4a", "audio/mp4"], ["sfx/mau_mau.ogg", "audio/ogg"],
-			["cards/hell_rot_7.webp", "image/webp"], ["cards/rueckseite.webp", "image/webp"], ["bilder/katze.webp", "image/webp"],
+			["cards/hell_rot_7.webp", "image/webp"], ["cards/rueckseite.webp", "image/webp"], ["bilder/katze.webp", "image/webp"], ["bilder/logo.webp", "image/webp"],
 			["fonts/" + woff, "font/woff2"], ["wach.mp4", "video/mp4"]]:
 		var r := await http_get(server, "/" + str(pair[0]))
 		check(int(r.status) == 200 and str(r.type).contains(pair[1]) and (r.body as PackedByteArray).size() > 500,

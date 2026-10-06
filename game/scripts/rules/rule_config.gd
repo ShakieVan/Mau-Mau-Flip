@@ -21,6 +21,7 @@ const CHOICES := {
 	"swap_direction": ["clockwise", "counter", "play", "against"],  # Platz+1, Platz−1, in bzw. gegen die Spielrichtung
 	"gamble_cards": ["off", "on"],             # Hausregel Glücksspiel: 2 zusätzliche Joker, siehe docs/module/A.md
 	"discard_color": ["off", "on"],            # Hausregel Farbe mit ablegen: 6 zusätzliche Karten, siehe docs/module/A.md
+	"flip_surprise": ["off", "on"],            # Hausregel Flip-Überraschung: Aktionskarte oben nach dem Flip wirkt auf den Nächsten
 }
 const FLAGS := {
 	"wild_counts_for_bluff": true,
@@ -38,8 +39,8 @@ const NUMBERS := {
 const PRESETS := {
 	"offiziell": {},
 	"klassisch500": {"scoring": "points500"},
-	"familie": {"round_end": "last", "stacking": "same", "penalty_turn": "play", "wild_restriction": "enforce", "mau_penalty": 1,
-		"swap_cards": "on"},
+	"familie": {"round_end": "last", "stacking": "same", "penalty_turn": "play", "wild_restriction": "free", "mau_penalty": 1,
+		"swap_cards": "on", "swap_direction": "play", "gamble_cards": "on", "discard_color": "on", "flip_surprise": "on"},
 	"mau_mau": {"stacking": "same", "wild_restriction": "enforce", "mau_penalty": 1},
 }
 const PRESET_TITLES := {"offiziell": "Offiziell", "klassisch500": "Klassisch 500", "familie": "Familie", "mau_mau": "Mau-Mau-Tradition"}
@@ -65,6 +66,7 @@ var swap_cards := "off"
 var swap_direction := "clockwise"
 var gamble_cards := "off"
 var discard_color := "off"
+var flip_surprise := "off"
 
 
 static func keys() -> Array:
@@ -85,12 +87,28 @@ static func preset_names() -> Array:
 	return PRESETS.keys()
 
 
-# Gespeicherte Regeln (App-Einstellungen, Regelsätze, Regeln vom Gastgeber) auf den Stand 0.1.3 bringen: Anzweifeln ("bluff")
-# gibt es in der Oberfläche nicht mehr und wird zu "free". Liefert eine Kopie, d bleibt unverändert.
+# Frühere „Familie“ (0.1.1 bis 0.1.3), wird von migrate_dict auf die heutige gehoben.
+const OLD_FAMILIE := {"round_end": "last", "stacking": "same", "penalty_turn": "play", "wild_restriction": "enforce",
+	"mau_penalty": 1, "swap_cards": "on"}
+
+
+# Gespeicherte Regeln (App-Einstellungen, Regelsätze, Regeln vom Gastgeber) auf den Stand 0.1.4 bringen: Anzweifeln ("bluff")
+# gibt es in der Oberfläche nicht mehr und wird zu "free" (0.1.3). Regeln, die genau der früheren „Familie“ entsprechen (mit
+# enforce oder, nach bluff → free, mit free), werden zur heutigen „Familie“ (0.1.4). Liefert eine Kopie, d bleibt unverändert.
 static func migrate_dict(d: Dictionary) -> Dictionary:
 	var out := d.duplicate()
 	if str(out.get("wild_restriction", "")) == "bluff":
 		out["wild_restriction"] = "free"
+	var mine := RuleConfig.from_dict(out).to_dict()
+	for wr in ["enforce", "free"]:
+		var old := RuleConfig.from_dict(OLD_FAMILIE)
+		old.wild_restriction = wr
+		var want := old.to_dict()
+		if wr == "free":                 # dann zählt der (entfallene) Schalter nicht
+			want["wild_counts_for_bluff"] = mine["wild_counts_for_bluff"]
+		if mine == want:
+			out.merge(RuleConfig.preset("familie").to_dict(), true)
+			return out
 	return out
 
 
@@ -252,6 +270,8 @@ func describe() -> Array[String]:
 		out.append("Ein Flip als letzte Karte wird noch ausgeführt; gewertet wird die neue Seite.")
 	else:
 		out.append("Ein Flip als letzte Karte wird nicht mehr ausgeführt.")
+	if flip_surprise == "on":
+		out.append("Flip-Überraschung: Die Aktionskarte, die nach dem Flip oben liegt, wirkt auf den Nächsten.")
 	# Zusatzkarten: Mit genau einer Hausregel steht die Kartenzahl in ihrer Zeile (Kartentausch wie bisher „(116)“), mit mehreren
 	# in einer eigenen Zeile.
 	var extras := (1 if swap_cards == "on" else 0) + (1 if gamble_cards == "on" else 0) + (1 if discard_color == "on" else 0)

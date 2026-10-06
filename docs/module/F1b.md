@@ -155,6 +155,18 @@ Prüfung der QR-Lesbarkeit: ffmpeg 9.0.1 enthält libquirc (Filter `quirc`) und 
 
 `F1b_tisch_hell.png`, `F1b_tisch_dunkel.png` (mit Mau-Marke, „Erwischt!“, „+5“, letzte Karte groß), `F1b_flip.png` (mitten in der Welle, Dämmerung), `F1b_farbwahl.png` (Felder, gezogener Joker über Gelb), `F1b_farbrad.png`, `F1b_sichtschutz.png`, `F1b_8_spieler.png` (Abzeichen, Richtung −1), `F1b_rundenende.png` (Punkte 500), `F1b_qr.png`, zusätzlich `F1b_effekte.png` (Stempel, Zzz, Mau-Blase, Erwischt, Farbwelle, Randpuls), `F1b_hilfe.png`, `F1b_grossansicht.png`. Erzeugen: `godot_run.ps1 -Script res://tests/test_ui_table_shots.gd -Resolution 1600x720` (einzeln mit `-EnvPairs 'SHOT=flip'`; `SHOT=ablauf` legt zur Durchsicht Bilder jedes Demo-Schritts nach `%TEMP%`).
 
+## Änderungen 0.1.4
+
+- **Wer dran ist:** `TurnHalo` (`scripts/ui/turn_halo.gd`, Shader `assets/shaders/turn_halo.gdshader`) legt einen Strahlenkranz um Kopfzeile und Fächer des Spielers am Zug (Tag golden, Nacht bläulich); beim eigenen Zug um das eigene Namensschild und die Hand (`HandView.cards_rect()`). Nur während des Zugs sichtbar, danach ausgeblendet und unsichtbar; Effekte reduziert: Strahlen stehen.
+- **Eigener Platz:** `TableView.me_badge` (`OpponentSeat` mit `header_only`) links über „Farbe“: Avatar, Name, Kartenzahl als Pille, Mau-Marke.
+- **Denkblase:** nach 5 s ohne Handlung am Namen (`OpponentSeat.THINK_AFTER`); jedes Ereignis mit `seat` setzt die Uhr zurück (`poke`).
+- **Kartenhilfe:** Das „?“ der offenen Großansicht meidet den Mau-Knopf (`HandView.avoid_global`), und solange die Großansicht offen ist, nimmt der Mau-Knopf keine Eingaben.
+- **Rundenende:** `TableEffects.SoftRaysFx` (Shader `soft_rays.gdshader`, Art wie die Tischstrahlen) statt der Keile.
+- **Partiestart:** Ohne bisherige Sicht baut `deal` zuerst den leeren Tisch der Zielsicht auf (Plätze mit 0 Karten, volle Stapelhöhe), dann fliegen die Karten wie bei „Nächste Runde“.
+- **Flip-Überraschung:** Ereignis `flip_surprise` → Stempel „Flip-Überraschung!“ über der Ablage; folgende Strafen zeigen sich wie nach einem Legen.
+- **Vertretener Gast:** `GameTable.view_of` setzt `players[i].substituted`; der Platz zeigt „Computer spielt“ statt „getrennt“.
+- Tests: `test_ui_014.gd` (33 ok). Kontrollbilder: `test_ui_014_shot.gd` → `optik_014_dran_tag.png`, `optik_014_ich_nacht.png`, `optik_014_rundenende.png`.
+
 ## Offene Punkte
 
 1. **Integration Phase 2 (F2)**: HandView (F1a) braucht einen kleinen Adapter auf die Hand-Schnittstelle oben (`apply_view` → `set_cards`/`set_playable`, `receive_card`/`landing_point` bzw. `spawn_from`, `flip_wave`). `take_card` passt bereits (CardView wird übernommen). Bei `drag_started` eines Jokers `open_color_fields()`, bei `drag_moved` `wish_picker.hover()`, bei `drag_ended` `wish_picker.drop()`.

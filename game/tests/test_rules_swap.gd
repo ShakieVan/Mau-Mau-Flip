@@ -198,10 +198,10 @@ func _sw_config_and_texts() -> void:
 	# Nutzerentscheidung 05.10.2026: „Familie“ spielt mit Kartentausch, alle anderen Voreinstellungen ohne.
 	for p in RuleConfig.preset_names():
 		check(RuleConfig.preset(p).swap_cards == ("on" if p == "familie" else "off"), "Voreinstellung %s: Kartentausch nur bei Familie" % p)
-	check(RuleConfig.preset("familie").card_count() == 116 and RuleConfig.preset("familie").swap_direction == "clockwise",
-		"Familie: 116 Karten, Tausch im Uhrzeigersinn")
-	check(RuleConfig.from_dict(RuleConfig.preset("familie").to_dict().merged({"swap_direction": "play"}, true)).preset_name() == "",
-		"Familie mit Tausch in Spielrichtung: eigene Regeln")
+	check(RuleConfig.preset("familie").card_count() == 124 and RuleConfig.preset("familie").swap_direction == "play",
+		"Familie: 124 Karten, Tausch in Spielrichtung")
+	check(RuleConfig.from_dict(RuleConfig.preset("familie").to_dict().merged({"swap_direction": "clockwise"}, true)).preset_name() == "",
+		"Familie mit Tausch im Uhrzeigersinn: eigene Regeln")
 	var on := RuleConfig.from_dict({"swap_cards": "on", "swap_direction": "play"})
 	check(on.card_count() == 116 and on.swap_direction == "play", "swap_cards=on: 116 Karten")
 	check(RuleConfig.from_dict(JSON.parse_string(JSON.stringify(on.to_dict()))).equals(on), "Rundreise über JSON")

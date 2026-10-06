@@ -498,8 +498,8 @@ func play_rounds(t: LocalTable, min_rounds: int, max_rounds: int, log: Dictionar
 # Übungsspiel mit allen Hausregeln: ganze Runden, bis Kartentausch, Glücksspiel und Farbe ablegen vorkamen
 func test_house_solo() -> void:
 	var cfg := house_config()
-	check(cfg.card_count() == 124 and cfg.swap_cards == "on" and cfg.round_end == "last" and cfg.preset_name() == "",
-		"Hausregeln: Familie + Glücksspiel + Farbe ablegen = 124 Karten, eigene Regeln")
+	check(cfg.card_count() == 124 and cfg.swap_cards == "on" and cfg.round_end == "last" and cfg.preset_name() == "familie",
+		"Hausregeln: Familie (mit Glücksspiel und Farbe ablegen) = 124 Karten")
 	var t := new_table()
 	var players := [{"name": "Lena", "kind": "human"}, {"name": "Bot A", "kind": "bot"}, {"name": "Bot B", "kind": "bot"},
 		{"name": "Bot C", "kind": "bot"}]

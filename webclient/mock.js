@@ -5,7 +5,7 @@
  * Szenen gluecksspiel, einsatz, tausch, ablegen): Kartentausch (swap_hands), Glücksspiel (Phase gamble, stake/press/stop, gamble_start,
  * stake, gamble_roll, stake_back, stake_discard) und Farbe mit ablegen (Phase discard_pick, discard_color), vereinfacht nach docs/module/A.md.
  * Parameter:
- *   gegner=1..9 (Standard 3), karten=N (eigene Startkarten), seite=dunkel, seed=Zahl, tempo=Faktor, haus=1 (alle drei Hausregeln),
+ *   ueberraschung=1 (Hausregel Flip-Überraschung), gegner=1..9 (Standard 3), karten=N (eigene Startkarten), seite=dunkel, seed=Zahl, tempo=Faktor, haus=1 (alle drei Hausregeln),
  *   richtung=spiel|gegen|gegenspiel (Kartentausch in/gegen Spielrichtung, gegen den Uhrzeigersinn), bluff=1 (alter Gastgeber mit Anzweifeln), wuerfe=0,0,4 (Ergebnisse der nächsten Glücksspiel-Drucke),
  *   szene=lobby|tisch|farbwahl|anzweifeln|gezogen|mau|rundenende|getrennt|viele|hilfe|rueckseiten|menue|gegner|blasen|
  *         gluecksspiel|einsatz|tausch|ablegen|ablegejoker
@@ -26,7 +26,7 @@
     wild_restriction: P('bluff') ? 'bluff' : 'free', wild_counts_for_bluff: true, jagd_wild_stops: false, mau_call: 'catch', mau_penalty: 2,
     backs_visible: true, peek_own_backs: true, two_player_reverse_skips: true, flip_last_card: 'execute', penalty_turn: 'skip',
     swap_cards: HAUS ? 'on' : 'off', swap_direction: { spiel: 'play', gegen: 'counter', gegenspiel: 'against' }[P('richtung')] || 'clockwise',
-    gamble_cards: HAUS ? 'on' : 'off', discard_color: HAUS ? 'on' : 'off',
+    gamble_cards: HAUS ? 'on' : 'off', discard_color: HAUS ? 'on' : 'off', flip_surprise: P('ueberraschung') ? 'on' : 'off',
   };
   const z = key => M.Karten.zerlege(key);
 
@@ -288,7 +288,8 @@
         case 'color':
           if (this.phase !== 'color' || this.dran !== s) return nein('Gerade ist keine Farbe zu wählen.');
           if (FARBEN[this.seite].indexOf(a.color) < 0) return nein('Diese Farbe gibt es auf dieser Seite nicht.');
-          this.farbe = a.color; this.phase = 'turn'; ev.push({ e: 'color', color: a.color }); this.dran = this.naechster(s);
+          this.farbe = a.color; this.phase = 'turn'; ev.push({ e: 'color', color: a.color });
+          if (this.ueberraschung) { this.ueberraschung = false; this.ueberrasche(s, z(this.f(this.top())).art, ev); } else this.dran = this.naechster(s);
           return { ok: true, events: ev };
         case 'draw': {
           if (this.dran !== s || this.phase !== 'turn') return nein('Du kannst gerade nicht ziehen.');
@@ -349,11 +350,28 @@
       this.seite = this.seite === 'hell' ? 'dunkel' : 'hell';
       ev.push({ e: 'flip', side: this.seite });
       const t = z(this.f(this.top()));
+      // Hausregel flip_surprise: eine klassische Aktionskarte oben wirkt, als hätte der Flip-Spieler sie gelegt
+      const ueber = REGELN.flip_surprise === 'on' && ['plus1', 'plus5', 'aussetzen', 'alle_aussetzen', 'richtungswechsel', 'wuenscher_plus2', 'farbjagd'].indexOf(t.art) >= 0;
       if (JOKER[t.art]) {
-        if (s === ICH && this.haende[s].length) { this.phase = 'color'; this.dran = s; return; }
+        if (s === ICH && this.haende[s].length) { this.phase = 'color'; this.dran = s; this.ueberraschung = ueber; return; }
         this.farbe = this.botFarbe(s); ev.push({ e: 'color', color: this.farbe });
       } else this.farbe = t.farbe;
+      if (ueber) { this.ueberrasche(s, t.art, ev); return; }
       this.dran = this.naechster(s);
+    }
+    ueberrasche(s, art, ev) {
+      const nx = this.naechster(s);
+      ev.push({ e: 'flip_surprise', seat: s, face: this.f(this.top()) });
+      switch (art) {
+        case 'plus1': case 'plus5': this.ziehe(nx, art === 'plus1' ? 1 : 5, ev); ev.push({ e: 'skip', seat: nx }); this.dran = this.naechster(nx); break;
+        case 'aussetzen': ev.push({ e: 'skip', seat: nx }); this.dran = this.naechster(nx); break;
+        case 'alle_aussetzen': ev.push({ e: 'skip_all', seat: s }); this.dran = s; break;
+        case 'richtungswechsel':
+          this.dir *= -1; ev.push({ e: 'reverse', dir: this.dir });
+          if (this.n === 2) { ev.push({ e: 'skip', seat: nx }); this.dran = s; } else this.dran = this.naechster(s);
+          break;
+        default: this.fordern = { von: s, opfer: nx, art, bluff: false, farbe: this.farbe }; this.loese(false, ev);
+      }
     }
     // „Mau!“ in discard_pick: erlaubt, wenn nach der Auswahl genau 1 Karte bleiben kann
     pickMau(s) {

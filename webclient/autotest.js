@@ -39,7 +39,7 @@
   // Ereignisse, die der Client kennt (Effekt in tisch.js oder bewusst ohne Effekt)
   const EREIGNISSE = ['deal', 'play', 'draw', 'skip', 'skip_all', 'reverse', 'color', 'flip', 'pending', 'challenge', 'mau', 'catch', 'penalty', 'shuffle',
     'round_over', 'game_over', 'finish', 'pass', 'choose_color', 'round_start', 'start', 'turn', 'keep', 'accept',
-    'swap_hands', 'gamble_start', 'stake', 'gamble_roll', 'stake_back', 'stake_discard', 'discard_color', 'discard_pick'];
+    'swap_hands', 'gamble_start', 'stake', 'gamble_roll', 'stake_back', 'stake_discard', 'discard_color', 'discard_pick', 'flip_surprise'];
   // Hausregel-Karten, die der Selbsttest bevorzugt legt (damit Kartentausch, Farbe ablegen und Glücksspiel sicher vorkommen)
   const VORRANG = { tausch: 1, ablegen: 2, ablegen_joker: 3, gluecksspiel: 4 };
 
@@ -123,7 +123,7 @@
     zustand(m) {
       this.states++;
       if (m.view) this.prot('S t' + m.view.turn + ' ' + m.view.phase + ' [' + (m.events || []).map(e => e.e + (e.seat !== undefined ? e.seat : '')).join(',') + '] h' + (m.view.hand || []).length);
-      (m.events || []).forEach(e => {
+      (m.events || []).forEach((e, i) => {
         this.ereignisse[e.e] = (this.ereignisse[e.e] || 0) + 1;
         if (!this.mock && EREIGNISSE.indexOf(e.e) < 0) this.fail('unbekanntes Ereignis ' + e.e);
         // verdeckte Information: fremde Einsatzkarten nie, die eigene neue Hand nach dem Tausch nur selbst
@@ -132,6 +132,14 @@
         if (e.e === 'gamble_roll' && !(e.value >= 0 && e.value <= 10)) this.fail('gamble_roll.value ' + e.value);
         if (e.e === 'swap_hands' && !Array.isArray(e.counts)) this.fail('swap_hands ohne counts');
         if (e.e === 'discard_color' && (!Array.isArray(e.faces) || e.faces.length !== (e.count | 0))) this.fail('discard_color: faces ≠ count');
+        // Flip-Überraschung: nur mit der Hausregel, direkt nach einem Flip (bzw. der Farbwahl danach), Gesicht = klassische Aktionskarte oben
+        if (e.e === 'flip_surprise') {
+          const ar = typeof e.face === 'string' ? M.Karten.zerlege(e.face).art : '';
+          if (typeof e.seat !== 'number' || ['plus1', 'plus5', 'aussetzen', 'alle_aussetzen', 'richtungswechsel', 'wuenscher_plus2', 'farbjagd'].indexOf(ar) < 0) this.fail('flip_surprise ' + JSON.stringify(e));
+          if (m.view && m.view.rules && m.view.rules.flip_surprise !== 'on') this.fail('flip_surprise ohne Hausregel');
+          const vor = (m.events || [])[i - 1];
+          if (vor && ['flip', 'color', 'choose_color'].indexOf(vor.e) < 0) this.fail('flip_surprise nicht direkt nach flip/color');
+        }
       });
       try { this.vertrag(m.view); this.vertragGlueck(m.view); this.vertragAblegen(m.view); } catch (e) { this.fail('Vertrag: ' + e); }
     },

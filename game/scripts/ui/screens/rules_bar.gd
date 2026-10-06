@@ -104,7 +104,9 @@ static func summary(cfg: RuleConfig, extras_first := false) -> String:
 		parts.append("Ziehkarten weitergeben")
 	if cfg.penalty_turn == "play":
 		parts.append("nach Strafziehen weiterspielen")
-	parts.append({"bluff": "Bluffen erlaubt", "enforce": "+2 nur ohne Farbe", "free": "Joker frei"}[cfg.wild_restriction])
+	parts.append({"bluff": "Bluffen erlaubt", "enforce": "+2 nur ohne Farbe", "free": "Wünscher +2 immer erlaubt"}[cfg.wild_restriction])
+	if str(cfg.get("flip_surprise")) == "on":
+		parts.append("Flip-Überraschung")
 	parts.append("%d Handkarten" % cfg.hand_size)
 	parts.append("Rückseiten sichtbar" if cfg.backs_visible else "Rückseiten verdeckt")
 	var extras := extras_text(cfg)

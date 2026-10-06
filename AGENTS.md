@@ -54,16 +54,13 @@ Am 04.10.2026 begonnen. Bisher Brainstorming und Recherche, noch kein Code. Erge
 
 Tempo-Regler der Computergegner, vier Tauschrichtungen, „Farbe mit ablegen“ mit Auswahl, Ablegen-Joker mit getrennter Ablege- und Spielfarbe, kein Anzweifeln (Wünscher +2 und Farbjagd immer erlaubt, „App prüft“ freiwillig), „Computer spielt für …“ bei getrennten Gästen, N6–N8. Bericht: `docs/geraetetest/0.1.3/BERICHT.md`. Update 0.1.1 → 0.1.2 vom Nutzer bestätigt. Hörtest der Spieltöne durch den Nutzer steht weiter aus.
 
-## Offen für 0.1.4 (Nutzerwünsche 06.10.2026)
+## Erledigt in 0.1.4 (veröffentlicht 06.10.2026)
 
-- Browser am Desktop, Startbild: Teile des Hintergrunds fehlen (Karten, „Mao“-Sprechblase).
-- Browser: Statt nur „Bitte quer halten“ bei unpassendem Fenster das Spiel in einem Rahmen mit passenden Proportionen zeigen (nach Fensterbreite); den Hinweis dezent im Überstand anzeigen.
-- Browser: Mond fehlt auf der dunklen Seite (die App zeigt ihn oben rechts).
-- App: Bei vielen Karten liegt das „?“ der Kartenhilfe über dem „Mau!“-Knopf; ein Tipp auf „?“ löst „Mau!“ aus (Eingabe geht durch). Bild: `docs/geraetetest/0.1.4/nutzer_hilfe_ueber_mau.jpg` (nur lokal).
-- **Wer dran ist, deutlich hervorheben** (App und Browser): Der leichte Schein um den Buchstaben ist zu schwach, vor allem vor der Sonne. Auffällige Strahlen rund um Karten und Namen des Spielers (Vorbild: `docs/geraetetest/0.1.4/nutzer_dran_vorbild_strahlen.webp`, Problem: `nutzer_dran_zu_schwach.webp`, nur lokal), nachts mit bläulichem Schimmer. Dazu eine animierte Denkblase am Namen, wenn der Spieler länger als 5 Sekunden braucht.
-- Eigene Kartenzahl sichtbar anzeigen (wie bei den Mitspielern), z. B. für die Entscheidung beim Kartentausch.
-- Kleinigkeiten aus dem Gerätetest 0.1.3: Regelzeile sagt bei „free“ „Joker frei“ statt „Immer erlaubt“; ein vertretener Gast steht weiter als „getrennt“ da; Griff des Tempo-Reglers sehr klein; Lite in der Phase discard_pick gegen einen echten Gastgeber am Gerät prüfen.
-- Rundenende: Am Handy steht im Hintergrund noch die alte „Glücksrad“-Sonne statt der sanften Strahlen; im Browser fehlen die Strahlen am Rundenende ganz (volle und reduzierte Effekte). Bild: `docs/geraetetest/0.1.4/nutzer_rundenende_gluecksrad.jpg` (harte, keilförmige Strahlen hinter dem Ergebnis; nur lokal).
+Schein von hinten für den Spieler am Zug (ohne Kasten/Rand, erst nach dem Austeilen, Namen mit Kontur in der Gegenfarbe), Denkblase nach 5 s, eigene Kartenzahl, Flip-Überraschung (Hausregel), neue „Familie“ mit allen Zusatzkarten (alte Familie wird automatisch angehoben), Partiestart wie „Nächste Runde“, sanfte Strahlen am Rundenende, „?“ löst kein „Mau!“ mehr aus, Browser: Mond, Startbild, Rahmen statt „Bitte quer halten“. Gerätetest wurde wegen der Kranz-Korrektur abgebrochen; Kontrollbilder `docs/module/optik_014_*.png`.
+
+## Offen für 0.1.5
+
+- **Schrift am Handy zu klein** (Nutzer, 06.10.2026). Vorschlag: (1) kleinste Texte (Beschreibungen, Hinweise, Pillen) allgemein größer; (2) Einstellung „Schriftgröße“ (Normal/Groß/Sehr groß) je Gerät. Dafür die bisher verstreut festgelegten Schriftgrößen zentral bündeln (z. B. in UiFonts) und alle Bildschirme samt Tisch per Bildschirmfoto-Tests in allen Stufen auf Überlauf prüfen. Kartenbilder bleiben unverändert. Laut Nutzer ist „gefühlt fast überall“ außer der großen Schrift zu klein; Extreme (Bilder in `docs/geraetetest/0.1.5/`, nur lokal): am Tisch „KI“-Abzeichen, „gleich dran“, Spielernamen, Kartenzahl-Pillen, „Stapel · 83“, Hinweisleiste („+1 auf dich – Zieh 2.“); in den Bildschirmen die grauen Beschreibungen (z. B. „Du sitzt unten …“) und die Regel-Kurzfassung unter „Regeln“.
 
 ## Empfehlung aus der Recherche
 

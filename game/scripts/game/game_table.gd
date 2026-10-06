@@ -78,6 +78,11 @@ func view_of(seat: int) -> Dictionary:
 			h.text = t + NEXT_ROUND_TAIL
 		elif not can and t.ends_with(NEXT_ROUND_TAIL):
 			h.text = t.trim_suffix(NEXT_ROUND_TAIL)
+	# Vertretener Mensch (Computer spielt für ihn): Anzeige „Computer spielt“ statt „getrennt“
+	if not _substitute.is_empty():
+		for p in v.get("players", []):
+			if _substitute.has(int(p.get("seat", -1))):
+				p["substituted"] = true
 	_patch_view(seat, v)
 	return v
 

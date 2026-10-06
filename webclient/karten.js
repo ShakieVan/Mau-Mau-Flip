@@ -132,6 +132,9 @@
         z.push('Alles wird gewendet: Ablage, Nachziehstapel und alle Hände. Ab jetzt gilt die andere Seite.');
         z.push('Passt auf ' + f + ' oder auf jeden Flip.');
         if ((r.flip_last_card || 'execute') === 'execute') z.push('Als letzte Karte wird der Flip noch ausgeführt; gewertet wird die neue Seite.');
+        z.push(r.flip_surprise === 'on'
+          ? 'Flip-Überraschung ist an: Liegt danach eine Aktionskarte oben (+1/+5, Aussetzen, Alle aussetzen, Richtungswechsel, Wünscher +2, Farbjagd), wirkt sie auf den Nächsten – als hättest du sie gelegt. Bei Wünscher +2 und Farbjagd wählst du zuerst die Farbe.'
+          : 'Die Aktionskarte, die danach oben liegt, wirkt nicht.');
         break;
       case 'wuenscher': z.push('Passt immer. Du wünschst dir eine Farbe – auch die bisherige.'); break;
       case 'wuenscher_plus2':
@@ -200,6 +203,7 @@
     if (r.swap_cards === 'on') z.push('Kartentausch: Wer einen legt, lässt alle ihre ganze Hand an den Nächsten weitergeben, ' + tauschRichtung(r) + '.');
     if (r.gamble_cards === 'on') z.push('Glücksspiel (2 Joker): verdeckt setzen und drücken – weiter riskieren oder aufhören. Treffer: 1 bis 10 Karten ziehen, Einsatz zurück; Aufhören: Einsatz unter die Ablage.');
     if (r.discard_color === 'on') z.push('Farbe ablegen: Wer eine Ablegen-Karte legt, wählt eigene Karten dieser Farbe zum Mitablegen; Joker bleiben auf der Hand. Beim Ablegen-Joker wählst du Ablegefarbe und Spielfarbe getrennt.');
+    if (r.flip_surprise === 'on') z.push('Flip-Überraschung: Die Aktionskarte, die nach dem Flip oben liegt, wirkt auf den Nächsten.');
     if (kartenZahl(r) > 112) z.push('Gespielt wird mit ' + kartenZahl(r) + ' Karten.');
     return z;
   }

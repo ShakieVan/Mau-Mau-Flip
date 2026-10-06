@@ -125,13 +125,14 @@ tools/                        Bau-, Test-, Asset- und Veröffentlichungsskripte
 | `swap_direction` | **`clockwise`** (Platz + 1) / `counter` (Platz − 1) / `play` (in der aktuellen Spielrichtung) / `against` (gegen die Spielrichtung); Texte „Im Uhrzeigersinn“, „Gegen den Uhrzeigersinn“, „In Spielrichtung“, „Gegen die Spielrichtung“ (`RuleConfig.swap_direction_title()`) |
 | `gamble_cards` | **`off`** / `on` (Hausregel Glücksspiel: 2 zusätzliche Karten, je Seite zweimal der Joker `hell_gluecksspiel` bzw. `dunkel_gluecksspiel`, 50 Punkte; Legen mit Farbwahl, danach Phase `gamble`: Karte verdeckt setzen, Knopf drücken, bis ein Treffer kommt oder die Hand leer ist; in keiner Voreinstellung) |
 | `discard_color` | **`off`** / `on` (Hausregel Farbe mit ablegen: 6 zusätzliche Karten, je Seite `hell_<farbe>_ablegen` je Farbe, 30 Punkte, legbar auf gleiche Farbe oder jede Ablegen-Karte, und zweimal der Joker `hell_ablegen_joker` bzw. `dunkel_ablegen_joker`, 50 Punkte; danach wählt der Leger in der Phase `discard_pick`, welche seiner Karten der Farbe (außer Jokern) ohne Wirkung mit auf die Ablage kommen; in keiner Voreinstellung) |
+| `flip_surprise` | **`off`** / `on` (Hausregel „Flip-Überraschung“: Liegt nach einem ausgeführten Flip eine klassische Aktionskarte oben – `plus1`, `plus5`, `aussetzen`, `alle_aussetzen`, `richtungswechsel`, `wuenscher_plus2`, `farbjagd` –, wirkt sie, als hätte der Flip-Spieler sie gelegt; betroffen ist der Nächste nach ihm. Bei Wünscher +2 und Farbjagd wählt der Flip-Spieler zuerst die Farbe (Phase `color`). Flip, Wünscher und Zusatzkarten oben lösen nichts aus, ebenso wenig ein Flip, mit dem die Runde endet. Stapeln und `penalty_turn` gelten wie beim Legen, Anzweifeln gibt es nicht. In „Familie“ an) |
 
 Kartenzahl je Partie: 112 + 4 (`swap_cards`) + 2 (`gamble_cards`) + 6 (`discard_color`), also 112 bis 124. Prüfsummen je Seite: hell 1280, dunkel 1480, dazu Kartentausch +80, Glücksspiel +100, Farbe mit ablegen +220. Die Kartencodes des Grunddecks und des Kartentauschs bleiben unverändert, die neuen hängen dahinter (Einzelheiten: `docs/module/A.md`).
 
 Startkarte, Flip und Neumischen verhalten sich wie in Abschnitt 1.13 von `docs/recherche/07_regeln_hausregeln.md`.
 
 **Voreinstellungen**
-- **`familie`:** `round_end=last`, `stacking=same`, `penalty_turn=play`, `wild_restriction=enforce`, `mau_penalty=1`, `swap_cards=on` (Nutzerentscheidung 05.10.2026; also 116 Karten)
+- **`familie`:** `round_end=last`, `stacking=same`, `penalty_turn=play`, `wild_restriction=free`, `mau_penalty=1`, `swap_cards=on`, `swap_direction=play`, `gamble_cards=on`, `discard_color=on`, `flip_surprise=on` (Nutzerentscheidung 06.10.2026, ab 0.1.4; also 124 Karten). Bis 0.1.3 war es `wild_restriction=enforce`, `swap_cards=on` ohne die übrigen Zusatzregeln (116 Karten). `RuleConfig.migrate_dict` hebt gespeicherte Regeln, die genau dieser alten „Familie“ entsprechen (mit `enforce` oder, nach `bluff` → `free`, mit `free`), auf die neue.
 - **`mau_mau`:** `stacking=same`, `wild_restriction=enforce`, `mau_penalty=1`
 - **`klassisch500`:** `scoring=points500` (seit 0.1.3 ohne `wild_counts_for_bluff=false`, das bei `free` nicht zählt)
 
@@ -217,6 +218,7 @@ Alle Daten JSON-tauglich: Zahlen als `int`, keine Godot-Typen.
 **Ereignisse:** `{e: <name>, seat?, …}`, z. B.:
 - `deal`, `play{seat, card, face}`, `draw{seat, count, faces?}` (`faces` nur für den Ziehenden)
 - `skip{seat}`, `skip_all`, `reverse{dir}`, `color{color}`, `flip{side}`, `pending{amount}`
+- `flip_surprise{seat, face}` (Flip-Überraschung, öffentlich): `seat` = Flip-Spieler, `face` = Gesicht oben; direkt nach `flip` (bzw. nach `color` beim Joker oben) und vor den Wirkungs-Ereignissen (`skip`, `reverse`, `skip_all`, `pending` …).
 - `challenge{seat, success}`, `mau{seat}`, `catch{seat, target}`, `penalty{seat, count}`
 - `shuffle`, `round_over{ranking, scores}`, `game_over`
 - `swap_hands{seat, dir, counts, hand?, backs?}` (Kartentausch): `seat` = Leger, `dir` = Tauschrichtung ±1, `counts` = Kartenzahl je Platz nach dem Tausch; `hand` = nur die eigene neue Hand (`events_for`), `backs` = Rückseiten je Platz sortiert (bei `backs_visible`). Danach liefert `view_for` die neuen Hände. Wer so auf 1 Karte kommt, muss nicht „Mau!“ rufen. Als letzte Karte: Leger fertig, Tausch nur unter den Übrigen bzw. entfällt bei Rundenende (Einzelheiten: `docs/module/A.md`, „Kartentausch“).

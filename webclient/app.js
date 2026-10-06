@@ -5,7 +5,7 @@
 (function (M) {
   'use strict';
 
-  const VERSION = '0.1.3';
+  const VERSION = '0.1.4';
   const PROTO = 1;
   // wach.mp4 (32×32, 2 s, H.264 Baseline, ohne Ton; erzeugt mit ffmpeg) als data:-URI
   const WACH_VIDEO = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAMzbW9vdgAAAGxtdmhkAAAAAAAAAAAAAAAAAAAD6AAAB9AAAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAl50cmFrAAAAXHRraGQAAAADAAAAAAAAAAAAAAABAAAAAAAAB9AAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAACAAAAAgAAAAAAAkZWR0cwAAABxlbHN0AAAAAAAAAAEAAAfQAAAAAAABAAAAAAHWbWRpYQAAACBtZGhkAAAAAAAAAAAAAAAAAABAAAAAgABVxAAAAAAALWhkbHIAAAAAAAAAAHZpZGUAAAAAAAAAAAAAAABWaWRlb0hhbmRsZXIAAAABgW1pbmYAAAAUdm1oZAAAAAEAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAAUFzdGJsAAAAuXN0c2QAAAAAAAAAAQAAAKlhdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAACAAIABIAAAASAAAAAAAAAABFExhdmM2My4xLjEwMSBsaWJ4MjY0AAAAAAAAAAAAAAAAGP//AAAAL2F2Y0MBQsAe/+EAFmdCwB7ZCWwEQAAAAwBAAAADAQPFi5IBAAZoy4DkTIAAAAAQcGFzcAAAAAEAAAABAAAAFGJ0cnQAAAAAAAAKpAAAAAAAAAAYc3R0cwAAAAAAAAABAAAABAAAIAAAAAAUc3RzcwAAAAAAAAABAAAAAQAAABxzdHNjAAAAAAAAAAEAAAABAAAABAAAAAEAAAAkc3RzegAAAAAAAAAAAAAABAAAAogAAAALAAAACwAAAAsAAAAUc3RjbwAAAAAAAAABAAADYwAAAGF1ZHRhAAAAWW1ldGEAAAAAAAAAIWhkbHIAAAAAAAAAAG1kaXJhcHBsAAAAAAAAAAAAAAAALGlsc3QAAAAkqXRvbwAAABxkYXRhAAAAAQAAAABMYXZmNjMuMS4xMDEAAAAIZnJlZQAAArFtZGF0AAACcgYF//9u3EXpvebZSLeWLNgg2SPu73gyNjQgLSBjb3JlIDE2NSByMzIyMyAwNDgwY2IwIC0gSC4yNjQvTVBFRy00IEFWQyBjb2RlYyAtIENvcHlsZWZ0IDIwMDMtMjAyNSAtIGh0dHA6Ly93d3cudmlkZW9sYW4ub3JnL3gyNjQuaHRtbCAtIG9wdGlvbnM6IGNhYmFjPTAgcmVmPTMgZGVibG9jaz0xOi0zOi0zIGFuYWx5c2U9MHgxOjB4MTExIG1lPWhleCBzdWJtZT03IHBzeT0xIHBzeV9yZD0yLjAwOjAuNzAgbWl4ZWRfcmVmPTEgbWVfcmFuZ2U9MTYgY2hyb21hX21lPTEgdHJlbGxpcz0xIDh4OGRjdD0wIGNxbT0wIGRlYWR6b25lPTIxLDExIGZhc3RfcHNraXA9MSBjaHJvbWFfcXBfb2Zmc2V0PS00IHRocmVhZHM9MSBsb29rYWhlYWRfdGhyZWFkcz0xIHNsaWNlZF90aHJlYWRzPTAgbnI9MCBkZWNpbWF0ZT0xIGludGVybGFjZWQ9MCBibHVyYXlfY29tcGF0PTAgY29uc3RyYWluZWRfaW50cmE9MCBiZnJhbWVzPTAgd2VpZ2h0cD0wIGtleWludD0yNTAga2V5aW50X21pbj0yIHNjZW5lY3V0PTQwIGludHJhX3JlZnJlc2g9MCByY19sb29rYWhlYWQ9NDAgcmM9Y3JmIG1idHJlZT0xIGNyZj00MC4wIHFjb21wPTAuNjAgcXBtaW49MCBxcG1heD02OSBxcHN0ZXA9NCBpcF9yYXRpbz0xLjQwIGFxPTE6MS4yMACAAAAADmWIhAXznJigACX3J114AAAAB0GaOAvnOWAAAAAHQZpUAvnOWAAAAAdBmmAVznLA';
@@ -142,10 +142,24 @@
       document.documentElement.style.setProperty('--vh', vh + 'px');
       document.documentElement.style.setProperty('--vw', vw + 'px');
       document.body.classList.toggle('hoch', vw < vh);
+      // Unpassendes Fenster (hoch oder fast quadratisch): Tisch in einem Rahmen mit Bühnenproportion (1180 × 720) nach der
+      // Fensterbreite, darunter im Überstand ein dezenter Hinweis. Rahmen und Hinweis zusammen stehen mittig.
+      const rahmen = vw / vh < 1.3;
+      let th = vh, oben = 0, rest = 0;
+      if (rahmen) {
+        th = Math.round(vw * 720 / 1180);
+        const frei = vh - th, hh = Math.min(frei, 150);
+        oben = Math.round((frei - hh) / 2); rest = hh;
+      }
+      const de = document.documentElement.style;
+      de.setProperty('--rahmen-oben', oben + 'px'); de.setProperty('--rahmen-h', th + 'px'); de.setProperty('--rahmen-rest', rest + 'px');
+      document.body.classList.toggle('rahmen', rahmen);
+      document.body.classList.toggle('rahmen-hinweis', rahmen && rest >= 56);
+      document.body.classList.toggle('grob', !!(window.matchMedia && matchMedia('(pointer: coarse)').matches));
       if (this.tisch) {
         const cs = getComputedStyle($('#sicher'));
-        const links = parseFloat(cs.paddingLeft) || 0, rechts = parseFloat(cs.paddingRight) || 0;
-        this.tisch.groesse(vw, vh, links, rechts);
+        const links = rahmen ? 0 : parseFloat(cs.paddingLeft) || 0, rechts = rahmen ? 0 : parseFloat(cs.paddingRight) || 0;
+        this.tisch.groesse(vw, th, links, rechts);
       }
     },
     zeigeScreen(name) {

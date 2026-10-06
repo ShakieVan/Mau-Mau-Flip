@@ -63,6 +63,10 @@ body[data-screen="tisch"] #tisch { display: block; }
 .start-logo .schriftzug { position: absolute; left: 0; right: 0; bottom: 5%; height: 1.1em; font-size: clamp(24px, 4.6vw, 54px); }
 .start-logo .schriftzug .mau { position: absolute; right: 37.5%; bottom: 0; }
 .start-logo .schriftzug .flip { position: absolute; left: 66%; bottom: 0; }
+/* volles Logo wie in der App (Sonnen- und Mondkarte, „Mau!“-Blase); die Text-Fassung oben bleibt Ersatz, falls das Bild fehlt */
+.start-logo .logo-bild { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.start-logo.mit-bild { aspect-ratio: 16 / 9; }
+.start-logo.mit-bild .katze, .start-logo.mit-bild .schriftzug, .start-logo.mit-bild .tag-seite, .start-logo.mit-bild .nacht-seite { display: none; }
 .mau, .flip { font-family: var(--f-brand); font-weight: 900; line-height: 1; letter-spacing: -.01em; }
 .mau { color: var(--ink); font-variation-settings: 'SOFT' 100, 'WONK' 0, 'opsz' 96; text-shadow: 0 2px 0 rgba(255,247,232,.6); }
 .flip { color: #FFE3F4; font-style: italic; font-variation-settings: 'SOFT' 100, 'WONK' 1, 'opsz' 96;
@@ -173,7 +177,7 @@ body[data-screen="tisch"] #tisch { display: block; }
 #tisch.wechselt .mau-blase .koerper, #tisch.wechselt .mau-blase .txt, #tisch.wechselt .mau-blase .schwanz, #tisch.wechselt .mau-blase .ohr,
 #tisch.wechselt .mau-blase .ohr::after, #tisch.wechselt .mau-blase .ring, #tisch.wechselt .mau-blase .stern,
 #tisch.wechselt .farbwahl .schleier, #tisch.wechselt .farbwahl .frage, #tisch.wechselt .automat .walze b,
-#tisch.wechselt .knopf.klein { transition: var(--tr); }
+#tisch.wechselt .knopf.klein, #tisch.wechselt .stempel, #tisch.wechselt .gg .denk i, #tisch.wechselt .gg .denk b { transition: var(--tr); }
 #tisch.wechselt .farbanzeige { transition: opacity .3s, color var(--wd) var(--ws), text-shadow var(--wd) var(--ws); }
 #tisch.wechselt .gg .ava { transition: box-shadow .3s, border-color var(--wd) var(--ws); }
 #tisch.wechselt .automat .kuppel { transition: transform .12s, box-shadow .3s, color var(--wd) var(--ws), border-color var(--wd) var(--ws); }
@@ -271,6 +275,16 @@ body.reduziert #tisch[data-seite="dunkel"] .himmel .sonne { transform: none; }
   radial-gradient(1px 1px at 94% 18%, #fff 50%, transparent 51%), radial-gradient(1.2px 1.2px at 6% 86%, #fff 50%, transparent 51%),
   radial-gradient(1px 1px at 48% 44%, #fff 50%, transparent 51%), radial-gradient(1.5px 1.5px at 66% 84%, #fff 50%, transparent 51%); }
 #tisch[data-seite="dunkel"] .himmel .nacht { opacity: 1; }
+/* Mond oben rechts (Gegenstück zur Sonne, wie in der App): Sichel aus einem inneren Schatten, sanfter Lichthof; steigt beim
+   Flip zur Nacht auf, während die Sonne sinkt */
+.himmel .mond { position: absolute; right: 7%; top: 4%; width: calc(104px * var(--s, 1)); height: calc(104px * var(--s, 1));
+  margin: calc(-52px * var(--s, 1)) calc(-52px * var(--s, 1)) 0 0; transform: rotate(-24deg) translateY(calc(var(--vh) * .5));
+  background: radial-gradient(circle at 50% 50%, #F4F0FF 0, #E2DAFF 70%, #CFC4FF 100%);
+  border-radius: 50%; -webkit-mask-image: radial-gradient(ellipse 40% 40% at 30% 40%, transparent 97%, #000 100%); mask-image: radial-gradient(ellipse 40% 40% at 30% 40%, transparent 97%, #000 100%);
+  transition: transform var(--wd) cubic-bezier(.45,0,.55,1); }
+#tisch[data-seite="dunkel"] .himmel .mond { transform: rotate(-24deg); }
+body.reduziert .himmel .mond { transform: rotate(-24deg); }
+@media (prefers-reduced-motion: reduce) { .himmel .mond { transform: rotate(-24deg); } }
 .buehne { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
 .buehne > * { position: absolute; }
 .karte { position: relative; border-radius: 7.1% / 4.6%; }
@@ -441,6 +455,42 @@ body.reduziert #tisch[data-seite="dunkel"] .himmel .sonne { transform: none; }
 .gg .marke svg { width: 14px; height: 14px; }
 .gg.dran .ava { box-shadow: 0 0 0 5px var(--gold), 0 0 24px rgba(255,214,90,.75); animation: dranPuls 1.2s ease-in-out infinite; }
 .gg.dran .name { color: var(--t-zug); }
+/* Wer dran ist (wie in der App): Strahlenkranz hinter Namen und Fächer, Tag golden, Nacht bläulich. Sparsam für schwache
+   Geräte: ein Element je Platz, Strahlen als Verlauf mit runder Maske (kein Weichzeichner), nur am aktiven Platz dreht es
+   sich langsam (reine Transformation). Nach 5 s erscheint eine Denkblase am Namen. */
+.gg { isolation: isolate; }
+.gg .kranz { position: absolute; left: 50%; top: 45%; width: 440px; height: 440px; margin: -220px 0 0 -220px; z-index: -1; pointer-events: none;
+  border-radius: 50%; opacity: 0; transform: scale(.7); transition: opacity .35s, transform .35s;
+  background: radial-gradient(circle, var(--kr-kern) 0, var(--kr-kern) 22%, var(--kr-kern2) 36%, transparent 60%),
+    repeating-conic-gradient(from 0deg, var(--kr-strahl) 0deg 6deg, transparent 10deg 18deg);
+  -webkit-mask-image: radial-gradient(circle, #000 30%, rgba(0,0,0,.85) 46%, transparent 71%); mask-image: radial-gradient(circle, #000 30%, rgba(0,0,0,.85) 46%, transparent 71%); }
+#tisch { --kr-kern: rgba(255,200,40,.9); --kr-kern2: rgba(255,170,20,.5); --kr-strahl: rgba(236,150,0,.72); }
+#tisch[data-seite="dunkel"] { --kr-kern: rgba(160,205,255,.75); --kr-kern2: rgba(110,160,255,.4); --kr-strahl: rgba(140,190,255,.62); }
+.gg.kompakt .kranz { width: 340px; height: 340px; margin: -170px 0 0 -170px; }
+.gg.dran .kranz { opacity: 1; transform: none; animation: kranzDreh 18s linear infinite; }
+@keyframes kranzDreh { to { transform: rotate(360deg); } }
+.gg .denk { position: absolute; right: -14px; top: -22px; z-index: 3; display: flex; align-items: flex-end; pointer-events: none; opacity: 0; transform: scale(.4); transform-origin: 0 100%; }
+.gg .denk i { display: block; border-radius: 50%; background: var(--cream); border: 2px solid var(--ink); margin-right: 2px; }
+.gg .denk i:nth-child(1) { width: 8px; height: 8px; } .gg .denk i:nth-child(2) { width: 12px; height: 12px; margin-bottom: 6px; }
+.gg .denk b { display: block; padding: 0 12px 6px; margin-bottom: 12px; border-radius: 20px; background: var(--cream); color: var(--ink); border: 2.5px solid var(--ink); font: 900 26px/1 var(--f-ui); box-shadow: 0 4px 10px rgba(0,0,0,.25); }
+#tisch[data-seite="dunkel"] .gg .denk i, #tisch[data-seite="dunkel"] .gg .denk b { background: #170E36; color: #DCE8FF; border-color: #8CB8FF; }
+.gg.dran .denk { animation: denkAuf .4s cubic-bezier(.3,1.6,.5,1) 5s both, denkWippen 2.4s ease-in-out 5.4s infinite; }
+@keyframes denkAuf { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: none; } }
+@keyframes denkWippen { 0%, 100% { opacity: 1; transform: none; } 50% { opacity: 1; transform: translateY(-4px) rotate(-3deg); } }
+/* eigener Platz: Kartenzahl über „Farbe“, Strahlen hinter der Hand, wenn ich dran bin */
+.ich-zahl { left: 46px; display: flex; align-items: center; gap: 8px; z-index: 36; pointer-events: none; }
+.ich-zahl .name { font: 700 22px var(--f-ui); color: var(--t-text); text-shadow: var(--t-schatten); }
+.ich-zahl .zahl { font: 800 16px var(--f-ui); background: var(--t-chip); color: var(--t-chip-fg); border-radius: 20px; padding: 2px 10px; font-variation-settings: 'opsz' 12; }
+.ich-zahl.dran .name { color: var(--t-zug-ich); }
+.ich-kranz { width: 1100px; height: 560px; margin: -330px 0 0 -550px; pointer-events: none; opacity: 0; transition: opacity .4s;
+  background: radial-gradient(ellipse 50% 50% at 50% 60%, var(--kr-kern2) 0, transparent 70%),
+    repeating-conic-gradient(from 0deg at 50% 60%, var(--kr-strahl) 0deg 2.5deg, transparent 5deg 10deg);
+  -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 60%, #000 25%, rgba(0,0,0,.5) 55%, transparent 100%); mask-image: radial-gradient(ellipse 50% 50% at 50% 60%, #000 25%, rgba(0,0,0,.5) 55%, transparent 100%); }
+.ich-kranz.an { opacity: .85; animation: kranzAtmen 2.4s ease-in-out infinite alternate; }
+@keyframes kranzAtmen { from { opacity: .6; } to { opacity: .95; } }
+body.reduziert .gg.dran .kranz, body.reduziert .ich-kranz.an { animation: none; }
+body.reduziert .gg.dran .denk { animation: denkAuf .01s 5s both; }
+@media (prefers-reduced-motion: reduce) { .gg.dran .kranz, .ich-kranz.an { animation: none; } .gg.dran .denk { animation: denkAuf .01s 5s both; } }
 /* getrennt: Bild und Fächer blassen aus, Schrift bleibt lesbar (Nebentext-Farbe, ≥ 4,5:1 bei Tag und Nacht), Marke voll */
 .gg.weg .ava, .gg.weg .faecher { opacity: .5; }
 .gg.weg .ava { filter: grayscale(1); }
@@ -486,6 +536,15 @@ body.reduziert #tisch[data-seite="dunkel"] .himmel .sonne { transform: none; }
 .abzeichen.strafe { background: var(--rot); color: #fff; }
 .abzeichen.aussetzen { background: #2A2350; color: var(--cream); border: 3px solid var(--lila); }
 .abzeichen.platz { background: var(--gold); color: var(--ink); border: 3px solid var(--ink); }
+/* Flip-Überraschung: Stempel auf der Ablage (Druckfarbe Rot mit doppeltem Rand, bei Nacht Neon-Pink) */
+.stempel { z-index: 60; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 18px 10px; border: 5px double #C4172A; border-radius: 14px;
+  color: #C4172A; background: rgba(255,247,232,.88); transform: translate(-50%, -50%) rotate(-12deg); white-space: nowrap; pointer-events: none;
+  animation: stempel 1.7s cubic-bezier(.2,.9,.3,1) both; }
+.stempel b { font: 900 34px/1 var(--f-brand); font-variation-settings: 'SOFT' 50, 'opsz' 72; text-transform: uppercase; letter-spacing: .02em; }
+.stempel span { font: 800 16px var(--f-ui); }
+#tisch[data-seite="dunkel"] .stempel { color: #FF9ECF; border-color: var(--pink); background: rgba(23,14,54,.9); box-shadow: 0 0 18px rgba(255,127,207,.6); }
+@keyframes stempel { 0% { opacity: 0; transform: translate(-50%, -50%) rotate(-12deg) scale(2.2); } 12% { opacity: 1; transform: translate(-50%, -50%) rotate(-12deg) scale(.94); }
+  18% { transform: translate(-50%, -50%) rotate(-12deg) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -50%) rotate(-12deg) scale(1); } }
 
 /* „Mau!“-Sprechblase (tisch.js mauBlase), auf allen Geräten beim rufenden Spieler. .mau-blase = Kasten des Körpers;
  * --tx/--ty: Ansatz des Schwanzes am Rand, --ox/--oy: seine Spitze (zum Rufenden, Drehpunkt der Animationen).
@@ -679,6 +738,17 @@ body.reduziert .automat.drueckbar .kuppel, body.reduziert .automat.dreht .lampe 
 .ansicht-reihe { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .ansicht-reihe .karte { width: 74px; height: 115px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,.35); }
 .runde-karte .sieger { font: 800 20px var(--f-ui); }
+/* Rundenende: sanfte Strahlen hinter dem Ergebnis (weiche Übergänge statt harter Keile, wie in der App); volle Effekte drehen
+   sehr langsam, reduzierte stehen still */
+#runde::before { content: ''; position: absolute; left: 50%; top: 50%; width: 160vmax; height: 160vmax; margin: -80vmax 0 0 -80vmax; pointer-events: none;
+  background: repeating-conic-gradient(from 0deg, rgba(255,214,110,0) 0deg, rgba(255,214,110,.2) 7deg, rgba(255,214,110,0) 14deg 20deg),
+    radial-gradient(circle, rgba(255,214,110,.28) 0, rgba(255,214,110,.08) 22%, transparent 45%);
+  -webkit-mask-image: radial-gradient(circle, transparent 4%, #000 14%, rgba(0,0,0,.45) 30%, transparent 48%); mask-image: radial-gradient(circle, transparent 4%, #000 14%, rgba(0,0,0,.45) 30%, transparent 48%);
+  animation: rundeStrahlen 90s linear infinite; }
+#runde { overflow: hidden; }
+@keyframes rundeStrahlen { to { transform: rotate(360deg); } }
+body.reduziert #runde::before { animation: none; }
+@media (prefers-reduced-motion: reduce) { #runde::before { animation: none; } }
 .runde-liste { list-style: none; margin: 8px 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .runde-liste li { display: flex; align-items: center; gap: 12px; padding: 8px 14px; border-radius: 12px; background: rgba(33,27,44,.07); font: 700 19px var(--f-ui); }
 .runde-liste li.ich { background: #FFE9A8; }
@@ -705,14 +775,23 @@ body.reduziert .automat.drueckbar .kuppel, body.reduziert .automat.dreht .lampe 
 .kreisel { width: 28px; height: 28px; border: 4px solid rgba(33,27,44,.18); border-top-color: var(--ink); border-radius: 50%; animation: drehen .8s linear infinite; }
 @keyframes drehen { to { transform: rotate(360deg); } }
 .quer { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 3000; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; background: var(--nachtgrund); padding: 24px; }
-body.hoch[data-screen="tisch"] .quer { display: flex; }
-.quer svg { width: 130px; height: 130px; overflow: visible; }
+/* Rahmen (app.js groesse): hohes oder fast quadratisches Fenster → Tisch in Bühnenproportion nach der Fensterbreite,
+   der Hinweis dezent im Überstand darunter (Handy hoch: Handy-Symbol, PC: „Fenster breiter ziehen“) */
+body.rahmen[data-screen="tisch"] { background: var(--nachtgrund); }
+body.rahmen #tisch { top: var(--rahmen-oben); height: var(--rahmen-h); box-shadow: 0 0 0 1px rgba(244,234,218,.14), 0 18px 50px rgba(0,0,0,.55); }
+body.rahmen-hinweis[data-screen="tisch"] .quer { display: flex; flex-direction: row; gap: 12px; z-index: 5; bottom: auto; padding: 6px 16px;
+  top: calc(var(--rahmen-oben) + var(--rahmen-h)); height: var(--rahmen-rest); background: none; opacity: .75; pointer-events: none; }
+.quer .nur-maus { display: none; }
+body:not(.grob) .quer .nur-maus { display: inline; } body:not(.grob) .quer .nur-grob { display: none; }
+body:not(.grob) .quer svg { display: none; }
+.quer-text { display: flex; flex-direction: column; gap: 2px; text-align: left; }
+.quer svg { width: 54px; height: 54px; flex: none; overflow: visible; }
 .quer .handy rect { fill: rgba(244,234,218,.08); stroke: var(--paper); stroke-width: 4; }
 .quer .handy circle { fill: var(--paper); }
 .quer .handy { transform-origin: 60px 60px; animation: kippen 2.6s ease-in-out infinite; }
 .quer .pfeil { fill: none; stroke: var(--pink); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 6px rgba(255,127,207,.8)); }
-.quer b { font: 900 30px var(--f-brand); font-variation-settings: 'SOFT' 100; color: var(--cream); }
-.quer span { color: #C9C3E8; font-weight: 700; }
+.quer b { font: 900 21px var(--f-brand); font-variation-settings: 'SOFT' 100; color: var(--cream); }
+.quer span { color: #C9C3E8; font-weight: 700; font-size: 14px; }
 @keyframes kippen { 0%, 25% { transform: rotate(0); } 55%, 85% { transform: rotate(-90deg); } 100% { transform: rotate(0); } }
 .toasts { position: fixed; left: 50%; top: max(10px, env(safe-area-inset-top)); transform: translateX(-50%); z-index: 2500; display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; width: max-content; max-width: 92vw; }
 .toast { background: var(--cream); color: var(--ink); font: 700 16px/1.3 var(--f-ui); padding: 10px 18px; border-radius: 22px; box-shadow: 0 8px 24px rgba(0,0,0,.45); text-align: center; animation: toastAuf .25s ease-out; transition: opacity .3s, transform .3s; }
@@ -737,6 +816,8 @@ body.ruhig *, body.ruhig *::before, body.ruhig *::after { animation: none !impor
   .start-logo { height: calc(min(46vw, 520px) * 11 / 16); }
   .gross-karte { height: calc(min(36vw, 210px) * 87 / 56); }
   @media (orientation: portrait) { .start-logo { height: calc(min(92vw, 460px) * 11 / 16); } }
+  .start-logo.mit-bild { height: calc(min(46vw, 520px) * 9 / 16); }
+  @media (orientation: portrait) { .start-logo.mit-bild { height: calc(min(92vw, 460px) * 9 / 16); } }
 }
 
 /* kleine Bühne (z. B. Handy quer mit Browserleisten): Beschriftungen etwas größer, Karten bleiben */
@@ -749,6 +830,8 @@ body.ruhig *, body.ruhig *::before, body.ruhig *::after { animation: none !impor
 .buehne.eng .pill { font-size: 25px; padding: 13px 22px; }
 .buehne.eng .pill svg { width: 30px; height: 30px; }
 .buehne.eng .stapelzahl { font-size: 24px; }
+.buehne.eng .ich-zahl .name { font-size: 26px; }
+.buehne.eng .ich-zahl .zahl { font-size: 19px; }
 .buehne.eng .farbanzeige { font-size: 29px; }
 .buehne.eng .farbwahl .feld b { font-size: 27px; }
 .buehne.eng .farbwahl .feld i { font-size: 17px; }

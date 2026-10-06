@@ -19,6 +19,7 @@
       <div class="tag-seite"></div><div class="nacht-seite"></div>
       <img class="katze" src="bilder/katze.webp" alt="" draggable="false" onerror="this.remove()">
       <div class="schriftzug"><span class="mau">Mau-Mau</span><span class="flip">Flip</span></div>
+      <img class="logo-bild" src="bilder/logo.webp" alt="" draggable="false" onload="this.parentNode.classList.add('mit-bild')" onerror="this.remove()">
     </div>
     <form id="start-form" class="start-form" autocomplete="off" novalidate>
       <h1>Mitspielen</h1>
@@ -124,8 +125,8 @@
 </div>
 <div id="quer" class="quer" aria-live="polite">
   <svg viewBox="0 0 120 120" aria-hidden="true"><g class="handy"><rect x="38" y="18" width="44" height="84" rx="9"/><circle cx="60" cy="92" r="3.5"/></g><path class="pfeil" d="M24 66a38 38 0 0 1 22-40M46 26l-11 -1M46 26l-3 10"/></svg>
-  <b>Bitte quer halten</b>
-  <span>Der Tisch braucht die Breite.</span>
+  <div class="quer-text"><b class="nur-grob">Quer halten</b><b class="nur-maus">Fenster breiter ziehen</b>
+  <span>Dann wird der Tisch größer.</span></div>
 </div>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 <video id="wach" muted playsinline loop preload="none" aria-hidden="true" tabindex="-1"></video>

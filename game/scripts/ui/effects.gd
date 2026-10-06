@@ -1082,6 +1082,28 @@ class RaysFx:
 				color)
 
 
+# Sanfte Lichtstrahlen wie am Tisch (Rundenende, 0.1.4): Shader soft_rays statt Keilen, nichts dreht sich
+class SoftRaysFx:
+	extends Node2D
+	var radius := 700.0
+	var tint := Color(1.0, 0.86, 0.5, 0.5)
+	var motion := true
+
+	func _ready() -> void:
+		var sh := load("res://assets/shaders/soft_rays.gdshader") as Shader
+		if sh != null:
+			var m := ShaderMaterial.new()
+			m.shader = sh
+			m.set_shader_parameter("tint", tint)
+			m.set_shader_parameter("radius", radius)
+			m.set_shader_parameter("inner", radius * 0.09)
+			m.set_shader_parameter("motion", 1.0 if motion else 0.0)
+			material = m
+
+	func _draw() -> void:
+		draw_rect(Rect2(-Vector2(radius, radius), Vector2(radius, radius) * 2.0), Color.WHITE)
+
+
 # Sonnenstrahlen hinter dem Gewinner (bleiben, bis free_rays oder clear)
 func sun_rays(pos: Vector2, radius: float, color: Color) -> RaysFx:
 	var r := RaysFx.new()

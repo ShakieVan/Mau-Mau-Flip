@@ -120,7 +120,7 @@
     _baue() {
       const r = this.root;
       // Himmel: Tagebene (Papier, Sonne oben links), Nachtebene (Sterne) und Dämmerung, die nur beim Flip kurz aufscheint
-      this.himmel = el('div', 'himmel', '<div class="tag"><i class="strahlen"></i><i class="sonne"></i></div><div class="nacht"><div class="sterne"></div></div><div class="daemmerung"></div>');
+      this.himmel = el('div', 'himmel', '<div class="tag"><i class="strahlen"></i><i class="sonne"></i></div><div class="nacht"><div class="sterne"></div><i class="mond"></i></div><div class="daemmerung"></div>');
       r.appendChild(this.himmel);
       const b = this.buehne = el('div', 'buehne');
       b.id = 'buehne';
@@ -144,6 +144,10 @@
       this.leiste = el('div', 'leiste', '<div class="hinweis"></div><div class="aktionen"></div>');
       b.appendChild(this.leiste);
       this.hinweis = this.leiste.firstChild; this.aktionen = this.leiste.lastChild;
+      // Eigener Platz: Strahlen hinter der Hand, wenn ich dran bin, und die eigene Kartenzahl (wie bei den Mitspielern)
+      this.ichKranz = el('div', 'ich-kranz'); b.insertBefore(this.ichKranz, this.gegnerBox);
+      this.ichZahl = el('div', 'ich-zahl', '<span class="name">Du</span><span class="zahl"></span>'); this.ichZahl.id = 'ich-zahl';
+      b.appendChild(this.ichZahl);
       this.hand = new M.Hand.Hand(this, {
         antippen: id => this.app.antippen(id), spielen: id => this.app.spielen(id), hilfe: f => this.app.hilfe(f), leer: () => this.app.antippen(null),
       });
@@ -244,6 +248,8 @@
       this.g.einsatz = { x: cx - 335, y: H - 250 };   // eigener Einsatzstapel: über der Hand links neben dem Hinweis (nicht bei den Mitspielern)
       this.knSort.style.top = (H - 160) + 'px';
       this.knRueck.style.top = (H - 88) + 'px';
+      this.ichZahl.style.top = (H - 222) + 'px';
+      setz(this.ichKranz, cx, H);
     }
     // Position eines Platzes (Bühnenkoordinaten) für Flüge und Abzeichen
     platzPos(seat) {
@@ -325,6 +331,9 @@
       if (!this._tauschLaeuft && this.hand.el.getAttribute('style')) this.hand.el.removeAttribute('style');   // Rest einer Tausch-Animation
       this.hinweis.textContent = this.hinweisText(h.text) || this._hinweisErsatz(v);
       this.hinweis.classList.toggle('dran', v.turn === ich && dran);
+      this.ichKranz.classList.toggle('an', dran);
+      this.ichZahl.classList.toggle('dran', dran);
+      this.ichZahl.lastChild.textContent = (v.hand || []).length;
       const p = v.pending || {};
       const jagd = p.kind === 'farbjagd';
       let ak = '';
@@ -394,7 +403,7 @@
         if (!g) {
           const e = el('div', 'gg');
           e.dataset.seat = p.seat;
-          e.innerHTML = '<div class="kopf"><div class="ava"></div><div class="name"></div><div class="zahl"></div></div><div class="faecher"></div><div class="marken"></div><button class="erwischen">Erwischt!</button>';
+          e.innerHTML = '<i class="kranz"></i><div class="denk" aria-hidden="true"><i></i><i></i><b>…</b></div><div class="kopf"><div class="ava"></div><div class="name"></div><div class="zahl"></div></div><div class="faecher"></div><div class="marken"></div><button class="erwischen">Erwischt!</button>';
           this.gegnerBox.appendChild(e);
           g = { e, sig: '' };
           this.gegnerEls.set(p.seat, g);
@@ -417,7 +426,8 @@
         if (p.mau) marken += '<span class="marke mau">Mau!</span>';
         if (p.kind === 'bot' && !kompakt) marken += '<span class="marke">Computer</span>';
         if (p.place > 0) marken += '<span class="marke platz">' + p.place + '. Platz</span>';
-        if (p.connected === false) marken += '<span class="marke weg">' + ICON_GETRENNT + 'getrennt</span>';
+        if (p.substituted) marken += '<span class="marke">Computer spielt</span>';
+        else if (p.connected === false) marken += '<span class="marke weg">' + ICON_GETRENNT + 'getrennt</span>';
         const mk = e.querySelector('.marken');
         if (mk.innerHTML !== marken) mk.innerHTML = marken;
         // Fächer der sichtbaren Rückseiten (sortiert vom Gastgeber) oder neutrale Rückseiten
@@ -695,6 +705,16 @@
       this.flug.appendChild(a);
       setTimeout(() => a.remove(), dauer + 50);
     }
+    // Stempel auf der Ablage (Flip-Überraschung): schräger Schriftzug, der aufgedrückt wird und ausblendet
+    stempel(titel, unter, dauer) {
+      const a = el('div', 'stempel', '<b>' + esc(titel) + '</b>' + (unter ? '<span>' + esc(unter) + '</span>' : ''));
+      a.id = 'stempel';
+      a.style.left = this.g.ablage.x + 'px'; a.style.top = this.g.ablage.y + 'px';
+      a.style.animationDuration = dauer + 'ms';
+      this.flug.appendChild(a);
+      setTimeout(() => a.remove(), dauer + 50);
+      return a;
+    }
     // Ton-Knopf in der Ecke: Zustand aus den Einstellungen
     zeigeTon() {
       const stumm = !!(this.app.einstellungen && this.app.einstellungen.stumm);
@@ -934,6 +954,14 @@
           } else { t.setzeSeite(e.side); t.zeige(zwischen, true); }
           t.banner(e.side === 'dunkel' ? 'Nacht!' : 'Tag!', 'Alles gewendet', 'flip', d(1100));
           await schlaf(d(600));
+          break;
+        }
+        case 'flip_surprise': {
+          // Hausregel flip_surprise: Die Aktionskarte oben nach dem Flip wirkt, als hätte der Flip-Spieler sie gelegt.
+          // Die Wirkungs-Ereignisse (skip, pending, reverse …) folgen direkt danach.
+          const name = e.face ? K().kartenName(e.face) : 'Aktionskarte';
+          t.stempel('Überraschung!', name + (e.seat === ich ? ' – von dir' : ' – von ' + t.name(e.seat)), d(1700));
+          await schlaf(d(900));
           break;
         }
         case 'pending':

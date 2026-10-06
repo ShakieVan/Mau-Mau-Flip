@@ -44,6 +44,9 @@ extends RefCounted
 #   die Ablage und wirken nicht (Ereignis discard_color), beim Joker folgt das Farbereignis, dann geht es weiter.
 # - Ein „Mau!“-Ruf verfällt, wenn nach dem Legen bzw. Setzen mehr als eine Karte bleibt. Vor dem Legen darf rufen, wer eine Karte
 #   legen kann, nach der genau 1 Karte bleibt (ohne Ablegen-Karten heißt das: 2 Karten auf der Hand).
+# - Flip-Überraschung (flip_surprise = on): Liegt nach einem ausgeführten Flip (nicht am Rundenende) eine klassische Aktionskarte
+#   oben (SURPRISE_KINDS), wirkt sie, als hätte der Flip-Spieler sie gelegt (öffentliches Ereignis flip_surprise {seat, face}
+#   direkt vor den Wirkungs-Ereignissen). Bei Wünscher +2/Farbjagd wählt er zuerst die Farbe (Phase "color"). Kein Anzweifeln.
 
 const FORMAT := 1
 const SWAP := "tausch"
@@ -54,6 +57,8 @@ const SIDES: Array[String] = ["hell", "dunkel"]
 const PLAY_PHASES := ["turn", "drawn", "challenge", "color", "gamble", "discard_pick"]
 const JAGD := "farbjagd"
 const PLUS2 := "wuenscher_plus2"
+# Flip-Überraschung: Diese Karten wirken, wenn sie nach einem Flip oben liegen (Flip, Wünscher und Zusatzkarten nicht).
+const SURPRISE_KINDS := ["plus1", "plus5", "aussetzen", "alle_aussetzen", "richtungswechsel", PLUS2, JAGD]
 const MIN_PLAYERS := 2
 const MAX_PLAYERS := 10
 const BAD_FIELD := -9999         # _int_field: Feld hat einen falschen Typ
@@ -431,7 +436,10 @@ func _act_color(seat: int, action: Dictionary, ev: Array) -> String:
 	color = c
 	wished = true
 	ev.append({"e": "color", "color": c, "seat": seat})
-	_advance(seat, false, ev)
+	if _surprise_kind() != "":
+		_surprise(seat, ev)                # Wünscher +2/Farbjagd oben nach dem Flip
+	else:
+		_advance(seat, false, ev)
 	return ""
 
 
@@ -858,9 +866,11 @@ func _play_rest(p: int, kind: String, legal: bool, snap: Array, ev: Array) -> vo
 		"flip":
 			_do_flip(ev)
 			if color == "":
-				state = "color"                # Joker oben: Der Flip-Spieler wählt die Farbe.
+				state = "color"                # Joker oben: Der Flip-Spieler wählt die Farbe (Überraschung danach in _act_color).
 				current = p
 				ev.append({"e": "choose_color", "seat": p})
+			elif _surprise_kind() != "":
+				_surprise(p, ev)
 			else:
 				_advance(p, false, ev)
 		"plus1", "plus5", PLUS2, JAGD:
@@ -920,7 +930,37 @@ func _discard_color(p: int, id: int, col: String, chosen: Array, ev: Array) -> v
 	ev.append({"e": "discard_color", "seat": p, "color": col, "cards": ids, "faces": keys, "count": ids.size()})
 
 
-func _start_pending(p: int, kind: String, legal: bool, snap: Array, finishing: bool, ev: Array) -> void:
+# Flip-Überraschung (flip_surprise = on): klassische Aktionsart der Karte oben nach einem Flip, sonst "".
+func _surprise_kind() -> String:
+	if config.flip_surprise != "on" or discard.is_empty():
+		return ""
+	var k := _kind[faces[side * n_cards + int(discard.back())]]
+	return k if SURPRISE_KINDS.has(k) else ""
+
+
+# Die Aktionskarte oben wirkt, als hätte der Flip-Spieler p sie gelegt (die Farbe steht schon fest, bei Jokern aus _act_color).
+# Anzweifeln gibt es dabei nicht: Niemand hat die Karte gelegt.
+func _surprise(p: int, ev: Array) -> void:
+	var k := _surprise_kind()
+	ev.append({"e": "flip_surprise", "seat": p, "face": _key[faces[side * n_cards + int(discard.back())]]})
+	match k:
+		"aussetzen":
+			_advance(p, true, ev)
+		"richtungswechsel":
+			dir = -dir
+			ev.append({"e": "reverse", "dir": dir, "seat": p})
+			_advance(p, _active_count() == 2 and config.two_player_reverse_skips, ev)
+		"alle_aussetzen":
+			ev.append({"e": "skip_all", "seat": p})
+			if place[p] != 0:
+				_advance(p, false, ev)
+			else:
+				_new_turn(p, ev)
+		_:
+			_start_pending(p, k, true, [], false, ev, false)
+
+
+func _start_pending(p: int, kind: String, legal: bool, snap: Array, finishing: bool, ev: Array, challengeable := true) -> void:
 	var amount := int(CardDB.DRAW_AMOUNT[kind])
 	if not pending.is_empty() and str(pending.kind) == kind:
 		amount += int(pending.amount)
@@ -928,7 +968,7 @@ func _start_pending(p: int, kind: String, legal: bool, snap: Array, finishing: b
 	pending = {"kind": kind, "amount": amount, "by": p, "victim": victim, "color": color, "legal": legal,
 		"snap": snap.duplicate(), "finisher": finishing}
 	ev.append({"e": "pending", "kind": kind, "amount": amount, "seat": victim, "by": p})
-	if (kind == PLUS2 or kind == JAGD) and config.wild_restriction == "bluff":
+	if challengeable and (kind == PLUS2 or kind == JAGD) and config.wild_restriction == "bluff":
 		current = victim
 		state = "challenge"
 		turn_started = false

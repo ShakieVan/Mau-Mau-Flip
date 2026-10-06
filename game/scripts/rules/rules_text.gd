@@ -102,7 +102,11 @@ static func card_help(key: String, config: RuleConfig = null) -> Array[String]:
 			out.append("Wendet alles: Ablage, Nachziehstapel und alle Hände. Danach gilt die %s." % side_name(other))
 			out.append("Passt auf %s und auf jeden Flip – ein Flip ist kein Joker." % color)
 			out.append("Oben liegt dann die bisher unterste Ablagekarte mit ihrer anderen Seite. Eine Wunschfarbe verfällt.")
-			out.append("Liegt danach eine Aktionskarte oben, wirkt sie nicht. Liegt ein Joker oben, wählst du die Farbe.")
+			if cfg.flip_surprise == "on":
+				out.append("Flip-Überraschung: Liegt danach eine Aktionskarte oben, wirkt sie auf den Nächsten, als hättest du sie gelegt. Bei Wünscher +2 und Farbjagd wählst du zuerst die Farbe.")
+				out.append("Flip, Wünscher und Zusatzkarten oben wirken nicht; beim Joker wählst du nur die Farbe.")
+			else:
+				out.append("Liegt danach eine Aktionskarte oben, wirkt sie nicht. Liegt ein Joker oben, wählst du die Farbe.")
 			if cfg.flip_last_card == "execute":
 				out.append("Als letzte Karte wird der Flip noch ausgeführt; gewertet wird die neue Seite.")
 			else:
@@ -275,7 +279,9 @@ static func overview(config: RuleConfig = null) -> Array[Dictionary]:
 	out.append({"title": "Spielzug", "text": "Lege eine Karte, die in Farbe, Zahl oder Symbol zur obersten Ablagekarte passt. Joker passen immer. %s %s" % [draw, voluntary]})
 	out.append({"title": "Helle Seite", "text": ("+1: Der Nächste zieht 1 und %s. Aussetzen: Der Nächste wird übersprungen. Richtungswechsel: Die Richtung dreht sich. Wünscher: Farbe wünschen. Wünscher +2: Farbe wünschen, der Nächste zieht 2 und %s.") % [cfg.penalty_tail(), cfg.penalty_tail()]})
 	out.append({"title": "Dunkle Seite", "text": ("+5: Der Nächste zieht 5 und %s. Alle aussetzen: Du bist sofort noch einmal dran. Richtungswechsel und Wünscher wie hell. Farbjagd: Farbe wünschen, der Nächste zieht, bis er diese Farbe hat, und %s.") % [cfg.penalty_tail(), cfg.penalty_tail()]})
-	out.append({"title": "Flip", "text": "Der Flip wendet Ablage, Nachziehstapel und alle Hände. Oben liegt dann die bisher unterste Ablagekarte mit ihrer anderen Seite. Eine Wunschfarbe verfällt, eine Aktionskarte oben wirkt nicht; liegt ein Joker oben, wählt der Flip-Spieler die Farbe."})
+	var flip_top := "eine Aktionskarte oben wirkt nicht; liegt ein Joker oben, wählt der Flip-Spieler die Farbe." if cfg.flip_surprise != "on" \
+		else "liegt ein Joker oben, wählt der Flip-Spieler die Farbe. Flip-Überraschung (Hausregel): Die Aktionskarte, die nach dem Flip oben liegt (+1, +5, Aussetzen, Alle aussetzen, Richtungswechsel, Wünscher +2, Farbjagd), wirkt auf den Nächsten, als hätte der Flip-Spieler sie gelegt; Stapeln gilt wie sonst."
+	out.append({"title": "Flip", "text": "Der Flip wendet Ablage, Nachziehstapel und alle Hände. Oben liegt dann die bisher unterste Ablagekarte mit ihrer anderen Seite. Eine Wunschfarbe verfällt, " + flip_top})
 	if swap_on:
 		var last := "Als letzte Karte bist du fertig und gewinnst; getauscht wird dann nicht mehr." if cfg.round_end == "first" \
 			else "Als letzte Karte bist du fertig; die anderen tauschen trotzdem untereinander."

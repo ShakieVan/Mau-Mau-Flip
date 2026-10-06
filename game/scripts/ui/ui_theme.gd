@@ -30,6 +30,22 @@ static func save() -> Error:
 	return ResourceSaver.save(t, PATH)
 
 
+# Runder Schiebergriff (px Durchmesser): Füllung mit dunklem Rand, weich geglättet
+static func grabber_texture(px: int, fill: Color, line: Color) -> ImageTexture:
+	var img := Image.create(px, px, false, Image.FORMAT_RGBA8)
+	var c := (px - 1) * 0.5
+	var r := px * 0.5 - 1.0
+	for y in px:
+		for x in px:
+			var d := Vector2(x - c, y - c).length()
+			var a := clampf(r - d + 0.5, 0.0, 1.0)
+			var col := fill if d < r - 3.5 else line
+			if d >= r - 4.5 and d < r - 3.5:
+				col = line.lerp(fill, r - 3.5 - d)
+			img.set_pixel(x, y, Color(col, col.a * a))
+	return ImageTexture.create_from_image(img)
+
+
 static func box(bg: Color, border := Color(0, 0, 0, 0), border_w := 0, radius := RADIUS, mx := 28.0, my := 26.0) -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = bg

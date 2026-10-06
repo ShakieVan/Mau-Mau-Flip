@@ -28,7 +28,7 @@ Grundlage: `docs/recherche/07_regeln_hausregeln.md`, Abschnitte 1.1–1.13 und H
 - **Passen:** Farbe, Zahl oder Symbol; Joker passen immer. Liegt ein Joker oben, zählt nur die Wunschfarbe.
 - **Flip:**
   - Kehrt Ablage und Nachziehstapel um und schaltet die Seite. Die neue Oberkarte ist die bisher unterste, nun mit der anderen Seite.
-  - Die Wunschfarbe verfällt. Eine Aktionskarte, die danach oben liegt, wirkt nicht.
+  - Die Wunschfarbe verfällt. Eine Aktionskarte, die danach oben liegt, wirkt nicht (mit der Hausregel `flip_surprise=on` doch, siehe „Flip-Überraschung“).
   - Liegt ein Joker oben, wählt der Flip-Spieler die Farbe.
 - **Wünscher +2 und Farbjagd:**
   - Einschränkung nach Tabelle 1.6, in drei Modi: `bluff`, `enforce`, `free`.
@@ -156,6 +156,7 @@ Ereignisse laut Plan:
 | `reverse` | `{dir, seat}` |
 | `color` | `{color, seat}`; `seat` −1 bei der Startfarbe |
 | `flip` | `{side, card, face, draw_back}` |
+| `flip_surprise` | `{seat (Flip-Spieler), face}`; öffentlich, vor den Wirkungs-Ereignissen der Oberkarte |
 | `pending` | `{kind, amount, seat (Opfer), by}` |
 | `challenge` | `{seat, target, success, hand*}` |
 | `mau` | `{seat}` |
@@ -556,3 +557,16 @@ Nutzerwunsch (AGENTS.md Nr. 27), Festlegung des Koordinators.
   - Computergegner: legt Zahlenkarten mit, behält Aktionskarten, außer er wird mit allen Kandidaten fertig; Spielfarbe beim Joker = häufigste verbleibende Farbe. `left_after` rechnet mit diesem Plan, der Ruf kommt vor dem Legen oder in der Auswahl.
 - **Texte:** Kartenhilfe und Übersicht nennen die Auswahl und die getrennte Spielfarbe des Ablegen-Jokers, die vier Tauschrichtungen und das Aufhören beim Glücksspiel; `describe()` sagt bei `free` „Wünscher +2 und Farbjagd dürfen immer gelegt werden.“ N8 (Gerätetest 0.1.1): Die Dopplung kam nicht aus `rules_text.gd`; `RulesText.overview` nennt ausgeschaltete Zusatzkarten nur im Absatz „Weitere besondere Karten“, der zweite Hinweis in `rules_screen.gd` ist schon entfernt.
 - **Tests:** `test_rules_discard.gd` (Auswahl, Ablehnungen, Joker mit getrennter Farbe, Joker ohne Kandidaten und als letzte Karte, Mau in der Auswahl, Bot-Auswahl, Rundreise in der Phase), `test_rules_views.gd` (Sicht- und Ereignisfelder, Hinweise gegen `apply()` auch für `discard_pick`), `test_rules_swap.gd` (vier Richtungen mit und ohne Richtungswechsel, Texte), `test_rules_cards.gd` (Standard `free`, `migrate_dict`, `swap_step`). `test_rules_play.gd` setzt für seine Anzweifel-Fälle `bluff` ausdrücklich als Grundlage.
+
+## Flip-Überraschung (Hausregel, 0.1.4)
+
+- **Option** `flip_surprise`: `off` (Standard, offiziell) / `on`. In „Familie“ an.
+- **Regel:** Liegt nach einem ausgeführten Flip eine klassische Aktionskarte oben (`MauGame.SURPRISE_KINDS`: +1, +5, Aussetzen, Alle aussetzen, Richtungswechsel, Wünscher +2, Farbjagd), wirkt sie, als hätte der Flip-Spieler sie gelegt. Ereignis `flip_surprise{seat, face}` direkt vor den Wirkungs-Ereignissen.
+  - Wünscher +2 und Farbjagd: erst Phase `color` für den Flip-Spieler, nach `{a:"color"}` folgt die Überraschung (`_act_color` erkennt sie an der Oberkarte, kein zusätzlicher Zustand; Speichern mitten in der Farbwahl geht).
+  - Flip, Wünscher und Zusatzkarten (Kartentausch, Glücksspiel, Ablegen) oben lösen nichts aus.
+  - Stapeln und `penalty_turn` wie beim Legen. Anzweifeln gibt es nicht (niemand hat die Karte gelegt), auch nicht im alten Modus `bluff`.
+  - Endet die Runde mit dem Flip (letzte Karte), gibt es keine Überraschung. Läuft sie bei `round_end=last` weiter, wirkt sie wie beim Legen vom gerade Fertigen aus.
+- **Computergegner:** unverändert. Die Gegenseite der untersten Ablagekarte liegt verdeckt; ein Bot, der sie kennt, wäre ein Leck.
+- **Familie 0.1.4:** zusätzlich `wild_restriction=free`, `swap_direction=play`, `gamble_cards=on`, `discard_color=on`, `flip_surprise=on` (124 Karten). `RuleConfig.migrate_dict` hebt Regeln, die genau der alten „Familie“ entsprechen (`RuleConfig.OLD_FAMILIE`, mit `enforce` oder `free`), auf die neue.
+- **Texte:** Kartenhilfe Flip, Regelübersicht (Absatz „Flip“) und Kurzfassung (`describe`) nennen die Überraschung nur, wenn sie an ist.
+- **Tests:** `test_rules_flip_surprise.gd` (jede Kartenart, Reihenfolge der Ereignisse, Joker oben mit Farbwahl auch nach Speichern, Bluff-Modus, Stapeln, `penalty_turn=play`, keine Überraschung bei Flip/Wünscher/Zusatzkarten oben, offiziell und am Rundenende, Familie und Hebung, Texte). Die Zufallsprüfungen (`RulesFixture.random_config`) würfeln `flip_surprise` mit.

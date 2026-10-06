@@ -100,6 +100,10 @@ var mau_variant_override := ""       # Tests/Kontrollbilder: feste Variante der 
 var _mau_rng := RandomNumberGenerator.new()
 var _mau_last := ""
 var _house: HouseRulesScript
+var me_badge: OpponentSeat            # eigener Platz (0.1.4): Name, Kartenzahl, Strahlenkranz und Denkblase links über den Knöpfen
+var _hand_halo: OpponentSeat.TurnHaloScript              # Strahlenkranz um die eigene Hand am Zug
+var _hand_halo_want := false                                # eigener Zug: Schein soll an, sobald keine Animation mehr läuft
+var _hand_halo_cards := 0                                   # so viele Karten muss die Hand haben, bevor der Schein angeht
 
 var _center := Vector2(800, 320)
 var _draw_pos := Vector2(623, 320)
@@ -126,6 +130,11 @@ func _init() -> void:
 	_world.add_child(_ring)
 	_seat_layer = Node2D.new()
 	_world.add_child(_seat_layer)
+	me_badge = OpponentSeat.new()
+	me_badge.name = "Ich"
+	me_badge.header_only = true
+	me_badge.visible = false
+	_world.add_child(me_badge)
 	_pile = PileView.new()
 	_world.add_child(_pile)
 	_color_ring = ColorRingView.new()
@@ -144,6 +153,10 @@ func _init() -> void:
 	hand_layer = Node2D.new()
 	hand_layer.name = "Hand"
 	_world.add_child(hand_layer)
+	_hand_halo = OpponentSeat.TurnHaloScript.new()
+	_hand_halo.name = "Kranz"
+	_hand_halo.reach = 70.0
+	hand_layer.add_child(_hand_halo)
 	fx = TableEffects.new()
 	_world.add_child(fx)
 	_ui = Control.new()
@@ -245,6 +258,11 @@ func set_reduced(on: bool) -> void:
 		fx_top.reduced = on
 	if _bg:
 		_bg.motion = not on
+	if me_badge:
+		me_badge.reduced = on
+		_hand_halo.motion = not on
+		for s in _seats:
+			(_seats[s] as OpponentSeat).reduced = on
 
 
 # Hand anschließen (HandView oder Demo-Reihe); der Knoten wandert in hand_layer
@@ -252,6 +270,21 @@ func set_hand(node: Node) -> void:
 	hand = node
 	if node is CanvasItem and node.get_parent() == null:
 		hand_layer.add_child(node)
+	# Großansicht offen: Eingaben gehen zuerst an die Hand („?“ der Kartenhilfe), nicht an den Mau-Knopf darunter
+	if node != null and node.has_signal("big_view_changed") and not node.is_connected("big_view_changed", _on_big_view):
+		node.connect("big_view_changed", _on_big_view)
+	_update_avoid()
+
+
+func _on_big_view(id: int) -> void:
+	mau_button.mouse_filter = Control.MOUSE_FILTER_STOP if id == -1 else Control.MOUSE_FILTER_IGNORE
+
+
+# Flächen, auf die die Hand das „?“ der Großansicht nicht legt (Mau-Knopf)
+func _update_avoid() -> void:
+	if hand != null and "avoid_global" in hand and mau_button.is_inside_tree():
+		var arr: Array[Rect2] = [mau_button.get_global_rect()]
+		hand.set("avoid_global", arr)
 
 
 func _layout() -> void:
@@ -274,6 +307,8 @@ func _layout() -> void:
 	_sort_btn.position = Vector2(40.0, sz.y - 190.0)
 	_backs_btn.position = Vector2(40.0, sz.y - 108.0)
 	mau_button.position = Vector2(sz.x - 46.0 - MauButton.SIZE, sz.y - 40.0 - MauButton.SIZE)
+	me_badge.position = Vector2(44.0, sz.y - 238.0)
+	_update_avoid()
 	hint_bar.hint_y = sz.y - 207.0
 	var x := sz.x - 46.0
 	for key in ["pick", "accept", "challenge", "keep"]:
@@ -426,6 +461,7 @@ func apply_view(v: Dictionary) -> void:
 		if node == null:
 			node = OpponentSeat.new()
 			node.seat = s
+			node.reduced = reduced
 			_seat_layer.add_child(node)
 			_seats[s] = node
 		node.show_score = show_score
@@ -450,7 +486,8 @@ func apply_view(v: Dictionary) -> void:
 	var next := next_seat(players, turn, int(v.get("dir", 1)))
 	for s in _seats:
 		var node: OpponentSeat = _seats[s]
-		node.set_turn(s == turn, s == next)
+		node.set_turn(s == turn and not str(v.get("phase", "")) in ["round_over", "game_over"], s == next)
+	_apply_me(v, turn, next)
 	_apply_hints(v.get("hints", {}), turn)
 	if hand != null and hand.has_method("apply_view"):
 		hand.call("apply_view", v)
@@ -467,6 +504,58 @@ func apply_view(v: Dictionary) -> void:
 			c.queue_free()
 	if not director.is_busy():
 		input_locked = false
+
+
+# Eigener Platz (0.1.4): Name mit Kartenzahl, am Zug Strahlenkranz um Namen und Hand (nur am eigenen Gerät mit Platz)
+func _apply_me(v: Dictionary, turn: int, next: int) -> void:
+	var mine := int(v.get("seat", 0)) >= 0 and not _player(my_seat).is_empty()
+	var phase := str(v.get("phase", "turn"))
+	var playing := phase != "round_over" and phase != "game_over"
+	me_badge.visible = mine
+	if mine:
+		me_badge.night = night
+		me_badge.set_player(_player(my_seat), false)
+		me_badge.set_turn(turn == my_seat and playing, next == my_seat)
+	else:
+		me_badge.set_turn(false)
+	_hand_halo_want = mine and turn == my_seat and playing
+	_hand_halo_cards = (v.get("hand", []) as Array).size()
+	_sync_hand_halo(0.0)
+
+
+# Schein hinter der eigenen Hand: erst an, wenn Austeilen und andere Animationen fertig sind (Nutzerbefund 06.10.2026: beim
+# Austeilen wanderte er mit den hereinfliegenden Karten mit); danach gleitet er weich zum Kasten der Handkarten.
+func _sync_hand_halo(delta: float) -> void:
+	var busy := (director != null and director.is_busy()) or (hand != null and hand.has_method("is_settling") and bool(hand.call("is_settling")))
+	# beim Austeilen kommen die Karten einzeln an: erst wenn alle da sind (Nutzerbefund 06.10.2026, Schein wanderte mit)
+	if hand != null and hand.has_method("card_count") and int(hand.call("card_count")) < _hand_halo_cards:
+		busy = true
+	# Animationen verzögern nur das Einschalten; ein schon leuchtender Schein bleibt an (kein Flackern beim Umsortieren)
+	_hand_halo.set_active(_hand_halo_want and (_hand_halo.active or not busy))
+	if not _hand_halo.visible or hand == null or not hand.has_method("cards_rect") or not (hand is Node2D):
+		return
+	var r: Rect2 = hand.call("cards_rect")
+	if r.size.x < 1.0:
+		return
+	var xf := (hand as Node2D).transform
+	var gr := Rect2(xf * r.position, (xf.basis_xform(r.size)).abs())
+	var cur: Rect2 = _hand_halo.box
+	if cur.size.x < 1.0 or delta <= 0.0 or _hand_halo.strength() < 0.05:
+		cur = gr                                  # beim Einblenden gleich an der richtigen Stelle
+	else:
+		var k := 1.0 - exp(-delta * 5.0)
+		cur = Rect2(cur.position.lerp(gr.position, k), cur.size.lerp(gr.size, k))
+	if not cur.is_equal_approx(_hand_halo.box):
+		_hand_halo.set_box(cur, 90.0)
+
+
+# Jemand hat gehandelt: seine Denkblase verschwindet, die Uhr beginnt neu
+func _poke(seat: int) -> void:
+	if seat == my_seat and me_badge.visible:
+		me_badge.poke()
+	var node := seat_node(seat)
+	if node != null:
+		node.poke()
 
 
 # „gleich dran“: der nächste Platz in Spielrichtung, der noch mitspielt (place 0). Fertige Spieler („bis zum Letzten“) überspringt
@@ -734,6 +823,8 @@ func set_night(v: float) -> void:
 	stake_pile.night = night
 	for s in _seats:
 		(_seats[s] as OpponentSeat).night = night
+	me_badge.night = night
+	_hand_halo.night = night
 	_sort_btn.night = night
 	_backs_btn.night = night
 	for k in _act_btns:
@@ -908,6 +999,8 @@ func skip_event(ev: Dictionary) -> void:
 func play_event(ev: Dictionary, speed: float) -> float:
 	_speed = speed
 	var e := str(ev.get("e", ""))
+	if ev.has("seat"):
+		_poke(int(ev.get("seat", -1)))
 	match e:
 		"deal":
 			return _ev_deal(ev)
@@ -927,6 +1020,8 @@ func play_event(ev: Dictionary, speed: float) -> float:
 			return _ev_color(ev)
 		"flip":
 			return _ev_flip(ev)
+		"flip_surprise":
+			return _ev_flip_surprise(ev)
 		"pending":
 			return _ev_pending(ev)
 		"challenge":
@@ -1168,6 +1263,7 @@ func _ev_deal(ev: Dictionary) -> float:
 	var n := players.size()
 	if n == 0:
 		return 0.0
+	_prepare_deal(target, int(ev.get("count", 7)))
 	UiApp.sound("mischen")
 	var per := mini(int(ev.get("count", (target.get("rules", {}) as Dictionary).get("hand_size", 7))), 7)
 	var dealer := int(ev.get("dealer", 0))
@@ -1185,6 +1281,56 @@ func _ev_deal(ev: Dictionary) -> float:
 			fx.fly_card(_pile.back_key if _pile.back_key != "" else CardTextures.BACK, _draw_pos, 0.0, CARD_W, dest, 0.0, w, fly, {"delay": t, "arc": 30.0})
 			t += step
 	return t + fly
+
+
+# Flip-Überraschung (Hausregel flip_surprise): Die Aktionskarte oben wirkt, als hätte der Flip-Spieler sie gelegt. Kurzer Stempel
+# über der Ablage; die folgenden Wirkungs-Ereignisse (Ziehen, Aussetzen …) zeigen sich wie nach einem normalen Legen.
+func _ev_flip_surprise(ev: Dictionary) -> float:
+	var face := str(ev.get("face", ""))
+	_last_player = int(ev.get("seat", -1))
+	_jagd_armed = face.ends_with("_farbjagd")
+	_plus_armed = 0
+	for kind in ["plus1", "plus5", "wuenscher_plus2"]:
+		if face.ends_with("_" + kind):
+			_plus_armed = int(kind.right(1))
+	var col := Color("#FF7FCF") if night > 0.5 else UiPalette.ALERT
+	fx.stamp(_discard_pos + Vector2(0, -CARD_W * 0.95), "Flip-Überraschung!", col, 34, 0.75)
+	if not reduced:
+		fx.ring_wave(_discard_pos, col, 30.0, 170.0, _d(0.5), 7.0)
+	UiApp.vibrate(20, 0.4)
+	return _d(0.85)
+
+
+# Partiestart (Gerätetest 0.1.4): Ohne bisherige Sicht gäbe es noch keine Plätze (Karten flögen in die Mitte) und der Stapel stünde
+# auf 0. Dann wie bei „Nächste Runde“ zuerst den leeren Tisch der Zielsicht aufbauen: alle Plätze mit 0 Karten, volle Stapelhöhe,
+# keine Ablage, niemand am Zug. Danach fliegen die Karten vom Stapel zu den Plätzen.
+func _prepare_deal(target: Dictionary, per: int) -> void:
+	if target.is_empty():
+		return
+	var tp: Array = target.get("players", [])
+	var missing := view.is_empty()
+	for p in tp:
+		var s := int(p.get("seat", -1))
+		if s != int(target.get("seat", 0)) and not _seats.has(s):
+			missing = true
+	if not missing:
+		return
+	var prep: Dictionary = target.duplicate(true)
+	var dealt := 0
+	for p in prep.get("players", []):
+		dealt += int(p.get("count", 0))
+		p["count"] = 0
+		p["backs"] = []
+		p["mau"] = false
+	prep["hand"] = []
+	prep["top"] = {}
+	prep["color"] = ""
+	prep["turn"] = -1
+	prep["hints"] = {}
+	prep["pending"] = {}
+	prep["phase"] = "deal"
+	prep["draw_count"] = int(target.get("draw_count", 0)) + maxi(dealt, per * tp.size()) + 1
+	apply_view(prep)
 
 
 func _ev_skip(ev: Dictionary) -> float:
@@ -1471,11 +1617,12 @@ func _show_round_end(v: Dictionary, ev: Dictionary, game_over := false) -> void:
 		str(rules.get("scoring", "none")) == "points500", game_over or str(v.get("phase", "")) == "game_over", host_name)
 	for c in _rays_fx.get_children():
 		c.queue_free()
-	var rays := TableEffects.RaysFx.new()
+	# Sanfte Lichtstrahlen wie am Tisch hinter dem Ergebnis (0.1.4, statt der harten Keile)
+	var rays := TableEffects.SoftRaysFx.new()
 	rays.position = round_end.winner_anchor() if round_end.size.x > 10.0 else Vector2(800, 200)
-	rays.radius = 420.0
-	rays.color = Color(1.0, 0.86, 0.35, 0.16)
-	rays.material = TableEffects.additive()
+	rays.radius = 900.0
+	rays.tint = Color(1.0, 0.84, 0.45, 0.55) if night < 0.5 else Color(0.62, 0.70, 1.0, 0.45)
+	rays.motion = not reduced
 	_rays_fx.add_child(rays)
 
 
@@ -1604,6 +1751,8 @@ func is_flipping() -> bool:
 
 
 func _process(delta: float) -> void:
+	if _hand_halo_want or _hand_halo.visible:
+		_sync_hand_halo(delta)
 	if _shake > 0.0 and not reduced:
 		_shake = maxf(_shake - delta * 1.6, 0.0)
 		var s := _shake * _shake

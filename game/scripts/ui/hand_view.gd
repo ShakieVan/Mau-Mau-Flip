@@ -657,6 +657,55 @@ func card_global_position(id: int) -> Vector2:
 	return s.view.global_position if s != null else Vector2.INF
 
 
+# Umriss der Handkarten (lokal, auf den Handbereich begrenzt): Schein am eigenen Zug (0.1.4). Leer ohne Karten. Gerechnet aus den
+# Zielplätzen, nicht aus den gerade fliegenden Karten, damit der Schein beim Austeilen nicht mitwandert (Nutzerbefund 06.10.2026).
+func cards_rect() -> Rect2:
+	var r := Rect2()
+	var first := true
+	for id in _order:
+		var s: Slot = _slots.get(id)
+		if s == null or s.view == null:
+			continue
+		var sz := s.view.card_size() * (s.target.get_scale().x if s.has_target else s.scl)
+		var c := s.target.origin if s.has_target else s.pos
+		var cr := Rect2(c - sz * 0.5, sz)
+		r = cr if first else r.merge(cr)
+		first = false
+	if first:
+		return Rect2()
+	var lim := layout_rect.grow_individual(0.0, 40.0, 0.0, 400.0)
+	return r.intersection(lim) if r.intersects(lim) else Rect2()
+
+
+# Karten, die gerade in der Hand liegen (ohne die noch anfliegenden der Regie)
+func card_count() -> int:
+	return _order.size()
+
+
+# Fliegen noch Karten an (Austeilen, Ziehen) oder sind sie weit vom Zielplatz entfernt?
+func is_settling() -> bool:
+	for id in _order:
+		var s: Slot = _slots.get(id)
+		if s == null:
+			continue
+		if s.delay > 0.0 or s.arc_pending or (s.has_target and s.pos.distance_to(s.target.origin) > 60.0):
+			return true
+	return false
+
+
+# „?“ der Großansicht nicht auf diese Flächen legen (global, z. B. der Mau-Knopf; Gerätetest 0.1.3)
+var avoid_global: Array[Rect2] = []
+
+
+func _badge_blocked(p: Vector2) -> bool:
+	var gp := to_global(p)
+	var gr := BADGE_R * global_scale.x + 6.0
+	for r in avoid_global:
+		if r.grow(gr).has_point(gp):
+			return true
+	return false
+
+
 # ---------------------------------------------------------------- Eingabe
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -1069,7 +1118,7 @@ func _sticky_button_pos() -> Vector2:
 	var size := s.view.card_size() * BIG_SCALE
 	var vr := _view_rect()
 	var right := _big_pos + Vector2(size.x * 0.5 + BADGE_R + 12.0 * DP, size.y * 0.5 - BADGE_R - 4.0 * DP)
-	if right.x + BADGE_R > vr.end.x - 4.0 * DP:
+	if right.x + BADGE_R > vr.end.x - 4.0 * DP or _badge_blocked(right):
 		right.x = _big_pos.x - size.x * 0.5 - BADGE_R - 12.0 * DP
 	return right
 

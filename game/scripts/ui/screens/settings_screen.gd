@@ -157,6 +157,9 @@ func tempo_row() -> Control:
 	s.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	s.custom_minimum_size = Vector2(0, ScreenKit.TOUCH)
 	s.focus_mode = Control.FOCUS_NONE
+	# Großer, daumentauglicher Griff (Gerätetest 0.1.3: der Standardgriff war winzig)
+	s.add_theme_icon_override("grabber", UiTheme.grabber_texture(46, UiPalette.CREAM, UiPalette.INK))
+	s.add_theme_icon_override("grabber_highlight", UiTheme.grabber_texture(46, UiPalette.PAPER_D, UiPalette.INK))
 	s.drag_started.connect(func() -> void: s.set_meta("dragging", true))
 	s.drag_ended.connect(func(_changed: bool) -> void:
 		s.set_meta("dragging", false)

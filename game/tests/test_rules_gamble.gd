@@ -212,8 +212,8 @@ func _gb_config_and_texts() -> void:
 	var c := RuleConfig.new()
 	check(c.gamble_cards == "off" and c.discard_color == "off" and c.card_count() == 112, "Standard: kein Glücksspiel, keine Ablegen-Karten")
 	for p in RuleConfig.preset_names():
-		check(RuleConfig.preset(p).gamble_cards == "off" and RuleConfig.preset(p).discard_color == "off",
-			"Voreinstellung %s ohne Glücksspiel und Farbe ablegen" % p)
+		check((RuleConfig.preset(p).gamble_cards == "on" and RuleConfig.preset(p).discard_color == "on") == (p == "familie"),
+			"Voreinstellung %s: Glücksspiel und Farbe ablegen nur bei Familie" % p)
 	var on := gb_cfg()
 	check(on.card_count() == 114 and on.preset_name() == "", "gamble_cards=on: 114 Karten, eigene Regeln")
 	check(RuleConfig.from_dict(JSON.parse_string(JSON.stringify(on.to_dict()))).equals(on), "Rundreise über JSON")
