@@ -38,3 +38,6 @@ tools/__pycache__/
 
 # Recherche-Originale mit Quellen-Links, die den Namen des Originalspiels enthalten (AGENTS.md 2) – nur lokal
 docs/recherche/_lokal/
+
+# Bestätigungsbilder des Play-Protect-Einspruchs zeigen das Google-Konto – nur lokal
+docs/play_protect/*.jpg
