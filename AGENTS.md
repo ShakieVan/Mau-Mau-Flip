@@ -60,6 +60,8 @@ Schein von hinten für den Spieler am Zug (ohne Kasten/Rand, erst nach dem Auste
 
 ## Offen für 0.1.5
 
+- **Ablage durchsehen** (Nutzerwunsch 06.10.2026, „damit Streitfragen aus dem Weg geräumt werden“): Tipp auf den Ablagestapel schiebt die oberste Karte zur Seite, Karte für Karte; Tipp auf den Seitenstapel schiebt eine zurück; Tipp irgendwo sonst schiebt alle zurück. Vorschlag: an jeder Karte steht, wer sie gelegt hat (und bei Jokern die gewünschte Farbe); Zähler „3 von 27“; legt jemand eine Karte, springt alles zurück. Gezeigt wird die Ablage, wie sie liegt (seit dem letzten Mischen; nach einem Flip gewendet). Verdeckte Glücksspiel-Einsätze unter der Ablage nur als Rückseite. App und Browser; die Sicht braucht dafür die öffentliche Ablage-Liste (kein Leck: die Ablage ist offen).
+
 - **Schrift am Handy zu klein** (Nutzer, 06.10.2026). Vorschlag: (1) kleinste Texte (Beschreibungen, Hinweise, Pillen) allgemein größer; (2) Einstellung „Schriftgröße“ (Normal/Groß/Sehr groß) je Gerät. Dafür die bisher verstreut festgelegten Schriftgrößen zentral bündeln (z. B. in UiFonts) und alle Bildschirme samt Tisch per Bildschirmfoto-Tests in allen Stufen auf Überlauf prüfen. Kartenbilder bleiben unverändert. Laut Nutzer ist „gefühlt fast überall“ außer der großen Schrift zu klein; Extreme (Bilder in `docs/geraetetest/0.1.5/`, nur lokal): am Tisch „KI“-Abzeichen, „gleich dran“, Spielernamen, Kartenzahl-Pillen, „Stapel · 83“, Hinweisleiste („+1 auf dich – Zieh 2.“); in den Bildschirmen die grauen Beschreibungen (z. B. „Du sitzt unten …“) und die Regel-Kurzfassung unter „Regeln“.
 
 ## Empfehlung aus der Recherche

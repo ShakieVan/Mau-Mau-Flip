@@ -532,21 +532,19 @@ func _sync_hand_halo(delta: float) -> void:
 		busy = true
 	# Animationen verzögern nur das Einschalten; ein schon leuchtender Schein bleibt an (kein Flackern beim Umsortieren)
 	_hand_halo.set_active(_hand_halo_want and (_hand_halo.active or not busy))
-	if not _hand_halo.visible or hand == null or not hand.has_method("cards_rect") or not (hand is Node2D):
+	if not _hand_halo.visible or hand == null or not (hand is Node2D):
 		return
-	var r: Rect2 = hand.call("cards_rect")
-	if r.size.x < 1.0:
+	# fest mittig im Kartenfeld (Nutzerwunsch 06.10.2026): wandert weder beim Ausspielen noch beim Ziehen oder Kleinerwerden der Hand
+	var lr: Variant = hand.get("layout_rect")
+	if not (lr is Rect2) or (lr as Rect2).size.x < 1.0:
 		return
+	var field: Rect2 = lr
+	var w := field.size.x * 0.7
+	var r := Rect2(field.position.x + (field.size.x - w) * 0.5, field.position.y, w, field.size.y)
 	var xf := (hand as Node2D).transform
 	var gr := Rect2(xf * r.position, (xf.basis_xform(r.size)).abs())
-	var cur: Rect2 = _hand_halo.box
-	if cur.size.x < 1.0 or delta <= 0.0 or _hand_halo.strength() < 0.05:
-		cur = gr                                  # beim Einblenden gleich an der richtigen Stelle
-	else:
-		var k := 1.0 - exp(-delta * 5.0)
-		cur = Rect2(cur.position.lerp(gr.position, k), cur.size.lerp(gr.size, k))
-	if not cur.is_equal_approx(_hand_halo.box):
-		_hand_halo.set_box(cur, 90.0)
+	if not gr.is_equal_approx(_hand_halo.box):
+		_hand_halo.set_box(gr, 90.0)
 
 
 # Jemand hat gehandelt: seine Denkblase verschwindet, die Uhr beginnt neu
