@@ -18,6 +18,7 @@ const BUSY_RETRY := 0.3          # Oberfläche beschäftigt: so lange später er
 const NEXT_ROUND_TAIL := " Weiter mit der nächsten Runde."
 
 var speed := 1.0                 # Faktor für alle Pausen; 0 = keine (Tests)
+var think_factor := 1.0          # nur Bedenkzeit der Computergegner (Regler „Tempo der Computergegner“, AppSettings.think_factor)
 var bot_level := 1               # MauBot-Stufe 0–2
 var auto_process := true
 var autosave := true
@@ -218,9 +219,9 @@ func _next_bot_plan() -> Dictionary:
 		if a.is_empty():
 			continue
 		var name := str(a.get("a", ""))
-		var delay := _rng.randf_range(THINK_MIN, THINK_MAX)
+		var delay := _rng.randf_range(THINK_MIN, THINK_MAX) * think_factor
 		if name == "mau":
-			delay = MAU_THINK
+			delay = MAU_THINK * minf(think_factor, 1.0)
 		var mo := game.mau_open
 		var grace: bool = mo >= 0 and mo != s and not is_bot(mo) and not bool(game.mau_said[mo])
 		if grace:

@@ -188,6 +188,26 @@ func substitute_bot(seat: int) -> void:
 	_changed([])
 
 
+# Getrennte Gäste ohne Vertretung (Knopf „Computer spielt für …“ am Tisch des Gastgebers)
+func substitutable_seats() -> Array:
+	var out: Array = []
+	if game == null:
+		return out
+	for s in seats.size():
+		if _is_remote(s) and not _substitute.has(s) and not bool(game.connected[s]):
+			out.append(s)
+	return out
+
+
+# Getrennter Mensch, auf dessen Zug das Spiel wartet (−1 = keiner)
+func waiting_seat() -> int:
+	return _waiting_seat
+
+
+func is_substituted(seat: int) -> bool:
+	return _substitute.has(seat)
+
+
 func act(action: Dictionary) -> void:
 	if game == null:
 		notice.emit("Die Partie hat noch nicht begonnen.")

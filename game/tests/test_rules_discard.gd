@@ -78,6 +78,24 @@ func dc_play(g: MauGame, seat: int, key: String, msg: String, col := "") -> Arra
 	return dc_act(g, seat, a, msg)
 
 
+# Ablegen-Karte legen und, falls die Auswahl offen ist, mitablegen: pick = null alle Kandidaten, sonst die Schlüssel in pick;
+# next_col = Spielfarbe (nur beim Ablegen-Joker). Liefert die Ereignisse beider Aktionen.
+func dc_lay(g: MauGame, seat: int, key: String, msg: String, col := "", pick: Variant = null, next_col := "") -> Array:
+	var ev := dc_play(g, seat, key, msg, col)
+	if g.phase() != "discard_pick":
+		return ev
+	var ids: Array = (g.view_for(seat).hints.can_pick as Array).duplicate()
+	if pick != null:
+		ids = []
+		for k in pick:
+			ids.append(RulesFixture.card(g, seat, str(k)))
+	var a := {"a": "discard_pick", "cards": ids}
+	if next_col != "":
+		a["color"] = next_col
+	ev.append_array(dc_act(g, seat, a, msg + ": Auswahl"))
+	return ev
+
+
 func dc_ev(ev: Array, e_name: String) -> Dictionary:
 	for e in ev:
 		if str(e.e) == e_name:
@@ -146,7 +164,7 @@ func _dc_config_and_texts() -> void:
 	check(d_on.contains("Farbe ablegen") and d_on.contains("(118)") and d_on.contains("Joker bleiben"), "describe (%s)" % d_on)
 	check(not "\n".join(RuleConfig.new().describe()).contains("ablegen"), "describe ohne Hausregel")
 	var h := "\n".join(RulesText.card_help("hell_rot_ablegen", on))
-	for part in ["alle anderen Karten in Rot", "Passt auf Rot und auf jede andere Ablegen-Karte", "Joker auf deiner Hand bleiben",
+	for part in ["welche deiner Karten in Rot du mit ablegst","Passt auf Rot und auf jede andere Ablegen-Karte", "Joker auf deiner Hand bleiben",
 			"wirken nicht", "„Mau!“", "gewinnst du die Runde", "30 Punkte"]:
 		check(h.contains(part), "Hilfe Rot ablegen enthält „%s“ (%s)" % [part, h])
 	var hj := "\n".join(RulesText.card_help("dunkel_ablegen_joker", dc_cfg({"round_end": "last", "mau_call": "off"})))
@@ -227,7 +245,32 @@ func _dc_colored() -> void:
 	var aid := RulesFixture.card(g, 0, "hell_rot_ablegen")
 	var under: Array = g.discard.duplicate()
 	var ev := dc_play(g, 0, "hell_rot_ablegen", "Rot ablegen")
-	check(dc_names(ev) == ["play", "discard_color", "turn"], "Ereignisse play, discard_color, turn (%s)" % str(dc_names(ev)))
+	check(dc_names(ev) == ["play", "discard_pick"] and g.phase() == "discard_pick" and g.current_seat() == 0,
+		"Auswahl offen: play, discard_pick (%s)" % str(dc_names(ev)))
+	check(JSON.stringify(dc_ev(ev, "discard_pick")) == JSON.stringify({"e": "discard_pick", "seat": 0, "color": "rot"}), "Ereignis discard_pick")
+	var reds: Array = []
+	for k in ["hell_rot_9", "hell_rot_plus1", "hell_rot_1", "hell_rot_aussetzen", "hell_rot_flip", "hell_rot_richtungswechsel"]:
+		reds.append(RulesFixture.card(g, 0, k))
+	for s in range(-1, 3):
+		var sv := g.view_for(s)
+		check(JSON.stringify(sv.discard_pick) == JSON.stringify({"seat": 0, "color": "rot"}), "Sicht discard_pick für Platz %d" % s)
+		var cp: Array = sv.hints.can_pick
+		check(cp == (reds if s == 0 else []) and (sv.hints.playable as Array).is_empty() and not bool(sv.hints.pick_color),
+			"can_pick nur für den Leger (Platz %d: %s)" % [s, str(cp)])
+	check(str(g.view_for(0).hints.text).contains("Wähle, welche Karten in Rot") and str(g.view_for(1).hints.text).contains("legt Rot mit ab"),
+		"Hinweistexte (%s / %s)" % [g.view_for(0).hints.text, g.view_for(1).hints.text])
+	# Falsches wird abgelehnt
+	for bad in [[0, {"a": "discard_pick", "cards": [RulesFixture.card(g, 0, "hell_gelb_2")]}], [0, {"a": "discard_pick", "cards": [reds[0], reds[0]]}],
+			[0, {"a": "discard_pick", "cards": "alle"}], [0, {"a": "discard_pick", "cards": [RulesFixture.card(g, 0, "hell_wuenscher")]}],
+			[1, {"a": "discard_pick", "cards": []}], [0, {"a": "draw"}], [0, {"a": "play", "card": reds[0]}]]:
+		var rb := g.apply(int(bad[0]), bad[1])
+		check(not bool(rb.ok) and str(rb.reason) != "", "abgelehnt: %s (%s)" % [JSON.stringify(bad[1]), rb.reason])
+	# Rundreise mitten in der Auswahl
+	var text := JSON.stringify(g.to_dict())
+	check(JSON.stringify(MauGame.from_dict(JSON.parse_string(text)).to_dict()) == text, "Rundreise in der Phase discard_pick")
+	var ev2 := dc_act(g, 0, {"a": "discard_pick", "cards": reds}, "alle Roten wählen")
+	check(dc_names(ev2) == ["discard_color", "turn"], "Ereignisse discard_color, turn (%s)" % str(dc_names(ev2)))
+	ev.append_array(ev2)
 	var e := dc_ev(ev, "discard_color")
 	var want := ["hell_rot_1", "hell_rot_9", "hell_rot_plus1", "hell_rot_aussetzen", "hell_rot_richtungswechsel", "hell_rot_flip"]
 	check(int(e.seat) == 0 and str(e.color) == "rot" and int(e.count) == 6 and e.faces == want, "alle Roten mit, nach Rang sortiert (%s)" % str(e))
@@ -246,6 +289,17 @@ func _dc_colored() -> void:
 	ev = dc_play(g, 0, "hell_gelb_ablegen", "Gelb ablegen ohne weitere Gelbe")
 	check(int(dc_ev(ev, "discard_color").count) == 0 and (dc_ev(ev, "discard_color").faces as Array).is_empty() and (g.hands[0] as Array).size() == 2,
 		"nichts weiter abzulegen: count 0")
+	check(not dc_names(ev).has("discard_pick") and g.current_seat() == 1, "ohne Kandidaten keine Auswahl")
+	# Nur einige mitablegen (auch Zahlen und Aktionskarten gemischt), Reihenfolge nach Rang; keine mitablegen
+	g = dc_make({"hands": [["hell_blau_ablegen", "hell_blau_9", "hell_blau_2", "hell_blau_plus1", "hell_gelb_1"], ["hell_blau_1"], ["hell_gruen_1"]],
+		"top": "hell_blau_5"})
+	ev = dc_lay(g, 0, "hell_blau_ablegen", "Blau ablegen, Auswahl 9 und +1", "", ["hell_blau_plus1", "hell_blau_9"])
+	check(dc_ev(ev, "discard_color").faces == ["hell_blau_9", "hell_blau_plus1"] and int(dc_ev(ev, "discard_color").count) == 2
+		and RulesFixture.hand_keys(g, 0) == ["hell_blau_2", "hell_gelb_1"] and g.pending.is_empty() and g.current_seat() == 1,
+		"nur die gewählten, +1 wirkt nicht (%s)" % str(dc_ev(ev, "discard_color")))
+	g = dc_make({"hands": [["hell_blau_ablegen", "hell_blau_9", "hell_gelb_1"], ["hell_blau_1"], ["hell_gruen_1"]], "top": "hell_blau_5"})
+	ev = dc_lay(g, 0, "hell_blau_ablegen", "Blau ablegen, nichts mit", "", [])
+	check(int(dc_ev(ev, "discard_color").count) == 0 and RulesFixture.hand_keys(g, 0) == ["hell_blau_9", "hell_gelb_1"], "leere Auswahl erlaubt")
 
 
 func _dc_wild() -> void:
@@ -256,81 +310,114 @@ func _dc_wild() -> void:
 	check(not bool(r.ok) and str(r.reason).contains("Wähle eine Farbe"), "Ablegen-Joker ohne Farbe abgelehnt")
 	r = g.apply(0, {"a": "play", "card": jid, "color": "lila"})
 	check(not bool(r.ok), "Farbe der anderen Seite abgelehnt")
-	var ev := dc_act(g, 0, {"a": "play", "card": jid, "color": "gelb"}, "Ablegen-Joker mit Gelb")
-	check(dc_names(ev) == ["play", "color", "discard_color", "turn"], "Ereignisse play, color, discard_color, turn (%s)" % str(dc_names(ev)))
+	var old_color := g.color
+	var ev := dc_act(g, 0, {"a": "play", "card": jid, "color": "gelb"}, "Ablegen-Joker mit Ablegefarbe Gelb")
+	check(dc_names(ev) == ["play", "discard_pick"] and g.color == old_color and g.phase() == "discard_pick",
+		"Ereignisse play, discard_pick; Spielfarbe noch offen (%s)" % str(dc_names(ev)))
+	var v := g.view_for(0)
+	check(bool(v.hints.pick_color) and (v.hints.can_pick as Array).size() == 3 and str(v.discard_pick.color) == "gelb", "Joker: Auswahl mit Farbwahl")
+	var gelb: Array = (v.hints.can_pick as Array).duplicate()
+	for bad in [{"a": "discard_pick", "cards": gelb}, {"a": "discard_pick", "cards": gelb, "color": "lila"}, {"a": "discard_pick", "cards": gelb, "color": 3}]:
+		var rb := g.apply(0, bad)
+		check(not bool(rb.ok), "Joker-Auswahl ohne gültige Spielfarbe abgelehnt (%s)" % rb.reason)
+	ev = dc_act(g, 0, {"a": "discard_pick", "cards": gelb, "color": "blau"}, "alle Gelben, weiter mit Blau")
+	check(dc_names(ev) == ["discard_color", "color", "turn"], "Ereignisse discard_color, color, turn (%s)" % str(dc_names(ev)))
 	var e := dc_ev(ev, "discard_color")
 	check(str(e.color) == "gelb" and e.faces == ["hell_gelb_1", "hell_gelb_7", "hell_gelb_richtungswechsel"], "gewählte Farbe mit ab (%s)" % str(e))
 	check(RulesFixture.hand_keys(g, 0) == ["hell_blau_3", "hell_ablegen_joker", "hell_wuenscher"], "andere Joker bleiben (%s)" % str(RulesFixture.hand_keys(g, 0)))
-	check(g.color == "gelb" and g.wished and RulesFixture.top_key(g) == "hell_ablegen_joker" and g.dir == 1 and g.current_seat() == 1,
-		"Wunschfarbe Gelb, Richtungswechsel ohne Wirkung")
+	check(g.color == "blau" and g.wished and RulesFixture.top_key(g) == "hell_ablegen_joker" and g.dir == 1 and g.current_seat() == 1,
+		"Spielfarbe Blau getrennt von der Ablegefarbe, Richtungswechsel ohne Wirkung")
+	# Joker ohne Karten der Ablegefarbe: Auswahl trotzdem (nur die Spielfarbe fehlt)
+	g = dc_make({"hands": [["hell_ablegen_joker", "hell_blau_3", "hell_wuenscher"], ["hell_blau_1"], ["hell_gruen_1"]], "top": "hell_rot_5"})
+	dc_play(g, 0, "hell_ablegen_joker", "Joker mit Rot ohne Rote", "rot")
+	check(g.phase() == "discard_pick" and (g.view_for(0).hints.can_pick as Array).is_empty() and bool(g.view_for(0).hints.pick_color)
+		and g.view_for(0).hints.text == "Wähle die Farbe, mit der es weitergeht.", "Joker ohne Kandidaten: nur Farbwahl")
+	ev = dc_act(g, 0, {"a": "discard_pick", "cards": [], "color": "gruen"}, "weiter mit Grün")
+	check(dc_names(ev) == ["discard_color", "color", "turn"] and g.color == "gruen" and int(dc_ev(ev, "discard_color").count) == 0, "Grün gilt")
 
 
 func _dc_mau() -> void:
-	# (a) Es bleibt 1 Karte: Ruf vorher erlaubt (mit 4 Karten), sonst Fenster und Erwischen
+	# (a) Es kann 1 Karte bleiben: Ruf vorher erlaubt (mit 4 Karten), sonst Fenster nach der Auswahl und Erwischen
 	var spec := {"hands": [["hell_rot_ablegen", "hell_rot_3", "hell_rot_4", "hell_blau_1"], ["hell_blau_2", "hell_blau_3"], ["hell_gruen_1"]],
 		"top": "hell_rot_5", "draw": ["hell_gelb_1", "hell_gelb_2"]}
 	var g := dc_make(spec)
 	var v := g.view_for(0)
 	check(v.hints.can_mau and str(v.hints.text).contains("Denk an „Mau!“"), "4 Karten, Ablegen lässt 1: Mau möglich, Erinnerung (%s)" % v.hints.text)
 	dc_play(g, 0, "hell_rot_ablegen", "ablegen ohne Ruf")
+	check(g.phase() == "discard_pick" and g.view_for(0).hints.can_mau and g.mau_open == -1 and (g.view_for(1).hints.catch as Array).is_empty(),
+		"in der Auswahl: Ruf möglich, noch nichts zu erwischen")
+	dc_act(g, 0, {"a": "discard_pick", "cards": g.view_for(0).hints.can_pick}, "beide Roten mit")
 	check((g.hands[0] as Array).size() == 1 and g.mau_open == 0 and g.view_for(1).hints.catch == [0] and g.view_for(0).hints.can_mau,
 		"1 Karte: Fenster offen, erwischbar, Ruf nachholbar")
 	var ev := dc_act(g, 1, {"a": "catch", "target": 0}, "erwischt")
 	check(dc_names(ev) == ["catch", "penalty", "draw"] and (g.hands[0] as Array).size() == 3, "Strafe 2 Karten")
+	# (a2) Ruf in der Auswahl, dann nur eine Rote mit (bleiben 2): Ruf verfällt
+	g = dc_make(spec)
+	dc_play(g, 0, "hell_rot_ablegen", "ablegen")
+	dc_act(g, 0, {"a": "mau"}, "Ruf in der Auswahl")
+	dc_act(g, 0, {"a": "discard_pick", "cards": [RulesFixture.card(g, 0, "hell_rot_3")]}, "nur Rot 3 mit")
+	check(not g.mau_said[0] and (g.hands[0] as Array).size() == 2 and g.mau_open == -1, "2 bleiben: Ruf verfallen")
 	# (b) Ruf vorher, dann ablegen: kein Fenster
 	g = dc_make(spec)
 	dc_act(g, 0, {"a": "mau"}, "Ruf vor dem Ablegen")
-	dc_play(g, 0, "hell_rot_ablegen", "ablegen nach Ruf")
+	dc_lay(g, 0, "hell_rot_ablegen", "ablegen nach Ruf")
 	check(g.mau_open == -1 and g.view_for(1).players[0].mau and (g.view_for(1).hints.catch as Array).is_empty(), "nach dem Ruf nicht erwischbar")
 	# (c) Ruf, dann eine andere Karte (bleiben 3): Ruf verfällt
 	g = dc_make(spec)
 	dc_act(g, 0, {"a": "mau"}, "Ruf")
 	dc_play(g, 0, "hell_rot_3", "dann Rot 3")
 	check(not g.mau_said[0] and not g.view_for(1).players[0].mau, "Ruf verfällt, wenn mehr als 1 Karte bleibt")
-	# (d) Ablegen-Joker: Ruf möglich, wenn eine Farbe 1 Karte übrig lässt; mit einer anderen Farbe verfällt er
+	# (d) Ablegen-Joker: Ruf möglich, wenn eine Farbe 1 Karte übrig lassen kann; mit einer anderen Farbe verfällt er
 	g = dc_make({"hands": [["hell_ablegen_joker", "hell_gelb_1", "hell_gelb_2", "hell_blau_1"], ["hell_blau_2"], ["hell_gruen_1"]], "top": "hell_rot_5"})
 	check(g.view_for(0).hints.can_mau, "Ablegen-Joker: mit Gelb bliebe 1 Karte → Mau möglich")
 	dc_act(g, 0, {"a": "mau"}, "Ruf vor dem Joker")
-	dc_act(g, 0, {"a": "play", "card": RulesFixture.card(g, 0, "hell_ablegen_joker"), "color": "blau"}, "Joker mit Blau (bleiben 2)")
+	dc_lay(g, 0, "hell_ablegen_joker", "Joker mit Blau (bleiben 2)", "blau", null, "gelb")
 	check(not g.mau_said[0] and (g.hands[0] as Array).size() == 2, "mit Blau bleiben 2: Ruf verfallen")
-	# (e) Keine Karte lässt 1 übrig: kein Ruf
+	# (e) Keine Karte lässt 1 übrig: kein Ruf, auch nicht in der Auswahl
 	g = dc_make({"hands": [["hell_rot_ablegen", "hell_rot_3", "hell_blau_1", "hell_blau_2"], ["hell_blau_3"], ["hell_gruen_1"]], "top": "hell_rot_5"})
 	check(not g.view_for(0).hints.can_mau and not str(g.view_for(0).hints.text).contains("Mau"), "nichts lässt 1 Karte: kein Mau")
 	var r := g.apply(0, {"a": "mau"})
 	check(not bool(r.ok) and str(r.reason) == "„Mau!“ geht erst, wenn du mit 2 Karten dran bist.", "Ruf abgelehnt (%s)" % r.reason)
-	# (f) 2 Karten, nur die Ablegen-Karte passt und leert die Hand: kein Ruf nötig, fertig ohne Strafe
-	g = dc_make({"hands": [["hell_rot_ablegen", "hell_rot_3"], ["hell_blau_3", "hell_blau_4"], ["hell_gruen_1"]], "top": "hell_blau_ablegen"})
-	check(dc_playable(g, 0) == ["hell_rot_ablegen"] and not g.view_for(0).hints.can_mau, "2 Karten, Ablegen leert die Hand: kein Mau")
+	dc_play(g, 0, "hell_rot_ablegen", "ablegen (bleiben mindestens 2)")
 	r = g.apply(0, {"a": "mau"})
-	check(not bool(r.ok) and str(r.reason) == "Damit legst du alles auf einmal ab – „Mau!“ brauchst du nicht.", "Begründung (%s)" % r.reason)
-	ev = dc_play(g, 0, "hell_rot_ablegen", "alles auf einmal ablegen")
+	check(not g.view_for(0).hints.can_mau and not bool(r.ok) and str(r.reason).contains("genau 1 Karte bleiben"), "in der Auswahl abgelehnt (%s)" % r.reason)
+	# (f) 2 Karten, nur die Ablegen-Karte passt: Wer Rot 3 behält, hat 1 Karte – Ruf erlaubt; alles mit: fertig ohne Strafe
+	g = dc_make({"hands": [["hell_rot_ablegen", "hell_rot_3"], ["hell_blau_3", "hell_blau_4"], ["hell_gruen_1"]], "top": "hell_blau_ablegen"})
+	check(dc_playable(g, 0) == ["hell_rot_ablegen"] and g.view_for(0).hints.can_mau, "2 Karten, Rot 3 könnte bleiben: Mau möglich")
+	ev = dc_lay(g, 0, "hell_rot_ablegen", "alles auf einmal ablegen")
 	check(g.phase() == "round_over" and int(g.result.ranking[0]) == 0 and not dc_names(ev).has("penalty"), "fertig ohne „Mau!“ und ohne Strafe")
-	# (g) auto: Fenster nach dem Ablegen, Strafe bei der ersten Handlung des Nächsten
+	# (g) auto: Fenster nach der Auswahl, Strafe bei der ersten Handlung des Nächsten
 	g = dc_make(spec, {"mau_call": "auto"})
-	dc_play(g, 0, "hell_rot_ablegen", "auto: ablegen ohne Ruf")
+	dc_lay(g, 0, "hell_rot_ablegen", "auto: ablegen ohne Ruf")
 	ev = dc_act(g, 1, {"a": "draw"}, "auto: Nächster zieht")
 	check(dc_names(ev).slice(0, 2) == ["penalty", "draw"] and (g.hands[0] as Array).size() == 3, "auto: Strafe beim Fensterende (%s)" % str(dc_names(ev)))
 	# (h) off: kein Fenster
 	g = dc_make(spec, {"mau_call": "off"})
-	dc_play(g, 0, "hell_rot_ablegen", "off: ablegen")
+	dc_lay(g, 0, "hell_rot_ablegen", "off: ablegen")
 	check(g.mau_open == -1 and not g.view_for(0).hints.can_mau, "off: kein Fenster")
 
 
 func _dc_finish() -> void:
 	var g := dc_make({"hands": [["hell_rot_ablegen", "hell_rot_1", "hell_rot_2", "hell_rot_plus1"], ["hell_blau_1", "hell_blau_ablegen"],
 		["hell_ablegen_joker"]], "top": "hell_rot_5"}, {"scoring": "points500"})
-	var ev := dc_play(g, 0, "hell_rot_ablegen", "alles ablegen (first)")
-	check(dc_names(ev) == ["play", "discard_color", "finish", "round_over"], "fertig: play, discard_color, finish, round_over (%s)" % str(dc_names(ev)))
-	check(g.phase() == "round_over" and int(g.result.ranking[0]) == 0 and g.result.points == [0, 31, 50], "Punkte: Ablegen 30, Joker 50 (%s)" % str(g.result.points))
+	var ev := dc_lay(g, 0, "hell_rot_ablegen", "alles ablegen (first)")
+	check(dc_names(ev) == ["play", "discard_pick", "discard_color", "finish", "round_over"], "fertig: play, discard_pick, discard_color, finish, round_over (%s)" % str(dc_names(ev)))
+	check(g.phase() == "round_over" and int(g.result.ranking[0]) == 0 and g.result.points == [0, 31, 50], "Punkte: Ablegen 30, Joker 50 (%s)" % str(g.result.get("points", [])))
 	check(g.pending.is_empty(), "mitabgelegte +1 wirkt auch als letzte Karte nicht")
 	g = dc_make({"hands": [["hell_rot_ablegen", "hell_rot_1"], ["hell_blau_1", "hell_blau_2"], ["hell_gruen_1", "hell_gruen_2"], ["hell_gelb_1"]],
 		"top": "hell_rot_5"}, {"round_end": "last"}, 4)
-	ev = dc_play(g, 0, "hell_rot_ablegen", "alles ablegen (last)")
-	check(dc_names(ev) == ["play", "discard_color", "finish", "turn"] and int(g.place[0]) == 1 and g.current_seat() == 1, "bis zum Letzten: fertig, Nächster dran")
+	ev = dc_lay(g, 0, "hell_rot_ablegen", "alles ablegen (last)")
+	check(dc_names(ev) == ["play", "discard_pick", "discard_color", "finish", "turn"] and int(g.place[0]) == 1 and g.current_seat() == 1, "bis zum Letzten: fertig, Nächster dran")
 	g = dc_make({"hands": [["hell_rot_ablegen", "hell_rot_1"], ["hell_blau_1", "hell_blau_2"], []], "top": "hell_rot_5", "finished": [2]},
 		{"round_end": "last"})
-	dc_play(g, 0, "hell_rot_ablegen", "alles ablegen, danach nur noch einer")
-	check(g.phase() == "round_over" and g.result.ranking == [2, 0, 1], "Platzierung 2, 0, 1 (%s)" % str(g.result.get("ranking", [])))
+	dc_lay(g, 0, "hell_rot_ablegen", "alles ablegen, danach nur noch einer")
+	check(g.phase() == "round_over" and g.result.get("ranking", []) == [2, 0, 1], "Platzierung 2, 0, 1 (%s)" % str(g.result.get("ranking", [])))
+	# Ablegen-Joker als letzte Karte: Auswahl ohne Kandidaten, Spielfarbe gilt für die Übrigen (bis zum Letzten)
+	g = dc_make({"hands": [["hell_ablegen_joker"], ["hell_blau_1", "hell_blau_2"], ["hell_gruen_1", "hell_gruen_2"]], "top": "hell_rot_5"},
+		{"round_end": "last"})
+	ev = dc_lay(g, 0, "hell_ablegen_joker", "Joker als letzte Karte", "rot", null, "gruen")
+	check(dc_names(ev) == ["play", "discard_pick", "discard_color", "color", "finish", "turn"] and g.color == "gruen" and int(g.place[0]) == 1,
+		"Joker zuletzt: fertig, Grün gilt (%s)" % str(dc_names(ev)))
 
 
 func _dc_pending() -> void:
@@ -341,7 +428,8 @@ func _dc_pending() -> void:
 	g = dc_make({"hands": [["hell_wuenscher_plus2", "hell_ablegen_joker", "hell_blau_1"], ["hell_blau_2"], ["hell_gruen_1"]], "top": "hell_rot_5"},
 		{"wild_restriction": "enforce"})
 	check(dc_playable(g, 0) == ["hell_ablegen_joker"], "enforce: Ablegen-Joker zählt als anderer Joker (%s)" % str(dc_playable(g, 0)))
-	g = dc_make({"hands": [["hell_wuenscher_plus2", "hell_blau_1"], ["hell_blau_ablegen", "hell_ablegen_joker"], ["hell_gruen_1"]], "top": "hell_rot_5"})
+	g = dc_make({"hands": [["hell_wuenscher_plus2", "hell_blau_1"], ["hell_blau_ablegen", "hell_ablegen_joker"], ["hell_gruen_1"]], "top": "hell_rot_5"},
+		{"wild_restriction": "bluff"})
 	dc_play(g, 0, "hell_wuenscher_plus2", "+2", "blau")
 	check(g.phase() == "challenge" and (g.view_for(1).hints.playable as Array).is_empty(), "beim Anzweifeln keine Ablegen-Karte")
 
@@ -349,14 +437,14 @@ func _dc_pending() -> void:
 func _dc_dark_side() -> void:
 	var g := dc_make({"side": "dunkel", "hands": [["dunkel_lila_ablegen", "dunkel_lila_1", "dunkel_lila_plus5", "dunkel_farbjagd", "dunkel_pink_2",
 		"dunkel_lila_alle_aussetzen"], ["dunkel_pink_3"], ["dunkel_orange_1"]], "top": "dunkel_lila_5"})
-	var ev := dc_play(g, 0, "dunkel_lila_ablegen", "Lila ablegen")
+	var ev := dc_lay(g, 0, "dunkel_lila_ablegen", "Lila ablegen")
 	check(dc_ev(ev, "discard_color").faces == ["dunkel_lila_1", "dunkel_lila_plus5", "dunkel_lila_alle_aussetzen"], "dunkle Seite: Lila mit ab")
 	check(RulesFixture.hand_keys(g, 0) == ["dunkel_farbjagd", "dunkel_pink_2"] and g.pending.is_empty() and g.current_seat() == 1,
 		"Farbjagd bleibt, +5 und Alle aussetzen wirken nicht")
 	# Danach ein Flip: Die mitabgelegten Karten wenden sich mit der Ablage.
 	g = dc_make({"hands": [["hell_rot_ablegen", "hell_rot_1/dunkel_pink_9"], ["hell_rot_flip", "hell_blau_1"], ["hell_gruen_1"]], "top": "hell_rot_5/dunkel_lila_6"},
 		{"round_end": "last"})
-	dc_play(g, 0, "hell_rot_ablegen", "ablegen, dann fertig")
+	dc_lay(g, 0, "hell_rot_ablegen", "ablegen, dann fertig")
 	dc_play(g, 1, "hell_rot_flip", "Flip danach")
 	check(g.side_name() == "dunkel" and RulesFixture.top_key(g) == "dunkel_lila_6", "nach dem Flip oben die unterste Ablagekarte (%s)" % RulesFixture.top_key(g))
 
@@ -366,7 +454,7 @@ func _dc_with_others() -> void:
 		"top": "hell_rot_5"}, {"swap_cards": "on", "gamble_cards": "on"})
 	check(g.n_cards == 124, "alle Hausregeln: 124 Karten")
 	var others: Array = [g.hands[1].duplicate(), g.hands[2].duplicate()]
-	var ev := dc_play(g, 0, "hell_rot_ablegen", "Rot ablegen mit Kartentausch und Glücksspiel auf der Hand")
+	var ev := dc_lay(g, 0, "hell_rot_ablegen", "Rot ablegen mit Kartentausch und Glücksspiel auf der Hand")
 	check(dc_ev(ev, "discard_color").faces == ["hell_rot_2", "hell_rot_tausch"] and not dc_names(ev).has("swap_hands") and not dc_names(ev).has("gamble_start"),
 		"Kartentausch geht ohne Wirkung mit, kein Glücksspiel")
 	check(RulesFixture.hand_keys(g, 0) == ["hell_gluecksspiel", "hell_gelb_1"] and g.hands[1] == others[0] and g.hands[2] == others[1],
@@ -392,7 +480,7 @@ func _dc_round_trip() -> void:
 				break
 			var seat := g.current_seat()
 			var r := g.apply(seat, MauBot.choose(g.view_for(seat), rng.randi(), 2))
-			if not dc_ev(r.events, "discard_color").is_empty():
+			if not dc_ev(r.events, "discard_color").is_empty() or (k % 2 == 0 and g.phase() == "discard_pick"):  # auch mitten in der Auswahl
 				hit = true
 				break
 		if not hit:
@@ -465,6 +553,29 @@ func _dc_bot_decisions() -> void:
 	var jv: Dictionary = JSON.parse_string(JSON.stringify(g.view_for(0)))
 	a = MauBot.choose(jv, 3, 2)
 	check(str(a.get("color", "")) == "gelb" and bool(g.apply(0, a).ok), "Bot auf JSON-Sicht (%s)" % str(a))
+	# Auswahl: Zahlen mit, Aktionskarten behalten – außer der Bot wird damit fertig; Joker: Spielfarbe = häufigste Restfarbe
+	g = dc_make({"hands": [["hell_rot_ablegen", "hell_rot_1", "hell_rot_plus1", "hell_rot_7", "hell_gelb_3", "hell_gelb_4"], ["hell_blau_1", "hell_blau_2"],
+		["hell_gruen_1", "hell_gruen_2"]], "top": "hell_rot_5"})
+	dc_play(g, 0, "hell_rot_ablegen", "Auswahl für den Bot")
+	a = _dc_bot(g, 0)
+	check(str(a.get("a", "")) == "discard_pick" and CardDB.sort_keys(_dc_keys(g, 0, a.cards)) == ["hell_rot_1", "hell_rot_7"] and not a.has("color"),
+		"Bot legt Zahlen mit, behält +1 (%s)" % str(a))
+	g = dc_make({"hands": [["hell_rot_ablegen", "hell_rot_1", "hell_rot_plus1"], ["hell_blau_1", "hell_blau_2"], ["hell_gruen_1", "hell_gruen_2"]],
+		"top": "hell_rot_5"})
+	dc_play(g, 0, "hell_rot_ablegen", "Auswahl, die fertig macht")
+	a = _dc_bot(g, 0)
+	check(str(a.get("a", "")) == "discard_pick" and (a.cards as Array).size() == 2, "Bot wird fertig: alles mit (%s)" % str(a))
+	g = dc_make({"hands": [["hell_ablegen_joker", "hell_gelb_1", "hell_gelb_2", "hell_blau_1", "hell_blau_2", "hell_gruen_4"], ["hell_blau_3"],
+		["hell_gruen_1"]], "top": "hell_rot_5"})
+	dc_play(g, 0, "hell_ablegen_joker", "Joker für den Bot", "gelb")
+	a = _dc_bot(g, 0)
+	check(str(a.get("a", "")) == "discard_pick" and (a.cards as Array).size() == 2 and str(a.get("color", "")) == "blau" and bool(g.apply(0, a).ok),
+		"Bot: Gelbe mit, weiter mit Blau (%s)" % str(a))
+	# Mau in der Auswahl, wenn danach 1 Karte bleibt
+	g = dc_make({"hands": [["hell_rot_ablegen", "hell_rot_1", "hell_rot_2", "hell_gelb_3"], ["hell_blau_1", "hell_blau_2"], ["hell_gruen_1", "hell_gruen_2"]],
+		"top": "hell_rot_5"})
+	dc_play(g, 0, "hell_rot_ablegen", "ohne Ruf gelegt")
+	check(str(_dc_bot(g, 0).get("a", "")) == "mau", "Bot ruft in der Auswahl „Mau!“")
 
 
 # --- Bot-Dauerlauf ---
@@ -556,7 +667,7 @@ func _dc_bot_round(g: MauGame, rng: RandomNumberGenerator, levels: Array, forget
 				called = seat
 				if before > 2:
 					dc_count("mau_vor_ablegen")
-		elif called == seat and kind != "catch":     # Erwischen zwischen Ruf und Legen ändert die eigene Hand nicht
+		elif called == seat and kind != "catch" and g.state != "discard_pick":  # Erwischen ändert die Hand nicht; nach der Auswahl zählen
 			# Ein Kartentausch nach dem Ruf (Zufallsbot) löscht alle Rufe nach der Regel; das zählt wie im Kartentausch-Test nicht.
 			var swapped := false
 			for e in res.events:
@@ -589,3 +700,10 @@ func _dc_bot_round(g: MauGame, rng: RandomNumberGenerator, levels: Array, forget
 		if inv != "":
 			return "nach %s: %s" % [JSON.stringify(act), inv]
 	return ""
+
+
+func _dc_keys(g: MauGame, seat: int, ids: Array) -> Array:
+	var out: Array = []
+	for id in ids:
+		out.append(g._key[g.faces[g.side * g.n_cards + int(id)]])
+	return out

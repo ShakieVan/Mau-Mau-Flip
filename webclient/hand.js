@@ -91,6 +91,7 @@
       const alt = new Set(this.reihe.map(c => c.id));
       this.reihe = reihe.slice();
       this.spielbar = new Set(opt.spielbar || []);
+      this.kandidaten = new Set(opt.kandidaten || []);   // Farbe mit ablegen: wählbare Karten (gewählte stehen in spielbar)
       const jetzt = new Set(reihe.map(c => c.id));
       for (const [id, el] of this.els) if (!jetzt.has(id)) { el.remove(); this.els.delete(id); }
       for (const id of Array.from(this.schwebend)) if (!jetzt.has(id)) this.schwebend.delete(id);
@@ -114,7 +115,8 @@
         if (hinten.dataset.face !== back) { hinten.dataset.face = back; hinten.innerHTML = M.Karten.gesichtHTML(back); }
         el.dataset.face = c.face;
         el.classList.toggle('spielbar', this.spielbar.has(c.id));
-        el.classList.toggle('matt', !!opt.dran && !this.spielbar.has(c.id));
+        el.classList.toggle('kandidat', this.kandidaten.has(c.id));
+        el.classList.toggle('matt', !!opt.dran && !this.spielbar.has(c.id) && !this.kandidaten.has(c.id));
       });
       this.el.classList.toggle('dran', !!opt.dran);
       // neue Karten kurz markieren; im Band zur einzelnen neuen Karte rollen

@@ -26,6 +26,7 @@ game/assets/web.zip
 # Bildschirmfotos echter Handys aus den Gerätetests: zeigen Gerätenamen und Statusleisten – nur lokal, die Berichte selbst sind im Repo
 docs/geraetetest/**/*.jpg
 docs/geraetetest/**/*.png
+docs/geraetetest/**/*.webp
 
 # KI-Ton-Kandidaten (groß, nur zum Auswählen): Rohfassungen, Spektrogramme, Kandidaten – im Repo bleiben README, Favoriten und Skripte
 audio/sfx_ki/roh/

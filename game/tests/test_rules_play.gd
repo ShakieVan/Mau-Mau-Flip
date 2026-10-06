@@ -44,7 +44,10 @@ func _initialize() -> void:
 # --- Hilfen ---
 
 func make(spec: Dictionary, opts := {}, n := 3) -> MauGame:
-	var g := RulesFixture.build(RuleConfig.from_dict(opts), n, spec)
+	# Diese Fälle stammen aus der Zeit mit Anzweifeln als Standard: ohne Angabe gilt hier weiter wild_restriction = bluff.
+	var d := {"wild_restriction": "bluff"}
+	d.merge(opts, true)
+	var g := RulesFixture.build(RuleConfig.from_dict(d), n, spec)
 	check(RulesFixture.card_check(g) == "", "Aufbau mit 112 Karten: " + RulesFixture.card_check(g))
 	return g
 

@@ -269,7 +269,7 @@ func run() -> void:
 	# Ereignisse mit sichtbarem Effekt am Tisch (Rest gleicht die Sicht ab)
 	for e in ["deal", "play", "draw", "skip", "skip_all", "reverse", "color", "flip", "pending", "challenge", "mau", "catch", "penalty",
 			"shuffle", "round_over", "game_over", "finish", "pass", "choose_color",
-			"swap_hands", "gamble_start", "stake", "gamble_roll", "stake_back", "stake_discard", "discard_color"]:
+			"swap_hands", "gamble_start", "stake", "gamble_roll", "stake_back", "stake_discard", "discard_color", "discard_pick"]:
 		check(effekte.has(e), "tisch.js spielt Ereignis „%s“ ab" % e)
 	var aktionen := {}
 	for src in [app, tisch]:
@@ -278,7 +278,8 @@ func run() -> void:
 		for m in RegEx.create_from_string("data-a=\"([a-z_]+)\"").search_all(src):
 			aktionen[m.get_string(1)] = true
 	aktionen.erase("wunsch")     # nur im Client: öffnet die Farbwahl, schickt dann {a:"color"}
-	for a in ["play", "draw", "keep", "challenge", "accept", "color", "mau", "catch", "next_round", "stake", "press", "stop"]:
+	aktionen.erase("ablegen")    # nur im Client: Knopf „Ablegen (n)“, schickt dann {a:"discard_pick"}
+	for a in ["play", "draw", "keep", "challenge", "accept", "color", "mau", "catch", "next_round", "stake", "press", "stop", "discard_pick"]:
 		check(aktionen.has(a), "Client sendet Aktion „%s“" % a)
 	# Nachrichten des Gastgebers (NetHostSession, HostTable), die der Client auswertet
 	var nachrichten := {}
@@ -313,6 +314,19 @@ func run() -> void:
 	for k in ["_gluecksspiel", "_ablegen_joker", "_tausch", "'gamble'", "swap_hands", "gamble_start", "gamble_roll", "stake_back", "stake_discard",
 			"discard_color", "can_stake", "can_press", "can_stop", "case 'stake'", "case 'press'", "case 'stop'", "'stop')", "'empty')"]:
 		check(mock.contains(k), "mock.js kennt „%s“" % k)
+	# 0.1.3: vier Tauschrichtungen, kein Anzweifeln in den Regeltexten, Auswahl beim Mitablegen, Glücksspiel mit Aufhören
+	for k in ["counter", "against", "gegen den Uhrzeigersinn", "gegen die aktuelle Spielrichtung"]:
+		check(karten.contains(k), "Regeltexte (karten.js): Tauschrichtung „%s“" % k)
+	check(not karten.contains("anzweifeln") and not karten.contains("Bluffen"), "Regeltexte (karten.js) ohne Anzweifeln")
+	check(karten.contains("weiter riskieren oder aufhören"), "Regeltexte (karten.js): Glücksspiel nennt das Aufhören")
+	check(tisch.contains("data-a=\"ablegen\">Ablegen (") and app.contains("'Welche Farbe legst du mit ab?'") and app.contains("'Mit welcher Farbe geht es weiter?'")
+			and app.contains("a: 'discard_pick', cards") and css.contains(".hk.kandidat"),
+		"Farbe mit ablegen: Auswahl in der Hand, Knopf „Ablegen (n)“, zweistufige Farbwahl beim Joker")
+	for k in ["case 'discard_pick'", "can_pick", "pick_color", "e: 'discard_pick'"]:
+		check(mock.contains(k), "mock.js kennt „%s“" % k)
+	check(autotest.contains("data-a=\"ablegen\"") and autotest.contains("abgewaehlt"), "autotest.js wählt beim Mitablegen (manchmal ab)")
+	check(NetProtocol.clean_action({"a": "discard_pick", "cards": [3, 5], "color": "rot"}).get("cards", []) == [3, 5],
+		"NetProtocol lässt {a:\"discard_pick\", cards:[…]} samt Kartenliste durch")
 	# Glücksspiel aufhören (AGENTS.md Nr. 26): Knopf „Aufhören“ nur mit hints.can_stop, stake_discard mit reason "stop" animiert
 	check(tisch.contains("'aufhoeren'") and tisch.contains("h.can_stop") and tisch.contains("Noch eine Karte setzen – oder aufhören?")
 			and tisch.contains("e.reason === 'stop'") and app.contains("aufhoeren()") and css.contains(".automat .aufhoeren"),
@@ -352,7 +366,7 @@ func run() -> void:
 	var bad := {}
 	var max_bytes := 0
 	# 40 Partien wie bisher, danach Partien mit allen drei Hausregeln, bis jedes neue Ereignis vorkam (höchstens 80)
-	var haus_events := ["swap_hands", "gamble_start", "stake", "gamble_roll", "stake_back", "stake_discard", "discard_color"]
+	var haus_events := ["swap_hands", "gamble_start", "stake", "gamble_roll", "stake_back", "stake_discard", "discard_color", "discard_pick"]
 	var haus_games := 0
 	for gi in 120:
 		var haus := gi >= 40
@@ -409,6 +423,21 @@ func run() -> void:
 							bad["hints.can_stop ohne eigenen Einsatz bei need = stake: " + str(gv)] = true
 				elif glueck and bool(h.get("can_stop", false)):
 					bad["hints.can_stop ohne Glücksspiel"] = true
+				# Farbe mit ablegen (0.1.3): discard_pick {seat, color} für alle, ohne Kandidatenzahl; can_pick/pick_color nur für den Wählenden
+				var ablegen := str((v.rules as Dictionary).get("discard_color", "off")) == "on"
+				if ablegen != v.has("discard_pick") or ablegen != h.has("can_pick"):
+					bad["discard_pick/can_pick bei discard_color=%s" % ablegen] = true
+				if ablegen and v.get("discard_pick") is Dictionary:
+					var dp: Dictionary = v.discard_pick
+					var cp: Array = h.get("can_pick", []) if h.get("can_pick") is Array else []
+					if dp.is_empty() != (str(v.phase) != "discard_pick") or (not dp.is_empty() and (dp.keys().size() != 2 or js_type(dp.get("seat")) != "number" or js_type(dp.get("color")) != "string")):
+						bad["view.discard_pick passt nicht zum Client: %s in Phase %s" % [str(dp), v.phase]] = true
+					if not cp.is_empty():
+						seen_hints["can_pick"] = true
+						if dp.is_empty() or int(dp.seat) != s:
+							bad["hints.can_pick bei fremder Auswahl"] = true
+					if bool(h.get("pick_color", false)):
+						seen_hints["pick_color"] = true
 				for e in fe:
 					if str(e.get("e", "")) == "stake_discard":
 						if not str(e.get("reason", "")) in ["stop", "empty"]:
@@ -454,7 +483,8 @@ func run() -> void:
 		check(ereignisse.has(e), "Ereignis „%s“ ist dem Client bekannt" % e)
 	for e in haus_events:
 		check(seen_events.has(e), "Ereignis „%s“ kam in %d Partien mit Hausregeln vor" % [e, haus_games])
-	for k in ["can_draw", "can_keep", "can_challenge", "can_accept", "can_mau", "can_next_round", "can_stake", "can_press", "can_stop"]:
+	# can_challenge/can_accept nicht mehr: "bluff" wird beim Laden zu "free" (0.1.3), die Knöpfe bleiben nur für alte Gastgeber
+	for k in ["can_draw", "can_keep", "can_mau", "can_next_round", "can_stake", "can_press", "can_stop", "can_pick", "pick_color"]:
 		check(seen_hints.has(k), "hints.%s kam in den Partien vor" % k)
 	check(seen_hints.has("stake_discard.stop"), "stake_discard mit reason „stop“ (Aufhören) kam in den Partien vor")
 	print("Sichten: %d, Phasen: %s, Ereignisse: %d Arten, Partien mit Hausregeln: %d, größte state-Nachricht: %d Byte" % [view_checks, str(seen_phases.keys()), seen_events.size(), haus_games, max_bytes])

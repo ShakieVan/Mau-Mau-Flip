@@ -25,7 +25,7 @@
   }
 
   // Erwartete Form der Sicht (game/scripts/rules/mau_game.gd view_for/_hints) – Prüfung Feld für Feld gegen den echten Gastgeber
-  const PHASEN = ['idle', 'turn', 'drawn', 'challenge', 'color', 'gamble', 'round_over', 'game_over'];
+  const PHASEN = ['idle', 'turn', 'drawn', 'challenge', 'color', 'gamble', 'discard_pick', 'round_over', 'game_over'];
   const HINT_FELDER = { playable: 'array', wild: 'array', can_draw: 'boolean', can_keep: 'boolean', can_challenge: 'boolean', can_accept: 'boolean',
     can_mau: 'boolean', catch: 'array', need_color: 'boolean', can_next_round: 'boolean', text: 'string' };
   const SICHT_FELDER = { seat: 'number', side: 'string', phase: 'string', turn: 'number', dir: 'number', color: 'string', players: 'array', hand: 'array',
@@ -39,7 +39,7 @@
   // Ereignisse, die der Client kennt (Effekt in tisch.js oder bewusst ohne Effekt)
   const EREIGNISSE = ['deal', 'play', 'draw', 'skip', 'skip_all', 'reverse', 'color', 'flip', 'pending', 'challenge', 'mau', 'catch', 'penalty', 'shuffle',
     'round_over', 'game_over', 'finish', 'pass', 'choose_color', 'round_start', 'start', 'turn', 'keep', 'accept',
-    'swap_hands', 'gamble_start', 'stake', 'gamble_roll', 'stake_back', 'stake_discard', 'discard_color'];
+    'swap_hands', 'gamble_start', 'stake', 'gamble_roll', 'stake_back', 'stake_discard', 'discard_color', 'discard_pick'];
   // Hausregel-Karten, die der Selbsttest bevorzugt legt (damit Kartentausch, Farbe ablegen und Glücksspiel sicher vorkommen)
   const VORRANG = { tausch: 1, ablegen: 2, ablegen_joker: 3, gluecksspiel: 4 };
 
@@ -49,7 +49,7 @@
       this.t0 = Date.now();
       this.zuege = 0; this.runden = 0; this.states = 0; this.errs = 0; this.ereignisse = {};
       this.fehler = []; this.notizen = [];
-      this.haus = { tausch: 0, ablegen: 0, ablegen_joker: 0, gluecksspiel: 0, gesetzt: 0, gedrueckt: 0, aufgehoert: 0 };
+      this.haus = { tausch: 0, ablegen: 0, ablegen_joker: 0, gluecksspiel: 0, gesetzt: 0, gedrueckt: 0, aufgehoert: 0, ausgewaehlt: 0, abgewaehlt: 0 };
       this.mock = !!M.param('mock');
       // gegen den echten Gastgeber: bis zum ersten Rundenende spielen
       this.ziel = +(M.param('zuege') || (this.mock ? 14 : 400));
@@ -97,6 +97,27 @@
         if ((h.playable || []).length || h.can_draw) this.fail('playable/can_draw im Glücksspiel');
       } else if ((h.can_stake || []).length || h.can_press || h.can_stop) this.fail('can_stake/can_press/can_stop ohne Glücksspiel');
     },
+    // Farbe mit ablegen (Phase discard_pick): discard_pick {seat, color} für alle, ohne Kandidatenzahl; can_pick nur für den Wählenden
+    vertragAblegen(v) {
+      if (!v) return;
+      const h = v.hints || {}, dp = v.discard_pick;
+      if (h.can_pick !== undefined && !Array.isArray(h.can_pick)) this.fail('hints.can_pick: ' + art(h.can_pick));
+      if (v.phase !== 'discard_pick') {
+        if (dp && Object.keys(dp).length) this.fail('discard_pick außerhalb der Phase');
+        if ((h.can_pick || []).length) this.fail('can_pick außerhalb der Phase');
+        return;
+      }
+      if (!dp || typeof dp.seat !== 'number' || typeof dp.color !== 'string') { this.fail('discard_pick ' + JSON.stringify(dp)); return; }
+      if (Object.keys(dp).some(k => k !== 'seat' && k !== 'color')) this.fail('discard_pick verrät mehr: ' + Object.keys(dp).join(','));
+      const ich = dp.seat === v.seat;
+      if (!ich && (h.can_pick || []).length) this.fail('can_pick bei fremder Auswahl');
+      (h.can_pick || []).forEach(id => {
+        const c = (v.hand || []).find(x => x.id === id);
+        if (!c) this.fail('can_pick nicht in der Hand');
+        else if (M.Karten.istJoker(c.face) || M.Karten.zerlege(c.face).farbe !== dp.color) this.fail('can_pick mit falscher Karte ' + c.face);
+      });
+      if ((h.playable || []).length || h.can_draw) this.fail('playable/can_draw in discard_pick');
+    },
     // &protokoll=1: Ablauf (Stände, eigene Entscheidungen) ans Ergebnis hängen, zur Fehlersuche
     prot(t) { if (M.param('protokoll')) { (this._prot = this._prot || []).push(t); if (this._prot.length > 60) this._prot.shift(); } },
     zustand(m) {
@@ -112,7 +133,7 @@
         if (e.e === 'swap_hands' && !Array.isArray(e.counts)) this.fail('swap_hands ohne counts');
         if (e.e === 'discard_color' && (!Array.isArray(e.faces) || e.faces.length !== (e.count | 0))) this.fail('discard_color: faces ≠ count');
       });
-      try { this.vertrag(m.view); this.vertragGlueck(m.view); } catch (e) { this.fail('Vertrag: ' + e); }
+      try { this.vertrag(m.view); this.vertragGlueck(m.view); this.vertragAblegen(m.view); } catch (e) { this.fail('Vertrag: ' + e); }
     },
     fehlerNachricht(m) { this.errs++; this.notiz('err vom Gastgeber: ' + m.text); },
     notiz(t) { this.notizen.push(t); },
@@ -128,7 +149,7 @@
       const v = this.v;
       if (!v || !this.ruhig()) return false;
       const h = v.hints || {};
-      return (v.turn === v.seat && (v.phase === 'turn' || v.phase === 'drawn' || v.phase === 'challenge' || v.phase === 'gamble')) || !!h.need_color || !!h.can_challenge;
+      return (v.turn === v.seat && (v.phase === 'turn' || v.phase === 'drawn' || v.phase === 'challenge' || v.phase === 'gamble' || v.phase === 'discard_pick')) || !!h.need_color || !!h.can_challenge;
     },
     rundeVorbei() { const v = this.v; return !!v && (v.phase === 'round_over' || v.phase === 'game_over') && this.ruhig(); },
 
@@ -502,6 +523,35 @@
         if (!k) this.fail('Erwischen-Knopf fehlt');
         else { this.klick(k); await antwort(); return; }
       }
+      // Farbe mit ablegen: alle Kandidaten vorausgewählt; jeder zweite Durchgang wählt eine ab; beim Joker danach die Spielfarbe
+      if (v.phase === 'discard_pick' && v.discard_pick && v.discard_pick.seat === v.seat) {
+        const t = app.tisch, kand = h.can_pick || [];
+        const knopf = () => t.aktionen.querySelector('button[data-a="ablegen"]');
+        if (!knopf() || knopf().textContent !== 'Ablegen (' + kand.length + ')') this.fail('Knopf „Ablegen (' + kand.length + ')“ fehlt: ' + (knopf() ? knopf().textContent : '-'));
+        if (t.hand.el.querySelectorAll('.hk.kandidat.spielbar').length !== kand.length) this.fail('Kandidaten nicht alle vorausgewählt');
+        let n = kand.length;
+        if (kand.length && this.zuege % 2) {
+          await this.tippe(kand[0]); n--;
+          if (!knopf() || knopf().textContent !== 'Ablegen (' + n + ')') this.fail('Abwählen ändert den Knopf nicht');
+          else this.haus.abgewaehlt++;
+        }
+        const ev0 = this.ereignisse.discard_color | 0;
+        this.klick(knopf());
+        const joker = h.pick_color !== undefined ? !!h.pick_color : !!(v.top && M.Karten.zerlege(v.top.face).art === 'ablegen_joker');
+        if (joker) {
+          await this.warte(() => t.farbwahlOffen, 3000, 'Spielfarbe');
+          if (t.farbwahl.querySelector('.frage').textContent !== 'Mit welcher Farbe geht es weiter?') this.fail('Frage der Spielfarbe fehlt');
+          await this.farbeWaehlen();
+        }
+        await antwort();
+        if (this.errs > e0) this.fail('Ablegen-Auswahl abgelehnt');
+        else {
+          this.haus.ausgewaehlt++;
+          await this.warte(() => this.ruhig(), 8000, 'Regie nach dem Ablegen');
+          if ((this.ereignisse.discard_color | 0) <= ev0) this.fail('Kein discard_color nach der Auswahl');
+        }
+        this.zuege++; return;
+      }
       // Glücksspiel: Karte antippen = verdeckt setzen, dann den Kuppelknopf des Automaten drücken
       if (v.phase === 'gamble' && v.turn === v.seat) {
         const t = app.tisch;
@@ -547,7 +597,13 @@
         const c = v.hand.find(x => x.id === id);
         if (this.zuege % 3 === 1) await this.wischHoch(id);
         else { await this.tippe(id); if (app.tisch.hand.gewaehlt !== id) this.fail('Antippen hebt die Karte nicht an'); await this.tippe(id); }
-        if (Array.isArray(h.wild) ? h.wild.indexOf(id) >= 0 : M.Karten.istJoker(c.face)) await this.farbeWaehlen();
+        if (Array.isArray(h.wild) ? h.wild.indexOf(id) >= 0 : M.Karten.istJoker(c.face)) {
+          if (artVon(id) === 'ablegen_joker') {
+            await this.warte(() => app.tisch.farbwahlOffen, 3000, 'Ablegefarbe');
+            if (app.tisch.farbwahl.querySelector('.frage').textContent !== 'Welche Farbe legst du mit ab?') this.fail('Frage der Ablegefarbe fehlt');
+          }
+          await this.farbeWaehlen();
+        }
         await antwort();
         if (this.errs > e0) this.fail('Zug abgelehnt: ' + c.face);
         else {

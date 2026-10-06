@@ -581,14 +581,14 @@ static func under_fan(i: int, n: int) -> Dictionary:
 	return {"pos": pivot + Vector2(0.0, -74.0).rotated(a), "rot": a}
 
 
-# „Mia legt 4 rote Karten mit ab.“ / „Du legst eine blaue Karte mit ab.“ / „Ben hat keine weitere grüne Karte.“
+# „Mia legt 4 rote Karten mit ab.“ / „Du legst eine blaue Karte mit ab.“ / „Ben legt keine grüne Karte mit ab.“
 func discard_text(seat: int, col: String, n: int) -> String:
 	var adj: String = COLOR_ADJ.get(col, "")
 	var me := seat >= 0 and seat == _me()
 	var who := "Du" if me else _name(seat)
 	var card1 := ("%s Karte" % adj) if adj != "" else "Karte"
 	if n <= 0:
-		return "%s %s keine weitere %s." % [who, "hast" if me else "hat", card1]
+		return "%s %s keine %s mit ab." % [who, "legst" if me else "legt", card1]
 	var verb := "legst" if me else "legt"
 	if n == 1:
 		return "%s %s eine %s mit ab." % [who, verb, card1]

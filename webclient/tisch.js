@@ -320,7 +320,7 @@
       const h = v.hints || {};
       const spielbar = h.playable || [];
       // Phasen des Gastgebers (MauGame): turn, drawn, challenge, color, gamble, round_over, game_over (idle nur vor dem Austeilen)
-      const dran = v.turn === ich && (v.phase === 'turn' || v.phase === 'drawn' || v.phase === 'challenge' || v.phase === 'color' || v.phase === 'gamble');
+      const dran = v.turn === ich && (v.phase === 'turn' || v.phase === 'drawn' || v.phase === 'challenge' || v.phase === 'color' || v.phase === 'gamble' || v.phase === 'discard_pick');
       this._zeigeAutomat(v);
       if (!this._tauschLaeuft && this.hand.el.getAttribute('style')) this.hand.el.removeAttribute('style');   // Rest einer Tausch-Animation
       this.hinweis.textContent = this.hinweisText(h.text) || this._hinweisErsatz(v);
@@ -334,6 +334,8 @@
       if (h.can_challenge) ak += '<button class="knopf klein warn" data-a="challenge">Anzweifeln</button>';
       if (h.can_accept || (h.can_challenge && h.can_accept === undefined)) ak += '<button class="knopf klein" data-a="accept">' + (jagd ? 'Annehmen' : 'Annehmen' + (p.amount ? ' (+' + p.amount + ')' : '')) + '</button>';
       if (h.need_color) ak += '<button class="knopf klein" data-a="wunsch">Farbe wählen</button>';
+      const pick = this.app.imAblegen && this.app.imAblegen() ? this.app.pickAuswahl(v) : null;
+      if (pick) ak += '<button class="knopf klein" data-a="ablegen">Ablegen (' + pick.length + ')</button>';
       if (this.aktionen.innerHTML !== ak) this.aktionen.innerHTML = ak;
       this.stapel.classList.toggle('ziehbar', !!h.can_draw);
       this.knMau.classList.toggle('bereit', !!h.can_mau);
@@ -352,7 +354,9 @@
       const markiert = setzbar || spielbar;
       const hervor = !this.app.hervorheben || this.app.hervorheben();
       const aktiv = dran && (v.phase === 'turn' || v.phase === 'drawn' || (v.phase === 'challenge' && spielbar.length > 0) || (setzbar !== null && setzbar.length > 0));
-      this.hand.setze(reihe, { spielbar: hervor ? markiert : [], dran: hervor && aktiv });
+      // Farbe mit ablegen: Auswahl angehoben, abgewählte Kandidaten bleiben hell, alles andere matt (unabhängig von „hervorheben“)
+      if (pick) this.hand.setze(reihe, { spielbar: pick, dran: true, kandidaten: h.can_pick || [] });
+      else this.hand.setze(reihe, { spielbar: hervor ? markiert : [], dran: hervor && aktiv });
       if (!nurLayout && alt && alt.turn !== ich && v.turn === ich && dran) {
         M.Ton.spiele('dran');
         if (this.app.vibrieren) this.app.vibrieren(25);
@@ -371,6 +375,7 @@
       if (v.phase === 'round_over') return 'Runde vorbei';
       if (v.phase === 'game_over') return 'Partie vorbei';
       if (v.phase === 'gamble') return v.turn === v.seat ? ((v.hints || {}).can_press ? 'Drück den Glücksspielknopf!' : ((v.hints || {}).can_stop ? 'Noch eine Karte setzen – oder aufhören?' : 'Leg eine Karte verdeckt auf deinen Einsatz.')) : (p ? p.name + ' spielt Glücksspiel' : '');
+      if (v.phase === 'discard_pick' && v.discard_pick) return v.discard_pick.seat === v.seat ? 'Wähl die Karten, die du mit ablegst' : ((v.players || []).find(x => x.seat === v.discard_pick.seat) || {}).name + ' wählt Karten in ' + K().farbName(v.discard_pick.color) + ' zum Mitablegen';
       if (v.turn === v.seat) return 'Du bist dran';
       return p ? p.name + ' ist dran' : '';
     }
@@ -643,7 +648,7 @@
     }
 
     /* ---------- Farbwahl (vier Felder um die Ablage) ---------- */
-    oeffneFarbwahl(seite, zaehlung, beiWahl) {
+    oeffneFarbwahl(seite, zaehlung, beiWahl, frage) {
       const fw = this.farbwahl;
       const farben = K().FARBEN[seite] || K().FARBEN.hell;
       fw.innerHTML = '<div class="schleier"></div>' + farben.map((f, i) => {
@@ -653,7 +658,7 @@
         return '<button class="feld f' + i + '" data-farbe="' + f + '" style="--f:' + grund + '">' +
           K().symbolSVG(f, { farbe: hellGrund ? K().INK : K().CREAM, grund }) +
           '<b>' + esc(fi.name) + '</b><i>' + (zaehlung[f] ? zaehlung[f] + '× auf der Hand' : 'keine') + '</i></button>';
-      }).join('') + '<button class="abbrechen rund" aria-label="Abbrechen">✕</button><div class="frage">Welche Farbe?</div>';
+      }).join('') + '<button class="abbrechen rund" aria-label="Abbrechen">✕</button><div class="frage">' + esc(frage || 'Welche Farbe?') + '</div>';
       fw.hidden = false;
       fw.classList.remove('auf'); void fw.offsetWidth; fw.classList.add('auf');
       fw.onclick = e => {
@@ -1026,6 +1031,11 @@
         }
 
         // ---------- Hausregel Glücksspiel ----------
+        case 'discard_pick': {  // {seat, color}: Auswahl der mitabgelegten Karten beginnt (Phase discard_pick)
+          const fi = K().FARB_INFO[e.color];
+          if (e.seat !== ich) t.banner('Farbe ablegen', t.name(e.seat) + ' wählt Karten in ' + (fi ? fi.name : '') + ' zum Mitablegen', 'farbe', d(1300));
+          break;
+        }
         case 'gamble_start':    // {seat}: Phase „gamble“ beginnt; der Automat erscheint
           t.automatAuf();
           t.automatStand({ seat: e.seat, stake: 0, need: 'stake', last: -1 }, Object.assign({}, t.v, { hints: {} }));

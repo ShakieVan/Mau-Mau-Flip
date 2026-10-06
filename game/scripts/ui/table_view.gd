@@ -75,6 +75,10 @@ var _ui: Control
 var _sort_btn: PillButton
 var _backs_btn: PillButton
 var _act_btns: Dictionary = {}
+var _pick_key := ""                  # laufende eigene Auswahl „Farbe mit ablegen“ (Runde, Platz, Farbe); "" = keine
+var _pick_color := false             # Ablegen-Joker: nach der Auswahl noch die Spielfarbe wählen
+var _pick_wait := false              # Farbrad für die Spielfarbe ist offen
+var _pick_cards: Array = []
 var _edge: ColorRect
 var _overlay: Control
 var _seats: Dictionary = {}           # Platz → OpponentSeat
@@ -153,14 +157,17 @@ func _init() -> void:
 	_sort_btn.pressed.connect(func() -> void: sort_pressed.emit())
 	_backs_btn = _pill("Rückseiten", "rueckseiten")
 	_backs_btn.pressed.connect(func() -> void: backs_pressed.emit())
-	for key in ["keep", "challenge", "accept"]:
-		var label: String = {"keep": "Behalten", "challenge": "Anzweifeln", "accept": "Annehmen"}[key]
-		var icon: String = {"keep": "haken", "challenge": "kreuz", "accept": "stapel"}[key]
+	for key in ["keep", "challenge", "accept", "pick"]:
+		var label: String = {"keep": "Behalten", "challenge": "Anzweifeln", "accept": "Annehmen", "pick": "Ablegen"}[key]
+		var icon: String = {"keep": "haken", "challenge": "kreuz", "accept": "stapel", "pick": "haken"}[key]
 		var b := _pill(label, icon)
 		b.style = "primary"
 		b.visible = false
 		var a: String = key
-		b.pressed.connect(func() -> void: _emit_action({"a": a}))
+		if a == "pick":
+			b.pressed.connect(_on_pick_pressed)
+		else:
+			b.pressed.connect(func() -> void: _emit_action({"a": a}))
 		_act_btns[key] = b
 	mau_button = MauButton.new()
 	mau_button.mau_pressed.connect(_on_mau_pressed)
@@ -196,6 +203,7 @@ func _init() -> void:
 	handover = HandoverScreen.new()
 	_overlay.add_child(handover)
 	wish_picker.color_chosen.connect(_on_wheel_color)
+	wish_picker.cancelled.connect(func() -> void: _pick_wait = false)
 	resized.connect(_layout)
 
 
@@ -268,7 +276,7 @@ func _layout() -> void:
 	mau_button.position = Vector2(sz.x - 46.0 - MauButton.SIZE, sz.y - 40.0 - MauButton.SIZE)
 	hint_bar.hint_y = sz.y - 207.0
 	var x := sz.x - 46.0
-	for key in ["accept", "challenge", "keep"]:
+	for key in ["pick", "accept", "challenge", "keep"]:
 		var b: PillButton = _act_btns[key]
 		b.size = Vector2(b.preferred_width(), PillButton.TOUCH_MIN)
 		x -= b.size.x
@@ -446,6 +454,7 @@ func apply_view(v: Dictionary) -> void:
 	_apply_hints(v.get("hints", {}), turn)
 	if hand != null and hand.has_method("apply_view"):
 		hand.call("apply_view", v)
+	_apply_pick(v)
 	_house.apply_view(v)
 	# Rundenende
 	var phase := str(v.get("phase", "turn"))
@@ -485,7 +494,11 @@ static func next_seat(players: Array, turn: int, dir: int) -> int:
 
 func _apply_hints(h: Dictionary, turn: int) -> void:
 	var me_turn := turn == my_seat and int(view.get("seat", 0)) >= 0
-	hint_bar.show_hint(hint_text(str(h.get("text", "Du bist dran." if me_turn else ""))), me_turn)
+	var text := str(h.get("text", "Du bist dran." if me_turn else ""))
+	var dp := discard_pick_of(view)
+	if not dp.is_empty() and (int(dp.get("seat", -1)) != my_seat or int(view.get("seat", 0)) < 0):
+		text = "%s wählt aus …" % str(_player(int(dp.get("seat", -1))).get("name", "?"))
+	hint_bar.show_hint(hint_text(text), me_turn)
 	var me_player := _player(my_seat)
 	if bool(h.get("can_mau", false)):
 		mau_button.mode = MauButton.Mode.READY
@@ -505,6 +518,101 @@ func _apply_hints(h: Dictionary, turn: int) -> void:
 	_layout_action_buttons()
 
 
+# ================================================================= Farbe mit ablegen: Auswahl (Phase discard_pick)
+
+static func discard_pick_of(v: Dictionary) -> Dictionary:
+	var raw: Variant = v.get("discard_pick", {})
+	return raw if raw is Dictionary else {}
+
+
+# Eigene Auswahl: Kandidaten (hints.can_pick) in der Hand vorausgewählt, Knopf „Ablegen (n)“. Beim Ablegen-Joker (hints.pick_color)
+# folgt nach dem Knopf das Farbrad „Mit welcher Farbe geht es weiter?“. Eine laufende Auswahl wird bei neuer Sicht nicht
+# zurückgesetzt (gleicher Schlüssel aus Runde, Platz und Farbe).
+func _apply_pick(v: Dictionary) -> void:
+	var dp := discard_pick_of(v)
+	var h: Dictionary = v.get("hints", {})
+	var cands: Array = h.get("can_pick", [])
+	var mine := not dp.is_empty() and int(v.get("seat", -1)) >= 0 and int(dp.get("seat", -1)) == int(v.get("seat", -1))
+	var b: PillButton = _act_btns["pick"]
+	if not mine:
+		if _pick_key != "":
+			_pick_key = ""
+			_pick_wait = false
+			if wish_picker.mode == "wheel" and wish_picker.title != "":
+				wish_picker.close()
+			if hand != null and hand.has_method("clear_pick"):
+				hand.call("clear_pick")
+		b.visible = false
+		_layout_action_buttons()
+		return
+	_pick_color = bool(h.get("pick_color", false))
+	var key := "%s/%s/%s" % [str(v.get("round", 0)), str(dp.get("seat", -1)), str(dp.get("color", ""))]
+	if key != _pick_key:
+		_pick_key = key
+		_pick_wait = false
+		if hand != null and hand.has_method("set_pick"):
+			hand.call("set_pick", cands)
+			if not hand.is_connected("pick_changed", _on_pick_changed):
+				hand.connect("pick_changed", _on_pick_changed)
+		if _pick_color and cands.is_empty():   # Ablegen-Joker ohne Karten dieser Farbe: gleich die Spielfarbe
+			_pick_key = key
+			_on_pick_pressed()
+			return
+	b.visible = not _pick_wait
+	_update_pick_button()
+
+
+func _on_pick_changed(_ids: Array) -> void:
+	_update_pick_button()
+
+
+func picked_cards() -> Array:
+	if hand != null and hand.has_method("get_pick"):
+		return hand.call("get_pick")
+	return []
+
+
+func _update_pick_button() -> void:
+	var b: PillButton = _act_btns["pick"]
+	var cands: Array = (view.get("hints", {}) as Dictionary).get("can_pick", [])
+	b.text = "Ablegen (%d)" % picked_cards().size() if not cands.is_empty() else "Weiter"
+	_layout_action_buttons()
+
+
+func _on_pick_pressed() -> void:
+	if _pick_key == "" or input_locked:
+		return
+	_pick_cards = picked_cards()
+	if _pick_color:
+		_pick_wait = true
+		(_act_btns["pick"] as PillButton).visible = false
+		wish_picker.open_wheel(side, _own_counts_after(_pick_cards), "Mit welcher Farbe geht es weiter?")
+		return
+	(_act_btns["pick"] as PillButton).visible = false
+	_emit_action({"a": "discard_pick", "cards": _pick_cards.duplicate()})
+
+
+# Abgelehnt (Meldung): Knopf bzw. Farbrad wieder anbieten
+func pick_retry() -> void:
+	if _pick_key == "":
+		return
+	_pick_wait = false
+	(_act_btns["pick"] as PillButton).visible = true
+	_update_pick_button()
+
+
+# Farbanzahl der Hand ohne die Karten, die gleich mit abgelegt werden
+func _own_counts_after(gone: Array) -> Dictionary:
+	var counts := {}
+	for c in view.get("hand", []):
+		if gone.has(int(c.get("id", -1))) or gone.has(float(c.get("id", -1))):
+			continue
+		var col := CardTextures.color_of(str(c.get("face", "")))
+		if col != "":
+			counts[col] = int(counts.get(col, 0)) + 1
+	return counts
+
+
 # Hinweistext für die Leiste: Ohne „Spielbare Karten hervorheben“ verrät er nicht, dass nichts passt (sonst wäre das die Markierung).
 func hint_text(text: String) -> String:
 	if not highlight and text.begins_with(HINT_NOTHING_FITS):
@@ -515,7 +623,7 @@ func hint_text(text: String) -> String:
 func _layout_action_buttons() -> void:
 	var sz := size if size.x > 10.0 else TableLayout.BASE
 	var x := sz.x - 46.0
-	for key in ["accept", "challenge", "keep"]:
+	for key in ["pick", "accept", "challenge", "keep"]:
 		var b: PillButton = _act_btns[key]
 		if not b.visible:
 			continue
@@ -679,6 +787,10 @@ func _own_counts() -> Dictionary:
 
 
 func _on_wheel_color(c: String) -> void:
+	if _pick_wait:
+		_pick_wait = false
+		_emit_action({"a": "discard_pick", "cards": _pick_cards.duplicate(), "color": c})
+		return
 	if bool((view.get("hints", {}) as Dictionary).get("need_color", false)):
 		_emit_action({"a": "color", "color": c})
 

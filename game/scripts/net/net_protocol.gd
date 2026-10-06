@@ -128,6 +128,18 @@ static func clean_action(a: Dictionary) -> Dictionary:
 			out[key] = int(v)
 		elif ACTION_FIELDS[key] == TYPE_STRING and v is String and str(v).length() <= 16:
 			out[key] = str(v)
+	# Kartenliste (discard_pick): nur ganze Zahlen, höchstens 120 Einträge.
+	var cards = a.get("cards")
+	if cards is Array and cards.size() <= 120:
+		var list: Array = []
+		var ok := true
+		for c in cards:
+			if not c is int:
+				ok = false
+				break
+			list.append(int(c))
+		if ok:
+			out["cards"] = list
 	return out
 
 static func auto_reply(text: String) -> String:

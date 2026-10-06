@@ -479,7 +479,7 @@ func bars() -> void:
 	var lena := house()
 	RuleSets.remember_host(lena.to_dict(), "Lena")
 	compact.refresh()
-	check(compact._offer.visible and compact._offer_btn.text == "Regeln von Lena übernehmen", "kompakt: Angebot sichtbar (%s)" % compact._offer_btn.text)
+	check(compact._offer.visible and compact._offer_btn.text == "Von Lena übernehmen", "kompakt: Angebot sichtbar (%s)" % compact._offer_btn.text)
 	var cgot := []
 	compact.changed.connect(func(c: RuleConfig) -> void: cgot.append(c))
 	compact._offer_btn.pressed.emit()
@@ -657,7 +657,7 @@ func reopen_as_host() -> void:
 		return
 	lobby.host.autosave = false
 	check(lobby._rules._head.text == "Offiziell · 112 Karten", "Lobby: noch die eigenen Regeln")
-	check(lobby._rules._offer.visible and lobby._rules._offer_btn.text == "Regeln von Lena übernehmen" and inside(lobby._rules._offer_btn.get_global_rect(), Rect2(0, 0, 1600, 720)),
+	check(lobby._rules._offer.visible and lobby._rules._offer_btn.text == "Von Lena übernehmen" and inside(lobby._rules._offer_btn.get_global_rect(), Rect2(0, 0, 1600, 720)),
 		"Lobby bietet „Regeln von Lena“ zum Übernehmen an")
 	check(inside(lobby._start.get_global_rect(), Rect2(0, 0, 1600, 720)) and not lobby._rules._summary.visible, "Start bleibt mit Angebot im Bild, das Angebot steht statt der Kurzbeschreibung")
 	for i in 4:

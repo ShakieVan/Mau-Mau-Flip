@@ -28,7 +28,7 @@ static func choose(view: Dictionary, rng_seed: int, level := 1) -> Dictionary:
 	var me := int(view.get("seat", -1))
 	var state := str(view.get("phase", ""))
 	var hints: Dictionary = view.get("hints", {})
-	if me < 0 or not state in ["turn", "drawn", "challenge", "color", "gamble"]:
+	if me < 0 or not state in ["turn", "drawn", "challenge", "color", "gamble", "discard_pick"]:
 		return {}
 	var catch_list: Array = hints.get("catch", [])
 	if not catch_list.is_empty() and (level > 0 or rng.randf() < 0.5):
@@ -47,12 +47,15 @@ static func choose(view: Dictionary, rng_seed: int, level := 1) -> Dictionary:
 			act = _turn(view, hints, rng, level)
 		"gamble":
 			act = _gamble(view, hints, rng, level)
+		"discard_pick":
+			act = _discard_pick(view, hints, rng)
 	# „Mau!“ nur, wenn der Bot mit dieser Handlung auf genau 1 Karte kommt (er legt bzw. setzt gleich), oder nachträglich, wenn er
 	# schon höchstens 1 Karte hat (z. B. Zusatzzug nach Aussetzen zu zweit: Seine nächste Handlung schlösse sonst das eigene
 	# Fenster). Vor einem Kartentausch nicht: Die Hand wandert weiter, der Ruf verfällt ohnehin.
 	var hand_size := (view.get("hand", []) as Array).size()
 	var a := str(act.get("a", ""))
-	var call := ((a == "play" or a == "stake") and left_after(view, act) == 1) or hand_size <= 1
+	var call := ((a == "play" or a == "stake" or a == "discard_pick") and left_after(view, act) == 1) \
+		or (hand_size <= 1 and a != "discard_pick")
 	if call and hand_size == 2 and a == "play" and _is_swap(_code_of_id(view, int(act.get("card", -1)))):
 		call = false
 	if bool(hints.get("can_mau", false)) and call:
@@ -60,13 +63,15 @@ static func choose(view: Dictionary, rng_seed: int, level := 1) -> Dictionary:
 	return act
 
 
-# Karten auf der Hand nach dieser Aktion (play: die Karte, bei Ablegen-Karten dazu die übrigen ihrer Farbe ohne Joker; stake: eine
-# Karte); andere Aktionen ändern die Hand hier nicht.
+# Karten auf der Hand nach dieser Aktion (play: die Karte, bei Ablegen-Karten dazu die, die der Bot danach mitablegen will
+# (_pick_plan); stake: eine Karte; discard_pick: die gewählten); andere Aktionen ändern die Hand hier nicht.
 static func left_after(view: Dictionary, act: Dictionary) -> int:
 	var hand: Array = view.get("hand", [])
 	var a := str(act.get("a", ""))
 	if a == "stake":
 		return hand.size() - 1
+	if a == "discard_pick":
+		return hand.size() - (act.get("cards", []) as Array).size()
 	if a != "play":
 		return hand.size()
 	var id := int(act.get("card", -1))
@@ -74,11 +79,50 @@ static func left_after(view: Dictionary, act: Dictionary) -> int:
 	if code < 0:
 		return hand.size() - 1
 	var kind := CardDB.kind_table()[code]
+	var col := ""
 	if kind == CardDB.DISCARD:
-		return hand.size() - 1 - _color_count(view, CardDB.color_table()[code], id)
-	if kind == CardDB.DISCARD_WILD:
-		return hand.size() - 1 - _color_count(view, str(act.get("color", "")), id)
-	return hand.size() - 1
+		col = CardDB.color_table()[code]
+	elif kind == CardDB.DISCARD_WILD:
+		col = str(act.get("color", ""))
+	else:
+		return hand.size() - 1
+	var cand: Array = []
+	var ctab := CardDB.color_table()
+	for item in hand:
+		var c := CardDB.code_of(str(item.face))
+		if int(item.id) != id and c >= 0 and ctab[c] == col:
+			cand.append(int(item.id))
+	return hand.size() - 1 - _pick_plan(view, cand, hand.size() - 1).size()
+
+
+# Was der Bot mitablegt: Zahlenkarten, Aktionskarten nur, wenn er damit fertig wird (rest = Handgröße ohne die Ablegen-Karte).
+static func _pick_plan(view: Dictionary, cand: Array, rest: int) -> Array:
+	if cand.size() >= rest:
+		return cand.duplicate()
+	var out: Array = []
+	var ktab := CardDB.kind_table()
+	for id in cand:
+		var c := _code_of_id(view, int(id))
+		if c >= 0 and ktab[c] == "zahl":
+			out.append(int(id))
+	return out
+
+
+# Phase discard_pick: Auswahl nach _pick_plan; beim Ablegen-Joker Spielfarbe = häufigste verbleibende Farbe.
+static func _discard_pick(view: Dictionary, hints: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
+	var cand: Array = hints.get("can_pick", [])
+	var hand: Array = view.get("hand", [])
+	var chosen := _pick_plan(view, cand, hand.size())
+	var act := {"a": "discard_pick", "cards": chosen}
+	if bool(hints.get("pick_color", false)):
+		var rest_view := view.duplicate()
+		var rest: Array = []
+		for item in hand:
+			if not chosen.has(int(item.id)):
+				rest.append(item)
+		rest_view["hand"] = rest
+		act["color"] = most_color(rest_view, -1, rng)
+	return act
 
 
 # Karten der Farbe col auf der eigenen Hand ohne die Karte skip_id (Joker haben keine Farbe).
@@ -367,7 +411,7 @@ static func _turn(view: Dictionary, hints: Dictionary, rng: RandomNumberGenerato
 			var act := _play(view, int(pid), rng)
 			if left_after(view, act) == 1:
 				return act
-	var bluff_mode := str((view.get("rules", {}) as Dictionary).get("wild_restriction", "bluff")) == "bluff"
+	var bluff_mode := str((view.get("rules", {}) as Dictionary).get("wild_restriction", "free")) == "bluff"
 	if not (view.get("pending", {}) as Dictionary).is_empty():
 		# Stapeln: lieber weitergeben als ziehen; geblufft wird nur selten.
 		for id in playable:
@@ -478,7 +522,7 @@ static func _drawn(view: Dictionary, hints: Dictionary, rng: RandomNumberGenerat
 		return {"a": "keep"} if can_keep else {}
 	var id := int(playable[0])
 	if can_keep and level > 0:
-		var bluff_mode := str((view.get("rules", {}) as Dictionary).get("wild_restriction", "bluff")) == "bluff"
+		var bluff_mode := str((view.get("rules", {}) as Dictionary).get("wild_restriction", "free")) == "bluff"
 		if bluff_mode and _is_bluff(view, id):
 			return {"a": "keep"}
 		var code := _code_of_id(view, id)

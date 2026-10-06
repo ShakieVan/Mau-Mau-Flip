@@ -72,6 +72,7 @@ func build() -> void:
 	var fx := ScreenKit.choice([["voll", "Voll"], ["reduziert", "Reduziert"]], str(UiApp.setting("effekte", "voll")), func(v: String) -> void: _store("effekte", v), 21)
 	fx.name = "Effekte"
 	look.add_child(ScreenKit.row("Effekte", fx, 150.0, "Reduziert: kürzer, weniger Teilchen"))
+	look.add_child(tempo_row())
 	# --- Updates, Teilen, Info
 	var upd := _section(right, "Updates")
 	var beta := ScreenKit.switch("Testversionen (Beta-Kanal)", _beta(), _on_beta)
@@ -133,6 +134,41 @@ func _section(parent: Control, title_text: String) -> VBoxContainer:
 	var v := ScreenKit.vbox(12)
 	card.add_child(v)
 	v.add_child(ScreenKit.heading(title_text, 30))
+	return v
+
+
+# Regler „Tempo der Computergegner“ (persönlich je Gerät, stufenlos; Mitte = Standard). Gespeichert wird beim Loslassen.
+func tempo_row() -> Control:
+	var v := ScreenKit.vbox(4)
+	v.name = "Tempo"
+	var l := ScreenKit.label("Tempo der Computergegner", "", 24)
+	l.add_theme_font_override("font", UiFonts.text(700))
+	v.add_child(l)
+	var h := ScreenKit.hbox(12)
+	v.add_child(h)
+	h.add_child(ScreenKit.label("gemütlich", "HintLabel", 18))
+	var s := HSlider.new()
+	s.name = "TempoRegler"
+	s.min_value = 0.0
+	s.max_value = 1.0
+	s.step = 0.01
+	s.value = clampf(float(UiApp.setting("bot_tempo", 0.5)), 0.0, 1.0)
+	s.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	s.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	s.custom_minimum_size = Vector2(0, ScreenKit.TOUCH)
+	s.focus_mode = Control.FOCUS_NONE
+	s.drag_started.connect(func() -> void: s.set_meta("dragging", true))
+	s.drag_ended.connect(func(_changed: bool) -> void:
+		s.set_meta("dragging", false)
+		_store("bot_tempo", s.value))
+	s.value_changed.connect(func(_v: float) -> void:   # Tippen auf die Leiste, Tastatur, Tests
+		if not bool(s.get_meta("dragging", false)):
+			_store("bot_tempo", s.value))
+	h.add_child(s)
+	h.add_child(ScreenKit.label("flott", "HintLabel", 18))
+	var hint := ScreenKit.hint("Nur die Bedenkzeit, nicht die Animationen. Im WLAN gilt der Regler des Gastgebers.", 17)
+	hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	v.add_child(hint)
 	return v
 
 

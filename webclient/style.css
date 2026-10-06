@@ -390,6 +390,10 @@ body.reduziert #tisch[data-seite="dunkel"] .himmel .sonne { transform: none; }
 #tisch[data-seite="dunkel"] .hk.gewaehlt .vorn { box-shadow: 0 0 0 4px var(--gold), 0 0 28px rgba(255,214,90,.9), 0 10px 18px rgba(0,0,0,.5); }
 .hk.matt .vorn::after { content: ""; position: absolute; top: 0; right: 0; bottom: 0; left: 0; border-radius: inherit; background: rgba(33,27,44,.24); }
 #tisch[data-seite="dunkel"] .hk.matt .vorn::after { background: rgba(10,13,32,.4); }
+/* Farbe mit ablegen: gewählte Kandidaten mit Ring, abgewählte gestrichelt umrandet */
+.hk.kandidat.spielbar .vorn { box-shadow: 0 0 0 4px #E88500, 0 0 22px rgba(232,133,0,.7), 0 8px 16px rgba(0,0,0,.45); }
+#tisch[data-seite="dunkel"] .hk.kandidat.spielbar .vorn { box-shadow: 0 0 0 4px var(--gold), 0 0 24px rgba(255,214,90,.8), 0 8px 16px rgba(0,0,0,.5); }
+.hk.kandidat:not(.spielbar) .vorn { outline: 3px dashed rgba(232,133,0,.85); outline-offset: -5px; }
 .hk.neu .vorn { animation: neu 2.4s ease-out; }
 @keyframes neu { 0%, 45% { box-shadow: 0 0 0 4px #7CF5FF, 0 0 30px #7CF5FF, 0 6px 14px rgba(0,0,0,.45); } 100% { box-shadow: 0 6px 14px rgba(0,0,0,.45); } }
 .wackeln { animation: wackeln .4s ease; }

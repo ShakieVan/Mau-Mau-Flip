@@ -26,6 +26,11 @@ var _view := {}
 var _seq := 0
 var _rejected := false
 var _leaving := false
+var _ended := false               # Spiel beendet: Gastgeber nach dem Spielende nicht mehr erreichbar (N6)
+
+# Nach dem Ende einer Runde bzw. der Partie gibt der Gast das Neuverbinden auf, wenn der Gastgeber so oft nicht erreichbar war
+# (N6: App im Hintergrund, der Gastgeber ist inzwischen ins Menü gegangen). Mitten in der Partie wird weiter versucht.
+const GIVE_UP := {"game_over": 1, "round_end": 3}
 
 
 # Beitreten. with_token: als bekannter Spieler zurückkommen (sonst Token aus dem Speicher des NetClient).
@@ -35,6 +40,7 @@ func join(host_address: String, host_port := NetProtocol.PORT, player_name := ""
 	port = host_port
 	_rejected = false
 	_leaving = false
+	_ended = false
 	client = NetClient.new()
 	client.name = "NetClient"
 	client.auto_poll = false
@@ -69,7 +75,7 @@ func current_view() -> Dictionary:
 
 
 func connection_state() -> String:
-	return "rejected" if _rejected else (client.state if client != null else "closed")
+	return "ended" if _ended else ("rejected" if _rejected else (client.state if client != null else "closed"))
 
 
 func act(action: Dictionary) -> void:
@@ -100,6 +106,18 @@ func _process(_delta: float) -> void:
 func pump() -> void:
 	if client != null:
 		client.poll()
+		_check_give_up()
+
+
+# Spielende und Gastgeber weg: nicht endlos „Verbinde neu …“, sondern „Spiel beendet“ (connection_changed "ended")
+func _check_give_up() -> void:
+	if client == null or _ended or client.state != "connecting":
+		return
+	var limit := int(GIVE_UP.get(str(_view.get("phase", "")), 0))
+	if limit > 0 and client.attempts > limit:     # so viele Versuche sind gescheitert
+		_ended = true
+		_drop_client()
+		connection_changed.emit("ended")
 
 
 # --- intern ---

@@ -33,7 +33,7 @@ var _offer_hidden := false
 
 static func current() -> RuleConfig:
 	var d: Variant = UiApp.setting("regeln", {})
-	return RuleConfig.from_dict(d if d is Dictionary else {})
+	return RuleSets.load_config(d)
 
 
 static func store(cfg: RuleConfig) -> void:
@@ -182,7 +182,7 @@ func _build_compact() -> void:
 	texts.add_child(_offer)
 	_offer_btn = ScreenKit.button("", "GhostButton", "wlan")
 	_offer_btn.name = "Uebernehmen"
-	_offer_btn.add_theme_font_size_override("font_size", 20)
+	_offer_btn.add_theme_font_size_override("font_size", 19)
 	_offer_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_offer_btn.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	_offer_btn.pressed.connect(adopt_host_rules)
@@ -206,7 +206,7 @@ func refresh() -> void:
 		var host := RuleSets.host_name()
 		_offer.visible = not _offer_hidden and host != "" and not RuleSets.host_matches(cfg)
 		_summary.visible = not _offer.visible
-		_offer_btn.text = "Regeln von %s übernehmen" % host      # das WLAN-Symbol zeigt die Herkunft (lange Namen enden mit …)
+		_offer_btn.text = "Von %s übernehmen" % host      # kurz (N7: am S10 abgeschnitten); WLAN-Symbol zeigt die Herkunft, lange Namen enden mit …
 		_offer_btn.tooltip_text = "Mit den Regeln weiterspielen, mit denen du zuletzt bei %s gespielt hast" % host
 		return
 	# Voll: Knopf „Gespeichert“ mit dem Namen des passenden Satzes bzw. des Gastgeber-Platzes

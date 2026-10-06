@@ -99,12 +99,10 @@
   }
 
   /* ---------------- Hilfe und Regeltexte ---------------- */
+  // Kein Anzweifeln mehr (0.1.3): „bluff“ eines alten Gastgebers gilt wie „free“ (die Knöpfe in tisch.js bleiben nur dafür)
   function bluffText(r) {
-    const wr = r.wild_restriction || 'bluff';
-    if (wr === 'free') return 'Darf immer gelegt werden.';
-    const ohne = 'Nur erlaubt, wenn du keine Karte der aktuellen Farbe hast' + (r.wild_counts_for_bluff !== false ? ' (Joker auf der Hand zählen als passend)' : '');
-    if (wr === 'enforce') return ohne + '. Das Spiel prüft das.';
-    return ohne + '. Der Nächste darf anzweifeln: Hast du geblufft, ziehst du selbst; sonst zieht er 2 Karten mehr.';
+    if (r.wild_restriction === 'enforce') return 'Nur erlaubt, wenn du keine Karte der aktuellen Farbe hast. Die App prüft das.';
+    return 'Darf immer gelegt werden.';
   }
   // Kartenhilfe passend zu den aktiven Regeln: {titel, zeilen}
   function hilfe(key, regeln) {
@@ -148,7 +146,7 @@
       // Hausregel-Karten (Texte wie RulesText._swap_lines/_gamble_lines/_discard_lines)
       case 'tausch':
         z.push('Alle geben gleichzeitig ihre ganze Hand an den Nächsten weiter, ' + tauschRichtung(r) + '. Danach ist ganz normal der Nächste in Spielrichtung dran.');
-        if (r.swap_direction === 'play') z.push('Nach einem Richtungswechsel wandern die Hände also andersherum.');
+        if (r.swap_direction === 'play' || r.swap_direction === 'against') z.push('Nach einem Richtungswechsel wandern die Hände also andersherum.');
         z.push('Passt auf ' + f + ' und auf jeden Kartentausch.', 'Zu zweit tauscht ihr einfach eure Hände.');
         z.push(r.round_end === 'last' ? 'Auch als letzte Karte: Du bist fertig, die anderen tauschen trotzdem untereinander.'
           : 'Auch als letzte Karte: Du bist fertig und gewinnst die Runde; getauscht wird dann nicht mehr.');
@@ -169,8 +167,8 @@
         if (r.gamble_cards !== 'on') z.push('Gehört zur Hausregel Glücksspiel (gerade nicht im Spiel).');
         break;
       case 'ablegen': case 'ablegen_joker': {
-        if (k.art === 'ablegen') z.push('Du legst alle anderen Karten in ' + f + ' mit ab; sie kommen unter diese Karte, die oben bleibt.', 'Passt auf ' + f + ' und auf jede andere Ablegen-Karte.');
-        else z.push('Joker: passt immer. Du wünschst eine Farbe und legst alle deine Karten dieser Farbe mit ab; sie kommen unter den Joker, die Farbe gilt.');
+        if (k.art === 'ablegen') z.push('Du wählst, welche deiner anderen Karten in ' + f + ' mit abgelegt werden (alle sind vorausgewählt). Sie kommen unter diese Karte, die oben bleibt.', 'Passt auf ' + f + ' und auf jede andere Ablegen-Karte.');
+        else z.push('Joker: passt immer. Erst wählst du die Farbe zum Mitablegen, dann die Karten, zum Schluss die Farbe, mit der es weitergeht (auch eine andere).');
         z.push('Joker auf deiner Hand bleiben dort. Mitabgelegte Aktionskarten wirken nicht.');
         const ende = r.round_end === 'last' ? 'bist du fertig' : 'gewinnst du die Runde';
         z.push(r.mau_call !== 'off' ? 'Bleibt dir danach 1 Karte, ruf „Mau!“ (auch schon vorher erlaubt); bleibt keine, ' + ende + '.' : 'Bleibt dir danach keine Karte, ' + ende + '.');
@@ -182,7 +180,7 @@
     if (k.art !== 'rueckseite') z.push('Wert bei der Abrechnung: ' + punkte(key) + ' Punkte.');
     return { titel: kartenName(key), zeilen: z };
   }
-  const tauschRichtung = r => (r && r.swap_direction === 'play' ? 'in der aktuellen Spielrichtung' : 'immer im Uhrzeigersinn');
+  const tauschRichtung = r => ({ counter: 'immer gegen den Uhrzeigersinn', play: 'in der aktuellen Spielrichtung', against: 'gegen die aktuelle Spielrichtung' }[r && r.swap_direction] || 'immer im Uhrzeigersinn');
   // Regelübersicht (Lobby, Menü)
   function regelnText(regeln) {
     const r = regeln || {};
@@ -194,14 +192,14 @@
     z.push({ must: 'Eine passende gezogene Karte muss gelegt werden.', may_not: 'Eine gezogene Karte darf nicht sofort gelegt werden.' }[r.drawn_card] || 'Eine passende gezogene Karte darf sofort gelegt werden.');
     if (r.stacking === 'same') z.push('Gleiche Ziehkarten dürfen gestapelt werden.');
     if (r.penalty_turn === 'play') z.push('Nach dem Strafziehen bist du trotzdem dran und darfst legen.');
-    z.push({ enforce: 'Wünscher +2 und Farbjagd nur ohne Karte der aktuellen Farbe.', free: 'Wünscher +2 und Farbjagd sind immer erlaubt.' }[r.wild_restriction] || 'Wünscher +2 und Farbjagd: Bluffen erlaubt, der Nächste darf anzweifeln.');
+    z.push(r.wild_restriction === 'enforce' ? 'Wünscher +2 und Farbjagd nur ohne Karte der aktuellen Farbe (App prüft).' : 'Wünscher +2 und Farbjagd sind immer erlaubt.');
     const pen = r.mau_penalty || 2;
     z.push({ auto: 'Vergessenes „Mau!“ kostet sofort ' + pen + ' Karten.', reminder: '„Mau!“ wird nur angezeigt, ohne Strafe.', off: 'Ohne „Mau!“-Ansage.' }[r.mau_call] || 'Wer „Mau!“ vergisst, kann erwischt werden (' + pen + ' Strafkarten).');
     if (r.backs_visible === false) z.push('Rückseiten der Mitspieler sind verdeckt.');
     // Hausregeln mit Zusatzkarten (wie RuleConfig.describe)
     if (r.swap_cards === 'on') z.push('Kartentausch: Wer einen legt, lässt alle ihre ganze Hand an den Nächsten weitergeben, ' + tauschRichtung(r) + '.');
-    if (r.gamble_cards === 'on') z.push('Glücksspiel: Wer den Joker legt, setzt Karte um Karte verdeckt und drückt den Glücksspielknopf – bis ein Treffer kommt (1 bis 10 Karten ziehen, Einsatz zurück) oder die Hand leer ist. Nach einem Druck ohne Treffer darf er aufhören; der Einsatz kommt dann unter die Ablage.');
-    if (r.discard_color === 'on') z.push('Farbe ablegen: Wer eine Ablegen-Karte legt, legt alle eigenen Karten dieser Farbe mit ab; Joker bleiben auf der Hand.');
+    if (r.gamble_cards === 'on') z.push('Glücksspiel (2 Joker): verdeckt setzen und drücken – weiter riskieren oder aufhören. Treffer: 1 bis 10 Karten ziehen, Einsatz zurück; Aufhören: Einsatz unter die Ablage.');
+    if (r.discard_color === 'on') z.push('Farbe ablegen: Wer eine Ablegen-Karte legt, wählt eigene Karten dieser Farbe zum Mitablegen; Joker bleiben auf der Hand. Beim Ablegen-Joker wählst du Ablegefarbe und Spielfarbe getrennt.');
     if (kartenZahl(r) > 112) z.push('Gespielt wird mit ' + kartenZahl(r) + ' Karten.');
     return z;
   }

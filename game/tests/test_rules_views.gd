@@ -267,8 +267,25 @@ func _leak_view(g: MauGame, s: int, secrets: Array) -> String:
 		return "Platz %d: Gesichter in der Sicht weichen ab (zu viel: %s)" % [s, str(_diff(got, want))]
 	# Glücksspiel-Felder nur mit der Hausregel (ohne sie bleibt die Sicht wie vorher).
 	var gamble_on := g.config.gamble_cards == "on"
-	if v.size() != VIEW_KEYS.size() + (1 if gamble_on else 0) or v.has("gamble") != gamble_on:
+	var discard_on := g.config.discard_color == "on"
+	if v.size() != VIEW_KEYS.size() + (1 if gamble_on else 0) + (1 if discard_on else 0) or v.has("gamble") != gamble_on \
+			or v.has("discard_pick") != discard_on:
 		return "Platz %d: zusätzliche Felder" % s
+	if v.hints.has("can_pick") != discard_on:
+		return "Platz %d: Ablege-Hinweise ohne die Hausregel bzw. fehlend" % s
+	if discard_on:
+		# Öffentlich nur Platz und Ablegefarbe (keine Kandidatenzahl), die wählbaren ids nur für den Leger selbst.
+		var dp: Dictionary = v.discard_pick
+		if (g.state == "discard_pick") == dp.is_empty():
+			return "Platz %d: view.discard_pick passt nicht zum Zustand" % s
+		if not dp.is_empty():
+			var dk: Array = dp.keys()
+			dk.sort()
+			if dk != ["color", "seat"] or int(dp.seat) != g.current:
+				return "Platz %d: view.discard_pick mit Feldern %s" % [s, str(dp.keys())]
+		for id in v.hints.can_pick:
+			if s < 0 or s != g.current or g.state != "discard_pick" or not (g.hands[s] as Array).has(int(id)):
+				return "can_pick für Platz %d mit fremder id oder außerhalb der Auswahl" % s
 	if v.hints.has("can_stake") != gamble_on or v.hints.has("can_press") != gamble_on:
 		return "Platz %d: Glücksspiel-Hinweise ohne die Hausregel bzw. fehlend" % s
 	if gamble_on:
@@ -356,6 +373,11 @@ func _leak_events(g: MauGame, events: Array, s: int, secrets: Array) -> String:
 				for k in src:
 					if not allowed.has(str(k)):
 						return "Glücksspiel-Ereignis mit Feld %s" % str(k)
+			"discard_pick":
+				var pk: Array = out.keys()
+				pk.sort()
+				if pk != ["color", "e", "seat"]:
+					return "Ablege-Auswahl-Ereignis mit Feldern %s" % str(out.keys())
 			"discard_color":
 				leak_discards += 1
 				if JSON.stringify(out) != JSON.stringify(src):
@@ -578,6 +600,18 @@ func _hint_consistency() -> void:
 				tries.append([seat, {"a": "stake", "card": int(item.id)}, (h.get("can_stake", []) as Array).has(int(item.id)),
 					"stake " + str(item.face)])
 			tries.append([seat, {"a": "press"}, bool(h.get("can_press", false)), "press"])
+			# Farbe mit ablegen: jede Handkarte einzeln wählen, alle Kandidaten bzw. keine (Farbe nur beim Joker, dann Pflicht)
+			var in_pick := g.state == "discard_pick"
+			var pick_col: Dictionary = {"color": v.colors[0]} if bool(h.get("pick_color", false)) else {}
+			for item in v.hand:
+				var pa := {"a": "discard_pick", "cards": [int(item.id)]}
+				pa.merge(pick_col)
+				tries.append([seat, pa, in_pick and (h.get("can_pick", []) as Array).has(int(item.id)), "discard_pick " + str(item.face)])
+			var all_pick := {"a": "discard_pick", "cards": (h.get("can_pick", []) as Array).duplicate()}
+			all_pick.merge(pick_col)
+			tries.append([seat, all_pick, in_pick, "discard_pick alle"])
+			if not pick_col.is_empty():
+				tries.append([seat, {"a": "discard_pick", "cards": []}, false, "discard_pick ohne Farbe"])
 			for o in n:
 				var ho: Dictionary = g.view_for(o).hints
 				tries.append([o, {"a": "mau"}, bool(ho.can_mau), "mau von %d" % o])

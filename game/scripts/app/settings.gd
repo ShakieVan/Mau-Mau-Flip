@@ -49,7 +49,7 @@ static func defaults() -> Dictionary:
 	# hervorheben: spielbare Karten der eigenen Hand hervorheben – persönliche Einstellung je Gerät, nie eine Regel (AGENTS.md 24).
 	return {"name": "", "mau_ton": "normal", "toene": "aus", "vibration": true, "effekte": "voll", "beta": not app_version().ends_with(".0"),
 		"sortierung": "farbe", "hervorheben": true, "regeln": {}, "letzte_namen": [], "regelsaetze": [], "regeln_gastgeber": {},
-		"regelsatz_gewaehlt": ""}
+		"regelsatz_gewaehlt": "", "bot_tempo": 0.5}
 
 static func app_version() -> String:
 	return str(ProjectSettings.get_setting("application/config/version", "0.0.0"))
@@ -70,8 +70,10 @@ static func sanitize(key: String, value: Variant) -> Variant:
 			return value if value is String and SORTIERUNG.has(value) else null
 		"vibration", "beta", "hervorheben":
 			return value if value is bool else null
+		"bot_tempo":                      # Tempo der Computergegner 0 (gemütlich) … 1 (flott), 0,5 = Standard
+			return clampf(float(value), 0.0, 1.0) if value is float or value is int else null
 		"regeln":
-			return value if value is Dictionary else null
+			return RuleSets.migrate(value) if value is Dictionary else null
 		"regelsaetze":                    # gespeicherte Regelsätze [{name, regeln}, …], siehe RuleSets
 			return RuleSets.sanitize_sets(value)
 		"regeln_gastgeber":               # Regeln des letzten Gastgebers {host, regeln}, siehe RuleSets
@@ -188,3 +190,8 @@ func remember_names(names: Array) -> void:
 	var merged: Array = names.duplicate()
 	merged.append_array(get_value("letzte_namen", []))
 	set_value("letzte_namen", merged)
+
+# Faktor für die Bedenkzeit der Computergegner aus dem Tempo-Regler (0 gemütlich … 1 flott): 2,5 … 1 (bei 0,5) … 0,4.
+# Betrifft nur die Bedenkzeit (GameTable.think_factor), nicht die Animationen; im WLAN gilt der Regler des Gastgebers.
+static func think_factor(tempo: float) -> float:
+	return pow(2.5, 1.0 - 2.0 * clampf(tempo, 0.0, 1.0))

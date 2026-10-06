@@ -37,8 +37,11 @@ extends RefCounted
 #   {a:"stop"} (Aufhören, immer erlaubt): nach mindestens einem Druck ohne Treffer statt weiterzusetzen. Der Einsatz kommt unter
 #   die Ablage (stake_discard mit reason "stop"; bei leerer Hand reason "empty"), der Zug ist vorbei. Bleibt 1 Karte, gilt die
 #   normale Mau-Regel: Das Fenster hat schon das Setzen geöffnet (vorher rufen, sonst erwischbar).
-# - Farbe mit ablegen (discard_color = on): Die übrigen Handkarten in der Farbe der Karte (Ablegen-Joker: gewählte Farbe), außer
-#   Jokern, kommen unter der Ablegen-Karte mit auf die Ablage und wirken nicht (Ereignis discard_color).
+# - Farbe mit ablegen (discard_color = on): Ablegefarbe = Kartenfarbe bzw. beim Ablegen-Joker das Feld color der play-Aktion.
+#   Hat der Leger Nicht-Joker-Karten dieser Farbe (beim Joker immer, weil noch die Spielfarbe fehlt), beginnt die Phase
+#   "discard_pick" (Ereignis discard_pick, Sicht discard_pick = {seat, color}, hints.can_pick nur für ihn). {a:"discard_pick",
+#   cards: Teilmenge von can_pick, color: Spielfarbe nur beim Joker}: Die gewählten Karten kommen unter der Ablegen-Karte mit auf
+#   die Ablage und wirken nicht (Ereignis discard_color), beim Joker folgt das Farbereignis, dann geht es weiter.
 # - Ein „Mau!“-Ruf verfällt, wenn nach dem Legen bzw. Setzen mehr als eine Karte bleibt. Vor dem Legen darf rufen, wer eine Karte
 #   legen kann, nach der genau 1 Karte bleibt (ohne Ablegen-Karten heißt das: 2 Karten auf der Hand).
 
@@ -48,7 +51,7 @@ const GAMBLE := "gluecksspiel"
 const DISCARD := "ablegen"
 const DISCARD_WILD := "ablegen_joker"
 const SIDES: Array[String] = ["hell", "dunkel"]
-const PLAY_PHASES := ["turn", "drawn", "challenge", "color", "gamble"]
+const PLAY_PHASES := ["turn", "drawn", "challenge", "color", "gamble", "discard_pick"]
 const JAGD := "farbjagd"
 const PLUS2 := "wuenscher_plus2"
 const MIN_PLAYERS := 2
@@ -84,6 +87,7 @@ var result := {}                 # Ergebnis der letzten Runde
 var pass_streak := 0             # aufeinanderfolgende Züge ohne Karte (beide Stapel leer)
 var seen := {}                   # Lagen bei fast leeren Stapeln → Anzahl (Stillstandsregel, _stalled)
 var gamble := {}                 # laufendes Glücksspiel {seat, q (geheim, 1–10), stake: [ids], need: "stake"|"press", last}
+var dpick := {}                  # offene Ablege-Auswahl {seat, color (Ablegefarbe), card (Ablegen-Karte), wild}
 
 var _valid := true              # false bei ungültiger Spielerzahl: start_round() und apply() lehnen ab
 var _forced_rolls: Array = []   # Testhaken (force_rolls): vorgegebene Ergebnisse der nächsten Drucke, nicht gespeichert
@@ -216,6 +220,8 @@ func apply(seat: int, action: Dictionary) -> Dictionary:
 			why = _act_press(seat, ev)
 		"stop":
 			why = _act_stop(seat, ev)
+		"discard_pick":
+			why = _act_discard_pick(seat, action, ev)
 		"mau":
 			why = _act_mau(seat, ev)
 		"catch":
@@ -247,6 +253,8 @@ func _phase_reason() -> String:
 			if str(gamble.get("need", "")) == "press":
 				return "Erst den Glücksspielknopf drücken."
 			return "Erst eine Karte verdeckt auf den Einsatz legen."
+		"discard_pick":
+			return "Erst auswählen, welche Karten mit abgelegt werden."
 	return "Das geht gerade nicht."
 
 
@@ -509,6 +517,58 @@ func _act_stop(seat: int, ev: Array) -> String:
 	return ""
 
 
+# Farbe mit ablegen: Auswahl der mitabgelegten Karten (Teilmenge von _pick_candidates, auch leer); beim Ablegen-Joker zusätzlich
+# Pflichtfeld color = Spielfarbe (bei der farbigen Karte wird color nicht gebraucht und übergangen).
+func _act_discard_pick(seat: int, action: Dictionary, ev: Array) -> String:
+	if state != "discard_pick":
+		if config.discard_color != "on":
+			return "Farbe mit ablegen gibt es in diesen Regeln nicht."
+		return "Gerade ist nichts zum Mitablegen offen." if state in PLAY_PHASES else _phase_reason()
+	if seat != current:
+		return "Du bist nicht dran."
+	var raw: Variant = action.get("cards", [])
+	if not raw is Array:
+		return "Ungültige Aktion."
+	var cand := _pick_candidates(seat)
+	var chosen: Array = []
+	for x in raw:
+		var c := _int_field({"c": x}, "c")
+		if c == BAD_FIELD or chosen.has(c):
+			return "Ungültige Aktion."
+		if not cand.has(c):
+			return "Diese Karte kannst du nicht mit ablegen."
+		chosen.append(c)
+	var wild := bool(dpick.get("wild", false))
+	var wish := ""
+	if wild:
+		wish = _str_field(action, "color")
+		if not (CardDB.COLORS[SIDES[side]] as Array).has(wish):
+			return "Wähle die Farbe, mit der es weitergeht."
+	var id := int(dpick.card)
+	var col := str(dpick.color)
+	dpick = {}
+	state = "turn"
+	_discard_color(seat, id, col, chosen, ev)
+	if wild:
+		color = wish
+		wished = true
+		ev.append({"e": "color", "color": wish, "seat": seat})
+	_play_rest(seat, DISCARD_WILD if wild else DISCARD, true, [], ev)
+	return ""
+
+
+# Wählbare Karten der offenen Ablege-Auswahl: Nicht-Joker-Karten der Ablegefarbe auf der Hand des Legers (Besitzerreihenfolge).
+func _pick_candidates(seat: int) -> Array:
+	var out: Array = []
+	if state != "discard_pick" or dpick.is_empty() or seat != int(dpick.seat):
+		return out
+	var col := str(dpick.color)
+	for c in hands[seat]:
+		if _color[faces[side * n_cards + int(c)]] == col:
+			out.append(int(c))
+	return out
+
+
 func _can_stop(seat: int) -> bool:
 	return state == "gamble" and seat == current and str(gamble.get("need", "")) == "stake" \
 		and (gamble.get("stake", []) as Array).size() >= 1
@@ -557,6 +617,8 @@ func _act_mau(seat: int, ev: Array) -> String:
 			return "„Mau!“ rufst du, wenn du deine vorletzte Karte legen kannst – gerade passt keine."
 		if seat == current and (hands[seat] as Array).size() == 2 and state == "gamble":
 			return "„Mau!“ rufst du, bevor du deine vorletzte Karte auf den Einsatz legst."
+		if seat == current and state == "discard_pick":
+			return "„Mau!“ geht hier nur, wenn nach dem Ablegen genau 1 Karte bleiben kann."
 		return "„Mau!“ geht erst, wenn du mit 2 Karten dran bist."
 	mau_said[seat] = true
 	if mau_open == seat:
@@ -608,6 +670,7 @@ func _start(ev: Array) -> void:
 	finished = []
 	result = {}
 	gamble = {}
+	dpick = {}
 	for s in n:
 		mau_said[s] = false
 		place[s] = 0
@@ -735,13 +798,15 @@ func _mau_penalty(seat: int, ev: Array) -> void:
 func _play(p: int, id: int, wish: String, legal: bool, snap: Array, ev: Array) -> void:
 	var f := faces[side * n_cards + id]
 	var kind := _kind[f]
-	var challengeable := (kind == PLUS2 or kind == JAGD) and config.wild_restriction == "bluff"
 	(hands[p] as Array).erase(id)
 	discard.append(id)
 	drawn_id = -1
 	pass_streak = 0
 	ev.append({"e": "play", "seat": p, "card": id, "face": _key[f]})
-	if wish != "":
+	var dcol := ""
+	if kind == DISCARD_WILD:
+		dcol = wish                            # beim Ablegen-Joker ist color die Ablegefarbe, die Spielfarbe folgt in discard_pick
+	elif wish != "":
 		color = wish
 		wished = true
 		ev.append({"e": "color", "color": wish, "seat": p})
@@ -749,7 +814,21 @@ func _play(p: int, id: int, wish: String, legal: bool, snap: Array, ev: Array) -
 		color = _color[f]
 		wished = false
 	if kind == DISCARD or kind == DISCARD_WILD:
-		_discard_color(p, id, ev)
+		if kind == DISCARD:
+			dcol = color
+		if kind == DISCARD_WILD or _color_count(p, dcol, -1) > 0:
+			dpick = {"seat": p, "color": dcol, "card": id, "wild": kind == DISCARD_WILD}
+			state = "discard_pick"
+			current = p
+			ev.append({"e": "discard_pick", "seat": p, "color": dcol})
+			return
+		_discard_color(p, id, dcol, [], ev)
+	_play_rest(p, kind, legal, snap, ev)
+
+
+# Zweiter Teil von _play (nach dem Ablegen): Mau-Fenster, Fertig und die Wirkung der Karte.
+func _play_rest(p: int, kind: String, legal: bool, snap: Array, ev: Array) -> void:
+	var challengeable := (kind == PLUS2 or kind == JAGD) and config.wild_restriction == "bluff"
 	var left := (hands[p] as Array).size()
 	_after_hand_shrinks(p)
 	var finishing := left == 0
@@ -818,17 +897,15 @@ func _start_gamble(p: int, ev: Array) -> void:
 	ev.append({"e": "gamble_start", "seat": p})
 
 
-# Farbe mit ablegen: Alle übrigen Handkarten in der geltenden Farbe (Ablegen-Karte: ihre Farbe, Ablegen-Joker: die gewählte, beides
-# steht schon in color) kommen mit auf die Ablage, unter die Ablegen-Karte, die oben bleibt. Joker (Farbe "") bleiben auf der Hand.
-# Die Karten wirken nicht. Reihenfolge nach Rang (nie Besitzerreihenfolge); die Gesichter liegen offen, das Ereignis ist öffentlich.
-func _discard_color(p: int, id: int, ev: Array) -> void:
-	var col := color
+# Farbe mit ablegen: Die gewählten Handkarten der Ablegefarbe col (chosen, aus _pick_candidates) kommen mit auf die Ablage, unter die
+# Ablegen-Karte, die oben bleibt. Die Karten wirken nicht. Reihenfolge nach Rang (nie Besitzerreihenfolge, nie Auswahlreihenfolge);
+# die Gesichter liegen offen, das Ereignis ist öffentlich.
+func _discard_color(p: int, id: int, col: String, chosen: Array, ev: Array) -> void:
 	var rank := CardDB.rank_table()
 	var items: Array = []
-	for c in hands[p]:
+	for c in chosen:
 		var fc := faces[side * n_cards + int(c)]
-		if _color[fc] == col:
-			items.append([rank[fc], int(c)])
+		items.append([rank[fc], int(c)])
 	items.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0] or (a[0] == b[0] and a[1] < b[1]))
 	var ids: Array = []
 	var keys: Array = []
@@ -1201,6 +1278,8 @@ func _can_mau(seat: int) -> bool:
 	var size := (hands[seat] as Array).size()
 	if state == "gamble":
 		return str(gamble.need) == "stake" and size == 2       # vor dem Setzen der vorletzten Karte
+	if state == "discard_pick":                                # wenn nach der Auswahl genau 1 Karte bleiben kann
+		return size >= 1 and size - _pick_candidates(seat).size() <= 1
 	if not state in ["turn", "drawn", "challenge"]:
 		return false
 	# Vor dem Legen nur, wenn eine Karte legbar ist (sonst zieht man und hätte 3 Karten: kein „blinder“ Ruf), nach der genau
@@ -1213,19 +1292,19 @@ func _can_mau(seat: int) -> bool:
 	return false
 
 
-# Kann das Legen dieser Karte genau 1 Karte übrig lassen? Normal bei 2 Karten; eine Ablegen-Karte nimmt die übrigen Karten ihrer
-# Farbe mit, ein Ablegen-Joker die einer wählbaren Farbe (Joker bleiben).
+# Kann das Legen dieser Karte genau 1 Karte übrig lassen? Normal bei 2 Karten; mit einer Ablegen-Karte darf man beliebig viele der
+# übrigen Karten ihrer Farbe mitablegen, mit einem Ablegen-Joker die einer wählbaren Farbe (Joker bleiben).
 func _can_leave_one(seat: int, id: int) -> bool:
-	var size := (hands[seat] as Array).size()
+	var rest := (hands[seat] as Array).size() - 1
 	var f := faces[side * n_cards + id]
 	if _kind[f] == DISCARD:
-		return size - 1 - _color_count(seat, _color[f], id) == 1
+		return rest >= 1 and rest - _color_count(seat, _color[f], id) <= 1
 	if _kind[f] == DISCARD_WILD:
+		var most := 0
 		for c in CardDB.COLORS[SIDES[side]]:
-			if size - 1 - _color_count(seat, str(c), id) == 1:
-				return true
-		return false
-	return size == 2
+			most = maxi(most, _color_count(seat, str(c), id))
+		return rest >= 1 and rest - most <= 1
+	return rest == 1
 
 
 # Karten der Farbe col auf der Hand eines Platzes, ohne die Karte skip (Joker haben keine Farbe und zählen nie).
@@ -1313,6 +1392,9 @@ func view_for(seat: int) -> Dictionary:
 			gv = {"seat": int(gamble.seat), "stake": (gamble.stake as Array).size(), "need": str(gamble.need),
 				"last": int(gamble.last)}
 		v["gamble"] = gv
+	# Farbe mit ablegen: offene Auswahl öffentlich nur mit Platz und Ablegefarbe (keine Kandidatenzahl, das wäre ein Leck).
+	if config.discard_color == "on":
+		v["discard_pick"] = {"seat": int(dpick.seat), "color": str(dpick.color)} if state == "discard_pick" and not dpick.is_empty() else {}
 	return v
 
 
@@ -1323,11 +1405,14 @@ func _hints(me: int) -> Dictionary:
 		h["can_stake"] = []
 		h["can_press"] = false
 		h["can_stop"] = false
+	if config.discard_color == "on":
+		h["can_pick"] = []
+		h["pick_color"] = false
 	if me >= 0 and state in PLAY_PHASES:
 		if me == current:
 			var playable: Array = []
 			var wild: Array = []
-			if state != "color" and state != "gamble":
+			if state in ["turn", "drawn", "challenge"]:
 				for id in hands[me]:
 					if _playable(me, int(id)):
 						playable.append(id)
@@ -1352,6 +1437,9 @@ func _hints(me: int) -> Dictionary:
 						h.can_stop = _can_stop(me)
 					else:
 						h.can_press = true
+				"discard_pick":
+					h.can_pick = _pick_candidates(me)
+					h.pick_color = bool(dpick.get("wild", false))
 		h.can_mau = _can_mau(me)
 		if config.mau_call == "catch" and mau_open >= 0 and mau_open != me and not mau_said[mau_open]:
 			h.catch = [mau_open]
@@ -1397,9 +1485,19 @@ func _hint_text(me: int, h: Dictionary) -> String:
 			"gamble":
 				var n := (gamble.stake as Array).size()
 				return t + "%s spielt Glücksspiel – Einsatz: %d %s." % [who, n, "Karte" if n == 1 else "Karten"]
+			"discard_pick":
+				return t + "%s legt %s mit ab." % [who, RulesText.color_name(str(dpick.get("color", "")))]
 		return t + "%s ist dran." % who
 	var text := ""
 	match state:
+		"discard_pick":
+			var cname := RulesText.color_name(str(dpick.get("color", "")))
+			if (h.can_pick as Array).is_empty():
+				text = "Wähle die Farbe, mit der es weitergeht."
+			elif bool(h.pick_color):
+				text = "Wähle, welche Karten in %s du mit ablegst, und die Farbe, mit der es weitergeht." % cname
+			else:
+				text = "Wähle, welche Karten in %s du mit ablegst." % cname
 		"color":
 			text = "Nach dem Flip liegt ein Joker oben – wähle die neue Farbe."
 		"gamble":
@@ -1526,6 +1624,8 @@ func to_dict() -> Dictionary:
 	# Laufendes Glücksspiel samt geheimer Quote (nur mit der Hausregel; ohne sie bleibt der Spielstand wie bisher).
 	if config.gamble_cards == "on":
 		d["gamble"] = gamble.duplicate(true)
+	if config.discard_color == "on":
+		d["discard_pick"] = dpick.duplicate(true)
 	return d
 
 
@@ -1590,6 +1690,11 @@ static func from_dict(d: Dictionary) -> MauGame:
 	if not gb.is_empty():
 		g.gamble = {"seat": int(gb.get("seat", 0)), "q": clampi(int(gb.get("q", 1)), 1, 10), "stake": _ints(gb.get("stake", [])),
 			"need": str(gb.get("need", "stake")), "last": int(gb.get("last", -1))}
+	var dp: Dictionary = d.get("discard_pick", {}) if d.get("discard_pick", {}) is Dictionary else {}
+	g.dpick = {}
+	if not dp.is_empty():
+		g.dpick = {"seat": int(dp.get("seat", 0)), "color": str(dp.get("color", "")), "card": int(dp.get("card", -1)),
+			"wild": bool(dp.get("wild", false))}
 	return g
 
 

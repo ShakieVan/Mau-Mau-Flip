@@ -50,6 +50,21 @@ Am 04.10.2026 begonnen. Bisher Brainstorming und Recherche, noch kein Code. Erge
 29. **Browser-Client folgt Tag/Nacht wie die App** (06.10.2026, Nutzerbefund): Die Tagseite des Tisches ist hell (Papier, Sonne, helle Plattform, dunkle Schrift), nicht dunkelblau; nur die Nachtseite ist dunkel.
 30. **Regelsätze** (06.10.2026, Nutzerwunsch): Eigene Regeln lassen sich unter einem Namen speichern, laden, überschreiben und löschen. App-Gäste merken sich die Regeln des Gastgebers automatisch („Zuletzt gespielt bei …“) und können sie als eigenen Satz speichern, damit ein anderer mit denselben Regeln weitermachen kann, wenn der Gastgeber gehen muss.
 
+## Erledigt in 0.1.3 (veröffentlicht 06.10.2026)
+
+Tempo-Regler der Computergegner, vier Tauschrichtungen, „Farbe mit ablegen“ mit Auswahl, Ablegen-Joker mit getrennter Ablege- und Spielfarbe, kein Anzweifeln (Wünscher +2 und Farbjagd immer erlaubt, „App prüft“ freiwillig), „Computer spielt für …“ bei getrennten Gästen, N6–N8. Bericht: `docs/geraetetest/0.1.3/BERICHT.md`. Update 0.1.1 → 0.1.2 vom Nutzer bestätigt. Hörtest der Spieltöne durch den Nutzer steht weiter aus.
+
+## Offen für 0.1.4 (Nutzerwünsche 06.10.2026)
+
+- Browser am Desktop, Startbild: Teile des Hintergrunds fehlen (Karten, „Mao“-Sprechblase).
+- Browser: Statt nur „Bitte quer halten“ bei unpassendem Fenster das Spiel in einem Rahmen mit passenden Proportionen zeigen (nach Fensterbreite); den Hinweis dezent im Überstand anzeigen.
+- Browser: Mond fehlt auf der dunklen Seite (die App zeigt ihn oben rechts).
+- App: Bei vielen Karten liegt das „?“ der Kartenhilfe über dem „Mau!“-Knopf; ein Tipp auf „?“ löst „Mau!“ aus (Eingabe geht durch). Bild: `docs/geraetetest/0.1.4/nutzer_hilfe_ueber_mau.jpg` (nur lokal).
+- **Wer dran ist, deutlich hervorheben** (App und Browser): Der leichte Schein um den Buchstaben ist zu schwach, vor allem vor der Sonne. Auffällige Strahlen rund um Karten und Namen des Spielers (Vorbild: `docs/geraetetest/0.1.4/nutzer_dran_vorbild_strahlen.webp`, Problem: `nutzer_dran_zu_schwach.webp`, nur lokal), nachts mit bläulichem Schimmer. Dazu eine animierte Denkblase am Namen, wenn der Spieler länger als 5 Sekunden braucht.
+- Eigene Kartenzahl sichtbar anzeigen (wie bei den Mitspielern), z. B. für die Entscheidung beim Kartentausch.
+- Kleinigkeiten aus dem Gerätetest 0.1.3: Regelzeile sagt bei „free“ „Joker frei“ statt „Immer erlaubt“; ein vertretener Gast steht weiter als „getrennt“ da; Griff des Tempo-Reglers sehr klein; Lite in der Phase discard_pick gegen einen echten Gastgeber am Gerät prüfen.
+- Rundenende: Am Handy steht im Hintergrund noch die alte „Glücksrad“-Sonne statt der sanften Strahlen; im Browser fehlen die Strahlen am Rundenende ganz (volle und reduzierte Effekte). Bild: `docs/geraetetest/0.1.4/nutzer_rundenende_gluecksrad.jpg` (harte, keilförmige Strahlen hinter dem Ergebnis; nur lokal).
+
 ## Empfehlung aus der Recherche
 
 - Godot 4.6.1 mit Compatibility-Renderer, Host entscheidet allein, jeder Client bekommt nur seine Sicht. WebSocket mit JSON für App- und Browser-Mitspieler.

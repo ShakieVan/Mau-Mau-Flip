@@ -26,8 +26,7 @@ const OPTIONS := [
 	["drawn_card", "Gezogene Karte", "Passt sie, …", [["may", "darf gelegt werden"], ["must", "muss gelegt werden"], ["may_not", "erst nächster Zug"]]],
 	["stacking", "Ziehkarten weitergeben", "+1 auf +1, +5 auf +5 …: die Summe wächst", [["off", "Aus"], ["same", "Gleiche Karte"]]],
 	["penalty_turn", "Nach dem Strafziehen", "Wer +1, +5 … abbekommt: aussetzen oder gleich weiterspielen", [["skip", "Aussetzen"], ["play", "Weiterspielen"]]],
-	["wild_restriction", "Wünscher +2 und Farbjagd", "Nur erlaubt, wenn keine Karte der aktuellen Farbe passt", [["bluff", "Bluffen erlaubt"], ["enforce", "App prüft"], ["free", "Immer erlaubt"]]],
-	["wild_counts_for_bluff", "Joker zählen beim Anzweifeln mit", "Fassung 2024: ein Wünscher auf der Hand gilt als passend", "schalter"],
+	["wild_restriction", "Wünscher +2 und Farbjagd", "„App prüft“: nur, wenn keine Karte der aktuellen Farbe passt", [["free", "Immer erlaubt"], ["enforce", "App prüft"]]],
 	["jagd_wild_stops", "Gezogener Joker beendet die Farbjagd", "", "schalter"],
 	["mau_call", "„Mau!“ rufen", "Bei der vorletzten Karte", [["catch", "Erwischen"], ["auto", "App bestraft"], ["reminder", "Nur Hinweis"], ["off", "Aus"]]],
 	["mau_penalty", "Strafkarten für vergessenes „Mau!“", "", "zahl", 1],
@@ -39,9 +38,9 @@ const OPTIONS := [
 # Hausregeln mit Zusatzkarten: wie OPTIONS, dazu die Gesichter für die Kartenbilder; "an_aus" = Schalter für "on"/"off".
 const EXTRA_OPTIONS := [
 	["swap_cards", "Kartentausch", "4 Zusatzkarten: Alle geben ihre ganze Hand weiter", "an_aus", ["hell_rot_tausch", "dunkel_tuerkis_tausch"]],
-	["swap_direction", "Tauschrichtung", "Wohin die Hände wandern (nur mit Kartentausch)", [["clockwise", "Im Uhrzeigersinn"], ["play", "In Spielrichtung"]], []],
-	["gamble_cards", "Glücksspiel", "2 Joker: verdeckt setzen und drücken, bis ein Treffer kommt", "an_aus", ["hell_gluecksspiel", "dunkel_gluecksspiel"]],
-	["discard_color", "Farbe mit ablegen", "6 Zusatzkarten: Alle Karten der Farbe mit ablegen", "an_aus", ["hell_gruen_ablegen", "hell_ablegen_joker"]],
+	["swap_direction", "Tauschrichtung", "Wohin die Hände wandern (nur mit Kartentausch)", [["clockwise", "Im Uhrzeigersinn"], ["counter", "Gegen den Uhrzeigersinn"], ["play", "In Spielrichtung"], ["against", "Gegen die Spielrichtung"]], []],
+	["gamble_cards", "Glücksspiel", "2 Joker: verdeckt setzen und drücken – weiter riskieren oder aufhören", "an_aus", ["hell_gluecksspiel", "dunkel_gluecksspiel"]],
+	["discard_color", "Farbe mit ablegen", "6 Zusatzkarten: Karten der Farbe mit ablegen, du wählst aus", "an_aus", ["hell_gruen_ablegen", "hell_ablegen_joker"]],
 ]
 const LABEL_W := 380.0
 const THUMB_W := 96.0
@@ -368,7 +367,19 @@ func _option_row(opt: Array) -> Control:
 	var key: String = opt[0]
 	var kind: Variant = opt[3]
 	var ctrl: Control
-	if kind is Array:
+	if kind is Array and (kind as Array).size() > 3:
+		# viele Knöpfe (Tauschrichtung): umbrechend statt einer langen Reihe
+		var row := ScreenKit.choice(kind, str(cfg.get(key)), func(v: String) -> void: set_option(key, v), 20)
+		var flow := HFlowContainer.new()
+		flow.add_theme_constant_override("h_separation", 8)
+		flow.add_theme_constant_override("v_separation", 8)
+		flow.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		for b in row.get_children():
+			row.remove_child(b)
+			flow.add_child(b)
+		row.free()
+		ctrl = flow
+	elif kind is Array:
 		ctrl = ScreenKit.choice(kind, str(cfg.get(key)), func(v: String) -> void: set_option(key, v), 20)
 	elif str(kind) == "schalter" or str(kind) == "an_aus":
 		var c := CheckButton.new()
@@ -440,7 +451,9 @@ func _refresh() -> void:
 			continue
 		var kind: Variant = opt[3]
 		if kind is Array:
-			ScreenKit.set_choice(ctrl as HBoxContainer, str(cfg.get(key)))
+			for b in ctrl.get_children():
+				if b is Button and (b as Button).has_meta("key"):
+					(b as Button).theme_type_variation = "PrimaryButton" if str(b.get_meta("key")) == str(cfg.get(key)) else "GhostButton"
 		elif str(kind) == "schalter":
 			(ctrl as CheckButton).set_pressed_no_signal(bool(cfg.get(key)))
 		elif str(kind) == "an_aus":
@@ -461,7 +474,6 @@ func _refresh() -> void:
 func _refresh_enabled() -> void:
 	_dim("target", cfg.effective_scoring() == "points500")
 	_dim("scoring", cfg.round_end == "first")
-	_dim("wild_counts_for_bluff", cfg.wild_restriction == "bluff")
 	_dim("mau_penalty", cfg.mau_call != "off")
 	_dim("swap_direction", cfg.swap_cards == "on", true)
 	var n := cfg.card_count()
@@ -552,11 +564,7 @@ func _render_special() -> void:
 		tx.name = "Text"
 		v.add_child(tx)
 		_special_box.add_child(row)
-	var off := RulesBar.EXTRAS.filter(func(x: Array) -> bool: return str(cfg.get(str(x[0]))) != "on").map(func(x: Array) -> String: return str(x[1]))
-	if not off.is_empty():
-		var names: Array[String] = []
-		names.assign(off)
-		_special_box.add_child(ScreenKit.hint("Weitere Zusatzkarten gibt es als Hausregel unter „Anpassen“: %s." % RulesBar.join_and(names), 18))
+	# Ausgeschaltete Zusatzkarten nennt schon RulesText („Weitere besondere Karten“); kein zweiter Hinweis hier (N8).
 
 
 # Besondere Karten der aktiven Regeln: [{kind, title, side, keys (Kartenbilder), lines}]. Die Sätze stammen aus RulesText.card_help;

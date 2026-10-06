@@ -33,6 +33,7 @@ signal play_denied(id: int)             # Ausspielen versucht, Karte nicht spiel
 signal sort_mode_changed(mode: String)  # Sortierung hat sich ohne set_sort_mode geändert (Umsortieren → "manuell", Spielerwechsel)
 signal big_view_changed(id: int)        # Großansicht geöffnet (Kartenkennung) bzw. geschlossen (−1)
 signal drag_armed(id: int, armed: bool) # Ziehen nach oben ist scharf: Loslassen spielt aus (Geisterbild auf der Ablage)
+signal pick_changed(ids: Array)          # Auswahl „Farbe mit ablegen“ geändert (gewählte Kennungen)
 
 const DP := HandLayout.DP
 const LIFT_PLAYABLE := 8.0 * DP
@@ -134,6 +135,8 @@ var _round := -1
 var _seat := -1
 var _seat_state := {}                   # Platz → {sort, order}: Sortierung je Spieler beim Weitergeben
 var _manual_seed: Array[int] = []       # gemerkte manuelle Reihenfolge für die nächste Hand
+var _pick_cands := {}                   # Auswahl „Farbe mit ablegen“ (Phase discard_pick): wählbare Karten …
+var _picked := {}                       # … und davon gewählte; leer = keine Auswahl
 
 
 class Slot:
@@ -590,6 +593,46 @@ func set_input_locked(on: bool) -> void:
 
 
 # Anzahl eigener Karten je Farbe der aktiven Seite (Farbfelder des Wünschers).
+# Auswahl „Farbe mit ablegen“ (Phase discard_pick): candidates sind wählbar und anfangs alle gewählt. Tippen (oder Hochziehen)
+# wählt ab bzw. wieder an; übrige Karten sind abgedunkelt. Leere Liste bzw. clear_pick() beendet die Auswahl.
+func set_pick(candidates: Array) -> void:
+	_pick_cands.clear()
+	_picked.clear()
+	for raw in candidates:
+		_pick_cands[int(raw)] = true
+		_picked[int(raw)] = true
+	if not _pick_cands.is_empty() and _selected != -1:
+		_set_selected(-1)
+
+
+func clear_pick() -> void:
+	_pick_cands.clear()
+	_picked.clear()
+
+
+func is_picking() -> bool:
+	return not _pick_cands.is_empty()
+
+
+func get_pick() -> Array:
+	var out: Array = []
+	for id in _order:
+		if _picked.has(id):
+			out.append(id)
+	return out
+
+
+func toggle_pick(id: int) -> void:
+	if not _pick_cands.has(id) or not _order.has(id):
+		return
+	if _picked.has(id):
+		_picked.erase(id)
+	else:
+		_picked[id] = true
+	_vibrate(8, 0.3)
+	pick_changed.emit(get_pick())
+
+
 func own_color_counts() -> Dictionary:
 	var counts := {}
 	for id in _order:
@@ -798,6 +841,9 @@ func _hover(p: Vector2) -> void:
 
 
 func _on_tap(id: int) -> void:
+	if is_picking():
+		toggle_pick(id)
+		return
 	if id == -1 or not _order.has(id):
 		if _selected != -1:
 			_set_selected(-1)
@@ -976,6 +1022,9 @@ func _cancel_gesture() -> void:
 func _try_play(id: int, drop_global: Vector2) -> bool:
 	if not _order.has(id) or _peek:
 		return false
+	if is_picking():                     # Auswahl läuft: Hochziehen wählt nur an/ab, gespielt wird nichts
+		toggle_pick(id)
+		return false
 	var s: Slot = _slots[id]
 	if enforce_playable and not _playable.has(id):
 		s.view.shake()
@@ -1126,6 +1175,8 @@ func _update_cards(dt: float) -> void:
 			lift += LIFT_PLAYABLE
 		if s.id == _selected:
 			lift += LIFT_SELECTED
+		if _picked.has(s.id):
+			lift += LIFT_SELECTED
 		var tpos := xf.origin + layout_rect.position + Vector2(0.0, -lift).rotated(rot)
 		var t := Transform2D(rot, Vector2(scl, scl), 0.0, tpos)
 		var key := i * 2
@@ -1174,6 +1225,8 @@ func _update_cards(dt: float) -> void:
 		var shade := HandLayout.shade(n, _scroll, _mode, i)
 		if marks and dim_unplayable and any_playable and not _playable.has(s.id) and not _peek and s.id != _big_id:
 			shade *= 0.92 if is_day else 0.84
+		elif is_picking() and not _pick_cands.has(s.id):
+			shade *= 0.8 if is_day else 0.7
 		s.view.day = is_day
 		s.view.playable_tint = accent
 		_apply_view(s, shade, elev)
@@ -1202,7 +1255,7 @@ func _apply_view(s: Slot, shade: float, elev: float) -> void:
 	v.brightness = shade
 	v.elevation = elev
 	var st := CardView.State.NORMAL
-	if s.id == _selected or (s.id == _drag_id and _drag_kind == "play" and _gesture.play_armed):
+	if s.id == _selected or _picked.has(s.id) or (s.id == _drag_id and _drag_kind == "play" and _gesture.play_armed):
 		st = CardView.State.SELECTED
 	elif _playable.has(s.id) and not _peek and marks_playable():
 		st = CardView.State.PLAYABLE

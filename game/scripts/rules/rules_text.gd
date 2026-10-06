@@ -163,10 +163,11 @@ static func _gamble_lines(cfg: RuleConfig) -> Array[String]:
 static func _discard_lines(kind: String, color: String, cfg: RuleConfig) -> Array[String]:
 	var out: Array[String] = []
 	if kind == "ablegen":
-		out.append("Du legst alle anderen Karten in %s mit ab; sie kommen unter diese Karte, die oben bleibt." % color)
+		out.append("Danach wählst du, welche deiner Karten in %s du mit ablegst (alle, einige oder keine); sie kommen unter diese Karte, die oben bleibt." % color)
 		out.append("Passt auf %s und auf jede andere Ablegen-Karte." % color)
 	else:
-		out.append("Joker: passt immer. Du wünschst eine Farbe und legst alle deine Karten dieser Farbe mit ab; sie kommen unter den Joker, die Farbe gilt.")
+		out.append("Joker: passt immer. Du wählst eine Farbe und dann, welche deiner Karten dieser Farbe du mit ablegst; sie kommen unter den Joker.")
+		out.append("Danach wählst du die Farbe, mit der es weitergeht – sie darf eine andere sein.")
 	out.append("Joker auf deiner Hand bleiben dort. Mitabgelegte Aktionskarten wirken nicht.")
 	var end := "gewinnst du die Runde" if cfg.round_end == "first" else "bist du fertig"
 	if cfg.mau_call != "off":
@@ -182,7 +183,7 @@ static func _discard_lines(kind: String, color: String, cfg: RuleConfig) -> Arra
 static func _swap_lines(color: String, cfg: RuleConfig) -> Array[String]:
 	var out: Array[String] = []
 	out.append("Alle geben gleichzeitig ihre ganze Hand an den Nächsten weiter, %s. Danach ist ganz normal der Nächste in Spielrichtung dran." % cfg.swap_direction_text())
-	if cfg.swap_direction == "play":
+	if cfg.swap_direction == "play" or cfg.swap_direction == "against":
 		out.append("Nach einem Richtungswechsel wandern die Hände also andersherum.")
 	out.append("Passt auf %s und auf jeden Kartentausch." % color)
 	out.append("Zu zweit tauscht ihr einfach eure Hände.")
@@ -286,7 +287,7 @@ static func overview(config: RuleConfig = null) -> Array[Dictionary]:
 		out.append({"title": "Glücksspiel", "text": "Hausregel: Der Glücksspiel-Joker passt immer; du wünschst eine Farbe, die nach dem Glücksspiel gilt. Dann legst du reihum eine beliebige Karte verdeckt auf deinen Einsatz und drückst den Glücksspielknopf. Je Glücksspiel wird geheim eine Trefferquote zwischen 1:1 und 1:10 ausgelost. Bei einem Treffer zeigt der Knopf 1 bis 10: So viele Karten ziehst du, nimmst den ganzen Einsatz zurück, und dein Zug ist vorbei. Zeigt er 0, geht es weiter; ist deine Hand dann leer, kommt der Einsatz unter den Ablagestapel und du %s. Nach einer 0 darfst du statt weiterzusetzen auch aufhören: Der ganze Einsatz kommt unter den Ablagestapel, dein Zug ist vorbei. Die Einsatzkarten wirken nicht.%s" % [done, mau_g]})
 	if discard_on:
 		var mau_d := " Bleibt dir 1 Karte, ruf „Mau!“." if cfg.mau_call != "off" else ""
-		out.append({"title": "Farbe ablegen", "text": "Hausregel: Wer eine Ablegen-Karte legt, legt alle eigenen Karten derselben Farbe mit ab, beim Ablegen-Joker die gewünschte Farbe. Sie kommen unter die Ablegen-Karte, die oben bleibt. Joker bleiben auf der Hand, mitabgelegte Aktionskarten wirken nicht. Die farbige Ablegen-Karte passt auf ihre Farbe und auf jede andere Ablegen-Karte, der Ablegen-Joker immer.%s Bleibt keine Karte, bist du fertig." % mau_d})
+		out.append({"title": "Farbe ablegen", "text": "Hausregel: Wer eine Ablegen-Karte legt, wählt danach, welche eigenen Karten derselben Farbe er mit ablegt (alle, einige oder keine). Beim Ablegen-Joker wählst du zuerst die Ablegefarbe und danach getrennt die Farbe, mit der es weitergeht. Die Karten kommen unter die Ablegen-Karte, die oben bleibt. Joker bleiben auf der Hand, mitabgelegte Aktionskarten wirken nicht. Die farbige Ablegen-Karte passt auf ihre Farbe und auf jede andere Ablegen-Karte, der Ablegen-Joker immer.%s Bleibt keine Karte, bist du fertig." % mau_d})
 	# Besondere Karten der ausgeschalteten Hausregeln kurz vorstellen (eingeschaltete haben oben einen eigenen Absatz).
 	var more: Array[String] = []
 	if not swap_on:
@@ -294,7 +295,7 @@ static func overview(config: RuleConfig = null) -> Array[Dictionary]:
 	if not gamble_on:
 		more.append("Glücksspiel-Joker (zwei je Seite): Du setzt reihum Karten verdeckt und drückst den Glücksspielknopf. Bei 0 setzt du weiter oder hörst auf (der Einsatz kommt unter die Ablage); ist die Hand leer, bist du fertig. Bei einem Treffer ziehst du 1 bis 10 Karten und nimmst den Einsatz zurück.")
 	if not discard_on:
-		more.append("Farbe ablegen (eine je Farbe, dazu zwei Joker je Seite): Du legst alle deine Karten dieser Farbe mit ab.")
+		more.append("Farbe ablegen (eine je Farbe, dazu zwei Joker je Seite): Du legst Karten dieser Farbe mit ab, welche, wählst du.")
 	if not more.is_empty():
 		out.append({"title": "Weitere besondere Karten", "text": "Diese Karten kommen nur mit ihrer Hausregel ins Spiel (einschalten unter „Anpassen“ → „Hausregeln mit Zusatzkarten“): " + " ".join(more)})
 	var stack := "Ziehkarten werden nicht gestapelt: Wer sie abbekommt, zieht und %s." % cfg.penalty_tail() if cfg.stacking == "off" \

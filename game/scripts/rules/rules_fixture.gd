@@ -81,7 +81,7 @@ static func random_config(rng: RandomNumberGenerator, with_swap := false, with_g
 	d["target"] = [150, 300, 500][rng.randi_range(0, 2)]
 	if with_swap:
 		d["swap_cards"] = "on"
-		d["swap_direction"] = "clockwise" if rng.randf() < 0.5 else "play"
+		d["swap_direction"] = RuleConfig.CHOICES["swap_direction"][rng.randi_range(0, 3)]
 	if with_gamble:
 		d["gamble_cards"] = "on"
 	if with_discard:
@@ -110,6 +110,12 @@ static func invariants(g: MauGame) -> String:
 			return "Glücksspiel: Quote %d" % int(gb.get("q", 0))
 	elif not g.gamble.is_empty():
 		return "Glücksspielzustand außerhalb der Phase gamble"
+	if g.state == "discard_pick":
+		if g.dpick.is_empty() or int(g.dpick.get("seat", -1)) != g.current or g.discard.is_empty() \
+				or int(g.discard.back()) != int(g.dpick.get("card", -1)):
+			return "Ablege-Auswahl ohne Zustand, für den falschen Platz oder ohne Ablegen-Karte oben"
+	elif not g.dpick.is_empty():
+		return "Ablege-Auswahl außerhalb der Phase discard_pick"
 	if not g.state in MauGame.PLAY_PHASES:
 		return "" if g.state in ["round_over", "game_over"] else "unbekannte Phase " + g.state
 	var c := g.current_seat()

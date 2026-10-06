@@ -34,6 +34,7 @@ func _init() -> void:
 	host_slot(st, path)
 	chosen(path)
 	write_errors()
+	migration_013(path)
 	for suffix in ["", ".bak", ".tmp"]:
 		DirAccess.remove_absolute(path + suffix)
 		DirAccess.remove_absolute(path + ".kaputt" + suffix)
@@ -259,3 +260,31 @@ func write_errors() -> void:
 	check(RuleSets.save("Alt", house(), st) == RuleSets.ERR_WRITE and RuleSets.config("Alt", st).equals(RuleConfig.new()), "Überschreiben scheitert: alter Satz bleibt")
 	check(not RuleSets.remove("Alt", st) and RuleSets.has_set("Alt", st), "Löschen scheitert: Satz bleibt")
 	check(not RuleSets.remember_host(house().to_dict(), "Lena", st), "Gastgeber merken scheitert: false")
+
+
+# 0.1.3 (Protokoll Nr. 2): Gespeicherte Regeln mit „bluff“ (App-Einstellungen, Regelsätze, Gastgeber-Regeln) laden als „free“.
+# Dazu der Regler „Tempo der Computergegner“ (bot_tempo 0…1, Standard 0,5 = Bedenkzeit wie bisher).
+func migration_013(path: String) -> void:
+	var p := path + ".mig"
+	var old := {"regeln": {"wild_restriction": "bluff", "hand_size": 6},
+		"regelsaetze": [{"name": "Alt", "regeln": {"wild_restriction": "bluff"}}],
+		"regeln_gastgeber": {"host": "Lena", "regeln": {"wild_restriction": "bluff", "stacking": "same"}}}
+	var f := FileAccess.open(p, FileAccess.WRITE)
+	f.store_string(JSON.stringify(old))
+	f.close()
+	var st := AppSettings.new(p)
+	var r: Dictionary = st.get_value("regeln")
+	check(str(r.get("wild_restriction", "")) == "free" and int(r.get("hand_size", 0)) == 6, "Einstellungen: bluff → free (%s)" % str(r))
+	var alt := RuleSets.config("Alt", st)
+	check(alt != null and alt.wild_restriction == "free", "Regelsatz: bluff → free")
+	var h := RuleSets.host_config(st)
+	check(h != null and h.wild_restriction == "free" and h.stacking == "same", "Gastgeber-Regeln: bluff → free")
+	RuleSets.remember_host({"wild_restriction": "bluff", "mau_penalty": 2}, "Kim", st)
+	check(RuleSets.host_config(st).wild_restriction == "free" and RuleSets.host_name(st) == "Kim", "neu gemerkte Gastgeber-Regeln: bluff → free")
+	check(RuleSets.load_config({"wild_restriction": "enforce"}).wild_restriction == "enforce", "App prüft bleibt")
+	# Tempo der Computergegner
+	check(is_equal_approx(float(st.get_value("bot_tempo")), 0.5) and is_equal_approx(AppSettings.think_factor(0.5), 1.0), "Tempo: Standard 0,5 = Faktor 1")
+	check(AppSettings.think_factor(0.0) > 2.0 and AppSettings.think_factor(1.0) < 0.5, "Tempo: gemütlich langsamer, flott schneller")
+	check(st.set_value("bot_tempo", 3) and is_equal_approx(float(st.get_value("bot_tempo")), 1.0) and not st.set_value("bot_tempo", "schnell"), "Tempo: begrenzt, Text ungültig")
+	for suffix in ["", ".bak", ".tmp"]:
+		DirAccess.remove_absolute(p + suffix)

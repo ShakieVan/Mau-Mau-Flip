@@ -91,14 +91,14 @@ func house(swap := true, gamble := true, discard := true, base := "familie") -> 
 
 
 # Schlüssel des hervorgehobenen Knopfs einer Auswahlreihe ("" = keiner)
-func chosen(row: HBoxContainer) -> String:
+func chosen(row: Container) -> String:
 	for b in row.get_children():
 		if b is Button and (b as Button).theme_type_variation == "PrimaryButton" and b.has_meta("key"):
 			return str(b.get_meta("key"))
 	return ""
 
 
-func choice_button(row: HBoxContainer, key: String) -> Button:
+func choice_button(row: Container, key: String) -> Button:
 	for b in row.get_children():
 		if b is Button and b.has_meta("key") and str(b.get_meta("key")) == key:
 			return b
@@ -182,9 +182,9 @@ func card_help() -> void:
 	check(g.contains("Ziehstrafe"), "Glücksspiel mit Stapeln: passt nicht unter einer Ziehstrafe")
 	# Farbe mit ablegen
 	var a := RulesText.card_help("hell_blau_ablegen", on)
-	check(a[0].contains("alle anderen Karten in Blau") and "\n".join(PackedStringArray(a)).contains("Passt auf Blau"), "Ablegen-Karte: Blau (%s)" % a[0])
+	check(a[0].contains("welche deiner Karten in Blau") and "\n".join(PackedStringArray(a)).contains("Passt auf Blau"), "Ablegen-Karte: Blau (%s)" % a[0])
 	var j := RulesText.card_help("dunkel_ablegen_joker", on)
-	check(j[0].begins_with("Joker: passt immer") and j[0].contains("dieser Farbe mit ab"), "Ablegen-Joker: Wirkung (%s)" % j[0])
+	check(j[0].begins_with("Joker: passt immer") and j[0].contains("Karten dieser Farbe du"), "Ablegen-Joker: Wirkung (%s)" % j[0])
 	check("\n".join(PackedStringArray(j)).contains("Joker auf deiner Hand bleiben"), "Ablegen-Joker: Joker bleiben")
 	# Wertung mit Punkten
 	var pts := house(true, true, true, "klassisch500")
@@ -203,8 +203,21 @@ func rules_editor() -> void:
 		check(rs._controls.has(key), "Editor: Zeile %s" % key)
 	if not rs._controls.has("swap_cards"):
 		return
+	# 0.1.3: kein Anzweifeln mehr in der Oberfläche; Glücksspiel nennt das Aufhören
+	var wr := rs._controls.get("wild_restriction") as Container
+	var wr_keys: Array = []
+	if wr != null:
+		for b in wr.get_children():
+			wr_keys.append(str(b.get_meta("key", "")))
+	check(wr_keys == ["free", "enforce"] and chosen(wr) == "free", "Wünscher +2: nur „Immer erlaubt“/„App prüft“, Standard frei (%s)" % str(wr_keys))
+	check(not rs._controls.has("wild_counts_for_bluff"), "Schalter „Joker zählen beim Anzweifeln mit“ entfällt")
+	var gamble_row := rs._controls["gamble_cards"].get_parent() as Control
+	var gamble_texts := ""
+	for l in gamble_row.find_children("*", "Label", true, false):
+		gamble_texts += (l as Label).text + " "
+	check(gamble_texts.contains("aufhören") and not gamble_texts.contains("bis ein Treffer"), "Glücksspiel-Kurztext mit Aufhören")
 	var sw := rs._controls["swap_cards"] as CheckButton
-	var dir := rs._controls["swap_direction"] as HBoxContainer
+	var dir := rs._controls["swap_direction"] as Container
 	var ga := rs._controls["gamble_cards"] as CheckButton
 	var dc := rs._controls["discard_color"] as CheckButton
 	var count := func() -> String:
@@ -241,6 +254,21 @@ func rules_editor() -> void:
 	choice_button(dir, "play").pressed.emit()
 	await frames(1)
 	check(RulesBar.current().swap_direction == "play" and chosen(rs._preset_row) == "" and chosen(dir) == "play", "In Spielrichtung: eigene Regeln")
+	# 0.1.3: vier Richtungen, umbrechend in der Zeile
+	var keys: Array = []
+	for b in dir.get_children():
+		keys.append(str(b.get_meta("key", "")))
+	check(keys == ["clockwise", "counter", "play", "against"] and dir is HFlowContainer, "Tauschrichtung: 4 Knöpfe umbrechend (%s)" % str(keys))
+	var right_edge := rs._editor.get_global_rect().end.x
+	var fits := true
+	for b in dir.get_children():
+		if (b as Control).get_global_rect().end.x > right_edge + 1.0:
+			fits = false
+	check(fits, "Tauschrichtung: alle Knöpfe im Bild")
+	for k in ["counter", "against"]:
+		choice_button(dir, k).pressed.emit()
+		await frames(1)
+		check(RulesBar.current().swap_direction == k and chosen(dir) == k, "Tauschrichtung %s" % k)
 	choice_button(dir, "clockwise").pressed.emit()
 	await frames(1)
 	check(chosen(rs._preset_row) == "familie", "Im Uhrzeigersinn: wieder Familie")

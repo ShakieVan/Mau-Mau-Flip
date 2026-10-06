@@ -5,7 +5,7 @@
 (function (M) {
   'use strict';
 
-  const VERSION = '0.1.2';
+  const VERSION = '0.1.3';
   const PROTO = 1;
   // wach.mp4 (32×32, 2 s, H.264 Baseline, ohne Ton; erzeugt mit ffmpeg) als data:-URI
   const WACH_VIDEO = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAMzbW9vdgAAAGxtdmhkAAAAAAAAAAAAAAAAAAAD6AAAB9AAAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAl50cmFrAAAAXHRraGQAAAADAAAAAAAAAAAAAAABAAAAAAAAB9AAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAACAAAAAgAAAAAAAkZWR0cwAAABxlbHN0AAAAAAAAAAEAAAfQAAAAAAABAAAAAAHWbWRpYQAAACBtZGhkAAAAAAAAAAAAAAAAAABAAAAAgABVxAAAAAAALWhkbHIAAAAAAAAAAHZpZGUAAAAAAAAAAAAAAABWaWRlb0hhbmRsZXIAAAABgW1pbmYAAAAUdm1oZAAAAAEAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAAUFzdGJsAAAAuXN0c2QAAAAAAAAAAQAAAKlhdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAACAAIABIAAAASAAAAAAAAAABFExhdmM2My4xLjEwMSBsaWJ4MjY0AAAAAAAAAAAAAAAAGP//AAAAL2F2Y0MBQsAe/+EAFmdCwB7ZCWwEQAAAAwBAAAADAQPFi5IBAAZoy4DkTIAAAAAQcGFzcAAAAAEAAAABAAAAFGJ0cnQAAAAAAAAKpAAAAAAAAAAYc3R0cwAAAAAAAAABAAAABAAAIAAAAAAUc3RzcwAAAAAAAAABAAAAAQAAABxzdHNjAAAAAAAAAAEAAAABAAAABAAAAAEAAAAkc3RzegAAAAAAAAAAAAAABAAAAogAAAALAAAACwAAAAsAAAAUc3RjbwAAAAAAAAABAAADYwAAAGF1ZHRhAAAAWW1ldGEAAAAAAAAAIWhkbHIAAAAAAAAAAG1kaXJhcHBsAAAAAAAAAAAAAAAALGlsc3QAAAAkqXRvbwAAABxkYXRhAAAAAQAAAABMYXZmNjMuMS4xMDEAAAAIZnJlZQAAArFtZGF0AAACcgYF//9u3EXpvebZSLeWLNgg2SPu73gyNjQgLSBjb3JlIDE2NSByMzIyMyAwNDgwY2IwIC0gSC4yNjQvTVBFRy00IEFWQyBjb2RlYyAtIENvcHlsZWZ0IDIwMDMtMjAyNSAtIGh0dHA6Ly93d3cudmlkZW9sYW4ub3JnL3gyNjQuaHRtbCAtIG9wdGlvbnM6IGNhYmFjPTAgcmVmPTMgZGVibG9jaz0xOi0zOi0zIGFuYWx5c2U9MHgxOjB4MTExIG1lPWhleCBzdWJtZT03IHBzeT0xIHBzeV9yZD0yLjAwOjAuNzAgbWl4ZWRfcmVmPTEgbWVfcmFuZ2U9MTYgY2hyb21hX21lPTEgdHJlbGxpcz0xIDh4OGRjdD0wIGNxbT0wIGRlYWR6b25lPTIxLDExIGZhc3RfcHNraXA9MSBjaHJvbWFfcXBfb2Zmc2V0PS00IHRocmVhZHM9MSBsb29rYWhlYWRfdGhyZWFkcz0xIHNsaWNlZF90aHJlYWRzPTAgbnI9MCBkZWNpbWF0ZT0xIGludGVybGFjZWQ9MCBibHVyYXlfY29tcGF0PTAgY29uc3RyYWluZWRfaW50cmE9MCBiZnJhbWVzPTAgd2VpZ2h0cD0wIGtleWludD0yNTAga2V5aW50X21pbj0yIHNjZW5lY3V0PTQwIGludHJhX3JlZnJlc2g9MCByY19sb29rYWhlYWQ9NDAgcmM9Y3JmIG1idHJlZT0xIGNyZj00MC4wIHFjb21wPTAuNjAgcXBtaW49MCBxcG1heD02OSBxcHN0ZXA9NCBpcF9yYXRpbz0xLjQwIGFxPTE6MS4yMACAAAAADmWIhAXznJigACX3J114AAAAB0GaOAvnOWAAAAAHQZpUAvnOWAAAAAdBmmAVznLA';
@@ -375,6 +375,7 @@
       if (!v || !this.verbindung) return;
       if (a.a === 'wunsch') { this._farbwunsch(); return; }
       if (a.a === 'draw') { this.ziehen(); return; }
+      if (a.a === 'ablegen') { this.ablegenBestaetigen(); return; }
       this._sendeAkt(a);
     },
     _sendeAkt(a) {
@@ -399,6 +400,7 @@
       if (!t) return;
       if (t.hand.rueck) { this.rueckseiten(); return; }
       if (id === null) { if (t.hand.gewaehlt !== null) t.hand.waehle(null); return; }
+      if (this.imAblegen()) { this.pickTipp(id); return; }
       // Glücksspiel: Im eigenen Glücksspiel setzt ein Tipp die Karte verdeckt (welche, ist fast egal: alle kommen zurück oder unter die Ablage)
       if (this.imGluecksspiel()) { this.setzen(id); return; }
       if (t.hand.gewaehlt === id) { this.spielen(id); return; }
@@ -411,6 +413,7 @@
       const c = (v.hand || []).find(h => h.id === id);
       if (!c) return;
       if (this.imGluecksspiel()) { this.setzen(id); return; }
+      if (this.imAblegen()) { this.pickTipp(id); return; }
       const h = v.hints || {};
       // Legen geht in „turn“ und „drawn“, mit Stapeln (stacking=same) auch in „challenge“ (dann steht die Karte in hints.playable)
       const legbar = v.turn === v.seat && (v.phase === 'turn' || v.phase === 'drawn' || (v.phase === 'challenge' && (h.playable || []).length > 0));
@@ -433,7 +436,7 @@
         t.oeffneFarbwahl(v.side, this.zaehleFarben(v, id), farbe => {
           if (farbe) this._spieleKarte(id, farbe);
           else if (this.tisch) this.tisch.hand.waehle(null);
-        });
+        }, M.Karten.zerlege(c.face).art === 'ablegen_joker' ? 'Welche Farbe legst du mit ab?' : null);
         return;
       }
       this._spieleKarte(id);
@@ -462,6 +465,39 @@
       return 'Passt nicht – gefragt ist ' + was + '.';
     },
     hervorheben() { return this.einstellungen.hervorheben !== false; },
+    // Farbe mit ablegen (Phase discard_pick, ich wähle): Auswahl je Ablegen-Karte, alle Kandidaten (hints.can_pick) vorausgewählt
+    imAblegen() { const v = this.view; return !!(v && v.phase === 'discard_pick' && v.discard_pick && v.discard_pick.seat === v.seat && v.seat >= 0); },
+    pickAuswahl(v) {
+      const kand = (v.hints || {}).can_pick || [];
+      const key = v.round + ':' + (v.top && v.top.id);
+      if (!this._pick || this._pick.key !== key) this._pick = { key, ab: new Set() };
+      return kand.filter(id => !this._pick.ab.has(id));
+    },
+    pickTipp(id) {
+      const v = this.view, t = this.tisch;
+      if ((v.hints.can_pick || []).indexOf(id) < 0) {
+        t.hand.wackeln(id);
+        this.toast('Mit ablegen kannst du nur Karten in ' + M.Karten.farbName(v.discard_pick.color) + ' (keine Joker).');
+        return;
+      }
+      this.pickAuswahl(v);
+      const ab = this._pick.ab;
+      if (ab.has(id)) ab.delete(id); else ab.add(id);
+      M.Ton.spiele('tipp');
+      t.zeige(v, true);
+    },
+    ablegenBestaetigen() {
+      const v = this.view, t = this.tisch;
+      if (!this.imAblegen() || !t || this.offen) return;
+      const karten = this.pickAuswahl(v);
+      const h = v.hints || {};
+      const joker = h.pick_color !== undefined ? !!h.pick_color : !!(v.top && M.Karten.zerlege(v.top.face).art === 'ablegen_joker');
+      if (!joker) { this._sendeAkt({ a: 'discard_pick', cards: karten }); return; }
+      // Ablegen-Joker: zum Schluss die Spielfarbe (Zählung ohne die mitabgelegten Karten)
+      const z = {};
+      (v.hand || []).forEach(c => { if (karten.indexOf(c.id) >= 0) return; const k = M.Karten.zerlege(c.face); if (k.farbe) z[k.farbe] = (z[k.farbe] || 0) + 1; });
+      t.oeffneFarbwahl(v.side, z, farbe => { if (farbe && this.imAblegen()) this._sendeAkt({ a: 'discard_pick', cards: karten, color: farbe }); }, 'Mit welcher Farbe geht es weiter?');
+    },
     // eigenes Glücksspiel läuft (Phase gamble, ich bin dran)
     imGluecksspiel() { const v = this.view; return !!(v && v.phase === 'gamble' && v.turn === v.seat && v.seat >= 0); },
     // Glücksspiel: Karte verdeckt auf den Einsatz ({a:"stake", card}), nur mit hints.can_stake
@@ -521,7 +557,8 @@
       if (!v) return;
       const h = v.hints || {};
       if (h.can_draw) { if (!this.offen) this._sendeAkt({ a: 'draw' }); return; }
-      if (this.imGluecksspiel()) this.toast(h.can_press ? 'Im Glücksspiel wird nicht gezogen – drück den Knopf.' : 'Im Glücksspiel wird nicht gezogen – setz eine Karte.');
+      if (this.imAblegen()) this.toast('Wähl erst die Karten zum Mitablegen und tippe auf „Ablegen“.');
+      else if (this.imGluecksspiel()) this.toast(h.can_press ? 'Im Glücksspiel wird nicht gezogen – drück den Knopf.' : 'Im Glücksspiel wird nicht gezogen – setz eine Karte.');
       else if (v.turn === v.seat && v.phase === 'drawn') this.toast('Leg die gezogene Karte oder tippe auf „Behalten“.');
       else if (v.turn === v.seat && h.can_challenge) this.toast('Erst anzweifeln oder annehmen.');
       else if (v.turn !== v.seat) this.toast('Warte, bis du dran bist.');
@@ -611,6 +648,7 @@
         else if (s === 'menue') this.menue();
         else if (s === 'gegner') { const p = (v.players || []).find(x => x.seat !== v.seat); if (p) this.gegnerAnsicht(p.seat); }
         else if (s === 'gewaehlt' || s === 'tisch') { const id = (v.hints.playable || [])[0]; if (id !== undefined && s === 'gewaehlt') this.tisch.hand.waehle(id); }
+        else if (s === 'ablegejoker') { const j = hand.find(c => K.zerlege(c.face).art === 'ablegen_joker'); if (j) this.spielen(j.id); }
         else if (s === 'tausch' || s === 'ablegen') {
           const passt = c => K.zerlege(c.face).art === s && (v.hints.playable || []).indexOf(c.id) >= 0;
           const c = hand.find(passt) || hand.find(c => K.zerlege(c.face).art === s);

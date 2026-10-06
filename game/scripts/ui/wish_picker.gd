@@ -21,6 +21,7 @@ var mode := ""                       # "" | "fields" | "wheel"
 var hovered := ""
 var wheel_center := Vector2.ZERO     # lokal (Bildschirmmitte), vom Tisch gesetzt
 var night := 0.0
+var title := ""                      # Farbrad: Frage über dem Rad (z. B. beim Ablegen-Joker), "" = keine
 
 var _open := 0.0
 var _tween: Tween
@@ -38,12 +39,14 @@ func open_fields(active_side: String, own_counts: Dictionary = {}) -> void:
 	_start("fields", active_side, own_counts)
 
 
-func open_wheel(active_side: String, own_counts: Dictionary = {}) -> void:
+func open_wheel(active_side: String, own_counts: Dictionary = {}, question := "") -> void:
 	_start("wheel", active_side, own_counts)
+	title = question
 
 
 func close() -> void:
 	mode = ""
+	title = ""
 	hovered = ""
 	_open = 0.0
 	queue_redraw()
@@ -219,6 +222,16 @@ func _draw_wheel() -> void:
 		var fs := maxi(int(17 * o), 1)
 		var lw := nf.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 		draw_string(nf, mid + Vector2(-lw * 0.5, 34.0 * o), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, sym_col)
+	if title != "":
+		var qf := UiFonts.title(800, true, 100.0, 36.0)
+		var qw := qf.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, 34).x
+		var qy := c.y - (WHEEL_R + 60.0) * o
+		var qr := Rect2(Vector2(c.x - qw * 0.5 - 24.0, qy - 40.0), Vector2(qw + 48.0, 56.0))
+		var qb := StyleBoxFlat.new()
+		qb.bg_color = Color(UiPalette.CREAM, 0.95)
+		qb.set_corner_radius_all(28)
+		draw_style_box(qb, qr)
+		draw_string(qf, Vector2(c.x - qw * 0.5, qy), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 34, UiPalette.INK)
 	draw_circle(c, (WHEEL_INNER - 10.0) * o, UiPalette.CREAM)
 	var tf := UiFonts.title(800, true, 100.0, 36.0)
 	for line in [["Farbe", -6.0], ["wählen", 20.0]]:

@@ -77,7 +77,16 @@ static func host_title(host_name: String) -> String:
 # --- Prüfen (AppSettings.sanitize) ---
 
 static func normalized(rules: Dictionary) -> Dictionary:
-	return RuleConfig.from_dict(rules).to_dict()
+	return load_config(rules).to_dict()
+
+
+# Gespeicherte oder empfangene Regeln auf den Stand 0.1.3 bringen: kein Anzweifeln mehr ("bluff" wird "free", Protokoll 0.1.3 Nr. 2).
+static func migrate(rules: Dictionary) -> Dictionary:
+	return RuleConfig.migrate_dict(rules)
+
+
+static func load_config(rules: Variant) -> RuleConfig:
+	return RuleConfig.from_dict(migrate(rules if rules is Dictionary else {}))
 
 
 # Liste der Sätze bereinigen; null = gar keine Liste (dann gilt der Standard []).
@@ -177,7 +186,7 @@ static func config(set_name: String, st: AppSettings = null) -> RuleConfig:
 	var i := index_of(set_name, st)
 	if i < 0:
 		return null
-	return RuleConfig.from_dict(list(st)[i].regeln)
+	return load_config(list(st)[i].regeln)
 
 
 # Gespeicherter Name in der gespeicherten Schreibweise ("" = gibt es nicht).
@@ -240,7 +249,7 @@ static func match_name(cfg: RuleConfig, st: AppSettings = null) -> String:
 	if chosen != "" and matches(chosen, cfg, st):
 		return chosen
 	for e in list(st):
-		if same(RuleConfig.from_dict(e.regeln), cfg):
+		if same(load_config(e.regeln), cfg):
 			return str(e.name)
 	return ""
 
@@ -288,7 +297,7 @@ static func host_name(st: AppSettings = null) -> String:
 
 static func host_config(st: AppSettings = null) -> RuleConfig:
 	var slot := host_slot(st)
-	return RuleConfig.from_dict(slot.regeln) if not slot.is_empty() else null
+	return load_config(slot.regeln) if not slot.is_empty() else null
 
 
 static func host_matches(cfg: RuleConfig, st: AppSettings = null) -> bool:

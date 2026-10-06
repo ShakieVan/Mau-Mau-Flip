@@ -3,12 +3,12 @@
  * gleiche Nachrichten (welcome, lobby, start, state mit events+view, err, pong), Sicht mit hints, sortierte Rückseiten.
  * Nicht regelvollständig (kein Stapeln, keine Platzierungen „bis zum Letzten“). Hausregeln mit Zusatzkarten (haus=1 bzw. die
  * Szenen gluecksspiel, einsatz, tausch, ablegen): Kartentausch (swap_hands), Glücksspiel (Phase gamble, stake/press/stop, gamble_start,
- * stake, gamble_roll, stake_back, stake_discard) und Farbe mit ablegen (discard_color), vereinfacht nach docs/module/A.md.
+ * stake, gamble_roll, stake_back, stake_discard) und Farbe mit ablegen (Phase discard_pick, discard_color), vereinfacht nach docs/module/A.md.
  * Parameter:
  *   gegner=1..9 (Standard 3), karten=N (eigene Startkarten), seite=dunkel, seed=Zahl, tempo=Faktor, haus=1 (alle drei Hausregeln),
- *   richtung=spiel (Kartentausch in Spielrichtung), wuerfe=0,0,4 (Ergebnisse der nächsten Glücksspiel-Drucke),
+ *   richtung=spiel|gegen|gegenspiel (Kartentausch in/gegen Spielrichtung, gegen den Uhrzeigersinn), bluff=1 (alter Gastgeber mit Anzweifeln), wuerfe=0,0,4 (Ergebnisse der nächsten Glücksspiel-Drucke),
  *   szene=lobby|tisch|farbwahl|anzweifeln|gezogen|mau|rundenende|getrennt|viele|hilfe|rueckseiten|menue|gegner|blasen|
- *         gluecksspiel|einsatz|tausch|ablegen
+ *         gluecksspiel|einsatz|tausch|ablegen|ablegejoker
  *   (blasen: alle Varianten der Mau-Sprechblase gleichzeitig, für Kontrollbilder; gluecksspiel: eigenes Glücksspiel, 2 Karten gesetzt;
  *    einsatz: ein Mitspieler spielt Glücksspiel; tausch/ablegen: app.js _szene legt gleich die passende Karte; app.js _szene)
  */
@@ -20,12 +20,12 @@
   const NAMEN = ['Lena', 'Tom', 'Mia', 'Ben', 'Ida', 'Noah', 'Lea', 'Finn', 'Ella'];
   const FARBEN = { hell: ['rot', 'gelb', 'gruen', 'blau'], dunkel: ['pink', 'tuerkis', 'orange', 'lila'] };
   const JOKER = { wuenscher: 1, wuenscher_plus2: 1, farbjagd: 1, gluecksspiel: 1, ablegen_joker: 1 };
-  const HAUS = !!P('haus') || ['gluecksspiel', 'einsatz', 'tausch', 'ablegen'].indexOf(P('szene') || '') >= 0;
+  const HAUS = !!P('haus') || ['gluecksspiel', 'einsatz', 'tausch', 'ablegen', 'ablegejoker'].indexOf(P('szene') || '') >= 0;
   const REGELN = {
     round_end: 'first', scoring: 'none', target: 500, hand_size: 7, draw_rule: 'one', drawn_card: 'may', stacking: 'off',
-    wild_restriction: 'bluff', wild_counts_for_bluff: true, jagd_wild_stops: false, mau_call: 'catch', mau_penalty: 2,
+    wild_restriction: P('bluff') ? 'bluff' : 'free', wild_counts_for_bluff: true, jagd_wild_stops: false, mau_call: 'catch', mau_penalty: 2,
     backs_visible: true, peek_own_backs: true, two_player_reverse_skips: true, flip_last_card: 'execute', penalty_turn: 'skip',
-    swap_cards: HAUS ? 'on' : 'off', swap_direction: P('richtung') === 'spiel' ? 'play' : 'clockwise',
+    swap_cards: HAUS ? 'on' : 'off', swap_direction: { spiel: 'play', gegen: 'counter', gegenspiel: 'against' }[P('richtung')] || 'clockwise',
     gamble_cards: HAUS ? 'on' : 'off', discard_color: HAUS ? 'on' : 'off',
   };
   const z = key => M.Karten.zerlege(key);
@@ -124,7 +124,7 @@
     }
     // Kartentausch: alle geben ihre ganze Hand an den Nächsten in Tauschrichtung; Rufe und Mau-Fenster verfallen
     tausche(s, ev) {
-      const schritt = REGELN.swap_direction === 'play' ? this.dir : 1;
+      const schritt = { counter: -1, play: this.dir, against: -this.dir }[REGELN.swap_direction] || 1;
       const alt = this.haende.slice();
       for (let i = 0; i < this.n; i++) this.haende[(i + schritt + this.n) % this.n] = alt[i];
       this.mau.clear(); this.mauOffen = null;
@@ -132,10 +132,11 @@
         hand: this.haende[ICH].map(id => ({ id, face: this.f(id), back: this.b(id) })),
         backs: this.haende.map((h, i) => (i === ICH || !REGELN.backs_visible) ? [] : sortiereFaces(h.map(id => this.b(id)))) });
     }
-    // Farbe mit ablegen: alle übrigen Karten der geltenden Farbe (Joker bleiben) kommen unter die Ablegen-Karte
-    legeFarbeAb(s, ev) {
-      const col = this.farbe, hand = this.haende[s];
-      const mit = M.Karten.sortiere(hand.filter(id => z(this.f(id)).farbe === col).map(id => ({ id, face: this.f(id) })), 'farbe').map(c => c.id);
+    // Farbe mit ablegen: Kandidaten sind die Nicht-Joker der Ablegefarbe; die gewählten kommen unter die Ablegen-Karte
+    kandidaten(s, col) { return this.haende[s].filter(id => z(this.f(id)).farbe === col && !JOKER[z(this.f(id)).art]); }
+    legeFarbeAb(s, col, wahl, ev) {
+      const hand = this.haende[s];
+      const mit = M.Karten.sortiere(wahl.map(id => ({ id, face: this.f(id) })), 'farbe').map(c => c.id);
       mit.forEach(id => hand.splice(hand.indexOf(id), 1));
       const top = this.ablage.pop();
       this.ablage.push(...mit, top);
@@ -175,7 +176,8 @@
           hand.splice(i, 1); this.ablage.push(a.card); this.gezogen = null; this.phase = 'turn';
           ev.push({ e: 'play', seat: s, card: a.card, face });
           const farbeVorher = this.farbe;
-          if (JOKER[k.art]) { this.farbe = a.color; ev.push({ e: 'color', color: a.color }); } else this.farbe = k.farbe;
+          // Ablegen-Joker: a.color ist die Ablegefarbe; die Spielfarbe kommt erst mit {a:"discard_pick"}
+          if (k.art === 'ablegen_joker') { /* Farbe folgt */ } else if (JOKER[k.art]) { this.farbe = a.color; ev.push({ e: 'color', color: a.color }); } else this.farbe = k.farbe;
           const nx = this.naechster(s);
           switch (k.art) {
             case 'plus1': case 'plus5': this.ziehe(nx, k.art === 'plus1' ? 1 : 5, ev); ev.push({ e: 'skip', seat: nx }); this.dran = this.naechster(nx); break;
@@ -189,7 +191,8 @@
             case 'wuenscher_plus2': case 'farbjagd': {
               const bluff = hand.some(id => { const kk = z(this.f(id)); return kk.farbe === farbeVorher || (REGELN.wild_counts_for_bluff && JOKER[kk.art]); });
               this.fordern = { von: s, opfer: nx, art: k.art, bluff, farbe: a.color };
-              this.dran = nx; this.phase = 'challenge';
+              // Anzweifeln nur noch bei einem alten Gastgeber (bluff=1); sonst wirkt die Karte sofort
+              if (REGELN.wild_restriction === 'bluff') { this.dran = nx; this.phase = 'challenge'; } else this.loese(false, ev);
               break;
             }
             case 'tausch': if (hand.length) this.tausche(s, ev); this.dran = nx; break;
@@ -200,7 +203,19 @@
                 ev.push({ e: 'gamble_start', seat: s });
               } else this.dran = nx;
               break;
-            case 'ablegen': case 'ablegen_joker': this.legeFarbeAb(s, ev); this.dran = nx; break;
+            case 'ablegen': case 'ablegen_joker': {
+              const col = k.art === 'ablegen_joker' ? a.color : k.farbe;
+              // Phase discard_pick: beim Joker immer (die Spielfarbe fehlt noch), sonst nur mit Kandidaten
+              if (hand.length && (k.art === 'ablegen_joker' || this.kandidaten(s, col).length)) {
+                this.pick = { seat: s, color: col, joker: k.art === 'ablegen_joker' };
+                this.phase = 'discard_pick'; this.dran = s;
+                ev.push({ e: 'discard_pick', seat: s, color: col });
+                return { ok: true, events: ev };
+              }
+              if (k.art === 'ablegen_joker') { this.farbe = col; ev.push({ e: 'color', color: col }); }
+              this.dran = nx;
+              break;
+            }
             default: this.dran = nx;
           }
           // Mau-Fenster nach dem Legen bzw. Mitablegen; nach einem Kartentausch muss niemand rufen
@@ -288,6 +303,24 @@
           if (this.dran !== s || this.phase !== 'drawn') return nein('Behalten geht nur nach dem Ziehen.');
           this.phase = 'turn'; this.gezogen = null; this.dran = this.naechster(s);
           return { ok: true, events: ev };
+        // Farbe mit ablegen: Auswahl der mitabgelegten Karten (Teilmenge der Kandidaten), beim Joker dazu die Spielfarbe
+        case 'discard_pick': {
+          const pk = this.pick;
+          if (this.phase !== 'discard_pick' || !pk || pk.seat !== s) return nein('Gerade wählst du keine Karten zum Mitablegen.');
+          const kand = this.kandidaten(s, pk.color);
+          const wahl = Array.isArray(a.cards) ? a.cards : [];
+          if (wahl.some(id => kand.indexOf(id) < 0) || new Set(wahl).size !== wahl.length) return nein('Diese Karte kannst du nicht mit ablegen.');
+          if (pk.joker && FARBEN[this.seite].indexOf(a.color) < 0) return nein('Bitte die Farbe wählen, mit der es weitergeht.');
+          this.legeFarbeAb(s, pk.color, wahl, ev);
+          this.farbe = pk.joker ? a.color : pk.color;
+          if (pk.joker) ev.push({ e: 'color', color: a.color });
+          this.pick = null; this.phase = 'turn';
+          this.dran = this.naechster(s);
+          if (hand.length === 1 && !this.mau.has(s)) this.mauOffen = { seat: s };
+          if (hand.length !== 1) this.mau.delete(s);
+          if (hand.length === 0) this.rundeEnde(s, ev);
+          return { ok: true, events: ev };
+        }
         case 'challenge': case 'accept':
           if (this.phase !== 'challenge' || !this.fordern || this.fordern.opfer !== s) return nein('Hier gibt es nichts anzuzweifeln.');
           this.beginneZug(s);
@@ -295,7 +328,7 @@
           return { ok: true, events: ev };
         case 'mau': {
           const ok = (this.dran === s && (this.phase === 'turn' || this.phase === 'drawn') && hand.length === 2) || (this.mauOffen && this.mauOffen.seat === s) ||
-            (this.phase === 'gamble' && this.gamble && this.gamble.need === 'stake' && this.dran === s && hand.length === 2);
+            (this.phase === 'gamble' && this.gamble && this.gamble.need === 'stake' && this.dran === s && hand.length === 2) || this.pickMau(s);
           if (!ok || this.mau.has(s)) return nein('„Mau!“ geht erst bei zwei Karten, wenn du dran bist.');
           this.mau.add(s);
           if (this.mauOffen && this.mauOffen.seat === s) this.mauOffen = null;
@@ -322,6 +355,11 @@
       } else this.farbe = t.farbe;
       this.dran = this.naechster(s);
     }
+    // „Mau!“ in discard_pick: erlaubt, wenn nach der Auswahl genau 1 Karte bleiben kann
+    pickMau(s) {
+      const pk = this.pick, h = this.haende[s];
+      return !!(this.phase === 'discard_pick' && pk && pk.seat === s && h.length >= 1 && h.length - this.kandidaten(s, pk.color).length <= 1);
+    }
     loese(anzweifeln, ev) {
       const f = this.fordern;
       this.fordern = null; this.phase = 'turn';
@@ -338,6 +376,7 @@
       this.ranking = [{ seat: sieger, place: 1, points: gewinn }].concat(andere.map((s, i) => ({ seat: s, place: i + 2, points: pkt(s) })));
       this.scores = this.punkte.slice();
       this.phase = 'round_over';
+      this.pick = null;
       this.mauOffen = null; this.fordern = null;
       ev.push({ e: 'finish', seat: sieger, place: 1 }, { e: 'round_over', ranking: this.ranking, scores: this.scores });
     }
@@ -352,7 +391,7 @@
         can_keep: meinZug && this.phase === 'drawn',
         can_challenge: this.phase === 'challenge' && this.fordern && this.fordern.opfer === ich,
         can_mau: !this.mau.has(ich) && ((meinZug && (this.phase === 'turn' || this.phase === 'drawn') && hand.length === 2) || !!(this.mauOffen && this.mauOffen.seat === ich) ||
-          (meinZug && this.phase === 'gamble' && !!this.gamble && this.gamble.need === 'stake' && hand.length === 2)),
+          (meinZug && this.phase === 'gamble' && !!this.gamble && this.gamble.need === 'stake' && hand.length === 2) || this.pickMau(ich)),
         catch: this.mauOffen && this.mauOffen.seat !== ich ? [this.mauOffen.seat] : [],
         need_color: this.phase === 'color' && meinZug,
         text: '',
@@ -369,6 +408,7 @@
       if (this.phase === 'round_over') h.text = this.ranking[0].seat === ich ? 'Mau-Mau! Du hast gewonnen.' : name(this.ranking[0].seat) + ' gewinnt die Runde.';
       else if (g && meinZug) h.text = g.need === 'stake' ? (h.can_stop ? 'Noch eine Karte setzen – oder aufhören?' : 'Leg eine Karte verdeckt auf deinen Einsatz.') : 'Drück den Glücksspielknopf!';
       else if (g) h.text = name(g.seat) + ' spielt Glücksspiel – Einsatz: ' + g.stake.length + (g.stake.length === 1 ? ' Karte.' : ' Karten.');
+      else if (this.phase === 'discard_pick' && this.pick) h.text = this.pick.seat === ich ? (this.pick.joker ? 'Wähl die Karten, die du mit ablegst – dann die Spielfarbe.' : 'Wähl die Karten, die du mit ablegst.') : name(this.pick.seat) + ' wählt Karten zum Mitablegen.';
       else if (h.need_color) h.text = 'Oben liegt ein Joker – wähle die Farbe.';
       else if (h.can_challenge) h.text = name(this.fordern.von) + ' legt ' + M.Karten.kartenName(this.f(this.top())) + '. Anzweifeln oder annehmen?';
       else if (meinZug && this.phase === 'drawn') h.text = 'Gezogene Karte legen oder behalten.';
@@ -392,6 +432,13 @@
         ranking: this.phase === 'round_over' ? this.ranking : [],
         rules: REGELN,
       };
+      // Felder der Hausregel Farbe ablegen (wie MauGame.view_for/_hints): immer da, gefüllt nur in der Phase discard_pick
+      if (REGELN.discard_color === 'on') {
+        const pk = this.phase === 'discard_pick' ? this.pick : null, meins = !!(pk && pk.seat === ich);
+        sicht.discard_pick = pk ? { seat: pk.seat, color: pk.color } : {};
+        h.can_pick = meins ? this.kandidaten(ich, pk.color) : [];
+        h.pick_color = meins && pk.joker;
+      }
       if (glueck) sicht.gamble = g ? { seat: g.seat, stake: g.stake.length, need: g.need, last: g.last } : {};
       return sicht;
     }
@@ -400,6 +447,19 @@
       if (this.phase === 'challenge' && this.fordern && this.fordern.opfer === s) return { a: this.rng() < 0.3 ? 'challenge' : 'accept' };
       if (this.dran !== s) return null;
       const hand = this.haende[s];
+      // Farbe mit ablegen: Zahlenkarten mit, Aktionskarten behalten (außer er wird fertig); Spielfarbe = häufigste verbleibende
+      if (this.phase === 'discard_pick' && this.pick && this.pick.seat === s) {
+        const kand = this.kandidaten(s, this.pick.color);
+        const wahl = hand.length === kand.length ? kand : kand.filter(id => z(this.f(id)).art === 'zahl');
+        if (hand.length - wahl.length === 1 && !this.mau.has(s) && this.rng() < 0.75) return { a: 'mau' };
+        const a = { a: 'discard_pick', cards: wahl };
+        if (this.pick.joker) {
+          const rest = {};
+          hand.forEach(id => { if (wahl.indexOf(id) >= 0) return; const k = z(this.f(id)); if (k.farbe) rest[k.farbe] = (rest[k.farbe] || 0) + 1; });
+          a.color = FARBEN[this.seite].slice().sort((x, y) => (rest[y] || 0) - (rest[x] || 0))[0];
+        }
+        return a;
+      }
       // Glücksspiel: vor der vorletzten Karte „Mau!“, dann die Karte mit den meisten Punkten setzen, sofort drücken
       if (this.phase === 'gamble' && this.gamble) {
         if (this.gamble.need === 'press') return { a: 'press' };
@@ -467,6 +527,12 @@
         }
         if (c !== null) { this.stapel.unshift(hand.pop()); hand.push(c); }
         if (name === 'ablegen') for (let i = 0; i < 2; i++) { const x = nimm(k => k.art === 'zahl' && k.farbe === this.farbe); if (x !== null) { this.stapel.unshift(hand.shift()); hand.push(x); } }
+      } else if (name === 'ablegejoker') {
+        // Ablegen-Joker plus drei Karten einer Farbe auf die Hand (app.js _szene legt den Joker)
+        const j = nimm(k => k.art === 'ablegen_joker');
+        if (j !== null) { this.stapel.unshift(hand.pop()); hand.push(j); }
+        const col = FARBEN[this.seite][1];
+        for (let i = 0; i < 3; i++) { const x = nimm(k => k.farbe === col && k.art !== 'ablegen'); if (x !== null) { this.stapel.unshift(hand.shift()); hand.push(x); } }
       } else if (name === 'rundenende') {
         const g = Math.min(2, this.n - 1);
         const ev = [];

@@ -596,7 +596,8 @@ func _gb_pending() -> void:
 	var r := g.apply(1, {"a": "play", "card": RulesFixture.card(g, 1, "hell_gluecksspiel"), "color": "rot"})
 	check(not bool(r.ok), "Glücksspiel auf offene Strafe abgelehnt (%s)" % r.reason)
 	# Anzweifeln offen: auch kein Glücksspiel
-	g = gb_make({"hands": [["hell_wuenscher_plus2", "hell_blau_1"], ["hell_gluecksspiel", "hell_blau_2"], ["hell_gruen_1"]], "top": "hell_rot_5"})
+	g = gb_make({"hands": [["hell_wuenscher_plus2", "hell_blau_1"], ["hell_gluecksspiel", "hell_blau_2"], ["hell_gruen_1"]], "top": "hell_rot_5"},
+		{"wild_restriction": "bluff"})
 	gb_play(g, 0, "hell_wuenscher_plus2", "+2 legen", "blau")
 	check(g.phase() == "challenge" and (g.view_for(1).hints.playable as Array).is_empty(), "challenge: kein Glücksspiel")
 	# Ein Glücksspiel-Joker auf der Hand zählt beim Wünscher +2 als „anderer Joker“ (wild_counts_for_bluff)
@@ -1093,7 +1094,7 @@ func _gb_bot_round(g: MauGame, rng: RandomNumberGenerator, levels: Array, forget
 		if kind == "mau":
 			if (g.hands[seat] as Array).size() >= 2:
 				called = seat
-		elif called == seat and kind != "catch":     # Erwischen zwischen Ruf und Legen ändert die eigene Hand nicht
+		elif called == seat and kind != "catch" and g.state != "discard_pick":  # Erwischen ändert die Hand nicht; nach der Auswahl zählen
 			# Ein Kartentausch nach dem Ruf (Zufallsbot) löscht alle Rufe nach der Regel; das zählt wie im Kartentausch-Test nicht.
 			var swapped := false
 			for e in res.events:

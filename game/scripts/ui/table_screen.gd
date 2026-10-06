@@ -60,6 +60,8 @@ var _peek_down_ms := -1
 var _peek_on := false
 var _peek_was_on := false
 var _handover_pending := false
+var _sub_btn: Button                 # Gastgeber: „Computer spielt für Kim“ (getrennter Gast, M4)
+var _sub_seat := -1
 
 
 # starter: wird aufgerufen, sobald der Tisch an der Quelle hängt (z. B. LocalTable.start, HostTable.start)
@@ -192,6 +194,12 @@ func _build_top() -> void:
 	_conn_menu.visible = false
 	_conn_menu.pressed.connect(_leave_now)
 	row.add_child(_conn_menu)
+	_sub_btn = ScreenKit.button("", "PrimaryButton", "bot")
+	_sub_btn.name = "ComputerUebernimmt"
+	_sub_btn.tooltip_text = "Ein Computergegner spielt für den getrennten Gast, bis er zurückkommt."
+	_sub_btn.visible = false
+	_sub_btn.pressed.connect(ask_substitute)
+	_top.add_child(_sub_btn)
 
 
 func on_enter() -> void:
@@ -221,6 +229,8 @@ func _layout() -> void:
 	_round_menu.position = Vector2(sz.x - _round_menu.size.x - 22.0, 14.0)
 	_conn.reset_size()
 	_conn.position = Vector2((sz.x - _conn.size.x) * 0.5, 16.0)
+	_sub_btn.size = Vector2(_sub_btn.get_combined_minimum_size().x + 20.0, ScreenKit.TOUCH)
+	_sub_btn.position = Vector2(14.0 + ScreenKit.TOUCH + 14.0, 10.0)
 
 
 func _process(_delta: float) -> void:
@@ -228,6 +238,9 @@ func _process(_delta: float) -> void:
 		return
 	_round_menu.visible = table.round_end.visible and not table.handover.visible
 	_menu_btn.visible = not table.handover.visible
+	# „Computer spielt für …“ verdeckt sonst die Frage über dem Farbrad (Ablegen-Joker)
+	if _sub_btn != null:
+		_sub_btn.visible = _sub_seat >= 0 and not table.wish_picker.is_open()
 	# Ziel der Ausspiel-Flüge folgt dem Tisch (Größenwechsel)
 	if not hand.play_target.is_finite():
 		_layout()
@@ -259,6 +272,7 @@ func _on_state(events: Array, v: Dictionary) -> void:
 	if source != null and source.mode() == "client" and not rules.is_empty():
 		RuleSets.remember_host(rules, _host_name())
 	table.handle_state(events, v)
+	_refresh_substitute()
 
 
 # Bots warten, solange die Regie noch abspielt
@@ -272,6 +286,7 @@ func _on_notice(text: String) -> void:
 		_last_play = -1
 	table.gamble_machine.press_sent = false
 	table.gamble_machine.queue_redraw()      # „Aufhören“ wieder zeigen
+	table.pick_retry()                        # „Farbe mit ablegen“: Auswahl wieder anbieten
 	table.show_notice(text, "warn")
 
 
@@ -304,8 +319,10 @@ func _on_connection(state: String) -> void:
 			_conn_host.visible = false
 			_conn_sub.visible = false
 			_conn.visible = true
-		"closed", "rejected":
-			_conn_label.text = "Verbindung zum Gastgeber beendet."
+		"closed", "rejected", "ended":
+			# Spielende und Gastgeber weg (N6) bzw. Wiederverbinden abgelehnt: klar „Spiel beendet“, Weg ins Menü
+			var over := state == "ended" or (state == "rejected" and not view.is_empty())
+			_conn_label.text = "Spiel beendet." if over else "Verbindung zum Gastgeber beendet."
 			_conn_menu.visible = true
 			var guest := _guest_rules() != null
 			_conn_save.visible = guest
@@ -361,6 +378,11 @@ func _card_face(id: int) -> String:
 	return ""
 
 
+# Ablegen-Joker: zuerst die Ablegefarbe im Farbrad (mit Frage), Farbfelder beim Ziehen gibt es für ihn nicht
+static func is_discard_joker(face: String) -> bool:
+	return str(CardDB.parse_key(face).get("kind", "")) == CardDB.DISCARD_WILD
+
+
 func _is_wild(id: int, face: String) -> bool:
 	var hints: Dictionary = view.get("hints", {})
 	var wild: Array = hints.get("wild", [])
@@ -396,7 +418,10 @@ func _on_play_requested(id: int, drop_global: Vector2) -> void:
 			_act({"a": "play", "card": id, "color": col})
 		else:
 			_pending_wild = id
-			table.open_color_wheel()
+			if is_discard_joker(face):
+				table.wish_picker.open_wheel(table.side, table.call("_own_counts"), "Welche Farbe legst du mit ab?")
+			else:
+				table.open_color_wheel()
 		return
 	_last_play = id
 	_act({"a": "play", "card": id})
@@ -406,7 +431,7 @@ func _on_drag_started(id: int, face: String) -> void:
 	if _staking():
 		return
 	var playable: Array = (view.get("hints", {}) as Dictionary).get("playable", [])
-	if _is_wild(id, face) and (playable.has(id) or playable.has(float(id))):
+	if _is_wild(id, face) and not is_discard_joker(face) and (playable.has(id) or playable.has(float(id))):
 		_wild_drag = id
 		table.open_color_fields()
 
@@ -560,7 +585,7 @@ func _guest_rules() -> RuleConfig:
 	var rules: Variant = view.get("rules", {})
 	if not rules is Dictionary or (rules as Dictionary).is_empty():
 		return null
-	return RuleConfig.from_dict(rules)
+	return RuleSets.load_config(rules)
 
 
 # Name des Gastgebers: Lobby (Spieler mit host_id), sonst die Begrüßung, sonst „Gastgeber“
@@ -641,3 +666,37 @@ func _leave_now() -> void:
 		source.leave()
 	if nav != null:
 		nav.home()
+
+
+# ================================================================= Gastgeber: Computer übernimmt (M4)
+
+# Knopf „Computer spielt für …“, solange ein Gast getrennt ist (zuerst der, auf den das Spiel wartet). Kommt er zurück, spielt er
+# selbst weiter (HostTable._on_rejoined beendet die Vertretung).
+func _refresh_substitute() -> void:
+	if _sub_btn == null:
+		return
+	_sub_seat = -1
+	if source is HostTable and not leaving and not str(view.get("phase", "")) in ["round_end", "game_over"]:
+		var list: Array = (source as HostTable).substitutable_seats()
+		if not list.is_empty():
+			var w := (source as HostTable).waiting_seat()
+			_sub_seat = w if list.has(w) else int(list[0])
+	_sub_btn.visible = _sub_seat >= 0
+	if _sub_seat >= 0:
+		_sub_btn.text = "Computer spielt für %s" % (source as HostTable).seat_name(_sub_seat)
+		_layout()
+
+
+func ask_substitute() -> void:
+	if _sub_seat < 0 or not source is HostTable:
+		return
+	var seat := _sub_seat
+	var who := (source as HostTable).seat_name(seat)
+	if _confirm != null and is_instance_valid(_confirm):
+		_confirm.queue_free()
+	_confirm = ConfirmBox.ask(_top, "Computer übernimmt?", "Ein Computergegner spielt für %s. Kommt %s zurück, spielt er wieder selbst." % [who, who], "Übernehmen", "Abbrechen")
+	_confirm.answered.connect(func(yes: bool) -> void:
+		_confirm = null
+		if yes and source is HostTable:
+			(source as HostTable).substitute_bot(seat)
+		_refresh_substitute())

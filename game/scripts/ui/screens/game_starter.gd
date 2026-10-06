@@ -10,6 +10,7 @@ static var test_speed := -1.0       # Tests: Pausen der Computergegner (0 = kein
 static func local(mode: String, cfg: RuleConfig, players: Array, rng_seed := 0) -> LocalTable:
 	var t := LocalTable.new()
 	t.name = "Spiel"
+	t.think_factor = bot_think_factor()
 	if test_speed >= 0.0:
 		t.speed = test_speed
 	if not t.setup(mode, players, cfg, rng_seed if rng_seed != 0 else randi()):
@@ -23,6 +24,7 @@ static func host() -> HostTable:
 	var t := HostTable.new()
 	t.name = "Gastgeber"
 	t.set_rules(RulesBar.current())
+	t.think_factor = bot_think_factor()
 	if test_speed >= 0.0:
 		t.speed = test_speed
 	return t
@@ -33,3 +35,8 @@ static func client() -> ClientTable:
 	var t := ClientTable.new()
 	t.name = "Mitspieler"
 	return t
+
+
+# Bedenkzeit der Computergegner nach dem Regler dieses Geräts (Einstellungen „Tempo der Computergegner“)
+static func bot_think_factor() -> float:
+	return AppSettings.think_factor(float(UiApp.setting("bot_tempo", 0.5)))

@@ -303,7 +303,8 @@ func _sw_clockwise() -> void:
 
 
 func _sw_after_reverse() -> void:
-	for mode in ["play", "clockwise"]:
+	# Nach dem Richtungswechsel (dir = −1): Platz + 1 bei clockwise und against, Platz − 1 bei counter und play
+	for mode in ["play", "clockwise", "counter", "against"]:
 		var spec := {"hands": [["hell_rot_richtungswechsel", "hell_gelb_1", "hell_gelb_2"], ["hell_blau_1", "hell_blau_2"],
 			["hell_blau_3", "hell_blau_4", "hell_blau_5"], ["hell_rot_tausch", "hell_gruen_1", "hell_gruen_2", "hell_gruen_3", "hell_gruen_4"]],
 			"top": "hell_rot_5"}
@@ -314,15 +315,31 @@ func _sw_after_reverse() -> void:
 		var tid := RulesFixture.card(g, 3, "hell_rot_tausch")
 		var ev := sw_play(g, 3, "hell_rot_tausch", "Kartentausch nach Richtungswechsel (%s)" % mode)
 		var rest := sw_without(old[3], tid)
-		if mode == "play":
+		if mode == "play" or mode == "counter":
 			check(g.hands[2] == rest and g.hands[1] == old[2] and g.hands[0] == old[1] and g.hands[3] == old[0],
-				"Spielrichtung: Hände wandern an Platz − 1")
-			sw_check_event(g, sw_ev(ev, "swap_hands"), 3, -1, "Spielrichtung")
+				"%s: Hände wandern an Platz − 1" % mode)
+			sw_check_event(g, sw_ev(ev, "swap_hands"), 3, -1, mode)
 		else:
 			check(g.hands[0] == rest and g.hands[1] == old[0] and g.hands[2] == old[1] and g.hands[3] == old[2],
-				"Uhrzeigersinn trotz Richtungswechsel: Hände wandern an Platz + 1")
-			sw_check_event(g, sw_ev(ev, "swap_hands"), 3, 1, "Uhrzeigersinn nach Richtungswechsel")
+				"%s nach Richtungswechsel: Hände wandern an Platz + 1" % mode)
+			sw_check_event(g, sw_ev(ev, "swap_hands"), 3, 1, mode)
 		check(g.current_seat() == 2 and g.dir == -1, "%s: danach Platz 2 (Spielrichtung bleibt −1) (%d)" % [mode, g.current_seat()])
+	# Ohne Richtungswechsel: counter und against wandern an Platz − 1
+	for mode in ["counter", "against"]:
+		var g := sw_make({"hands": [["hell_rot_tausch", "hell_gelb_1"], ["hell_blau_1", "hell_blau_2"], ["hell_blau_3", "hell_blau_4", "hell_blau_5"]],
+			"top": "hell_rot_5"}, {"swap_direction": mode}, 3)
+		var old: Array = g.hands.duplicate(true)
+		var tid := RulesFixture.card(g, 0, "hell_rot_tausch")
+		var ev := sw_play(g, 0, "hell_rot_tausch", "Kartentausch (%s)" % mode)
+		check(g.hands[2] == sw_without(old[0], tid) and g.hands[0] == old[1] and g.hands[1] == old[2], "%s: Hände an Platz − 1" % mode)
+		sw_check_event(g, sw_ev(ev, "swap_hands"), 0, -1, mode)
+		check(g.current_seat() == 1, "%s: danach der Nächste in Spielrichtung" % mode)
+	var texts := []
+	for mode in ["clockwise", "counter", "play", "against"]:
+		texts.append("\n".join(RulesText.card_help("hell_rot_tausch", sw_cfg({"swap_direction": mode}))))
+	check(texts[0].contains("immer im Uhrzeigersinn") and texts[1].contains("immer gegen den Uhrzeigersinn")
+		and texts[2].contains("in der aktuellen Spielrichtung") and texts[3].contains("gegen die aktuelle Spielrichtung")
+		and texts[3].contains("andersherum") and not texts[1].contains("andersherum"), "Kartenhilfe je Tauschrichtung")
 
 
 func _sw_two_players() -> void:

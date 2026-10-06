@@ -350,7 +350,7 @@ func _on_lobby(l: Dictionary) -> void:
 		row.add_child(tl)
 		_lobby_list.add_child(row)
 	var rules: Variant = l.get("rules", {})
-	var cfg := RuleConfig.from_dict(rules if rules is Dictionary else {})
+	var cfg := RuleSets.load_config(rules)
 	var welcomed := client.client.host_name if client != null and client.client != null else ""
 	host_name = RuleSets.host_name_in_lobby(l, welcomed if welcomed != "" else "Gastgeber")
 	_lobby_rules.text = "\n".join(PackedStringArray(cfg.describe()))

@@ -112,8 +112,8 @@ tools/                        Bau-, Test-, Asset- und Veröffentlichungsskripte
 | `draw_rule` | **`one`** (eine Karte, darf sie sofort legen) / `until_playable` |
 | `drawn_card` | **`may`** / `must` / `may_not` |
 | `stacking` | **`off`** / `same` (gleiche Ziehkarte weitergeben, Summe wächst) |
-| `wild_restriction` | **`bluff`** (+2/Farbjagd nur ohne aktuelle Farbe, Anzweifeln möglich) / `enforce` (App verhindert) / `free` |
-| `wild_counts_for_bluff` | **true** (Fassung 2024: Joker auf der Hand zählen als passend) / false |
+| `wild_restriction` | **`free`** (+2/Farbjagd immer erlaubt, ab 0.1.3 Standard in allen Voreinstellungen) / `enforce` (nur ohne aktuelle Farbe, App verhindert) / `bluff` (nur noch aus Verträglichkeit, Anzweifeln; Oberflächen bieten es nicht an, `RuleConfig.migrate_dict()` macht gespeichertes `bluff` beim Laden zu `free`) |
+| `wild_counts_for_bluff` | **true** (Fassung 2024: Joker auf der Hand zählen als passend) / false; ab 0.1.3 nicht mehr in der Oberfläche, zählt bei `free` nicht für die Voreinstellung |
 | `jagd_wild_stops` | **false** (gezogener Joker beendet die Farbjagd nicht) |
 | `mau_call` | **`catch`** (Mitspieler können erwischen) / `auto` (App bestraft sofort) / `reminder` (nur Hinweis) / `off` |
 | `mau_penalty` | **2** |
@@ -122,9 +122,9 @@ tools/                        Bau-, Test-, Asset- und Veröffentlichungsskripte
 | `two_player_reverse_skips` | **true** |
 | `flip_last_card` | **`execute`** (Flip als letzte Karte wird ausgeführt, Wertung auf neuer Seite) |
 | `swap_cards` | **`off`** / `on` (Hausregel Kartentausch: 4 zusätzliche Karten, also 116; hell je eine `hell_<farbe>_tausch`, dunkel je eine `dunkel_<farbe>_tausch`, 20 Punkte, legbar auf gleiche Farbe oder jeden Kartentausch; alle aktiven Spieler geben ihre ganze Hand an den nächsten aktiven Platz weiter, danach ist der Nächste in Spielrichtung dran; in der Voreinstellung „Familie“ an) |
-| `swap_direction` | **`clockwise`** (Hände wandern immer an Platz + 1) / `play` (in der aktuellen Spielrichtung) |
+| `swap_direction` | **`clockwise`** (Platz + 1) / `counter` (Platz − 1) / `play` (in der aktuellen Spielrichtung) / `against` (gegen die Spielrichtung); Texte „Im Uhrzeigersinn“, „Gegen den Uhrzeigersinn“, „In Spielrichtung“, „Gegen die Spielrichtung“ (`RuleConfig.swap_direction_title()`) |
 | `gamble_cards` | **`off`** / `on` (Hausregel Glücksspiel: 2 zusätzliche Karten, je Seite zweimal der Joker `hell_gluecksspiel` bzw. `dunkel_gluecksspiel`, 50 Punkte; Legen mit Farbwahl, danach Phase `gamble`: Karte verdeckt setzen, Knopf drücken, bis ein Treffer kommt oder die Hand leer ist; in keiner Voreinstellung) |
-| `discard_color` | **`off`** / `on` (Hausregel Farbe mit ablegen: 6 zusätzliche Karten, je Seite `hell_<farbe>_ablegen` je Farbe, 30 Punkte, legbar auf gleiche Farbe oder jede Ablegen-Karte, und zweimal der Joker `hell_ablegen_joker` bzw. `dunkel_ablegen_joker`, 50 Punkte; alle übrigen Handkarten der Farbe außer Jokern kommen ohne Wirkung mit auf die Ablage; in keiner Voreinstellung) |
+| `discard_color` | **`off`** / `on` (Hausregel Farbe mit ablegen: 6 zusätzliche Karten, je Seite `hell_<farbe>_ablegen` je Farbe, 30 Punkte, legbar auf gleiche Farbe oder jede Ablegen-Karte, und zweimal der Joker `hell_ablegen_joker` bzw. `dunkel_ablegen_joker`, 50 Punkte; danach wählt der Leger in der Phase `discard_pick`, welche seiner Karten der Farbe (außer Jokern) ohne Wirkung mit auf die Ablage kommen; in keiner Voreinstellung) |
 
 Kartenzahl je Partie: 112 + 4 (`swap_cards`) + 2 (`gamble_cards`) + 6 (`discard_color`), also 112 bis 124. Prüfsummen je Seite: hell 1280, dunkel 1480, dazu Kartentausch +80, Glücksspiel +100, Farbe mit ablegen +220. Die Kartencodes des Grunddecks und des Kartentauschs bleiben unverändert, die neuen hängen dahinter (Einzelheiten: `docs/module/A.md`).
 
@@ -133,7 +133,7 @@ Startkarte, Flip und Neumischen verhalten sich wie in Abschnitt 1.13 von `docs/r
 **Voreinstellungen**
 - **`familie`:** `round_end=last`, `stacking=same`, `penalty_turn=play`, `wild_restriction=enforce`, `mau_penalty=1`, `swap_cards=on` (Nutzerentscheidung 05.10.2026; also 116 Karten)
 - **`mau_mau`:** `stacking=same`, `wild_restriction=enforce`, `mau_penalty=1`
-- **`klassisch500`:** `scoring=points500`, `wild_counts_for_bluff=false`
+- **`klassisch500`:** `scoring=points500` (seit 0.1.3 ohne `wild_counts_for_bluff=false`, das bei `free` nicht zählt)
 
 **Eigene Regelsätze** gehören nicht zum Regelwerk. Sie sind gespeicherte `RuleConfig.to_dict()` in den Einstellungen des Geräts (`RuleSets`, Abschnitt 9), dazu die Regeln des letzten Gastgebers. `RuleConfig` bleibt dafür unverändert.
 
@@ -163,14 +163,15 @@ func to_dict() -> Dictionary / static func from_dict(d) -> MauGame   # Speichern
 | `{a:"draw"}` | Ziehen (nach Regel `draw_rule`). |
 | `{a:"keep"}` | Gezogene, spielbare Karte behalten; der Zug endet. |
 | `{a:"challenge"}` / `{a:"accept"}` | Anzweifeln oder annehmen, nur der Betroffene nach +2 bzw. Farbjagd im Modus `bluff`. |
-| `{a:"mau"}` | Mau rufen (gültig ab „2 Karten und am Zug“ bis zum Beginn des nächsten Zugs; mit Ablegen-Karten auch mit mehr Karten, wenn eine legbare Karte genau 1 übrig lässt; im Glücksspiel mit 2 Karten vor dem Setzen). |
+| `{a:"mau"}` | Mau rufen (gültig ab „2 Karten und am Zug“ bis zum Beginn des nächsten Zugs; mit Ablegen-Karten auch mit mehr Karten, wenn eine legbare Karte genau 1 übrig lassen kann, und in der Phase `discard_pick`; im Glücksspiel mit 2 Karten vor dem Setzen). |
 | `{a:"catch", target:<seat>}` | Erwischen. |
 | `{a:"next_round"}` | Nächste Runde, nur Platz 0 bzw. Gastgeber. |
 | `{a:"stake", card:<id>}` | Glücksspiel: eine beliebige eigene Handkarte verdeckt auf den Einsatz legen (Pflicht vor jedem Druck). |
 | `{a:"press"}` | Glücksspiel: Knopf drücken (erst nach einem `stake`). |
 | `{a:"stop"}` | Glücksspiel: aufhören (immer erlaubt, nach mindestens einem Druck ohne Treffer, also bei `need = "stake"` und Einsatz ≥ 1). Der Einsatz kommt unter die Ablage, der Zug ist vorbei. |
+| `{a:"discard_pick", cards:[<id>…], color:<farbe>?}` | Farbe mit ablegen, nur in Phase `discard_pick`: Teilmenge von `hints.can_pick` (auch leer); `color` = Spielfarbe, nur und Pflicht nach dem Ablegen-Joker. |
 
-Glücksspiel und Ablegen-Joker werden wie Wünscher mit `{a:"play", card, color}` gelegt.
+Glücksspiel und Ablegen-Joker werden wie Wünscher mit `{a:"play", card, color}` gelegt; beim Ablegen-Joker ist `color` die Ablegefarbe, die Spielfarbe folgt mit `discard_pick`.
 
 ### Phasen
 
@@ -181,6 +182,7 @@ Glücksspiel und Ablegen-Joker werden wie Wünscher mit `{a:"play", card, color}
 | `challenge` | Betroffener entscheidet `challenge` oder `accept` |
 | `color` | nach einem Flip liegt ein Joker oben: der Flip-Spieler wählt `{a:"color", color}` |
 | `gamble` | Glücksspiel des Legers (`current_seat()`): abwechselnd `stake` und `press`, bis ein Treffer kommt (1–10 Karten ziehen, Einsatz zurück, Zug vorbei) oder bei 0 die Hand leer ist (Einsatz unter die Ablage, fertig); `mau` und `catch` gehen wie sonst |
+| `discard_pick` | Farbe mit ablegen (seit 0.1.3): Der Leger (`current_seat()`) wählt mit `discard_pick` die mitabgelegten Karten, beim Ablegen-Joker dazu die Spielfarbe. Entsteht nach einer Ablegen-Karte, wenn der Leger Nicht-Joker-Karten der Ablegefarbe hat, nach einem Ablegen-Joker immer. `mau` geht, wenn nach der Auswahl genau 1 Karte bleiben kann. |
 | `round_over` | Runde beendet |
 | `game_over` | Partie beendet |
 
@@ -210,6 +212,7 @@ Alle Daten JSON-tauglich: Zahlen als `int`, keine Godot-Typen.
 - **Nur mit `gamble_cards=on`** (sonst fehlen die Felder, damit Sichten ohne die Hausregel unverändert bleiben):
   - `gamble`: während eines Glücksspiels `{seat, stake: Anzahl der Einsatzkarten, need: "stake"|"press", last: letzter Wert 0–10 oder −1}` für alle Plätze, sonst `{}`. Die Trefferquote und die Einsatzgesichter stehen nie in einer Sicht.
   - `hints.can_stake`: ids der setzbaren Karten (nur der Glücksspieler bei `need = "stake"`, sonst `[]`), `hints.can_press` (bool), `hints.can_stop` (bool, nur mit der Hausregel; sonst fehlt das Feld wie `can_stake`/`can_press`). Hinweistexte: „Leg eine Karte verdeckt auf deinen Einsatz.“, „Noch eine Karte setzen – oder aufhören?“ (bei `can_stop`) bzw. „Drück den Glücksspielknopf!“.
+- **Nur mit `discard_color=on`:** `discard_pick`: während der Auswahl `{seat, color}` (Ablegefarbe) für alle Plätze, sonst `{}` (keine Kandidatenzahl, das wäre ein Leck); `hints.can_pick` = ids der wählbaren Karten (nur der Leger), `hints.pick_color` = true nach dem Ablegen-Joker (Spielfarbe nötig).
 
 **Ereignisse:** `{e: <name>, seat?, …}`, z. B.:
 - `deal`, `play{seat, card, face}`, `draw{seat, count, faces?}` (`faces` nur für den Ziehenden)
@@ -224,7 +227,7 @@ Alle Daten JSON-tauglich: Zahlen als `int`, keine Godot-Typen.
   - bei einem Treffer `draw{…, reason:"gluecksspiel"}`, dann `stake_back{seat, count, cards*, faces*, backs}` (ganzer Einsatz zurück; Rückseiten wie beim Ziehen), danach `turn` des Nächsten.
   - bei 0 und leerer Hand `stake_discard{seat, count, cards*, faces*, reason:"empty"}` (Einsatz unter die Ablage), dann `finish` und `round_over` bzw. `turn`.
   - bei `{a:"stop"}` `stake_discard{seat, count, cards*, faces*, reason:"stop"}`, dann `turn` des Nächsten. Bleibt genau 1 Karte, gilt die normale Mau-Regel: Das Fenster hat schon das Setzen geöffnet (vorher rufen, sonst erwischbar, bis der Nächste handelt).
-- `discard_color{seat, color, cards, faces, count}` (Farbe mit ablegen, nach `play`/`color`): öffentlich, die mitabgelegten Karten liegen unter der Ablegen-Karte, sortiert nach Rang.
+- Farbe mit ablegen: `discard_pick{seat, color}` nach `play`, wenn die Auswahl beginnt (öffentlich); nach der Auswahl (bzw. direkt nach `play`, wenn es keine Kandidaten gibt) `discard_color{seat, color, cards, faces, count}`: öffentlich, nur die gewählten Karten, unter der Ablegen-Karte nach Rang sortiert; beim Ablegen-Joker folgt `color{color}` mit der Spielfarbe.
 
 ### Prüfungen (Pflicht)
 

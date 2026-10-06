@@ -88,7 +88,7 @@ func _config() -> void:
 	var c := RuleConfig.new()
 	var d := c.to_dict()
 	var want := {"round_end": "first", "scoring": "none", "target": 500, "hand_size": 7, "draw_rule": "one", "drawn_card": "may",
-		"stacking": "off", "penalty_turn": "skip", "wild_restriction": "bluff", "wild_counts_for_bluff": true, "jagd_wild_stops": false,
+		"stacking": "off", "penalty_turn": "skip", "wild_restriction": "free", "wild_counts_for_bluff": true, "jagd_wild_stops": false,
 		"mau_call": "catch", "mau_penalty": 2, "backs_visible": true, "peek_own_backs": true, "two_player_reverse_skips": true,
 		"flip_last_card": "execute", "swap_cards": "off", "swap_direction": "clockwise", "gamble_cards": "off",
 		"discard_color": "off"}
@@ -102,7 +102,18 @@ func _config() -> void:
 	var mm := RuleConfig.preset("mau_mau")
 	check(mm.stacking == "same" and mm.wild_restriction == "enforce" and mm.mau_penalty == 1 and mm.round_end == "first", "Voreinstellung mau_mau")
 	var k5 := RuleConfig.preset("klassisch500")
-	check(k5.scoring == "points500" and not k5.wild_counts_for_bluff and k5.target == 500, "Voreinstellung klassisch500")
+	check(k5.scoring == "points500" and k5.wild_restriction == "free" and k5.target == 500, "Voreinstellung klassisch500")
+	# 0.1.3: Anzweifeln entfällt in der Oberfläche; gespeichertes "bluff" wird beim Laden zu "free", Tauschrichtungen
+	check(RuleConfig.migrate_dict({"wild_restriction": "bluff", "stacking": "same"}) == {"wild_restriction": "free", "stacking": "same"}
+		and RuleConfig.migrate_dict({"wild_restriction": "enforce"}).wild_restriction == "enforce" and RuleConfig.migrate_dict({}) == {}, "migrate_dict: bluff → free")
+	var k5b := RuleConfig.from_dict({"scoring": "points500", "wild_counts_for_bluff": false})
+	check(k5b.preset_name() == "klassisch500", "ohne Anzweifeln zählt wild_counts_for_bluff nicht für die Voreinstellung")
+	var steps := []
+	for sd in ["clockwise", "counter", "play", "against"]:
+		var sc := RuleConfig.from_dict({"swap_direction": sd})
+		check(sc.swap_direction == sd and RuleConfig.swap_direction_title(sd) != "", "Tauschrichtung %s" % sd)
+		steps.append([sc.swap_step(1), sc.swap_step(-1)])
+	check(steps == [[1, 1], [-1, -1], [1, -1], [-1, 1]], "swap_step je Richtung (%s)" % str(steps))
 	for p in RuleConfig.preset_names():
 		check(RuleConfig.preset(p).preset_name() == p, "preset_name erkennt " + p)
 	# Rundreise auch über JSON (Zahlen als float)
@@ -123,7 +134,8 @@ func _config() -> void:
 	# describe
 	var lines := RuleConfig.new().describe()
 	check(lines.size() >= 8, "describe liefert Zeilen (%d)" % lines.size())
-	check("\n".join(lines).contains("anzweifeln"), "describe erwähnt Anzweifeln")
+	check("\n".join(lines).contains("dürfen immer gelegt werden") and not "\n".join(lines).contains("anzweifeln"), "describe: Wünscher +2 immer erlaubt")
+	check("\n".join(RuleConfig.from_dict({"wild_restriction": "bluff"}).describe()).contains("anzweifeln"), "describe erwähnt Anzweifeln bei bluff")
 	check("\n".join(RuleConfig.preset("familie").describe()).contains("Bis zum Letzten"), "describe familie: bis zum Letzten")
 	check("\n".join(RuleConfig.preset("familie").describe()).contains("Stapeln"), "describe familie: Stapeln")
 	check(c.duplicate_config().equals(c), "duplicate_config")
@@ -139,7 +151,7 @@ func _texts() -> void:
 	var plus5 := "\n".join(RulesText.card_help("dunkel_lila_plus5", stack))
 	check(plus5.contains("+5 darf gestapelt werden"), "„+5 darf gestapelt werden“ bei stacking=same")
 	check(not "\n".join(RulesText.card_help("dunkel_lila_plus5", off)).contains("darf gestapelt"), "kein Stapeln bei stacking=off")
-	check("\n".join(RulesText.card_help("hell_wuenscher_plus2", off)).contains("anzweifeln"), "Wünscher +2: anzweifeln bei bluff")
+	check("\n".join(RulesText.card_help("hell_wuenscher_plus2", RuleConfig.from_dict({"wild_restriction": "bluff"}))).contains("anzweifeln"), "Wünscher +2: anzweifeln bei bluff")
 	check("\n".join(RulesText.card_help("hell_wuenscher_plus2", RuleConfig.from_dict({"wild_restriction": "enforce"}))).contains("App achtet"),
 		"Wünscher +2: App achtet bei enforce")
 	check("\n".join(RulesText.card_help("hell_wuenscher_plus2", RuleConfig.from_dict({"wild_restriction": "free"}))).contains("jederzeit"),

@@ -178,7 +178,7 @@ func _mau_decisions() -> void:
 		var a := _decide(g, 0, level)
 		check(a.get("a", "") == "draw", "Stufe %d: nichts passt → ziehen, kein Mau (%s)" % [level, str(a)])
 		# Opfer einer +2 mit 2 Karten ohne Stapeln: anzweifeln oder annehmen, kein Ruf
-		g = RulesFixture.build(RuleConfig.new(), 3, {"hands": [["hell_wuenscher_plus2", "hell_gelb_1", "hell_gelb_2"], ["hell_rot_3", "hell_rot_4"], ["hell_rot_6"]],
+		g = RulesFixture.build(RuleConfig.from_dict({"wild_restriction": "bluff"}), 3, {"hands": [["hell_wuenscher_plus2", "hell_gelb_1", "hell_gelb_2"], ["hell_rot_3", "hell_rot_4"], ["hell_rot_6"]],
 			"top": "hell_rot_5"})
 		g.apply(0, {"a": "play", "card": RulesFixture.card(g, 0, "hell_wuenscher_plus2"), "color": "blau"})
 		a = _decide(g, 1, level)
@@ -254,7 +254,7 @@ func _bot_decisions() -> void:
 		var hand: Array = ["hell_wuenscher_plus2", "hell_gruen_9"]
 		for j in k:
 			hand.append("hell_gelb_%d" % (j + 1))
-		g = RulesFixture.build(RuleConfig.new(), 3, {"hands": [hand, ["hell_blau_1", "hell_blau_2", "hell_blau_3"], ["hell_rot_2"]], "top": "hell_rot_5"})
+		g = RulesFixture.build(RuleConfig.from_dict({"wild_restriction": "bluff"}), 3, {"hands": [hand, ["hell_blau_1", "hell_blau_2", "hell_blau_3"], ["hell_rot_2"]], "top": "hell_rot_5"})
 		if hand.size() == 2:
 			g.apply(0, {"a": "mau"})
 		g.apply(0, {"a": "play", "card": RulesFixture.card(g, 0, "hell_wuenscher_plus2"), "color": "blau"})

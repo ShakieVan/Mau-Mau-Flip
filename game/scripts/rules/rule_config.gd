@@ -14,11 +14,11 @@ const CHOICES := {
 	"drawn_card": ["may", "must", "may_not"],
 	"stacking": ["off", "same"],
 	"penalty_turn": ["skip", "play"],          # nach dem Strafziehen aussetzen (offiziell) oder gleich weiterspielen (Hausregel)
-	"wild_restriction": ["bluff", "enforce", "free"],
+	"wild_restriction": ["free", "enforce", "bluff"],  # "bluff" (Anzweifeln) nur aus Verträglichkeit, Oberflächen bieten es nicht an
 	"mau_call": ["catch", "auto", "reminder", "off"],
 	"flip_last_card": ["execute", "ignore"],
 	"swap_cards": ["off", "on"],               # Hausregel Kartentausch: 4 zusätzliche Karten (116), siehe docs/module/A.md
-	"swap_direction": ["clockwise", "play"],   # Hände wandern immer im Uhrzeigersinn oder in der aktuellen Spielrichtung
+	"swap_direction": ["clockwise", "counter", "play", "against"],  # Platz+1, Platz−1, in bzw. gegen die Spielrichtung
 	"gamble_cards": ["off", "on"],             # Hausregel Glücksspiel: 2 zusätzliche Joker, siehe docs/module/A.md
 	"discard_color": ["off", "on"],            # Hausregel Farbe mit ablegen: 6 zusätzliche Karten, siehe docs/module/A.md
 }
@@ -37,7 +37,7 @@ const NUMBERS := {
 }
 const PRESETS := {
 	"offiziell": {},
-	"klassisch500": {"scoring": "points500", "wild_counts_for_bluff": false},
+	"klassisch500": {"scoring": "points500"},
 	"familie": {"round_end": "last", "stacking": "same", "penalty_turn": "play", "wild_restriction": "enforce", "mau_penalty": 1,
 		"swap_cards": "on"},
 	"mau_mau": {"stacking": "same", "wild_restriction": "enforce", "mau_penalty": 1},
@@ -52,7 +52,7 @@ var draw_rule := "one"
 var drawn_card := "may"
 var stacking := "off"
 var penalty_turn := "skip"
-var wild_restriction := "bluff"
+var wild_restriction := "free"
 var wild_counts_for_bluff := true
 var jagd_wild_stops := false
 var mau_call := "catch"
@@ -83,6 +83,15 @@ static func preset(preset_name: String) -> RuleConfig:
 
 static func preset_names() -> Array:
 	return PRESETS.keys()
+
+
+# Gespeicherte Regeln (App-Einstellungen, Regelsätze, Regeln vom Gastgeber) auf den Stand 0.1.3 bringen: Anzweifeln ("bluff")
+# gibt es in der Oberfläche nicht mehr und wird zu "free". Liefert eine Kopie, d bleibt unverändert.
+static func migrate_dict(d: Dictionary) -> Dictionary:
+	var out := d.duplicate()
+	if str(out.get("wild_restriction", "")) == "bluff":
+		out["wild_restriction"] = "free"
+	return out
 
 
 static func from_dict(d: Dictionary) -> RuleConfig:
@@ -134,6 +143,8 @@ func preset_name() -> String:
 	var mine := to_dict()
 	if swap_cards == "off":
 		mine["swap_direction"] = CHOICES["swap_direction"][0]
+	if wild_restriction == "free":   # dann zählt der (in der Oberfläche entfallene) Schalter nicht
+		mine["wild_counts_for_bluff"] = FLAGS["wild_counts_for_bluff"]
 	for p in PRESETS:
 		if RuleConfig.preset(p).to_dict() == mine:
 			return p
@@ -155,9 +166,18 @@ func has_extra_cards() -> bool:
 	return swap_cards == "on" or gamble_cards == "on" or discard_color == "on"
 
 
-# Tauschrichtung beim Kartentausch: +1 = Uhrzeigersinn (Platz + 1), sonst die aktuelle Spielrichtung play_dir (±1).
+# Tauschrichtung beim Kartentausch als Platzschritt (±1): Uhrzeigersinn +1, gegen den Uhrzeigersinn −1, in bzw. gegen die
+# aktuelle Spielrichtung play_dir (±1).
 func swap_step(play_dir: int) -> int:
-	return 1 if swap_direction == "clockwise" or play_dir >= 0 else -1
+	var d := 1 if play_dir >= 0 else -1
+	match swap_direction:
+		"counter":
+			return -1
+		"play":
+			return d
+		"against":
+			return -d
+	return 1
 
 
 # Punktwertung gilt nur, wenn die Runde beim ersten Fertigen endet; bis zum Letzten zählen Platzierungen.
@@ -237,19 +257,38 @@ func describe() -> Array[String]:
 	var extras := (1 if swap_cards == "on" else 0) + (1 if gamble_cards == "on" else 0) + (1 if discard_color == "on" else 0)
 	var total := " (%d)" % card_count() if extras == 1 else ""
 	if swap_cards == "on":
-		out.append("Kartentausch: 4 zusätzliche Karten%s. Wer eine legt, lässt alle ihre ganze Hand an den Nächsten weitergeben, %s." % [total, swap_direction_text()])
+		out.append("Kartentausch: 4 zusätzliche Karten%s. Wer eine legt, lässt alle ihre ganze Hand weitergeben, %s." % [total, swap_direction_text()])
 	if gamble_cards == "on":
-		out.append("Glücksspiel: 2 zusätzliche Joker%s. Wer einen legt, setzt Karte um Karte verdeckt und drückt den Glücksspielknopf – bis ein Treffer kommt (1 bis 10 Karten ziehen, Einsatz zurück) oder die Hand leer ist (fertig). Nach einem Druck ohne Treffer darf er aufhören; der Einsatz kommt dann unter die Ablage." % total)
+		out.append("Glücksspiel: 2 zusätzliche Joker%s. Wer einen legt, setzt Karte um Karte verdeckt und drückt den Glücksspielknopf – bei einem Treffer 1 bis 10 Karten ziehen und den Einsatz zurücknehmen. Nach einem Druck ohne Treffer weiter riskieren oder aufhören (der Einsatz kommt unter die Ablage); mit leerer Hand bist du fertig." % total)
 	if discard_color == "on":
-		out.append("Farbe ablegen: 6 zusätzliche Karten%s. Wer eine legt, legt alle eigenen Karten dieser Farbe mit ab; Joker bleiben auf der Hand." % total)
+		out.append("Farbe ablegen: 6 zusätzliche Karten%s. Wer eine legt, legt dazu eigene Karten dieser Farbe ab, du wählst aus; Joker bleiben auf der Hand. Beim Ablege-Joker wählst du erst die Ablegefarbe, danach die Farbe, mit der es weitergeht." % total)
 	if extras > 1:
 		out.append("Gespielt wird mit %d Karten." % card_count())
 	return out
 
 
-# Tauschrichtung als Satzteil: „immer im Uhrzeigersinn“ bzw. „in der aktuellen Spielrichtung“.
+# Tauschrichtung als Satzteil, z. B. „immer im Uhrzeigersinn“ oder „in der aktuellen Spielrichtung“.
 func swap_direction_text() -> String:
-	return "immer im Uhrzeigersinn" if swap_direction == "clockwise" else "in der aktuellen Spielrichtung"
+	match swap_direction:
+		"counter":
+			return "immer gegen den Uhrzeigersinn"
+		"play":
+			return "in der aktuellen Spielrichtung"
+		"against":
+			return "gegen die aktuelle Spielrichtung"
+	return "immer im Uhrzeigersinn"
+
+
+# Kurzname einer Tauschrichtung für Auswahllisten.
+static func swap_direction_title(value: String) -> String:
+	match value:
+		"counter":
+			return "Gegen den Uhrzeigersinn"
+		"play":
+			return "In Spielrichtung"
+		"against":
+			return "Gegen die Spielrichtung"
+	return "Im Uhrzeigersinn"
 
 
 # Was nach dem Strafziehen passiert, als Satzende: „… zieht 5 und setzt aus.“ bzw. „… und ist danach trotzdem dran.“

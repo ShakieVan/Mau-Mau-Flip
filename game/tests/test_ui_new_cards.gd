@@ -56,6 +56,7 @@ func run() -> void:
 	await gamble_stop_opponent_test()
 	await discard_test()
 	await discard_opponent_test()
+	await discard_joker_test()
 	await highlight_test()
 	await plain_rules_test()
 	if app != null:
@@ -422,8 +423,20 @@ func discard_test() -> void:
 			seen.append(str(e.get("e", ""))))
 	var log := watch(ts)
 	ts.hand.play_requested.emit(RulesFixture.card(g, 0, "hell_rot_ablegen"), ts.hand.play_target)
+	# 0.1.3: Auswahl (Phase discard_pick): alle 4 roten vorausgewählt, eine abwählen, „Ablegen (3)“
+	await settle(ts, 0.3)
+	var pick: PillButton = tv.get("_act_btns")["pick"]
+	check(g.state == "discard_pick" and ts.hand.is_picking() and ts.hand.get_pick().size() == 4 and pick.visible and pick.text == "Ablegen (4)",
+		"Ablegen: Auswahl mit 4 vorausgewählten Karten (%s, %s)" % [g.state, pick.text])
+	var plus1 := RulesFixture.card(g, 0, "hell_rot_plus1")
+	ts.hand.toggle_pick(plus1)
+	check(pick.text == "Ablegen (3)" and not ts.hand.get_pick().has(plus1), "Ablegen: Abwählen zählt mit (%s)" % pick.text)
+	ts.hand.call("_on_tap", RulesFixture.card(g, 0, "hell_blau_2"))
+	check(ts.hand.get_pick().size() == 3 and g.state == "discard_pick", "Ablegen: andere Farbe nicht wählbar, nichts gespielt")
+	pick.pressed.emit()
 	await wait_event(log, "discard_color")
-	check(toast_has(ts, "Du legst 4 rote Karten mit ab."), "Ablegen: Hinweis")
+	check(toast_has(ts, "Du legst 3 rote Karten mit ab."), "Ablegen: Hinweis")
+	check(sorted_ids(ts.view.get("hand", [])).has(plus1), "Ablegen: abgewählte Karte bleibt auf der Hand")
 	await settle(ts, 0.8)
 	check(seen.has("discard_color") and not seen.has("skip") and not seen.has("reverse") and not seen.has("pending"), "Ablegen: Aktionskarten wirken nicht (%s)" % [seen])
 	check(g.current_seat() == 1 and g.dir == 1, "Ablegen: der Nächste ist dran, Richtung bleibt")
@@ -432,7 +445,7 @@ func discard_test() -> void:
 		keys.append(c.current_key())
 	check(keys.back() == "hell_rot_ablegen", "Ablegen: Ablegen-Karte oben")
 	var under_ok := true
-	for k in ["hell_rot_3", "hell_rot_aussetzen", "hell_rot_plus1", "hell_rot_richtungswechsel"]:
+	for k in ["hell_rot_3", "hell_rot_aussetzen", "hell_rot_richtungswechsel"]:
 		if not keys.has(k):
 			under_ok = false
 	check(under_ok, "Ablegen: mitabgelegte Karten liegen unter der Ablegen-Karte (%s)" % [keys])
@@ -456,8 +469,14 @@ func discard_opponent_test() -> void:
 	var lt := ts.source as LocalTable
 	var log := watch(ts)
 	lt._apply(1, {"a": "play", "card": RulesFixture.card(g, 1, "hell_gelb_ablegen")})
-	await wait_event(log, "discard_color")
-	check(toast_has(ts, "Ben legt 2 gelbe Karten mit ab."), "Ablegen Gegner: Hinweis")
+	await settle(ts, 0.2)
+	check(g.state == "discard_pick" and tv.hint_bar.hint.ends_with("wählt aus …") and not tv.get("_act_btns")["pick"].visible,
+		"Ablegen Gegner: „… wählt aus …“ (%s)" % tv.hint_bar.hint)
+	var deadline := Time.get_ticks_msec() + 8000
+	while not log.has("discard_color") and Time.get_ticks_msec() < deadline:
+		lt.pump()
+		await frames(1)
+	check(toast_has(ts, "Ben legt"), "Ablegen Gegner: Hinweis")
 	await settle(ts, 0.8)
 	check(g.side == 0 and tv.side == "hell", "Ablegen Gegner: mitabgelegter Flip wendet nicht")
 	check(tv.discard_cards().back().current_key() == "hell_gelb_ablegen", "Ablegen Gegner: Ablegen-Karte oben")
@@ -524,4 +543,33 @@ func plain_rules_test() -> void:
 	ts.hand.play_requested.emit(RulesFixture.card(game_of(ts), 0, "hell_rot_2"), ts.hand.play_target)
 	await settle(ts)
 	check((ts.view.hand as Array).size() == 1, "Ohne Hausregel: normal gelegt")
+	await close_table(ts)
+
+
+# Ablegen-Joker (0.1.3): Farbrad „Welche Farbe legst du mit ab?“ → Auswahl → Farbrad „Mit welcher Farbe geht es weiter?“
+func discard_joker_test() -> void:
+	var ts := await make_table(discard_cfg(), 2, {"hands": [["hell_ablegen_joker", "hell_blau_3", "hell_blau_4", "hell_rot_7", "hell_gelb_2"],
+		["hell_gruen_1", "hell_gruen_2"]], "top": "hell_rot_5", "current": 0})
+	var g := game_of(ts)
+	var tv := ts.table
+	var log := watch(ts)
+	ts.hand.play_requested.emit(RulesFixture.card(g, 0, "hell_ablegen_joker"), ts.hand.play_target)
+	await frames(2)
+	check(tv.wish_picker.mode == "wheel" and tv.wish_picker.title == "Welche Farbe legst du mit ab?" and int(tv.wish_picker.counts.get("blau", 0)) == 2,
+		"Ablegen-Joker: erst die Ablegefarbe (mit Anzahl)")
+	tv.wish_picker.close()
+	tv.wish_picker.color_chosen.emit("blau")
+	await settle(ts, 0.3)
+	var pick: PillButton = tv.get("_act_btns")["pick"]
+	check(g.state == "discard_pick" and ts.hand.get_pick().size() == 2 and pick.visible and pick.text == "Ablegen (2)", "Ablegen-Joker: Auswahl Blau (%s)" % pick.text)
+	pick.pressed.emit()
+	await frames(2)
+	check(tv.wish_picker.mode == "wheel" and tv.wish_picker.title == "Mit welcher Farbe geht es weiter?" and not pick.visible
+		and int(tv.wish_picker.counts.get("blau", 0)) == 0, "Ablegen-Joker: danach die Spielfarbe (ohne die mitabgelegten)")
+	tv.wish_picker.close()
+	tv.wish_picker.color_chosen.emit("gelb")
+	await wait_event(log, "discard_color")
+	await settle(ts, 0.5)
+	check(g.color == "gelb" and g.state != "discard_pick" and (ts.view.get("hand", []) as Array).size() == 2 and not ts.hand.is_picking(),
+		"Ablegen-Joker: Blau abgelegt, weiter mit Gelb (%s)" % g.color)
 	await close_table(ts)
