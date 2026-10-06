@@ -540,7 +540,7 @@ func _sync_hand_halo(delta: float) -> void:
 		return
 	var field: Rect2 = lr
 	var w := field.size.x * 0.7
-	var r := Rect2(field.position.x + (field.size.x - w) * 0.5, field.position.y, w, field.size.y)
+	var r := Rect2(field.position.x + (field.size.x - w) * 0.5, field.position.y + field.size.y * 0.5, w, field.size.y)   # ½ Höhe tiefer (Nutzerwunsch)
 	var xf := (hand as Node2D).transform
 	var gr := Rect2(xf * r.position, (xf.basis_xform(r.size)).abs())
 	if not gr.is_equal_approx(_hand_halo.box):
