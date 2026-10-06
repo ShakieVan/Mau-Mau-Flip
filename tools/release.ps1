@@ -94,7 +94,11 @@ elseif ($problems.Count -gt 0 -and -not $SkipBuild) { Step 'Bau übersprungen (e
 # 5. Baubeleg, Signatur, Paket und Version der APK
 if (-not (Test-Path -LiteralPath $apk)) { $problems.Add("APK fehlt: builds/$assetName (tools/build.ps1 -Target Android)") }
 else {
-    $sha = (Get-FileHash -LiteralPath $apk -Algorithm SHA256).Hash.ToLower()
+    # Get-FileHash liefert unter Windows PowerShell 5.1 im Trockenlauf (-WhatIf) nichts, deshalb hier ohne WhatIf
+    $previousWhatIf = $WhatIfPreference
+    $WhatIfPreference = $false
+    try { $sha = (Get-FileHash -LiteralPath $apk -Algorithm SHA256).Hash.ToLower() }
+    finally { $WhatIfPreference = $previousWhatIf }
     $size = (Get-Item -LiteralPath $apk).Length
     $stampPath = Join-Path $buildsDir "MauMauFlip-$version.build.json"
     $stamp = if (Test-Path -LiteralPath $stampPath) { Get-Content -LiteralPath $stampPath -Raw | ConvertFrom-Json } else { $null }
