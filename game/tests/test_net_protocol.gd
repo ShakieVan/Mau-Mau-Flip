@@ -79,7 +79,8 @@ func test_names() -> void:
 
 func test_hello() -> void:
 	var v := NetProtocol.game_version()
-	check(v == "0.1.1", "Spielversion aus project.godot (%s)" % v)
+	var expected := str(ProjectSettings.get_setting("application/config/version", ""))
+	check(v == expected and v.split(".").size() == 3, "Spielversion aus project.godot (%s)" % v)
 	var hello := NetProtocol.make_hello("Ben", "app", "tok")
 	check(hello.proto == NetProtocol.PROTO and hello.game == v and hello.token == "tok" and hello.kind == "app", "make_hello")
 	check(NetProtocol.check_hello(NetProtocol.clean_client_message(hello), v).is_empty(), "passende Begrüßung angenommen")
