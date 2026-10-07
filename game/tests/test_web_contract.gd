@@ -121,6 +121,25 @@ func pruefe_014(css: String, tisch: String, karten: String, mock: String, autote
 		"Flip-Überraschung: Regeltext, Kartenhilfe, Stempel, Mock und Selbsttest")
 
 
+# Beta 1.0.2: „In der App spielen“ (Android, App-Link maumauflip://join?h=&p=) und „Regeln“/„So geht's“ im Spielmenü
+func pruefe_102(css: String, karten: String, app: String, seite: String) -> void:
+	check(seite.contains("id=\"app-link\"") and seite.contains(">In der App spielen<") and seite.contains("Noch nicht installiert? Dann holst du sie")
+			and seite.contains("Die App ist noch nicht installiert – hier kannst du sie laden.") and seite.contains("href=\"/apk\""),
+		"Startseite: Knopf „In der App spielen“ mit Zusatz, APK-Bereich mit Hinweis darunter")
+	check(app.contains("'intent://join?h='") and app.contains("#Intent;scheme=maumauflip;package=de.maumauflip.game;S.browser_fallback_url=")
+			and app.contains("'/?app=1'") and app.contains("params.get('app') === '1'") and app.contains("$('#app-spielen').hidden = !geht")
+			and app.contains("const geht = IST_ANDROID"),
+		"App-Link: Intent nur auf Android, Rückfall auf ?app=1 klappt den APK-Bereich auf")
+	check(seite.contains("id=\"menue-regeln\"") and seite.contains("id=\"menue-sogehts\"") and seite.contains("id=\"regeln\"") and seite.contains("id=\"sogehts\"")
+			and app.contains("M.Karten.besondereKarten(r)") and karten.contains("function besondereKarten(") and css.contains(".rk-bild")
+			and css.contains(".sogehts-liste"),
+		"Spielmenü: „Regeln“ (aktive Regeln und besondere Karten) und „So geht's“")
+	for k in ["Karte lange drücken", "Ablage durchsehen", "tipp auf „Mau!“"]:
+		check(seite.contains(k), "„So geht's“ erklärt: %s" % k)
+	for k in ["hell_rot_tausch", "hell_gluecksspiel", "hell_ablegen_joker", "dunkel_farbjagd"]:
+		check(karten.contains("'%s'" % k) and FileAccess.file_exists(web_dir.path_join("cards/%s.webp" % k)), "Besondere Karten: Bild für „%s“" % k)
+
+
 func pruefe_tag_nacht(css: String, tisch: String) -> void:
 	var shader := FileAccess.get_file_as_string("res://assets/shaders/table_background.gdshader")
 	var tag_grund := RegEx.create_from_string("day = mix\\(vec3\\(([0-9.]+), ([0-9.]+), ([0-9.]+)\\)").search(shader)
@@ -363,6 +382,7 @@ func run() -> void:
 		"style.css: Glücksspiel-Automat und Einsatzstapel (Tag und Nacht)")
 	pruefe_tag_nacht(css, tisch)
 	pruefe_014(css, tisch, karten, mock, autotest, app, seite)
+	pruefe_102(css, karten, app, seite)
 	# Pegel der Spieltöne relativ zum Mau-Ton (normal) wie in der App (AppSound.TON_DB gegen MAU_DB), auf 0,5 dB genau
 	var stufen := RegEx.create_from_string("STUFEN_SPIEL = \\{ aus: 0, leise: ([0-9.]+), normal: ([0-9.]+) \\}").search(ton)
 	var pegel := []

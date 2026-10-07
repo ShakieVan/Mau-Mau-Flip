@@ -233,7 +233,9 @@ func _build(config: RuleConfig, player_count: int, spec: Dictionary, rng_seed: i
 	g.draw_pile.append_array(draw_top)
 	g.discard.append_array(under)
 	g.discard.append(top)
-	g.current = int(spec.get("current", 0))
+	for id in g.discard:
+		g._lay(int(id))               # flip_mode = card: Ablagekarten liegen mit der aktiven Seite
+	g.current =int(spec.get("current", 0))
 	g.dir = int(spec.get("dir", 1))
 	var top_code := g.faces[g.side * g.n_cards + top]
 	g.color = str(spec.get("color", g._color[top_code]))

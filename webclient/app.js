@@ -5,7 +5,7 @@
 (function (M) {
   'use strict';
 
-  const VERSION = '1.0.1';
+  const VERSION = '1.0.2';
   const PROTO = 1;
   // wach.mp4 (32×32, 2 s, H.264 Baseline, ohne Ton; erzeugt mit ffmpeg) als data:-URI
   const WACH_VIDEO = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAMzbW9vdgAAAGxtdmhkAAAAAAAAAAAAAAAAAAAD6AAAB9AAAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAl50cmFrAAAAXHRraGQAAAADAAAAAAAAAAAAAAABAAAAAAAAB9AAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAACAAAAAgAAAAAAAkZWR0cwAAABxlbHN0AAAAAAAAAAEAAAfQAAAAAAABAAAAAAHWbWRpYQAAACBtZGhkAAAAAAAAAAAAAAAAAABAAAAAgABVxAAAAAAALWhkbHIAAAAAAAAAAHZpZGUAAAAAAAAAAAAAAABWaWRlb0hhbmRsZXIAAAABgW1pbmYAAAAUdm1oZAAAAAEAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAAUFzdGJsAAAAuXN0c2QAAAAAAAAAAQAAAKlhdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAACAAIABIAAAASAAAAAAAAAABFExhdmM2My4xLjEwMSBsaWJ4MjY0AAAAAAAAAAAAAAAAGP//AAAAL2F2Y0MBQsAe/+EAFmdCwB7ZCWwEQAAAAwBAAAADAQPFi5IBAAZoy4DkTIAAAAAQcGFzcAAAAAEAAAABAAAAFGJ0cnQAAAAAAAAKpAAAAAAAAAAYc3R0cwAAAAAAAAABAAAABAAAIAAAAAAUc3RzcwAAAAAAAAABAAAAAQAAABxzdHNjAAAAAAAAAAEAAAABAAAABAAAAAEAAAAkc3RzegAAAAAAAAAAAAAABAAAAogAAAALAAAACwAAAAsAAAAUc3RjbwAAAAAAAAABAAADYwAAAGF1ZHRhAAAAWW1ldGEAAAAAAAAAIWhkbHIAAAAAAAAAAG1kaXJhcHBsAAAAAAAAAAAAAAAALGlsc3QAAAAkqXRvbwAAABxkYXRhAAAAAQAAAABMYXZmNjMuMS4xMDEAAAAIZnJlZQAAArFtZGF0AAACcgYF//9u3EXpvebZSLeWLNgg2SPu73gyNjQgLSBjb3JlIDE2NSByMzIyMyAwNDgwY2IwIC0gSC4yNjQvTVBFRy00IEFWQyBjb2RlYyAtIENvcHlsZWZ0IDIwMDMtMjAyNSAtIGh0dHA6Ly93d3cudmlkZW9sYW4ub3JnL3gyNjQuaHRtbCAtIG9wdGlvbnM6IGNhYmFjPTAgcmVmPTMgZGVibG9jaz0xOi0zOi0zIGFuYWx5c2U9MHgxOjB4MTExIG1lPWhleCBzdWJtZT03IHBzeT0xIHBzeV9yZD0yLjAwOjAuNzAgbWl4ZWRfcmVmPTEgbWVfcmFuZ2U9MTYgY2hyb21hX21lPTEgdHJlbGxpcz0xIDh4OGRjdD0wIGNxbT0wIGRlYWR6b25lPTIxLDExIGZhc3RfcHNraXA9MSBjaHJvbWFfcXBfb2Zmc2V0PS00IHRocmVhZHM9MSBsb29rYWhlYWRfdGhyZWFkcz0xIHNsaWNlZF90aHJlYWRzPTAgbnI9MCBkZWNpbWF0ZT0xIGludGVybGFjZWQ9MCBibHVyYXlfY29tcGF0PTAgY29uc3RyYWluZWRfaW50cmE9MCBiZnJhbWVzPTAgd2VpZ2h0cD0wIGtleWludD0yNTAga2V5aW50X21pbj0yIHNjZW5lY3V0PTQwIGludHJhX3JlZnJlc2g9MCByY19sb29rYWhlYWQ9NDAgcmM9Y3JmIG1idHJlZT0xIGNyZj00MC4wIHFjb21wPTAuNjAgcXBtaW49MCBxcG1heD02OSBxcHN0ZXA9NCBpcF9yYXRpbz0xLjQwIGFxPTE6MS4yMACAAAAADmWIhAXznJigACX3J114AAAAB0GaOAvnOWAAAAAHQZpUAvnOWAAAAAdBmmAVznLA';
@@ -85,6 +85,7 @@
       $('#beitreten').addEventListener('click', ev => { ev.preventDefault(); this.beitreten(); });
       $('#start-form').addEventListener('submit', ev => { ev.preventDefault(); this.beitreten(); });
       $('#apk').hidden = !IST_ANDROID;
+      this._appLink();
       $('#tipp-safari').hidden = !IST_IOS;
       $('#tipp-ios-browser').hidden = !(IST_IOS && !IST_SAFARI);
       if (Speicher.get('token', null) && n.value) $('#beitreten').textContent = 'Weiterspielen';
@@ -105,6 +106,27 @@
         }).catch(() => clearTimeout(t));
       } else if (params.get('mock')) $('#start-host').textContent = 'Spiel von Lena · Testmodus';
     },
+    // „In der App spielen“ (nur Android, AGENTS.md 1.0.2): Intent-Link öffnet die App mit maumauflip://join?h=<IP>&p=<Port>;
+    // fehlt sie, schickt Chrome auf diese Seite mit ?app=1 zurück → APK-Bereich aufgeklappt mit Hinweis.
+    _appLink() {
+      const h = location.hostname, p = location.port || (location.protocol === 'https:' ? '443' : '80');
+      const geht = IST_ANDROID && /^https?:/.test(location.protocol) && !!h;
+      $('#app-spielen').hidden = !geht;
+      if (geht) {
+        const zurueck = 'http://' + h + ':' + p + '/?app=1';
+        $('#app-link').href = 'intent://join?h=' + encodeURIComponent(h) + '&p=' + p + '#Intent;scheme=maumauflip;package=de.maumauflip.game;S.browser_fallback_url='
+          + encodeURIComponent(zurueck) + ';end';
+      }
+      const aufklappen = () => {
+        if ($('#apk').hidden) return;
+        $('#apk-hinweis').hidden = false;
+        $('#apk-anleitung').open = true;
+        $('#apk').classList.add('auf');
+        setTimeout(() => { try { $('#apk').scrollIntoView({ block: 'start' }); } catch (e) { $('#apk').scrollIntoView(); } }, 120);
+      };
+      $('#app-hier').addEventListener('click', ev => { ev.preventDefault(); aufklappen(); });
+      if (params.get('app') === '1') aufklappen();
+    },
     _ereignisse() {
       const neu = () => { cancelAnimationFrame(this._raf); this._raf = requestAnimationFrame(() => this.groesse()); };
       window.addEventListener('resize', neu);
@@ -122,7 +144,7 @@
       document.addEventListener('keydown', e => {
         if (e.key !== 'Escape') return;
         if (this.tisch && this.tisch.farbwahlOffen) { this.tisch.schliesseFarbwahl(); this.tisch.hand.waehle(null); return; }
-        ['hilfe', 'ansicht', 'menue', 'runde'].forEach(id => this.schliesse(id));
+        ['hilfe', 'ansicht', 'menue', 'runde', 'regeln', 'sogehts'].forEach(id => this.schliesse(id));
       });
       // Lobby
       $('#bereit').addEventListener('click', ev => { ev.preventDefault(); this.bereit(); });
@@ -143,6 +165,8 @@
         const b = ev.target.closest('button[data-set]');
         if (b) { ev.preventDefault(); this.einstellen(b.dataset.set, b.dataset.wert); return; }
         if (ev.target.closest('#menue-neu')) { ev.preventDefault(); this.schliesse('menue'); if (this.verbindung) this.verbindung.neuVerbinden(); }
+        if (ev.target.closest('#menue-regeln')) { ev.preventDefault(); this.regeln(); }
+        if (ev.target.closest('#menue-sogehts')) { ev.preventDefault(); this.schliesse('menue'); this.oeffne('sogehts'); }
       });
     },
     groesse() {
@@ -179,7 +203,7 @@
         this.tisch = new M.Tisch.Tisch($('#tisch'), this);
         this.groesse();
       }
-      if (name !== 'tisch') ['hilfe', 'ansicht', 'runde'].forEach(id => this.schliesse(id));
+      if (name !== 'tisch') ['hilfe', 'ansicht', 'runde', 'regeln', 'sogehts'].forEach(id => this.schliesse(id));
       this.themaFarbe();
     },
     // Browserleiste (theme-color): am Tisch nach Tag/Nacht (Tisch.themaFarbe), sonst Nachtblau wie Start und Lobby
@@ -669,6 +693,8 @@
         else if (s === 'hilfe') { const c = hand.find(c => K.zerlege(c.face).art !== 'zahl') || hand[0]; if (c) this.hilfe(c.face); }
         else if (s === 'rueckseiten') this.rueckseiten();
         else if (s === 'menue') this.menue();
+        else if (s === 'regeln') this.regeln();
+        else if (s === 'sogehts') this.oeffne('sogehts');
         else if (s === 'gegner') { const p = (v.players || []).find(x => x.seat !== v.seat); if (p) this.gegnerAnsicht(p.seat); }
         else if (s === 'gewaehlt' || s === 'tisch') { const id = (v.hints.playable || [])[0]; if (id !== undefined && s === 'gewaehlt') this.tisch.hand.waehle(id); }
         else if (s === 'ablegejoker') { const j = hand.find(c => K.zerlege(c.face).art === 'ablegen_joker'); if (j) this.spielen(j.id); }
@@ -751,9 +777,19 @@
       $('#zeile-vollbild').hidden = IST_IOS || !(el.requestFullscreen || el.webkitRequestFullscreen);
       $('#zeile-vibration').hidden = !navigator.vibrate;
       $('#menue-stumm').hidden = !e.stumm;
-      $('#menue-regeln').innerHTML = M.Karten.regelnText(this.view && this.view.rules).map(t => '<li>' + esc(t) + '</li>').join('');
       $('#menue-info').textContent = 'Mau-Mau Flip ' + this.version + ' · Browser · ' + this.name + (this.view ? ' · Platz ' + (this.view.seat + 1) : '');
       this.oeffne('menue');
+    },
+    // „Regeln“ im Spielmenü: aktive Regeln und besondere Karten (nur lesen, Partie läuft weiter)
+    regeln() {
+      const r = this.view && this.view.rules;
+      $('#regeln-liste').innerHTML = M.Karten.regelnText(r).map(t => '<li>' + esc(t) + '</li>').join('');
+      $('#regeln-karten').innerHTML = M.Karten.besondereKarten(r).map(g => '<h4>' + esc(g.titel) + '</h4>' + (g.hinweis ? '<p class="klein">' + esc(g.hinweis) + '</p>' : '')
+        + '<div class="rk-reihe">' + g.karten.map(k => '<div class="rk"><div class="rk-bild">' + M.Karten.gesichtHTML(k.key) + '</div><div class="rk-text"><b>' + esc(k.name) + '</b>'
+          + k.zeilen.map(z => '<span>' + esc(z) + '</span>').join('') + '</div></div>').join('') + '</div>').join('');
+      this.schliesse('menue');
+      this.oeffne('regeln');
+      $('#regeln .modal-karte').scrollTop = 0;
     },
     einstellen(k, wert) {
       const e = this.einstellungen;

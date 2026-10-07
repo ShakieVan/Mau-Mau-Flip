@@ -55,6 +55,7 @@ var _conn_host: Button               # App-Gast: „Selbst eröffnen“ mit den 
 var _save_opt: Button                # Spielmenü des App-Gasts: „Regeln dieser Partie speichern“
 var _confirm: ConfirmBox
 var _save_box: RuleSetSaveBox
+var _help: IngameHelp                # Spielmenü: „Regeln ansehen“ / „So geht's“ (1.0.2)
 var _wild_drag := -1                # Wünscher, der gerade gezogen wird (Farbfelder offen)
 var _pending_wild := -1              # Wünscher wartet auf das Farbrad
 var _last_play := -1                 # optimistisch ausgespielt, Antwort steht aus
@@ -241,6 +242,8 @@ func _process(_delta: float) -> void:
 		return
 	_round_menu.visible = table.round_end.visible and not table.handover.visible
 	_menu_btn.visible = not table.handover.visible
+	if table.handover.visible and is_help_open():
+		_help.close()                    # Regel 15: beim Weitergeben keine Karten, auch keine Regelbilder
 	_sync_menu_night()
 	# „Computer spielt für …“ verdeckt sonst die Frage über dem Farbrad (Ablegen-Joker)
 	if _sub_btn != null:
@@ -591,6 +594,9 @@ static func _tinted(tex: Texture2D, col: Color) -> Texture2D:
 func on_back() -> bool:
 	if leaving:
 		return true
+	if is_help_open():
+		_help.close()
+		return true
 	if table != null and table.help_popup.visible:
 		table.help_popup.close()
 		return true
@@ -618,6 +624,20 @@ func on_back() -> bool:
 		_confirm = null
 		if yes:
 			_leave_now())
+	var rules_opt := _confirm.add_option("Regeln ansehen", "regeln")
+	rules_opt.name = "RegelnAnsehen"
+	rules_opt.pressed.connect(open_help.bind("regeln"))
+	var how_opt := _confirm.add_option("So geht's", "hilfe")
+	how_opt.name = "SoGehts"
+	how_opt.pressed.connect(open_help.bind("bedienung"))
+	# beide nebeneinander in einer Zeile, damit die Rückfrage auch bei großer Schrift niedrig bleibt
+	var help_row := ScreenKit.hbox(16)
+	help_row.name = "Hilfe"
+	rules_opt.get_parent().add_child(help_row)
+	help_row.get_parent().move_child(help_row, rules_opt.get_index())
+	for b: Button in [rules_opt, how_opt]:
+		b.reparent(help_row, false)
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	if _guest_rules() != null:
 		# Die Rückfrage bleibt offen: Wer gehen wollte, geht nach dem Speichern mit „Verlassen“.
 		_save_opt = _confirm.add_option("Regeln dieser Partie speichern", "regeln")
@@ -625,6 +645,25 @@ func on_back() -> bool:
 		_save_opt.pressed.connect(save_host_rules)
 		_refresh_saved_state()
 	return true
+
+
+# Spielmenü → „Regeln ansehen“ (tab "regeln") bzw. „So geht's“ (tab "bedienung"): Die Rückfrage schließt, die Überlagerung
+# zeigt die Regeln dieser Partie (view.rules) bzw. die Bedienung; die Partie läuft weiter. Nicht während des Sichtschutzes.
+func open_help(which := "regeln") -> void:
+	if _confirm != null and is_instance_valid(_confirm):
+		_confirm.queue_free()
+		_confirm = null
+	if is_help_open():
+		_help.show_tab(which)
+		return
+	if table == null or table.handover.visible:
+		return
+	_help = IngameHelp.open(_top, view.get("rules", {}), table.night > 0.5, true, which)
+	_help.closed.connect(func() -> void: _help = null)
+
+
+func is_help_open() -> bool:
+	return _help != null and is_instance_valid(_help) and not _help.is_queued_for_deletion()
 
 
 # App-Gast: Regeln des Gastgebers aus der Sicht (null = kein Gast oder noch keine Sicht)

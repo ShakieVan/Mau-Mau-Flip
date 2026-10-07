@@ -1,28 +1,29 @@
 class_name HostLobbyScreen
 extends AppScreen
-# Spiel eröffnen (HostTable, Modul G): links großer QR-Code mit http://<ip>:<port>/ und Adresse als Text samt Hinweisen
-# (Warnseite → „Weiter“, iPhone: Safari, Hotel-WLAN → Hotspot), rechts die Spielerliste in Sitzordnung (Pfeile ändern sie),
-# App/Browser/Computer-Kennung, verbunden-Status, darunter Regeln (eine Zeile, öffnet den Editor) und Start ab 2 Spielern.
-# Spielerzahl und Computergegner + / − stehen in der Kopfzeile. So zeigt die Liste bei 1600 × 720 fünf Spieler ganz und blättert
-# darüber hinaus per Wischen (Gerätetest 0.1.1, N2: vorher nur zwei Zeilen sichtbar). Nach „+“ oder einem Pfeil rollt die Liste
-# zum betroffenen Spieler.
+# Spiel eröffnen (HostTable, Modul G; Beta 1.0.2 für Menschen ohne Technikhintergrund): Kopfzeile „So geht's“ (HostHelpDialog),
+# „Regeln“ (Regel-Editor) und „Start“ – Start ist immer zu sehen und ab 2 Spielern aktiv. Darunter ein seitlich blätterbarer
+# Bereich mit Einrasten (LobbyPager): links „Mitspieler einladen“ mit ① WLAN und ② Spiel (InvitePanel), rechts die Spielerliste
+# in Sitzordnung (Pfeile ändern sie) mit App/Browser/Computer-Kennung und verbunden-Status, darunter Regelzeile, Spielerzahl und
+# Computergegner − / +. Die jeweils andere Seite ragt ins Bild. 1600 × 720: fünf Spieler ganz sichtbar, darüber per Wischen.
+# Nach „+“ oder einem Pfeil rollt die Liste zum betroffenen Spieler.
 
 const ROW_H := 72.0
 
 var host: HostTable
 var lobby: Dictionary = {}
-var _qr: TextureRect
-var _url: Label
-var _more: Label
+var pager: LobbyPager
+var invite: InvitePanel
 var _scroll: ScrollContainer
 var _list: VBoxContainer
 var _start: Button
+var _help_btn: Button
+var _rules_btn: Button
 var _count: Label
 var _rules: RulesBar
 var _bot_minus: Button
 var _bot_plus: Button
 var _confirm: ConfirmBox
-var _wifi_panel: GameWifiPanel        # Spiel-WLAN (Beta 1.0.1), Zurück schließt es
+var _help: HostHelpDialog
 var _started := false
 var _focus_id := -1                 # Spieler, zu dem die Liste nach dem nächsten Neuaufbau rollt
 var _focus_last := false            # … bzw. zum letzten (neuer Computergegner)
@@ -35,77 +36,35 @@ func build() -> void:
 	var err := host.open(who)
 	host.lobby_changed.connect(_on_lobby)
 	host.notice.connect(func(t: String) -> void: toast(t))
-	# Kopfzeile rechts: Spielerzahl und Computergegner
-	var tools := ScreenKit.hbox(8)
-	# Spiel-WLAN (Beta 1.0.1, GameWifiPanel): eigenes WLAN mit WLAN-QR-Code, nur mit App auf Android (am PC per NetAndroid.wifi_stub)
-	if NetAndroid.game_wifi_available():
-		var wifi_button := ScreenKit.button("Spiel-WLAN", "GhostButton", "wlan")
-		wifi_button.name = "SpielWlan"
-		wifi_button.tooltip_text = "Spiel-WLAN öffnen"
-		wifi_button.pressed.connect(func() -> void: _wifi_panel = GameWifiPanel.open(self, host))
-		tools.add_child(wifi_button)
-	_count = ScreenKit.label("", "HintLabel", UiFonts.size("text"))
-	_count.name = "Spielerzahl"
-	_count.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	tools.add_child(_count)
-	_bot_minus = ScreenKit.button("−", "GhostButton", "", ScreenKit.TOUCH)
-	_bot_minus.name = "MinusComputer"
-	_bot_minus.tooltip_text = "Computergegner entfernen"
-	_bot_minus.pressed.connect(_remove_bot)
-	tools.add_child(_bot_minus)
-	var bl := ScreenKit.label("Computer", "", UiFonts.size("text"))
-	bl.add_theme_font_override("font", UiFonts.text(700))
-	bl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	tools.add_child(bl)
-	_bot_plus = ScreenKit.button("+", "GhostButton", "roboter", ScreenKit.TOUCH)
-	_bot_plus.name = "PlusComputer"
-	_bot_plus.tooltip_text = "Computergegner hinzufügen"
-	_bot_plus.pressed.connect(func() -> void:
-		_focus_last = true
-		host.add_bot())
-	tools.add_child(_bot_plus)
+	if err != OK:
+		toast("Kein freier Port – bitte die App neu starten.")
+	# Kopfzeile: So geht's, Regeln, Start
+	var tools := ScreenKit.hbox(12)
+	_help_btn = ScreenKit.button("So geht's", "GhostButton", "hilfe")
+	_help_btn.name = "SoGehts"
+	_help_btn.pressed.connect(open_help)
+	tools.add_child(_help_btn)
+	_rules_btn = ScreenKit.button("Regeln", "GhostButton", "regeln")
+	_rules_btn.name = "Regeln"
+	_rules_btn.tooltip_text = "Regeln ansehen und anpassen"
+	tools.add_child(_rules_btn)
+	_start = ScreenKit.button("Start", "PrimaryButton", "start", 200.0)
+	_start.name = "Start"
+	_start.add_theme_font_size_override("font_size", UiFonts.size("start"))
+	_start.pressed.connect(start_game)
+	tools.add_child(_start)
 	var content := page("Spiel eröffnen", true, tools)
-	var cols := ScreenKit.hbox(26)
-	cols.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	content.add_child(cols)
-	# --- links: QR-Code und Hinweise
-	var left := ScreenKit.card(24.0)
-	left.custom_minimum_size = Vector2(520, 0)
-	cols.add_child(left)
-	var lv := ScreenKit.vbox(10)
-	var lscroll := ScreenKit.scroller()   # große Schrift: Hinweise blättern statt abschneiden
-	left.add_child(lscroll)
-	lv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	lscroll.add_child(lv)
-	var qrow := ScreenKit.hbox(20)
-	lv.add_child(qrow)
-	_qr = TextureRect.new()
-	_qr.name = "QR"
-	_qr.custom_minimum_size = Vector2(250, 250)
-	_qr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_qr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_qr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	qrow.add_child(_qr)
-	var qtext := ScreenKit.vbox(6)
-	qtext.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	qrow.add_child(qtext)
-	qtext.add_child(ScreenKit.heading("Ohne App mitspielen", UiFonts.size("zeile")))
-	qtext.add_child(ScreenKit.hint("QR-Code mit der Kamera scannen oder die Adresse im Browser eintippen:", UiFonts.size("hinweis")))
-	_url = ScreenKit.label("", "", UiFonts.size("zeile"))
-	_url.name = "Adresse"
-	_url.add_theme_font_override("font", UiFonts.text(800, 90.0))
-	_url.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
-	qtext.add_child(_url)
-	_more = ScreenKit.hint("", UiFonts.size("klein"))
-	qtext.add_child(_more)
-	lv.add_child(ScreenKit.hint("• Mit App: „Im WLAN spielen“ → „Beitreten“, das Spiel erscheint von selbst.", UiFonts.size("hinweis")))
-	lv.add_child(ScreenKit.hint("• Warnseite „nicht sicher“? Das ist normal im eigenen WLAN: „Weiter“ bzw. „Trotzdem öffnen“.", UiFonts.size("hinweis")))
-	lv.add_child(ScreenKit.hint("• iPhone: am besten mit Safari öffnen.", UiFonts.size("hinweis")))
-	lv.add_child(ScreenKit.hint("• Hotel- oder Gäste-WLAN sieht sich oft nicht gegenseitig: dann oben „Spiel-WLAN“ tippen und die anderen damit verbinden.", UiFonts.size("hinweis")))
-	# --- rechts: Spieler (Bildlauf), darunter Regeln und Start
+	pager = LobbyPager.new()
+	pager.blocked = func() -> bool: return _dialog_open() or (nav != null and nav.top() != self)
+	content.add_child(pager)
+	# --- Seite 1: Einladen
+	invite = InvitePanel.new()
+	pager.add_page(invite)
+	invite.setup(host, err != OK)
+	# --- Seite 2: Spieler (Bildlauf), darunter Regeln, Spielerzahl und Computergegner
 	var right := ScreenKit.card(24.0)
-	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	cols.add_child(right)
+	right.name = "Mitspieler"
+	pager.add_page(right)
 	var rv := ScreenKit.vbox(10)
 	right.add_child(rv)
 	_scroll = ScreenKit.scroller()
@@ -119,7 +78,7 @@ func build() -> void:
 	line.custom_minimum_size = Vector2(0, 2)
 	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	rv.add_child(line)
-	var bottom := ScreenKit.hbox(16)
+	var bottom := ScreenKit.hbox(12)
 	rv.add_child(bottom)
 	_rules = RulesBar.new()
 	_rules.compact = true
@@ -128,14 +87,32 @@ func build() -> void:
 	_rules.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_rules.changed.connect(func(cfg: RuleConfig) -> void: host.set_rules(cfg))
 	bottom.add_child(_rules)
-	_start = ScreenKit.button("Start", "PrimaryButton", "start", 200.0)
-	_start.name = "Start"
-	_start.custom_minimum_size = Vector2(210, 92)
-	_start.add_theme_font_size_override("font_size", UiFonts.size("start"))
-	_start.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	_start.pressed.connect(start_game)
-	bottom.add_child(_start)
-	_show_address(err)
+	_rules._edit.visible = false                 # „Regeln“ steht oben in der Kopfzeile
+	_rules_btn.pressed.connect(func() -> void:
+		_rules.nav = nav
+		_rules._open_editor())
+	_count = ScreenKit.label("", "HintLabel", UiFonts.size("text"))
+	_count.name = "Spielerzahl"
+	_count.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	bottom.add_child(_count)
+	_bot_minus = ScreenKit.button("−", "GhostButton", "", ScreenKit.TOUCH)
+	_bot_minus.name = "MinusComputer"
+	_bot_minus.tooltip_text = "Computergegner entfernen"
+	_bot_minus.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_bot_minus.pressed.connect(_remove_bot)
+	bottom.add_child(_bot_minus)
+	var bl := ScreenKit.label("Computer", "", UiFonts.size("text"))
+	bl.add_theme_font_override("font", UiFonts.text(700))
+	bl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	bottom.add_child(bl)
+	_bot_plus = ScreenKit.button("+", "GhostButton", "roboter", ScreenKit.TOUCH)
+	_bot_plus.name = "PlusComputer"
+	_bot_plus.tooltip_text = "Computergegner hinzufügen"
+	_bot_plus.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_bot_plus.pressed.connect(func() -> void:
+		_focus_last = true
+		host.add_bot())
+	bottom.add_child(_bot_plus)
 	_on_lobby(host.lobby())
 
 
@@ -145,22 +122,29 @@ func on_enter() -> void:
 		_rules.refresh()
 
 
-func _show_address(err: Error) -> void:
-	var urls := host.host_urls() if err == OK else ([] as Array[String])
-	if err != OK:
-		_url.text = "Kein freier Port – bitte die App neu starten."
-		_qr.texture = null
+func show_page(i: int, animate := true) -> void:
+	if pager != null:
+		pager.show_page(i, animate)
+
+
+func open_help() -> void:
+	if _help != null and is_instance_valid(_help):
 		return
-	if urls.is_empty():
-		_url.text = "Kein WLAN gefunden"
-		_more.text = "Mit einem WLAN verbinden oder einen Hotspot öffnen, dann diese Seite neu öffnen."
-		_qr.texture = null
-		return
-	_url.text = urls[0].trim_prefix("http://").trim_suffix("/")
-	_more.text = ("Auch: " + ", ".join(PackedStringArray(urls.slice(1).map(func(u: String) -> String: return u.trim_prefix("http://").trim_suffix("/"))))) if urls.size() > 1 else ""
-	var qr := QrCode.encode(urls[0])
-	if qr != null:
-		_qr.texture = qr.to_texture(8, 3, UiPalette.INK, Color.WHITE)
+	_help = HostHelpDialog.open(self)
+	_help.closed.connect(func() -> void: _help = null)
+
+
+func _dialog_open() -> bool:
+	return (_help != null and is_instance_valid(_help)) or (_confirm != null and is_instance_valid(_confirm))
+
+
+# Mitspieler ohne Gastgeber und Computergegner
+static func guest_count(l: Dictionary) -> int:
+	var n := 0
+	for p in l.get("players", []):
+		if str(p.get("kind", "")) != "bot" and int(p.get("id", -1)) != int(l.get("host_id", -1)):
+			n += 1
+	return n
 
 
 func _on_lobby(l: Dictionary) -> void:
@@ -191,6 +175,8 @@ func _on_lobby(l: Dictionary) -> void:
 	_start.disabled = players.size() < 2
 	_bot_minus.disabled = bots == 0
 	_bot_plus.disabled = players.size() >= NetProtocol.MAX_PLAYERS
+	if invite != null:
+		invite.set_guests(guest_count(l))
 
 
 # Zeile ganz in den sichtbaren Bereich holen (nach dem Layout)
@@ -310,18 +296,15 @@ func start_game() -> void:
 
 
 func on_back() -> bool:
-	var guests := 0
-	for p in lobby.get("players", []):
-		if str(p.get("kind", "")) != "bot" and int(p.get("id", -1)) != int(lobby.get("host_id", -1)):
-			guests += 1
-	if _wifi_panel != null and is_instance_valid(_wifi_panel):
-		_wifi_panel.close()          # Spiel-WLAN bleibt offen, nur das Panel schließt
-		_wifi_panel = null
+	if _help != null and is_instance_valid(_help):
+		_help.close()               # „So geht's“ schließen
+		_help = null
 		return true
 	if _confirm != null and is_instance_valid(_confirm):
 		_confirm.cancel()            # offene Rückfrage: Zurück heißt „Bleiben“
 		_confirm = null
 		return true
+	var guests := guest_count(lobby)
 	if guests == 0:
 		return false
 	_confirm = ConfirmBox.ask(self, "Lobby schließen?", close_text(guests), "Schließen", "Bleiben")

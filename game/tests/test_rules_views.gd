@@ -225,11 +225,11 @@ func _expected_keys(g: MauGame, s: int) -> Dictionary:
 				_add(want, g._key[g.faces[oth + int(id)]])
 	if not g.discard.is_empty():
 		_add(want, g._key[g.faces[act + int(g.discard.back())]])
-	# Ablage-Protokoll: alle Ablagekarten der aktiven Seite, außer verdeckten Glücksspiel-Einsätzen unter der obersten Karte.
+	# Ablage-Protokoll: alle Ablagekarten (aktive Seite, bei flip_mode = card die Seite, mit der sie liegen), außer verdeckten Glücksspiel-Einsätzen unter der obersten Karte.
 	for i in g.discard.size():
 		var did := int(g.discard[i])
 		if i == g.discard.size() - 1 or not bool((g.dlog.get(did, {}) as Dictionary).get("h", false)):
-			_add(want, g._key[g.faces[act + did]])
+			_add(want, g._key[g.faces[_shown(g, i) * g.n_cards + did]])
 	if not g.draw_pile.is_empty():
 		_add(want, g._key[g.faces[oth + int(g.draw_pile.back())]])
 	if g.config.backs_visible:
@@ -258,7 +258,7 @@ func _check_discard_log(g: MauGame, dl: Array) -> String:
 		var hid := bool(e.h)
 		if hid != (i < dl.size() - 1 and bool((g.dlog.get(did, {}) as Dictionary).get("h", false))):
 			return "discard_log[%d]: verdeckt falsch" % i
-		if (str(e.f) == "") != hid or (not hid and str(e.f) != g._key[g.faces[g.side * g.n_cards + did]]):
+		if (str(e.f) == "") != hid or (not hid and str(e.f) != g._key[g.faces[_shown(g, i) * g.n_cards + did]]):
 			return "discard_log[%d]: Gesicht falsch" % i
 		if int(e.s) < -1 or int(e.s) >= g.players.size():
 			return "discard_log[%d]: Leger %d" % [i, int(e.s)]
@@ -762,3 +762,10 @@ func _round_trip() -> void:
 	var back := MauGame.from_dict(JSON.parse_string(JSON.stringify(fresh.to_dict())))
 	check(back.phase() == "idle" and back.config.preset_name() == "familie" and back.players.size() == 4, "Rundreise vor dem Start")
 	check(back.start_round().size() > 0 and back.phase() == "turn", "geladene Partie startet")
+
+
+# Seite, mit der Ablagekarte i im Protokoll erscheint: oben die aktive, darunter bei flip_mode = card die gemerkte (dside).
+func _shown(g: MauGame, i: int) -> int:
+	if i == g.discard.size() - 1 or g.config.flip_mode != "card":
+		return g.side
+	return int(g.dside.get(int(g.discard[i]), g.side))

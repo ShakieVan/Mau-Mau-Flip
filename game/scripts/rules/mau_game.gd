@@ -10,6 +10,8 @@ extends RefCounted
 # faces[s * n_cards + id] = Gesichtscode (CardDB) der Seite s (0 hell, 1 dunkel). Paarung hell↔dunkel und
 # ids werden je Runde aus dem Seed neu gemischt. Stapel sind Arrays, oben = letztes Element. Alle Karten liegen gleich
 # ausgerichtet: Ein Flip kehrt beide Stapel um und schaltet die aktive Seite; Hände wenden sich dadurch von selbst.
+# Bei flip_mode = card bleibt die Ablage in ihrer Reihenfolge, oben liegt die andere Seite der Flip-Karte; die Karten darunter
+# gelten als zur Seite gelegt und zeigen im Ablage-Protokoll die Seite, mit der sie lagen (dside, nur in diesem Modus).
 #
 # Abläufe (Kurzfassung):
 # - Ziehkarte → offene Strafe (pending). Wünscher +2/Farbjagd bei wild_restriction=bluff: Phase "challenge" für das Opfer.
@@ -94,6 +96,7 @@ var seen := {}                   # Lagen bei fast leeren Stapeln → Anzahl (Sti
 var gamble := {}                 # laufendes Glücksspiel {seat, q (geheim, 1–10), stake: [ids], need: "stake"|"press", last}
 var dpick := {}                  # offene Ablege-Auswahl {seat, color (Ablegefarbe), card (Ablegen-Karte), wild}
 var dlog := {}                   # Ablage-Protokoll: id → {s: Leger (-1 Startkarte), c: Wunschfarbe, h: verdeckter Einsatz}
+var dside := {}                  # nur flip_mode = card: id → Seite (0/1), mit der die Ablagekarte liegt
 
 var _valid := true              # false bei ungültiger Spielerzahl: start_round() und apply() lehnen ab
 var _forced_rolls: Array = []   # Testhaken (force_rolls): vorgegebene Ergebnisse der nächsten Drucke, nicht gespeichert
@@ -594,6 +597,7 @@ func _stake_under(seat: int, reason: String, ev: Array) -> void:
 		keys.append(_key[faces[side * n_cards + int(id)]])
 	for id in stake:
 		dlog[int(id)] = {"s": seat, "c": "", "h": true}
+		_lay(int(id))
 	var under := stake.duplicate()
 	under.append_array(discard)
 	discard = under
@@ -700,6 +704,7 @@ func _start(ev: Array) -> void:
 	draw_pile = _shuffled_range(n_cards)
 	discard = []
 	dlog = {}
+	dside = {}
 	ev.append({"e": "round_start", "round": round_no, "dealer": dealer})
 	for k in config.hand_size:
 		for i in n:
@@ -714,6 +719,7 @@ func _reveal_start_card(ev: Array) -> void:
 	while not draw_pile.is_empty():
 		var id: int = draw_pile.pop_back()
 		discard.append(id)
+		_lay(id)
 		var f := faces[side * n_cards + id]
 		var number := _kind[f] == "zahl"
 		ev.append({"e": "start", "card": id, "face": _key[f], "ignored": not number})
@@ -817,6 +823,7 @@ func _play(p: int, id: int, wish: String, legal: bool, snap: Array, ev: Array) -
 	(hands[p] as Array).erase(id)
 	discard.append(id)
 	dlog[id] = {"s": p, "c": "", "h": false}
+	_lay(id)
 	drawn_id = -1
 	pass_streak = 0
 	ev.append({"e": "play", "seat": p, "card": id, "face": _key[f]})
@@ -935,6 +942,7 @@ func _discard_color(p: int, id: int, col: String, chosen: Array, ev: Array) -> v
 		keys.append(_key[faces[side * n_cards + c]])
 		(hands[p] as Array).erase(c)
 		dlog[c] = {"s": p, "c": "", "h": false}
+		_lay(c)
 	discard.pop_back()
 	discard.append_array(ids)
 	discard.append(id)
@@ -1034,11 +1042,13 @@ func _final_effect(p: int, kind: String, ev: Array) -> void:
 
 
 func _do_flip(ev: Array) -> void:
-	discard.reverse()
+	if config.flip_mode != "card":
+		discard.reverse()              # offiziell: ganze Ablage wenden; bei "card" dreht sich nur die Flip-Karte oben
 	draw_pile.reverse()
 	side = 1 - side
 	wished = false
 	var top: int = discard.back()
+	_lay(top)
 	var f := faces[side * n_cards + top]
 	color = _color[f]
 	ev.append({"e": "flip", "side": SIDES[side], "card": top, "face": _key[f], "draw_back": _draw_back()})
@@ -1248,6 +1258,8 @@ func _reshuffle(ev: Array) -> void:
 	dlog = {}
 	if keep != null:
 		dlog[top] = keep
+	dside = {}
+	_lay(top)
 	ev.append({"e": "shuffle", "count": draw_pile.size()})
 
 
@@ -1261,14 +1273,22 @@ func _note_wish(c: String) -> void:
 	dlog[id] = e
 
 
-# Öffentliches Ablage-Protokoll (für alle gleich): von unten nach oben, verdeckte Einsätze ohne Gesicht.
+# flip_mode = card: Seite merken, mit der die Karte auf die Ablage kommt (beim Flip die neue Seite der Flip-Karte).
+func _lay(id: int) -> void:
+	if config.flip_mode == "card":
+		dside[id] = side
+
+
+# Öffentliches Ablage-Protokoll (für alle gleich): von unten nach oben, verdeckte Einsätze ohne Gesicht. Bei flip_mode = card
+# zeigen die Karten unter der obersten die Seite, mit der sie lagen (dside); offiziell alle die aktive Seite.
 func _discard_log() -> Array:
 	var out: Array = []
 	for i in discard.size():
 		var id: int = discard[i]
 		var e: Dictionary = dlog.get(id, {})
 		var hid := bool(e.get("h", false)) and i < discard.size() - 1   # oben (nach einem Flip) ist die Karte ohnehin offen
-		out.append({"f": "" if hid else _key[faces[side * n_cards + int(id)]], "s": int(e.get("s", -1)),
+		var shown := side if i == discard.size() - 1 else int(dside.get(int(id), side))
+		out.append({"f": "" if hid else _key[faces[shown * n_cards + int(id)]], "s": int(e.get("s", -1)),
 			"c": str(e.get("c", "")), "h": hid})
 	return out
 
@@ -1704,6 +1724,12 @@ func to_dict() -> Dictionary:
 		d["gamble"] = gamble.duplicate(true)
 	if config.discard_color == "on":
 		d["discard_pick"] = dpick.duplicate(true)
+	if config.flip_mode == "card":       # nur in diesem Modus, sonst bleibt der Spielstand wie bisher
+		var ds: Array = []
+		for id in discard:
+			if dside.has(int(id)):
+				ds.append([int(id), int(dside[int(id)])])
+		d["dside"] = ds
 	return d
 
 
@@ -1742,6 +1768,12 @@ static func from_dict(d: Dictionary) -> MauGame:
 		for e in dl:
 			if e is Array and (e as Array).size() == 4:
 				g.dlog[int(e[0])] = {"s": int(e[1]), "c": str(e[2]), "h": bool(e[3])}
+	g.dside = {}
+	var dsl: Variant = d.get("dside", [])
+	if dsl is Array:
+		for e in dsl:
+			if e is Array and (e as Array).size() == 2:
+				g.dside[int(e[0])] = clampi(int(e[1]), 0, 1)
 	g.hands = []
 	var hs: Array = d.get("hands", [])
 	for s in n:

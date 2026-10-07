@@ -165,6 +165,8 @@ static var use_binding := true
 static var bound_to := ""                # "wifi" | "hotspot" | "" – Bindung der zuletzt angelegten Sockets
 static var bind_problem := ""
 static var _owners := {}
+static var _last_address := {}          # letzte Adresse je Zweck (für das Wiederherstellen nach einer Internet-Anfrage)
+static var _suspended := false          # Bindung für eine Internet-Anfrage (Updater) gerade gelöst
 
 static func _android_state() -> Dictionary:
 	if not use_binding or override_interfaces != null or not _has("state"):
@@ -175,6 +177,7 @@ static func _android_state() -> Dictionary:
 static func bind_for(purpose: String, address := "") -> String:
 	# Vor dem Anlegen neuer Sockets aufrufen. Ergebnis: woran die gleich entstehenden Sockets gebunden sind ("wifi", "hotspot", "").
 	_owners[purpose] = true
+	_last_address[purpose] = address
 	bind_problem = ""
 	var s := _android_state()
 	if s.is_empty() or not ["wifi_handle", "hotspot_addresses", "host_plan", "join_binding", "in_hotspot", "bind_wifi", "bind_network",
@@ -208,6 +211,26 @@ static func bind_for(purpose: String, address := "") -> String:
 	bound_to = "wifi" if err == "" else ""
 	bind_problem = err
 	return bound_to
+
+# Internet-Anfragen (Update-Prüfung, APK-Download): Eine Bindung an ein Netz, das womöglich kein Internet hat (eigenes Spiel-WLAN
+# ab Android 16, Spiel-WLAN eines anderen Gastgebers), wird kurz gelöst, damit die Anfrage über das Standardnetz läuft
+# (Nutzerbefund 07.10.2026: „Jetzt prüfen“ hing bei offenem Spiel-WLAN und meldete „Keine Verbindung.“). Bestehende Sockets
+# des Spiels bleiben unberührt; danach wird die vorige Bindung wiederhergestellt.
+static func suspend_for_internet() -> void:
+	if _suspended or bound_to == "":
+		return
+	_call("unbind")
+	bound_to = ""
+	_suspended = true
+
+
+static func resume_after_internet() -> void:
+	if not _suspended:
+		return
+	_suspended = false
+	for purpose in _owners.keys():
+		bind_for(str(purpose), str(_last_address.get(purpose, "")))
+
 
 static func release(purpose: String) -> void:
 	# Zweck beendet; ohne weitere Zwecke wird die Bindung gelöst.

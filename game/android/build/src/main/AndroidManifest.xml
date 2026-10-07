@@ -75,6 +75,19 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity-alias>
+        <!-- App-Link „In der App spielen“ (Beta 1.0.2, AppLink.java): maumauflip://join?h=<IP>&p=<Port> öffnet das Spiel und tritt
+             dem Gastgeber bei. Eigener Alias, weil .GodotApp nicht exportiert ist; Ziel bleibt die Spiel-Activity. -->
+        <activity-alias
+            android:name=".GodotAppLink"
+            android:targetActivity=".GodotApp"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="maumauflip" android:host="join" />
+            </intent-filter>
+        </activity-alias>
 
     </application>
 

@@ -101,7 +101,7 @@ func _init() -> void:
 	check(limit_text.begins_with("GitHub-Limit erreicht – später erneut versuchen") and limit_text.contains("10 Minuten"), "403 mit Wartezeit: " + limit_text)
 	check(Updater.failure_text(HTTPRequest.RESULT_SUCCESS, 403, PackedStringArray(), 0) == "GitHub-Limit erreicht – später erneut versuchen."
 		and Updater.failure_text(HTTPRequest.RESULT_SUCCESS, 429, PackedStringArray(["retry-after: 30"]), 0).contains("1 Minute)")
-		and Updater.failure_text(HTTPRequest.RESULT_CANT_CONNECT, 0, PackedStringArray(), 0) == "Keine Verbindung."
+		and Updater.failure_text(HTTPRequest.RESULT_CANT_CONNECT, 0, PackedStringArray(), 0) == Updater.NO_CONNECTION
 		and Updater.failure_text(HTTPRequest.RESULT_SUCCESS, 502, PackedStringArray(), 0).contains("502"), "403 ohne Angabe, 429, kein Netz, 502")
 
 	# Ablauf mit eigenen Einstellungen und eigenem Download-Ordner (ohne Netz: Antworten werden direkt eingespeist).

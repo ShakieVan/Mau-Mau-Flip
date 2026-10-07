@@ -303,6 +303,16 @@ func rules_editor() -> void:
 	await frames(1)
 	check(ga.button_pressed and dc.button_pressed and sw.button_pressed and count.call() == "124 Karten" and RulesBar.current().flip_surprise == "on",
 		"Familie: Schalter an, Flip-Überraschung an")
+	# Flip dreht (1.0.2): Familie „Nur die gelegte Karte“; „Ganze Ablage“ macht eigene Regeln daraus
+	var fm := rs._controls["flip_mode"] as Container
+	check(chosen(fm) == "card" and choice_button(fm, "pile").text == "Ganze Ablage (offiziell)" and choice_button(fm, "card").text == "Nur die gelegte Karte",
+		"Flip dreht: Zeile mit beiden Werten, Familie = nur die Karte")
+	choice_button(fm, "pile").pressed.emit()
+	await frames(1)
+	check(RulesBar.current().flip_mode == "pile" and chosen(rs._preset_row) == "", "Flip dreht ganze Ablage: eigene Regeln")
+	choice_button(fm, "card").pressed.emit()
+	await frames(1)
+	check(chosen(rs._preset_row) == "familie", "Flip dreht nur die Karte: wieder Familie")
 	# Übersicht
 	RulesBar.store(house())
 	rs.cfg = RulesBar.current()
@@ -383,6 +393,7 @@ func lobbies() -> void:
 		await frames(1)
 	for i in 3:
 		host.add_bot()
+	lobby.show_page(1, false)             # Beta 1.0.2: Spielerliste rechts vom Einladen-Bereich
 	await wait(0.4)
 	# Gastgeber: 5 Spieler ganz sichtbar, Start und Regeln im Bild
 	var screen := Rect2(Vector2.ZERO, Vector2(1600, 720))

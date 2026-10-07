@@ -22,6 +22,7 @@ const CHOICES := {
 	"gamble_cards": ["off", "on"],             # Hausregel Glücksspiel: 2 zusätzliche Joker, siehe docs/module/A.md
 	"discard_color": ["off", "on"],            # Hausregel Farbe mit ablegen: 6 zusätzliche Karten, siehe docs/module/A.md
 	"flip_surprise": ["off", "on"],            # Hausregel Flip-Überraschung: Aktionskarte oben nach dem Flip wirkt auf den Nächsten
+	"flip_mode": ["pile", "card"],             # Flip wendet die ganze Ablage (offiziell) oder nur die gelegte Flip-Karte (Hausregel)
 }
 const FLAGS := {
 	"wild_counts_for_bluff": true,
@@ -40,7 +41,8 @@ const PRESETS := {
 	"offiziell": {},
 	"klassisch500": {"scoring": "points500"},
 	"familie": {"round_end": "last", "stacking": "same", "penalty_turn": "play", "wild_restriction": "free", "mau_penalty": 1,
-		"swap_cards": "on", "swap_direction": "play", "gamble_cards": "on", "discard_color": "on", "flip_surprise": "on"},
+		"swap_cards": "on", "swap_direction": "play", "gamble_cards": "on", "discard_color": "on", "flip_surprise": "on",
+		"flip_mode": "card"},
 	"mau_mau": {"stacking": "same", "wild_restriction": "enforce", "mau_penalty": 1},
 }
 const PRESET_TITLES := {"offiziell": "Offiziell", "klassisch500": "Klassisch 500", "familie": "Familie", "mau_mau": "Mau-Mau-Tradition"}
@@ -67,6 +69,7 @@ var swap_direction := "clockwise"
 var gamble_cards := "off"
 var discard_color := "off"
 var flip_surprise := "off"
+var flip_mode := "pile"
 
 
 static func keys() -> Array:
@@ -95,11 +98,18 @@ const OLD_FAMILIE := {"round_end": "last", "stacking": "same", "penalty_turn": "
 # Gespeicherte Regeln (App-Einstellungen, Regelsätze, Regeln vom Gastgeber) auf den Stand 0.1.4 bringen: Anzweifeln ("bluff")
 # gibt es in der Oberfläche nicht mehr und wird zu "free" (0.1.3). Regeln, die genau der früheren „Familie“ entsprechen (mit
 # enforce oder, nach bluff → free, mit free), werden zur heutigen „Familie“ (0.1.4). Liefert eine Kopie, d bleibt unverändert.
+# Ohne Schlüssel flip_mode (bis 1.0.1) wird die damalige „Familie“ (heutige ohne flip_mode = card) zur heutigen (1.0.2).
 static func migrate_dict(d: Dictionary) -> Dictionary:
 	var out := d.duplicate()
 	if str(out.get("wild_restriction", "")) == "bluff":
 		out["wild_restriction"] = "free"
 	var mine := RuleConfig.from_dict(out).to_dict()
+	if not d.has("flip_mode"):
+		var fam := RuleConfig.from_dict(out)
+		fam.flip_mode = "card"
+		if fam.preset_name() == "familie":
+			out.merge(RuleConfig.preset("familie").to_dict(), true)
+			return out
 	for wr in ["enforce", "free"]:
 		var old := RuleConfig.from_dict(OLD_FAMILIE)
 		old.wild_restriction = wr
@@ -270,6 +280,8 @@ func describe() -> Array[String]:
 		out.append("Ein Flip als letzte Karte wird noch ausgeführt; gewertet wird die neue Seite.")
 	else:
 		out.append("Ein Flip als letzte Karte wird nicht mehr ausgeführt.")
+	if flip_mode == "card":
+		out.append("Flip dreht nur die gelegte Karte: Oben liegt ihre andere Seite, die übrige Ablage bleibt zur Seite gelegt.")
 	if flip_surprise == "on":
 		out.append("Flip-Überraschung: Die Aktionskarte, die nach dem Flip oben liegt, wirkt auf den Nächsten.")
 	# Zusatzkarten: Mit genau einer Hausregel steht die Kartenzahl in ihrer Zeile (Kartentausch wie bisher „(116)“), mit mehreren

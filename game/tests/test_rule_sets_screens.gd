@@ -656,6 +656,8 @@ func reopen_as_host() -> void:
 	if lobby.host == null or lobby.host.port() <= 0:
 		return
 	lobby.host.autosave = false
+	lobby.show_page(1, false)             # Beta 1.0.2: Regelzeile auf der Seite der Spielerliste
+	await frames(2)
 	check(lobby._rules._head.text == "Offiziell · 112 Karten", "Lobby: noch die eigenen Regeln")
 	check(lobby._rules._offer.visible and lobby._rules._offer_btn.text == "Von Lena übernehmen" and inside(lobby._rules._offer_btn.get_global_rect(), Rect2(0, 0, 1600, 720)),
 		"Lobby bietet „Regeln von Lena“ zum Übernehmen an")

@@ -101,6 +101,7 @@ func run() -> void:
 		await process_frame
 	for i in 3:
 		host.add_bot()
+	lobby.show_page(1, false)             # Beta 1.0.2: Spielerliste rechts vom Einladen-Bereich
 	await wait(0.8)
 	shot("lobby_5_spieler")
 	for i in 5:

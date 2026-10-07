@@ -33,6 +33,7 @@ package com.godot.game;
 import org.godotengine.godot.Godot;
 import org.godotengine.godot.GodotActivity;
 
+import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -95,6 +96,19 @@ public class GodotApp extends GodotActivity {
 		SplashScreen.installSplashScreen(this);
 		EdgeToEdge.enable(this);
 		super.onCreate(savedInstanceState);
+		// Mau-Mau Flip (Beta 1.0.2, App-Link „In der App spielen“): Adresse des Gastgebers merken (AppLink.java). Nicht nach einer
+		// Wiederherstellung oder aus dem Verlauf, sonst träte die App einem alten Spiel erneut bei.
+		Intent start = getIntent();
+		if (savedInstanceState == null && start != null
+				&& (start.getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) == 0) {
+			AppLink.remember(start);
+		}
+	}
+
+	@Override
+	public void onNewIntent(Intent intent) {
+		super.onNewIntent(intent);
+		AppLink.remember(intent);
 	}
 
 	@Override

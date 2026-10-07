@@ -77,6 +77,17 @@ func build() -> void:
 	if up is Object and (up as Object).has_signal("changed"):
 		(up as Object).connect("changed", _refresh_update)
 	_refresh_update()
+	# App-Link „In der App spielen“ (Beta 1.0.2): Das Hauptmenü liegt immer unten im Stapel und nimmt Links entgegen
+	if app != null and app.has_signal("app_link_received"):
+		app.connect("app_link_received", _on_app_link)
+		_on_app_link.call_deferred()
+
+
+func _on_app_link() -> void:
+	var app := UiApp.app()
+	if nav == null or app == null or not app.has_method("take_pending_link"):
+		return
+	JoinScreen.handle_link(nav, app.call("take_pending_link"))
 
 
 func on_enter() -> void:

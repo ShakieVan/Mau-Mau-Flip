@@ -18,6 +18,7 @@ signal message(id: int, msg: Dictionary)
 signal lobby_changed
 signal finished                          # finish() ist fertig: alles geschlossen
 signal log_line(text: String)
+signal page_visited(address: String)     # ein fremdes Gerät (nicht dieses) hat die Spielseite „/“ abgerufen (Lobby, Beta 1.0.2)
 
 const HELLO_TIMEOUT_MS := 10000
 const CLOSE_GRACE_MS := 3000             # nach „reject“/„bye“: so lange darf der Client selbst schließen (NetServer.close_ws)
@@ -66,6 +67,7 @@ func start(name_of_host: String, port_first := NetProtocol.PORT, port_last := Ne
 	server.ws_closed.connect(_on_closed)
 	server.ws_dropped.connect(_on_dropped)
 	server.log_line.connect(_log)
+	server.page_visited.connect(_on_page)
 	var err := server.start(port_first, port_last)
 	if err != OK:
 		_drop_node(server)
@@ -328,6 +330,20 @@ func apk_url(host_header := "") -> String:
 	return "http://%s/apk" % host
 
 # ---------- Ereignisse des Servers ----------
+
+func _on_page(address: String) -> void:
+	if not is_own_address(address):
+		page_visited.emit(address)
+
+static func is_own_address(address: String, own: Variant = null) -> bool:
+	# Eigene Adresse (Loopback oder eine Schnittstelle dieses Geräts)? own: Liste statt IP.get_local_addresses() (Tests).
+	var a := address.trim_prefix("::ffff:").get_slice("%", 0)
+	if a == "" or a.begins_with("127.") or a == "::1":
+		return true
+	for o in (own if own is Array else Array(IP.get_local_addresses())):
+		if str(o).trim_prefix("::ffff:").get_slice("%", 0) == a:
+			return true
+	return false
 
 func _on_open(conn: int, conn_info: Dictionary) -> void:
 	_pending[conn] = {"since_ms": Time.get_ticks_msec(), "info": conn_info}

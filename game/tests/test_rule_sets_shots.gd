@@ -214,6 +214,7 @@ func run() -> void:
 	lobby.host.autosave = false
 	lobby.host.add_bot()
 	lobby.host.add_bot()
+	lobby.show_page(1, false)             # Beta 1.0.2: Regelzeile bei der Spielerliste
 	await wait(0.5)
 	shot("lobby_angebot")
 	lobby._rules._offer_btn.pressed.emit()

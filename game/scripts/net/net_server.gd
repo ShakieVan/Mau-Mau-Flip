@@ -21,6 +21,7 @@ signal ws_message(conn: int, text: String)
 signal ws_closed(conn: int, code: int, reason: String)
 signal ws_dropped(conn: int, why: String, size: int)   # Nachricht verworfen: "size" (> max_client_message) oder "rate"
 signal log_line(text: String)
+signal page_visited(address: String)                   # GET „/“ bzw. „/index.html“ (Spielseite) von dieser Adresse (Lobby, Beta 1.0.2)
 
 const CHUNK := 65536
 const MAX_APK_STREAMS := 6
@@ -208,6 +209,8 @@ func poll() -> void:
 				ws_dropped.emit(e[1], e[2], e[3])
 			"log":
 				log_line.emit(e[1])
+			"page":
+				page_visited.emit(e[1])
 
 func send_text(conn: int, text: String) -> void:
 	_command(["send", [conn], text])
@@ -659,6 +662,8 @@ func _handle_request(c: Conn, req: Dictionary) -> void:
 		c.apk_next_ask = 0
 		_apk_wait(c, Time.get_ticks_msec())
 		return
+	if method == "GET" and (path == "/" or path == "/index.html"):
+		_event(["page", c.address])
 	_serve_file(c, req, keep)
 
 func _respond(c: Conn, status: int, type: String, body: PackedByteArray, extra: Dictionary, keep: bool, head_only := false) -> void:

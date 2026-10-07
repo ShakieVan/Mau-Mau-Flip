@@ -37,6 +37,9 @@ var _started := false
 var host_rules: RuleConfig          # Regeln der letzten Lobby-Nachricht (null = noch keine)
 var host_name := ""                 # Name des Gastgebers aus der Lobby
 var _adopted: ClientTable           # with_client(): bestehende Verbindung, wird in build() übernommen
+var direct := {}                    # App-Link (direct_to): {address, port} – ohne Suche verbinden
+var _name_box: Control              # App-Link ohne gespeicherten Namen: erst nach dem Namen fragen
+var _name_edit: LineEdit
 
 
 # Lobby mit einer bestehenden Verbindung (vom Tisch zurück); zeigt sofort deren letzte Lobby.
@@ -44,6 +47,68 @@ static func with_client(ct: ClientTable) -> JoinScreen:
 	var s := JoinScreen.new()
 	s._adopted = ct
 	return s
+
+
+# App-Link „In der App spielen“ (Beta 1.0.2): direkt zu diesem Gastgeber, ohne Suche. Fehlt der eigene Name, fragt die Seite
+# zuerst danach.
+static func direct_to(address: String, port: int) -> JoinScreen:
+	var s := JoinScreen.new()
+	s.direct = {"address": address, "port": port}
+	return s
+
+
+# Link aus App.take_pending_link() ({ok, address, port, error}, NetAndroid.parse_app_link) auf dem Bildschirmstapel ausführen.
+# Ungültig → freundlicher Hinweis. Läuft eine Partie oder Lobby, fragt die App erst. Ist man schon mit genau diesem Spiel verbunden,
+# bleibt alles, wie es ist.
+static func handle_link(nav: ScreenNav, link: Dictionary) -> void:
+	if nav == null or link.is_empty():
+		return
+	if not bool(link.get("ok", false)):
+		nav.toast(str(link.get("error", "Der Link zum Spiel ist unvollständig.")))
+		return
+	var address := str(link.address)
+	var port := int(link.port)
+	var busy := false
+	for s in nav.stack:
+		var ct: Object = null
+		if s is JoinScreen and (s as JoinScreen).client != null:
+			ct = (s as JoinScreen).client
+		elif s is TableScreen and not (s as TableScreen).leaving:
+			ct = (s as TableScreen).source
+		elif s is HostLobbyScreen:
+			busy = true
+			continue
+		else:
+			continue
+		if ct is ClientTable and same_game(ct as ClientTable, address, port):
+			nav.toast("Du bist schon in diesem Spiel.")
+			return
+		busy = true
+	if not busy:
+		_open_direct(nav, address, port)
+		return
+	var top := nav.top()
+	var box := ConfirmBox.ask(top if top != null else nav, "Anderem Spiel beitreten?",
+		"Du bist gerade in einem Spiel. Wenn du wechselst, verlässt du es.", "Wechseln", "Bleiben")
+	box.name = "AppLinkFrage"
+	box.answered.connect(func(yes: bool) -> void:
+		if yes and is_instance_valid(nav):
+			for s in nav.stack:
+				if s is TableScreen and (s as TableScreen).source != null and not (s as TableScreen).leaving:
+					(s as TableScreen).leaving = true
+					(s as TableScreen).source.leave()
+			_open_direct(nav, address, port))
+
+
+static func _open_direct(nav: ScreenNav, address: String, port: int) -> void:
+	nav.home(false)
+	nav.push(WlanScreen.new(), false)
+	nav.push(JoinScreen.direct_to(address, port))
+
+
+# Verbindung ct gehört zu genau diesem Gastgeber und ist nicht beendet
+static func same_game(ct: ClientTable, address: String, port: int) -> bool:
+	return ct.address == address and ct.port == port and not ct.connection_state() in ["closed", "rejected", "ended"]
 
 
 func build() -> void:
@@ -136,8 +201,70 @@ func build() -> void:
 		_adopt(_adopted)
 		_adopted = null
 		return
+	if not direct.is_empty():
+		_start_direct()
+		return
 	_start_search()
 	_refresh_games()
+
+
+# App-Link: Adresse eintragen und ohne Suche verbinden; ohne gespeicherten Namen erst danach fragen
+func _start_direct() -> void:
+	var address := str(direct.address)
+	var port := int(direct.port)
+	_address.text = "%s:%d" % [address, port]
+	_search_box.visible = false
+	if AppSettings.clean_name(str(UiApp.setting("name", ""))) == "":
+		_status.text = "Fast geschafft – wie heißt du?"
+		_show_name_box()
+		return
+	join(address, port)
+
+
+func _show_name_box() -> void:
+	var card := ScreenKit.card(24.0)
+	card.name = "NameFrage"
+	_name_box = card
+	_search_box.get_parent().add_child(card)
+	var v := ScreenKit.vbox(14)
+	card.add_child(v)
+	v.add_child(ScreenKit.heading("Dein Name", UiFonts.size("zwischen")))
+	v.add_child(ScreenKit.text_block("So sehen dich die anderen am Tisch.", UiFonts.size("text")))
+	var row := ScreenKit.hbox(14)
+	v.add_child(row)
+	_name_edit = LineEdit.new()
+	_name_edit.name = "Name"
+	_name_edit.placeholder_text = "Dein Name"
+	_name_edit.max_length = AppSettings.NAME_MAX
+	_name_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_name_edit.custom_minimum_size = Vector2(0, ScreenKit.TOUCH)
+	_name_edit.add_theme_font_size_override("font_size", UiFonts.size("text"))
+	_name_edit.text_submitted.connect(func(_t: String) -> void: confirm_name())
+	row.add_child(_name_edit)
+	var go := ScreenKit.button("Beitreten", "PrimaryButton", "start")
+	go.name = "NameBeitreten"
+	go.pressed.connect(confirm_name)
+	row.add_child(go)
+	_name_edit.call_deferred("grab_focus")
+
+
+# Name aus der Namensfrage übernehmen, speichern und verbinden
+func confirm_name() -> void:
+	if _name_edit == null:
+		return
+	var n := AppSettings.clean_name(_name_edit.text)
+	if n == "":
+		toast("Bitte gib deinen Namen ein.")
+		return
+	_name_edit.release_focus()
+	var app := UiApp.app()
+	var st: Variant = app.get("settings") if app != null else null
+	if st is Object:
+		(st as Object).call("set_value", "name", n)
+	_name_box.queue_free()
+	_name_box = null
+	_name_edit = null
+	join(str(direct.address), int(direct.port))
 
 
 # Bestehende Verbindung übernehmen (with_client): Lobby zeigen, ohne neu zu verbinden

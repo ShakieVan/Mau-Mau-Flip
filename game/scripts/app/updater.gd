@@ -131,7 +131,8 @@ func set_beta(on: bool) -> void:
 # HTTPRequest.timeout begrenzt die GESAMTE Anfrage, nicht die Pause zwischen zwei Paketen. Für die Versionsabfrage (klein) passt
 # das; ein Download liefe damit nach 30 s ab, egal wie gut die Verbindung ist. Beim Download ist die Grenze daher aus, stattdessen
 # bricht ein Wächter erst ab, wenn STALL_TIMEOUT Sekunden lang kein Byte mehr ankommt.
-const CHECK_TIMEOUT := 30.0
+const NO_CONNECTION := "Keine Verbindung zu GitHub. Prüfe das Internet – auch VPN- oder Firewall-Apps können es sperren."
+const CHECK_TIMEOUT := 12.0   # je Quelle; danach Klartext statt langem Warten (Nutzerbefund 07.10.2026)
 const STALL_TIMEOUT := 30.0
 var downloading := false
 var last_bytes := -1
@@ -184,6 +185,7 @@ func check(manual: bool) -> void:
 	answered = false
 	failed = false
 	failure = ""
+	NetAddresses.suspend_for_internet()
 	request_next()
 
 func request_next() -> void:
@@ -200,7 +202,7 @@ func request_next() -> void:
 		http.request_completed.disconnect(_checked)
 		failed = true
 		if failure == "":
-			failure = "Keine Verbindung."
+			failure = NO_CONNECTION
 		request_next()
 
 func _checked(result: int, code: int, headers: PackedStringArray, body: PackedByteArray) -> void:
@@ -222,6 +224,7 @@ func finish_check() -> void:
 	# Eine neuere Version wird angeboten, auch wenn eine zweite Quelle (Beta-Kanal) nicht geantwortet hat. Ohne neuere Version zählt
 	# ein Fehlschlag: Dann ist „Du hast die neueste Version.“ nicht sicher, und der Prüfzeitpunkt bleibt offen (nächster Start fragt neu).
 	busy = false
+	NetAddresses.resume_after_internet()
 	var newer := not best.is_empty() and compare_versions(best.version, current_version()) > 0
 	var store := {}
 	if not failed:
@@ -235,7 +238,7 @@ func finish_check() -> void:
 		apk_ready = FileAccess.file_exists(apk_path())
 		publish("Neue Version verfügbar.")
 	elif failed:
-		publish(failure if failure != "" else "Keine Verbindung.")
+		publish(failure if failure != "" else NO_CONNECTION)
 	elif best.is_empty():
 		release = {}
 		publish("Noch kein passendes Release veröffentlicht.")
@@ -252,7 +255,7 @@ static func failure_text(result: int, code: int, headers: PackedStringArray, now
 	# und damit das Limit von 60 Abfragen je Stunde – das soll nicht als „Keine Verbindung.“ erscheinen. Die Antwort nennt in
 	# x-ratelimit-reset (Unix-Zeit) bzw. retry-after (Sekunden), wann es wieder geht.
 	if result != HTTPRequest.RESULT_SUCCESS:
-		return "Keine Verbindung."
+		return NO_CONNECTION
 	if not rate_limited(code):
 		return "GitHub antwortet gerade nicht (Fehler %d). Bitte später erneut versuchen." % code
 	var retry := -1
@@ -310,7 +313,9 @@ func download() -> void:
 	stall = 0.0
 	http.request_completed.connect(_downloaded, CONNECT_ONE_SHOT)
 	var headers := PackedStringArray(["User-Agent: MauMauFlip/%s" % current_version(), "Accept: application/octet-stream"])
+	NetAddresses.suspend_for_internet()
 	if http.request(str(release.url), headers) != OK:
+		NetAddresses.resume_after_internet()
 		http.request_completed.disconnect(_downloaded)
 		busy = false
 		downloading = false
@@ -339,6 +344,7 @@ func _process(dt: float) -> void:
 
 func _downloaded(result: int, code: int, _headers: PackedStringArray, _body: PackedByteArray) -> void:
 	downloading = false
+	NetAddresses.resume_after_internet()
 	var part := apk_path() + ".part"
 	if result != HTTPRequest.RESULT_SUCCESS or code != 200:
 		busy = false

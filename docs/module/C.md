@@ -43,11 +43,25 @@ Stand 04.10.2026, Nachtschicht. Alles aus dem Auftrag ist umgesetzt. Die signier
   - Überall `catch (Throwable)`.
 - `NetHelper.java`: Multicast-Sperre heißt jetzt „MauMauFlipNetz“; überall `catch (Throwable)`.
 - `ApkShare.java`: Thread heißt jetzt „MauMauFlip-ApkShare“; überall `catch (Throwable)`.
-- `GodotApp.java`: unverändert aus der Vorlage.
+- `GodotApp.java`: aus der Vorlage, dazu: Fokusmarkierung aus, App-Link merken (siehe unten).
+- `AppLink.java`: App-Link „In der App spielen“ (siehe unten).
 
 **`src/main/AndroidManifest.xml`**
 - Berechtigungen wie Draw2Race, dazu VIBRATE und WAKE_LOCK.
 - `screenOrientation="sensorLandscape"`.
+
+**App-Link „In der App spielen“ (Beta 1.0.2)**
+- Adresse `maumauflip://join?h=<IP>&p=<Port>`. Die Spielseite öffnet sie auf Android als `intent://join?h=…&p=…#Intent;scheme=maumauflip;package=de.maumauflip.game;S.browser_fallback_url=…;end` (Rückfall: `http://<IP>:<Port>/?app=1`).
+- Manifest: eigener `activity-alias` `.GodotAppLink` → `.GodotApp`, `exported="true"`, Filter VIEW + DEFAULT + BROWSABLE, `scheme="maumauflip"`, `host="join"`. Ein Alias, weil `.GodotApp` nicht exportiert ist; die bestehenden Einträge bleiben unverändert. Godots `src/release`-Manifest nennt nur `.GodotApp` und `.GodotAppLauncher`, der Alias kommt unverändert aus `src/main` dazu.
+- `AppLink.java` merkt sich den Link: `GodotApp.onCreate` (nicht nach einer Wiederherstellung, nicht aus dem Verlauf) und `onNewIntent` rufen `remember(intent)` auf. `take()` liefert ihn einmal und vergisst ihn dann.
+- `NetAndroid.take_app_link()` holt ihn ab (PC und Tests: `app_link_stub`). `parse_app_link()` liefert `{ok, address, port, error}` und nimmt nur private IPv4-Adressen (10/8, 172.16/12, 192.168/16) mit Port 1–65535.
+- `App.check_app_link()` läuft beim Start, beim Fortsetzen und bei Fokus. Es löst `app_link_received` aus. Das Hauptmenü holt den Link mit `take_pending_link()` und gibt ihn an `JoinScreen.handle_link(nav, link)` weiter.
+- `handle_link` macht Folgendes:
+  - Ungültiger Link: nur ein Hinweis.
+  - Schon mit genau diesem Spiel verbunden: Hinweis, sonst nichts.
+  - Lobby, Partie oder andere Verbindung offen: Rückfrage „Anderem Spiel beitreten?“ (Wechseln/Bleiben).
+  - Sonst: Hauptmenü → „Im WLAN spielen“ → `JoinScreen.direct_to(ip, port)`, das ohne Suche verbindet. Fehlt der Name, fragt es zuerst danach („NameFrage“).
+- Test: `tests/test_app_link.gd`.
 
 ### App-Dienste: `game/scripts/app/`
 

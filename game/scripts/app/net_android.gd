@@ -490,3 +490,68 @@ static func game_wifi_message(st: Dictionary) -> Dictionary:
 		"":
 			return {"title": "Spiel-WLAN", "text": "Öffnet ein eigenes WLAN ohne Internet, falls sich die Handys im Hotel- oder Gäste-WLAN nicht sehen.", "retry": true, "settings": false}
 	return {"title": "Hat nicht geklappt", "text": "Das Spiel-WLAN ließ sich nicht öffnen. Versuch es noch einmal oder nutze deinen normalen Hotspot.", "retry": true, "settings": false}
+
+# --- App-Link „In der App spielen“ (Beta 1.0.2): maumauflip://join?h=<IP>&p=<Port> ---
+# GodotApp.java merkt das Intent (AppLink.java), App (scripts/app/app.gd) holt es beim Start und beim Fortsetzen ab. Am PC und in
+# Tests ersetzt app_link_stub den Java-Helfer (String = wartender Link, wird beim Abholen geleert).
+
+const APP_LINK_SCHEME := "maumauflip"
+static var app_link_stub = null         # String = Simulation statt Java (PC, Tests); null = echtes Android bzw. keiner
+
+static func take_app_link() -> String:
+	# Wartenden App-Link abholen und vergessen ("" = keiner).
+	if app_link_stub is String:
+		var t: String = app_link_stub
+		app_link_stub = null
+		return t
+	if OS.get_name() != "Android":
+		return ""
+	var java = JavaClassWrapper.wrap("com.godot.game.AppLink")
+	return str(java.take()) if java != null else ""
+
+static func private_ipv4(ip: String) -> bool:
+	# Adresse in einem privaten Netz (10/8, 172.16/12, 192.168/16) – nur dorthin tritt die App per Link bei.
+	var parts := ip.split(".")
+	if parts.size() != 4:
+		return false
+	for p in parts:
+		if not p.is_valid_int() or int(p) < 0 or int(p) > 255 or p.length() > 3:
+			return false
+	var a := int(parts[0])
+	var b := int(parts[1])
+	return a == 10 or (a == 172 and b >= 16 and b <= 31) or (a == 192 and b == 168)
+
+static func app_link_url(address: String, port: int) -> String:
+	return "%s://join?h=%s&p=%d" % [APP_LINK_SCHEME, address, port]
+
+static func parse_app_link(link: String) -> Dictionary:
+	# {ok, address, port, error}; error ist ein kurzer deutscher Satz für den Nutzer.
+	var bad := {"ok": false, "address": "", "port": 0,
+		"error": "Der Link zum Spiel ist unvollständig. Scanne den QR-Code beim Gastgeber noch einmal."}
+	var t := link.strip_edges()
+	var prefix := APP_LINK_SCHEME + "://join"
+	if not t.to_lower().begins_with(prefix):
+		return bad
+	t = t.substr(prefix.length())
+	var hash_at := t.find("#")
+	if hash_at >= 0:
+		t = t.substr(0, hash_at)
+	t = t.trim_prefix("/")
+	if not t.begins_with("?"):
+		return bad
+	var query := {}
+	for pair in t.substr(1).split("&", false):
+		var eq := pair.find("=")
+		if eq > 0:
+			query[pair.substr(0, eq).to_lower()] = pair.substr(eq + 1).uri_decode().strip_edges()
+	var address := str(query.get("h", ""))
+	var port_text := str(query.get("p", ""))
+	if address == "" or port_text == "" or not port_text.is_valid_int():
+		return bad
+	var port := int(port_text)
+	if port < 1 or port > 65535:
+		return bad
+	if not private_ipv4(address):
+		return {"ok": false, "address": address, "port": port,
+			"error": "Dieser Link führt nicht zu einem Spiel in deiner Nähe. Die App tritt nur Spielen im selben WLAN bei."}
+	return {"ok": true, "address": address, "port": port, "error": ""}

@@ -9,6 +9,11 @@ extends Node
 
 const MOBILE_MAX_FPS := 60
 
+# App-Link „In der App spielen“ (Beta 1.0.2): Beim Start und beim Fortsetzen holt die App einen wartenden Link ab
+# (NetAndroid.take_app_link) und hält ihn in app_link, bis das Hauptmenü ihn übernimmt (take_pending_link → JoinScreen.handle_link).
+signal app_link_received
+var app_link := {}                      # {ok, address, port, error} aus NetAndroid.parse_app_link; {} = keiner
+
 var settings: AppSettings
 var sound: AppSound
 var updater: Updater
@@ -41,6 +46,7 @@ func _ready() -> void:
 	apk_share.setup()
 	_keep_on = bool(ProjectSettings.get_setting("display/window/energy_saving/keep_screen_on", true))
 	print("Mau-Mau Flip %s (%s)" % [version(), OS.get_name()])
+	check_app_link()
 	if is_android():
 		updater.changed.connect(_log_update)
 		updater.check(false)
@@ -98,6 +104,27 @@ func _log_update() -> void:
 	if updater.status != _logged_status:
 		_logged_status = updater.status
 		print("Updater: %s (Kanal %s)" % [updater.status, "Beta" if updater.beta() else "Release"])
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_RESUMED or what == NOTIFICATION_APPLICATION_FOCUS_IN:
+		check_app_link()
+
+
+func check_app_link() -> bool:
+	# Wartenden App-Link abholen; true = einer kam (Signal app_link_received).
+	var link := NetAndroid.take_app_link()
+	if link == "":
+		return false
+	app_link = NetAndroid.parse_app_link(link)
+	print("App-Link: %s → %s" % [link, "ok" if bool(app_link.ok) else "abgewiesen"])
+	app_link_received.emit()
+	return true
+
+
+func take_pending_link() -> Dictionary:
+	var l := app_link
+	app_link = {}
+	return l
 
 func version() -> String:
 	return str(ProjectSettings.get_setting("application/config/version", "0.0.0"))

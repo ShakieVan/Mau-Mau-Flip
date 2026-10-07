@@ -129,7 +129,9 @@
         z.push('Passt auf ' + f + ' oder auf jeden Richtungswechsel.');
         break;
       case 'flip':
-        z.push('Alles wird gewendet: Ablage, Nachziehstapel und alle Hände. Ab jetzt gilt die andere Seite.');
+        z.push(r.flip_mode === 'card'
+          ? 'Nachziehstapel und alle Hände werden gewendet, von der Ablage nur dieser Flip: Oben liegt seine andere Seite, die übrige Ablage bleibt zur Seite gelegt. Ab jetzt gilt die andere Seite.'
+          : 'Alles wird gewendet: Ablage, Nachziehstapel und alle Hände. Oben liegt dann die bisher unterste Ablagekarte mit ihrer anderen Seite. Ab jetzt gilt die andere Seite.');
         z.push('Passt auf ' + f + ' oder auf jeden Flip.');
         if ((r.flip_last_card || 'execute') === 'execute') z.push('Als letzte Karte wird der Flip noch ausgeführt; gewertet wird die neue Seite.');
         z.push(r.flip_surprise === 'on'
@@ -197,15 +199,37 @@
     if (r.penalty_turn === 'play') z.push('Nach dem Strafziehen bist du trotzdem dran und darfst legen.');
     z.push(r.wild_restriction === 'enforce' ? 'Wünscher +2 und Farbjagd nur ohne Karte der aktuellen Farbe (App prüft).' : 'Wünscher +2 und Farbjagd sind immer erlaubt.');
     const pen = r.mau_penalty || 2;
-    z.push({ auto: 'Vergessenes „Mau!“ kostet sofort ' + pen + ' Karten.', reminder: '„Mau!“ wird nur angezeigt, ohne Strafe.', off: 'Ohne „Mau!“-Ansage.' }[r.mau_call] || 'Wer „Mau!“ vergisst, kann erwischt werden (' + pen + ' Strafkarten).');
+    z.push({ auto: 'Vergessenes „Mau!“ kostet sofort ' + (pen === 1 ? 'eine Karte' : pen + ' Karten') + '.', reminder: '„Mau!“ wird nur angezeigt, ohne Strafe.', off: 'Ohne „Mau!“-Ansage.' }[r.mau_call] || 'Wer „Mau!“ vergisst, kann erwischt werden (' + (pen === 1 ? 'eine Strafkarte' : pen + ' Strafkarten') + ').');
     if (r.backs_visible === false) z.push('Rückseiten der Mitspieler sind verdeckt.');
     // Hausregeln mit Zusatzkarten (wie RuleConfig.describe)
     if (r.swap_cards === 'on') z.push('Kartentausch: Wer einen legt, lässt alle ihre ganze Hand an den Nächsten weitergeben, ' + tauschRichtung(r) + '.');
     if (r.gamble_cards === 'on') z.push('Glücksspiel (2 Joker): verdeckt setzen und drücken – weiter riskieren oder aufhören. Treffer: 1 bis 10 Karten ziehen, Einsatz zurück; Aufhören: Einsatz unter die Ablage.');
     if (r.discard_color === 'on') z.push('Farbe ablegen: Wer eine Ablegen-Karte legt, wählt eigene Karten dieser Farbe zum Mitablegen; Joker bleiben auf der Hand. Beim Ablegen-Joker wählst du Ablegefarbe und Spielfarbe getrennt.');
+    if (r.flip_mode === 'card') z.push('Flip dreht nur die gelegte Karte: Oben liegt ihre andere Seite, die übrige Ablage bleibt zur Seite gelegt.');
     if (r.flip_surprise === 'on') z.push('Flip-Überraschung: Die Aktionskarte, die nach dem Flip oben liegt, wirkt auf den Nächsten.');
     if (kartenZahl(r) > 112) z.push('Gespielt wird mit ' + kartenZahl(r) + ' Karten.');
     return z;
+  }
+
+  // Besondere Karten für „Regeln“ im Spielmenü: je Art eine Beispielkarte mit Name und Wirkung (die ersten Zeilen aus hilfe()).
+  // Zusatzkarten nur, wenn ihre Hausregel an ist.
+  function besondereKarten(regeln) {
+    const r = regeln || {};
+    const karte = key => {
+      const art = zerlege(key).art;
+      const zeilen = hilfe(key, r).zeilen.filter(z => !/^(Passt auf|Wert bei|Gehört zur)/.test(z)).slice(0, 2);
+      return { key, name: art === 'ablegen' ? 'Ablegen-Karte' : (ART_NAME[art] || art), zeilen };
+    };
+    const g = [
+      { titel: 'Helle Seite', karten: ['hell_rot_plus1', 'hell_rot_aussetzen', 'hell_rot_richtungswechsel', 'hell_rot_flip', 'hell_wuenscher', 'hell_wuenscher_plus2'].map(karte) },
+      { titel: 'Dunkle Seite (nach einem Flip)', hinweis: 'Richtungswechsel, Flip und Wünscher gibt es hier auch.', karten: ['dunkel_pink_plus5', 'dunkel_pink_alle_aussetzen', 'dunkel_farbjagd'].map(karte) },
+    ];
+    const haus = [];
+    if (r.swap_cards === 'on') haus.push('hell_rot_tausch');
+    if (r.gamble_cards === 'on') haus.push('hell_gluecksspiel');
+    if (r.discard_color === 'on') haus.push('hell_rot_ablegen', 'hell_ablegen_joker');
+    if (haus.length) g.push({ titel: 'Zusatzkarten (Hausregeln)', hinweis: 'Gibt es auf beiden Seiten.', karten: haus.map(karte) });
+    return g;
   }
 
   /* ---------------- Symbole (aus Entwurf A, Box 100×100) ---------------- */
@@ -506,7 +530,7 @@
 
   M.Karten = {
     INK, PAPER, CREAM, NIGHT, MOON, FARBEN, FARB_INFO, VERHAELTNIS: CH / CW,
-    zerlege, istJoker, punkte, farbName, kartenName, passendText, kartenZahl, sortiere, hilfe, regelnText,
+    zerlege, istJoker, punkte, farbName, kartenName, passendText, kartenZahl, sortiere, hilfe, regelnText, besondereKarten,
     symbolSVG, iconSVG, karteSVG, gesichtHTML, farbSymbolHTML, element, setzeGesicht, pruefeBilder, Bilder, mix,
   };
 })(window.MMF = window.MMF || {});

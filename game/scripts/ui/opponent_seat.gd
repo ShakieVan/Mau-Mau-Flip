@@ -387,10 +387,7 @@ func _draw() -> void:
 	if str(player.get("kind", "human")) == "bot":
 		var bc := ac + Vector2(ar * 0.72, ar * 0.72)
 		var kfs := UiFonts.size("mini")
-		draw_circle(bc, kfs * 0.85, UiPalette.INK)
-		var kf := UiFonts.text(800, 80.0)
-		var kw := kf.get_string_size("KI", HORIZONTAL_ALIGNMENT_LEFT, -1, kfs).x
-		draw_string(kf, bc + Vector2(-kw * 0.5, kfs * 0.36), "KI", HORIZONTAL_ALIGNMENT_LEFT, -1, kfs, UiPalette.PAPER)
+		ScreenKit.draw_bot_badge(self, bc, kfs * 0.85)
 	if _sleep > 0.0:
 		var cat := UiIcons.icon("katze", 40, Color(UiPalette.MOON, _sleep), UiPalette.INK)
 		draw_texture_rect(cat, Rect2(ac + Vector2(-20, -ar - 44), Vector2(40, 40)), false)

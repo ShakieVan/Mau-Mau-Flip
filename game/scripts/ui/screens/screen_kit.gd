@@ -362,10 +362,45 @@ class AvatarDot:
 		if kind == "bot":
 			var bc := c + Vector2(r * 0.72, r * 0.72)
 			var sf := maxi(int(r * 0.42), UiFonts.size("mini"))
-			draw_circle(bc, maxf(r * 0.42, sf * 0.85), UiPalette.INK)
-			var tw := f.get_string_size("KI", HORIZONTAL_ALIGNMENT_LEFT, -1, sf).x
-			draw_string(f, bc + Vector2(-tw * 0.5, sf * 0.36), "KI", HORIZONTAL_ALIGNMENT_LEFT, -1, sf, UiPalette.PAPER)
+			ScreenKit.draw_bot_badge(self, bc, maxf(r * 0.42, sf * 0.85))
+
+
+# Symbol in einer anderen Farbe (Alpha bleibt), z. B. der helle Roboterkopf im dunklen Abzeichen der Computergegner
+static var _tinted := {}
+
+
+static func icon_tinted(name: String, col: Color) -> Texture2D:
+	var key := name + "|" + col.to_html()
+	if _tinted.has(key):
+		return _tinted[key]
+	var src := icon(name)
+	if src == null:
+		return null
+	var img := src.get_image()
+	if img == null:
+		return src
+	img = img.duplicate()
+	img.decompress()
+	img.convert(Image.FORMAT_RGBA8)
+	for y in img.get_height():
+		for x in img.get_width():
+			var c := img.get_pixel(x, y)
+			if c.a > 0.0:
+				img.set_pixel(x, y, Color(col.r, col.g, col.b, c.a))
+	var tex := ImageTexture.create_from_image(img)
+	_tinted[key] = tex
+	return tex
+
+
+# Abzeichen „Computergegner“: Roboterkopf statt „KI“ (Nutzerwunsch 07.10.2026: manche Menschen haben Angst vor KI)
+static func draw_bot_badge(ci: CanvasItem, center: Vector2, radius: float) -> void:
+	ci.draw_circle(center, radius, UiPalette.INK)
+	var tex := icon_tinted("roboter", UiPalette.PAPER)
+	if tex != null:
+		var s := radius * 1.45
+		ci.draw_texture_rect(tex, Rect2(center - Vector2(s, s) * 0.5, Vector2(s, s)), false)
 
 
 static func clear_cache() -> void:
 	_icons.clear()
+	_tinted.clear()

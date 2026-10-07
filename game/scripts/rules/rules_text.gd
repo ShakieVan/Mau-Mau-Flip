@@ -99,9 +99,15 @@ static func card_help(key: String, config: RuleConfig = null) -> Array[String]:
 			else:
 				out.append("Zu zweit hat er keine Wirkung.")
 		"flip":
-			out.append("Wendet alles: Ablage, Nachziehstapel und alle Hände. Danach gilt die %s." % side_name(other))
+			if cfg.flip_mode == "card":
+				out.append("Wendet Nachziehstapel, alle Hände und sich selbst. Danach gilt die %s." % side_name(other))
+			else:
+				out.append("Wendet alles: Ablage, Nachziehstapel und alle Hände. Danach gilt die %s." % side_name(other))
 			out.append("Passt auf %s und auf jeden Flip – ein Flip ist kein Joker." % color)
-			out.append("Oben liegt dann die bisher unterste Ablagekarte mit ihrer anderen Seite. Eine Wunschfarbe verfällt.")
+			if cfg.flip_mode == "card":
+				out.append("Oben liegt dann die andere Seite dieses Flips; die übrige Ablage bleibt zur Seite gelegt. Eine Wunschfarbe verfällt.")
+			else:
+				out.append("Oben liegt dann die bisher unterste Ablagekarte mit ihrer anderen Seite. Eine Wunschfarbe verfällt.")
 			if cfg.flip_surprise == "on":
 				out.append("Flip-Überraschung: Liegt danach eine Aktionskarte oben, wirkt sie auf den Nächsten, als hättest du sie gelegt. Bei Wünscher +2 und Farbjagd wählst du zuerst die Farbe.")
 				out.append("Flip, Wünscher und Zusatzkarten oben wirken nicht; beim Joker wählst du nur die Farbe.")
@@ -281,7 +287,9 @@ static func overview(config: RuleConfig = null) -> Array[Dictionary]:
 	out.append({"title": "Dunkle Seite", "text": ("+5: Der Nächste zieht 5 und %s. Alle aussetzen: Du bist sofort noch einmal dran. Richtungswechsel und Wünscher wie hell. Farbjagd: Farbe wünschen, der Nächste zieht, bis er diese Farbe hat, und %s.") % [cfg.penalty_tail(), cfg.penalty_tail()]})
 	var flip_top := "eine Aktionskarte oben wirkt nicht; liegt ein Joker oben, wählt der Flip-Spieler die Farbe." if cfg.flip_surprise != "on" \
 		else "liegt ein Joker oben, wählt der Flip-Spieler die Farbe. Flip-Überraschung (Hausregel): Die Aktionskarte, die nach dem Flip oben liegt (+1, +5, Aussetzen, Alle aussetzen, Richtungswechsel, Wünscher +2, Farbjagd), wirkt auf den Nächsten, als hätte der Flip-Spieler sie gelegt; Stapeln gilt wie sonst."
-	out.append({"title": "Flip", "text": "Der Flip wendet Ablage, Nachziehstapel und alle Hände. Oben liegt dann die bisher unterste Ablagekarte mit ihrer anderen Seite. Eine Wunschfarbe verfällt, " + flip_top})
+	var flip_turn := "Der Flip wendet Ablage, Nachziehstapel und alle Hände. Oben liegt dann die bisher unterste Ablagekarte mit ihrer anderen Seite." if cfg.flip_mode != "card" \
+		else "Der Flip wendet Nachziehstapel und alle Hände, von der Ablage aber nur sich selbst (Hausregel): Oben liegt seine andere Seite, die übrige Ablage bleibt zur Seite gelegt."
+	out.append({"title": "Flip", "text": flip_turn + " Eine Wunschfarbe verfällt, " + flip_top})
 	if swap_on:
 		var last := "Als letzte Karte bist du fertig und gewinnst; getauscht wird dann nicht mehr." if cfg.round_end == "first" \
 			else "Als letzte Karte bist du fertig; die anderen tauschen trotzdem untereinander."
@@ -335,4 +343,32 @@ static func overview(config: RuleConfig = null) -> Array[Dictionary]:
 		special += " Zu zweit wirkt der Richtungswechsel wie Aussetzen."
 	special += " Ein Flip als letzte Karte wird %s." % ("noch ausgeführt, gewertet wird die neue Seite" if cfg.flip_last_card == "execute" else "nicht mehr ausgeführt")
 	out.append({"title": "Sonderfälle", "text": special})
+	return out
+
+
+# „So geht's“ im Spielmenü (Beta 1.0.2): Bedienung und Gesten in kurzen Absätzen {title, text}, passend zu den aktiven Regeln.
+static func controls(config: RuleConfig = null) -> Array[Dictionary]:
+	var cfg := config if config != null else RuleConfig.new()
+	var out: Array[Dictionary] = []
+	out.append({"title": "Karte ausspielen", "text": "Tipp eine Karte an, sie hebt sich. Ein zweiter Tipp legt sie. Du kannst sie auch nach oben auf die Ablage ziehen oder schnippen. Passende Karten leuchten, wenn „Spielbare Karten hervorheben“ in den Einstellungen an ist."})
+	out.append({"title": "Ziehen", "text": "Passt nichts, tipp auf den Nachziehstapel links von der Ablage. Er leuchtet, wenn du ziehen darfst."})
+	out.append({"title": "Hilfe zu einer Karte", "text": "Halte eine Karte gedrückt, dann siehst du sie groß. Zieh sie nach unten auf das „?“: Dann steht da kurz, was sie kann."})
+	out.append({"title": "Sortieren", "text": "Der Sortierknopf wechselt zwischen Farbe, Wert, Punkte und Eigene. Willst du selbst ordnen, halte eine Karte und schieb sie zur Seite."})
+	var backs := "Viele Karten? Wisch über deine Hand, sie dreht sich wie ein Karussell."
+	if cfg.peek_own_backs:
+		backs += " Halte den Rückseiten-Knopf, dann siehst du die Rückseiten deiner Karten."
+	if cfg.backs_visible:
+		backs += " Tipp auf die Karten eines Mitspielers, dann siehst du seine Rückseiten groß."
+	out.append({"title": "Hand und Rückseiten", "text": backs})
+	match cfg.mau_call:
+		"catch":
+			out.append({"title": "Mau rufen", "text": "Hast du nur noch 2 Karten und bist dran, tipp auf „Mau!“ – vor oder nach dem Legen. Vergisst es jemand, tipp schnell auf seine Karten: erwischt!"})
+		"auto", "reminder":
+			out.append({"title": "Mau rufen", "text": "Hast du nur noch 2 Karten und bist dran, tipp auf „Mau!“ – vor oder nach dem Legen."})
+	out.append({"title": "Ablage durchsehen", "text": "Tipp auf die Ablage: Die oberste Karte rutscht zur Seite, und du siehst, was darunter liegt und wer es gelegt hat. Tipp auf den Stapel daneben legt eine zurück, ein Tipp auf den Tisch alle."})
+	if cfg.gamble_cards == "on":
+		out.append({"title": "Glücksspiel", "text": "Nach dem Glücksspiel-Joker ziehst du eine Karte aus deiner Hand auf deinen Einsatz und drückst „Los!“. Bei 0 setzt du weiter oder tippst „Aufhören“."})
+	if cfg.discard_color == "on":
+		out.append({"title": "Farbe ablegen", "text": "Nach der Ablegen-Karte sind die passenden Karten schon ausgewählt. Tipp eine an, um sie zu behalten, und dann auf „Ablegen“."})
+	out.append({"title": "Spielmenü", "text": "Der Zurück-Knopf oben links öffnet dieses Menü. Dort kannst du die Regeln ansehen oder die Partie verlassen."})
 	return out

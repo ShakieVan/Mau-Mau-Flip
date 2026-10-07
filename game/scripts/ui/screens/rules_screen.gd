@@ -34,6 +34,7 @@ const OPTIONS := [
 	["peek_own_backs", "Eigene Rückseiten ansehen", "Knopf „Rückseiten“ am Tisch", "schalter"],
 	["two_player_reverse_skips", "Zu zweit: Richtungswechsel wirkt wie Aussetzen", "", "schalter"],
 	["flip_last_card", "Flip als letzte Karte", "", [["execute", "wird ausgeführt"], ["ignore", "nicht mehr ausgeführt"]]],
+	["flip_mode", "Flip dreht", "Nur die gelegte Karte: Die übrige Ablage bleibt zur Seite gelegt.", [["pile", "Ganze Ablage (offiziell)"], ["card", "Nur die gelegte Karte"]]],
 	["flip_surprise", "Flip-Überraschung", "Die Aktionskarte, die nach dem Flip oben liegt, wirkt auf den Nächsten.", [["off", "Aus"], ["on", "An"]]],
 ]
 # Hausregeln mit Zusatzkarten: wie OPTIONS, dazu die Gesichter für die Kartenbilder; "an_aus" = Schalter für "on"/"off".
