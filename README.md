@@ -4,6 +4,17 @@ Mau-Mau mit Wendekarten für Android. Jede Karte hat eine **helle Seite** (Rot, 
 
 **Version 1.0.0** · Godot 4.6.1 · offline spielbar · nicht-kommerzielles Hobbyprojekt
 
+<p align="center"><img src="docs/screenshots/hauptmenue.jpg" alt="Hauptmenü von Mau-Mau Flip mit der Mau-Katze zwischen Tag- und Nachtkarte" width="100%"></p>
+
+| | |
+|:---:|:---:|
+| <img src="docs/screenshots/tisch_nacht.jpg" alt="Spieltisch bei Nacht, du bist dran" width="100%"> | <img src="docs/screenshots/mau_mau.jpg" alt="Tom ruft Mau-Mau" width="100%"> |
+| **Nachtseite** – wer dran ist, leuchtet | **„Mau-Mau!“** – auf allen Geräten zu hören und zu sehen |
+| <img src="docs/screenshots/gluecksspiel.jpg" alt="Glücksspiel-Automat mit Treffer" width="100%"> | <img src="docs/screenshots/kartentausch.jpg" alt="Kartentausch bei Tag" width="100%"> |
+| **Glücksspiel** – weiter riskieren oder aufhören? | **Kartentausch** – alle Hände wandern weiter |
+| <img src="docs/screenshots/browser.jpg" alt="Browser-Client bei Tag" width="100%"> | |
+| **Im Browser** – iPhone und Co. spielen ohne App mit | |
+
 ## Spielen
 
 1. Unter [Releases](../../releases) (reguläre Versionen) bzw. im [Beta-Repo](https://github.com/ShakieVan/Mau-Mau-Flip-Beta/releases) (Testversionen) die Datei `MauMauFlip-<Version>.apk` herunterladen. Spätere Updates bietet die App selbst an.
