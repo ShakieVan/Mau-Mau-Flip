@@ -91,7 +91,8 @@ func test_hello() -> void:
 	check(old.get("code") == "version" and old.text.contains("App vom Gastgeber holen: " + url) and old.text.contains("0.1.0"), "ältere App → version mit APK-Hinweis")
 	var web := NetProtocol.check_hello({"proto": 1, "game": "0.0.9", "kind": "web"}, v, url)
 	check(web.text.contains("Seite neu laden") and web.text.contains("App vom Gastgeber holen"), "Browser: neu laden plus APK-Hinweis")
-	var newer := NetProtocol.check_hello({"proto": 1, "game": "0.2.0", "kind": "app"}, v, url)
+	var newer_version := "%d.0.0" % (int(v.split(".")[0]) + 1)   # immer neuer als die eigene Version
+	var newer := NetProtocol.check_hello({"proto": 1, "game": newer_version, "kind": "app"}, v, url)
 	check(newer.get("code") == "version" and newer.text.contains("Gastgeber sollte") and not newer.text.contains("/apk"), "neuere App → Gastgeber aktualisieren, keine Rückstufung")
 	check(NetProtocol.compare_versions("0.1.10", "0.1.9") == 1 and NetProtocol.compare_versions("1.0", "1.0.0") == 0, "Versionsvergleich")
 

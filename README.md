@@ -2,7 +2,7 @@
 
 Mau-Mau mit Wendekarten für Android. Jede Karte hat eine **helle Seite** (Rot, Gelb, Grün, Blau) und eine **dunkle Seite** (Pink, Türkis, Orange, Lila). Wer eine Flip-Karte legt, dreht den ganzen Tisch um – aus Tag wird Nacht, aus „Zieh 1“ wird „Zieh 5“. Und weil man von den Karten der anderen immer die Gegenseite sieht, weiß man ungefähr, was nach dem nächsten Flip auf einen zukommt.
 
-**Version 0.1.1 (Beta)** · Godot 4.6.1 · offline spielbar · nicht-kommerzielles Hobbyprojekt
+**Version 1.0.0** · Godot 4.6.1 · offline spielbar · nicht-kommerzielles Hobbyprojekt
 
 ## Spielen
 
