@@ -80,7 +80,7 @@ func _build(suggestion: String) -> void:
 	# Kopf: Titel, Kartenzahl, Abbrechen
 	var head := ScreenKit.hbox(16)
 	v.add_child(head)
-	var h := ScreenKit.heading(TITLE, 36)
+	var h := ScreenKit.heading(TITLE, UiFonts.size("ueberschrift"))
 	h.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	h.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	h.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
@@ -89,17 +89,17 @@ func _build(suggestion: String) -> void:
 	_pill.name = "Kartenzahl"
 	_pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_pill.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	_pill_label = ScreenKit.label("", "", 20)
+	_pill_label = ScreenKit.label("", "", UiFonts.size("text"))
 	_pill_label.add_theme_font_override("font", UiFonts.text(800))
 	_pill.add_child(_pill_label)
 	head.add_child(_pill)
 	_no = ScreenKit.button("Abbrechen", "GhostButton")
 	_no.name = "Nein"
-	_no.add_theme_font_size_override("font_size", 20)
+	_no.add_theme_font_size_override("font_size", UiFonts.size("text"))
 	_no.pressed.connect(cancel)
 	head.add_child(_no)
 	# Was gespeichert wird (beim Gast mit dem Namen des Gastgebers)
-	_what = ScreenKit.hint("", 17)
+	_what = ScreenKit.hint("", UiFonts.size("klein"))
 	_what.name = "Inhalt"
 	_what.max_lines_visible = 2
 	_what.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
@@ -115,7 +115,7 @@ func _build(suggestion: String) -> void:
 	field.text = RuleSets.clean_name(suggestion)
 	field.custom_minimum_size = Vector2(0, ScreenKit.TOUCH)
 	field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	field.add_theme_font_size_override("font_size", 28)
+	field.add_theme_font_size_override("font_size", UiFonts.size("zwischen"))
 	field.select_all_on_focus = true
 	field.text_changed.connect(_on_typed)
 	field.text_submitted.connect(func(_t: String) -> void: confirm())
@@ -125,7 +125,7 @@ func _build(suggestion: String) -> void:
 	_yes.icon = ScreenKit.glyph("haken", 36)
 	_yes.pressed.connect(confirm)
 	row.add_child(_yes)
-	_msg = ScreenKit.hint(hint_text(), 18)
+	_msg = ScreenKit.hint(hint_text(), UiFonts.size("hinweis"))
 	_msg.name = "Meldung"
 	v.add_child(_msg)
 	# Rückfrage zum Überschreiben: eigene Zeile unter dem Feld, „Überschreiben“ rechts außen (eine Zeile unter „Speichern“)
@@ -133,14 +133,14 @@ func _build(suggestion: String) -> void:
 	_question.name = "Rueckfrage"
 	_question.visible = false
 	v.add_child(_question)
-	_question_label = ScreenKit.text_block("", 20)
+	_question_label = ScreenKit.text_block("", UiFonts.size("text"))
 	_question_label.add_theme_font_override("font", UiFonts.text(800))
 	_question_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_question_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_question.add_child(_question_label)
 	_other = ScreenKit.button("Anderer Name", "GhostButton")
 	_other.name = "AndererName"
-	_other.add_theme_font_size_override("font_size", 20)
+	_other.add_theme_font_size_override("font_size", UiFonts.size("text"))
 	_other.pressed.connect(other_name)
 	_question.add_child(_other)
 	_over = ScreenKit.button("Überschreiben", "PrimaryButton", "", 250.0)

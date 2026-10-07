@@ -83,19 +83,19 @@ static func title(text: String) -> Label:
 	return label(text, "TitleLabel")
 
 
-static func heading(text: String, size := 30) -> Label:
+static func heading(text: String, size := 0) -> Label:
 	var l := label(text, "HeadingLabel")
-	l.add_theme_font_size_override("font_size", size)
+	l.add_theme_font_size_override("font_size", size if size > 0 else UiFonts.size("zwischen"))
 	return l
 
 
-static func hint(text: String, size := 20) -> Label:
+static func hint(text: String, size := 0) -> Label:
 	var l := label(text, "HintLabel", size)
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	return l
 
 
-static func text_block(text: String, size := 22) -> Label:
+static func text_block(text: String, size := 0) -> Label:
 	var l := label(text, "", size)
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	return l
@@ -140,7 +140,7 @@ static func stepper(min_v: int, max_v: int, value: int, on_change: Callable, ste
 	var row := hbox(10)
 	var minus := button("−", "GhostButton", "", TOUCH)
 	var plus := button("+", "GhostButton", "", TOUCH)
-	var shown := label("", "", 34)
+	var shown := label("", "", UiFonts.size("zahl"))
 	shown.add_theme_font_override("font", UiFonts.text(800, 100.0))
 	shown.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	shown.custom_minimum_size = Vector2(110 if unit != "" else 64, 0)
@@ -166,13 +166,13 @@ static func stepper(min_v: int, max_v: int, value: int, on_change: Callable, ste
 
 
 # Auswahlreihe: options = [[schlüssel, beschriftung], …]; gewählt = Sonnengelb, sonst Papier. on_change(schlüssel)
-static func choice(options: Array, value: String, on_change: Callable, font_size := 22, min_w := 0.0) -> HBoxContainer:
+static func choice(options: Array, value: String, on_change: Callable, font_size := 0, min_w := 0.0) -> HBoxContainer:
 	var row := hbox(8)
 	var buttons: Array[Button] = []
 	for opt in options:
 		var key := str(opt[0])
 		var b := button(str(opt[1]), "PrimaryButton" if key == value else "GhostButton", "", min_w)
-		b.add_theme_font_size_override("font_size", font_size)
+		b.add_theme_font_size_override("font_size", font_size if font_size > 0 else UiFonts.size("text"))
 		b.set_meta("key", key)
 		buttons.append(b)
 		row.add_child(b)
@@ -265,12 +265,12 @@ static func row(text: String, control: Control, label_w := 300.0, sub := "") -> 
 	var left := vbox(0)
 	left.custom_minimum_size = Vector2(label_w, 0)
 	left.alignment = BoxContainer.ALIGNMENT_CENTER
-	var l := label(text, "", 24)
+	var l := label(text, "", UiFonts.size("zeile"))
 	l.add_theme_font_override("font", UiFonts.text(700))
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	left.add_child(l)
 	if sub != "":
-		left.add_child(hint(sub, 17))
+		left.add_child(hint(sub, UiFonts.size("klein")))
 	r.add_child(left)
 	r.add_child(control)
 	return r
@@ -361,8 +361,8 @@ class AvatarDot:
 		draw_string(f, c + Vector2(-w * 0.5, fs * 0.36), initial, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, UiPalette.INK)
 		if kind == "bot":
 			var bc := c + Vector2(r * 0.72, r * 0.72)
-			draw_circle(bc, r * 0.42, UiPalette.INK)
-			var sf := int(r * 0.42)
+			var sf := maxi(int(r * 0.42), UiFonts.size("mini"))
+			draw_circle(bc, maxf(r * 0.42, sf * 0.85), UiPalette.INK)
 			var tw := f.get_string_size("KI", HORIZONTAL_ALIGNMENT_LEFT, -1, sf).x
 			draw_string(f, bc + Vector2(-tw * 0.5, sf * 0.36), "KI", HORIZONTAL_ALIGNMENT_LEFT, -1, sf, UiPalette.PAPER)
 

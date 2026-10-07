@@ -166,7 +166,11 @@ func avatar_global() -> Vector2:
 
 
 func header_height() -> float:
-	return (AVATAR_R_COMPACT if compact else AVATAR_R) * 2.0
+	if compact:
+		return AVATAR_R_COMPACT * 2.0
+	# Nebenzeile („gleich dran“) wächst mit der Schriftgröße (UiFonts): der Fächer rückt entsprechend tiefer
+	var sub_bottom := UiFonts.size("name") * 0.91 + UiFonts.size("pille") * 0.75
+	return maxf(AVATAR_R * 2.0, sub_bottom * 2.0 - 8.0)
 
 
 # Nimmt eine Karte aus dem Fächer (Ausspielen eines Gegners). Bevorzugt den gewünschten Schlüssel.
@@ -343,14 +347,16 @@ func _draw() -> void:
 	var ink := UiPalette.ui_text(night)
 	var name_font := UiFonts.text(700, 100.0)
 	var num_font := UiFonts.text(800, 90.0)
-	var name_size := 17 if compact else 21
+	var name_size := UiFonts.px(UiFonts.SIZES["name"] * (0.85 if compact else 1.0))
+	var pill_fs := UiFonts.size("pille")
+	var pill_h := pill_fs + 9.0
 	var nm := player_name()
 	if compact and nm.length() > 9:
 		nm = nm.substr(0, 8) + "…"
 	var ar := AVATAR_R_COMPACT if compact else AVATAR_R
 	var cnt := str(count())
 	var name_w := name_font.get_string_size(nm, HORIZONTAL_ALIGNMENT_LEFT, -1, name_size).x
-	var cnt_w := maxf(num_font.get_string_size(cnt, HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x + 16.0, 26.0)
+	var cnt_w := maxf(num_font.get_string_size(cnt, HORIZONTAL_ALIGNMENT_LEFT, -1, pill_fs).x + 16.0, pill_h + 2.0)
 	var hw := ar * 2.0 + 12.0 + name_w + 10.0 + cnt_w
 	if hw != _header_w:
 		_header_w = hw
@@ -380,10 +386,11 @@ func _draw() -> void:
 	draw_string(ini_font, ac + Vector2(-iw.x * 0.5, ini_size * 0.36), initial, HORIZONTAL_ALIGNMENT_LEFT, -1, ini_size, UiPalette.INK)
 	if str(player.get("kind", "human")) == "bot":
 		var bc := ac + Vector2(ar * 0.72, ar * 0.72)
-		draw_circle(bc, 10.0, UiPalette.INK)
+		var kfs := UiFonts.size("mini")
+		draw_circle(bc, kfs * 0.85, UiPalette.INK)
 		var kf := UiFonts.text(800, 80.0)
-		var kw := kf.get_string_size("KI", HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x
-		draw_string(kf, bc + Vector2(-kw * 0.5, 3.6), "KI", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, UiPalette.PAPER)
+		var kw := kf.get_string_size("KI", HORIZONTAL_ALIGNMENT_LEFT, -1, kfs).x
+		draw_string(kf, bc + Vector2(-kw * 0.5, kfs * 0.36), "KI", HORIZONTAL_ALIGNMENT_LEFT, -1, kfs, UiPalette.PAPER)
 	if _sleep > 0.0:
 		var cat := UiIcons.icon("katze", 40, Color(UiPalette.MOON, _sleep), UiPalette.INK)
 		draw_texture_rect(cat, Rect2(ac + Vector2(-20, -ar - 44), Vector2(40, 40)), false)
@@ -395,27 +402,27 @@ func _draw() -> void:
 	draw_string(name_font, Vector2(nx, name_size * 0.36), nm, HORIZONTAL_ALIGNMENT_LEFT, -1, name_size, Color(ink, 1.0 if connected else 0.55))
 	# Kartenzahl als Pille
 	var cx := nx + name_w + 10.0
-	var pill := Rect2(cx, -12.0, cnt_w, 24.0)
+	var pill := Rect2(cx, -pill_h * 0.5, cnt_w, pill_h)
 	var pill_bg := UiPalette.PAPER if night > 0.5 else UiPalette.INK
 	var pill_fg := UiPalette.INK if night > 0.5 else UiPalette.PAPER
-	_draw_round_rect(pill, 12.0, pill_bg)
-	var tw := num_font.get_string_size(cnt, HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x
-	draw_string(num_font, Vector2(cx + (cnt_w - tw) * 0.5, 5.5), cnt, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, pill_fg)
+	_draw_round_rect(pill, pill_h * 0.5, pill_bg)
+	var tw := num_font.get_string_size(cnt, HORIZONTAL_ALIGNMENT_LEFT, -1, pill_fs).x
+	draw_string(num_font, Vector2(cx + (cnt_w - tw) * 0.5, pill_fs * 0.36), cnt, HORIZONTAL_ALIGNMENT_LEFT, -1, pill_fs, pill_fg)
 	# Nebenzeile: gleich dran / getrennt / Punkte / Mau
 	var sub := status_text()
 	var sub_font := UiFonts.text(600, 90.0)
 	if sub != "" and not compact:
-		draw_string_outline(sub_font, Vector2(nx, name_size * 0.36 + 19.0), sub, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, 5, Color(halo_ink, 0.85))
-		draw_string(sub_font, Vector2(nx, name_size * 0.36 + 19.0), sub, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, UiPalette.ui_muted(night))
+		draw_string_outline(sub_font, Vector2(nx, name_size * 0.36 + name_size * 0.55 + pill_fs * 0.55), sub, HORIZONTAL_ALIGNMENT_LEFT, -1, pill_fs, 5, Color(halo_ink, 0.85))
+		draw_string(sub_font, Vector2(nx, name_size * 0.36 + name_size * 0.55 + pill_fs * 0.55), sub, HORIZONTAL_ALIGNMENT_LEFT, -1, pill_fs, UiPalette.ui_muted(night))
 	if bool(player.get("mau", false)):
 		_draw_mau_tag(ac + Vector2(-ar - 4.0, -ar - 2.0))
 	var place := int(player.get("place", 0))
 	if place > 0:
 		var mc := ac + Vector2(-ar * 0.75, ar * 0.75)
-		draw_circle(mc, 13.0, UiPalette.TURN)
+		draw_circle(mc, pill_fs * 0.85, UiPalette.TURN)
 		var pt := "%d." % place
-		var pw := num_font.get_string_size(pt, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x
-		draw_string(num_font, mc + Vector2(-pw * 0.5, 5.0), pt, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, UiPalette.INK)
+		var pw := num_font.get_string_size(pt, HORIZONTAL_ALIGNMENT_LEFT, -1, pill_fs).x
+		draw_string(num_font, mc + Vector2(-pw * 0.5, pill_fs * 0.36), pt, HORIZONTAL_ALIGNMENT_LEFT, -1, pill_fs, UiPalette.INK)
 	if compact and _cards.is_empty() and not header_only:
 		_draw_bar(Vector2(-BAR_W * 0.5, ar + 10.0))
 	if thinking():
@@ -447,9 +454,10 @@ func _draw_top() -> void:
 	if _more > 0 and not compact:
 		var mpos := _fan.position + Vector2(fan_max_w * 0.5 - 6.0, card_w * 1.1)
 		var mt := "+%d" % _more
-		var mw := num_font.get_string_size(mt, HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x + 14.0
-		_round_rect(_top, Rect2(mpos - Vector2(mw * 0.5, 12), Vector2(mw, 24)), 12.0, pill_bg)
-		_top.draw_string(num_font, mpos + Vector2(-mw * 0.5 + 7.0, 5.5), mt, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, pill_fg)
+		var mfs := UiFonts.size("pille")
+		var mw := num_font.get_string_size(mt, HORIZONTAL_ALIGNMENT_LEFT, -1, mfs).x + 14.0
+		_round_rect(_top, Rect2(mpos - Vector2(mw * 0.5, (mfs + 9.0) * 0.5), Vector2(mw, mfs + 9.0)), (mfs + 9.0) * 0.5, pill_bg)
+		_top.draw_string(num_font, mpos + Vector2(-mw * 0.5 + 7.0, mfs * 0.36), mt, HORIZONTAL_ALIGNMENT_LEFT, -1, mfs, pill_fg)
 	if catchable:
 		var r := _catch_rect()
 		var pulse := 0.5 + 0.5 * sin(_time * 6.0)
@@ -464,10 +472,11 @@ func _draw_top() -> void:
 func _draw_mau_tag(p: Vector2) -> void:
 	var f := UiFonts.mau()
 	var t := "Mau!"
-	var w := f.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x + 14.0
-	var r := Rect2(p - Vector2(w * 0.5, 13), Vector2(w, 24))
-	_draw_round_rect(r, 12.0, UiPalette.CREAM)
-	draw_string(f, r.position + Vector2(7, 17.5), t, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, UiPalette.INK)
+	var fs := UiFonts.size("pille")
+	var w := f.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x + 14.0
+	var r := Rect2(p - Vector2(w * 0.5, fs * 0.5 + 6.0), Vector2(w, fs + 9.0))
+	_draw_round_rect(r, (fs + 9.0) * 0.5, UiPalette.CREAM)
+	draw_string(f, r.position + Vector2(7, r.size.y * 0.5 + fs * 0.36), t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, UiPalette.INK)
 
 
 # Abzeichen-Farbbalken: Rückseiten je Farbe als Segmente mit Symbol und Anzahl; besondere Rückseiten als Marken dahinter
@@ -480,7 +489,7 @@ func _draw_bar(origin: Vector2) -> void:
 	if not backs_visible():
 		var f := UiFonts.text(700, 90.0)
 		var t := "verdeckt"
-		draw_string(f, origin + Vector2(10, 17), t, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, UiPalette.ui_muted(night))
+		draw_string(f, origin + Vector2(10, BAR_H * 0.5 + UiFonts.size("mini") * 0.36), t, HORIZONTAL_ALIGNMENT_LEFT, -1, UiFonts.size("mini"), UiPalette.ui_muted(night))
 		return
 	var counts := {}
 	var order: Array[String] = []
@@ -500,6 +509,8 @@ func _draw_bar(origin: Vector2) -> void:
 	var x := origin.x
 	var total := float(keys.size())
 	var f2 := UiFonts.text(800, 85.0)
+	var bfs := mini(UiFonts.size("mini"), int(BAR_H) - 4)
+	var by := (BAR_H - 2.0) * 0.5 + bfs * 0.36
 	for col in order:
 		var seg_w := BAR_W * float(counts[col]) / total
 		var seg := Rect2(x + 1.0, origin.y + 1.0, maxf(seg_w - 2.0, 2.0), BAR_H - 2.0)
@@ -508,10 +519,10 @@ func _draw_bar(origin: Vector2) -> void:
 		var label := str(counts[col])
 		if seg_w >= 34.0 and col != "joker":
 			draw_texture_rect(UiIcons.symbol(col, 32, UiPalette.text_on(fill), fill), Rect2(seg.position + Vector2(3, 3), Vector2(16, 16)), false)
-			draw_string(f2, seg.position + Vector2(21, 16.5), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, UiPalette.text_on(fill))
+			draw_string(f2, seg.position + Vector2(21, by), label, HORIZONTAL_ALIGNMENT_LEFT, -1, bfs, UiPalette.text_on(fill))
 		elif seg_w >= 14.0:
-			var lw := f2.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
-			draw_string(f2, seg.position + Vector2((seg.size.x - lw) * 0.5, 16.5), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, UiPalette.text_on(fill))
+			var lw := f2.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, bfs).x
+			draw_string(f2, seg.position + Vector2((seg.size.x - lw) * 0.5, by), label, HORIZONTAL_ALIGNMENT_LEFT, -1, bfs, UiPalette.text_on(fill))
 		x += seg_w
 	# Marken für auffällige Rückseiten
 	var mx := origin.x
@@ -529,7 +540,7 @@ func _draw_bar(origin: Vector2) -> void:
 		elif kind == "flip":
 			draw_texture_rect(UiIcons.icon("flip", 28, fg, UiPalette.PAPER if night <= 0.5 else UiPalette.INK), Rect2(chip.position + Vector2(4, 3), Vector2(14, 14)), false)
 		var label := txt + "×%d" % int(specials[kind]) if txt != "" else "×%d" % int(specials[kind])
-		draw_string(mf, chip.position + Vector2(19, 14.5), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, fg)
+		draw_string(mf, chip.position + Vector2(19, 10.0 + UiFonts.px(13) * 0.36), label, HORIZONTAL_ALIGNMENT_LEFT, -1, UiFonts.px(13), fg)
 		mx += 44.0
 
 

@@ -101,6 +101,7 @@
   const ICON_TON = '<svg viewBox="0 0 26 26" aria-hidden="true"><path d="M4 10h4l6-5v16l-6-5H4z" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path class="an" d="M17.5 9.5a5 5 0 0 1 0 7M20.5 6.5a9.5 9.5 0 0 1 0 13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path class="aus" d="M17 9.5l7 7M24 9.5l-7 7" fill="none" stroke="#FF6B6B" stroke-width="2.6" stroke-linecap="round"/></svg>';
   // Mau-Sprechblase: Animationsvarianten (zufällig je Ruf), „schlicht“ bei reduzierten Effekten bzw. prefers-reduced-motion
   const BLASEN = ['plopp', 'ohren', 'huepf', 'ballon', 'gummi'];
+  const SEITE_DX = 200;   // Seitenstapel beim Durchsehen der Ablage: Abstand rechts neben der Ablage (Bühnenpixel)
   const BLASE_PARAM = +((M.param && M.param('blase')) || new URLSearchParams(location.search).get('blase') || 0);   // Testhilfe: feste Dauer in ms
   const STERNE = [[-8, 18, -26, -18], [104, 10, 28, -22], [92, 96, 30, 20], [-6, 88, -28, 18], [48, -18, 0, -30], [30, 108, -6, 26]];   // x %, y %, Drift x/y px
   const ICON_GETRENNT ='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9a13 13 0 0 1 18 0M6.5 12.5a8 8 0 0 1 11 0M10 16a3 3 0 0 1 4 0" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round"/><path d="M4 4l16 16" stroke="#FF6B6B" stroke-width="2.4" stroke-linecap="round"/></svg>';
@@ -141,6 +142,12 @@
       this.farbring = this.ablage.querySelector('.farbring');
       this.ablageKarten = this.ablage.querySelector('.karten');
       this.offenEl = this.ablage.querySelector('.offen');
+      // Ablage durchsehen (view.discard_log): Tipp auf die Ablage schiebt die oberste Karte auf den Seitenstapel daneben
+      this.seiten = el('div', 'seitenstapel', '<div class="zaehler"></div><div class="karten"></div><div class="info"><b class="von"></b><span class="wunsch"></span></div>');
+      this.seiten.id = 'seitenstapel'; this.seiten.hidden = true;
+      b.appendChild(this.seiten);
+      this.seitenKarten = this.seiten.querySelector('.karten');
+      this.durch = 0; this._durchSig = '';
       this.leiste = el('div', 'leiste', '<div class="hinweis"></div><div class="aktionen"></div>');
       b.appendChild(this.leiste);
       this.hinweis = this.leiste.firstChild; this.aktionen = this.leiste.lastChild;
@@ -188,6 +195,10 @@
       tipp(this.stapel, () => this.app.ziehen());
       tipp(this.kuppel, () => this.app.druecken());
       tipp(this.knStop, () => this.app.aufhoeren());
+      tipp(this.ablage, () => this.durchsehen(1));
+      tipp(this.seiten, () => this.durchsehen(-1));
+      // Tipp irgendwo sonst schiebt alle Karten zurück (der Tipp selbst wirkt normal weiter)
+      this.root.addEventListener('pointerdown', ev => { if (this.durch && !ev.target.closest('#ablage, #seitenstapel')) this.durchsehen(0); }, true);
       this._halten(this.ablage, () => this.v && this.v.top && this.app.hilfe(this.v.top.face));
       this._halten(this.stapel, () => this.v && this.v.draw_back && this.app.hilfe(this.v.draw_back));
       this.aktionen.addEventListener('click', e => {
@@ -242,6 +253,7 @@
       setz(this.stapelZahl, cx - 177, cy + 106);
       setz(this.farbe, cx, cy);
       setz(this.ablage, cx + 177, cy);
+      setz(this.seiten, cx + 177 + SEITE_DX, cy);
       setz(this.leiste, cx, H - 212);
       setz(this.farbwahl, cx + 177, cy);
       setz(this.automat, cx - 2, cy + 10);
@@ -467,6 +479,11 @@
     }
     _zeigeAblage(v, alt) {
       const top = v.top;
+      // Durchsehen: ändert sich die Ablage (jemand legt, Flip, Mischen), springt alles zurück
+      const log = Array.isArray(v.discard_log) ? v.discard_log : [];
+      const dsig = log.length + '|' + v.side + '|' + (top ? top.id + top.face : '') + '|' + (log.length ? log[log.length - 1].f : '');
+      if (dsig !== this._durchSig) { this._durchSig = dsig; if (this.durch) { this.durch = 0; this._seitenZeichnen(); } }
+      this.ablage.classList.toggle('durchsehbar', log.length > 0);
       if (!top) { this.ablageKarten.innerHTML = ''; this.ablageVerlauf = []; return; }
       const letzte = this.ablageVerlauf[this.ablageVerlauf.length - 1];
       if (alt && alt.side !== v.side) this.ablageVerlauf = [];
@@ -483,6 +500,7 @@
       this.offenEl.hidden = !txt;
     }
     _ablageZeichnen() {
+      if (this.durch > 0) return this._durchZeichnen();
       const sig = this.ablageVerlauf.map(c => c.id + c.face).join(',');
       if (this.ablageKarten.dataset.sig === sig) return;
       this.ablageKarten.dataset.sig = sig;
@@ -496,6 +514,54 @@
         this.ablageKarten.appendChild(k);
       });
     }
+    /* ---------- Ablage durchsehen (view.discard_log, für alle gleich) ---------- */
+    // d = 1: oberste noch liegende Karte auf den Seitenstapel, -1: eine zurück, 0: alle zurück
+    durchsehen(d) {
+      const log = this.v && Array.isArray(this.v.discard_log) ? this.v.discard_log : [];
+      const n = d === 0 ? 0 : Math.max(0, Math.min(log.length, this.durch + d));
+      if (n === this.durch) return;
+      const vor = this.durch;
+      this.durch = n;
+      if (n === 0) { this.ablageKarten.dataset.sig = ''; this._ablageZeichnen(); } else this._durchZeichnen();
+      this._seitenZeichnen(n > vor);
+    }
+    _durchGesicht(e) { return e && e.f && !e.h ? e.f : 'rueckseite'; }
+    // Ablage während des Durchsehens: die noch liegenden Karten (die obersten drei)
+    _durchZeichnen() {
+      const log = (this.v && this.v.discard_log) || [], rest = log.length - this.durch;
+      const sig = 'd' + this.durch + '|' + this._durchSig;
+      if (this.ablageKarten.dataset.sig === sig) return;
+      this.ablageKarten.dataset.sig = sig;
+      this.ablageKarten.innerHTML = '';
+      for (let i = Math.max(0, rest - 3); i < rest; i++) {
+        const k = K().element(this._durchGesicht(log[i]), 124, i === rest - 1 ? 'top' : 'alt');
+        k.style.transform = 'translate(calc(-50% + ' + (i - rest + 1) * 12 + 'px),-50%) rotate(' + kartenRot(i * 13 + 5) * 0.6 + 'deg)';
+        this.ablageKarten.appendChild(k);
+      }
+    }
+    // Seitenstapel: zuerst verschobene Karte unten, zuletzt verschobene (tiefste) oben, mit Leger, Wunschfarbe und Zähler
+    _seitenZeichnen(neu) {
+      const log = (this.v && this.v.discard_log) || [], n = this.durch;
+      this.seiten.hidden = n === 0;
+      this.seitenKarten.innerHTML = '';
+      if (!n) return;
+      const L = log.length, oben = L - n;
+      for (let i = Math.min(L - 1, oben + 2); i >= oben; i--) {
+        const k = K().element(this._durchGesicht(log[i]), 124, i === oben ? 'top' + (neu ? ' neu' : '') : 'alt');
+        k.style.transform = 'translate(calc(-50% + ' + (i - oben) * 10 + 'px),-50%) rotate(' + kartenRot(i * 13 + 5) * 0.6 + 'deg)';
+        this.seitenKarten.appendChild(k);
+      }
+      const e = log[oben] || {};
+      const s = typeof e.s === 'number' ? e.s : -1;
+      const wer = s < 0 ? 'Startkarte' : (this.v && s === this.v.seat ? 'von dir' : 'von ' + this.name(s));
+      this.seiten.querySelector('.von').textContent = e.h ? 'Einsatz ' + wer : wer;
+      const w = this.seiten.querySelector('.wunsch');
+      w.textContent = e.c ? 'Wunsch: ' + K().farbName(e.c) : '';
+      w.hidden = !e.c;
+      if (e.c) w.dataset.farbe = e.c; else delete w.dataset.farbe;
+      this.seiten.querySelector('.zaehler').textContent = n + ' von ' + L;
+    }
+
     // Farbe mit ablegen / Einsatz unter die Ablage: Karten landen UNTER der obersten (sie bleibt oben)
     unterAblage(karten) {
       const top = this.ablageVerlauf[this.ablageVerlauf.length - 1];

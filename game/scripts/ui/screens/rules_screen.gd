@@ -67,7 +67,7 @@ var _confirm: ConfirmBox
 
 func build() -> void:
 	cfg = RulesBar.current()
-	_tabs = ScreenKit.choice([["uebersicht", "Übersicht"], ["anpassen", "Anpassen"]], start_tab, _show_tab, 22, 190.0)
+	_tabs = ScreenKit.choice([["uebersicht", "Übersicht"], ["anpassen", "Anpassen"]], start_tab, _show_tab, UiFonts.size("text"), 190.0)
 	_tabs.name = "Reiter"
 	var content := page("Regeln", true, _tabs)
 	_overview = ScreenKit.scroller()
@@ -95,12 +95,12 @@ func build() -> void:
 	ecard.add_child(ev)
 	var prow := ScreenKit.hbox(14)
 	ev.add_child(prow)
-	var pl := ScreenKit.label("Voreinstellung", "", 24)
+	var pl := ScreenKit.label("Voreinstellung", "", UiFonts.size("zeile"))
 	pl.add_theme_font_override("font", UiFonts.text(700))
 	pl.custom_minimum_size = Vector2(300, 0)
 	pl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	prow.add_child(pl)
-	_preset_row = ScreenKit.choice(RulesBar.PRESETS, cfg.preset_name(), apply_preset, 21)
+	_preset_row = ScreenKit.choice(RulesBar.PRESETS, cfg.preset_name(), apply_preset, UiFonts.size("text"))
 	prow.add_child(_preset_row)
 	prow.add_child(ScreenKit.spacer())
 	var top_count := _count_pill()
@@ -115,14 +115,14 @@ func build() -> void:
 	var xhead := ScreenKit.hbox(14)
 	xhead.custom_minimum_size = Vector2(0, 64)
 	ev.add_child(xhead)
-	var xh := ScreenKit.heading("Hausregeln mit Zusatzkarten", 30)
+	var xh := ScreenKit.heading("Hausregeln mit Zusatzkarten", UiFonts.size("zwischen"))
 	xh.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	xhead.add_child(xh)
 	xhead.add_child(ScreenKit.spacer())
 	var count := _count_pill()
 	count.name = "Kartenzahl"
 	xhead.add_child(count)
-	ev.add_child(ScreenKit.hint("Jede bringt eigene Karten mit. Ohne sie wird mit 112 Karten gespielt.", 18))
+	ev.add_child(ScreenKit.hint("Jede bringt eigene Karten mit. Ohne sie wird mit 112 Karten gespielt.", UiFonts.size("hinweis")))
 	for opt in EXTRA_OPTIONS:
 		ev.add_child(_extra_row(opt))
 	_refresh()
@@ -136,11 +136,11 @@ func _sets_row() -> Control:
 	row.name = "Gespeichert"
 	var head := ScreenKit.hbox(18)
 	row.add_child(head)
-	var l := ScreenKit.label("Gespeichert", "", 24)
+	var l := ScreenKit.label("Gespeichert", "", UiFonts.size("zeile"))
 	l.add_theme_font_override("font", UiFonts.text(700))
 	l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	head.add_child(l)
-	_sets_hint = ScreenKit.hint("", 17)
+	_sets_hint = ScreenKit.hint("", UiFonts.size("klein"))
 	_sets_hint.name = "Hinweis"
 	_sets_hint.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_sets_hint.autowrap_mode = TextServer.AUTOWRAP_OFF
@@ -149,7 +149,7 @@ func _sets_row() -> Control:
 	_save_btn = ScreenKit.button("Speichern unter …", "", "regeln")
 	_save_btn.name = "SpeichernUnter"
 	_save_btn.tooltip_text = "Die eingestellten Regeln unter einem Namen speichern"
-	_save_btn.add_theme_font_size_override("font_size", 20)
+	_save_btn.add_theme_font_size_override("font_size", UiFonts.size("text"))
 	_save_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_save_btn.custom_minimum_size.y = 64.0          # flache Kopfreihe, damit die Optionen im Bild bleiben
 	for st in ["normal", "hover", "pressed", "disabled", "hover_pressed"]:
@@ -183,7 +183,7 @@ func _rebuild_sets() -> void:
 		var hb := ScreenKit.button(RuleSets.host_title(host), "GhostButton", "wlan")
 		hb.name = "Gastgeber"
 		hb.tooltip_text = "Regeln, mit denen du zuletzt im WLAN-Spiel von %s gespielt hast" % host
-		hb.add_theme_font_size_override("font_size", 21)
+		hb.add_theme_font_size_override("font_size", UiFonts.size("text"))
 		hb.set_meta("host", true)
 		hb.pressed.connect(apply_host_rules)
 		_sets_box.add_child(hb)
@@ -196,7 +196,7 @@ func _rebuild_sets() -> void:
 		var b := ScreenKit.button(n, "GhostButton")
 		b.name = "Laden"
 		b.tooltip_text = "Antippen lädt"
-		b.add_theme_font_size_override("font_size", 21)
+		b.add_theme_font_size_override("font_size", UiFonts.size("text"))
 		b.set_meta("set", n)
 		b.button_down.connect(_on_set_down.bind(b))
 		b.pressed.connect(_on_set_pressed.bind(b))
@@ -210,7 +210,7 @@ func _rebuild_sets() -> void:
 		pair.add_child(x)
 		_sets_box.add_child(pair)
 	if _sets_box.get_child_count() == 0:
-		var h := ScreenKit.hint("Noch nichts gespeichert. Stell die Regeln ein und tippe oben auf „Speichern unter …“.", 18)
+		var h := ScreenKit.hint("Noch nichts gespeichert. Stell die Regeln ein und tippe oben auf „Speichern unter …“.", UiFonts.size("hinweis"))
 		h.name = "Leer"
 		h.custom_minimum_size = Vector2(0, ScreenKit.TOUCH)
 		h.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -356,7 +356,7 @@ func _count_pill() -> PanelContainer:
 	var p := PanelContainer.new()
 	p.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var l := ScreenKit.label("", "", 22)
+	var l := ScreenKit.label("", "", UiFonts.size("text"))
 	l.add_theme_font_override("font", UiFonts.text(800))
 	l.name = "Text"
 	p.add_child(l)
@@ -370,7 +370,7 @@ func _option_row(opt: Array) -> Control:
 	var ctrl: Control
 	if kind is Array and (kind as Array).size() > 3:
 		# viele Knöpfe (Tauschrichtung): umbrechend statt einer langen Reihe
-		var row := ScreenKit.choice(kind, str(cfg.get(key)), func(v: String) -> void: set_option(key, v), 20)
+		var row := ScreenKit.choice(kind, str(cfg.get(key)), func(v: String) -> void: set_option(key, v), UiFonts.size("text"))
 		var flow := HFlowContainer.new()
 		flow.add_theme_constant_override("h_separation", 8)
 		flow.add_theme_constant_override("v_separation", 8)
@@ -381,7 +381,7 @@ func _option_row(opt: Array) -> Control:
 		row.free()
 		ctrl = flow
 	elif kind is Array:
-		ctrl = ScreenKit.choice(kind, str(cfg.get(key)), func(v: String) -> void: set_option(key, v), 20)
+		ctrl = ScreenKit.choice(kind, str(cfg.get(key)), func(v: String) -> void: set_option(key, v), UiFonts.size("text"))
 	elif str(kind) == "schalter" or str(kind) == "an_aus":
 		var c := CheckButton.new()
 		var as_text := str(kind) == "an_aus"
@@ -512,12 +512,12 @@ func _render_overview() -> void:
 	var extras := RulesBar.extra_names(cfg)
 	if not extras.is_empty():
 		head += " · Hausregeln: " + RulesBar.join_and(extras)
-	t += "[font_size=20][color=#6E6178]%s[/color][/font_size]\n" % head.replace("[", "[lb]")
+	t += "[font_size=%d][color=#%s]%s[/color][/font_size]\n" % [UiFonts.size("text"), UiPalette.MUTED_DAY.to_html(false), head.replace("[", "[lb]")]
 	for sec in RulesText.overview(cfg):
-		t += "\n[font_size=30][b]%s[/b][/font_size]\n%s\n" % [str(sec.get("title", "")), str(sec.get("text", ""))]
+		t += "\n[font_size=%d][b]%s[/b][/font_size]\n%s\n" % [UiFonts.size("zwischen"), str(sec.get("title", "")), str(sec.get("text", ""))]
 	_overview_text.text = t
 	_render_special()
-	var s := "[font_size=30][b]Kurz gesagt[/b][/font_size]\n"
+	var s := "[font_size=%d][b]Kurz gesagt[/b][/font_size]\n" % UiFonts.size("zwischen")
 	for line in cfg.describe():
 		s += "• %s\n" % line
 	_overview_short.text = s
@@ -538,7 +538,7 @@ func _render_special() -> void:
 	for c in _special_box.get_children():
 		_special_box.remove_child(c)
 		c.queue_free()
-	var h := ScreenKit.label("Besondere Karten", "", 30)
+	var h := ScreenKit.label("Besondere Karten", "", UiFonts.size("zwischen"))
 	h.add_theme_font_override("font", UiFonts.text(800))
 	_special_box.add_child(h)
 	var sp := special_cards(cfg)
@@ -555,13 +555,13 @@ func _render_special() -> void:
 		row.add_child(v)
 		var head := ScreenKit.hbox(12)
 		v.add_child(head)
-		var tl := ScreenKit.label(str(e.title), "", 24)
+		var tl := ScreenKit.label(str(e.title), "", UiFonts.size("zeile"))
 		tl.add_theme_font_override("font", UiFonts.text(800))
 		head.add_child(tl)
-		var sl := ScreenKit.label(str(e.side), "HintLabel", 18)
+		var sl := ScreenKit.label(str(e.side), "HintLabel", UiFonts.size("hinweis"))
 		sl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		head.add_child(sl)
-		var tx := ScreenKit.text_block(" ".join(PackedStringArray(e.lines)), 20)
+		var tx := ScreenKit.text_block(" ".join(PackedStringArray(e.lines)), UiFonts.size("text"))
 		tx.name = "Text"
 		v.add_child(tx)
 		_special_box.add_child(row)
@@ -638,3 +638,10 @@ class CardThumbs:
 			draw_style_box(shadow, Rect2(rect.position + Vector2(2, 3), rect.size))
 			draw_texture_rect(CardTextures.get_texture(str(keys[i])), rect, false)
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+# Einstellung „Schriftgröße“ live: Übersicht mit den neuen Größen neu aufbauen (verzögert, damit UiFonts.rescale_tree die neuen
+# Beschriftungen nicht ein zweites Mal umrechnet)
+func on_font_scale() -> void:
+	if _overview_text != null:
+		call_deferred("_render_overview")

@@ -34,6 +34,7 @@ const DISCARD_UNDER_MAX := 7          # zusätzlich höchstens so viele mitabgel
 # Bausteine der Hausregeln per preload (laufen so auch, bevor ein Import den Klassen-Cache erneuert hat)
 const GambleMachineScript := preload("res://scripts/ui/gamble_machine.gd")
 const StakePileScript := preload("res://scripts/ui/stake_pile.gd")
+const DiscardBrowserScript := preload("res://scripts/ui/discard_browser.gd")
 const HouseRulesScript := preload("res://scripts/ui/table_house_rules.gd")
 const HINT_NOTHING_FITS := "Du bist dran – nichts passt"
 
@@ -86,6 +87,7 @@ var _n := 0
 var _speed := 1.0
 var _color := ""
 var _discard_rays: JokerRays
+var discard_browser: DiscardBrowserScript # „Ablage durchsehen“ (1.0.1): Tipp auf die Ablage schiebt Karten zur Seite
 var _jagd_armed := false
 var _plus_armed := 0
 var _last_player := -1
@@ -143,6 +145,10 @@ func _init() -> void:
 	_world.add_child(_discard_layer)
 	_color_mark = ColorMark.new()
 	_world.add_child(_color_mark)
+	discard_browser = DiscardBrowserScript.new()
+	discard_browser.name = "AblageDurchsehen"
+	discard_browser.opened_changed.connect(func(open: bool) -> void: _discard_layer.visible = not open)
+	_world.add_child(discard_browser)
 	stake_pile = StakePileScript.new()
 	stake_pile.name = "Einsatz"
 	_world.add_child(stake_pile)
@@ -251,6 +257,8 @@ func _pill(text: String, icon: String) -> PillButton:
 
 func set_reduced(on: bool) -> void:
 	reduced = on
+	if discard_browser:
+		discard_browser.reduced = on
 	if gamble_machine:
 		gamble_machine.reduced = on
 	if fx:
@@ -298,6 +306,7 @@ func _layout() -> void:
 	_pile.position = _draw_pos
 	_color_ring.position = _discard_pos
 	_discard_layer.position = _discard_pos
+	discard_browser.position = _discard_pos
 	_color_mark.position = _center
 	gamble_machine.position = _center
 	wish_picker.position = _discard_pos
@@ -425,11 +434,21 @@ func update_hand_target() -> void:
 # ================================================================= Abgleich mit der Sicht
 
 func handle_state(events: Array, new_view: Dictionary) -> void:
+	_close_browser_on(events)
 	director.enqueue(events, new_view)
 
 
 func play_events(events: Array) -> void:
+	_close_browser_on(events)
 	director.enqueue(events, {})
+
+
+# Ablage durchsehen: Ändert sich die Ablage (Legen, Flip, Mischen …), springt alles sofort zurück.
+func _close_browser_on(events: Array) -> void:
+	for e in events:
+		if e is Dictionary and str(e.get("e", "")) in ["play", "flip", "shuffle", "discard_color", "stake_discard", "start", "round_start"]:
+			discard_browser.close_now()
+			return
 
 
 func apply_view(v: Dictionary) -> void:
@@ -476,6 +495,10 @@ func apply_view(v: Dictionary) -> void:
 	_pile.set_pile(str(v.get("draw_back", "")), int(v.get("draw_count", 0)))
 	var top: Dictionary = v.get("top", {})
 	_set_top(str(top.get("face", "")), int(top.get("id", -1)))
+	var names: Array = []
+	for p in players:
+		names.append(str(p.get("name", "")))
+	discard_browser.set_log(v.get("discard_log", []) if v.get("discard_log", []) is Array else [], names)
 	_set_color(str(v.get("color", "")), false)
 	_ring.set_direction(int(v.get("dir", 1)))
 	var pending: Dictionary = v.get("pending", {})
@@ -832,6 +855,7 @@ func set_night(v: float) -> void:
 	fx_top.night = night
 	_pile.night = night
 	_color_mark.night = night
+	discard_browser.night = night
 	_color_ring.night = night
 	wish_picker.night = night
 
@@ -927,6 +951,8 @@ func _gui_input(event: InputEvent) -> void:
 func _tap(p: Vector2) -> bool:
 	var g := get_global_transform() * p
 	var wp := _world.to_local(g)
+	if discard_browser.handle_tap(discard_browser.to_local(g)):    # Ablage/Seitenstapel; sonst schiebt es alles zurück
+		return true
 	for s in _seats:
 		var node: OpponentSeat = _seats[s]
 		if node.hit_catch(g):
@@ -1856,8 +1882,9 @@ class PileView:
 			draw_style_box(g, Rect2(-w * 0.5, -h * 0.5, w, h))
 		var f := UiFonts.text(700, 100.0)
 		var t := "Stapel · %d" % count
-		var tw := f.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, 17).x
-		draw_string(f, Vector2(-tw * 0.5, h * 0.5 + 28.0), t, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, UiPalette.ui_muted(night))
+		var sfs := UiFonts.size("hinweis")
+		var tw := f.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, sfs).x
+		draw_string(f, Vector2(-tw * 0.5, h * 0.5 + 12.0 + sfs * 0.75), t, HORIZONTAL_ALIGNMENT_LEFT, -1, sfs, UiPalette.ui_muted(night))
 
 
 class ColorRingView:
@@ -1908,7 +1935,7 @@ class ColorRingView:
 			draw_circle(c, 26.0 * s, UiPalette.CREAM)
 			var f := UiFonts.text(800, 85.0)
 			var t := "+%d" % pending
-			var fs := int(24 * s)
+			var fs := int(UiFonts.size("text") * s)
 			var tw := f.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 			draw_string(f, c + Vector2(-tw * 0.5, fs * 0.36), t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, UiPalette.INK)
 
@@ -1944,5 +1971,6 @@ class ColorMark:
 		draw_texture_rect(UiIcons.symbol(color_key, 96, col, bg.lerp(col, 0.25)), Rect2(Vector2(-isz * 0.5, -16.0 - isz * 0.5), Vector2(isz, isz)), false)
 		var f := UiFonts.text(800, 100.0)
 		var t := UiPalette.color_name(color_key)
-		var tw := f.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, 22).x
-		draw_string(f, Vector2(-tw * 0.5, 32.0), t, HORIZONTAL_ALIGNMENT_LEFT, -1, 22, UiPalette.ui_text(night))
+		var cfs := UiFonts.size("text")
+		var tw := f.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, cfs).x
+		draw_string(f, Vector2(-tw * 0.5, 22.0 + cfs * 0.45), t, HORIZONTAL_ALIGNMENT_LEFT, -1, cfs, UiPalette.ui_text(night))

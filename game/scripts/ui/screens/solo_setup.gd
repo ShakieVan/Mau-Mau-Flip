@@ -27,21 +27,24 @@ func build() -> void:
 	lv.add_child(step)
 	_seats = ScreenKit.hbox(12)
 	lv.add_child(_seats)
-	lv.add_child(ScreenKit.hint("Du sitzt unten, die Computergegner im Halbkreis um den Tisch. Sie denken kurz nach, bevor sie legen.", 19))
+	lv.add_child(ScreenKit.hint("Du sitzt unten, die Computergegner im Halbkreis um den Tisch. Sie denken kurz nach, bevor sie legen.", UiFonts.size("hinweis")))
 	# rechts: Regeln und Start
 	var right := ScreenKit.card()
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	cols.add_child(right)
 	var rv := ScreenKit.vbox(18)
 	right.add_child(rv)
+	# Regeln im Bildlauf (große Schrift: lieber blättern als abschneiden), Start immer sichtbar darunter
+	var rscroll := ScreenKit.scroller()
+	rv.add_child(rscroll)
 	_rules = RulesBar.new()
 	_rules.nav = nav
-	rv.add_child(_rules)
-	rv.add_child(ScreenKit.spacer(false))
+	_rules.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	rscroll.add_child(_rules)
 	var start := ScreenKit.button("Los geht's", "PrimaryButton", "start")
 	start.name = "Start"
 	start.custom_minimum_size = Vector2(0, 100)
-	start.add_theme_font_size_override("font_size", 30)
+	start.add_theme_font_size_override("font_size", UiFonts.size("start"))
 	start.pressed.connect(start_game)
 	rv.add_child(start)
 	_refresh_seats()

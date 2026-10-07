@@ -34,9 +34,9 @@ func _build(title_text: String, text: String, yes_text: String, no_text: String)
 	var v := ScreenKit.vbox(18)
 	_card.add_child(v)
 	_box = v
-	v.add_child(ScreenKit.heading(title_text, 40))
+	v.add_child(ScreenKit.heading(title_text, UiFonts.size("dialog")))
 	if text != "":
-		v.add_child(ScreenKit.text_block(text, 22))
+		v.add_child(ScreenKit.text_block(text, UiFonts.size("text")))
 	var row := ScreenKit.hbox(16)
 	_row = row
 	v.add_child(row)

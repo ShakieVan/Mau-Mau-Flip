@@ -570,3 +570,9 @@ Nutzerwunsch (AGENTS.md Nr. 27), Festlegung des Koordinators.
 - **Familie 0.1.4:** zusätzlich `wild_restriction=free`, `swap_direction=play`, `gamble_cards=on`, `discard_color=on`, `flip_surprise=on` (124 Karten). `RuleConfig.migrate_dict` hebt Regeln, die genau der alten „Familie“ entsprechen (`RuleConfig.OLD_FAMILIE`, mit `enforce` oder `free`), auf die neue.
 - **Texte:** Kartenhilfe Flip, Regelübersicht (Absatz „Flip“) und Kurzfassung (`describe`) nennen die Überraschung nur, wenn sie an ist.
 - **Tests:** `test_rules_flip_surprise.gd` (jede Kartenart, Reihenfolge der Ereignisse, Joker oben mit Farbwahl auch nach Speichern, Bluff-Modus, Stapeln, `penalty_turn=play`, keine Überraschung bei Flip/Wünscher/Zusatzkarten oben, offiziell und am Rundenende, Familie und Hebung, Texte). Die Zufallsprüfungen (`RulesFixture.random_config`) würfeln `flip_surprise` mit.
+
+## Ablage-Protokoll (1.0.1, „Ablage durchsehen“)
+
+- **Sicht:** `view.discard_log` (BETA1_PLAN Abschnitt Sichten): Ablage unten → oben als `{f, s, c, h}`, für alle Plätze gleich. Intern `MauGame.dlog` (id → `{s, c, h}`), gesetzt in `_play` (Leger), `_discard_color` (Mitabgelegte mit Leger), `_stake_under` (Einsatz verdeckt, `h`), `_note_wish` bei jedem Farbereignis (Joker, Farbwahl, Start-Notfall). Flip dreht nur `discard` (Gesichter aus der aktiven Seite), `_reshuffle` behält nur den Eintrag der obersten Karte, Rundenstart leert. Speichern als `dlog`.
+- **Lecktest:** `test_rules_views.gd` erwartet die offenen Ablagegesichter im Protokoll (`_expected_keys`) und prüft Form, Reihenfolge, Leger und verdeckte Einsätze (`_check_discard_log`); läuft so auch in `test_rules_gamble.gd`, `test_rules_discard.gd` und `test_rules_swap.gd` mit.
+- **Tests:** `test_rules_discard_log.gd` (Legen, Joker mit Farbe, Farbe mit ablegen, Glücksspiel-Einsatz verdeckt, Flip, Mischen, gleiche Liste für alle, Speichern).

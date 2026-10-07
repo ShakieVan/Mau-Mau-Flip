@@ -78,6 +78,7 @@
       this.seite = this.opt.seite === 'dunkel' && this.runde === 1 ? 'dunkel' : 'hell';
       this.stapel = this.mische(Array.from({ length: this.karten.length }, (x, i) => i));
       this.ablage = [];
+      this.leger = {}; this.wunsch = {}; this.verdeckt = new Set();   // für view.discard_log: Leger, Wunschfarbe, verdeckter Einsatz je Karte
       this.haende = this.sp.map(() => []);
       this.dir = 1; this.phase = 'turn'; this.gezogen = null; this.mau = new Set(); this.mauOffen = null; this.fordern = null; this.ranking = []; this.scores = null;
       this.gamble = null;
@@ -107,6 +108,7 @@
         const t = this.ablage.pop();
         this.stapel = this.mische(this.ablage);
         this.ablage = [t];
+        this.stapel.forEach(id => { delete this.leger[id]; delete this.wunsch[id]; this.verdeckt.delete(id); });
         ev.push({ e: 'shuffle' });
         if (!this.stapel.length) return null;
       }
@@ -140,6 +142,7 @@
       mit.forEach(id => hand.splice(hand.indexOf(id), 1));
       const top = this.ablage.pop();
       this.ablage.push(...mit, top);
+      mit.forEach(id => { this.leger[id] = s; delete this.wunsch[id]; this.verdeckt.delete(id); });
       ev.push({ e: 'discard_color', seat: s, color: col, cards: mit.slice(), faces: mit.map(id => this.f(id)), count: mit.length });
     }
     ziehBisFarbe(s, farbe, ev) {
@@ -178,6 +181,8 @@
           const farbeVorher = this.farbe;
           // Ablegen-Joker: a.color ist die Ablegefarbe; die Spielfarbe kommt erst mit {a:"discard_pick"}
           if (k.art === 'ablegen_joker') { /* Farbe folgt */ } else if (JOKER[k.art]) { this.farbe = a.color; ev.push({ e: 'color', color: a.color }); } else this.farbe = k.farbe;
+          this.leger[a.card] = s; this.verdeckt.delete(a.card);
+          if (JOKER[k.art] && k.art !== 'ablegen_joker') this.wunsch[a.card] = a.color; else delete this.wunsch[a.card];
           const nx = this.naechster(s);
           switch (k.art) {
             case 'plus1': case 'plus5': this.ziehe(nx, k.art === 'plus1' ? 1 : 5, ev); ev.push({ e: 'skip', seat: nx }); this.dran = this.naechster(nx); break;
@@ -266,6 +271,7 @@
             this.dran = this.naechster(s);
           } else if (!hand.length) {
             this.ablage.unshift(...stake);
+            stake.forEach(id => { this.leger[id] = s; this.verdeckt.add(id); });
             ev.push(this.einsatzWeg(s, stake, 'empty'));
             this.gamble = null;
             this.rundeEnde(s, ev);
@@ -280,6 +286,7 @@
           if (!this.gamble.stake.length) return nein('Aufhören geht erst nach dem ersten Druck.');
           const stake = this.gamble.stake;
           this.ablage.unshift(...stake);
+          stake.forEach(id => { this.leger[id] = s; this.verdeckt.add(id); });
           ev.push(this.einsatzWeg(s, stake, 'stop'));
           this.gamble = null; this.phase = 'turn';
           this.dran = this.naechster(s);
@@ -289,6 +296,7 @@
           if (this.phase !== 'color' || this.dran !== s) return nein('Gerade ist keine Farbe zu wählen.');
           if (FARBEN[this.seite].indexOf(a.color) < 0) return nein('Diese Farbe gibt es auf dieser Seite nicht.');
           this.farbe = a.color; this.phase = 'turn'; ev.push({ e: 'color', color: a.color });
+          this.wunsch[this.top()] = a.color;
           if (this.ueberraschung) { this.ueberraschung = false; this.ueberrasche(s, z(this.f(this.top())).art, ev); } else this.dran = this.naechster(s);
           return { ok: true, events: ev };
         case 'draw': {
@@ -315,6 +323,7 @@
           this.legeFarbeAb(s, pk.color, wahl, ev);
           this.farbe = pk.joker ? a.color : pk.color;
           if (pk.joker) ev.push({ e: 'color', color: a.color });
+          if (pk.joker) this.wunsch[this.top()] = a.color;
           this.pick = null; this.phase = 'turn';
           this.dran = this.naechster(s);
           if (hand.length === 1 && !this.mau.has(s)) this.mauOffen = { seat: s };
@@ -346,7 +355,7 @@
       }
     }
     wende(s, ev) {
-      this.ablage.reverse(); this.stapel.reverse();
+      this.ablage.reverse(); this.stapel.reverse(); this.wunsch = {};
       this.seite = this.seite === 'hell' ? 'dunkel' : 'hell';
       ev.push({ e: 'flip', side: this.seite });
       const t = z(this.f(this.top()));
@@ -442,6 +451,8 @@
         })),
         hand: hand.map(id => ({ id, face: this.f(id), back: REGELN.peek_own_backs ? this.b(id) : undefined })),
         top: { id: this.top(), face: this.f(this.top()) },
+        // Ablage von unten nach oben (öffentlich, für „Ablage durchsehen“): {f, s, c, h}
+        discard_log: this.ablage.map(id => ({ f: this.verdeckt.has(id) ? '' : this.f(id), s: id in this.leger ? this.leger[id] : -1, c: this.wunsch[id] || '', h: this.verdeckt.has(id) })),
         draw_back: this.stapel.length ? this.b(this.stapel[this.stapel.length - 1]) : '',
         draw_count: this.stapel.length,
         pending: null,

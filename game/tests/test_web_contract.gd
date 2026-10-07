@@ -276,6 +276,10 @@ func run() -> void:
 	var spieler_typen := js_types(autotest, "SPIELER_FELDER")
 	var glueck_hints := js_types(autotest, "HINT_GLUECK")
 	var glueck_sicht := js_types(autotest, "SICHT_GLUECK")
+	var discard_typen := js_types(autotest, "DISCARD_FELDER")
+	check(sicht_typen.get("discard_log") == "array" and discard_typen.get("f") == "string" and discard_typen.get("s") == "number"
+			and discard_typen.get("c") == "string" and discard_typen.get("h") == "boolean",
+		"Ablage durchsehen: discard_log und Eintragsform in autotest.js (%s)" % str(discard_typen))
 	check(phasen.size() >= 6 and ereignisse.size() >= 20 and hint_typen.size() >= 10 and sicht_typen.size() >= 15 and spieler_typen.size() >= 8,
 		"Listen in autotest.js gefunden (%d/%d/%d/%d/%d)" % [phasen.size(), ereignisse.size(), hint_typen.size(), sicht_typen.size(), spieler_typen.size()])
 	check(glueck_hints.get("can_stake") == "array" and glueck_hints.get("can_press") == "boolean" and glueck_hints.get("can_stop") == "boolean"
@@ -385,6 +389,7 @@ func run() -> void:
 	var view_checks := 0
 	var bad := {}
 	var max_bytes := 0
+	var max_log := 0
 	# 40 Partien wie bisher, danach Partien mit allen drei Hausregeln, bis jedes neue Ereignis vorkam (höchstens 80)
 	var haus_events := ["swap_hands", "gamble_start", "stake", "gamble_roll", "stake_back", "stake_discard", "discard_color", "discard_pick"]
 	var haus_games := 0
@@ -458,6 +463,24 @@ func run() -> void:
 							bad["hints.can_pick bei fremder Auswahl"] = true
 					if bool(h.get("pick_color", false)):
 						seen_hints["pick_color"] = true
+				# Ablage durchsehen (1.0.1): discard_log für alle gleich, Einträge {f, s, c, h}, letzter = oberste Karte, Einsätze ohne Gesicht
+				if v.get("discard_log") is Array and v.get("top") is Dictionary:
+					var dl: Array = v.discard_log
+					if dl.is_empty() or str((dl[dl.size() - 1] as Dictionary).get("f", "")) != str(v.top.get("face", "")):
+						bad["discard_log: letzter Eintrag ≠ top"] = true
+					for de in dl:
+						for k in discard_typen:
+							if js_type((de as Dictionary).get(k)) != discard_typen[k]:
+								bad["discard_log[].%s: %s statt %s" % [k, js_type((de as Dictionary).get(k)), discard_typen[k]]] = true
+						if bool((de as Dictionary).get("h", false)):
+							seen_hints["discard_log.h"] = true
+							if str(de.get("f", "")) != "":
+								bad["discard_log: verdeckter Einsatz mit Gesicht"] = true
+						if int((de as Dictionary).get("s", -1)) < -1 or int(de.get("s", -1)) >= n:
+							bad["discard_log: Platz außerhalb"] = true
+					if s > 0 and str(dl) != str(g.view_for(0).get("discard_log")):
+						bad["discard_log nicht für alle gleich"] = true
+					max_log = maxi(max_log, dl.size())
 				for e in fe:
 					if str(e.get("e", "")) == "flip_surprise" and (js_type(e.get("seat")) != "number" or js_type(e.get("face")) != "string"):
 						bad["flip_surprise ohne seat/face: " + str(e)] = true
@@ -499,6 +522,16 @@ func run() -> void:
 	for k in bad:
 		check(false, "Sicht passt nicht zum Client: " + str(k))
 	check(bad.is_empty(), "%d Sichten passen Feld für Feld zum Client" % view_checks)
+	check(max_log >= 5 and seen_hints.has("discard_log.h"), "discard_log wächst (bis %d Karten) und zeigt verdeckte Einsätze ohne Gesicht" % max_log)
+	# Browser: Ablage durchsehen (Seitenstapel, Leger, Wunschfarbe, Zähler; springt bei Änderung zurück) und Einstellung „Schriftgröße“
+	check(tisch.contains("v.discard_log") and tisch.contains("'seitenstapel'") and tisch.contains("this.durchsehen(1)") and tisch.contains("this.durchsehen(-1)")
+			and tisch.contains("this.durchsehen(0)") and tisch.contains("'Startkarte'") and tisch.contains("' von ' + L") and tisch.contains("'Wunsch: '")
+			and mock.contains("discard_log:") and autotest.contains("durchsehenTest()"),
+		"Browser: Ablage durchsehen nach dem Protokoll (Tipp Ablage/Seitenstapel/daneben, Leger, Wunschfarbe, Zähler)")
+	check(seite.contains("data-set=\"schrift\"") and seite.contains("data-schrift=\"sehr_gross\"") and app.contains("Speicher.get('schrift', 'normal')")
+			and css.contains("html[data-schrift=\"gross\"] { --fs: 1.15; }") and css.contains("html[data-schrift=\"sehr_gross\"] { --fs: 1.3; }")
+			and css.contains(".gg .name { font: 700 calc(27px * var(--fs))") and css.contains(".hinweis { font: 700 calc(26px * var(--fs))"),
+		"Browser: größere Grundschrift und Einstellung „Schriftgröße“ (Normal/Groß/Sehr groß, je Gerät)")
 	for ph in seen_phases:
 		check(phasen.has(ph), "Phase „%s“ ist dem Client bekannt" % ph)
 	for e in seen_events:

@@ -36,15 +36,19 @@ func build() -> void:
 	var head := ScreenKit.hbox(14)
 	lv.add_child(head)
 	head.add_child(ScreenKit.heading("Mitspieler"))
-	_count = ScreenKit.label("", "HintLabel", 20)
+	_count = ScreenKit.label("", "HintLabel", UiFonts.size("text"))
 	_count.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	head.add_child(_count)
-	lv.add_child(ScreenKit.hint("Tragt euch so ein, wie ihr sitzt – links herum: Nach Platz 1 kommt, wer links daneben sitzt.", 19))
+	# Hinweis im Bildlauf über der Liste: bei großer Schrift und offener Tastatur bleibt Platz für die Namensfelder
 	_scroll = ScreenKit.scroller()
 	lv.add_child(_scroll)
+	var inner := ScreenKit.vbox(10)
+	inner.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_scroll.add_child(inner)
+	inner.add_child(ScreenKit.hint("Tragt euch so ein, wie ihr sitzt – links herum: Nach Platz 1 kommt, wer links daneben sitzt.", UiFonts.size("hinweis")))
 	_list = ScreenKit.vbox(10)
 	_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_scroll.add_child(_list)
+	inner.add_child(_list)
 	var add_row := ScreenKit.hbox(12)
 	lv.add_child(add_row)
 	_add_human = ScreenKit.button("+ Mitspieler", "", "spieler")
@@ -62,15 +66,20 @@ func build() -> void:
 	cols.add_child(right)
 	var rv := ScreenKit.vbox(16)
 	right.add_child(rv)
+	# Regeln und Hinweis im Bildlauf (große Schrift: lieber blättern als abschneiden), Start immer sichtbar darunter
+	var rscroll := ScreenKit.scroller()
+	rv.add_child(rscroll)
+	var rinner := ScreenKit.vbox(16)
+	rinner.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	rscroll.add_child(rinner)
 	_rules = RulesBar.new()
 	_rules.nav = nav
-	rv.add_child(_rules)
-	rv.add_child(ScreenKit.hint("Vor jedem Zug erscheint ein Sichtschutz ohne Karten. Erst wer dran ist, deckt durch Halten auf.", 19))
-	rv.add_child(ScreenKit.spacer(false))
+	rinner.add_child(_rules)
+	rinner.add_child(ScreenKit.hint("Vor jedem Zug erscheint ein Sichtschutz ohne Karten. Erst wer dran ist, deckt durch Halten auf.", UiFonts.size("hinweis")))
 	var start := ScreenKit.button("Los geht's", "PrimaryButton", "start")
 	start.name = "Start"
 	start.custom_minimum_size = Vector2(0, 100)
-	start.add_theme_font_size_override("font_size", 30)
+	start.add_theme_font_size_override("font_size", UiFonts.size("start"))
 	start.pressed.connect(start_game)
 	rv.add_child(start)
 	_rebuild()
@@ -149,7 +158,7 @@ func _row(i: int) -> Control:
 	var e: Dictionary = entries[i]
 	var row := ScreenKit.hbox(10)
 	row.custom_minimum_size = Vector2(0, ScreenKit.TOUCH)
-	var no := ScreenKit.label(str(i + 1), "", 24, Color(UiPalette.INK, 0.55))
+	var no := ScreenKit.label(str(i + 1), "", UiFonts.size("zeile"), Color(UiPalette.INK, 0.72))
 	no.add_theme_font_override("font", UiFonts.text(800))
 	no.custom_minimum_size = Vector2(30, 0)
 	no.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -158,12 +167,12 @@ func _row(i: int) -> Control:
 	av.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(av)
 	if e.kind == "bot":
-		var l := ScreenKit.label(str(e.name), "", 26)
+		var l := ScreenKit.label(str(e.name), "", UiFonts.size("zeile"))
 		l.add_theme_font_override("font", UiFonts.text(700))
 		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		row.add_child(l)
-		var tag := ScreenKit.label("Computer", "HintLabel", 18)
+		var tag := ScreenKit.label("Computer", "HintLabel", UiFonts.size("hinweis"))
 		tag.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		row.add_child(tag)
 	else:

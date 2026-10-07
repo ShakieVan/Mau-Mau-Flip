@@ -21,7 +21,31 @@ static func get_theme() -> Theme:
 			_theme = load(PATH) as Theme
 		if _theme == null:
 			_theme = build()
+		apply_scale(_theme)
 	return _theme
+
+
+# Schriftgrößen des Themas aus UiFonts.SIZES mit dem Faktor der Einstellung „Schriftgröße“ (auch live: Controls mit diesem
+# Thema übernehmen die neue Größe sofort)
+const THEME_SIZES := [
+	["Button", "font_size", "knopf"], ["OptionButton", "font_size", "knopf"], ["MenuButton", "font_size", "knopf"],
+	["PrimaryButton", "font_size", "knopf"], ["DarkButton", "font_size", "knopf"], ["GhostButton", "font_size", "knopf"],
+	["Label", "font_size", "text"], ["TitleLabel", "font_size", "titel"], ["HeadingLabel", "font_size", "abschnitt"],
+	["HintLabel", "font_size", "hinweis"], ["NightLabel", "font_size", "text"], ["LineEdit", "font_size", "zeile"],
+	["CheckBox", "font_size", "text"], ["CheckButton", "font_size", "text"], ["PopupMenu", "font_size", "text"],
+	["ItemList", "font_size", "text"], ["TabBar", "font_size", "text"], ["TooltipLabel", "font_size", "hinweis"],
+	["RichTextLabel", "normal_font_size", "text"], ["RichTextLabel", "bold_font_size", "text"],
+	["RichTextLabel", "italics_font_size", "text"], ["RichTextLabel", "bold_italics_font_size", "text"],
+]
+
+
+static func apply_scale(t: Theme) -> void:
+	if t == null:
+		return
+	t.default_font_size = UiFonts.size("text")
+	for e in THEME_SIZES:
+		t.set_font_size(str(e[1]), str(e[0]), UiFonts.size(str(e[2])))
+	t.set_color("font_color", "HintLabel", UiPalette.MUTED_DAY)
 
 
 static func save() -> Error:
@@ -82,7 +106,6 @@ static func _buttons(t: Theme, type: String, bg: Color, fg: Color, border: Color
 static func build() -> Theme:
 	var t := Theme.new()
 	t.default_font = UiFonts.text(600)
-	t.default_font_size = 24
 	var ink := UiPalette.INK
 	var paper := UiPalette.PAPER
 	var cream := UiPalette.CREAM
@@ -90,7 +113,6 @@ static func build() -> Theme:
 	for type in ["Button", "OptionButton", "MenuButton"]:
 		_buttons(t, type, cream, ink, ink, 3)
 		t.set_font("font", type, UiFonts.text(700))
-		t.set_font_size("font_size", type, 26)
 		t.set_constant("h_separation", type, 12)
 	t.set_type_variation("PrimaryButton", "Button")
 	_buttons(t, "PrimaryButton", UiPalette.FILL["gelb"], ink, ink, 3)
@@ -100,16 +122,12 @@ static func build() -> Theme:
 	_buttons(t, "GhostButton", Color(ink, 0.05), ink, Color(ink, 0.35), 2)
 	# Beschriftungen
 	t.set_color("font_color", "Label", ink)
-	t.set_font_size("font_size", "Label", 24)
 	t.set_type_variation("TitleLabel", "Label")
 	t.set_font("font", "TitleLabel", UiFonts.title(800, false, 50.0, 72.0))
-	t.set_font_size("font_size", "TitleLabel", 52)
 	t.set_type_variation("HeadingLabel", "Label")
 	t.set_font("font", "HeadingLabel", UiFonts.title(700, false, 50.0, 48.0))
-	t.set_font_size("font_size", "HeadingLabel", 34)
 	t.set_type_variation("HintLabel", "Label")
 	t.set_color("font_color", "HintLabel", UiPalette.MUTED_DAY)
-	t.set_font_size("font_size", "HintLabel", 20)
 	t.set_type_variation("NightLabel", "Label")
 	t.set_color("font_color", "NightLabel", paper)
 	# Flächen
@@ -135,14 +153,12 @@ static func build() -> Theme:
 	t.set_color("font_placeholder_color", "LineEdit", Color(ink, 0.45))
 	t.set_color("caret_color", "LineEdit", ink)
 	t.set_color("selection_color", "LineEdit", Color(UiPalette.FILL["blau"], 0.35))
-	t.set_font_size("font_size", "LineEdit", 26)
 	# Schalter und Auswahl
 	for type in ["CheckBox", "CheckButton"]:
 		t.set_color("font_color", type, ink)
 		t.set_color("font_hover_color", type, ink)
 		t.set_color("font_pressed_color", type, ink)
 		t.set_color("font_hover_pressed_color", type, ink)
-		t.set_font_size("font_size", type, 24)
 		t.set_constant("h_separation", type, 14)
 		var empty := StyleBoxEmpty.new()
 		empty.content_margin_top = 22
@@ -154,10 +170,8 @@ static func build() -> Theme:
 	t.set_stylebox("panel", "PopupMenu", box(paper, Color(ink, 0.2), 2, 20, 12.0, 12.0))
 	t.set_color("font_color", "PopupMenu", ink)
 	t.set_color("font_hover_color", "PopupMenu", ink)
-	t.set_font_size("font_size", "PopupMenu", 24)
 	t.set_constant("v_separation", "PopupMenu", 26)
 	t.set_stylebox("hover", "PopupMenu", box(UiPalette.PAPER_D, Color(0, 0, 0, 0), 0, 14, 8.0, 8.0))
-	t.set_font_size("font_size", "ItemList", 24)
 	t.set_constant("v_separation", "ItemList", 20)
 	t.set_color("font_color", "ItemList", ink)
 	t.set_stylebox("panel", "ItemList", box(cream, Color(ink, 0.2), 2, 20, 10.0, 10.0))
@@ -176,12 +190,9 @@ static func build() -> Theme:
 	t.set_font("bold_font", "RichTextLabel", UiFonts.text(800))
 	t.set_font("italics_font", "RichTextLabel", UiFonts.title(500, true, 50.0, 24.0))
 	t.set_font("bold_italics_font", "RichTextLabel", UiFonts.title(800, true, 50.0, 24.0))
-	for k in ["normal_font_size", "bold_font_size", "italics_font_size", "bold_italics_font_size"]:
-		t.set_font_size(k, "RichTextLabel", 24)
 	t.set_color("default_color", "RichTextLabel", ink)
 	t.set_constant("line_separation", "RichTextLabel", 6)
 	# Reiter
-	t.set_font_size("font_size", "TabBar", 24)
 	t.set_stylebox("tab_selected", "TabBar", box(paper, Color(ink, 0.2), 2, 18, 22.0, 18.0))
 	t.set_stylebox("tab_unselected", "TabBar", box(UiPalette.PAPER_D, Color(0, 0, 0, 0), 0, 18, 22.0, 18.0))
 	t.set_color("font_selected_color", "TabBar", ink)
@@ -189,6 +200,7 @@ static func build() -> Theme:
 	# Hinweise
 	t.set_stylebox("panel", "TooltipPanel", box(ink, Color(0, 0, 0, 0), 0, 12, 14.0, 10.0))
 	t.set_color("font_color", "TooltipLabel", paper)
+	apply_scale(t)
 	return t
 
 

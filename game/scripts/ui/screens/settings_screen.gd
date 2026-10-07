@@ -1,7 +1,7 @@
 class_name SettingsScreen
 extends AppScreen
 # Einstellungen: Name, Ton (Mau-Ton aus/leise/normal mit Probehören der Aufnahmen „Mau!“ und „Mau-Mau!“, Spieltöne
-# aus/leise/normal, Standard aus), Spielbare Karten hervorheben (nur dieses Gerät), Vibration, Effekte, Updates (Beta-Kanal,
+# aus/leise/normal, Standard aus), Schriftgröße (Normal/Groß/Sehr groß, live), Spielbare Karten hervorheben (nur dieses Gerät), Vibration, Effekte, Updates (Beta-Kanal,
 # Jetzt prüfen, Fortschritt, Installieren, Im Browser herunterladen), App teilen, Info (Version, Lizenz, Schriften).
 # Alles wird sofort in App.settings gespeichert.
 
@@ -39,12 +39,12 @@ func build() -> void:
 	_name.custom_minimum_size = Vector2(0, ScreenKit.TOUCH)
 	_name.text_changed.connect(func(t: String) -> void: _store("name", AppSettings.clean_name(t)))
 	_name.text_submitted.connect(func(_t: String) -> void: _name.release_focus())
-	player.add_child(ScreenKit.row("Name", _name, 150.0))
+	player.add_child(ScreenKit.row("Name", _name, 190.0))
 	var sound := _section(left, "Ton")
 	var levels := [["aus", "Aus"], ["leise", "Leise"], ["normal", "Normal"]]
-	var ton := ScreenKit.choice(levels, MauSound.level(), _on_mau_ton, 21)
+	var ton := ScreenKit.choice(levels, MauSound.level(), _on_mau_ton, UiFonts.size("text"))
 	ton.name = "MauTon"
-	sound.add_child(ScreenKit.row("Mau-Ton", ton, 150.0))
+	sound.add_child(ScreenKit.row("Mau-Ton", ton, 190.0))
 	var probe_row := ScreenKit.hbox(12)
 	var probe := ScreenKit.button("Mau!", "GhostButton", "mau")
 	probe.name = "Probehoeren"
@@ -56,29 +56,33 @@ func build() -> void:
 	probe2.tooltip_text = "Probehören: „Mao-Mao“"
 	probe2.pressed.connect(func() -> void: MauSound.probe("mau_mau"))
 	probe_row.add_child(probe2)
-	sound.add_child(ScreenKit.row("Probehören", probe_row, 150.0))
-	var cat := ScreenKit.hint("Der Mau-Ton klingt auf allen Geräten am Tisch, wenn jemand „Mau!“ ruft oder fertig wird. Die Sprechblase sieht man auch ohne Ton. Katze im Raum? Leise stellen.", 18)
+	sound.add_child(ScreenKit.row("Probehören", probe_row, 190.0))
+	var cat := ScreenKit.hint("Der Mau-Ton klingt auf allen Geräten am Tisch, wenn jemand „Mau!“ ruft oder fertig wird. Die Sprechblase sieht man auch ohne Ton. Katze im Raum? Leise stellen.", UiFonts.size("hinweis"))
 	cat.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	sound.add_child(cat)
 	var toene_val := str(UiApp.setting("toene", "aus"))
-	var toene := ScreenKit.choice(levels, toene_val if AppSettings.TOENE.has(toene_val) else "aus", _on_toene, 21)
+	var toene := ScreenKit.choice(levels, toene_val if AppSettings.TOENE.has(toene_val) else "aus", _on_toene, UiFonts.size("text"))
 	toene.name = "Toene"
-	sound.add_child(ScreenKit.row("Spieltöne", toene, 150.0, "Karte, Ziehen, Mischen, Flip, Sieg"))
+	sound.add_child(ScreenKit.row("Spieltöne", toene, 190.0, "Karte, Ziehen, Mischen, Flip, Sieg"))
 	var look := _section(left, "Bedienung und Optik")
+	# Schriftgröße je Gerät (Beta 1.0.1): wirkt sofort auf alle Bildschirme und den Tisch (ScreenNav → UiFonts.set_level)
+	var schrift := ScreenKit.choice(UiFonts.LEVEL_NAMES, str(UiApp.setting("schrift", "normal")), func(v: String) -> void: _store("schrift", v))
+	schrift.name = "Schrift"
+	look.add_child(ScreenKit.row("Schrift", schrift, 190.0))
 	# Persönliche Hilfe, nie eine Regel des Gastgebers (AGENTS.md 24); der Tisch (HandView) hört auf App.settings.changed.
 	look.add_child(ScreenKit.switch_row("Spielbare Karten hervorheben", "Nur auf diesem Gerät: Karten, die du gerade legen kannst, werden in deiner Hand hervorgehoben.",
 		bool(UiApp.setting("hervorheben", true)), func(on: bool) -> void: _store("hervorheben", on), "Hervorheben"))
 	look.add_child(ScreenKit.switch_row("Vibration", "", bool(UiApp.setting("vibration", true)), func(on: bool) -> void: _store("vibration", on), "Vibration"))
-	var fx := ScreenKit.choice([["voll", "Voll"], ["reduziert", "Reduziert"]], str(UiApp.setting("effekte", "voll")), func(v: String) -> void: _store("effekte", v), 21)
+	var fx := ScreenKit.choice([["voll", "Voll"], ["reduziert", "Reduziert"]], str(UiApp.setting("effekte", "voll")), func(v: String) -> void: _store("effekte", v), UiFonts.size("text"))
 	fx.name = "Effekte"
-	look.add_child(ScreenKit.row("Effekte", fx, 150.0, "Reduziert: kürzer, weniger Teilchen"))
+	look.add_child(ScreenKit.row("Effekte", fx, 190.0, "Reduziert: kürzer, weniger Teilchen"))
 	look.add_child(tempo_row())
 	# --- Updates, Teilen, Info
 	var upd := _section(right, "Updates")
 	var beta := ScreenKit.switch("Testversionen (Beta-Kanal)", _beta(), _on_beta)
 	beta.name = "Beta"
 	upd.add_child(beta)
-	_update_status = ScreenKit.text_block("", 21)
+	_update_status = ScreenKit.text_block("", UiFonts.size("text"))
 	upd.add_child(_update_status)
 	_update_bar = ProgressBar.new()
 	_update_bar.custom_minimum_size = Vector2(0, 16)
@@ -105,20 +109,20 @@ func build() -> void:
 	_browser_btn.pressed.connect(func() -> void: _updater_call("open_release_page"))
 	urow.add_child(_browser_btn)
 	var share := _section(right, "App weitergeben")
-	share.add_child(ScreenKit.hint("Ohne Internet an Geräte in der Nähe, z. B. per Quick Share. Im WLAN-Spiel bekommen Mitspieler die App auch über die Seite des Gastgebers.", 19))
+	share.add_child(ScreenKit.hint("Ohne Internet an Geräte in der Nähe, z. B. per Quick Share. Im WLAN-Spiel bekommen Mitspieler die App auch über die Seite des Gastgebers.", UiFonts.size("hinweis")))
 	var srow := ScreenKit.hbox(14)
 	share.add_child(srow)
 	var sb := ScreenKit.button("App teilen", "", "teilen")
 	sb.name = "AppTeilen"
 	sb.pressed.connect(_share)
 	srow.add_child(sb)
-	_share_status = ScreenKit.hint("", 18)
+	_share_status = ScreenKit.hint("", UiFonts.size("hinweis"))
 	_share_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_share_status.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	srow.add_child(_share_status)
 	var info := _section(right, "Info")
-	info.add_child(ScreenKit.text_block("Mau-Mau Flip %s\nEin Hobbyprojekt von ShakieVan." % MainMenuScreen._version_text(), 22))
-	info.add_child(ScreenKit.hint("Lizenz: CC BY-NC 4.0 (nicht kommerziell). Schriften: Bricolage Grotesque und Fraunces unter der SIL Open Font License 1.1. Quellcode und Versionen auf GitHub: ShakieVan/Mau-Mau-Flip.", 18))
+	info.add_child(ScreenKit.text_block("Mau-Mau Flip %s\nEin Hobbyprojekt von ShakieVan." % MainMenuScreen._version_text(), UiFonts.size("text")))
+	info.add_child(ScreenKit.hint("Lizenz: CC BY-NC 4.0 (nicht kommerziell). Schriften: Bricolage Grotesque und Fraunces unter der SIL Open Font License 1.1. Quellcode und Versionen auf GitHub: ShakieVan/Mau-Mau-Flip.", UiFonts.size("hinweis")))
 	var app := UiApp.app()
 	for key in ["updater", "apk_share"]:
 		var obj: Variant = app.get(key) if app != null else null
@@ -133,7 +137,7 @@ func _section(parent: Control, title_text: String) -> VBoxContainer:
 	parent.add_child(card)
 	var v := ScreenKit.vbox(12)
 	card.add_child(v)
-	v.add_child(ScreenKit.heading(title_text, 30))
+	v.add_child(ScreenKit.heading(title_text, UiFonts.size("zwischen")))
 	return v
 
 
@@ -141,12 +145,12 @@ func _section(parent: Control, title_text: String) -> VBoxContainer:
 func tempo_row() -> Control:
 	var v := ScreenKit.vbox(4)
 	v.name = "Tempo"
-	var l := ScreenKit.label("Tempo der Computergegner", "", 24)
+	var l := ScreenKit.label("Tempo der Computergegner", "", UiFonts.size("zeile"))
 	l.add_theme_font_override("font", UiFonts.text(700))
 	v.add_child(l)
 	var h := ScreenKit.hbox(12)
 	v.add_child(h)
-	h.add_child(ScreenKit.label("gemütlich", "HintLabel", 18))
+	h.add_child(ScreenKit.label("gemütlich", "HintLabel", UiFonts.size("hinweis")))
 	var s := HSlider.new()
 	s.name = "TempoRegler"
 	s.min_value = 0.0
@@ -168,8 +172,8 @@ func tempo_row() -> Control:
 		if not bool(s.get_meta("dragging", false)):
 			_store("bot_tempo", s.value))
 	h.add_child(s)
-	h.add_child(ScreenKit.label("flott", "HintLabel", 18))
-	var hint := ScreenKit.hint("Nur die Bedenkzeit, nicht die Animationen. Im WLAN gilt der Regler des Gastgebers.", 17)
+	h.add_child(ScreenKit.label("flott", "HintLabel", UiFonts.size("hinweis")))
+	var hint := ScreenKit.hint("Nur die Bedenkzeit, nicht die Animationen. Im WLAN gilt der Regler des Gastgebers.", UiFonts.size("klein"))
 	hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	v.add_child(hint)
 	return v

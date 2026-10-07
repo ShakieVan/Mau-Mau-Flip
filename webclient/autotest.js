@@ -29,7 +29,9 @@
   const HINT_FELDER = { playable: 'array', wild: 'array', can_draw: 'boolean', can_keep: 'boolean', can_challenge: 'boolean', can_accept: 'boolean',
     can_mau: 'boolean', catch: 'array', need_color: 'boolean', can_next_round: 'boolean', text: 'string' };
   const SICHT_FELDER = { seat: 'number', side: 'string', phase: 'string', turn: 'number', dir: 'number', color: 'string', players: 'array', hand: 'array',
-    top: 'object', draw_back: 'string', draw_count: 'number', pending: 'object', hints: 'object', round: 'number', ranking: 'array', rules: 'object', result: 'object' };
+    top: 'object', draw_back: 'string', draw_count: 'number', pending: 'object', hints: 'object', round: 'number', ranking: 'array', rules: 'object', result: 'object', discard_log: 'array' };
+  // Einträge von view.discard_log (Ablage von unten nach oben, öffentlich): Gesicht ("" verdeckt), Leger (-1 Startkarte), Wunschfarbe, verdeckter Einsatz
+  const DISCARD_FELDER = { f: 'string', s: 'number', c: 'string', h: 'boolean' };
   const SPIELER_FELDER = { seat: 'number', name: 'string', kind: 'string', count: 'number', backs: 'array', place: 'number', mau: 'boolean', connected: 'boolean', score: 'number' };
   // Nur mit der Hausregel Glücksspiel (rules.gamble_cards = "on"); ohne sie fehlen die Felder (der Client rechnet mit Standardwerten)
   const HINT_GLUECK = { can_stake: 'array', can_press: 'boolean', can_stop: 'boolean' };
@@ -118,6 +120,18 @@
       });
       if ((h.playable || []).length || h.can_draw) this.fail('playable/can_draw in discard_pick');
     },
+    // Ablage durchsehen (auch gegen das Mock): Form je Eintrag, letzter Eintrag = oberste Karte, verdeckte Einsätze ohne Gesicht
+    vertragAblage(v) {
+      if (!v || !v.top) return;
+      const log = v.discard_log;
+      if (!Array.isArray(log)) { this.fail('Sicht.discard_log fehlt'); return; }
+      if (!log.length) { this.fail('discard_log leer trotz Ablage'); return; }
+      log.forEach(e => Object.keys(DISCARD_FELDER).forEach(k => { if (art(e[k]) !== DISCARD_FELDER[k]) this.fail('discard_log[].' + k + ': ' + art(e[k])); }));
+      if (log.some(e => e.h && e.f !== '')) this.fail('discard_log: verdeckter Einsatz mit Gesicht');
+      if (log.some(e => e.s < -1 || e.s >= (v.players || []).length)) this.fail('discard_log: Platz außerhalb');
+      if (log[log.length - 1].f !== v.top.face) this.fail('discard_log: letzter Eintrag ' + log[log.length - 1].f + ' ≠ top ' + v.top.face);
+      this.ereignisse.ablageLog = Math.max(this.ereignisse.ablageLog || 0, log.length);
+    },
     // &protokoll=1: Ablauf (Stände, eigene Entscheidungen) ans Ergebnis hängen, zur Fehlersuche
     prot(t) { if (M.param('protokoll')) { (this._prot = this._prot || []).push(t); if (this._prot.length > 60) this._prot.shift(); } },
     zustand(m) {
@@ -141,7 +155,7 @@
           if (vor && ['flip', 'color', 'choose_color'].indexOf(vor.e) < 0) this.fail('flip_surprise nicht direkt nach flip/color');
         }
       });
-      try { this.vertrag(m.view); this.vertragGlueck(m.view); this.vertragAblegen(m.view); } catch (e) { this.fail('Vertrag: ' + e); }
+      try { this.vertrag(m.view); this.vertragGlueck(m.view); this.vertragAblegen(m.view); this.vertragAblage(m.view); } catch (e) { this.fail('Vertrag: ' + e); }
     },
     fehlerNachricht(m) { this.errs++; this.notiz('err vom Gastgeber: ' + m.text); },
     notiz(t) { this.notizen.push(t); },
@@ -313,6 +327,7 @@
         }
         await this.warte(() => this.ruhig(), 10000, "Regie am Ende");
         this.pruefe();
+        await this.durchsehenTest();
         this.mauPruefung();
       } catch (e) {
         this.fail(String(e && e.message || e));
@@ -382,6 +397,24 @@
       }
       const varianten = Object.keys(t.blasenVarianten || {}).sort().map(k => k + '=' + t.blasenVarianten[k]).join(' ');
       this.notiz('Mau-Ereignisse ' + mau + ', Fertig ' + fertig + ', Blasen ' + blasen + (varianten ? ' [' + varianten + ']' : ''));
+    },
+    // Ablage durchsehen: zwei Karten zur Seite, eine zurück, Tipp daneben schiebt alle zurück (am Ende, dann ist die Ablage länger)
+    async durchsehenTest() {
+      const t = this.app.tisch, log = (this.v && this.v.discard_log) || [], sig = t._durchSig;
+      if (log.length < 2) { this.notiz('Ablage durchsehen: nur ' + log.length + ' Karte(n)'); return; }
+      const fehler = [];
+      this.klick('#ablage'); this.klick('#ablage'); await schlaf(30);
+      const z = ($('#seitenstapel .zaehler') || {}).textContent;
+      if (t.durch !== 2 || $('#seitenstapel').hidden || z !== '2 von ' + log.length) fehler.push('Ablage durchsehen: ' + t.durch + ' / ' + z);
+      if (!$('#seitenstapel .von').textContent) fehler.push('Ablage durchsehen: Leger fehlt');
+      this.klick('#seitenstapel'); await schlaf(30);
+      if (t.durch !== 1) fehler.push('Seitenstapel schiebt nicht zurück (' + t.durch + ')');
+      t.stapelZahl.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      await schlaf(30);
+      if (t.durch !== 0 || !$('#seitenstapel').hidden) fehler.push('Tipp daneben schiebt nicht alles zurück');
+      if (t._durchSig !== sig) { this.notiz('Ablage durchsehen: Ablage hat sich währenddessen geändert'); return; }
+      fehler.forEach(f => this.fail(f));
+      this.ereignisse.durchgesehen = log.length;
     },
     // Sortieren, Rückseiten, Kartenhilfe, Menü, Gegneransicht einmal bedienen
     async bedienung() {

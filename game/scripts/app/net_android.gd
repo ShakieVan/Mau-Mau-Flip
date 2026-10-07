@@ -364,3 +364,129 @@ static func usable_ipv4(ip: String) -> bool:
 	# Für die Suche brauchbare eigene Adresse: IPv4, nicht Loopback, nicht Link-local (169.254), nicht 0.0.0.0.
 	var value := ipv4_to_int(ip)
 	return value > 0 and (value >> 24) != 127 and (value >> 16) != 0xA9FE
+
+# --- Spiel-WLAN (Beta 1.0.1): eigenes WLAN per LocalOnlyHotspot (android/build/src/main/java/com/godot/game/GameWifi.java) ---
+# Der Gastgeber öffnet es per Knopf (scripts/ui/screens/game_wifi_panel.gd). Name und Passwort vergibt Android je Sitzung zufällig;
+# kein Internet für Gäste; endet mit der App. Der normale Hotspot des Nutzers wird nie geändert. Am PC (und in Tests) ersetzt
+# wifi_stub den Java-Helfer: {start_error: "" | Fehlercode, ssid, password, security, address, granted, sdk, ap_enabled}.
+
+const GAME_WIFI_PORT := 24690
+static var wifi_stub = null              # Dictionary = Simulation statt Java (PC, Tests); null = echtes Android bzw. nicht verfügbar
+static var _stub_state := {}
+
+static func _wifi_java() -> Array:
+	if OS.get_name() != "Android" or not Engine.has_singleton("AndroidRuntime"):
+		return []
+	var activity = Engine.get_singleton("AndroidRuntime").getActivity()
+	var java = JavaClassWrapper.wrap("com.godot.game.GameWifi")
+	return [java, activity] if java != null and activity != null else []
+
+static func game_wifi_available() -> bool:
+	return wifi_stub is Dictionary or not _wifi_java().is_empty()
+
+static func game_wifi_permission() -> String:
+	# Nötige Laufzeit-Erlaubnis: ab Android 13 „Geräte in der Nähe“, bis 12 der genaue Standort.
+	var j := _wifi_java()
+	if not j.is_empty():
+		return str(j[0].requiredPermission())
+	return "android.permission.NEARBY_WIFI_DEVICES" if int((wifi_stub if wifi_stub is Dictionary else {}).get("sdk", 34)) >= 33 \
+		else "android.permission.ACCESS_FINE_LOCATION"
+
+static func game_wifi_start() -> String:
+	# "" = Start angestoßen (Ergebnis über game_wifi_state()), sonst Fehlercode.
+	if wifi_stub is Dictionary:
+		var err := str(wifi_stub.get("start_error", ""))
+		if not bool(wifi_stub.get("granted", true)):
+			err = "permission"
+		_stub_state = {"status": "failed" if err != "" else "on", "error": err}
+		return err
+	var j := _wifi_java()
+	if j.is_empty():
+		return "unsupported"
+	return str(j[0].startHotspot(j[1]))
+
+static func game_wifi_stop() -> bool:
+	if wifi_stub is Dictionary:
+		var was := str(_stub_state.get("status", "")) == "on"
+		_stub_state = {"status": "off", "error": ""}
+		return was
+	var j := _wifi_java()
+	return not j.is_empty() and bool(j[0].stopHotspot())
+
+static func game_wifi_state() -> Dictionary:
+	# {status: off|starting|on|failed|stopped, ssid, password, security, error, sdk, permission, granted, location_on, ap_enabled
+	# (1 an, 0 aus, -1 unbekannt), concurrency}. Ohne Android und Stub: status "failed", error "unsupported".
+	if wifi_stub is Dictionary:
+		var on := str(_stub_state.get("status", "off")) == "on"
+		return {"status": str(_stub_state.get("status", "off")), "error": str(_stub_state.get("error", "")),
+			"ssid": str(wifi_stub.get("ssid", "AndroidShare_4821")) if on else "",
+			"password": str(wifi_stub.get("password", "k7m3x9q2w5r8t4z")) if on else "",
+			"security": str(wifi_stub.get("security", "wpa2")) if on else "", "sdk": int(wifi_stub.get("sdk", 34)),
+			"permission": game_wifi_permission(), "granted": bool(wifi_stub.get("granted", true)),
+			"location_on": bool(wifi_stub.get("location_on", true)), "ap_enabled": int(wifi_stub.get("ap_enabled", 0)), "concurrency": true}
+	var j := _wifi_java()
+	if j.is_empty():
+		return {"status": "failed", "error": "unsupported"}
+	var data = _json(j[0].hotspotState(j[1]))
+	return data if data is Dictionary else {"status": "failed", "error": "exception"}
+
+static func wifi_qr_escape(text: String) -> String:
+	# Sonderzeichen im WLAN-QR-Code (ZXing-Format): \ ; , : " mit vorangestelltem Backslash.
+	var out := ""
+	for ch in text:
+		if ch in ["\\", ";", ",", ":", "\""]:
+			out += "\\"
+		out += ch
+	return out
+
+static func wifi_qr_text(ssid: String, password: String, security := "wpa2") -> String:
+	# WLAN-QR-Code: WIFI:T:WPA;S:<ssid>;P:<passwort>;; – T steht auch bei WPA3 auf WPA (T:SAE erkennen viele Leser nicht).
+	if security == "open" or password == "":
+		return "WIFI:T:nopass;S:%s;;" % wifi_qr_escape(ssid)
+	return "WIFI:T:WPA;S:%s;P:%s;;" % [wifi_qr_escape(ssid), wifi_qr_escape(password)]
+
+static func game_url(address: String, port := GAME_WIFI_PORT) -> String:
+	return "http://%s:%d/" % [address, port] if address != "" else ""
+
+static func game_wifi_address(s: Dictionary, before: Array = []) -> String:
+	# Eigene Adresse im Spiel-WLAN aus den Netzwerkschnittstellen (nie 192.168 annehmen): eine Hotspot-Schnittstelle, bevorzugt eine,
+	# die erst nach dem Start erschien (before = Hotspot-Adressen davor). "" = noch keine.
+	var spots := hotspot_interfaces(s)
+	for i in spots:
+		if not before.has(str(i.address)):
+			return str(i.address)
+	return str(spots[0].address) if not spots.is_empty() else ""
+
+static func game_wifi_message(st: Dictionary) -> Dictionary:
+	# Deutscher Text zum Zustand: {title, text, retry (erneut versuchen sinnvoll), settings (App-Einstellungen öffnen hilft)}.
+	var err := str(st.get("error", ""))
+	var status := str(st.get("status", "off"))
+	var old := int(st.get("sdk", 33)) < 33
+	if status == "on":
+		return {"title": "Spiel-WLAN ist offen", "text": "Kein Internet für die Gäste – das ist normal. Es endet, wenn du die App schließt.",
+			"retry": false, "settings": false}
+	if status == "starting":
+		return {"title": "Spiel-WLAN wird geöffnet …", "text": "", "retry": false, "settings": false}
+	if status == "stopped":
+		return {"title": "Spiel-WLAN beendet", "text": "Android hat das Spiel-WLAN geschlossen. Tippe auf „Neu öffnen“.", "retry": true, "settings": false}
+	match err:
+		"permission":
+			return {"title": "Erlaubnis fehlt", "text": ("Ohne die Erlaubnis „Standort“ kann die App bis Android 12 kein Spiel-WLAN öffnen. Den Standort selbst nutzt sie nicht."
+				if old else "Ohne die Erlaubnis „Geräte in der Nähe“ kann die App kein Spiel-WLAN öffnen.")
+				+ " Erlaube sie beim nächsten Versuch oder in den App-Einstellungen unter „Berechtigungen“.", "retry": true, "settings": true}
+		"location_off":
+			return {"title": "Standort ist aus", "text": "Bis Android 12 braucht das Spiel-WLAN den eingeschalteten Standort. Schalte ihn in den Schnelleinstellungen ein und tippe erneut.",
+				"retry": true, "settings": false}
+		"incompatible_mode", "ap_running":
+			return {"title": "Dein Hotspot läuft", "text": "Beide gleichzeitig gehen nicht. Schalte deinen normalen Hotspot bitte in den Schnelleinstellungen aus – die App ändert ihn nie. Oder lass ihn an und verbinde die anderen damit.",
+				"retry": true, "settings": false}
+		"no_channel":
+			return {"title": "Kein freier Funkkanal", "text": "Android hat gerade keinen Kanal fürs Spiel-WLAN gefunden. Versuch es gleich noch einmal.", "retry": true, "settings": false}
+		"tethering_disallowed":
+			return {"title": "Auf diesem Handy gesperrt", "text": "Ein eigenes WLAN ist hier nicht erlaubt (z. B. Firmen-Handy oder Mobilfunkanbieter). Nimm ein anderes Handy als Gastgeber.",
+				"retry": false, "settings": false}
+		"unsupported":
+			return {"title": "Nicht verfügbar", "text": "Ein Spiel-WLAN geht nur mit der App auf Android 8 oder neuer.", "retry": false, "settings": false}
+		"":
+			return {"title": "Spiel-WLAN", "text": "Öffnet ein eigenes WLAN ohne Internet, falls sich die Handys im Hotel- oder Gäste-WLAN nicht sehen.", "retry": true, "settings": false}
+	return {"title": "Hat nicht geklappt", "text": "Das Spiel-WLAN ließ sich nicht öffnen. Versuch es noch einmal oder nutze deinen normalen Hotspot.", "retry": true, "settings": false}

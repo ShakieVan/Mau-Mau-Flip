@@ -43,16 +43,16 @@ func _build(current: RuleConfig) -> void:
 	_card.add_child(v)
 	var head := ScreenKit.hbox(16)
 	v.add_child(head)
-	var h := ScreenKit.heading("Gespeicherte Regeln", 36)
+	var h := ScreenKit.heading("Gespeicherte Regeln", UiFonts.size("ueberschrift"))
 	h.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	h.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	head.add_child(h)
 	var close := ScreenKit.button("Schließen", "GhostButton")
 	close.name = "Schliessen"
-	close.add_theme_font_size_override("font_size", 20)
+	close.add_theme_font_size_override("font_size", UiFonts.size("text"))
 	close.pressed.connect(cancel)
 	head.add_child(close)
-	v.add_child(ScreenKit.hint("Antippen wählt die Regeln. Speichern, ändern und löschen kannst du sie unter „Regeln anpassen“.", 18))
+	v.add_child(ScreenKit.hint("Antippen wählt die Regeln. Speichern, ändern und löschen kannst du sie unter „Regeln anpassen“.", UiFonts.size("hinweis")))
 	_scroll = ScreenKit.scroller()
 	_scroll.name = "Liste"
 	_scroll.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
@@ -68,7 +68,7 @@ func _build(current: RuleConfig) -> void:
 	if host != "":
 		var hb := ScreenKit.button(RuleSets.host_title(host), "PrimaryButton" if RuleSets.host_matches(current) else "GhostButton", "wlan")
 		hb.name = "Gastgeber"
-		hb.add_theme_font_size_override("font_size", 21)
+		hb.add_theme_font_size_override("font_size", UiFonts.size("text"))
 		hb.set_meta("host", true)
 		hb.pressed.connect(_pick_host)
 		flow.add_child(hb)
@@ -78,12 +78,12 @@ func _build(current: RuleConfig) -> void:
 		var n := str(all[i].name)
 		var b := ScreenKit.button(n, "PrimaryButton" if n == active else "GhostButton")
 		b.name = "Satz%d" % i
-		b.add_theme_font_size_override("font_size", 21)
+		b.add_theme_font_size_override("font_size", UiFonts.size("text"))
 		b.set_meta("set", n)
 		b.pressed.connect(_pick_set.bind(n))
 		flow.add_child(b)
 	if flow.get_child_count() == 0:
-		var e := ScreenKit.hint("Noch nichts gespeichert. Unter „Regeln anpassen“ → „Speichern unter …“ legst du einen Regelsatz an.", 20)
+		var e := ScreenKit.hint("Noch nichts gespeichert. Unter „Regeln anpassen“ → „Speichern unter …“ legst du einen Regelsatz an.", UiFonts.size("text"))
 		e.name = "Leer"
 		e.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		flow.add_child(e)

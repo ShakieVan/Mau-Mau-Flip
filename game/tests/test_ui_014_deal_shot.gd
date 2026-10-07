@@ -36,6 +36,15 @@ func run() -> void:
 	await create_timer(0.8).timeout
 	shots.append(root.get_texture().get_image())
 	_save_sheet(shots)
+	# Zurück-Knopf auf der Nachtseite (1.0.1): Ausschnitt oben links
+	ts.table.night = 1.0
+	for i in 20:
+		await process_frame
+	var night_img := root.get_texture().get_image()
+	night_img.crop(480, 240)
+	var np := ProjectSettings.globalize_path("res://").path_join("../docs/module/optik_101_zurueck_nacht.png").simplify_path()
+	night_img.save_png(np)
+	print("Bild: " + np)
 	print("RESULT: 1 ok")
 	quit(0)
 

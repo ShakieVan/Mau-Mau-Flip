@@ -5,7 +5,7 @@
 (function (M) {
   'use strict';
 
-  const VERSION = '1.0.0';
+  const VERSION = '1.0.1';
   const PROTO = 1;
   // wach.mp4 (32×32, 2 s, H.264 Baseline, ohne Ton; erzeugt mit ffmpeg) als data:-URI
   const WACH_VIDEO = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAMzbW9vdgAAAGxtdmhkAAAAAAAAAAAAAAAAAAAD6AAAB9AAAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAl50cmFrAAAAXHRraGQAAAADAAAAAAAAAAAAAAABAAAAAAAAB9AAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAACAAAAAgAAAAAAAkZWR0cwAAABxlbHN0AAAAAAAAAAEAAAfQAAAAAAABAAAAAAHWbWRpYQAAACBtZGhkAAAAAAAAAAAAAAAAAABAAAAAgABVxAAAAAAALWhkbHIAAAAAAAAAAHZpZGUAAAAAAAAAAAAAAABWaWRlb0hhbmRsZXIAAAABgW1pbmYAAAAUdm1oZAAAAAEAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAAUFzdGJsAAAAuXN0c2QAAAAAAAAAAQAAAKlhdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAACAAIABIAAAASAAAAAAAAAABFExhdmM2My4xLjEwMSBsaWJ4MjY0AAAAAAAAAAAAAAAAGP//AAAAL2F2Y0MBQsAe/+EAFmdCwB7ZCWwEQAAAAwBAAAADAQPFi5IBAAZoy4DkTIAAAAAQcGFzcAAAAAEAAAABAAAAFGJ0cnQAAAAAAAAKpAAAAAAAAAAYc3R0cwAAAAAAAAABAAAABAAAIAAAAAAUc3RzcwAAAAAAAAABAAAAAQAAABxzdHNjAAAAAAAAAAEAAAABAAAABAAAAAEAAAAkc3RzegAAAAAAAAAAAAAABAAAAogAAAALAAAACwAAAAsAAAAUc3RjbwAAAAAAAAABAAADYwAAAGF1ZHRhAAAAWW1ldGEAAAAAAAAAIWhkbHIAAAAAAAAAAG1kaXJhcHBsAAAAAAAAAAAAAAAALGlsc3QAAAAkqXRvbwAAABxkYXRhAAAAAQAAAABMYXZmNjMuMS4xMDEAAAAIZnJlZQAAArFtZGF0AAACcgYF//9u3EXpvebZSLeWLNgg2SPu73gyNjQgLSBjb3JlIDE2NSByMzIyMyAwNDgwY2IwIC0gSC4yNjQvTVBFRy00IEFWQyBjb2RlYyAtIENvcHlsZWZ0IDIwMDMtMjAyNSAtIGh0dHA6Ly93d3cudmlkZW9sYW4ub3JnL3gyNjQuaHRtbCAtIG9wdGlvbnM6IGNhYmFjPTAgcmVmPTMgZGVibG9jaz0xOi0zOi0zIGFuYWx5c2U9MHgxOjB4MTExIG1lPWhleCBzdWJtZT03IHBzeT0xIHBzeV9yZD0yLjAwOjAuNzAgbWl4ZWRfcmVmPTEgbWVfcmFuZ2U9MTYgY2hyb21hX21lPTEgdHJlbGxpcz0xIDh4OGRjdD0wIGNxbT0wIGRlYWR6b25lPTIxLDExIGZhc3RfcHNraXA9MSBjaHJvbWFfcXBfb2Zmc2V0PS00IHRocmVhZHM9MSBsb29rYWhlYWRfdGhyZWFkcz0xIHNsaWNlZF90aHJlYWRzPTAgbnI9MCBkZWNpbWF0ZT0xIGludGVybGFjZWQ9MCBibHVyYXlfY29tcGF0PTAgY29uc3RyYWluZWRfaW50cmE9MCBiZnJhbWVzPTAgd2VpZ2h0cD0wIGtleWludD0yNTAga2V5aW50X21pbj0yIHNjZW5lY3V0PTQwIGludHJhX3JlZnJlc2g9MCByY19sb29rYWhlYWQ9NDAgcmM9Y3JmIG1idHJlZT0xIGNyZj00MC4wIHFjb21wPTAuNjAgcXBtaW49MCBxcG1heD02OSBxcHN0ZXA9NCBpcF9yYXRpbz0xLjQwIGFxPTE6MS4yMACAAAAADmWIhAXznJigACX3J114AAAAB0GaOAvnOWAAAAAHQZpUAvnOWAAAAAdBmmAVznLA';
@@ -48,7 +48,7 @@
     logPuffer: [],
     // ton = Mau-Ton (Aufnahmen, Standard normal), toene = übrige Spieltöne (Dateien aus sfx/, sonst synthetisch; Standard aus), stumm = Ton-Knopf in der Ecke
     // hervorheben = spielbare Karten hervorheben (persönliche Einstellung je Gerät, AGENTS.md Nr. 24; Standard an)
-    einstellungen: { ton: 'normal', toene: 'aus', stumm: false, effekte: 'voll', sort: 'farbe', vibration: true, vollbild: true, hervorheben: true },
+    einstellungen: { ton: 'normal', toene: 'aus', stumm: false, effekte: 'voll', sort: 'farbe', vibration: true, vollbild: true, hervorheben: true, schrift: 'normal' },
     _mauZuletzt: {},       // „art:Platz“ → Zeitpunkt des letzten Mau-Tons (Entprellung)
 
     /* ---------------- Start ---------------- */
@@ -63,6 +63,8 @@
       e.vibration = Speicher.get('vibration', true);
       e.vollbild = Speicher.get('vollbild', true);
       e.hervorheben = Speicher.get('hervorheben', true) !== false;
+      e.schrift = params.get('schrift') || Speicher.get('schrift', 'normal');   // ?schrift=… nur für Kontrollbilder
+      this._schrift(e.schrift);
       M.Ton.setzeStufe(e.ton);
       M.Ton.setzeToene(e.toene);
       M.Ton.setzeStumm(e.stumm);
@@ -129,6 +131,13 @@
       // Fenster schließen
       document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', ev => {
         if (ev.target === m || ev.target.closest('.schliessen')) { ev.preventDefault(); this.schliesse(m.id); }
+      }));
+      // Schriftgröße auch auf Start und Lobby (dieselbe Einstellung wie im Menü)
+      document.querySelectorAll('.schrift-wahl').forEach(w => w.addEventListener('click', ev => {
+        const b = ev.target.closest('button[data-schrift]');
+        if (!b) return;
+        ev.preventDefault();
+        this.einstellungen.schrift = b.dataset.schrift; Speicher.set('schrift', b.dataset.schrift); this._schrift(b.dataset.schrift);
       }));
       $('#menue').addEventListener('click', ev => {
         const b = ev.target.closest('button[data-set]');
@@ -761,7 +770,14 @@
       if (k === 'toene') { M.Ton.setzeToene(wert); M.Ton.spiele('karte'); }
       if (k === 'effekte') document.body.classList.toggle('reduziert', wert === 'reduziert');
       if (k === 'hervorheben' && this.tisch && this.view) this.tisch.zeige(this.view, true);
+      if (k === 'schrift') { this._schrift(wert); if (this.tisch && this.view) this.tisch.zeige(this.view, true); }
       this.menue();
+    },
+    // Schriftgröße je Gerät: html[data-schrift] setzt --fs (style.css); Kartenbilder bleiben gleich
+    _schrift(w) {
+      if (['normal', 'gross', 'sehr_gross'].indexOf(w) < 0) w = 'normal';
+      document.documentElement.dataset.schrift = w;
+      document.querySelectorAll('.schrift-wahl button[data-schrift]').forEach(b => b.classList.toggle('an', b.dataset.schrift === w));
     },
     toast(text, art, dauer) {
       const box = $('#toasts');

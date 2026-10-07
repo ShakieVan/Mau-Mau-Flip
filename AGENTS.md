@@ -58,13 +58,16 @@ Tempo-Regler der Computergegner, vier Tauschrichtungen, „Farbe mit ablegen“ 
 
 Schein von hinten für den Spieler am Zug (ohne Kasten/Rand, erst nach dem Austeilen, Namen mit Kontur in der Gegenfarbe), Denkblase nach 5 s, eigene Kartenzahl, Flip-Überraschung (Hausregel), neue „Familie“ mit allen Zusatzkarten (alte Familie wird automatisch angehoben), Partiestart wie „Nächste Runde“, sanfte Strahlen am Rundenende, „?“ löst kein „Mau!“ mehr aus, Browser: Mond, Startbild, Rahmen statt „Bitte quer halten“. Gerätetest wurde wegen der Kranz-Korrektur abgebrochen; Kontrollbilder `docs/module/optik_014_*.png`.
 
-## Offen für Beta 1.0.1 (nach dem Release 1.0.0)
+## Erledigt in Beta 1.0.1 (veröffentlicht 07.10.2026)
 
-- **Spiel-WLAN** (Nutzerentscheidung 07.10.2026, in 1.0.1): Der Gastgeber öffnet per Knopf ein eigenes WLAN (Android LocalOnlyHotspot) und zeigt einen WLAN-QR-Code (`WIFI:T:WPA;S:…;P:…;;`), danach bzw. im Wechsel den Spiel-QR-Code. Der normale Hotspot des Nutzers wird weder benutzt noch geändert (läuft er, bittet die App, ihn auszuschalten). Name/Passwort vergibt Android zufällig je Sitzung. Kein Internet für Gäste; endet mit der App. Erlaubnis „Geräte in der Nähe“ (13+) bzw. Standort (bis 12). Einzelheiten: `docs/recherche/03_draw2race_android_infrastruktur.md` (b), `04_apk_offline_und_netz.md` (B2). Den Beitritt eines Handys ins Spiel-WLAN testet der Nutzer selbst (keine WLAN-Einstellungen per adb ändern).
+Release 1.0.0 am 07.10.2026 veröffentlicht (`ShakieVan/Mau-Mau-Flip`). Beta 1.0.1: größere Schrift mit Einstellung „Schrift“ (zentral in `UiFonts`), Ablage durchsehen (`view.discard_log`, `DiscardBrowser`), Spiel-WLAN (LocalOnlyHotspot, `GameWifi.java`, WLAN-QR + Spiel-QR, am S21 geprüft: swlan0, Server erreichbar), heller Zurück-Knopf nachts, README mit Bildergalerie. Bericht: `docs/geraetetest/1.0.1/BERICHT.md`.
 
-- **Ablage durchsehen** (Nutzerwunsch 06.10.2026, „damit Streitfragen aus dem Weg geräumt werden“): Tipp auf den Ablagestapel schiebt die oberste Karte zur Seite, Karte für Karte; Tipp auf den Seitenstapel schiebt eine zurück; Tipp irgendwo sonst schiebt alle zurück. Vorschlag: an jeder Karte steht, wer sie gelegt hat (und bei Jokern die gewünschte Farbe); Zähler „3 von 27“; legt jemand eine Karte, springt alles zurück. Gezeigt wird die Ablage, wie sie liegt (seit dem letzten Mischen; nach einem Flip gewendet). Verdeckte Glücksspiel-Einsätze unter der Ablage nur als Rückseite. App und Browser; die Sicht braucht dafür die öffentliche Ablage-Liste (kein Leck: die Ablage ist offen).
+## Offen (nach 1.0.1)
 
-- **Schrift am Handy zu klein** (Nutzer, 06.10.2026). Vorschlag: (1) kleinste Texte (Beschreibungen, Hinweise, Pillen) allgemein größer; (2) Einstellung „Schriftgröße“ (Normal/Groß/Sehr groß) je Gerät. Dafür die bisher verstreut festgelegten Schriftgrößen zentral bündeln (z. B. in UiFonts) und alle Bildschirme samt Tisch per Bildschirmfoto-Tests in allen Stufen auf Überlauf prüfen. Kartenbilder bleiben unverändert. Laut Nutzer ist „gefühlt fast überall“ außer der großen Schrift zu klein; Extreme (Bilder in `docs/geraetetest/0.1.5/`, nur lokal): am Tisch „KI“-Abzeichen, „gleich dran“, Spielernamen, Kartenzahl-Pillen, „Stapel · 83“, Hinweisleiste („+1 auf dich – Zieh 2.“); in den Bildschirmen die grauen Beschreibungen (z. B. „Du sitzt unten …“) und die Regel-Kurzfassung unter „Regeln“.
+- Beitritt eines zweiten Geräts ins Spiel-WLAN per QR (Android, iPhone) und Spiel-WLAN auf dem S10 (Standortabfrage) – Test durch den Nutzer.
+- Restliche feste Schriftgrößen: round_end_view, wish_picker, handover_screen, help_popup, pill_button, mau_button, backs_viewer.
+- Bei „Sehr groß“ und Joker berührt der Zähler unter dem Seitenstapel (Ablage durchsehen) die Hinweisleiste.
+- Lite-Client auf echten Handys mit Schrift-Einstellung und Ablage durchsehen prüfen.
 
 ## Empfehlung aus der Recherche
 

@@ -17,6 +17,7 @@ const MAU_TON := ["aus", "leise", "normal"]
 const TOENE := ["aus", "leise", "normal"]   # übrige Spieltöne (AppSound), Standard aus
 const EFFEKTE := ["voll", "reduziert"]
 const SORTIERUNG := ["farbe", "wert", "punkte", "manuell"]
+const SCHRIFT := ["normal", "gross", "sehr_gross"]   # Schriftgröße je Gerät (UiFonts.LEVELS), Beta 1.0.1
 const RECENT_NAMES := 12          # so viele zuletzt benutzte Namen (Weitergeben) bleiben gemerkt
 
 # Spielername wie Draw2Race: höchstens 12 Zeichen; Buchstaben samt Umlauten und ß, Ziffern, Leerzeichen und - _ . ' ! ?
@@ -49,7 +50,7 @@ static func defaults() -> Dictionary:
 	# hervorheben: spielbare Karten der eigenen Hand hervorheben – persönliche Einstellung je Gerät, nie eine Regel (AGENTS.md 24).
 	return {"name": "", "mau_ton": "normal", "toene": "aus", "vibration": true, "effekte": "voll", "beta": not app_version().ends_with(".0"),
 		"sortierung": "farbe", "hervorheben": true, "regeln": {}, "letzte_namen": [], "regelsaetze": [], "regeln_gastgeber": {},
-		"regelsatz_gewaehlt": "", "bot_tempo": 0.5}
+		"regelsatz_gewaehlt": "", "bot_tempo": 0.5, "schrift": "normal"}
 
 static func app_version() -> String:
 	return str(ProjectSettings.get_setting("application/config/version", "0.0.0"))
@@ -66,6 +67,8 @@ static func sanitize(key: String, value: Variant) -> Variant:
 			return value if value is String and TOENE.has(value) else null
 		"effekte":
 			return value if value is String and EFFEKTE.has(value) else null
+		"schrift":
+			return value if value is String and SCHRIFT.has(value) else null
 		"sortierung":
 			return value if value is String and SORTIERUNG.has(value) else null
 		"vibration", "beta", "hervorheben":

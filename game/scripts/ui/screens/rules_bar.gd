@@ -131,27 +131,27 @@ func _ready() -> void:
 func _build_full() -> void:
 	var head := ScreenKit.hbox(14)
 	add_child(head)
-	var l := ScreenKit.label("Regeln", "", 24)
+	var l := ScreenKit.label("Regeln", "", UiFonts.size("zeile"))
 	l.add_theme_font_override("font", UiFonts.text(700))
 	l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	head.add_child(l)
 	head.add_child(ScreenKit.spacer())
 	_edit = ScreenKit.button("Regeln anpassen", "GhostButton", "regeln")
 	_edit.name = "RegelnAnpassen"
-	_edit.add_theme_font_size_override("font_size", 21)
+	_edit.add_theme_font_size_override("font_size", UiFonts.size("text"))
 	_edit.pressed.connect(_open_editor)
 	head.add_child(_edit)
-	_choice = ScreenKit.choice(PRESETS, current().preset_name(), _on_preset, 21)
+	_choice = ScreenKit.choice(PRESETS, current().preset_name(), _on_preset, UiFonts.px(21))   # vier Knöpfe in einer Reihe: etwas kleiner
 	for b in _choice.get_children():
 		(b as Control).size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	add_child(_choice)
 	_saved_btn = ScreenKit.button("", "GhostButton", "regeln")
 	_saved_btn.name = "Gespeichert"
-	_saved_btn.add_theme_font_size_override("font_size", 21)
+	_saved_btn.add_theme_font_size_override("font_size", UiFonts.size("text"))
 	_saved_btn.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	_saved_btn.pressed.connect(open_picker)
 	add_child(_saved_btn)
-	_summary = ScreenKit.hint("", 18)
+	_summary = ScreenKit.hint("", UiFonts.size("hinweis"))
 	add_child(_summary)
 
 
@@ -161,19 +161,19 @@ func _build_compact() -> void:
 	_edit = ScreenKit.button("Regeln", "GhostButton", "regeln")
 	_edit.name = "RegelnAnpassen"
 	_edit.tooltip_text = "Regeln anpassen"
-	_edit.add_theme_font_size_override("font_size", 22)
+	_edit.add_theme_font_size_override("font_size", UiFonts.size("text"))
 	_edit.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_edit.pressed.connect(_open_editor)
 	row.add_child(_edit)
-	var texts := ScreenKit.vbox(2)
+	var texts := ScreenKit.vbox(0)
 	texts.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	texts.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(texts)
-	_head = ScreenKit.label("", "", 21)
+	_head = ScreenKit.label("", "", UiFonts.px(22))   # Lobby: fünf Spieler müssen über der Regelzeile ganz sichtbar bleiben
 	_head.name = "RegelnKopf"
 	_head.add_theme_font_override("font", UiFonts.text(800))
 	texts.add_child(_head)
-	_summary = ScreenKit.hint("", 16)
+	_summary = ScreenKit.hint("", UiFonts.size("klein"))
 	_summary.max_lines_visible = 2
 	_summary.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	texts.add_child(_summary)
@@ -184,7 +184,7 @@ func _build_compact() -> void:
 	texts.add_child(_offer)
 	_offer_btn = ScreenKit.button("", "GhostButton", "wlan")
 	_offer_btn.name = "Uebernehmen"
-	_offer_btn.add_theme_font_size_override("font_size", 19)
+	_offer_btn.add_theme_font_size_override("font_size", UiFonts.size("hinweis"))
 	_offer_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_offer_btn.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	_offer_btn.pressed.connect(adopt_host_rules)

@@ -3,7 +3,7 @@ extends SceneTree
 # events_for in Bot-Partien), JSON-Tauglichkeit, Determinismus, to_dict/from_dict-Rundreise.
 
 const VIEW_KEYS := ["v", "seat", "side", "phase", "turn", "dir", "color", "wish", "colors", "players", "hand", "top", "draw_back",
-	"draw_count", "discard_count", "pending", "drawn", "hints", "round", "dealer", "ranking", "result", "rules"]
+	"draw_count", "discard_count", "pending", "drawn", "hints", "round", "dealer", "ranking", "result", "rules", "discard_log"]
 const PLAYER_KEYS := ["seat", "name", "kind", "count", "backs", "place", "mau", "connected", "score"]
 const HINT_KEYS := ["playable", "wild", "can_draw", "can_keep", "can_challenge", "can_accept", "can_mau", "catch", "need_color",
 	"can_next_round", "text"]
@@ -225,6 +225,11 @@ func _expected_keys(g: MauGame, s: int) -> Dictionary:
 				_add(want, g._key[g.faces[oth + int(id)]])
 	if not g.discard.is_empty():
 		_add(want, g._key[g.faces[act + int(g.discard.back())]])
+	# Ablage-Protokoll: alle Ablagekarten der aktiven Seite, außer verdeckten Glücksspiel-Einsätzen unter der obersten Karte.
+	for i in g.discard.size():
+		var did := int(g.discard[i])
+		if i == g.discard.size() - 1 or not bool((g.dlog.get(did, {}) as Dictionary).get("h", false)):
+			_add(want, g._key[g.faces[act + did]])
 	if not g.draw_pile.is_empty():
 		_add(want, g._key[g.faces[oth + int(g.draw_pile.back())]])
 	if g.config.backs_visible:
@@ -237,6 +242,27 @@ func _expected_keys(g: MauGame, s: int) -> Dictionary:
 			for k in h:
 				_add(want, str(k))
 	return want
+
+
+# view.discard_log: genau die Ablage von unten nach oben, Felder {f, s, c, h}; verdeckt nur Einsätze unter der obersten Karte.
+func _check_discard_log(g: MauGame, dl: Array) -> String:
+	if dl.size() != g.discard.size():
+		return "discard_log hat %d statt %d Einträge" % [dl.size(), g.discard.size()]
+	for i in dl.size():
+		var e: Dictionary = dl[i]
+		var ks: Array = e.keys()
+		ks.sort()
+		if ks != ["c", "f", "h", "s"]:
+			return "discard_log mit Feldern %s" % str(e.keys())
+		var did := int(g.discard[i])
+		var hid := bool(e.h)
+		if hid != (i < dl.size() - 1 and bool((g.dlog.get(did, {}) as Dictionary).get("h", false))):
+			return "discard_log[%d]: verdeckt falsch" % i
+		if (str(e.f) == "") != hid or (not hid and str(e.f) != g._key[g.faces[g.side * g.n_cards + did]]):
+			return "discard_log[%d]: Gesicht falsch" % i
+		if int(e.s) < -1 or int(e.s) >= g.players.size():
+			return "discard_log[%d]: Leger %d" % [i, int(e.s)]
+	return ""
 
 
 func _add(d: Dictionary, k: String) -> void:
@@ -309,6 +335,9 @@ func _leak_view(g: MauGame, s: int, secrets: Array) -> String:
 			return "Platz %d: Spielerfelder %s" % [s, str(p.keys())]
 	if s < 0 and not (v.hand as Array).is_empty():
 		return "Zuschauer mit Hand"
+	var why := _check_discard_log(g, v.discard_log)
+	if why != "":
+		return "Platz %d: %s" % [s, why]
 	if int(v.drawn) >= 0 and (s != g.current or g.state != "drawn"):
 		return "gezogene id für Platz %d sichtbar" % s
 	for id in v.hints.playable:

@@ -12,8 +12,8 @@ const NIGHT_HI := Color("#161C3F")
 const NIGHT_PANEL := Color("#1B2147")
 const MOON := Color("#F4F0FF")
 const RING := Color("#9A86FF")         # Richtungsring (Lavendel)
-const MUTED_NIGHT := Color("#C9C3E8")  # Nebentext auf Nacht
-const MUTED_DAY := Color("#6E6178")    # Nebentext auf Papier
+const MUTED_NIGHT := Color("#DCD7F4")  # Nebentext auf Nacht (1.0.1 heller: mehr Kontrast)
+const MUTED_DAY := Color("#4F4459")    # Nebentext auf Papier (1.0.1 dunkler: mehr Kontrast)
 const TURN := Color("#FFD65A")         # Zugmarke (warmes Gelb)
 const ALERT := Color("#E5484D")        # Strafe/Erwischt (kein großflächiges Rot)
 

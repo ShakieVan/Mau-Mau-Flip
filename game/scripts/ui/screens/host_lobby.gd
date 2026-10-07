@@ -22,6 +22,7 @@ var _rules: RulesBar
 var _bot_minus: Button
 var _bot_plus: Button
 var _confirm: ConfirmBox
+var _wifi_panel: GameWifiPanel        # Spiel-WLAN (Beta 1.0.1), Zurück schließt es
 var _started := false
 var _focus_id := -1                 # Spieler, zu dem die Liste nach dem nächsten Neuaufbau rollt
 var _focus_last := false            # … bzw. zum letzten (neuer Computergegner)
@@ -35,8 +36,15 @@ func build() -> void:
 	host.lobby_changed.connect(_on_lobby)
 	host.notice.connect(func(t: String) -> void: toast(t))
 	# Kopfzeile rechts: Spielerzahl und Computergegner
-	var tools := ScreenKit.hbox(12)
-	_count = ScreenKit.label("", "HintLabel", 21)
+	var tools := ScreenKit.hbox(8)
+	# Spiel-WLAN (Beta 1.0.1, GameWifiPanel): eigenes WLAN mit WLAN-QR-Code, nur mit App auf Android (am PC per NetAndroid.wifi_stub)
+	if NetAndroid.game_wifi_available():
+		var wifi_button := ScreenKit.button("Spiel-WLAN", "GhostButton", "wlan")
+		wifi_button.name = "SpielWlan"
+		wifi_button.tooltip_text = "Spiel-WLAN öffnen"
+		wifi_button.pressed.connect(func() -> void: _wifi_panel = GameWifiPanel.open(self, host))
+		tools.add_child(wifi_button)
+	_count = ScreenKit.label("", "HintLabel", UiFonts.size("text"))
 	_count.name = "Spielerzahl"
 	_count.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	tools.add_child(_count)
@@ -45,7 +53,7 @@ func build() -> void:
 	_bot_minus.tooltip_text = "Computergegner entfernen"
 	_bot_minus.pressed.connect(_remove_bot)
 	tools.add_child(_bot_minus)
-	var bl := ScreenKit.label("Computer", "", 21)
+	var bl := ScreenKit.label("Computer", "", UiFonts.size("text"))
 	bl.add_theme_font_override("font", UiFonts.text(700))
 	bl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	tools.add_child(bl)
@@ -65,7 +73,10 @@ func build() -> void:
 	left.custom_minimum_size = Vector2(520, 0)
 	cols.add_child(left)
 	var lv := ScreenKit.vbox(10)
-	left.add_child(lv)
+	var lscroll := ScreenKit.scroller()   # große Schrift: Hinweise blättern statt abschneiden
+	left.add_child(lscroll)
+	lv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	lscroll.add_child(lv)
 	var qrow := ScreenKit.hbox(20)
 	lv.add_child(qrow)
 	_qr = TextureRect.new()
@@ -78,19 +89,19 @@ func build() -> void:
 	var qtext := ScreenKit.vbox(6)
 	qtext.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	qrow.add_child(qtext)
-	qtext.add_child(ScreenKit.heading("Ohne App mitspielen", 26))
-	qtext.add_child(ScreenKit.hint("QR-Code mit der Kamera scannen oder die Adresse im Browser eintippen:", 18))
-	_url = ScreenKit.label("", "", 25)
+	qtext.add_child(ScreenKit.heading("Ohne App mitspielen", UiFonts.size("zeile")))
+	qtext.add_child(ScreenKit.hint("QR-Code mit der Kamera scannen oder die Adresse im Browser eintippen:", UiFonts.size("hinweis")))
+	_url = ScreenKit.label("", "", UiFonts.size("zeile"))
 	_url.name = "Adresse"
 	_url.add_theme_font_override("font", UiFonts.text(800, 90.0))
 	_url.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
 	qtext.add_child(_url)
-	_more = ScreenKit.hint("", 16)
+	_more = ScreenKit.hint("", UiFonts.size("klein"))
 	qtext.add_child(_more)
-	lv.add_child(ScreenKit.hint("• Mit App: „Im WLAN spielen“ → „Beitreten“, das Spiel erscheint von selbst.", 18))
-	lv.add_child(ScreenKit.hint("• Warnseite „nicht sicher“? Das ist normal im eigenen WLAN: „Weiter“ bzw. „Trotzdem öffnen“.", 18))
-	lv.add_child(ScreenKit.hint("• iPhone: am besten mit Safari öffnen.", 18))
-	lv.add_child(ScreenKit.hint("• Hotel- oder Gäste-WLAN sieht sich oft nicht gegenseitig: dann einen Hotspot an diesem Handy öffnen und die anderen damit verbinden.", 18))
+	lv.add_child(ScreenKit.hint("• Mit App: „Im WLAN spielen“ → „Beitreten“, das Spiel erscheint von selbst.", UiFonts.size("hinweis")))
+	lv.add_child(ScreenKit.hint("• Warnseite „nicht sicher“? Das ist normal im eigenen WLAN: „Weiter“ bzw. „Trotzdem öffnen“.", UiFonts.size("hinweis")))
+	lv.add_child(ScreenKit.hint("• iPhone: am besten mit Safari öffnen.", UiFonts.size("hinweis")))
+	lv.add_child(ScreenKit.hint("• Hotel- oder Gäste-WLAN sieht sich oft nicht gegenseitig: dann oben „Spiel-WLAN“ tippen und die anderen damit verbinden.", UiFonts.size("hinweis")))
 	# --- rechts: Spieler (Bildlauf), darunter Regeln und Start
 	var right := ScreenKit.card(24.0)
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -120,7 +131,7 @@ func build() -> void:
 	_start = ScreenKit.button("Start", "PrimaryButton", "start", 200.0)
 	_start.name = "Start"
 	_start.custom_minimum_size = Vector2(210, 92)
-	_start.add_theme_font_size_override("font_size", 30)
+	_start.add_theme_font_size_override("font_size", UiFonts.size("start"))
 	_start.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_start.pressed.connect(start_game)
 	bottom.add_child(_start)
@@ -196,7 +207,7 @@ func _row(p: Dictionary, i: int, n: int, host_id: int) -> Control:
 	var id := int(p.get("id", -1))
 	row.name = "Spieler%d" % id
 	var kind := str(p.get("kind", "app"))
-	var no := ScreenKit.label(str(i + 1), "", 22, Color(UiPalette.INK, 0.55))
+	var no := ScreenKit.label(str(i + 1), "", UiFonts.size("text"), Color(UiPalette.INK, 0.72))
 	no.custom_minimum_size = Vector2(26, 0)
 	no.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(no)
@@ -207,7 +218,7 @@ func _row(p: Dictionary, i: int, n: int, host_id: int) -> Control:
 	texts.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	texts.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_child(texts)
-	var nl := ScreenKit.label(str(p.get("name", "")), "", 24)
+	var nl := ScreenKit.label(str(p.get("name", "")), "", UiFonts.size("zeile"))
 	nl.add_theme_font_override("font", UiFonts.text(700))
 	texts.add_child(nl)
 	var tag: String = {"app": "App", "web": "Browser", "bot": "Computer"}.get(kind, kind)
@@ -218,7 +229,7 @@ func _row(p: Dictionary, i: int, n: int, host_id: int) -> Control:
 		tag += " · getrennt"
 	elif kind != "bot" and id != host_id:
 		tag += " · verbunden" + (" · bereit" if bool(p.get("ready", false)) else "")
-	var tl := ScreenKit.label(tag, "HintLabel", 17)
+	var tl := ScreenKit.label(tag, "HintLabel", UiFonts.size("klein"))
 	if not connected:
 		tl.add_theme_color_override("font_color", UiPalette.ALERT)
 	texts.add_child(tl)
@@ -303,6 +314,10 @@ func on_back() -> bool:
 	for p in lobby.get("players", []):
 		if str(p.get("kind", "")) != "bot" and int(p.get("id", -1)) != int(lobby.get("host_id", -1)):
 			guests += 1
+	if _wifi_panel != null and is_instance_valid(_wifi_panel):
+		_wifi_panel.close()          # Spiel-WLAN bleibt offen, nur das Panel schließt
+		_wifi_panel = null
+		return true
 	if _confirm != null and is_instance_valid(_confirm):
 		_confirm.cancel()            # offene Rückfrage: Zurück heißt „Bleiben“
 		_confirm = null

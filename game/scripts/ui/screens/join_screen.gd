@@ -63,7 +63,7 @@ func build() -> void:
 	_connect_btn.name = "Verbinden"
 	_connect_btn.pressed.connect(_connect_typed)
 	top.add_child(_connect_btn)
-	_status = ScreenKit.label("Suche Spiele im WLAN …", "HintLabel", 21)
+	_status = ScreenKit.label("Suche Spiele im WLAN …", "HintLabel", UiFonts.size("text"))
 	_status.name = "Status"
 	content.add_child(_status)
 	# Suche
@@ -73,7 +73,7 @@ func build() -> void:
 	content.add_child(search)
 	var sv := ScreenKit.vbox(10)
 	search.add_child(sv)
-	sv.add_child(ScreenKit.heading("Gefundene Spiele", 28))
+	sv.add_child(ScreenKit.heading("Gefundene Spiele", UiFonts.size("zwischen")))
 	var scroll := ScreenKit.scroller()
 	sv.add_child(scroll)
 	_games = ScreenKit.vbox(10)
@@ -90,7 +90,7 @@ func build() -> void:
 	var lleft := ScreenKit.vbox(8)
 	lleft.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	lv.add_child(lleft)
-	lleft.add_child(ScreenKit.heading("Am Tisch", 28))
+	lleft.add_child(ScreenKit.heading("Am Tisch", UiFonts.size("zwischen")))
 	var lscroll := ScreenKit.scroller()
 	lleft.add_child(lscroll)
 	_lobby_list = ScreenKit.vbox(4)             # 5 Spieler passen bei 1600 × 720 ganz hinein, weitere per Wischen
@@ -99,8 +99,8 @@ func build() -> void:
 	var lright := ScreenKit.vbox(14)
 	lright.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	lv.add_child(lright)
-	lright.add_child(ScreenKit.heading("Regeln dieser Partie", 28))
-	_lobby_head = ScreenKit.text_block("", 21)
+	lright.add_child(ScreenKit.heading("Regeln dieser Partie", UiFonts.size("zwischen")))
+	_lobby_head = ScreenKit.text_block("", UiFonts.size("text"))
 	_lobby_head.name = "RegelnKopf"
 	_lobby_head.add_theme_font_override("font", UiFonts.text(800))
 	lright.add_child(_lobby_head)
@@ -108,10 +108,10 @@ func build() -> void:
 	var rscroll := ScreenKit.scroller()
 	rscroll.name = "RegelnBildlauf"
 	lright.add_child(rscroll)
-	_lobby_rules = ScreenKit.text_block("", 20)
+	_lobby_rules = ScreenKit.text_block("", UiFonts.size("text"))
 	_lobby_rules.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	rscroll.add_child(_lobby_rules)
-	_lobby_hint = ScreenKit.hint(lobby_hint(""), 19)
+	_lobby_hint = ScreenKit.hint(lobby_hint(""), UiFonts.size("hinweis"))
 	_lobby_hint.name = "Hinweis"
 	lright.add_child(_lobby_hint)
 	var brow := ScreenKit.hbox(14)
@@ -119,7 +119,7 @@ func build() -> void:
 	_save_btn = ScreenKit.button("Regeln speichern", "GhostButton", "regeln")
 	_save_btn.name = "RegelnSpeichern"
 	_save_btn.tooltip_text = "Diese Regeln als eigenen Satz speichern"
-	_save_btn.add_theme_font_size_override("font_size", 21)
+	_save_btn.add_theme_font_size_override("font_size", UiFonts.size("text"))
 	_save_btn.pressed.connect(save_rules)
 	brow.add_child(_save_btn)
 	_ready_btn = ScreenKit.button("Bereit", "PrimaryButton")
@@ -183,7 +183,7 @@ func _refresh_games() -> void:
 		c.queue_free()
 	var list: Array = discovery.games_list() if discovery != null else []
 	if list.is_empty():
-		_games.add_child(ScreenKit.hint("Noch nichts gefunden. Der Gastgeber tippt auf „Spiel eröffnen“; beide Geräte im selben WLAN. Klappt die Suche nicht, die Adresse unter dem QR-Code des Gastgebers oben eintippen.", 20))
+		_games.add_child(ScreenKit.hint("Noch nichts gefunden. Der Gastgeber tippt auf „Spiel eröffnen“; beide Geräte im selben WLAN. Klappt die Suche nicht, die Adresse unter dem QR-Code des Gastgebers oben eintippen.", UiFonts.size("text")))
 		return
 	_status.text = "%d %s gefunden – antippen zum Beitreten." % [list.size(), "Spiel" if list.size() == 1 else "Spiele"]
 	for g in list:
@@ -206,7 +206,7 @@ func _game_button(g: Dictionary) -> Control:
 	texts.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	texts.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	inner.add_child(texts)
-	var t := ScreenKit.label("Spiel von %s" % name_text, "", 28)
+	var t := ScreenKit.label("Spiel von %s" % name_text, "", UiFonts.size("zwischen"))
 	t.add_theme_font_override("font", UiFonts.title(800, false, 50.0, 48.0))
 	texts.add_child(t)
 	var detail := "%d %s · %s" % [int(g.get("players", 0)), "Spieler", str(g.get("address", ""))]
@@ -214,7 +214,7 @@ func _game_button(g: Dictionary) -> Control:
 		detail += " · Partie läuft"
 	if not bool(g.get("compatible", true)):
 		detail += " · andere Version (%s)" % str(g.get("version", "?"))
-	texts.add_child(ScreenKit.label(detail, "HintLabel", 19))
+	texts.add_child(ScreenKit.label(detail, "HintLabel", UiFonts.size("hinweis")))
 	var addr := str(g.get("address", ""))
 	var port := int(g.get("port", NetProtocol.PORT))
 	b.pressed.connect(func() -> void: join(addr, port))
@@ -333,7 +333,7 @@ func _on_lobby(l: Dictionary) -> void:
 		var av := ScreenKit.avatar(i, str(p.get("name", "?")), "bot" if kind == "bot" else "human", 46.0)
 		av.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		row.add_child(av)
-		var n := ScreenKit.label(str(p.get("name", "")) + ("  (du)" if int(p.get("id", -2)) == me else ""), "", 23)
+		var n := ScreenKit.label(str(p.get("name", "")) + ("  (du)" if int(p.get("id", -2)) == me else ""), "", UiFonts.size("text"))
 		n.add_theme_font_override("font", UiFonts.text(700))
 		n.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		n.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -345,7 +345,7 @@ func _on_lobby(l: Dictionary) -> void:
 			tag += " · getrennt"
 		elif bool(p.get("ready", false)):
 			tag += " · bereit"
-		var tl := ScreenKit.label(tag, "HintLabel", 18)
+		var tl := ScreenKit.label(tag, "HintLabel", UiFonts.size("hinweis"))
 		tl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		row.add_child(tl)
 		_lobby_list.add_child(row)

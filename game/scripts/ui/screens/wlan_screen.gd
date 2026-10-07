@@ -9,7 +9,7 @@ func build() -> void:
 	var content := page("Im WLAN spielen")
 	var name_row := ScreenKit.hbox(16)
 	content.add_child(name_row)
-	var l := ScreenKit.label("Dein Name", "", 26)
+	var l := ScreenKit.label("Dein Name", "", UiFonts.size("zeile"))
 	l.add_theme_font_override("font", UiFonts.text(700))
 	l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	name_row.add_child(l)
@@ -43,13 +43,13 @@ func _choice_card(title_text: String, text: String, icon_name: String, variation
 	ic.custom_minimum_size = Vector2(56, 56)
 	ic.modulate = UiPalette.INK
 	head.add_child(ic)
-	head.add_child(ScreenKit.heading(title_text, 36))
-	v.add_child(ScreenKit.text_block(text, 22))
+	head.add_child(ScreenKit.heading(title_text, UiFonts.size("ueberschrift")))
+	v.add_child(ScreenKit.text_block(text, UiFonts.size("text")))
 	v.add_child(ScreenKit.spacer(false))
 	var b := ScreenKit.button(button_text, variation, "start")
 	b.name = button_text
 	b.custom_minimum_size = Vector2(0, 96)
-	b.add_theme_font_size_override("font_size", 28)
+	b.add_theme_font_size_override("font_size", UiFonts.size("zwischen"))
 	b.pressed.connect(action)
 	v.add_child(b)
 	return card

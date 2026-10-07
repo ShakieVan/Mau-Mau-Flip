@@ -129,6 +129,31 @@ func stop(text := "") -> void:
 func port() -> int:
 	return server.port if server != null else 0
 
+func rebind() -> String:
+	# Nach dem Öffnen des Spiel-WLANs (LocalOnlyHotspot): Bindung neu bewerten (NetAddresses.bind_for, Draw2Race-Regeln). Waren Server
+	# und Suche ans WLAN gebunden, erreichen sie die Spiel-WLAN-Gäste nicht; dann entstehen beide neu auf demselben Port, solange noch
+	# kein Mitspieler verbunden ist. "" = passt, sonst deutscher Hinweis.
+	if server == null:
+		return ""
+	var before := NetAddresses.bound_to
+	var now := NetAddresses.bind_for("host")
+	if now == before:
+		return ""
+	var guests := players.values().filter(func(p): return not bool(p.get("local", false)) and int(p.get("conn", -1)) >= 0)
+	if not guests.is_empty():
+		return "Mitspieler sind schon verbunden. Damit das Spiel-WLAN klappt, eröffne das Spiel neu."
+	var p := server.port
+	server.stop()
+	var err := server.start(p, p)
+	if err != OK:
+		err = server.start(NetProtocol.PORT, NetProtocol.PORT_LAST)
+	if err != OK:
+		return "Das Spiel ließ sich nicht neu öffnen. Bitte zurück und neu eröffnen."
+	if discovery != null:
+		discovery.start_host(info(), discovery_port)
+	_log("Neu gebunden (%s → %s) auf Port %d" % [before if before != "" else "ungebunden", now if now != "" else "ungebunden", server.port])
+	return ""
+
 func _process(_delta: float) -> void:
 	if auto_poll:
 		poll()

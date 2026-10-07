@@ -81,6 +81,15 @@ func _pill(center: Vector2, text: String, font: Font, fs: int, bg: Color, fg: Co
 	draw_string(font, Vector2(center.x - tw * 0.5, center.y + fs * 0.36), text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, fg)
 
 
+# Höhen wachsen mit der Schriftgröße (UiFonts)
+func hint_h() -> float:
+	return maxf(HINT_H, UiFonts.size("hinweisleiste") + 18.0)
+
+
+func toast_h() -> float:
+	return maxf(TOAST_H, UiFonts.size("text") + 22.0)
+
+
 func _draw() -> void:
 	var cx := size.x * 0.5
 	var f := UiFonts.text(700, 100.0)
@@ -88,11 +97,11 @@ func _draw() -> void:
 		var s := 1.0 + 0.12 * sin(_hint_pop * PI)
 		draw_set_transform(Vector2(cx, hint_y) * (1.0 - s), 0.0, Vector2(s, s))
 		if highlight:
-			_pill(Vector2(cx, hint_y), hint, f, 19, UiPalette.CREAM if night > 0.5 else UiPalette.INK, UiPalette.INK if night > 0.5 else UiPalette.CREAM, HINT_H)
+			_pill(Vector2(cx, hint_y), hint, f, UiFonts.size("hinweisleiste"), UiPalette.CREAM if night > 0.5 else UiPalette.INK, UiPalette.INK if night > 0.5 else UiPalette.CREAM, hint_h())
 		else:
-			_pill(Vector2(cx, hint_y), hint, f, 18, UiPalette.ui_fill(night), UiPalette.ui_text(night), HINT_H - 4.0, UiPalette.ui_line(night))
+			_pill(Vector2(cx, hint_y), hint, f, UiFonts.size("hinweisleiste") - 1, UiPalette.ui_fill(night), UiPalette.ui_text(night), hint_h() - 4.0, UiPalette.ui_line(night))
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	var y := hint_y - HINT_H * 0.5 - 14.0 - TOAST_H * 0.5
+	var y := hint_y - hint_h() * 0.5 - 14.0 - toast_h() * 0.5
 	for i in range(_toasts.size() - 1, -1, -1):
 		var t: Dictionary = _toasts[i]
 		var age := float(t["t"])
@@ -107,5 +116,5 @@ func _draw() -> void:
 				border = Color(UiPalette.TURN, a)
 			"error":
 				border = Color(UiPalette.ALERT, a)
-		_pill(Vector2(cx, y + (1.0 - a) * 10.0), str(t["text"]), f, 19, bg, fg, TOAST_H, border)
-		y -= TOAST_H + 8.0
+		_pill(Vector2(cx, y + (1.0 - a) * 10.0), str(t["text"]), f, UiFonts.size("text"), bg, fg, toast_h(), border)
+		y -= toast_h() + 8.0

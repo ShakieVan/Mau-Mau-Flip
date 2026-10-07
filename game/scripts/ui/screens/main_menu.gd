@@ -28,18 +28,18 @@ func build() -> void:
 	left.add_child(_logo)
 	var foot := ScreenKit.hbox(14)
 	left.add_child(foot)
-	_version = ScreenKit.label("Version %s · Ein Hobbyprojekt von ShakieVan" % _version_text(), "HintLabel", 19)
+	_version = ScreenKit.label("Version %s · Ein Hobbyprojekt von ShakieVan" % _version_text(), "HintLabel", UiFonts.size("hinweis"))
 	_version.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	foot.add_child(_version)
 	foot.add_child(ScreenKit.spacer())
 	var share := ScreenKit.button("App teilen", "GhostButton", "teilen")
-	share.add_theme_font_size_override("font_size", 21)
+	share.add_theme_font_size_override("font_size", UiFonts.size("text"))
 	share.name = "AppTeilen"
 	share.pressed.connect(_share)
 	foot.add_child(share)
 	_update_btn = ScreenKit.button("Update ↓", "PrimaryButton", "update")
 	_update_btn.name = "Update"
-	_update_btn.add_theme_font_size_override("font_size", 21)
+	_update_btn.add_theme_font_size_override("font_size", UiFonts.size("text"))
 	_update_btn.visible = false
 	_update_btn.pressed.connect(func() -> void: nav.push(SettingsScreen.new()))
 	foot.add_child(_update_btn)
@@ -106,10 +106,10 @@ func _big(text: String, sub: String, icon_name: String, variation := "") -> Butt
 	texts.alignment = BoxContainer.ALIGNMENT_CENTER
 	texts.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	inner.add_child(texts)
-	var t := ScreenKit.label(text, "", 31)
+	var t := ScreenKit.label(text, "", UiFonts.size("zwischen"))
 	t.add_theme_font_override("font", UiFonts.title(800, false, 50.0, 48.0))
 	texts.add_child(t)
-	var s := ScreenKit.label(sub, "", 19, Color(UiPalette.INK, 0.62))
+	var s := ScreenKit.label(sub, "", UiFonts.size("hinweis"), Color(UiPalette.INK, 0.78))
 	texts.add_child(s)
 	return b
 

@@ -23,6 +23,8 @@ func _init() -> void:
 		and AppSettings.sanitize("regeln_gastgeber", {"host": "Lena"}) == null, "Regelsätze und Gastgeber-Regeln: Standard leer, Prüfung (Einzelheiten: test_rule_sets)")
 	check(s.get_value("regelsatz_gewaehlt") == "" and AppSettings.sanitize("regelsatz_gewaehlt", 3) == null
 		and AppSettings.sanitize("regeln_gastgeber", {"host": "Lena", "regeln": {}}) == null, "zuletzt gewählter Satz: Standard leer; Gastgeber ohne Regeln ungültig")
+	check(s.get_value("schrift") == "normal" and AppSettings.sanitize("schrift", "gross") == "gross" and AppSettings.sanitize("schrift", "riesig") == null
+		and AppSettings.sanitize("schrift", 2) == null, "Schriftgröße: Standard normal, nur normal/gross/sehr_gross")
 	check(not FileAccess.file_exists(path), "ohne Änderung keine Datei")
 	# Sofort gespeichert und beim nächsten Start wieder geladen; JSON-Zahlen kommen als float zurück.
 	check(s.set_value("mau_ton", "leise") and FileAccess.file_exists(path), "set_value speichert sofort")

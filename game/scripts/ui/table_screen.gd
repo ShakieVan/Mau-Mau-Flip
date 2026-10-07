@@ -42,6 +42,9 @@ var leaving := false
 
 var _top: Control
 var _menu_btn: Button
+var _menu_night := -1                  # zuletzt angewandte Seite des Zurück-Knopfs (0 Tag, 1 Nacht)
+var _menu_icon_day: Texture2D
+var _menu_icon_night: Texture2D
 var _round_menu: Button
 var _conn: PanelContainer
 var _conn_label: Label
@@ -238,6 +241,7 @@ func _process(_delta: float) -> void:
 		return
 	_round_menu.visible = table.round_end.visible and not table.handover.visible
 	_menu_btn.visible = not table.handover.visible
+	_sync_menu_night()
 	# „Computer spielt für …“ verdeckt sonst die Frage über dem Farbrad (Ablegen-Joker)
 	if _sub_btn != null:
 		_sub_btn.visible = _sub_seat >= 0 and not table.wish_picker.is_open()
@@ -538,6 +542,51 @@ func _set_peek(on: bool) -> void:
 
 
 # ================================================================= Verlassen
+
+# Zurück-Knopf nachts hell (Nutzerbefund 07.10.2026: auf der Nachtseite unsichtbar): heller Pfeil und heller Rand, tagsüber wie bisher.
+func _sync_menu_night() -> void:
+	var n := 1 if table.night > 0.5 else 0
+	if n == _menu_night:
+		return
+	_menu_night = n
+	if _menu_icon_day == null:
+		_menu_icon_day = _menu_btn.icon
+		_menu_icon_night = _tinted(_menu_icon_day, UiPalette.PAPER)
+	_menu_btn.icon = _menu_icon_night if n == 1 else _menu_icon_day
+	_menu_btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	for ic in ["icon_normal_color", "icon_hover_color", "icon_pressed_color", "icon_focus_color", "icon_hover_pressed_color"]:
+		if n == 1:
+			_menu_btn.add_theme_color_override(ic, Color.WHITE)
+		else:
+			_menu_btn.remove_theme_color_override(ic)
+	for st in ["normal", "hover", "pressed", "focus"]:
+		if n == 1:
+			var sb := StyleBoxFlat.new()
+			sb.bg_color = Color(UiPalette.PAPER, 0.10 if st == "normal" else 0.2)
+			sb.border_color = Color(UiPalette.PAPER, 0.75)
+			sb.set_border_width_all(2)
+			sb.set_corner_radius_all(int(ScreenKit.TOUCH * 0.5))
+			_menu_btn.add_theme_stylebox_override(st, sb)
+		else:
+			_menu_btn.remove_theme_stylebox_override(st)
+
+
+static func _tinted(tex: Texture2D, col: Color) -> Texture2D:
+	if tex == null:
+		return null
+	var img := tex.get_image()
+	if img == null:
+		return tex
+	img = img.duplicate()
+	img.decompress()
+	img.convert(Image.FORMAT_RGBA8)
+	for y in img.get_height():
+		for x in img.get_width():
+			var c := img.get_pixel(x, y)
+			if c.a > 0.0:
+				img.set_pixel(x, y, Color(col.r, col.g, col.b, c.a))
+	return ImageTexture.create_from_image(img)
+
 
 func on_back() -> bool:
 	if leaving:

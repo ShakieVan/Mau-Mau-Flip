@@ -61,10 +61,21 @@ func _ready() -> void:
 	get_tree().quit_on_go_back = false
 	_bg.tageszeit = 0.0
 	_bg.motion = not UiApp.reduced_effects()
+	# Einstellung „Schriftgröße“ (je Gerät): beim Start setzen, Änderungen wirken live auf alles schon Gebaute
+	UiFonts.set_level(str(UiApp.setting("schrift", "normal")), get_tree().root)
+	var app := UiApp.app()
+	var st: Variant = app.get("settings") if app != null else null
+	if st is Object and (st as Object).has_signal("changed"):
+		(st as Object).connect("changed", _on_setting_changed)
 	resized.connect(_on_resized)
 	_on_resized()
 	if autostart and stack.is_empty():
 		push(MainMenuScreen.new(), false)
+
+
+func _on_setting_changed(key: String, value: Variant) -> void:
+	if key == "schrift" and is_inside_tree():
+		UiFonts.set_level(str(value), get_tree().root)
 
 
 func _on_resized() -> void:
@@ -130,7 +141,14 @@ func _apply_keyboard(kb: float, field: Control) -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	var sc := _scroll_of(field) if is_instance_valid(field) and field.is_inside_tree() else null
+	var extra := 0.0
 	if sc != null:
+		# Bildlauf niedriger als das Feld (große Schrift, fester Inhalt darüber und darunter): Bildschirm oben um den Rest
+		# hinausschieben, damit der Bildlauf das Feld ganz zeigen kann
+		if sc.size.y < field.size.y + 8.0:
+			extra = field.size.y + 8.0 - sc.size.y
+			_set_screen_bottom(s, kb - extra, extra)
+			await get_tree().process_frame
 		sc.ensure_control_visible(field)
 		await get_tree().process_frame
 	if is_instance_valid(field) and field.is_inside_tree() and is_instance_valid(s) and _kb_screen == s:
@@ -138,7 +156,7 @@ func _apply_keyboard(kb: float, field: Control) -> void:
 		var free := get_viewport().get_visible_rect().size.y - kb - KB_GAP
 		var lift := clampf(r.end.y - free, 0.0, maxf(0.0, r.position.y - KB_GAP))
 		if lift > 0.0:
-			_set_screen_bottom(s, kb, lift)
+			_set_screen_bottom(s, kb - extra, lift + extra)
 	_kb_busy = false
 
 

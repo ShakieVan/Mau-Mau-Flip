@@ -93,6 +93,7 @@ var pass_streak := 0             # aufeinanderfolgende Züge ohne Karte (beide S
 var seen := {}                   # Lagen bei fast leeren Stapeln → Anzahl (Stillstandsregel, _stalled)
 var gamble := {}                 # laufendes Glücksspiel {seat, q (geheim, 1–10), stake: [ids], need: "stake"|"press", last}
 var dpick := {}                  # offene Ablege-Auswahl {seat, color (Ablegefarbe), card (Ablegen-Karte), wild}
+var dlog := {}                   # Ablage-Protokoll: id → {s: Leger (-1 Startkarte), c: Wunschfarbe, h: verdeckter Einsatz}
 
 var _valid := true              # false bei ungültiger Spielerzahl: start_round() und apply() lehnen ab
 var _forced_rolls: Array = []   # Testhaken (force_rolls): vorgegebene Ergebnisse der nächsten Drucke, nicht gespeichert
@@ -435,6 +436,7 @@ func _act_color(seat: int, action: Dictionary, ev: Array) -> String:
 		return "Wähle eine Farbe der %s." % RulesText.side_name(SIDES[side])
 	color = c
 	wished = true
+	_note_wish(c)
 	ev.append({"e": "color", "color": c, "seat": seat})
 	if _surprise_kind() != "":
 		_surprise(seat, ev)                # Wünscher +2/Farbjagd oben nach dem Flip
@@ -560,6 +562,7 @@ func _act_discard_pick(seat: int, action: Dictionary, ev: Array) -> String:
 	if wild:
 		color = wish
 		wished = true
+		_note_wish(wish)
 		ev.append({"e": "color", "color": wish, "seat": seat})
 	_play_rest(seat, DISCARD_WILD if wild else DISCARD, true, [], ev)
 	return ""
@@ -589,6 +592,8 @@ func _stake_under(seat: int, reason: String, ev: Array) -> void:
 	var keys: Array = []
 	for id in stake:
 		keys.append(_key[faces[side * n_cards + int(id)]])
+	for id in stake:
+		dlog[int(id)] = {"s": seat, "c": "", "h": true}
 	var under := stake.duplicate()
 	under.append_array(discard)
 	discard = under
@@ -694,6 +699,7 @@ func _start(ev: Array) -> void:
 		faces[n_cards + id] = dd[dark[id]]
 	draw_pile = _shuffled_range(n_cards)
 	discard = []
+	dlog = {}
 	ev.append({"e": "round_start", "round": round_no, "dealer": dealer})
 	for k in config.hand_size:
 		for i in n:
@@ -719,6 +725,8 @@ func _reveal_start_card(ev: Array) -> void:
 	if color == "":         # Notfall: keine Zahl mehr im Stapel und oben ein Joker
 		color = CardDB.COLORS[SIDES[side]][_rng.randi_range(0, 3)]
 		wished = true
+	if wished:
+		_note_wish(color)
 	ev.append({"e": "color", "color": color, "seat": -1})
 
 
@@ -808,6 +816,7 @@ func _play(p: int, id: int, wish: String, legal: bool, snap: Array, ev: Array) -
 	var kind := _kind[f]
 	(hands[p] as Array).erase(id)
 	discard.append(id)
+	dlog[id] = {"s": p, "c": "", "h": false}
 	drawn_id = -1
 	pass_streak = 0
 	ev.append({"e": "play", "seat": p, "card": id, "face": _key[f]})
@@ -817,6 +826,7 @@ func _play(p: int, id: int, wish: String, legal: bool, snap: Array, ev: Array) -
 	elif wish != "":
 		color = wish
 		wished = true
+		_note_wish(wish)
 		ev.append({"e": "color", "color": wish, "seat": p})
 	else:
 		color = _color[f]
@@ -924,6 +934,7 @@ func _discard_color(p: int, id: int, col: String, chosen: Array, ev: Array) -> v
 		ids.append(c)
 		keys.append(_key[faces[side * n_cards + c]])
 		(hands[p] as Array).erase(c)
+		dlog[c] = {"s": p, "c": "", "h": false}
 	discard.pop_back()
 	discard.append_array(ids)
 	discard.append(id)
@@ -1233,7 +1244,33 @@ func _reshuffle(ev: Array) -> void:
 	_shuffle(rest)
 	draw_pile.append_array(rest)
 	discard = [top]
+	var keep: Variant = dlog.get(top)
+	dlog = {}
+	if keep != null:
+		dlog[top] = keep
 	ev.append({"e": "shuffle", "count": draw_pile.size()})
+
+
+# Wunschfarbe an der obersten Ablagekarte vermerken (Ablage-Protokoll, view.discard_log).
+func _note_wish(c: String) -> void:
+	if discard.is_empty():
+		return
+	var id := int(discard.back())
+	var e: Dictionary = dlog.get(id, {"s": -1, "c": "", "h": false})
+	e.c = c
+	dlog[id] = e
+
+
+# Öffentliches Ablage-Protokoll (für alle gleich): von unten nach oben, verdeckte Einsätze ohne Gesicht.
+func _discard_log() -> Array:
+	var out: Array = []
+	for i in discard.size():
+		var id: int = discard[i]
+		var e: Dictionary = dlog.get(id, {})
+		var hid := bool(e.get("h", false)) and i < discard.size() - 1   # oben (nach einem Flip) ist die Karte ohnehin offen
+		out.append({"f": "" if hid else _key[faces[side * n_cards + int(id)]], "s": int(e.get("s", -1)),
+			"c": str(e.get("c", "")), "h": hid})
+	return out
 
 
 func _shuffle(a: Array) -> void:
@@ -1419,7 +1456,7 @@ func view_for(seat: int) -> Dictionary:
 		"top": top, "draw_back": _draw_back(), "draw_count": draw_pile.size(), "discard_count": discard.size(),
 		"pending": pend, "drawn": drawn_id if me >= 0 and me == current and state == "drawn" else -1,
 		"hints": _hints(me), "round": round_no, "dealer": dealer, "ranking": finished.duplicate(),
-		"result": {}, "rules": config.to_dict(),
+		"result": {}, "rules": config.to_dict(), "discard_log": _discard_log(),
 	}
 	if state == "round_over" or state == "game_over":
 		v.ranking = (result.get("ranking", []) as Array).duplicate()
@@ -1660,6 +1697,7 @@ func to_dict() -> Dictionary:
 		"drawn": drawn_id, "mau_said": mau_said.duplicate(), "mau_open": mau_open, "turn_started": turn_started,
 		"place": place.duplicate(), "finished": finished.duplicate(), "scores": scores.duplicate(),
 		"result": result.duplicate(true), "pass_streak": pass_streak, "seen": _seen_list(),
+		"dlog": _dlog_list(),
 	}
 	# Laufendes Glücksspiel samt geheimer Quote (nur mit der Hausregel; ohne sie bleibt der Spielstand wie bisher).
 	if config.gamble_cards == "on":
@@ -1667,6 +1705,15 @@ func to_dict() -> Dictionary:
 	if config.discard_color == "on":
 		d["discard_pick"] = dpick.duplicate(true)
 	return d
+
+
+func _dlog_list() -> Array:
+	var out: Array = []
+	for id in discard:
+		if dlog.has(int(id)):
+			var e: Dictionary = dlog[int(id)]
+			out.append([int(id), int(e.s), str(e.c), bool(e.h)])
+	return out
 
 
 static func from_dict(d: Dictionary) -> MauGame:
@@ -1689,6 +1736,12 @@ static func from_dict(d: Dictionary) -> MauGame:
 	g.faces.resize(g.n_cards * 2)
 	g.draw_pile = _ints(d.get("draw", []))
 	g.discard = _ints(d.get("discard", []))
+	g.dlog = {}
+	var dl: Variant = d.get("dlog", [])
+	if dl is Array:
+		for e in dl:
+			if e is Array and (e as Array).size() == 4:
+				g.dlog[int(e[0])] = {"s": int(e[1]), "c": str(e[2]), "h": bool(e[3])}
 	g.hands = []
 	var hs: Array = d.get("hands", [])
 	for s in n:
