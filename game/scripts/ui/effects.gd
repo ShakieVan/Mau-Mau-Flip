@@ -12,7 +12,8 @@ var night := 0.0
 static var _glow_tex: Texture2D
 static var _dot_tex: Texture2D
 static var _rect_tex: Texture2D
-static var _star_tex: Texture2D
+static var _ray_tex: Texture2D
+static var _core_tex: Texture2D
 
 var last_celebration := ""      # für Tests: "konfetti" oder "sterne" (zuletzt gestartet)
 
@@ -61,29 +62,46 @@ static func rect_texture() -> Texture2D:
 	return _rect_tex
 
 
-static func star_texture() -> Texture2D:
-	# Fünfzackiger Stern mit geraden, spitzen Zacken (weiß, weiche Kante), wird über modulate bzw. Teilchenfarbe eingefärbt.
-	# Nutzerbefund 1.3.4: Die frühere Form (Zackenrand linear über den Winkel) hatte gebogene Kanten und wirkte wie Blumen.
-	if _star_tex == null:
+static func sparkle_ray_texture() -> Texture2D:
+	# Funkelstern (1.3.6): vier feine Lichtstrahlen (waagrecht/senkrecht), zur Spitze hin dünner und weich auslaufend, mit kleinem
+	# Glühen in der Mitte; weiß, wird über die Zeichenfarbe eingefärbt und additiv gemischt. Die kurzen Diagonalstrahlen sind
+	# dieselbe Textur, um 45° gedreht und kleiner gezeichnet. Mit Mipmaps, damit die dünnen Strahlen klein nicht flimmern.
+	# (Die fünfzackigen Sterne bis 1.3.5 gibt es nur noch im Browser.)
+	if _ray_tex == null:
 		var n := 64
-		var c := Vector2(n, n) * 0.5
-		var outer := n * 0.5 - 2.0
-		var inner := outer * 0.42
-		var pts := PackedVector2Array()
-		for i in 10:
-			var ang := -PI * 0.5 + i * PI / 5.0
-			pts.append(c + Vector2(cos(ang), sin(ang)) * (outer if i % 2 == 0 else inner))
+		var c := n * 0.5
 		var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
 		for y in n:
 			for x in n:
-				var q := Vector2(x + 0.5, y + 0.5)
-				var d := INF
-				for i in 10:
-					d = minf(d, q.distance_to(Geometry2D.get_closest_point_to_segment(q, pts[i], pts[(i + 1) % 10])))
-				var sd := -d if Geometry2D.is_point_in_polygon(q, pts) else d    # negativ = innen
-				img.set_pixel(x, y, Color(1, 1, 1, clampf(0.5 - sd / 1.2, 0.0, 1.0)))
-		_star_tex = ImageTexture.create_from_image(img)
-	return _star_tex
+				var dx := absf(x + 0.5 - c)
+				var dy := absf(y + 0.5 - c)
+				var v := 0.55 * exp(-pow(sqrt(dx * dx + dy * dy) / 6.0, 2.0))     # Glühen in der Mitte
+				for axis in 2:                                                       # Strahl entlang x bzw. y
+					var along := (dx if axis == 0 else dy) / (c - 0.5)
+					var across := dy if axis == 0 else dx
+					if along < 1.0:
+						var w := 0.6 + 2.5 * pow(1.0 - along, 1.5)                 # Breite (px) nimmt zur Spitze ab
+						v = maxf(v, exp(-pow(across / w, 2.0)) * pow(1.0 - along, 1.1))
+				img.set_pixel(x, y, Color(1, 1, 1, clampf(v, 0.0, 1.0)))
+		img.generate_mipmaps()
+		_ray_tex = ImageTexture.create_from_image(img)
+	return _ray_tex
+
+
+static func sparkle_core_texture() -> Texture2D:
+	# Heller Kern eines Funkelsterns: scharfe Mitte, weicher Lichthof
+	if _core_tex == null:
+		var n := 32
+		var c := n * 0.5
+		var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
+		for y in n:
+			for x in n:
+				var r := Vector2(x + 0.5 - c, y + 0.5 - c).length()
+				var v := exp(-pow(r / 2.6, 2.0)) + 0.32 * exp(-r / 4.5) * clampf(1.0 - r / c, 0.0, 1.0)
+				img.set_pixel(x, y, Color(1, 1, 1, clampf(v, 0.0, 1.0)))
+		img.generate_mipmaps()
+		_core_tex = ImageTexture.create_from_image(img)
+	return _core_tex
 
 
 static func additive() -> CanvasItemMaterial:
@@ -253,74 +271,130 @@ func celebrate(area: Rect2, amount := 220) -> void:
 		confetti(area, colors, amount)
 
 
-# Sternenschauer: Sterne in den übergebenen Farben fallen langsam, drehen sich sanft und funkeln; dazu ein Glitzerschweif aus
-# additiven Punkten. „Reduziert“: wenige ruhige Sterne ohne Funkeln und Schweif.
-func star_shower(area: Rect2, colors: Array, amount := 220) -> void:
-	var calm := reduced
-	var p := CPUParticles2D.new()
-	p.position = Vector2(area.get_center().x, area.position.y - 10.0)
-	p.one_shot = true
-	p.explosiveness = 0.75
-	p.amount = maxi(10, int(amount * (0.06 if calm else 0.45)))
-	p.lifetime = 2.6
-	p.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
-	p.emission_rect_extents = Vector2(area.size.x * 0.5, 8.0)
-	p.direction = Vector2(0, 1)
-	p.spread = 25.0
-	p.initial_velocity_min = 60.0
-	p.initial_velocity_max = 200.0
-	p.gravity = Vector2(0, 220)
-	p.damping_min = 20.0
-	p.damping_max = 50.0
-	p.angular_velocity_min = -90.0
-	p.angular_velocity_max = 90.0
-	p.angle_min = 0.0
-	p.angle_max = 72.0
-	p.scale_amount_min = 0.4                  # Textur 64 px (vorher 32 px bei 0,7–1,5)
-	p.scale_amount_max = 0.85
-	if not calm:
-		var tw := Curve.new()                      # Funkeln: die Größe pulsiert zweimal
-		for pt in [[0.0, 0.6], [0.2, 1.0], [0.4, 0.55], [0.6, 1.0], [0.8, 0.6], [1.0, 0.2]]:
-			tw.add_point(Vector2(pt[0], pt[1]))
-		p.scale_amount_curve = tw
-	p.texture = star_texture()
-	var g := Gradient.new()
-	g.interpolation_mode = Gradient.GRADIENT_INTERPOLATE_CONSTANT
-	var offs := PackedFloat32Array()
-	var cols := PackedColorArray()
-	for i in colors.size():
-		offs.append(float(i) / colors.size())
-		cols.append(colors[i])
-	g.offsets = offs
-	g.colors = cols
-	p.color_initial_ramp = g
-	var fade := Gradient.new()
-	fade.offsets = PackedFloat32Array([0.0, 0.8, 1.0])
-	fade.colors = PackedColorArray([Color.WHITE, Color.WHITE, Color(1, 1, 1, 0)])
-	p.color_ramp = fade
-	_one_shot(p, p.lifetime)
-	if calm:
-		return
-	var s := CPUParticles2D.new()                  # Glitzerschweif
-	s.position = p.position
-	s.one_shot = true
-	s.explosiveness = 0.2
-	s.amount = int(amount * 0.9)
-	s.lifetime = 2.6
-	s.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
-	s.emission_rect_extents = p.emission_rect_extents
-	s.direction = Vector2(0, 1)
-	s.spread = 20.0
-	s.initial_velocity_min = 40.0
-	s.initial_velocity_max = 160.0
-	s.gravity = Vector2(0, 160)
-	s.scale_amount_min = 0.25
-	s.scale_amount_max = 0.7
-	s.texture = dot_texture()
-	s.material = additive()
-	s.color_initial_ramp = g
-	s.color_ramp = fade
-	_one_shot(s, s.lifetime)
+# Sternenschauer (1.3.6, Nutzerwunsch „richtige kleine, funkelnde Sterne“ wie die Lichtschacht-Strahlen): Lichtpunkte mit hellem
+# Kern und feinen Strahlen (4 lange, 4 kurze diagonale), additiv, in den übergebenen Farben. Sie fallen und schweben wie das
+# Konfetti (2,6 s), die Strahlen werden je Stern zeitversetzt länger und kürzer und blitzen kurz auf; dazu stehende Glitzerpunkte,
+# die kurz aufleuchten. „Reduziert“: wenige ruhige Lichtpunkte ohne Blitzen und Glitzer. Ein Knoten zeichnet alles (S10).
+func star_shower(area: Rect2, colors: Array, amount := 220) -> SparkleShowerFx:
+	var fx := SparkleShowerFx.new()
+	fx.calm = reduced
+	fx.material = additive()
+	fx.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	var h := 720.0
+	if is_inside_tree():
+		h = get_viewport_rect().size.y
+	if reduced:
+		fx.setup(area, h, colors, maxi(8, int(amount * 0.05)), 0)
+	else:
+		fx.setup(area, h, colors, int(amount * 0.6), int(amount * 0.08))
+	add_child(fx)
+	return fx
+
+
+class SparkleShowerFx:
+	extends Node2D
+	const LIFE := 2.6
+	const GRAVITY := 200.0
+	var calm := false
+	var stars: Array = []       # je Stern: Start, Ort, Tempo, Größe, Farbe, Funkelphasen, Blitzzeiten
+	var glints: Array = []      # stehende Glitzerpunkte
+	var t := 0.0
+	var _end := 0.0
+
+	func setup(area: Rect2, height: float, colors: Array, count: int, glint_count: int) -> void:
+		var top := area.position.y - 10.0
+		for i in count:
+			var ang := deg_to_rad(90.0 + randf_range(-25.0, 25.0))
+			var st := {
+				"born": randf_range(0.0, 1.0) if calm else randf_range(0.0, 0.65),
+				"pos": Vector2(randf_range(area.position.x, area.end.x), top + randf_range(-8.0, 8.0)),
+				"vel": Vector2.from_angle(ang) * (randf_range(40.0, 90.0) if calm else randf_range(60.0, 200.0)),
+				"damp": randf_range(20.0, 50.0),
+				"size": randf_range(12.0, 20.0) if calm else lerpf(8.0, 28.0, pow(randf(), 0.7)),
+				"color": colors[randi() % colors.size()] if not colors.is_empty() else Color.WHITE,
+				"ph": randf() * TAU, "ph2": randf() * TAU,
+				"sp": randf_range(5.0, 9.0), "sp2": randf_range(6.0, 11.0),
+				"rot": randf_range(-0.3, 0.3), "spin": 0.0 if calm else randf_range(-0.8, 0.8),
+				"sway": randf_range(6.0, 16.0), "flash": [],
+			}
+			if not calm:                 # ein bis zwei kurze Blitze je Stern
+				for k in randi_range(1, 2):
+					(st["flash"] as Array).append(randf_range(0.25, LIFE * 0.8))
+			stars.append(st)
+		for i in glint_count:
+			var gc: Color = Color.WHITE
+			if randf() < 0.5 and not colors.is_empty():
+				gc = colors[randi() % colors.size()]
+			glints.append({
+				"born": randf_range(0.15, LIFE),
+				"pos": Vector2(randf_range(area.position.x + 20.0, area.end.x - 20.0), randf_range(height * 0.06, height * 0.8)),
+				"size": randf_range(18.0, 36.0),
+				"color": gc,
+				"rot": randf_range(-0.2, 0.2),
+			})
+		_end = LIFE + 1.0 + 0.3
+
+	func _process(delta: float) -> void:
+		t += delta
+		var g := Vector2(0, GRAVITY * (0.45 if calm else 1.0))
+		for st in stars:
+			var age: float = t - float(st["born"])
+			if age <= 0.0 or age > LIFE:
+				continue
+			var v: Vector2 = st["vel"] + g * delta
+			var sp := v.length()
+			if sp > 0.0:
+				v = v / sp * maxf(0.0, sp - float(st["damp"]) * delta)
+			st["vel"] = v
+			st["pos"] = (st["pos"] as Vector2) + (v + Vector2(cos(age * 1.7 + float(st["ph"])) * float(st["sway"]), 0.0)) * delta
+		queue_redraw()
+		if t > _end:
+			queue_free()
+
+	# Gezeichnet in drei Durchgängen (lange Strahlen, kurze Strahlen, Kerne), damit gleiche Texturen gebündelt werden
+	func _draw() -> void:
+		var ray := TableEffects.sparkle_ray_texture()
+		var core := TableEffects.sparkle_core_texture()
+		var items: Array = []        # [Ort, Drehung, lang, kurz, Kern, Farbe, Helligkeit]
+		for st in stars:
+			var age: float = t - float(st["born"])
+			if age <= 0.0 or age >= LIFE:
+				continue
+			var a := clampf(age / 0.12, 0.0, 1.0) * clampf((LIFE - age) / (LIFE * 0.2), 0.0, 1.0)
+			var s: float = st["size"]
+			var col: Color = st["color"]
+			if calm:
+				items.append([st["pos"], float(st["rot"]), s * 0.55, s * 0.25, s * 0.7, col, a * 0.7])
+				continue
+			var f := 0.0
+			for ft in st["flash"]:
+				f += exp(-pow((age - float(ft)) / 0.08, 2.0))
+			var tw1 := 0.5 + 0.5 * sin(age * float(st["sp"]) + float(st["ph"]))
+			var tw2 := 0.5 + 0.5 * sin(age * float(st["sp2"]) + float(st["ph2"]))
+			var lng := s * (0.55 + 0.45 * tw1) * (1.0 + 0.9 * f)
+			var sht := s * 0.5 * (0.45 + 0.55 * tw2) * (1.0 + 0.6 * f)
+			items.append([st["pos"], float(st["rot"]) + float(st["spin"]) * age, lng, sht, s * (0.55 + 0.25 * f), col,
+				a * (0.7 + 0.3 * tw1) * (1.0 + 0.8 * f)])
+		for gl in glints:
+			var u: float = (t - float(gl["born"])) / 0.5
+			if u <= 0.0 or u >= 1.0:
+				continue
+			var k := pow(sin(PI * u), 2.0)
+			var gs: float = gl["size"]
+			items.append([gl["pos"], float(gl["rot"]), gs * k, gs * 0.45 * k, gs * 0.5 * k, gl["color"], k * 1.3])
+		for pass_i in 3:
+			var tex := core if pass_i == 2 else ray
+			for it in items:
+				var sz: float = it[2 + pass_i]
+				if sz < 0.5:
+					continue
+				var col: Color = it[5]
+				if pass_i == 2:
+					col = col.lerp(Color.WHITE, 0.65)
+				col.a = clampf(float(it[6]), 0.0, 1.0)
+				draw_set_transform(it[0], float(it[1]) + (PI * 0.25 if pass_i == 1 else 0.0), Vector2.ONE)
+				draw_texture_rect(tex, Rect2(-Vector2(sz, sz) * 0.5, Vector2(sz, sz)), false, col)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
 # Kurzes additives Aufleuchten (Neon zündet, Treffer)

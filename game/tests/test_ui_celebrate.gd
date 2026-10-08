@@ -64,31 +64,52 @@ func _celebration() -> void:
 	fx.night = 1.0
 	fx.celebrate(area, 220)
 	check(fx.last_celebration == "sterne", "Nacht: Sternenschauer")
-	var stars := 0
-	for c in fx.get_children():
-		if c is CPUParticles2D and (c as CPUParticles2D).texture == TableEffects.star_texture():
-			stars += 1
-			check(absf((c as CPUParticles2D).lifetime - 2.6) < 0.01, "Sterne fallen so lange wie das Konfetti")
-	check(stars == 1 and fx.get_child_count() == 2, "Sterne plus Glitzerschweif")
+	# Funkelsterne (1.3.6): ein additiver Zeichenknoten, mehr und kleinere Sterne (8–28 px), je Stern eigene Funkelphase und
+	# ein bis zwei Blitze, dazu stehende Glitzerpunkte; gleiche Dauer wie das Konfetti
+	var sh := fx.get_child(0) as TableEffects.SparkleShowerFx
+	check(fx.get_child_count() == 1 and sh != null, "Nacht: ein Funkelstern-Knoten")
+	if sh != null:
+		var mat := sh.material as CanvasItemMaterial
+		check(mat != null and mat.blend_mode == CanvasItemMaterial.BLEND_MODE_ADD, "Funkelsterne additiv")
+		check(sh.stars.size() >= 120 and sh.glints.size() >= 10, "Mehr Sterne als bisher (99) plus Glitzerpunkte")
+		check(absf(TableEffects.SparkleShowerFx.LIFE - 2.6) < 0.01, "Sterne fallen so lange wie das Konfetti")
+		var sizes_ok := true
+		var phases := {}
+		var flashes_ok := true
+		for st in sh.stars:
+			sizes_ok = sizes_ok and float(st["size"]) >= 8.0 and float(st["size"]) <= 28.0
+			phases[snappedf(float(st["ph"]), 0.001)] = true
+			flashes_ok = flashes_ok and (st["flash"] as Array).size() >= 1
+		check(sizes_ok, "Sterne 8–28 px")
+		check(phases.size() > sh.stars.size() / 2, "Funkeln zeitversetzt je Stern")
+		check(flashes_ok, "Jeder Stern blitzt mindestens einmal auf")
+		var y0: float = (sh.stars[0]["pos"] as Vector2).y
+		for i in 40:
+			await process_frame
+		check(sh.t > 0.3 and ((sh.stars[0]["pos"] as Vector2).y > y0 or float(sh.stars[0]["born"]) > sh.t - 0.05), "Sterne fallen")
 	fx.night = 0.0
 	var before := fx.get_child_count()
 	fx.celebrate(area, 220)
 	check(fx.last_celebration == "konfetti" and fx.get_child_count() == before + 1, "Tag: Konfetti")
-	# reduziert: nachts wenige ruhige Sterne ohne Schweif, tags wie bisher reduziertes Konfetti
+	# reduziert: nachts wenige ruhige Lichtpunkte ohne Blitzen und Glitzer, tags wie bisher reduziertes Konfetti
 	var calm := TableEffects.new()
 	calm.reduced = true
 	root.add_child(calm)
 	calm.night = 1.0
 	calm.celebrate(area, 220)
-	var p := calm.get_child(0) as CPUParticles2D
-	check(calm.get_child_count() == 1 and p.amount <= 20 and p.scale_amount_curve == null, "Reduziert: wenige ruhige Sterne")
-	# Gerade, spitze Zacken (Nutzerbefund 1.3.4: gebogene Kanten wirkten wie Blumen): Mitte und Spitze deckend, zwischen Spitze
-	# und Tal bei Radius 18,5 durchsichtig (bei der alten, gebogenen Form lag der Rand dort erst bei ~20 → deckend)
-	var star_img := TableEffects.star_texture().get_image()
-	var c := Vector2(32, 32)
-	var mid := c + Vector2(cos(deg_to_rad(-72.0)), sin(deg_to_rad(-72.0))) * 18.5
-	check(TableEffects.star_texture().get_width() == 64 and star_img.get_pixel(32, 32).a > 0.9 and star_img.get_pixel(32, 6).a > 0.5
-			and star_img.get_pixelv(Vector2i(mid)).a < 0.2, "Sterntextur: gerade, spitze Zacken")
+	var cs := calm.get_child(0) as TableEffects.SparkleShowerFx
+	var quiet := cs != null and cs.calm and cs.stars.size() <= 20 and cs.glints.is_empty()
+	if cs != null:
+		for st in cs.stars:
+			quiet = quiet and (st["flash"] as Array).is_empty() and float(st["spin"]) == 0.0
+	check(calm.get_child_count() == 1 and quiet, "Reduziert: wenige ruhige Lichtpunkte")
+	# Strahlentextur: Mitte hell, lange Strahlen auf den Achsen bis fast zum Rand, diagonal daneben dunkel
+	var ray := TableEffects.sparkle_ray_texture().get_image()
+	check(TableEffects.sparkle_ray_texture().get_width() == 64 and ray.get_pixel(32, 32).a > 0.9 and ray.get_pixel(32, 12).a > 0.15
+			and ray.get_pixel(12, 32).a > 0.15 and ray.get_pixel(14, 14).a < 0.05 and ray.get_pixel(32, 24).a > ray.get_pixel(29, 24).a + 0.3,
+			"Strahlentextur: feine Strahlen auf den Achsen")
+	var core := TableEffects.sparkle_core_texture().get_image()
+	check(core.get_pixel(16, 16).a > 0.9 and core.get_pixel(1, 1).a < 0.05, "Kerntextur: heller Kern, weicher Rand")
 	fx.queue_free()
 	calm.queue_free()
 	# Tisch: Rundenende wählt nach der Tischseite
