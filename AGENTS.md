@@ -84,6 +84,10 @@ Release 1.1.0 am 07.10.2026 veröffentlicht. Beta 1.1.1: großer Modus in App un
 - „Regeln ansehen“/„So geht's“ bleiben vorerst doppelt (☰-Menü und Zurück-Menü).
 - Browser großer Modus: Namensliste ~36 % breit mit größerer Schrift, Ablage verdeckt den Ziehstapel nicht mehr (auch 760×300). Offen: Desktop 1280×800 kleine Stapel; Hinweis „Du bist dran“ überdeckt den unteren Stapelrand; am S10 noch selbst ansehen.
 
+## Release 1.2.0 (veröffentlicht 08.10.2026)
+
+Stand von Beta 1.1.4 als reguläres Release in `ShakieVan/Mau-Mau-Flip`.
+
 ## Erledigt in Beta 1.1.4 (veröffentlicht 08.10.2026)
 
 Großer Modus: Kopf „Reihenfolge“ mit großem Kreispfeil über der Spielerliste auch in der App (`list_header.gd`), dreht sich beim Richtungswechsel; im Browser größer. Offen: Drehung/Gegenrichtung im Browser nicht im Bild geprüft.
