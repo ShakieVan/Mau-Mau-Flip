@@ -25,3 +25,31 @@ Namen. Lite übernimmt jetzt nur noch einen Text als Namen (`webclient/app.js`).
 **Nicht am Gerät geprüft:** Abbruch des Gastgebers mit Rückkehr per Token. Das deckt `test_game_online` und `test_net_online` in
 Godot headless ab. wss/TLS lässt sich erst mit dem echten Cloudflare-Vermittler prüfen.
 Das APK auf dem S21 war der Stand vor der Lite-Korrektur. Das endgültige APK unterscheidet sich nur im mitgelieferten Browser-Client.
+
+## Internet (echter Vermittler, 08.10.2026)
+
+**Aufbau:** APK 1.3.1 neu gebaut (`tools/build.ps1 -Target Android`, Tests grün, SHA-256 `0533d38e…6404036`), auf S21 und S10
+installiert. Vermittler `https://mau-mau-flip-relay.shakie.workers.dev` (Standard, `wss://`). S21 = Gastgeber (Android 15, Heim-WLAN),
+S10 = App-Gast bzw. Chrome. Auf dem S21 vorher App-Daten gelöscht, weil vom lokalen Test noch `http://localhost:24700` eingestellt war.
+
+| Schritt | Ergebnis | Bild |
+|---|---|---|
+| S21: Mit anderen spielen → Eröffnen → Online (Internet) → Online öffnen | Raum SCHUH-40, QR, „Link teilen“, Standard-Vermittler | n_10 |
+| S10 App: Beitreten → `schuh40` eintippen | normalisiert, in der Lobby; Gastgeber: Haken, „1 Mitspieler online“ | n_11, n_12 |
+| Kurze Partie (Aussetzen, Farbwechsel, Ziehen) | beide Seiten synchron | n_13, n_14 |
+| S10: App force-stop, neu starten, Code erneut eingeben | Gastgeber zeigt „getrennt“; Gast kommt per Token zurück, gleiche Hand (4 Karten) | n_15 |
+| Gastgeber „Verlassen“ | App-Gast: „Verbindung zum Gastgeber beendet“ mit „Selbst eröffnen“/„Regeln speichern“ | – |
+| Falscher Code KROKO-77 | „Raum nicht gefunden. Prüf den Code – oder lass dir am besten den Link schicken.“ | n_16 |
+| Online-Raum PLANET-56 offen, dann Spiel-WLAN geöffnet | Vermittler-Verbindung bleibt | n_19 |
+| S10 Chrome: `…workers.dev/?r=planet56` | Lader → `/c/1.3.1/?r=PLANET-56`, Lite tritt bei (Lobby, „Browser“) | n_17, n_18 |
+| Lite-Partie bei offenem Spiel-WLAN (Legen, Ziehen) | synchron | n_20, n_21 |
+| Neuer Raum LAUCH-22 bei offenem Spiel-WLAN, dann Spiel-WLAN schließen | Raum öffnet, bleibt offen (`/info?room` → `open:true`); nach „Zurück“ `open:false` | – |
+| logcat beider Geräte | keine E/W-Zeilen mit Tag `godot`, keine TLS-/Zertifikatsfehler; nur übliche System-Meldungen (BufferQueue) | – |
+
+**Spiel-WLAN + Online:** Auf dem S21 (Android 15, Heim-WLAN) bleibt der Prozess bei offenem Spiel-WLAN ungebunden
+(`host_plan`: Hotspot und WLAN → ""), daher läuft die Vermittler-Verbindung übers Standardnetz. Nicht prüfbar: Android 16+
+ohne WLAN (nur Spiel-WLAN + mobile Daten) – dort bindet `host_plan` an den Hotspot; ein **neu** aufgebauter Vermittler-Socket
+(Raum öffnen oder Neuverbinden nach Netzwechsel) liefe dann ins Spiel-WLAN ohne Internet. Ebenso bei Bindung an ein WLAN ohne Internet.
+
+**Kleinigkeiten:** Nach einem Neustart steht der letzte Raumcode nicht im Feld (man tippt ihn neu, dann Token-Rückkehr).
+Die Lite-Startseite ist auch tagsüber dunkel (Tisch dann hell wie vorgesehen).

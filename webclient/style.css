@@ -988,3 +988,8 @@ body[data-screen="tisch"][data-seite="dunkel"] .runde-liste .ges { background: v
 body[data-screen="tisch"][data-seite="dunkel"] .sogehts-liste dt, body[data-screen="tisch"][data-seite="dunkel"] .regeln-karte h4 { color: var(--gold); }
 body[data-screen="tisch"][data-seite="dunkel"] .modal a { color: var(--pink); }
 body[data-screen="tisch"][data-seite="dunkel"] .rk { background: rgba(244,240,255,.07); }
+
+/* „Erwischt!“ immer vorn (Nutzerbefund 08.10.2026): bei offenem Fenster liegen die Mitspieler über Ablage, Strafplakette (.offen 45)
+   und Farbanzeige, aber unter Hinweisleiste (50) und Knöpfen (60); im großen Modus die vorgezogene Zeile über der letzten sichtbaren */
+.gegner-box.fangbar { z-index: 46; }
+.gg.vorn { z-index: 3; }

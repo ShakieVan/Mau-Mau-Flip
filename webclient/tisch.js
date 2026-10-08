@@ -504,6 +504,8 @@
       const kompakt = gross || n >= 7;
       const h = v.hints || {};
       const fangbar = new Set(h.catch || []);
+      // offenes Erwischen-Fenster: Mitspieler über Ablage, Strafplakette und Farbanzeige legen (Nutzerbefund 08.10.2026)
+      this.gegnerBox.classList.toggle('fangbar', fangbar.size > 0);
       const da = new Set();
       const laeuft = v.phase !== 'round_over' && v.phase !== 'game_over';
       // Großer Modus: Liste in Spielrichtung ab dem Spieler, der dran ist (k = 0 oben); eigene Zeile „Du“ gehört dazu
@@ -539,7 +541,12 @@
         e.classList.toggle('ich', p.seat === ich);
         if (gross) {
           const L = this.g.liste, li = listeSp.indexOf(p), fertig = li < 0;
-          const k = fertig ? L.cap : ((li - ti) * dir % nl + nl) % nl;
+          let k = fertig ? L.cap : ((li - ti) * dir % nl + nl) % nl;
+          // Erwischbar, aber unterhalb der sichtbaren Zeilen (wer gerade gelegt hat, steht ganz unten): Zeile über die letzte
+          // sichtbare legen, damit „Erwischt!“ zu sehen ist (Nutzerbefund 08.10.2026)
+          const vorn = fangbar.has(p.seat) && k >= L.cap && L.cap > 0;
+          if (vorn) k = L.cap - 1;
+          e.classList.toggle('vorn', vorn);
           const sprung = g.k !== undefined && k > g.k && !richtungNeu && !fertig;   // oben raus, unten wieder rein (endlose Liste)
           g.k = k;
           const y = L.top + (k + 0.5) * L.zeile;
@@ -562,6 +569,7 @@
         e.classList.toggle('dran', v.turn === p.seat && laeuft);
         e.classList.toggle('weg', p.connected === false);
         e.classList.toggle('fangbar', fangbar.has(p.seat));
+        if (!gross) e.classList.remove('vorn');
         const ava = e.querySelector('.ava');
         ava.textContent = (p.name || '?').trim().charAt(0).toUpperCase();
         ava.style.background = AVA_FARBEN[p.seat % AVA_FARBEN.length];
@@ -583,6 +591,11 @@
         if (g.sig !== sig) { g.sig = sig; this._faecher(e.querySelector('.faecher'), backs, kompakt, p.count); }
       });
       for (const [seat, g] of this.gegnerEls) if (!da.has(seat)) { g.e.remove(); this.gegnerEls.delete(seat); }
+      // vorgezogene erwischbare Zeile verdeckt die letzte sichtbare: diese solange ausblenden (sonst scheint sie durch)
+      if (gross) {
+        const vorne = [...this.gegnerEls.values()].some(g => g.e.classList.contains('vorn'));
+        for (const g of this.gegnerEls.values()) if (vorne && !g.e.classList.contains('vorn') && g.k === this.g.liste.cap - 1) g.e.classList.add('aus');
+      }
     }
     _faecher(box, backs, kompakt, count) {
       box.innerHTML = '';

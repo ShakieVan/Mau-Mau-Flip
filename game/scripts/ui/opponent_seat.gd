@@ -41,6 +41,7 @@ var _bump := 0.0
 var _header_w := 200.0
 var _halo: TurnHaloScript
 var _think := 0.0
+var _catch: Node2D               # „Erwischt!“-Knopf; TableView hängt ihn in eine Ebene über dem ganzen Tisch (attach_catch_layer)
 
 
 func _init() -> void:
@@ -49,10 +50,38 @@ func _init() -> void:
 	add_child(_halo)
 	_fan = Node2D.new()
 	add_child(_fan)
-	# Über dem Fächer: „Erwischt!“-Knopf und „+n“
+	# Über dem Fächer: „+n“
 	_top = Node2D.new()
 	add_child(_top)
 	_top.draw.connect(_draw_top)
+	_catch = Node2D.new()
+	_catch.name = "Erwischt"
+	_catch.visible = false
+	add_child(_catch)
+	_catch.draw.connect(_draw_catch)
+
+
+# „Erwischt!“ über allem zeichnen (Nutzerbefund 08.10.2026): Die Plätze liegen unter Stapel, Ablage, Farbschild, Strafplakette,
+# Hand, Effekten und Hinweisleiste; der Knopf folgt dem Platz (Lage, Sichtbarkeit, Deckkraft) in einer eigenen obersten Ebene.
+func attach_catch_layer(layer: Node2D) -> void:
+	if layer == null or _catch.get_parent() == layer:
+		return
+	_catch.reparent(layer, false)
+	_sync_catch()
+
+
+func _sync_catch() -> void:
+	if _catch.get_parent() != self:
+		_catch.global_transform = global_transform
+		_catch.modulate = modulate
+	_catch.visible = catchable and is_visible_in_tree()
+	if _catch.visible:
+		_catch.queue_redraw()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE and is_instance_valid(_catch) and _catch.get_parent() != self:
+		_catch.queue_free()
 
 
 func _process(delta: float) -> void:
@@ -61,8 +90,8 @@ func _process(delta: float) -> void:
 		_think += delta
 	if _turn or catchable or _sleep > 0.0 or _bump > 0.0:
 		queue_redraw()
-	if catchable:
-		_top.queue_redraw()
+	if catchable or _catch.visible:
+		_sync_catch()
 
 
 func set_night(v: float) -> void:
@@ -81,8 +110,8 @@ func set_reduced(on: bool) -> void:
 func set_catchable(on: bool) -> void:
 	catchable = on
 	queue_redraw()
-	if _top:
-		_top.queue_redraw()
+	if _catch:
+		_sync_catch()
 
 
 func set_turn(on: bool, next := false) -> void:
@@ -638,15 +667,20 @@ func _draw_top() -> void:
 		var mw := num_font.get_string_size(mt, HORIZONTAL_ALIGNMENT_LEFT, -1, mfs).x + 14.0
 		_round_rect(_top, Rect2(mpos - Vector2(mw * 0.5, (mfs + 9.0) * 0.5), Vector2(mw, mfs + 9.0)), (mfs + 9.0) * 0.5, pill_bg)
 		_top.draw_string(num_font, mpos + Vector2(-mw * 0.5 + 7.0, mfs * 0.36), mt, HORIZONTAL_ALIGNMENT_LEFT, -1, mfs, pill_fg)
-	if catchable:
-		var r := _catch_rect()
-		var pulse := 0.5 + 0.5 * sin(_time * 6.0)
-		_round_rect(_top, r.grow(3.0 + 2.0 * pulse), 26.0, Color(UiPalette.ALERT, 0.35))
-		_round_rect(_top, r, 23.0, UiPalette.ALERT)
-		var ef := UiFonts.title(800, true, 100.0, 36.0)
-		var et := I18n.t("Erwischt!")
-		var ew := ef.get_string_size(et, HORIZONTAL_ALIGNMENT_LEFT, -1, 22).x
-		_top.draw_string(ef, Vector2(-ew * 0.5, r.position.y + 31.0), et, HORIZONTAL_ALIGNMENT_LEFT, -1, 22, UiPalette.CREAM)
+
+
+func _draw_catch() -> void:
+	if not catchable:
+		return
+	var r := _catch_rect()
+	var pulse := 0.5 + 0.5 * sin(_time * 6.0)
+	_round_rect(_catch, r.grow(3.0 + 2.0 * pulse), 26.0, Color(UiPalette.ALERT, 0.35))
+	_round_rect(_catch, r, 23.0, UiPalette.ALERT)
+	var ef := UiFonts.title(800, true, 100.0, 36.0)
+	var et := I18n.t("Erwischt!")
+	var ew := ef.get_string_size(et, HORIZONTAL_ALIGNMENT_LEFT, -1, 22).x
+	# mittig im Knopf (im großen Modus liegt er links neben der Zeile, nicht unter der Platzmitte)
+	_catch.draw_string(ef, Vector2(r.get_center().x - ew * 0.5, r.position.y + 31.0), et, HORIZONTAL_ALIGNMENT_LEFT, -1, 22, UiPalette.CREAM)
 
 
 func _draw_mau_tag(p: Vector2) -> void:

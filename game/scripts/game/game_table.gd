@@ -13,6 +13,18 @@ const THINK_MIN := 0.6
 const THINK_MAX := 1.2
 const MAU_THINK := 0.35          # „Mau!“ rufen Bots etwas schneller
 const MAU_GRACE := 1.5           # Schonfrist für Menschen im Mau-Fenster (Regelbericht: etwa 1,5 s)
+# Erwischen-Frist (Nutzerbefund 08.10.2026: Der rote Knopf „Erwischt!“ war für Menschen praktisch nie zu sehen, weil Bots einen
+# vergesslichen Mitspieler schon nach 0,6–1,2 s erwischten, oft noch während die gelegte Karte flog). Sitzt ein Mensch am
+# Tisch, der erwischen könnte (nicht der Vergessliche selbst), warten alle Bots bei offenem Fenster (Erwischen und eigener Zug,
+# der das Fenster schlösse) CATCH_GRACE + Zufall 0–CATCH_JITTER, mal think_factor, nie unter CATCH_MIN, nie über CATCH_MAX (sonst
+# stünde das Spiel bei „gemütlich“ bis ~23 s). Dazu kommt pauschal
+# CATCH_ANIM für das Abspielen bei Netz-Gästen (Legen ~0,5 s, mit Flip/Effekten länger); auf dem eigenen Gerät beginnt die Frist
+# außerdem erst, wenn die Tischregie fertig ist (busy_check, siehe _step). Nur Bots am Tisch: wie bisher.
+const CATCH_GRACE := 3.0
+const CATCH_JITTER := 1.5
+const CATCH_MIN := 2.0
+const CATCH_MAX := 8.0
+const CATCH_ANIM := 1.0
 const ROUND_PAUSE := 1.2         # zusätzlich nach dem Austeilen
 const BUSY_RETRY := 0.3          # Oberfläche beschäftigt: so lange später erneut versuchen
 const NEXT_ROUND_TAIL := " Weiter mit der nächsten Runde."
@@ -195,6 +207,10 @@ func _step() -> bool:
 	if _plan.is_empty():
 		return false
 	var now := Time.get_ticks_msec()
+	if _plan.has("grace") and _ui_busy():
+		# Schonfrist zählt erst ab dem sichtbaren Ende der Animation: solange die Regie spielt, neu beginnen
+		_plan.at = maxi(int(_plan.at), now + int(float(_plan.grace) * 1000.0 * speed))
+		return false
 	if now < int(_plan.at):
 		return false
 	if _ui_busy():
@@ -234,13 +250,35 @@ func _next_bot_plan() -> Dictionary:
 		if name == "mau":
 			delay = MAU_THINK * minf(think_factor, 1.0)
 		var mo := game.mau_open
-		var grace: bool = mo >= 0 and mo != s and not is_bot(mo) and not bool(game.mau_said[mo])
-		if grace:
-			delay = maxf(delay, MAU_GRACE + _rng.randf_range(0.0, 0.5))
+		var window: bool = mo >= 0 and not bool(game.mau_said[mo])
+		var grace := 0.0
+		if window and mo != s and not is_bot(mo):
+			grace = MAU_GRACE + _rng.randf_range(0.0, 0.5)
+		if window and _human_can_catch(mo):
+			grace = maxf(grace, catch_grace(_rng.randf_range(0.0, CATCH_JITTER), think_factor))
+		delay = maxf(delay, grace)
 		delay += _extra_pause
 		_extra_pause = 0.0
-		return {"seat": s, "action": a, "at": Time.get_ticks_msec() + int(delay * 1000.0 * speed)}
+		var plan := {"seat": s, "action": a, "at": Time.get_ticks_msec() + int(delay * 1000.0 * speed)}
+		if grace > 0.0:
+			plan["grace"] = grace
+		return plan
 	return {}
+
+
+# Erwischen-Frist in Sekunden (ohne speed) für einen Zufallsanteil jitter (0–CATCH_JITTER) und den Tempo-Faktor
+static func catch_grace(jitter: float, factor: float) -> float:
+	return clampf((CATCH_GRACE + jitter) * factor, CATCH_MIN, CATCH_MAX) + CATCH_ANIM
+
+
+# Sitzt ein Mensch (nicht der Vergessliche, kein vertretener Platz) am Tisch, der den Platz mo erwischen könnte?
+func _human_can_catch(mo: int) -> bool:
+	if game == null or str(game.config.mau_call) != "catch":
+		return false
+	for s in seats.size():
+		if s != mo and not is_bot(s):
+			return true
+	return false
 
 
 func _ui_busy() -> bool:

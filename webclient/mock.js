@@ -544,7 +544,7 @@
         const t = z(this.f(this.top()));
         const id = nimm(k => k.farbe === t.farbe && k.art === 'zahl');
         if (id !== null) { this.stapel.unshift(hand.pop()); hand.push(id); }
-        const g = Math.min(2, this.n - 1);
+        const g = P('wer') ? Math.min(+P('wer'), this.n - 1) : Math.min(2, this.n - 1);   // wer=k: dieser Platz vergisst „Mau!“
         while (this.haende[g].length > 1) this.stapel.unshift(this.haende[g].pop());
         this.mauOffen = { seat: g };
       } else if (name === 'gluecksspiel' || name === 'einsatz') {

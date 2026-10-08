@@ -71,6 +71,7 @@ var _bg: TableBackground
 var _world: Node2D
 var _ring: DirectionRing
 var _seat_layer: Node2D
+var _catch_layer: Node2D
 var _pile: PileView
 var _color_ring: ColorRingView
 var _pending_badge: PendingBadge      # „+N“-Plakette über Ablage und Farbschild (1.1.3)
@@ -219,6 +220,10 @@ func _init() -> void:
 	mau_button = MauButton.new()
 	mau_button.mau_pressed.connect(_on_mau_pressed)
 	_ui.add_child(mau_button)
+	# „Erwischt!“-Knöpfe der Plätze über Tisch, Hand und Hinweisleiste, aber unter Farbwahl und Überlagerungen (Nutzerbefund 08.10.2026)
+	_catch_layer = Node2D.new()
+	_catch_layer.name = "ErwischtEbene"
+	add_child(_catch_layer)
 	_edge = ColorRect.new()
 	_edge.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_edge.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -407,6 +412,7 @@ func set_big(on: bool) -> void:
 	if not on:                            # Liste blendet Zeilen aus (fertig, unter der letzten Zeile); am Tisch alle sichtbar
 		for s in _seats:
 			(_seats[s] as CanvasItem).modulate.a = 1.0
+			(_seats[s] as CanvasItem).z_index = 0
 		me_badge.modulate.a = 1.0
 	_list_slot.clear()
 	_list_target.clear()
@@ -583,6 +589,7 @@ func apply_view(v: Dictionary) -> void:
 			node.seat = s
 			node.reduced = reduced
 			_seat_layer.add_child(node)
+			node.attach_catch_layer(_catch_layer)
 			_seats[s] = node
 		node.show_score = show_score
 		node.compact = TableLayout.compact(_n) and not big
@@ -982,6 +989,14 @@ func _position_list() -> void:
 		node.position = Vector2(float(rows["x"]), BigLayout.row_y(wy, rows))
 		node.row_size = Vector2(float(rows["w"]), BigLayout.row_h(w, rows))
 		node.modulate.a = BigLayout.row_alpha(w, n, k)
+		node.z_index = 0
+		if node.catchable and node.modulate.a < 0.99 and k >= 1:
+			# Erwischbar, aber außerhalb der sichtbaren Zeilen (z. B. wer gerade gelegt hat, steht ganz unten): die Zeile über die
+			# letzte sichtbare legen, damit „Erwischt!“ zu sehen ist (Nutzerbefund 08.10.2026)
+			node.position = Vector2(float(rows["x"]), BigLayout.row_y(float(k) - 1.0, rows))
+			node.row_size = Vector2(float(rows["w"]), BigLayout.row_h(float(k) - 1.0, rows))
+			node.modulate.a = 1.0
+			node.z_index = 1                # auch über der eigenen Zeile „Du“ (me_badge liegt über der Platzebene)
 		if not is_equal_approx(node.flip_y, fy):
 			node.flip_y = fy
 			node.queue_redraw()

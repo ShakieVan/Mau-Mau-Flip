@@ -403,7 +403,7 @@ static func controls(config: RuleConfig = null) -> Array[Dictionary]:
 	out.append({"title": _t("Hand und Rückseiten"), "text": backs})
 	match cfg.mau_call:
 		"catch":
-			out.append({"title": _t("Mau rufen"), "text": _t("Hast du nur noch 2 Karten und bist dran, tipp auf „Mau!“ – vor oder nach dem Legen. Vergisst es jemand, tipp schnell auf seine Karten: erwischt!")})
+			out.append({"title": _t("Mau rufen"), "text": _t("Hast du nur noch 2 Karten und bist dran, tipp auf „Mau!“ – vor oder nach dem Legen. Vergisst es jemand, erscheint über seinen Karten der rote Knopf „Erwischt!“: schnell antippen, bevor der Nächste legt oder zieht.")})
 		"auto", "reminder":
 			out.append({"title": _t("Mau rufen"), "text": _t("Hast du nur noch 2 Karten und bist dran, tipp auf „Mau!“ – vor oder nach dem Legen.")})
 	out.append({"title": _t("Ablage durchsehen"), "text": _t("Tipp auf die Ablage: Die oberste Karte rutscht zur Seite, und du siehst, was darunter liegt und wer es gelegt hat. Tipp auf den Stapel daneben legt eine zurück, ein Tipp auf den Tisch alle.")})
