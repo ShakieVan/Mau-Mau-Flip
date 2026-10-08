@@ -10,6 +10,10 @@ extends GameTable
 # {t:"err", text}. Getrennte Spieler behalten ihren Platz; ist ein getrennter Mensch am Zug, wartet das Spiel (Hinweis an alle).
 # substitute_bot(seat) lässt einen Bot für ihn spielen (auto_substitute_s > 0: automatisch nach so vielen Sekunden). Wer mit
 # seinem Token zurückkommt, bekommt sofort den aktuellen Stand und spielt selbst weiter.
+# App-Wechsel (Beta 1.3.3): „away“/„back“ der Gäste und des Gastgebers (NetHostSession.player_away) landen als away:true in
+# view.players (Gastgeber-Eintrag zusätzlich host:true); „back“ schickt dem Gast den vollen Stand. Der Knopf „Computer für … spielen
+# lassen“ (substitutable_seats) kommt erst, wenn der Gast sub_offer_ms (30 s) weg oder getrennt ist; vorher absent_seats() für den
+# Hinweis „… ist kurz weg“. Ein Gast in einer anderen App wird nie automatisch vertreten.
 # Speicherstand nach jeder Änderung (user://laufende_partie.json), resume() setzt eine Partie samt Token der Gäste fort.
 
 const BOT_NAMES := ["Minka", "Mogli", "Luna", "Tiger", "Socke", "Krümel", "Flocke", "Pünktchen", "Schnurri", "Mieze"]
@@ -21,6 +25,7 @@ var discovery_port := NetProtocol.DISCOVERY_PORT
 var web_zip_path := "res://assets/web.zip"
 var threaded := true             # Netz-Thread des Servers (Modul D)
 var auto_substitute_s := 0.0     # 0 = warten (Standard); > 0: Bot übernimmt einen getrennten Menschen am Zug nach so vielen s
+var sub_offer_ms := NetProtocol.SUB_OFFER_MS   # so lange weg/getrennt, bis „Computer für … spielen lassen“ erscheint
 
 var _seat_ids: Array = []        # Platz -> Spieler-id der Sitzung
 var _seq := {}                   # Spieler-id -> letzte seq seiner Aktionen (seq_ack)
@@ -41,6 +46,7 @@ func open(host_name := "", port_first := NetProtocol.PORT, port_last := NetProto
 	add_child(session)
 	session.player_left.connect(_on_left)
 	session.player_rejoined.connect(_on_rejoined)
+	session.player_away.connect(_on_away)
 	session.message.connect(_on_message)
 	session.lobby_changed.connect(func() -> void: lobby_changed.emit(session.lobby_message()))
 	var err := session.start(host_name if host_name != "" else _own_name(), port_first, port_last, threaded)
@@ -188,15 +194,30 @@ func substitute_bot(seat: int) -> void:
 	_changed([])
 
 
-# Getrennte Gäste ohne Vertretung (Knopf „Computer spielt für …“ am Tisch des Gastgebers)
-func substitutable_seats() -> Array:
+# Gäste ohne Vertretung, die getrennt oder kurz in einer anderen App sind (Hinweis „… ist kurz weg“ am Tisch des Gastgebers)
+func absent_seats() -> Array:
 	var out: Array = []
 	if game == null:
 		return out
 	for s in seats.size():
-		if _is_remote(s) and not _substitute.has(s) and not bool(game.connected[s]):
+		if _is_remote(s) and not _substitute.has(s) and (not bool(game.connected[s]) or is_away(s)):
 			out.append(s)
 	return out
+
+
+# … davon die, die schon sub_offer_ms weg sind: erst dann der Knopf „Computer für … spielen lassen“ (Beta 1.3.3)
+func substitutable_seats() -> Array:
+	return absent_seats().filter(func(s): return absent_ms(s) >= sub_offer_ms)
+
+
+# Platz kurz in einer anderen App („away“)?
+func is_away(seat: int) -> bool:
+	return session != null and seat >= 0 and seat < _seat_ids.size() and session.is_away(int(_seat_ids[seat]))
+
+
+# Seit wann (ms) ein Platz weg oder getrennt ist; 0 = da.
+func absent_ms(seat: int) -> int:
+	return session.gone_ms(int(_seat_ids[seat])) if session != null and seat >= 0 and seat < _seat_ids.size() else 0
 
 
 # Getrennter Mensch, auf dessen Zug das Spiel wartet (−1 = keiner)
@@ -259,7 +280,8 @@ func _bots_paused() -> bool:
 
 
 func _pre_step() -> bool:
-	if auto_substitute_s > 0.0 and _waiting_seat >= 0 and Time.get_ticks_msec() - _wait_since > int(auto_substitute_s * 1000.0):
+	# nie für einen Gast, der nur kurz in einer anderen App ist
+	if auto_substitute_s > 0.0 and _waiting_seat >= 0 and not is_away(_waiting_seat) and Time.get_ticks_msec() - _wait_since > int(auto_substitute_s * 1000.0):
 		substitute_bot(_waiting_seat)
 		return true
 	return false
@@ -275,13 +297,25 @@ func _after_change() -> void:
 		if _waiting_seat != cur:
 			_waiting_seat = cur
 			_wait_since = Time.get_ticks_msec()
-			_tell_all([I18n.part("%s ist getrennt – warte …", [seat_name(cur)])])
+			if not is_away(cur):     # sonst steht dort schon „… ist kurz in einer anderen App – warte …“
+				_tell_all([I18n.part("%s ist getrennt – warte …", [seat_name(cur)])])
 	else:
 		_waiting_seat = -1
 
 
 func _patch_view(seat: int, v: Dictionary) -> void:
-	if _waiting_seat >= 0 and seat != _waiting_seat:
+	# Spielerliste: Gastgeber (host) und „kurz in einer anderen App“ (away), Beta 1.3.3
+	for p in v.get("players", []):
+		var s := int((p as Dictionary).get("seat", -1))
+		if s == host_seat:
+			p["host"] = true
+		if is_away(s):
+			p["away"] = true
+	var cur := game.current_seat()
+	if cur >= 0 and cur != seat and is_away(cur) and _is_remote(cur) and not _substitute.has(cur):
+		(v.hints as Dictionary).text = "%s ist kurz in einer anderen App – warte …" % seat_name(cur)
+		(v.hints as Dictionary).lt = [I18n.part("%s ist kurz in einer anderen App – warte …", [seat_name(cur)])]
+	elif _waiting_seat >= 0 and seat != _waiting_seat:
 		(v.hints as Dictionary).text = "%s ist getrennt – warte …" % seat_name(_waiting_seat)
 		(v.hints as Dictionary).lt = [I18n.part("%s ist getrennt – warte …", [seat_name(_waiting_seat)])]
 
@@ -317,7 +351,10 @@ func _on_left(id: int) -> void:
 	if s < 0:
 		return
 	game.set_connected(s, false)
-	notice.emit(I18n.t("%s ist getrennt.") % seat_name(s))
+	# Kurz in einer anderen App: Android trennt Hintergrund-Apps oft nach Sekunden (Gerätetest 1.3.3); der Platz zeigt dann schon
+	# „kurz in einer anderen App“, ein zusätzliches „getrennt“ widerspräche dem.
+	if not is_away(s):
+		notice.emit(I18n.t("%s ist getrennt.") % seat_name(s))
 	_changed([])
 
 
@@ -332,6 +369,20 @@ func _on_rejoined(id: int) -> void:
 		_substitute.erase(s)
 	notice.emit(I18n.t("%s ist wieder da.") % seat_name(s))
 	_changed([])                 # schickt allen (auch dem Zurückgekehrten) sofort den aktuellen Stand
+
+
+# „away“/„back“ (Gast oder Gastgeber selbst): Änderung → alle bekommen den neuen Stand; „back“ ohne Änderung → nur dieser Gast
+# (er will nach der Rückkehr in die App den vollen Stand).
+func _on_away(id: int, _on: bool, changed: bool) -> void:
+	if game == null:
+		return
+	var s := _seat_ids.find(id)
+	if s < 0:
+		return
+	if changed:
+		_changed([])
+	elif _is_remote(s) and bool(game.connected[s]):
+		_send_state(s, [])
 
 
 func _on_message(id: int, msg: Dictionary) -> void:
@@ -372,7 +423,8 @@ func _restore_guest(p: Dictionary) -> int:
 	var id: int = session._next_id
 	session._next_id += 1
 	session.players[id] = {"id": id, "name": str(p.name), "kind": str(p.get("net", "app")), "token": str(p.get("token", "")),
-		"connected": false, "ready": true, "seat": session._next_seat(), "conn": -1, "local": false, "address": ""}
+		"connected": false, "ready": true, "seat": session._next_seat(), "conn": -1, "local": false, "address": "",
+		"gone_since": maxi(Time.get_ticks_msec(), 1)}
 	return id
 
 

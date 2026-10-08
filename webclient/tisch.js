@@ -581,6 +581,7 @@
         if (p.kind === 'bot' && !kompakt) marken += '<span class="marke">' + esc(M.t('Computer')) + '</span>';
         if (p.place > 0) marken += '<span class="marke platz">' + esc(M.t('%d. Platz', p.place)) + '</span>';
         if (p.substituted) marken += '<span class="marke">' + esc(M.t('Computer spielt')) + '</span>';
+        else if (p.away) marken += '<span class="marke weg app">' + esc(M.t('kurz in einer anderen App')) + '</span>';
         else if (p.connected === false) marken += '<span class="marke weg">' + ICON_GETRENNT + esc(M.t('getrennt')) + '</span>';
         const mk = e.querySelector('.marken');
         if (mk.innerHTML !== marken) mk.innerHTML = marken;

@@ -62,6 +62,11 @@ func test_client_messages() -> void:
 	var lg := NetProtocol.clean_client_message({"t": "log", "text": "Fehler\nZeile 2\u0001" +"y".repeat(5000)})
 	check(lg.text.begins_with("Fehler\nZeile 2y") and lg.text.length() == NetProtocol.MAX_LOG_TEXT, "log gekürzt, Steuerzeichen raus, Zeilenumbruch bleibt")
 	check(NetProtocol.clean_client_message({"t": "ping", "ts": 12}).ts == 12, "ping")
+	# Beta 1.3.3: App-Wechsel ohne weitere Felder; Fristen
+	check(NetProtocol.clean_client_message({"t": "away", "x": 1, "text": "y".repeat(9000)}) == {"t": "away"}, "away auf {t} gekürzt")
+	check(NetProtocol.clean_client_message({"t": "back", "token": "z"}) == {"t": "back"}, "back auf {t} gekürzt")
+	check(NetProtocol.auto_reply("{\"t\":\"away\"}") == "" and NetProtocol.auto_reply("{\"t\":\"back\"}") == "", "away/back gehen an die Sitzung")
+	check(NetProtocol.RESUME_PROBE_MS == 3000 and NetProtocol.SUB_OFFER_MS == 30000, "Rückkehr-Prüfung 3 s, Vertretung erst nach 30 s")
 	check(NetProtocol.clean_client_message({"t": "neu", "x": 1}).get("x") == 1, "unbekannter Typ geht durch")
 
 func test_names() -> void:

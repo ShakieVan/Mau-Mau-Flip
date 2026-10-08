@@ -1,0 +1,418 @@
+{
+ "schnurren_01": {
+  "top": [
+   [
+    "Sound effect",
+    0.09
+   ],
+   [
+    "Stomach rumble",
+    0.03
+   ],
+   [
+    "Breathing",
+    0.02
+   ],
+   [
+    "Speech",
+    0.02
+   ],
+   [
+    "Animal",
+    0.02
+   ]
+  ],
+  "warn": {}
+ },
+ "schnurren_02": {
+  "top": [
+   [
+    "Stomach rumble",
+    0.95
+   ],
+   [
+    "Sound effect",
+    0.01
+   ],
+   [
+    "Music",
+    0.01
+   ],
+   [
+    "Speech",
+    0.0
+   ],
+   [
+    "Gurgling",
+    0.0
+   ]
+  ],
+  "warn": {}
+ },
+ "schnurren_03": {
+  "top": [
+   [
+    "Stomach rumble",
+    0.08
+   ],
+   [
+    "Heart murmur",
+    0.04
+   ],
+   [
+    "Sound effect",
+    0.03
+   ],
+   [
+    "Speech",
+    0.02
+   ],
+   [
+    "Breathing",
+    0.02
+   ]
+  ],
+  "warn": {}
+ },
+ "schnurren_04": {
+  "top": [
+   [
+    "Stomach rumble",
+    0.64
+   ],
+   [
+    "Purr",
+    0.04
+   ],
+   [
+    "Sound effect",
+    0.03
+   ],
+   [
+    "Animal",
+    0.02
+   ],
+   [
+    "Fart",
+    0.01
+   ]
+  ],
+  "warn": {
+   "Purr": 0.04
+  }
+ },
+ "schnurren_05": {
+  "top": [
+   [
+    "Stomach rumble",
+    0.62
+   ],
+   [
+    "Fart",
+    0.06
+   ],
+   [
+    "Music",
+    0.04
+   ],
+   [
+    "Sound effect",
+    0.03
+   ],
+   [
+    "Speech",
+    0.01
+   ]
+  ],
+  "warn": {
+   "Music": 0.04
+  }
+ },
+ "schnurren_06": {
+  "top": [
+   [
+    "Squeal",
+    0.16
+   ],
+   [
+    "Chicken, rooster",
+    0.1
+   ],
+   [
+    "Sound effect",
+    0.06
+   ],
+   [
+    "Cluck",
+    0.06
+   ],
+   [
+    "Fowl",
+    0.05
+   ]
+  ],
+  "warn": {}
+ },
+ "schnurren_07": {
+  "top": [
+   [
+    "Heart sounds, heartbeat",
+    0.16
+   ],
+   [
+    "Heart murmur",
+    0.09
+   ],
+   [
+    "Throbbing",
+    0.05
+   ],
+   [
+    "Stomach rumble",
+    0.05
+   ],
+   [
+    "Sound effect",
+    0.03
+   ]
+  ],
+  "warn": {}
+ },
+ "schnurren_08": {
+  "top": [
+   [
+    "Domestic animals, pets",
+    0.42
+   ],
+   [
+    "Animal",
+    0.33
+   ],
+   [
+    "Cat",
+    0.25
+   ],
+   [
+    "Growling",
+    0.1
+   ],
+   [
+    "Caterwaul",
+    0.05
+   ]
+  ],
+  "warn": {
+   "Purr": 0.03,
+   "Cat": 0.25,
+   "Animal": 0.33,
+   "Growling": 0.1
+  }
+ },
+ "schnurren_09": {
+  "top": [
+   [
+    "Stomach rumble",
+    0.33
+   ],
+   [
+    "Sound effect",
+    0.07
+   ],
+   [
+    "Speech",
+    0.02
+   ],
+   [
+    "Fart",
+    0.02
+   ],
+   [
+    "Heart murmur",
+    0.01
+   ]
+  ],
+  "warn": {}
+ },
+ "schnurren_10": {
+  "top": [
+   [
+    "Stomach rumble",
+    0.84
+   ],
+   [
+    "Sound effect",
+    0.01
+   ],
+   [
+    "Speech",
+    0.0
+   ],
+   [
+    "Gurgling",
+    0.0
+   ],
+   [
+    "Oink",
+    0.0
+   ]
+  ],
+  "warn": {}
+ },
+ "schnurren_11": {
+  "top": [
+   [
+    "Sound effect",
+    0.11
+   ],
+   [
+    "Breathing",
+    0.03
+   ],
+   [
+    "Animal",
+    0.03
+   ],
+   [
+    "Stomach rumble",
+    0.02
+   ],
+   [
+    "Speech",
+    0.02
+   ]
+  ],
+  "warn": {
+   "Animal": 0.03,
+   "Breathing": 0.03
+  }
+ },
+ "schnurren_12": {
+  "top": [
+   [
+    "Snort",
+    0.07
+   ],
+   [
+    "Sound effect",
+    0.06
+   ],
+   [
+    "Animal",
+    0.04
+   ],
+   [
+    "Zipper (clothing)",
+    0.03
+   ],
+   [
+    "Roar",
+    0.02
+   ]
+  ],
+  "warn": {
+   "Animal": 0.04
+  }
+ },
+ "schnurren_13": {
+  "top": [
+   [
+    "Stomach rumble",
+    0.54
+   ],
+   [
+    "Sound effect",
+    0.02
+   ],
+   [
+    "Music",
+    0.02
+   ],
+   [
+    "Heart murmur",
+    0.02
+   ],
+   [
+    "Fart",
+    0.02
+   ]
+  ],
+  "warn": {}
+ },
+ "schnurren_14": {
+  "top": [
+   [
+    "Stomach rumble",
+    0.52
+   ],
+   [
+    "Sound effect",
+    0.05
+   ],
+   [
+    "Roar",
+    0.02
+   ],
+   [
+    "Purr",
+    0.02
+   ],
+   [
+    "Animal",
+    0.01
+   ]
+  ],
+  "warn": {}
+ },
+ "schnurren_15": {
+  "top": [
+   [
+    "Heart sounds, heartbeat",
+    0.35
+   ],
+   [
+    "Heart murmur",
+    0.16
+   ],
+   [
+    "Throbbing",
+    0.1
+   ],
+   [
+    "Hum",
+    0.05
+   ],
+   [
+    "Sound effect",
+    0.03
+   ]
+  ],
+  "warn": {
+   "Hum": 0.05
+  }
+ },
+ "schnurren_16": {
+  "top": [
+   [
+    "Stomach rumble",
+    0.7
+   ],
+   [
+    "Sound effect",
+    0.02
+   ],
+   [
+    "Scratch",
+    0.01
+   ],
+   [
+    "Fart",
+    0.01
+   ],
+   [
+    "Frog",
+    0.01
+   ]
+  ],
+  "warn": {}
+ }
+}

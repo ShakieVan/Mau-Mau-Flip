@@ -238,7 +238,9 @@ func _row(p: Dictionary, i: int, n: int, host_id: int) -> Control:
 	if online:
 		tag += " · " + I18n.t("online")
 	var connected := bool(p.get("connected", true))
-	if not connected:
+	if bool(p.get("away", false)):
+		tag += " · " + I18n.t("kurz in einer anderen App")
+	elif not connected:
 		tag += " · " + I18n.t("getrennt")
 	elif kind != "bot" and id != host_id:
 		tag += " · " + I18n.t("verbunden") + (" · " + I18n.t("bereit") if bool(p.get("ready", false)) else "")

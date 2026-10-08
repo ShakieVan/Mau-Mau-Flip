@@ -42,6 +42,14 @@ body[data-screen="tisch"] #tisch { display: block; }
   radial-gradient(1.2px 1.2px at 64% 72%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 30% 82%, #fff 50%, transparent 51%),
   radial-gradient(1.6px 1.6px at 90% 54%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 48% 30%, #fff 50%, transparent 51%); }
 
+/* Startseite: vor Spielbeginn gibt es keinen Tisch-Zustand, also Tag (hell, Papier, dunkle Schrift) wie in der App */
+body[data-screen="start"] { background: #E6D7BC; }
+#start { background: radial-gradient(ellipse 80% 70% at 50% 40%, #FFF7E8 0%, #F4EADA 55%, #E6D7BC 100%); color: var(--ink); }
+#start::before { display: none; }
+#start .start-logo { box-shadow: 0 18px 44px rgba(33,27,44,.28), 0 0 0 2px rgba(33,27,44,.14); }
+#start .start-form { background: var(--cream); border: 2px solid rgba(33,27,44,.16); box-shadow: 0 18px 44px rgba(33,27,44,.22); }
+#start .start-form input { background: #fff; }
+
 /* Knöpfe */
 .knopf { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 16px; padding: 14px 22px;
   font: 800 19px/1.1 var(--f-ui); text-decoration: none; transition: transform .12s, box-shadow .2s, background .2s; white-space: nowrap; }
@@ -132,6 +140,7 @@ body[data-screen="tisch"] #tisch { display: block; }
 .marke { display: inline-flex; align-items: center; gap: 4px; font: 800 calc(15px * var(--fs)) var(--f-ui); padding: 3px 9px; border-radius: 10px; background: rgba(33,27,44,.1); white-space: nowrap; }
 .marke.gast { background: var(--ink); color: var(--cream); }
 .marke.weg { background: #FFE1E3; color: #8A1720; }
+.marke.weg.app { background: #FFF0C2; color: #6B4A00; }   /* kurz in einer anderen App: Bernstein statt Alarmrot */
 .lobby-seite { flex: 0 0 300px; display: flex; flex-direction: column; gap: 10px; background: rgba(244,234,218,.08); border: 2px solid rgba(244,234,218,.16); border-radius: 20px; padding: 16px; }
 .lobby-seite .knopf.haupt { font-size: 22px; padding: 16px; background: var(--cream); color: var(--ink); box-shadow: 0 4px 0 #B9AE98, 0 10px 26px rgba(255,214,90,.25); }
 .lobby-seite .knopf.haupt.an { background: #4FD36E; color: var(--ink); box-shadow: 0 4px 0 #2C8543, 0 10px 26px rgba(79,211,110,.35); }
@@ -464,6 +473,7 @@ body.reduziert .himmel .mond { transform: rotate(-24deg); }
 .gg .marke.mau { background: var(--pink); color: var(--ink); border-color: transparent; font: italic 900 calc(19px * var(--fs)) var(--f-brand); }
 .gg .marke.platz { background: var(--gold); color: var(--ink); border-color: transparent; }
 .gg .marke.weg { background: #5A1E2A; color: #FFD0D4; }
+.gg .marke.weg.app { background: #4A3A10; color: #FFE7A3; }
 .gg .marke svg { width: 14px; height: 14px; }
 .gg.dran .ava { box-shadow: 0 0 0 5px var(--gold), 0 0 24px rgba(255,214,90,.75); animation: dranPuls 1.2s ease-in-out infinite; }
 .gg.dran .name { color: var(--t-zug); }
@@ -812,6 +822,10 @@ body:not(.grob) .quer svg { display: none; }
 .toast.leise { background: rgba(255,247,232,.92); color: var(--ink); box-shadow: 0 8px 24px rgba(0,0,0,.45); }
 body.tag .toast.leise { background: rgba(33,27,44,.95); color: var(--cream); box-shadow: 0 0 0 2px rgba(244,234,218,.3), 0 8px 24px rgba(0,0,0,.4); }
 .toast.weg { opacity: 0; transform: translateY(-8px); }
+/* Gastgeber kurz in einer anderen App (Beta 1.3.3): deutliche Pille oben, nachts Creme, am Tag Druckfarbe (wie die leisen Hinweise) */
+.host-app { position: fixed; left: 50%; top: max(12px, env(safe-area-inset-top)); transform: translateX(-50%); z-index: 2400; max-width: 92vw; background: var(--cream); color: var(--ink); font: 800 calc(19px * var(--fs))/1.3 var(--f-ui); padding: 12px 22px; border-radius: 24px; box-shadow: 0 0 0 3px rgba(255,180,40,.85), 0 10px 28px rgba(0,0,0,.45); text-align: center; pointer-events: none; }
+body.tag .host-app { background: rgba(33,27,44,.96); color: var(--cream); }
+.host-app[hidden] { display: none; }
 @keyframes toastAuf { from { opacity: 0; transform: translateY(-10px); } }
 #wach { position: fixed; left: 0; bottom: 0; width: 2px; height: 2px; opacity: .01; pointer-events: none; z-index: -1; }
 

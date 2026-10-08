@@ -224,7 +224,7 @@ func refresh_online() -> void:
 		var link := str(info.get("link", ""))
 		_on_code.text = code
 		_on_link.text = link.trim_prefix("https://")
-		_on_status.text = I18n.t("Verbindung zum Vermittler kurz weg – verbinde neu …") if st == "away" else \
+		_on_status.text = I18n.t("Online-Verbindung unterbrochen – verbinde neu …") if st == "away" else \
 			(I18n.t("1 Mitspieler online") if online_guests == 1 else (I18n.t("%d Mitspieler online") % online_guests if online_guests > 1 else I18n.t("Warte auf Mitspieler …")))
 		if link != _on_qr_text:
 			_on_qr_text = link

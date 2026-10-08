@@ -16,11 +16,14 @@ static func symbol(color_key: String, px: int, main := Color(0, 0, 0, 0), cut :=
 	return icon(UiPalette.symbol_of(color_key), px, m, cut)
 
 
-static func icon(name: String, px: int, main: Color, cut := UiPalette.CREAM) -> Texture2D:
-	var key := "%s|%d|%s|%s" % [name, px, main.to_html(), cut.to_html()]
+# deg: im SVG gedreht (statt Bild zurücklesen und drehen – get_image() ist im Compatibility-Renderer auf manchen GPUs unzuverlässig)
+static func icon(name: String, px: int, main: Color, cut := UiPalette.CREAM, deg := 0) -> Texture2D:
+	var key := "%s|%d|%s|%s|%d" % [name, px, main.to_html(), cut.to_html(), deg]
 	if _cache.has(key):
 		return _cache[key]
 	var body := _body(name, "#" + main.to_html(false), main.a, "#" + cut.to_html(false), cut.a)
+	if deg != 0 and body != "":
+		body = "<g transform=\"rotate(%d 50 50)\">%s</g>" % [deg, body]
 	var svg := "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"%d\" height=\"%d\" viewBox=\"0 0 100 100\">%s</svg>" % [px, px, body]
 	var img := Image.new()
 	var tex: Texture2D = null
@@ -113,6 +116,8 @@ static func _body(name: String, m: String, ma: float, c: String, ca: float) -> S
 				+ "<rect x=\"40\" y=\"12\" width=\"44\" height=\"62\" rx=\"8\" fill=\"%s\" fill-opacity=\"%.3f\" stroke=\"%s\" stroke-opacity=\"%.3f\" stroke-width=\"7\"/>" % [c, ca, m, ma]
 		"pfeil":
 			return _line("M10 50H84M58 22L86 50L58 78", m, ma, 12)
+		"zurueck":
+			return _line("M88 50H16M42 22L14 50L42 78", m, ma, 11)
 		"flip":
 			return "<circle cx=\"50\" cy=\"50\" r=\"44\" fill=\"%s\" fill-opacity=\"%.3f\"/>" % [m, ma] \
 				+ _fill("M81.1 18.9A44 44 0 0 1 18.9 81.1Z", c, ca) \

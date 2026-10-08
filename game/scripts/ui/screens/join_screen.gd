@@ -169,6 +169,9 @@ func build() -> void:
 	_room.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_room.custom_minimum_size = Vector2(0, ScreenKit.TOUCH)
 	_room.max_length = 24
+	_room.clear_button_enabled = true
+	_room.text = str(last_room().get("room", ""))   # Beta 1.3.3: letzter Raumcode bleibt stehen (auch nach Neustart, Spielende, „nicht gefunden“)
+	_room.text_changed.connect(_on_room_text)
 	_room.text_submitted.connect(func(_t: String) -> void: join_typed_room())
 	online.add_child(_room)
 	_room_btn = ScreenKit.button("Beitreten", "PrimaryButton", "start")
@@ -276,10 +279,36 @@ func _join_direct() -> void:
 		join(str(direct.address), int(direct.port))
 
 
-# Eingetippter Raumcode (Vermittler aus den Einstellungen)
+# Zuletzt benutzter Raum {room, relay} aus den Einstellungen ({} = keiner); relay "" = Vermittler aus den Einstellungen.
+static func last_room() -> Dictionary:
+	var v: Variant = AppSettings.clean_last_room(UiApp.setting("letzter_raum", {}))
+	return v if v is Dictionary else {}
+
+
+func _remember_room(code: String, relay: String) -> void:
+	var app := UiApp.app()
+	if app != null and app.settings != null:
+		var entry := {"room": code, "relay": relay}
+		if AppSettings.clean_last_room(entry) != last_room():
+			app.settings.set_value("letzter_raum", entry)
+
+
+func _on_room_text(text: String) -> void:
+	# Feld geleert (z. B. mit dem ×): gemerkten Raum vergessen.
+	if text.strip_edges() == "":
+		var app := UiApp.app()
+		if app != null and app.settings != null:
+			app.settings.reset("letzter_raum")
+
+
+# Eingetippter Raumcode (Vermittler aus den Einstellungen bzw. der gemerkte Vermittler dieses Raums)
 func join_typed_room() -> void:
 	_room.release_focus()
-	join_room(_room.text, "")
+	var last := last_room()
+	var relay := ""
+	if not last.is_empty() and NetProtocol.normalize_room_code(_room.text) == str(last.room):
+		relay = str(last.relay)
+	join_room(_room.text, relay)
 
 
 # Online beitreten: Code prüfen, beim Vermittler nachfragen (/info?room=), dann verbinden. relay "" = aus den Einstellungen;
@@ -299,6 +328,7 @@ func join_room(code_text: String, relay: String) -> void:
 		var app := UiApp.app()
 		if app != null:
 			app.settings.set_value("vermittler", url)
+	_remember_room(code, url)
 	_status.text = I18n.t("Suche Raum %s …") % code
 	_pending_room = {"room": code, "relay": url}
 	if _room_check == null:
@@ -308,11 +338,17 @@ func join_room(code_text: String, relay: String) -> void:
 		add_child(_room_check)
 		_room_check.request_completed.connect(_on_room_checked)
 	_room_check.cancel_request()
+	NetAddresses.hold_unbound(_check_hold(), 10000)   # Android: Anfrage ins Internet, nicht ins Spiel-WLAN
 	if _room_check.request(url + "/info?room=" + code) != OK:
 		_on_room_checked(HTTPRequest.RESULT_CANT_CONNECT, 0, PackedStringArray(), PackedByteArray())
 
 
+func _check_hold() -> String:
+	return "room_check:%d" % get_instance_id()
+
+
 func _on_room_checked(result: int, status: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+	NetAddresses.release_hold(_check_hold())
 	if _pending_room.is_empty():
 		return
 	var target := _pending_room
@@ -532,7 +568,8 @@ func _on_connection(state: String) -> void:
 			_online_row.visible = false          # Platz für die Lobby (5 Spieler und „Bereit“ bei 1600 × 720)
 			_stop_search()
 		"connecting":
-			_status.text = "Verbinde …"
+			# schon in der Lobby (Beta 1.3.3): klarer Hinweis statt nur „Verbinde …“
+			_status.text = client.connection_hint() if client != null and _lobby_box.visible else "Verbinde …"
 		"rejected", "closed":
 			if not _started:
 				# Grund behalten (z. B. „Der Gastgeber hat das Spiel beendet.“); sonst bliebe „Verbunden. Warte …“ stehen.
@@ -585,7 +622,9 @@ func _on_lobby(l: Dictionary) -> void:
 		var tag: String = I18n.t({"app": "App", "web": "Browser", "bot": "Computer"}.get(kind, kind))
 		if int(p.get("id", -1)) == int(l.get("host_id", -2)):
 			tag = I18n.t("Gastgeber")
-		if not bool(p.get("connected", true)):
+		if bool(p.get("away", false)):
+			tag += " · " + I18n.t("kurz in einer anderen App")
+		elif not bool(p.get("connected", true)):
 			tag += " · " + I18n.t("getrennt")
 		elif bool(p.get("ready", false)):
 			tag += " · " + I18n.t("bereit")

@@ -138,6 +138,8 @@ Farbnamen als Kartenfarbe groß („Play Blue or a 9“), im Fließtext als Adje
 | Mitspieler | other players / players |
 | Computergegner | computer player |
 | Computer spielt für … | Computer plays for … |
+| Computer für … spielen lassen | Let the computer play for … |
+| kurz in einer anderen App | briefly in another app |
 | Lobby | lobby |
 | Bereit | Ready |
 | Spiel-WLAN | Game Wi-Fi |

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#0C0F22">
+<meta name="theme-color" content="#E6D7BC">
 <meta name="format-detection" content="telephone=no">
 <meta name="color-scheme" content="dark">
 <title>Mau-Mau Flip – Mitspielen</title>
@@ -159,13 +159,14 @@
 </div>
 
 <div id="verbinde" class="verbinde" hidden>
-  <div class="verbinde-karte"><span class="kreisel"></span><b id="verbinde-titel" data-t>Verbinde neu …</b><span id="verbinde-unter" class="klein" data-t>Dein Platz bleibt frei.</span><b id="verbinde-weg-titel" hidden data-t>Gastgeber kurz weg …</b><span id="verbinde-weg" class="klein" hidden data-t>Ich warte und verbinde dann neu.</span><button id="verbinde-laden" class="knopf neben klein" hidden data-t>Seite neu laden</button></div>
+  <div class="verbinde-karte"><span class="kreisel"></span><b id="verbinde-titel" data-t>Verbindung zum Gastgeber unterbrochen – warte …</b><span id="verbinde-unter" class="klein" data-t>Dein Platz bleibt frei.</span><b id="verbinde-weg-titel" hidden data-t>Gastgeber kurz weg – warte …</b><span id="verbinde-weg" class="klein" hidden data-t>Ich warte und verbinde dann neu.</span><button id="verbinde-laden" class="knopf neben klein" hidden data-t>Seite neu laden</button></div>
 </div>
 <div id="quer" class="quer" aria-live="polite">
   <svg viewBox="0 0 120 120" aria-hidden="true"><g class="handy"><rect x="38" y="18" width="44" height="84" rx="9"/><circle cx="60" cy="92" r="3.5"/></g><path class="pfeil" d="M24 66a38 38 0 0 1 22-40M46 26l-11 -1M46 26l-3 10"/></svg>
   <div class="quer-text"><b class="nur-grob" data-t>Quer halten</b><b class="nur-maus" data-t>Fenster breiter ziehen</b>
   <span data-t>Dann wird der Tisch größer.</span></div>
 </div>
+<div id="host-app" class="host-app" hidden aria-live="polite"></div>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 <video id="wach" muted playsinline loop preload="none" aria-hidden="true" tabindex="-1"></video>
 

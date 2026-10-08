@@ -271,6 +271,8 @@ Client → Host:
 | `{t:"lobby_ready", ready:bool}` | Bereit-Meldung in der Lobby |
 | `{t:"ping", ts}` | Lebenszeichen |
 | `{t:"log", text}` | Fehler aus dem Browser für das Gastgeber-Log |
+| `{t:"away"}` | Beta 1.3.3: App bzw. Seite geht in den Hintergrund (andere App); sofort gesendet, Best effort |
+| `{t:"back"}` | Beta 1.3.3: wieder vorn; der Gastgeber antwortet mit dem vollen Stand (`state` bzw. `lobby`) |
 
 Host → Client:
 
@@ -278,9 +280,9 @@ Host → Client:
 |---|---|
 | `{t:"welcome", id, token, host_name}` | Anmeldung angenommen |
 | `{t:"reject", code, text, lt?}` | `code`: `version`, `full`, `running`, `proto`; `lt` siehe „Texte in jeder Sprache“ |
-| `{t:"lobby", rev, players:[{id, name, kind, connected, ready, seat}], rules, host_id}` | Lobby-Stand |
+| `{t:"lobby", rev, players:[{id, name, kind, connected, ready, seat, online?, away?}], rules, host_id}` | Lobby-Stand |
 | `{t:"start", seat}` | Partie beginnt |
-| `{t:"state", seq_ack?, events:[…], view:{…}}` | nach jeder Änderung: gefilterte Ereignisse plus vollständige Sicht (Abschnitt 4) |
+| `{t:"state", seq_ack?, events:[…], view:{…}}` | nach jeder Änderung: gefilterte Ereignisse plus vollständige Sicht (Abschnitt 4); `view.players[i]` zusätzlich `away:true` (kurz in einer anderen App) und `host:true` (Gastgeber) |
 | `{t:"err", text, lt?}` | Aktion abgelehnt; Text für den Hinweis |
 | `{t:"notice", text, lt?}` | Meldung an alle (z. B. „Kim ist getrennt – warte …“) |
 | `{t:"pong", ts}` | Antwort auf `ping` |
@@ -306,6 +308,27 @@ Host → Client:
   - Höchstens 10 Spieler. 8 KB je Client-Nachricht, 20 Nachrichten pro Sekunde.
 - `net_client.gd`, `class_name NetClient`:
   - verbindet, merkt sich das Token je Host-Adresse, verbindet automatisch neu (Abstand 1, 2, 4 s, höchstens 5 s).
+- **Online über den Vermittler** (Beta 1.3.3, `docs/online/ENTWURF.md` „Stille Aussetzer“; gilt für App und Lite gleich):
+  - Herzschlag Text `ping` alle 10 s (Antwort `pong` vom Vermittler), 25 s Stille = getrennt. Nach eigenem Senden ohne jede Antwort
+    binnen 6 s sofort `ping`, nach weiteren 4 s ohne Antwort neu verbinden (mit Token, danach voller Stand).
+  - Schließcodes an Gäste: 4503 Gastgeber kurz weg (10 s warten), **4012 Gastgeber wieder da → sofort neu anmelden**, 4404/4409/1001
+    endgültig, 4000 ersetzt.
+  - Gastgeber `away`: Online-Gäste bleiben in der Sitzung `connected` (keine Vertretung, keine Rückfrage); nach der Rückkehr 4012 an
+    ihre alten Verbindungen, 20 s Frist für die Neuanmeldung, erst danach `connected=false`.
+  - Hinweise: Gastgeber „Online-Verbindung unterbrochen – verbinde neu …“, Gast „Verbindung zum Gastgeber unterbrochen – warte …“,
+    bei 4503 „Gastgeber kurz weg – warte …“.
+- **App-Wechsel** (Beta 1.3.3, WLAN und online, App und Lite gleich):
+  - Weggehen (App: `NOTIFICATION_APPLICATION_PAUSED`/`FOCUS_OUT`, Lite: `visibilitychange` hidden/`pagehide`): sofort `{t:"away"}`
+    (senden + poll). Neu angemeldet, aber noch weg → nach der Begrüßung wieder `away`.
+  - Zurückkommen (`RESUMED`/`FOCUS_IN`, Lite: sichtbar/`pageshow`): `{t:"back"}` und `ping`; kommt binnen 3 s nichts
+    (`NetProtocol.RESUME_PROBE_MS`), sofort neu verbinden (mit Token, danach voller Stand). Ein wartender Neuversuch startet sofort.
+    Der Gastgeber prüft ebenso seine Vermittler-Verbindung (`NetRelayHost.check_now`).
+  - Der Gastgeber verteilt `away` in Lobby und Sicht. Anzeige am Platz/in der Liste „kurz in einer anderen App“; ist der Gastgeber
+    weg: „<Name> (Gastgeber) ist kurz in einer anderen App – warte …“. Ohne `away` (Abriss) gelten die Hinweise oben.
+  - Vertretung: Knopf „Computer für %s spielen lassen“ erst, wenn der Gast 30 s (`NetProtocol.SUB_OFFER_MS`) weg oder getrennt
+    ist, vorher nur „%s ist kurz weg“ bzw. „%s ist kurz in einer anderen App“. Ein Gast in einer anderen App wird nie automatisch vertreten.
+  - Abwärtsverträglich: ältere Gastgeber reichen `away`/`back` an die Spielsteuerung, die nur `act` kennt; ältere Gäste ignorieren
+    die Felder `away`/`host`.
 - `net_discovery.gd`, `class_name NetDiscovery`: UDP-Port `24692`.
   - Rundruf „MMF?“, Antwort JSON aus `/info`.
   - Gerichtete Rundrufe je Schnittstelle (Lehre aus Draw2Race), Multicast-Sperre über NetAndroid.

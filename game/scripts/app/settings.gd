@@ -80,6 +80,8 @@ static func sanitize(key: String, value: Variant) -> Variant:
 				return null
 			var url := NetProtocol.normalize_relay_url(value)
 			return url if url != "" or str(value).strip_edges() == "" else null
+		"letzter_raum":                   # Online-Gast: zuletzt benutzter Raum {room, relay} (relay "" = Standard-Vermittler), Beta 1.3.3
+			return clean_last_room(value)
 		"sortierung":
 			return value if value is String and SORTIERUNG.has(value) else null
 		"vibration", "beta", "hervorheben", "grosser_modus", "zug_vibration":
@@ -104,6 +106,18 @@ static func sanitize(key: String, value: Variant) -> Variant:
 					names.append(n)
 			return names.slice(0, RECENT_NAMES)
 	return value
+
+static func clean_last_room(value: Variant) -> Variant:
+	# {room: "KATZE-42", relay: "https://…" | ""}; Raumcode gültig, Vermittler nur, wenn er nicht der Standard ist. null = ungültig.
+	if not value is Dictionary or not value.get("room") is String:
+		return null
+	var room := NetProtocol.normalize_room_code(str(value.room))
+	if room == "":
+		return null
+	var relay := NetProtocol.normalize_relay_url(str(value.get("relay", ""))) if value.get("relay") is String else ""
+	if NetProtocol.is_default_relay(relay):
+		relay = ""
+	return {"room": room, "relay": relay}
 
 func get_value(key: String, fallback: Variant = null) -> Variant:
 	if data.has(key):

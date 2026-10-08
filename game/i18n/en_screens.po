@@ -1064,8 +1064,11 @@ msgstr "Link copied – paste it into a messenger, for example."
 msgid "Verbinde mit dem Vermittler …"
 msgstr "Connecting to the relay …"
 
-msgid "Verbindung zum Vermittler kurz weg – verbinde neu …"
-msgstr "Lost the relay for a moment – reconnecting …"
+msgid "Online-Verbindung unterbrochen – verbinde neu …"
+msgstr "Online connection lost – reconnecting …"
+
+msgid "Verbindung zum Gastgeber unterbrochen – warte …"
+msgstr "Connection to the host lost – waiting …"
 
 msgid "1 Mitspieler online"
 msgstr "1 player online"

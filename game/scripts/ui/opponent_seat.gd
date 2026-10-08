@@ -138,6 +138,8 @@ func status_text() -> String:
 	var sub := ""
 	if bool(player.get("substituted", false)):
 		sub = I18n.t("Computer spielt")
+	elif bool(player.get("away", false)):
+		sub = I18n.t("kurz in einer anderen App")
 	elif not bool(player.get("connected", true)):
 		sub = I18n.t("getrennt")
 	elif _next:
@@ -615,12 +617,17 @@ func _draw_row() -> void:
 # Nebenzeile der Listenzeile
 func row_status() -> String:
 	var parts: Array[String] = []
-	if _turn:
+	var away := bool(player.get("away", false)) and not bool(player.get("substituted", false))
+	if away:
+		pass                                  # „kurz in einer anderen App“ ist lang: „dran“ zeigt schon die hervorgehobene Zeile
+	elif _turn:
 		parts.append(I18n.t("dran"))
 	elif _next:
 		parts.append(I18n.t("gleich dran"))
 	if bool(player.get("substituted", false)):
 		parts.append(I18n.t("Computer spielt"))
+	elif bool(player.get("away", false)):
+		parts.append(I18n.t("kurz in einer anderen App"))
 	elif not bool(player.get("connected", true)):
 		parts.append(I18n.t("getrennt"))
 	if show_score:

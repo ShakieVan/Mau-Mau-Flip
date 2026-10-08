@@ -11,12 +11,16 @@ extends Node
 # Online-Spiel (docs/online/ENTWURF.md): open_online(vermittler) öffnet zusätzlich einen Raum beim Vermittler (NetRelayHost, gleiche
 # Schnittstelle wie NetServer). Verbindungsnummern ab NetProtocol.RELAY_CONN_BASE gehören zum Vermittler (_link wählt den Transport),
 # so spielen WLAN- und Online-Gäste in derselben Lobby und Partie. finish/stop beenden auch den Raum ({k:"end"}).
+# App-Wechsel (Beta 1.3.3): Gäste melden „away“/„back“ (kurz in einer anderen App), der Gastgeber selbst über PAUSED/FOCUS_OUT bzw.
+# RESUMED/FOCUS_IN (app_paused/app_resumed). Feld away je Spieler, in der Lobby verteilt (die Spielsteuerung übernimmt es in die
+# Sicht); gone_ms(id) = seit wann weg oder getrennt (Knopf „Computer für … spielen lassen“ erst nach NetProtocol.SUB_OFFER_MS).
 #
 # Nutzung: var s := NetHostSession.new(); add_child(s); s.start("Lena"); var me := s.host_id; s.message.connect(…)
 
 signal player_joined(id: int)
 signal player_left(id: int)
 signal player_rejoined(id: int)
+signal player_away(id: int, on: bool, changed: bool)   # „away“ (on) bzw. „back“; changed = false: nichts geändert (Gast will den vollen Stand)
 signal message(id: int, msg: Dictionary)
 signal lobby_changed
 signal finished                          # finish() ist fertig: alles geschlossen
@@ -148,7 +152,16 @@ func rebind(after_close := false) -> String:
 	# Spiel-WLAN gebunden, ist dessen Netz weg; dann entsteht der Server auch mit (nun getrennten) Mitspielern neu.
 	if server == null:
 		return ""
-	var before := NetAddresses.bound_to
+	var before := NetAddresses.binding()
+	if NetAddresses.holding() > 0:
+		# Gerade entsteht eine Internet-Verbindung (Vermittler, Updater) ohne Bindung: neu bewerten, sobald sie steht.
+		NetAddresses.after_holds(_rebind_after.bind(after_close, before))
+		return ""
+	return _rebind_after(after_close, before)
+
+func _rebind_after(after_close: bool, before: String) -> String:
+	if server == null:
+		return ""
 	var now := NetAddresses.bind_for("host")
 	if now == before:
 		return ""
@@ -191,6 +204,58 @@ func _stop_if_detached() -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_PREDELETE:
 		stop()
+	elif what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		app_paused()
+	elif what == NOTIFICATION_APPLICATION_RESUMED or what == NOTIFICATION_APPLICATION_FOCUS_IN:
+		app_resumed()
+
+# Gastgeber-App geht in den Hintergrund: allen sofort „kurz in einer anderen App“ zeigen (Best effort, danach hält Android an).
+func app_paused() -> void:
+	if host_id == 0 or not players.has(host_id) or bool(players[host_id].get("away", false)):
+		return
+	set_away(host_id, true)
+	flush()
+
+# Gastgeber-App wieder vorn: Vermittler-Verbindung sofort prüfen, „away“ zurücknehmen (alle bekommen den aktuellen Stand).
+func app_resumed() -> void:
+	if relay != null:
+		relay.check_now()
+	if host_id != 0 and players.has(host_id) and bool(players[host_id].get("away", false)):
+		set_away(host_id, false)
+		flush()
+
+# Gesendetes sofort hinausschieben (WLAN ohne Thread und Vermittler); der Server-Thread sendet selbst.
+func flush() -> void:
+	if server != null and not server.threaded:
+		server.poll()
+	if relay != null:
+		relay.flush()
+
+# Spieler kurz in einer anderen App (on) bzw. wieder da. Verteilt die Lobby; player_away meldet es der Spielsteuerung.
+func set_away(id: int, on: bool) -> void:
+	if not players.has(id):
+		return
+	var p: Dictionary = players[id]
+	var changed := bool(p.get("away", false)) != on
+	p.away = on
+	if on and int(p.get("gone_since", 0)) == 0:
+		p.gone_since = maxi(Time.get_ticks_msec(), 1)
+	elif not on and bool(p.connected):
+		p.gone_since = 0
+	if changed:
+		_log("Spieler %d „%s“ %s" % [id, p.name, "kurz in einer anderen App" if on else "wieder da"])
+		_changed(true)
+	player_away.emit(id, on, changed)
+
+func is_away(id: int) -> bool:
+	return players.has(id) and bool(players[id].get("away", false))
+
+# Wie lange ein Spieler schon weg (andere App) oder getrennt ist, in ms; 0 = da.
+func gone_ms(id: int) -> int:
+	if not players.has(id):
+		return 0
+	var since := int(players[id].get("gone_since", 0))
+	return Time.get_ticks_msec() - since if since > 0 else 0
 
 func poll() -> void:
 	if server == null and relay == null:
@@ -334,6 +399,8 @@ func lobby_message() -> Dictionary:
 		var entry := {"id": id, "name": p.name, "kind": p.kind, "connected": p.connected, "ready": p.ready, "seat": int(p.seat)}
 		if bool(p.get("online", false)):
 			entry["online"] = true          # über den Vermittler verbunden (Weltkugel in der Lobby)
+		if bool(p.get("away", false)):
+			entry["away"] = true            # kurz in einer anderen App (Beta 1.3.3; ältere Geräte ignorieren das Feld)
 		list.append(entry)
 	return {"t": "lobby", "rev": rev, "players": list, "rules": rules, "host_id": host_id}
 
@@ -381,6 +448,8 @@ func _on_closed(conn: int, code: int, reason: String) -> void:
 		return
 	players[id].conn = -1
 	players[id].connected = false
+	if int(players[id].get("gone_since", 0)) == 0:
+		players[id].gone_since = maxi(Time.get_ticks_msec(), 1)
 	_log("Spieler %d „%s“ getrennt (%d%s)" % [id, players[id].name, code, " " + reason if reason != "" else ""])
 	player_left.emit(id)
 	_changed()
@@ -414,6 +483,10 @@ func _on_message(conn: int, text: String) -> void:
 		"lobby_ready":
 			if not running:
 				set_ready(id, bool(msg.ready))
+		"away", "back":
+			set_away(id, msg.t == "away")
+			if msg.t == "back" and not running:
+				send_to(id, lobby_message())       # voller Stand der Lobby (in der Partie schickt die Spielsteuerung „state“)
 		"log":
 			_log("Gast %d „%s“: %s" % [id, players[id].name, str(msg.text).left(300)])
 		_:
@@ -451,6 +524,8 @@ func _hello(conn: int, msg: Dictionary, conn_info: Dictionary) -> void:
 			_close(old, NetWs.CLOSE_REPLACED, "neue Verbindung")
 		p.conn = conn
 		p.connected = true
+		p.away = false                  # neu angemeldet = App vorn (sonst schickt der Gast gleich wieder „away“)
+		p.gone_since = 0
 		p.kind = msg.kind
 		p.address = str(conn_info.get("address", ""))
 		p.online = bool(conn_info.get("online", false))

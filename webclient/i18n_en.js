@@ -69,7 +69,6 @@ window.MMF_I18N_EN = {
   "Tipp auf einen Mitspieler zeigt seine Rückseiten, wenn die Regeln das erlauben.": "Tapping another player shows their backs, if the rules allow it.",
   "Ton": "Sound",
   "Der Lautsprecher oben schaltet alles stumm. Lautstärke und Schrift stellst du im Menü ein.": "The speaker at the top mutes everything. You set volume and text size in the menu.",
-  "Verbinde neu …": "Reconnecting …",
   "Dein Platz bleibt frei.": "Your seat stays free.",
   "Seite neu laden": "Reload page",
   "Quer halten": "Hold sideways",
@@ -362,6 +361,5 @@ window.MMF_I18N_EN = {
   "Der Gastgeber ist kurz weg. Ich versuche es in 10 Sekunden erneut …": "The host is away for a moment. Trying again in 10 seconds …",
   "Der Raum ist voll.": "The room is full.",
   "Der Gastgeber hat den Raum geschlossen.": "The host has closed the room.",
-  "Gastgeber kurz weg …": "Host away for a moment …",
   "Ich warte und verbinde dann neu.": "I'll wait and then reconnect."
 };

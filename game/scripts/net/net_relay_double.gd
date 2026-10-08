@@ -41,6 +41,22 @@ func advance(ms: int) -> void:
 	core.tick(now_ms())
 	_flush_core()
 
+# Tests (Beta 1.3.3): Verbindung still abreißen lassen – der Socket bleibt offen, aber nichts kommt mehr an oder zurück (auch kein
+# „pong“). So wie eine Mobilfunk-Verbindung, die ohne Close verschwindet. Ergebnis: Socket-Nummer oder -1.
+func hang_host(code: String) -> int:
+	var r: Dictionary = core.rooms.get(code, {})
+	if r.is_empty() or int(r.host) < 0:
+		return -1
+	mute_ws(int(r.host))
+	return int(r.host)
+
+func hang_guest(code: String, c: int) -> int:
+	var r: Dictionary = core.rooms.get(code, {})
+	if r.is_empty() or not (r.guests as Dictionary).has(c):
+		return -1
+	mute_ws(int(r.guests[c]))
+	return int(r.guests[c])
+
 func base_url() -> String:
 	return "http://127.0.0.1:%d" % port
 

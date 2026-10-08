@@ -222,7 +222,7 @@ func net_flow() -> void:
 	hts._leave_now()                                       # „bye“ erreicht den getrennten Gast nicht
 	await wait(0.6)
 	check(nav.top() is MainMenuScreen, "L: Gastgeber im Hauptmenü")
-	check(rts._conn.visible and rts._conn_label.text == "Verbinde neu …", "L: Gast zeigt „Verbinde neu …“ (%s)" % rts._conn_label.text)
+	check(rts._conn.visible and rts._conn_label.text == "Verbindung zum Gastgeber unterbrochen – warte …", "L: Gast zeigt „Verbindung zum Gastgeber unterbrochen – warte …“ (%s)" % rts._conn_label.text)
 	nav.push(HostLobbyScreen.new(), false)
 	await frames(3)
 	var lobby2 := nav.top() as HostLobbyScreen

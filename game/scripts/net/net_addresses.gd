@@ -166,7 +166,6 @@ static var bound_to := ""                # "wifi" | "hotspot" | "" – Bindung d
 static var bind_problem := ""
 static var _owners := {}
 static var _last_address := {}          # letzte Adresse je Zweck (für das Wiederherstellen nach einer Internet-Anfrage)
-static var _suspended := false          # Bindung für eine Internet-Anfrage (Updater) gerade gelöst
 
 static func _android_state() -> Dictionary:
 	if not use_binding or override_interfaces != null or not _has("state"):
@@ -179,6 +178,9 @@ static func bind_for(purpose: String, address := "") -> String:
 	_owners[purpose] = true
 	_last_address[purpose] = address
 	bind_problem = ""
+	if holding() > 0:
+		_rebind = true       # ausgesetzt (Internet-Verbindung entsteht gerade): erst beim Freigeben binden
+		return ""
 	var s := _android_state()
 	if s.is_empty() or not ["wifi_handle", "hotspot_addresses", "host_plan", "join_binding", "in_hotspot", "bind_wifi", "bind_network",
 			"hotspot_handle", "unbind", "bound_to_wifi"].all(func(m): return _has(m)):
@@ -212,29 +214,101 @@ static func bind_for(purpose: String, address := "") -> String:
 	bind_problem = err
 	return bound_to
 
-# Internet-Anfragen (Update-Prüfung, APK-Download): Eine Bindung an ein Netz, das womöglich kein Internet hat (eigenes Spiel-WLAN
-# ab Android 16, Spiel-WLAN eines anderen Gastgebers), wird kurz gelöst, damit die Anfrage über das Standardnetz läuft
-# (Nutzerbefund 07.10.2026: „Jetzt prüfen“ hing bei offenem Spiel-WLAN und meldete „Keine Verbindung.“). Bestehende Sockets
-# des Spiels bleiben unberührt; danach wird die vorige Bindung wiederhergestellt.
-static func suspend_for_internet() -> void:
-	if _suspended or bound_to == "":
+# Internet-Verbindungen (Update-Prüfung, APK-Download, Verbindung zum Vermittler): Eine Bindung an ein Netz, das womöglich kein
+# Internet hat (eigenes Spiel-WLAN ab Android 16, Spiel-WLAN eines anderen Gastgebers, WLAN ohne Internet), wird ausgesetzt, damit
+# die neuen Sockets über das Standardnetz laufen (Nutzerbefund 07.10.2026: „Jetzt prüfen“ hing bei offenem Spiel-WLAN und meldete
+# „Keine Verbindung.“). Mehrere Nutzer gleichzeitig (Updater, Vermittler-Gastgeber, Vermittler-Gast) halten je einen Halt
+# (hold_unbound, gezählt je Halter). Erst wenn der letzte Halt frei ist (release_hold) oder seine Frist abgelaufen ist (expire_holds),
+# wird die vorige Bindung wiederhergestellt. Bestehende Sockets behalten ihr Netz. bind_for während eines Halts merkt sich den Zweck
+# nur und bindet beim Wiederherstellen.
+const HOLD_MS := 15000
+
+static var clock_ms := -1               # nur Tests: feste Uhr statt Time.get_ticks_msec()
+static var _holds := {}                 # Halter -> Frist (ms, 0 = ohne Frist)
+static var _held_bound := ""            # Bindung vor dem ersten Halt
+static var _rebind := false             # beim Freigeben neu binden
+static var _after_holds: Array = []     # Callables, die nach dem Wiederherstellen laufen
+
+static func _now() -> int:
+	return clock_ms if clock_ms >= 0 else Time.get_ticks_msec()
+
+static func holding() -> int:
+	# Zahl der Halter (abgelaufene Fristen werden dabei geräumt).
+	expire_holds()
+	return _holds.size()
+
+static func is_held(holder: String) -> bool:
+	return _holds.has(holder)
+
+static func binding() -> String:
+	# Bindung, die gilt bzw. nach dem Aussetzen wieder gilt.
+	return _held_bound if not _holds.is_empty() else bound_to
+
+static func hold_unbound(holder: String, timeout_ms := HOLD_MS) -> void:
+	# Bindung aussetzen, bis release_hold(holder) oder die Frist abläuft (timeout_ms <= 0: ohne Frist).
+	expire_holds()
+	if _holds.is_empty():
+		_held_bound = bound_to
+		_rebind = bound_to != ""
+		if bound_to != "":
+			_call("unbind")
+			bound_to = ""
+	_holds[holder] = (_now() + timeout_ms) if timeout_ms > 0 else 0
+
+static func release_hold(holder: String) -> void:
+	if not _holds.has(holder):
 		return
-	_call("unbind")
-	bound_to = ""
-	_suspended = true
+	_holds.erase(holder)
+	if _holds.is_empty():
+		_restore()
+
+static func expire_holds() -> void:
+	if _holds.is_empty():
+		return
+	var now := _now()
+	for holder in _holds.keys():
+		var until := int(_holds[holder])
+		if until > 0 and now >= until:
+			_holds.erase(holder)
+	if _holds.is_empty():
+		_restore()
+
+static func after_holds(callable: Callable) -> void:
+	# callable läuft, sobald kein Halt mehr besteht (sofort, wenn keiner besteht).
+	if holding() == 0:
+		callable.call()
+	else:
+		_after_holds.append(callable)
+
+static func _restore() -> void:
+	var again := _rebind
+	_rebind = false
+	_held_bound = ""
+	if again:
+		for purpose in _owners.keys():
+			bind_for(str(purpose), str(_last_address.get(purpose, "")))
+	var calls := _after_holds
+	_after_holds = []
+	for c in calls:
+		if (c as Callable).is_valid():
+			(c as Callable).call()
+
+static func suspend_for_internet() -> void:
+	# Updater: Halt ohne Frist, resume_after_internet gibt ihn frei.
+	hold_unbound("updater", 0)
 
 
 static func resume_after_internet() -> void:
-	if not _suspended:
-		return
-	_suspended = false
-	for purpose in _owners.keys():
-		bind_for(str(purpose), str(_last_address.get(purpose, "")))
+	release_hold("updater")
 
 
 static func release(purpose: String) -> void:
 	# Zweck beendet; ohne weitere Zwecke wird die Bindung gelöst.
 	_owners.erase(purpose)
+	_last_address.erase(purpose)
+	if _owners.is_empty():
+		_rebind = false
+		_held_bound = ""
 	if _owners.is_empty() and bound_to != "":
 		_call("unbind")
 		bound_to = ""

@@ -110,6 +110,11 @@ Online-Spiel Schritt 1: Vermittler (`relay/`, Cloudflare Worker + Durable Object
 - **Tags sind unveränderlich:** Der Vermittler holt `/c/<version>/` vom Tag `v<version>` und speichert es bis zu 1 Jahr (Cloudflare und Browser). Tags nur beim Veröffentlichen setzen (`tools/release.ps1`: erst committen und pushen, dann Release; das Skript legt den Tag an). Vorabtests über den echten Vermittler mit einer Versionsnummer, die danach übersprungen wird.
 - Offen: Android 16+ mit Spiel-WLAN (Prozessbindung an den Hotspot) und gleichzeitig Online – Vermittler-Socket könnte ins Netz ohne Internet laufen; Bindung beim Verbinden zählend aussetzen, am S24 prüfen (nur nach Absprache). Letzter Raumcode nach Neustart nicht vorbelegt. Lite-Startseite tagsüber dunkel. iPhone als Online-Gast ungetestet.
 
+## Geplant für Beta 1.3.4 (Nutzerwünsche 08.10.2026)
+
+- **Aussetzen-Karten:** beim Legen ein Katzenschnurren (Spieltöne; Kandidaten aus MOSS-SoundEffect wie die übrigen Spieltöne, Nutzer wählt per Hörseite; nichts aus `audio/referenz`).
+- **Partie-Ende nachts:** statt Konfettiregen ein bunter Sternenschauer (App und Browser; tagsüber bleibt Konfetti).
+
 ## Geplant: Online-Spiel, Schritt 1 (Nutzerentscheidung 08.10.2026)
 
 - Vermittler (Relay) als Cloudflare Worker mit Durable Objects (ein Raum = ein Objekt), im Repo samt „Deploy to Cloudflare“-Knopf im README: Jede Gruppe (oder der Nutzer als Standard) richtet sich mit einem Klick einen eigenen Gratis-Vermittler ein; der Gratistarif pausiert bei Überschreiten der Tageslimits, kostet aber nichts. Vor dem Umsetzen die aktuellen Bedingungen (Durable Objects im Gratistarif, WebSocket-Limits) prüfen.

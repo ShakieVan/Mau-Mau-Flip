@@ -43,8 +43,7 @@ var leaving := false
 var _top: Control
 var _menu_btn: Button
 var _menu_night := -1                  # zuletzt angewandte Seite des Zurück-Knopfs (0 Tag, 1 Nacht)
-var _menu_icon_day: Texture2D
-var _menu_icon_night: Texture2D
+var _online_away := false              # Gastgeber: Vermittler-Verbindung unterbrochen (Hinweis oben, Beta 1.3.3)
 var _round_menu: Button
 var _conn: PanelContainer
 var _conn_label: Label
@@ -67,8 +66,13 @@ var _peek_down_ms := -1
 var _peek_on := false
 var _peek_was_on := false
 var _handover_pending := false
-var _sub_btn: Button                 # Gastgeber: „Computer spielt für Kim“ (getrennter Gast, M4)
+var _sub_btn: Button                 # Gastgeber: „Computer für Kim spielen lassen“ (Gast ≥ 30 s weg, M4, Beta 1.3.3)
 var _sub_seat := -1
+var _sub_hint: PanelContainer        # Gastgeber: vorher nur „Kim ist kurz weg“ bzw. „… ist kurz in einer anderen App“
+var _sub_hint_label: Label
+var _sub_hint_seat := -1
+var _sub_next_ms := 0                # nächste Prüfung der 30-s-Frist
+var _host_app_away := false          # Gast: Gastgeber kurz in einer anderen App (Hinweis oben)
 
 
 # starter: wird aufgerufen, sobald der Tisch an der Quelle hängt (z. B. LocalTable.start, HostTable.start)
@@ -158,7 +162,12 @@ func build() -> void:
 
 
 func _build_top() -> void:
-	_menu_btn = ScreenKit.button("", "GhostButton", "zurueck", ScreenKit.TOUCH)
+	# Pfeil gezeichnet wie das ☰ (UiIcons), nicht als eingefärbtes Bild: Auf einem Gast-Gerät (1.3.2, Tag) erschien statt des Pfeils ein
+	# schwarzes Quadrat – Texture2D.get_image() liest im Compatibility-Renderer je nach GPU nichts Brauchbares zurück.
+	_menu_btn = ScreenKit.button("", "GhostButton", "", ScreenKit.TOUCH)
+	_menu_btn.icon = UiIcons.icon("zurueck", 40, UiPalette.INK)
+	_menu_btn.expand_icon = false
+	_menu_btn.add_theme_constant_override("icon_max_width", 40)
 	_menu_btn.name = "Menue"
 	_menu_btn.tooltip_text = "Partie verlassen"
 	_menu_btn.position = Vector2(14, 10)
@@ -216,6 +225,13 @@ func _build_top() -> void:
 	_sub_btn.visible = false
 	_sub_btn.pressed.connect(ask_substitute)
 	_top.add_child(_sub_btn)
+	_sub_hint = ScreenKit.card(12.0, false)
+	_sub_hint.name = "KurzWeg"
+	_sub_hint.visible = false
+	_sub_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_sub_hint_label = ScreenKit.label("", "", 22)
+	_sub_hint.add_child(_sub_hint_label)
+	_top.add_child(_sub_hint)
 
 
 func on_enter() -> void:
@@ -254,6 +270,8 @@ func _layout() -> void:
 	_conn.position = Vector2((sz.x - _conn.size.x) * 0.5, 16.0)
 	_sub_btn.size = Vector2(_sub_btn.get_combined_minimum_size().x + 20.0, ScreenKit.TOUCH)
 	_sub_btn.position = Vector2((_burger.position.x + _burger.size.x if not table.big else 14.0 + _menu_btn.size.x) + 14.0, 10.0)
+	_sub_hint.reset_size()
+	_sub_hint.position = _sub_btn.position + Vector2(0.0, (ScreenKit.TOUCH - _sub_hint.size.y) * 0.5)
 
 
 func _process(_delta: float) -> void:
@@ -269,10 +287,17 @@ func _process(_delta: float) -> void:
 			_ingame_menu.close()
 		if is_settings_open():
 			_settings_ov.close()
+	_sync_conn_hint()
 	_sync_menu_night()
-	# „Computer spielt für …“ verdeckt sonst die Frage über dem Farbrad (Ablegen-Joker)
+	# „Computer für … spielen lassen“ verdeckt sonst die Frage über dem Farbrad (Ablegen-Joker)
 	if _sub_btn != null:
+		if Time.get_ticks_msec() >= _sub_next_ms:
+			_sub_next_ms = Time.get_ticks_msec() + 500     # 30-s-Frist und Abwesenheit ohne neuen Stand nachführen
+			_refresh_substitute()
 		_sub_btn.visible = _sub_seat >= 0 and not table.wish_picker.is_open()
+		_sub_hint.visible = _sub_seat < 0 and _sub_hint_seat >= 0 and not table.wish_picker.is_open()
+		if _sub_hint.visible and bool(_sub_hint.get_meta("night", false)) != (table.night > 0.5):
+			ScreenKit.set_card_night(_sub_hint, table.night > 0.5)
 	# Ziel der Ausspiel-Flüge folgt dem Tisch (Größenwechsel)
 	if not hand.play_target.is_finite():
 		_layout()
@@ -364,7 +389,7 @@ func _on_connection(state: String) -> void:
 		"open":
 			_conn.visible = false
 		"connecting":
-			_conn_label.text = "Verbinde neu …"
+			_conn_label.text = _conn_hint()
 			_conn_menu.visible = false
 			_conn_save.visible = false
 			_conn_host.visible = false
@@ -590,23 +615,72 @@ func _set_peek(on: bool) -> void:
 
 # ================================================================= Verlassen
 
+# Hinweis bei Online-Aussetzern (Beta 1.3.3, Nutzerbefund 1.3.2: niemand sah, dass die Verbindung weg war).
+# Gast: Text je nach Lage (Gastgeber kurz weg / Verbindung unterbrochen), auch wenn er während des Wartens wechselt.
+# Gastgeber: solange seine Verbindung zum Vermittler neu aufgebaut wird, „Online-Verbindung unterbrochen – verbinde neu …“.
+func _conn_hint() -> String:
+	return str(source.call("connection_hint")) if source != null and source.has_method("connection_hint") else "Verbinde neu …"
+
+
+func _sync_conn_hint() -> void:
+	if source is HostTable:
+		var s: NetHostSession = (source as HostTable).session
+		var away := s != null and s.online_state() == "away"
+		if away == _online_away:
+			return
+		_online_away = away
+		_conn_label.text = "Online-Verbindung unterbrochen – verbinde neu …"
+		for b: Control in [_conn_menu, _conn_save, _conn_host, _conn_sub]:
+			b.visible = false
+		_conn.visible = away
+		_layout()
+	elif _conn.visible and _conn_label.text != _conn_hint() and source != null and source.has_method("connection_state") \
+			and str(source.call("connection_state")) == "connecting":
+		_conn_label.text = _conn_hint()
+		_layout()
+	else:
+		# Gast (Beta 1.3.3): Gastgeber meldet „kurz in einer anderen App“ → deutlich oben, solange die Verbindung offen ist
+		var who := _away_host_name()
+		if who != "":
+			var text := I18n.t("%s (Gastgeber) ist kurz in einer anderen App – warte …") % who
+			_host_app_away = true
+			if not _conn.visible or _conn_label.text != text:
+				_conn_label.text = text
+				for b: Control in [_conn_menu, _conn_save, _conn_host, _conn_sub]:
+					b.visible = false
+				_conn.visible = true
+				_layout()
+		elif _host_app_away:
+			_host_app_away = false
+			if source != null and str(source.call("connection_state")) == "open":
+				_conn.visible = false
+			_layout()
+
+
+# Name des Gastgebers, wenn er laut Stand kurz in einer anderen App ist (nur App-Gast, Verbindung offen); sonst "".
+func _away_host_name() -> String:
+	if not source is ClientTable or str(source.call("connection_state")) != "open":
+		return ""
+	for p in view.get("players", []):
+		if p is Dictionary and bool(p.get("host", false)) and bool(p.get("away", false)):
+			return str(p.get("name", ""))
+	return ""
+
+
 # Zurück-Knopf nachts hell (Nutzerbefund 07.10.2026: auf der Nachtseite unsichtbar): heller Pfeil und heller Rand, tagsüber wie bisher.
 func _sync_menu_night() -> void:
 	var n := 1 if table.night > 0.5 else 0
 	if n == _menu_night:
 		return
 	_menu_night = n
-	if _menu_icon_day == null:
-		_menu_icon_day = _menu_btn.icon
-		_menu_icon_night = _tinted(_menu_icon_day, UiPalette.PAPER)
-	_menu_btn.icon = _menu_icon_night if n == 1 else _menu_icon_day
+	_menu_btn.icon = UiIcons.icon("zurueck", 40, UiPalette.PAPER if n == 1 else UiPalette.INK)
 	_menu_btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	# ☰ (Beta 1.1.2) im selben Stil: gezeichnete Striche, tagsüber Druckfarbe, nachts hell
 	_burger.icon = UiIcons.icon("menue", 40, UiPalette.PAPER if n == 1 else UiPalette.INK)
 	for b: Button in [_menu_btn, _burger]:
 		for ic in ["icon_normal_color", "icon_hover_color", "icon_pressed_color", "icon_focus_color", "icon_hover_pressed_color"]:
-			if n == 1:
-				b.add_theme_color_override(ic, Color.WHITE)
+			if n == 1 or b == _menu_btn:
+				b.add_theme_color_override(ic, Color.WHITE)    # Pfeil in seiner gezeichneten Farbe
 			else:
 				b.remove_theme_color_override(ic)
 		for st in ["normal", "hover", "pressed", "focus"]:
@@ -619,23 +693,6 @@ func _sync_menu_night() -> void:
 				b.add_theme_stylebox_override(st, sb)
 			else:
 				b.remove_theme_stylebox_override(st)
-
-
-static func _tinted(tex: Texture2D, col: Color) -> Texture2D:
-	if tex == null:
-		return null
-	var img := tex.get_image()
-	if img == null:
-		return tex
-	img = img.duplicate()
-	img.decompress()
-	img.convert(Image.FORMAT_RGBA8)
-	for y in img.get_height():
-		for x in img.get_width():
-			var c := img.get_pixel(x, y)
-			if c.a > 0.0:
-				img.set_pixel(x, y, Color(col.r, col.g, col.b, c.a))
-	return ImageTexture.create_from_image(img)
 
 
 func on_back() -> bool:
@@ -859,18 +916,33 @@ func _leave_now() -> void:
 
 # Knopf „Computer spielt für …“, solange ein Gast getrennt ist (zuerst der, auf den das Spiel wartet). Kommt er zurück, spielt er
 # selbst weiter (HostTable._on_rejoined beendet die Vertretung).
+# Beta 1.3.3 (Nutzerbefund: „Computer spielt für Püppi“ wirkte wie ein Zustand): Der Knopf heißt „Computer für %s spielen lassen“ und
+# kommt erst, wenn der Gast 30 s weg (andere App) oder getrennt ist; vorher nur der Hinweis „%s ist kurz weg“ bzw. „… in einer anderen App“.
 func _refresh_substitute() -> void:
 	if _sub_btn == null:
 		return
+	var old_seat := _sub_seat
+	var old_hint := _sub_hint_label.text
 	_sub_seat = -1
+	_sub_hint_seat = -1
 	if source is HostTable and not leaving and not str(view.get("phase", "")) in ["round_end", "game_over"]:
-		var list: Array = (source as HostTable).substitutable_seats()
+		var ht := source as HostTable
+		var w := ht.waiting_seat()
+		var cur := int(view.get("turn", -1))
+		var list: Array = ht.substitutable_seats()
 		if not list.is_empty():
-			var w := (source as HostTable).waiting_seat()
-			_sub_seat = w if list.has(w) else int(list[0])
+			_sub_seat = w if list.has(w) else (cur if list.has(cur) else int(list[0]))
+		else:
+			var absent: Array = ht.absent_seats()
+			if not absent.is_empty():
+				_sub_hint_seat = w if absent.has(w) else (cur if absent.has(cur) else int(absent[0]))
+				var who := ht.seat_name(_sub_hint_seat)
+				_sub_hint_label.text = (I18n.t("%s ist kurz in einer anderen App") if ht.is_away(_sub_hint_seat) else I18n.t("%s ist kurz weg")) % who
 	_sub_btn.visible = _sub_seat >= 0
+	_sub_hint.visible = _sub_seat < 0 and _sub_hint_seat >= 0
 	if _sub_seat >= 0:
-		_sub_btn.text = I18n.t("Computer spielt für %s") % (source as HostTable).seat_name(_sub_seat)
+		_sub_btn.text = I18n.t("Computer für %s spielen lassen") % (source as HostTable).seat_name(_sub_seat)
+	if _sub_seat != old_seat or _sub_hint_label.text != old_hint:
 		_layout()
 
 

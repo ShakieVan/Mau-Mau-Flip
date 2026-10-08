@@ -107,7 +107,8 @@ func run() -> void:
 	r._ws = null
 	r._lost("Test")
 	check(host.online_state() == "away", "Gastgeber online kurz weg")
-	check(not bool(host.player(int(pm.id)).connected) and bool(host.player(int(pw.id)).connected), "Online-Gäste getrennt, WLAN-Gast nicht")
+	# Beta 1.3.3: Nur der Gastgeber ist weg – seine Online-Gäste gelten nicht als gegangen (keine Vertretung durch den Computer)
+	check(bool(host.player(int(pm.id)).connected) and bool(host.player(int(pw.id)).connected), "Online-Gäste bleiben verbunden, WLAN-Gast auch")
 	check(wait(func(): return host.online_state() == "open", 6000), "Gastgeber wieder online (Token)")
 	check(str(host.online_info().get("room")) == code, "derselbe Raumcode")
 	check(wait(func(): return rejoined.has(int(pm.id)) and rejoined.has(int(po.id)), 8000), "Online-Gäste als dieselben Spieler zurück")

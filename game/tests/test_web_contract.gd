@@ -105,6 +105,8 @@ func kontrast(a: Color, b: Color) -> float:
 # 0.1.4 (Browser): volles Logo, Rahmen statt „Bitte quer halten“, Mond, Strahlenkranz und Denkblase, eigene Kartenzahl,
 # Strahlen am Rundenende, Flip-Überraschung (Regeltext, Kartenhilfe, Stempel, Mock, Selbsttest)
 func pruefe_014(css: String, tisch: String, karten: String, mock: String, autotest: String, app: String, seite: String) -> void:
+	check(css.contains("#start { background: radial-gradient(ellipse 80% 70% at 50% 40%, #FFF7E8") and seite.contains("theme-color\" content=\"#E6D7BC\"")
+			and app.contains("this.screen === 'start' ? '#E6D7BC'"), "Startseite (Name eingeben) ist tagsüber hell, vor Spielbeginn gilt Tag")
 	check(seite.contains("bilder/logo.webp") and FileAccess.file_exists(web_dir.path_join("bilder/logo.webp")) and css.contains(".start-logo.mit-bild"),
 		"Startseite zeigt das volle Logo (Karten und „Mau!“-Blase)")
 	check(app.contains("classList.toggle('rahmen'") and css.contains("body.rahmen #tisch") and css.contains("body.rahmen-hinweis[data-screen=\"tisch\"] .quer")
@@ -879,9 +881,9 @@ func _po_unq(q: String) -> String:
 # (webclient/test/netz_online.html); hier nur der Vertrag der Quelltexte.
 func pruefe_online(app: String, seite: String) -> void:
 	var netz := read_web("netz.js")
-	check(netz.contains("online: bool") and netz.contains("ONLINE_PING = 25000") and netz.contains("ONLINE_STILL = 70000") and netz.contains("ONLINE_HOST_WEG = 10000")
+	check(netz.contains("online: bool") and netz.contains("ONLINE_PING = 10000") and netz.contains("ONLINE_STILL = 25000") and netz.contains("ONLINE_HOST_WEG = 10000")
 			and netz.contains("this._text('ping')"),
-		"netz.js: Online-Herzschlag Text ping alle 25 s, 70 s Stille, 10 s Wartezeit bei Gastgeber weg")
+		"netz.js: Online-Herzschlag Text ping alle 10 s, 25 s Stille, 10 s Wartezeit bei Gastgeber weg")
 	check(netz.contains("4404: 'kein_raum'") and netz.contains("4409: 'voll'") and netz.contains("1001: 'raum_ende'") and netz.contains("ev.code === 4503")
 			and netz.contains("'host_weg'"),
 		"netz.js: Schließcodes 4404/4409/1001 endgültig, 4503 = Gastgeber kurz weg")
@@ -895,5 +897,24 @@ func pruefe_online(app: String, seite: String) -> void:
 		"app.js: online „In der App spielen“ mit Raum, APK-Knopf zeigt auf GitHub-Releases")
 	check(app.contains("s === 'host_weg'") and app.contains("_raumEnde(") and seite.contains("id=\"verbinde-weg-titel\"") and seite.contains("id=\"verbinde-weg\""),
 		"app.js/index.html: Hinweise „Gastgeber kurz weg“ und „Raum nicht gefunden/voll/geschlossen“")
+	# Beta 1.3.3: 4012 (Gastgeber wieder da) → sofort neu anmelden; Hinweise wie in der App
+	check(netz.contains("ev.code === 4012") and seite.contains(">Verbindung zum Gastgeber unterbrochen – warte …<")
+			and seite.contains(">Gastgeber kurz weg – warte …<"),
+		"netz.js/index.html: 4012 sofort neu, Hinweise „Verbindung zum Gastgeber unterbrochen – warte …“ / „Gastgeber kurz weg – warte …“")
 	var t := read_web("test/netz_online.html")
 	check(t.contains("4503") and t.contains("4404") and t.contains("data-ok") and t.contains("O.code("), "webclient/test/netz_online.html: Chrome-Test des Online-Modus vorhanden")
+	# Beta 1.3.3, App-Wechsel: verdeckt → {t:"away"}, sichtbar → {t:"back"} und Prüfung (3 s), Gastgeber in einer anderen App deutlich,
+	# Spieler in einer anderen App in Liste und Lobby markiert
+	var tisch := read_web("tisch.js")
+	check(netz.contains("weg() { this.imHintergrund = true; this._roh({ t: 'away' }); }") and netz.contains("if (war) this._roh({ t: 'back' });")
+			and netz.contains("if (this.imHintergrund) this._roh({ t: 'away' });") and netz.contains("WECK_PRUEFUNG = 3000"),
+		"netz.js: away beim Verdecken, back + Prüfung beim Zurückkommen, away nach Neuanmeldung im Hintergrund")
+	check(app.contains("else this.wegGehen();") and app.contains("addEventListener('pagehide', () => this.wegGehen())")
+			and app.contains("this.wecken(true)") and app.contains("this.verbindung.zurueck()"),
+		"app.js: visibilitychange/pagehide → away, sichtbar/pageshow → back")
+	check(seite.contains("id=\"host-app\"") and app.contains("M.t('%s (Gastgeber) ist kurz in einer anderen App – warte …', name)")
+			and app.contains("p.host && p.away") and app.contains("p.id === m.host_id && p.away"),
+		"app.js/index.html: Hinweis „<Name> (Gastgeber) ist kurz in einer anderen App – warte …“ (Tisch und Lobby)")
+	check(tisch.contains("else if (p.away) marken +=") and tisch.contains("M.t('kurz in einer anderen App')") and app.contains("p.away ? '<span class=\"marke weg app\">'"),
+		"tisch.js/app.js: Marke „kurz in einer anderen App“ am Platz, in der großen Liste und in der Lobby")
+	check(t.contains("weg()") and t.contains("zurueck()") and t.contains("'away'") and t.contains("'back'"), "netz_online.html: Chrome-Test des App-Wechsels")

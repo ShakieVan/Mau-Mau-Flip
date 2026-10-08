@@ -78,6 +78,11 @@ func connection_state() -> String:
 	return "ended" if _ended else ("rejected" if _rejected else (client.state if client != null else "closed"))
 
 
+# Hinweis beim Neuverbinden (Beta 1.3.3): „Gastgeber kurz weg – warte …“ (4503) bzw. „Verbindung zum Gastgeber unterbrochen – warte …“
+func connection_hint() -> String:
+	return client.hint() if client != null else "Verbindung zum Gastgeber unterbrochen – warte …"
+
+
 func act(action: Dictionary) -> void:
 	if client == null or client.state != "open":
 		notice.emit("Keine Verbindung zum Gastgeber – einen Moment …")

@@ -26,19 +26,7 @@ static func glyph(name: String, px := 40, deg := 0) -> Texture2D:
 	var key := "glyph|%s|%d|%d" % [name, px, deg]
 	if _icons.has(key):
 		return _icons[key]
-	var tex := UiIcons.icon(name, px, UiPalette.CREAM)
-	if deg != 0 and tex != null:
-		var img := tex.get_image()
-		img.clear_mipmaps()
-		match deg:
-			90:
-				img.rotate_90(CLOCKWISE)
-			-90, 270:
-				img.rotate_90(COUNTERCLOCKWISE)
-			180:
-				img.rotate_180()
-		img.generate_mipmaps()
-		tex = ImageTexture.create_from_image(img)
+	var tex := UiIcons.icon(name, px, UiPalette.CREAM, UiPalette.CREAM, deg)   # gedreht im SVG, ohne get_image()
 	_icons[key] = tex
 	return tex
 
@@ -410,42 +398,18 @@ class AvatarDot:
 			ScreenKit.draw_bot_badge(self, bc, maxf(r * 0.42, sf * 0.85))
 
 
-# Symbol in einer anderen Farbe (Alpha bleibt), z. B. der helle Roboterkopf im dunklen Abzeichen der Computergegner
-static var _tinted := {}
-
-
-static func icon_tinted(name: String, col: Color) -> Texture2D:
-	var key := name + "|" + col.to_html()
-	if _tinted.has(key):
-		return _tinted[key]
-	var src := icon(name)
-	if src == null:
-		return null
-	var img := src.get_image()
-	if img == null:
-		return src
-	img = img.duplicate()
-	img.decompress()
-	img.convert(Image.FORMAT_RGBA8)
-	for y in img.get_height():
-		for x in img.get_width():
-			var c := img.get_pixel(x, y)
-			if c.a > 0.0:
-				img.set_pixel(x, y, Color(col.r, col.g, col.b, c.a))
-	var tex := ImageTexture.create_from_image(img)
-	_tinted[key] = tex
-	return tex
-
-
 # Abzeichen „Computergegner“: Roboterkopf statt „KI“ (Nutzerwunsch 07.10.2026: manche Menschen haben Angst vor KI)
 static func draw_bot_badge(ci: CanvasItem, center: Vector2, radius: float) -> void:
 	ci.draw_circle(center, radius, UiPalette.INK)
-	var tex := icon_tinted("roboter", UiPalette.PAPER)
+	# Heller Kopf: das cremefarbene Bild per Modulation auf Papierton (früher eingefärbt über get_image() – auf manchen GPUs
+	# kam dabei ein schwarzes Quadrat heraus)
+	var tex := icon("roboter")
 	if tex != null:
 		var s := radius * 1.45
-		ci.draw_texture_rect(tex, Rect2(center - Vector2(s, s) * 0.5, Vector2(s, s)), false)
+		var p := UiPalette.PAPER
+		var c := UiPalette.CREAM
+		ci.draw_texture_rect(tex, Rect2(center - Vector2(s, s) * 0.5, Vector2(s, s)), false, Color(minf(p.r / c.r, 1.0), minf(p.g / c.g, 1.0), minf(p.b / c.b, 1.0)))
 
 
 static func clear_cache() -> void:
 	_icons.clear()
-	_tinted.clear()

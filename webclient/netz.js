@@ -2,9 +2,12 @@
  * Protokoll: docs/BETA1_PLAN.md Abschnitt 5. Verbindet nach Abbruch selbst neu (1, 2, 4, höchstens 5 s),
  * sofort bei visibilitychange/pageshow (Weckruf). Ein Wächter erkennt stille Verbindungen (iOS nach Sperre).
  * Online-Modus (opt.online, docs/online/ENTWURF.md): Verbindung über den Vermittler (…/ws?role=guest&room=CODE), das Spielprotokoll bleibt
- * unverändert. Herzschlag ist der Text „ping“ alle 25 s (Antwort „pong“), 70 s Stille = getrennt. Schließcodes des Vermittlers:
+ * unverändert. Herzschlag ist der Text „ping“ alle 10 s (Antwort „pong“), 25 s Stille = getrennt (Beta 1.3.3; vorher 25/70 s).
+ * 4012: Der Gastgeber war kurz weg und ist wieder da → sofort neu anmelden (Token, danach voller Stand). Schließcodes des Vermittlers:
  * 4503 Gastgeber kurz weg (10 s warten, Status host_weg), 4404 Raum unbekannt (kein_raum), 4409 voll (voll), 1001 beendet (raum_ende);
  * die letzten drei sind endgültig. Status: verbinde | offen | getrennt | host_weg | kein_raum | voll | raum_ende | ersetzt | beendet.
+ * App-Wechsel (Beta 1.3.3): weg() schickt bei verdeckter Seite sofort {t:"away"}, zurueck() bei sichtbarer {t:"back"} (der Gastgeber
+ * schickt darauf den vollen Stand) und prüft wie wecken(): binnen 3 s keine Antwort → sofort neu verbinden. Ältere Gastgeber ignorieren beides.
  */
 (function (M) {
   'use strict';
@@ -12,8 +15,8 @@
   const PING_ABSTAND = 5000;     // ms zwischen Lebenszeichen
   const STILL_GRENZE = 15000;    // ohne Nachricht → neu verbinden
   const WECK_PRUEFUNG = 3000;    // nach Weckruf: so lange auf Antwort warten
-  const ONLINE_PING = 25000;     // Online: Text „ping“ alle 25 s (der Vermittler antwortet „pong“, ohne sein Objekt zu wecken)
-  const ONLINE_STILL = 70000;    // Online: so lange Stille bis „getrennt“
+  const ONLINE_PING = 10000;     // Online: Text „ping“ alle 10 s (der Vermittler antwortet „pong“, ohne sein Objekt zu wecken)
+  const ONLINE_STILL = 25000;    // Online: so lange Stille bis „getrennt“
   const ONLINE_HOST_WEG = 10000; // Online: Gastgeber kurz weg (4503) → so lange warten
   const ONLINE_ENDE = { 4404: 'kein_raum', 4409: 'voll', 1001: 'raum_ende' };   // endgültige Schließcodes des Vermittlers
 
@@ -33,6 +36,7 @@
       this.endgueltig = false;
       this.letzteRx = 0;
       this.letzterPing = 0;
+      this.imHintergrund = false;
       this.wache = setInterval(() => this._wachen(), 1000);
     }
     start() { this.endgueltig = false; this._verbinde(); }
@@ -49,6 +53,7 @@
         this.versuche = 0;
         this.letzteRx = Date.now();
         this._roh(this.opt.hallo());
+        if (this.imHintergrund) this._roh({ t: 'away' });   // neu angemeldet, aber noch in einer anderen App
         this._setze('offen');
       };
       ws.onmessage = ev => {
@@ -68,6 +73,7 @@
           const ende = ONLINE_ENDE[ev.code];
           if (ende) { this.endgueltig = true; clearTimeout(this.timer); this._setze(ende); return; }
           if (ev.code === 4503) { this._hostWeg(); return; }
+          if (ev.code === 4012) { this._setze('getrennt'); clearTimeout(this.timer); this.timer = setTimeout(() => this._verbinde(), 100); return; }
         }
         this._spaeter();
       };
@@ -117,6 +123,15 @@
         this._ping();
         setTimeout(() => { if (!this.endgueltig && this.letzteRx === vorher && this.ws && this.ws.readyState === 1) { this.versuche = 1; this._verbinde(); } }, WECK_PRUEFUNG);
       }
+    }
+    // Seite verdeckt (andere App): „away“ sofort an den Gastgeber (Best effort)
+    weg() { this.imHintergrund = true; this._roh({ t: 'away' }); }
+    // Seite wieder sichtbar: „back“ (der Gastgeber schickt den vollen Stand), dann prüfen wie wecken()
+    zurueck() {
+      const war = this.imHintergrund;
+      this.imHintergrund = false;
+      if (war) this._roh({ t: 'back' });
+      this.wecken();
     }
     // Nutzerwunsch „Neu verbinden“: Verbindung sofort ersetzen
     neuVerbinden() { if (this.endgueltig) return; this.versuche = Math.max(this.versuche, 1); this._verbinde(); }

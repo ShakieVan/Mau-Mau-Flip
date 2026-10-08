@@ -6,8 +6,10 @@ extends RefCounted
 # Szene – alle Funktionen sind statisch und ohne geteilten Zustand, also auch aus dem Netz-Thread des Servers aufrufbar (auto_reply).
 #
 # Client → Host: hello {proto, game, name, kind, token?} · act {seq, a} · lobby_ready {ready} · ping {ts} · log {text}
+#                away {} · back {} (Beta 1.3.3: App bzw. Seite kurz im Hintergrund / wieder vorn; ältere Gastgeber ignorieren beides)
 # Host → Client: welcome {id, token, host_name} · reject {code, text} · lobby {rev, players, rules, host_id} · start {seat}
 #                state {seq_ack?, events, view} · err {text} · pong {ts} · bye {text}
+#                Spielerlisten (lobby.players, view.players): away:true = kurz in einer anderen App; view: host:true = Gastgeber
 # Zahlen: JSON kennt nur float; decode() wandelt ganzzahlige Werte in int (Kennungen, Plätze, Zeitstempel in ms).
 
 const PROTO := 1                          # Protokollversion: bei jeder inkompatiblen Änderung erhöhen
@@ -36,9 +38,15 @@ const MAX_DEPTH := 12
 const RELAY_DEFAULT := "https://mau-mau-flip-relay.shakie.workers.dev"   # Standard-Vermittler (bereitgestellt vom Nutzer 08.10.2026)
 const RELAY_CONN_BASE := 1000000          # Verbindungsnummern der Online-Gäste beim Gastgeber: RELAY_CONN_BASE + c
 const RELAY_PROTO := 1
-const RELAY_PING_MS := 25000              # Online-Herzschlag: Text „ping“, der Vermittler antwortet „pong“
-const RELAY_TIMEOUT_MS := 70000           # so lange Stille → getrennt
+const RELAY_PING_MS := 10000              # Online-Herzschlag: Text „ping“, der Vermittler antwortet „pong“ (Beta 1.3.3: 25 → 10 s)
+const RELAY_TIMEOUT_MS := 25000           # so lange Stille → getrennt (Beta 1.3.3: 70 → 25 s)
+const RELAY_PROBE_AFTER_MS := 6000        # nach eigenem Senden so lange nichts empfangen → sofort „ping“ (Prüfung nach Aktion)
+const RELAY_PROBE_WAIT_MS := 4000         # … und so lange auf irgendeine Antwort warten, sonst neu verbinden
+const RELAY_RESYNC_GRACE_MS := 20000      # Gastgeber wieder verbunden: so lange gelten die alten Online-Gäste als „kommen gleich“
+const CLOSE_RESYNC := 4012                # Gastgeber war kurz weg und ist wieder da: Gast soll sich sofort neu anmelden (kein Ende)
 const RELAY_HOST_AWAY_MS := 10000         # Code 4503 (Gastgeber kurz weg): so lange warten, dann neu verbinden
+const RESUME_PROBE_MS := 3000             # App wieder vorn: so lange auf eine Antwort warten, sonst sofort neu verbinden (mit Token)
+const SUB_OFFER_MS := 30000               # Gast so lange weg bzw. getrennt: erst dann „Computer für … spielen lassen“ anbieten
 const RELAY_MAX_HOST_MESSAGE := 256 * 1024
 const CLOSE_ROOM_UNKNOWN := 4404
 const CLOSE_HOST_AWAY := 4503
@@ -245,6 +253,8 @@ static func clean_client_message(msg: Dictionary) -> Dictionary:
 			if not msg.get("text") is String:
 				return {}
 			return {"t": "log", "text": strip_controls(str(msg.text), true).left(MAX_LOG_TEXT)}
+		"away", "back":
+			return {"t": t}             # kurz in einer anderen App / wieder da (Beta 1.3.3), ohne weitere Felder
 		_:
 			# Unbekannte Typen (künftige Erweiterungen) gehen unverändert an die Spielsteuerung; sie prüft selbst.
 			return msg

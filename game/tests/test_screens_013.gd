@@ -156,8 +156,14 @@ func net_flow() -> void:
 	nav2.queue_free()
 	nav2 = null
 	check(await _wait_for(func() -> bool: return host.game != null and not bool(host.game.connected[seat]), 4.0), "M4: Gastgeber sieht den Gast getrennt")
-	check(await _wait_for(func() -> bool: return hts._sub_btn.visible, 2.0) and hts._sub_btn.text == "Computer spielt für %s" % gname,
-		"M4: Knopf „Computer spielt für %s“ (%s)" % [gname, hts._sub_btn.text])
+	# Beta 1.3.3: vor 30 s nur der Hinweis „… ist kurz weg“, kein Knopf
+	check(await _wait_for(func() -> bool: return hts._sub_hint.visible, 2.0) and hts._sub_hint_label.text == "%s ist kurz weg" % gname
+			and not hts._sub_btn.visible and host.substitutable_seats().is_empty(),
+		"M4: zuerst nur „%s ist kurz weg“ (%s), kein Knopf" % [gname, hts._sub_hint_label.text])
+	host.sub_offer_ms = 400                  # statt 30 s
+	check(await _wait_for(func() -> bool: return hts._sub_btn.visible, 3.0) and hts._sub_btn.text == "Computer für %s spielen lassen" % gname
+			and not hts._sub_hint.visible,
+		"M4: danach Knopf „Computer für %s spielen lassen“ (%s)" % [gname, hts._sub_btn.text])
 	var r := hts._sub_btn.get_global_rect()
 	check(Rect2(0, 0, 1600, 720).encloses(r), "M4: Knopf im Bild")
 	hts.ask_substitute()

@@ -28,12 +28,14 @@ developers.cloudflare.com/changelog/product/durable-objects/, developers.cloudfl
   `devDependencies.wrangler: "^4.126.0"` (Version vom 25.08.2026, nach Einführung von `exports`), **kein** `build`-Script und kein
   Bundler. Beim ersten echten Deploy durch den Nutzer prüfen; scheitert `exports`, Rückfall auf `migrations: [{tag:"v1", new_sqlite_classes:["Room"]}]`.
 - Unklar, ob DO-Anfragen und Worker-Anfragen dasselbe 100 000-Kontingent teilen → so rechnen, als zählten beide (Upgrade = 2 Anfragen).
-- Ob Auto-Antworten als eingehende Nachrichten zählen, ist nicht dokumentiert → als 1/20 Anfrage rechnen, Abstand großzügig (25 s).
+- Ob Auto-Antworten als eingehende Nachrichten zählen, ist nicht dokumentiert → als 1/20 Anfrage rechnen. Abstand seit Beta 1.3.3 10 s (vorher 25 s), siehe Überschlag.
 - Keine Speicherung je Nachricht (Zeilen-Schreiblimit); Verbindungsdaten in Tags/Attachments.
 - `observability` aus, kein `console.log` mit Inhalten oder Raumcodes.
 
 **Überschlag** (6 Spieler, 3 h): Verbindungen ~6×(1+5 Wiederverbindungen)×2 = 72; Spielnachrichten eingehend ~6 000 → 300;
-Herzschläge 6×432 = 2 600 → 130. Zusammen < 600 Anfragen pro Abend, Dauer ~0 (Hibernation).
+Herzschläge (Beta 1.3.3: alle 10 s statt 25 s) 6×1 080 = 6 480 → 324; Prüf-„ping“ nach eigenem Senden ohne Antwort binnen 6 s
+(Gastgeber höchstens einer je 6 s während der Partie, ~1 800 → 90; Gäste selten) – zusammen < 900 Anfragen pro Abend (vorher < 600),
+Dauer ~0 (Hibernation). Selbst zehn solche Abende am selben Tag bleiben unter 10 % des Gratis-Kontingents (100 000/Tag).
 
 **Dazu der Browser-Client über `/c/*`** (seit 08.10.2026 über den Worker, nicht mehr als kostenlose Assets): Je erstem Aufruf eines
 Browser-Gastes `index.html`, `style.css`, 9 Skripte, 2 Bilder, die benutzten Schriften (~3), Töne (~9, je ein Format) und die nach und
@@ -88,8 +90,30 @@ Gastgeber → Vermittler:
 | `{k:"end"}` | Raum schließen: Gäste bekommen 1001, Speicher wird gelöscht |
 
 Herzschlag: `setWebSocketAutoResponse(new WebSocketRequestResponsePair("ping", "pong"))` – die Gegenstelle schickt im Online-Modus
-alle **25 s** den Text `ping` (kein JSON) und gilt nach **70 s** Stille als getrennt. Das Spiel-`{t:"ping"}` entfällt über den
+alle **10 s** den Text `ping` (kein JSON) und gilt nach **25 s** Stille als getrennt (Beta 1.3.3; vorher 25/70 s). Das Spiel-`{t:"ping"}` entfällt über den
 Vermittler (RTT-Anzeige leer). Kein Polling, keine Wecker außer den Raum-Alarmen.
+
+**Stille Aussetzer (Beta 1.3.3, Nutzerbefund 1.3.2):** Eine Mobilfunk-/VPN-Verbindung kann ohne Close verschwinden; der Gastgeber
+spielte lokal weiter, der Gast sah über eine Minute lang den alten Stand. Seitdem:
+- Herzschlag 10 s, 25 s Stille = getrennt (Gastgeber `NetRelayHost`, App-Gast `NetClient`, Lite `netz.js`). Zusätzlich prüft jede
+  Seite nach eigenem Senden: Kommt binnen **6 s** gar nichts zurück, sofort `ping`; bleibt auch darauf **4 s** alles still, neu
+  verbinden (Lite: bestehende Prüfung „Keine Antwort vom Gastgeber“ nach 6 s mit Weckruf, 3 s).
+- Ist nur die Vermittler-Verbindung des Gastgebers weg (`away`), gelten seine Online-Gäste in der Sitzung **nicht** als gegangen
+  (kein `ws_closed` → keine Vertretung „Computer spielt für …“, keine Rückfrage). Nach der Rückkehr mit Raum-Token schickt der
+  Gastgeber ihren alten Verbindungen `{k:"kick", code: 4012}`: Der Vermittler behält beim Ersetzen eines still toten Gastgeber-Sockets
+  die Gäste (`REPLACED` an den alten, kein 4503 an die Gäste), der neue Gastgeber-Socket kennt sie aber nicht. 4012 lässt App und
+  Lite sofort mit Token neu anmelden (danach voller Stand). Wer binnen 20 s nicht wiederkommt, gilt dann als getrennt. Ohne
+  Änderung am Vermittler (Kick-Codes 3000–4999 sind erlaubt).
+- Hinweise: Gastgeber am Tisch „Online-Verbindung unterbrochen – verbinde neu …“ (Lobby gleicher Text), Gäste „Verbindung zum
+  Gastgeber unterbrochen – warte …“ bzw. bei 4503 „Gastgeber kurz weg – warte …“ (App und Lite).
+- Test: `game/tests/test_net_hang.gd` (Nachbau mit hängendem Socket `hang_host`/`hang_guest`, genau die Abfolge des Befunds).
+
+**App-Wechsel (Beta 1.3.3, Nutzerbefund: kurz in Threema für Screenshots, danach bis zu 70 s alter Stand; „Computer spielt für Püppi“
+wirkte wie ein Zustand):** Beim Weggehen schickt das Gerät sofort `{t:"away"}` (Spielprotokoll, für den Vermittler nur Daten), beim
+Zurückkommen `{t:"back"}` plus `ping` mit 3 s Frist, sonst sofort neu verbinden (Gast: `NetClient.check_now`, Gastgeber:
+`NetRelayHost.check_now`, Lite: `zurueck()`). Alle sehen „kurz in einer anderen App“ am Platz; ist der Gastgeber weg, zeigen die
+Gäste „<Name> (Gastgeber) ist kurz in einer anderen App – warte …“. Der Knopf „Computer für %s spielen lassen“ kommt erst nach 30 s.
+Einzelheiten: `docs/BETA1_PLAN.md` Abschnitt 5 „App-Wechsel“; Test `game/tests/test_net_away.gd`.
 
 ### Raum-Objekt `Room` (Zustand)
 
@@ -146,7 +170,7 @@ Damit laufen **WLAN- und Online-Gäste gleichzeitig** in derselben Lobby und Par
 - `apk_url()` liefert für Online-Gäste den GitHub-Release-Link statt `/apk`; `check_hello` bleibt (exakte Version).
 - `finish/stop` schicken zusätzlich `{k:"end"}`.
 - `NetClient.connect_relay(relay_url, code, name, kind)`: `wss://<v>/ws?role=guest&room=CODE`; Token-Schlüssel `relay:<v>/<CODE>`;
-  Online-Herzschlag (25 s `ping`, 70 s Stille); Code 4503 → 10 s warten; 4404/4409/1001 endgültig mit Text.
+  Online-Herzschlag (10 s `ping`, 25 s Stille, Prüfung 6 + 4 s nach eigenem Senden); Code 4503 → 10 s warten; 4012 → sofort neu; 4404/4409/1001 endgültig mit Text.
 - TLS: `WebSocketPeer` mit `TLSOptions.client()` (eingebaute Zertifikate). `http://`-Vermittler (nur lokaler Nachbau) → `ws://`.
 
 **Bedienung** (kein neuer Hauptmenü-Knopf):

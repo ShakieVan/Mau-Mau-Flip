@@ -9,8 +9,13 @@ extends Node
 # Zustände: idle → connecting → open (angenommen) → connecting (neu verbinden) … → closed.
 # Online (docs/online/ENTWURF.md): connect_relay(vermittler, raumcode) bzw. connect_to mit einem Raum-Link als Adresse
 # („https://<vermittler>/?r=KATZE-42“): wss://<vermittler>/ws?role=guest&room=CODE, Token je Raum (relay:<vermittler>/<CODE>),
-# Herzschlag „ping“ alle 25 s (Antwort „pong“ vom Vermittler), 70 s Stille = getrennt. Code 4503 (Gastgeber kurz weg) → 10 s
+# Herzschlag „ping“ alle 10 s (Antwort „pong“ vom Vermittler), 25 s Stille = getrennt. Code 4503 (Gastgeber kurz weg) → 10 s
 # warten; 4404 (Raum unbekannt), 4409 (voll) und 1001 (Raum beendet) sind endgültig.
+# Beta 1.3.3: online Herzschlag 10 s, 25 s Stille = getrennt; nach eigenem Senden ohne jede Antwort binnen 6 s sofort „ping“, 4 s
+# später neu verbinden. 4012 (Gastgeber wieder da) → sofort neu anmelden. hint() liefert den Hinweis für Tisch und Lobby.
+# App-Wechsel (Beta 1.3.3, Nutzerbefund: Threema für Screenshots, danach bis zu 70 s alter Stand): PAUSED/FOCUS_OUT → „away“ sofort
+# hinaus (senden + poll, Best effort); RESUMED/FOCUS_IN → check_now(): „back“ (der Gastgeber schickt darauf den vollen Stand) und
+# „ping“ – kommt binnen 3 s nichts, sofort neu verbinden (mit Token). Wartet gerade ein Neuversuch, startet er sofort.
 
 signal state_changed(state: String)
 signal welcomed(id: int, host_name: String)
@@ -35,6 +40,11 @@ var ping_ms := PING_MS
 var timeout_ms := TIMEOUT_MS
 var retry_ms: Array = RETRY_MS.duplicate()
 var host_away_ms := NetProtocol.RELAY_HOST_AWAY_MS   # Online, Code 4503: so lange warten
+var probe_after_ms := NetProtocol.RELAY_PROBE_AFTER_MS
+var probe_wait_ms := NetProtocol.RELAY_PROBE_WAIT_MS
+var resume_probe_ms := NetProtocol.RESUME_PROBE_MS   # App wieder vorn: so lange auf eine Antwort warten
+var app_away := false                    # App gerade im Hintergrund („away“ gesendet)
+var host_away := false                   # Online: zuletzt 4503 (Gastgeber kurz weg) bekommen, bis zur nächsten Annahme
 var hello_override := {}                 # nur Tests: Felder der Begrüßung ersetzen (z. B. falsche Version)
 var state := "idle"                      # idle | connecting | open | closed
 var address := ""
@@ -59,6 +69,10 @@ var _next_ping_ms := 0
 var _retry_at := -1
 var _closing: WebSocketPeer
 var _closing_until := 0
+var _probe_since := -1
+var _probe_deadline := -1
+var _resume_deadline := -1               # nach check_now(): bis dahin muss etwas kommen, sonst sofort neu verbinden
+var _checked_ms := -100000
 static var _tokens := {}
 
 func connect_to(host_address: String, host_port := NetProtocol.PORT, name_of_player := "Gast", client_kind := "app") -> Error:
@@ -109,6 +123,8 @@ func send(msg: Dictionary) -> Error:
 	# Nur angenommen (state == "open"); sonst ERR_UNAVAILABLE (die Spielsteuerung zeigt „Verbindung …“).
 	if state != "open" or _ws == null or _ws.get_ready_state() != WebSocketPeer.STATE_OPEN:
 		return ERR_UNAVAILABLE
+	if is_online() and _probe_since < 0:
+		_probe_since = Time.get_ticks_msec()     # Prüfung nach eigener Aktion (Beta 1.3.3)
 	return _ws.send_text(NetProtocol.encode(msg))
 
 func close(text := "") -> void:
@@ -119,6 +135,7 @@ func close(text := "") -> void:
 			_closing = _ws
 			_closing_until = Time.get_ticks_msec() + 1000
 		_ws = null
+	_unhold()
 	_retry_at = -1
 	if state != "idle" and state != "closed":
 		_final(text if text != "" else I18n.t("Verbindung beendet."))
@@ -148,9 +165,58 @@ func _notification(what: int) -> void:
 		_ws = null
 		_closing = null
 		_retry_at = -1
+		_unhold()
 		if state != "idle" and state != "closed":
 			NetAddresses.release("join")
 			state = "closed"
+	elif what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		app_paused()
+	elif what == NOTIFICATION_APPLICATION_RESUMED or what == NOTIFICATION_APPLICATION_FOCUS_IN:
+		app_resumed(what == NOTIFICATION_APPLICATION_RESUMED)
+
+# App geht in den Hintergrund: „away“ sofort hinaus (einmal je Abwesenheit; Android hält danach alles an).
+func app_paused() -> void:
+	if app_away:
+		return
+	app_away = true
+	if state == "open" and _welcomed and _ws != null and _ws.get_ready_state() == WebSocketPeer.STATE_OPEN:
+		_ws.send_text(NetProtocol.encode({"t": "away"}))
+		_ws.poll()
+
+# App wieder vorn: Verbindung prüfen und vollen Stand holen. force (RESUMED): auch ohne vorheriges „away“, höchstens einmal je Sekunde.
+func app_resumed(force := true) -> void:
+	var was_away := app_away
+	app_away = false
+	if not was_away and (not force or Time.get_ticks_msec() - _checked_ms < 1000):
+		return
+	check_now()
+
+# Sofort prüfen (Rückkehr in die App): wartender Neuversuch → jetzt; offene Verbindung → „back“ + „ping“, Antwort binnen
+# resume_probe_ms, sonst sofort neu verbinden; zu lange still → sofort neu verbinden.
+func check_now() -> void:
+	var now := Time.get_ticks_msec()
+	_checked_ms = now
+	if state == "connecting":
+		if _retry_at >= 0:
+			_retry_at = now
+		return
+	if state != "open" or _ws == null:
+		return
+	if _ws.get_ready_state() != WebSocketPeer.STATE_OPEN:
+		_lost(I18n.t("Verbindung getrennt."), 0)
+		return
+	var limit := NetProtocol.RELAY_TIMEOUT_MS if is_online() and timeout_ms == TIMEOUT_MS else timeout_ms
+	if now - _last_rx_ms > limit:
+		_lost(I18n.t("Verbindung getrennt."), 0)
+		return
+	if _welcomed:
+		_ws.send_text(NetProtocol.encode({"t": "back"}))
+	# Android trennt Hintergrund-Apps oft: dann ist der Socket nach dem ersten Senden schon zu (kein Fehler im Protokoll, Gerätetest 1.3.3)
+	if _ws.get_ready_state() == WebSocketPeer.STATE_OPEN:
+		_ws.send_text("ping" if is_online() else NetProtocol.encode({"t": "ping", "ts": now}))
+	_next_ping_ms = now + _ping_every()
+	_resume_deadline = now + resume_probe_ms
+	_ws.poll()
 
 func poll() -> void:
 	var now := Time.get_ticks_msec()
@@ -165,6 +231,10 @@ func poll() -> void:
 		return
 	_ws.poll()
 	var st := _ws.get_ready_state()
+	if st != WebSocketPeer.STATE_CONNECTING:
+		_unhold()
+	elif is_online():
+		NetAddresses.expire_holds()
 	if st == WebSocketPeer.STATE_OPEN and not _was_open:
 		_was_open = true
 		_last_rx_ms = now
@@ -175,6 +245,9 @@ func poll() -> void:
 	while _ws != null and _ws.get_available_packet_count() > 0:
 		var bytes := _ws.get_packet()
 		_last_rx_ms = now
+		_probe_since = -1
+		_probe_deadline = -1
+		_resume_deadline = -1
 		if bytes.size() > NetProtocol.MAX_HOST_MESSAGE:
 			continue
 		if is_online() and bytes.size() == 4 and bytes.get_string_from_utf8() == "pong":
@@ -188,8 +261,16 @@ func poll() -> void:
 			_next_ping_ms = now + _ping_every()
 			# Online: Text „ping“ (der Vermittler antwortet selbst, ohne aufzuwachen); im WLAN das Spiel-Ping mit Laufzeit
 			_ws.send_text("ping" if is_online() else NetProtocol.encode({"t": "ping", "ts": now}))
+		if _welcomed and is_online() and _probe_deadline < 0 and _probe_since >= 0 and now - _probe_since > probe_after_ms:
+			_probe_deadline = now + probe_wait_ms     # eigene Aktion blieb ohne Antwort: sofort nachfragen
+			_next_ping_ms = now + _ping_every()
+			_ws.send_text("ping")
 		if now - _last_rx_ms > limit:
 			_lost(I18n.t("Gastgeber antwortet nicht (%d s).") % (limit / 1000))
+		elif _resume_deadline >= 0 and now > _resume_deadline:
+			_lost(I18n.t("Verbindung getrennt."), 0)     # nach der Rückkehr in die App: still tot → sofort neu (mit Token)
+		elif _probe_deadline >= 0 and now > _probe_deadline:
+			_lost(I18n.t("Vermittler antwortet nicht."))
 		elif not _welcomed and now - _opened_ms > connect_timeout_ms:
 			_lost(I18n.t("Anmeldung nicht beantwortet."))
 	elif st == WebSocketPeer.STATE_CONNECTING:
@@ -226,8 +307,17 @@ func _relay_close(code: int) -> bool:
 			_ws = null
 			_final(I18n.t("Der Gastgeber hat das Spiel beendet."))
 			return true
+		NetProtocol.CLOSE_RESYNC:
+			_ws = null
+			host_away = false
+			_retry_at = Time.get_ticks_msec() + 100
+			close_text = I18n.t("Verbindung zum Gastgeber unterbrochen – warte …")
+			_log("Gastgeber wieder da (4012), melde mich neu an.")
+			_set_state("connecting")
+			return true
 		NetProtocol.CLOSE_HOST_AWAY:
 			_ws = null
+			host_away = true
 			var wait := host_away_ms
 			_retry_at = Time.get_ticks_msec() + wait
 			close_text = I18n.t("Gastgeber kurz weg – warte …")
@@ -238,6 +328,9 @@ func _relay_close(code: int) -> bool:
 
 func _open() -> Error:
 	_ws = WebSocketPeer.new()
+	_probe_since = -1
+	_probe_deadline = -1
+	_resume_deadline = -1
 	_ws.inbound_buffer_size = NetProtocol.MAX_HOST_MESSAGE + 4096
 	_ws.outbound_buffer_size = 65536
 	_ws.max_queued_packets = 4096
@@ -248,6 +341,8 @@ func _open() -> Error:
 	var err := OK
 	if is_online():
 		var url := NetProtocol.relay_ws_url(relay_url, "role=guest&room=" + room)
+		# Android: Bindung an ein Netz ohne Internet (Spiel-WLAN, WLAN) aussetzen, bis der Socket steht (offen, Fehler oder Frist).
+		NetAddresses.hold_unbound(hold_id())
 		err = _ws.connect_to_url(url, TLSOptions.client() if url.begins_with("wss://") else null)
 		if err != OK:
 			_lost(I18n.t("Vermittler nicht erreichbar."))
@@ -268,9 +363,12 @@ func _handle(msg: Dictionary) -> void:
 			_store_token(_key(), token)
 			_welcomed = true
 			attempts = 0
+			host_away = false
 			_next_ping_ms = Time.get_ticks_msec() + _ping_every()
 			_log("Angenommen von „%s“ als Spieler %d" % [host_name, my_id])
 			_set_state("open")
+			if app_away and _ws != null:
+				_ws.send_text(NetProtocol.encode({"t": "away"}))   # neu angemeldet, aber noch in der anderen App
 			welcomed.emit(my_id, host_name)
 		"reject":
 			reject_code = str(msg.get("code", "")).left(16)
@@ -298,7 +396,20 @@ func _handle(msg: Dictionary) -> void:
 			if _welcomed:
 				message.emit(msg)
 
-func _lost(reason: String) -> void:
+# Hinweis während des Neuverbindens (Tisch, Lobby): Gastgeber kurz weg (4503) oder Verbindung unterbrochen
+func hint() -> String:
+	return "Gastgeber kurz weg – warte …" if host_away else "Verbindung zum Gastgeber unterbrochen – warte …"
+
+func hold_id() -> String:
+	return "relay_guest:%d" % get_instance_id()
+
+func _unhold() -> void:
+	NetAddresses.release_hold(hold_id())
+
+func _lost(reason: String, delay := -1) -> void:
+	# delay ≥ 0: so bald neu verbinden (0 = sofort, nach der Rückkehr in die App), sonst nach der Staffel retry_ms.
+	_unhold()
+	_resume_deadline = -1
 	if _ws != null:
 		_ws.close()
 		_ws = null
@@ -307,13 +418,15 @@ func _lost(reason: String) -> void:
 	if not auto_reconnect:
 		_final(reason)
 		return
-	var delay: int = retry_ms[mini(maxi(attempts - 1, 0), retry_ms.size() - 1)]
+	if delay < 0:
+		delay = retry_ms[mini(maxi(attempts - 1, 0), retry_ms.size() - 1)]
 	_retry_at = Time.get_ticks_msec() + delay
 	_log("%s Neuer Versuch in %.0f s." % [reason, delay / 1000.0])
 	close_text = reason
 	_set_state("connecting")
 
 func _final(text: String) -> void:
+	_unhold()
 	_retry_at = -1
 	NetAddresses.release("join")
 	close_text = text

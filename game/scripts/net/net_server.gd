@@ -133,6 +133,7 @@ class Conn:
 	var close_reason := ""
 	var close_at := 0                    # verzögertes Schließen (close_ws mit grace_ms): dann Close senden
 	var close_pending := []
+	var muted := false                   # nur Tests (Vermittler-Nachbau): stilles Abreißen – nichts mehr lesen oder senden, nicht trennen
 	var info := {}
 
 # ---------- Öffentliche Schnittstelle (Hauptthread) ----------
@@ -225,6 +226,10 @@ func close_ws(conn: int, code := NetWs.CLOSE_NORMAL, reason := "", grace_ms := 0
 	# grace_ms > 0: erst so lange warten, ob der Client selbst schließt (nach „reject“/„bye“). Godots WebSocketPeer verwirft Nachrichten,
 	# die im selben poll() wie ein vollständiger Close-Handshake ankommen – ein sofortiger Close-Rahmen kostete sonst das „reject“.
 	_command(["close", conn, code, reason, grace_ms])
+
+# Nur Tests: Verbindung „hängt“ (kein Lesen, kein Senden, kein Trennen) – wie ein still abgerissener Mobilfunk-Socket.
+func mute_ws(conn: int, on := true) -> void:
+	_command(["mute", conn, on])
 
 func set_info(info: Dictionary) -> void:
 	# Inhalt von /info (port wird ergänzt).
@@ -396,6 +401,13 @@ func _commands() -> bool:
 				if c != null and c.kind == "ws" and not c.close_sent:
 					_queue(c, frame)
 					_count("msgs_out")
+		elif cmd[0] == "mute":
+			var m: Conn = _conns.get(cmd[1])
+			if m != null:
+				m.muted = bool(cmd[2])
+				m.out.clear()
+				m.out_off = 0
+				m.out_bytes = 0
 		elif cmd[0] == "close":
 			var c: Conn = _conns.get(cmd[1])
 			if c != null and c.kind == "ws":
@@ -425,6 +437,11 @@ func _service(c: Conn, now: int) -> bool:
 		return false
 	var busy := false
 	var n := c.peer.get_available_bytes()
+	if c.muted:
+		if n > 0:
+			c.peer.get_partial_data(mini(n, CHUNK))   # Eingang verwerfen (wie ein Funkloch: nichts kommt an)
+		c.last_rx_ms = now                           # und nicht selbst trennen: die Gegenstelle muss es bemerken
+		return n > 0
 	if n > 0:
 		var r := c.peer.get_partial_data(mini(n, CHUNK))
 		if r[0] == OK and (r[1] as PackedByteArray).size() > 0:
@@ -503,7 +520,7 @@ func _timeouts(c: Conn, now: int) -> void:
 				_queue(c, NetWs.encode_frame(NetWs.OP_PING, "mmf".to_ascii_buffer()))
 
 func _queue(c: Conn, bytes: PackedByteArray) -> void:
-	if bytes.is_empty():
+	if bytes.is_empty() or c.muted:
 		return
 	c.out.append(bytes)
 	c.out_bytes += bytes.size()

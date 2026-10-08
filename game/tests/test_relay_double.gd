@@ -408,12 +408,16 @@ func test_sockets() -> void:
 	host._ws.close()
 	host._ws = null
 	host._lost("Test")
-	check(host.state == "away" and closed.size() == 1 and closed[0][1] == NetProtocol.CLOSE_HOST_AWAY, "Gastgeber getrennt → away, Gast getrennt")
+	# Beta 1.3.3: Während „away“ gilt der Gast für die Sitzung nicht als gegangen (kein ws_closed); nach der Rückkehr läuft eine Frist.
+	check(host.state == "away" and closed.is_empty(), "Gastgeber getrennt → away, Gast bleibt für die Sitzung verbunden")
+	host.resync_grace_ms = 600
 	guest.host_away_ms = 400
 	check(wait(all, func(): return host.state == "open"), "Gastgeber wieder da (Token)")
 	check(host.room == code, "gleicher Raumcode nach der Rückkehr")
 	check(wait(all, func(): return opened.size() == 2, 5000), "Gast verbindet nach 4503 neu")
 	check(opened.size() == 2 and int(opened[1][0]) > conn, "neue Verbindungsnummer")
+	check(wait(all, func(): return closed.size() == 1 and int(closed[0][0]) == conn and int(closed[0][1]) == NetProtocol.CLOSE_HOST_AWAY, 3000),
+		"alte Verbindung gilt erst nach der Frist als getrennt")
 	# Ende: Gast bekommt 1001
 	host.close()
 	check(wait(all, func(): return guest.state == "closed"), "Raum beendet → Gast endgültig getrennt")

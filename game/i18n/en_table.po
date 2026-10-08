@@ -164,6 +164,24 @@ msgstr "%s is disconnected – waiting …"
 msgid "%s ist getrennt."
 msgstr "%s is disconnected."
 
+msgid "kurz in einer anderen App"
+msgstr "briefly in another app"
+
+msgid "%s ist kurz in einer anderen App"
+msgstr "%s is briefly in another app"
+
+msgid "%s ist kurz in einer anderen App – warte …"
+msgstr "%s is briefly in another app – waiting …"
+
+msgid "%s (Gastgeber) ist kurz in einer anderen App – warte …"
+msgstr "%s (host) is briefly in another app – waiting …"
+
+msgid "%s ist kurz weg"
+msgstr "%s is away for a moment"
+
+msgid "Computer für %s spielen lassen"
+msgstr "Let the computer play for %s"
+
 msgid "%s ist wieder da."
 msgstr "%s is back."
 

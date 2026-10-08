@@ -5,7 +5,7 @@
 (function (M) {
   'use strict';
 
-  const VERSION = '1.3.2';
+  const VERSION = '1.3.3';
   const PROTO = 1;
   // wach.mp4 (32×32, 2 s, H.264 Baseline, ohne Ton; erzeugt mit ffmpeg) als data:-URI
   const WACH_VIDEO = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAMzbW9vdgAAAGxtdmhkAAAAAAAAAAAAAAAAAAAD6AAAB9AAAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAl50cmFrAAAAXHRraGQAAAADAAAAAAAAAAAAAAABAAAAAAAAB9AAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAACAAAAAgAAAAAAAkZWR0cwAAABxlbHN0AAAAAAAAAAEAAAfQAAAAAAABAAAAAAHWbWRpYQAAACBtZGhkAAAAAAAAAAAAAAAAAABAAAAAgABVxAAAAAAALWhkbHIAAAAAAAAAAHZpZGUAAAAAAAAAAAAAAABWaWRlb0hhbmRsZXIAAAABgW1pbmYAAAAUdm1oZAAAAAEAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAAUFzdGJsAAAAuXN0c2QAAAAAAAAAAQAAAKlhdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAACAAIABIAAAASAAAAAAAAAABFExhdmM2My4xLjEwMSBsaWJ4MjY0AAAAAAAAAAAAAAAAGP//AAAAL2F2Y0MBQsAe/+EAFmdCwB7ZCWwEQAAAAwBAAAADAQPFi5IBAAZoy4DkTIAAAAAQcGFzcAAAAAEAAAABAAAAFGJ0cnQAAAAAAAAKpAAAAAAAAAAYc3R0cwAAAAAAAAABAAAABAAAIAAAAAAUc3RzcwAAAAAAAAABAAAAAQAAABxzdHNjAAAAAAAAAAEAAAABAAAABAAAAAEAAAAkc3RzegAAAAAAAAAAAAAABAAAAogAAAALAAAACwAAAAsAAAAUc3RjbwAAAAAAAAABAAADYwAAAGF1ZHRhAAAAWW1ldGEAAAAAAAAAIWhkbHIAAAAAAAAAAG1kaXJhcHBsAAAAAAAAAAAAAAAALGlsc3QAAAAkqXRvbwAAABxkYXRhAAAAAQAAAABMYXZmNjMuMS4xMDEAAAAIZnJlZQAAArFtZGF0AAACcgYF//9u3EXpvebZSLeWLNgg2SPu73gyNjQgLSBjb3JlIDE2NSByMzIyMyAwNDgwY2IwIC0gSC4yNjQvTVBFRy00IEFWQyBjb2RlYyAtIENvcHlsZWZ0IDIwMDMtMjAyNSAtIGh0dHA6Ly93d3cudmlkZW9sYW4ub3JnL3gyNjQuaHRtbCAtIG9wdGlvbnM6IGNhYmFjPTAgcmVmPTMgZGVibG9jaz0xOi0zOi0zIGFuYWx5c2U9MHgxOjB4MTExIG1lPWhleCBzdWJtZT03IHBzeT0xIHBzeV9yZD0yLjAwOjAuNzAgbWl4ZWRfcmVmPTEgbWVfcmFuZ2U9MTYgY2hyb21hX21lPTEgdHJlbGxpcz0xIDh4OGRjdD0wIGNxbT0wIGRlYWR6b25lPTIxLDExIGZhc3RfcHNraXA9MSBjaHJvbWFfcXBfb2Zmc2V0PS00IHRocmVhZHM9MSBsb29rYWhlYWRfdGhyZWFkcz0xIHNsaWNlZF90aHJlYWRzPTAgbnI9MCBkZWNpbWF0ZT0xIGludGVybGFjZWQ9MCBibHVyYXlfY29tcGF0PTAgY29uc3RyYWluZWRfaW50cmE9MCBiZnJhbWVzPTAgd2VpZ2h0cD0wIGtleWludD0yNTAga2V5aW50X21pbj0yIHNjZW5lY3V0PTQwIGludHJhX3JlZnJlc2g9MCByY19sb29rYWhlYWQ9NDAgcmM9Y3JmIG1idHJlZT0xIGNyZj00MC4wIHFjb21wPTAuNjAgcXBtaW49MCBxcG1heD02OSBxcHN0ZXA9NCBpcF9yYXRpbz0xLjQwIGFxPTE6MS4yMACAAAAADmWIhAXznJigACX3J114AAAAB0GaOAvnOWAAAAAHQZpUAvnOWAAAAAdBmmAVznLA';
@@ -197,8 +197,10 @@
       window.addEventListener('resize', neu);
       window.addEventListener('orientationchange', () => setTimeout(neu, 120));
       if (window.visualViewport) window.visualViewport.addEventListener('resize', neu);
-      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') this.wecken(); });
-      window.addEventListener('pageshow', () => this.wecken());
+      // App-Wechsel (Beta 1.3.3): verdeckt → „away“ an den Gastgeber, sichtbar → „back“ (voller Stand) und Verbindung prüfen
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') this.wecken(true); else this.wegGehen(); });
+      window.addEventListener('pagehide', () => this.wegGehen());
+      window.addEventListener('pageshow', () => this.wecken(true));
       window.addEventListener('online', () => this.wecken());
       // keine Zoom- und Kontextmenü-Gesten im Spiel
       document.addEventListener('gesturestart', e => e.preventDefault());
@@ -282,7 +284,7 @@
     // Browserleiste (theme-color): am Tisch nach Tag/Nacht (Tisch.themaFarbe), sonst Nachtblau wie Start und Lobby
     themaFarbe() {
       const m = document.querySelector('meta[name="theme-color"]');
-      const f = this.screen === 'tisch' && this.tisch && this.tisch.root.dataset.seite ? this.tisch.themaFarbe() : '#0C0F22';
+      const f = this.screen === 'tisch' && this.tisch && this.tisch.root.dataset.seite ? this.tisch.themaFarbe() : (this.screen === 'start' ? '#E6D7BC' : '#0C0F22');
       if (m && m.getAttribute('content') !== f) m.setAttribute('content', f);
       document.body.classList.toggle('tag', f === '#E6D7BC');   // leise Hinweise: am Tag dunkel, nachts hell (style.css .toast.leise)
     },
@@ -322,6 +324,7 @@
       this.verbindung.start();
     },
     status(s) {
+      if (s !== 'offen') this.hostApp('');
       const v = $('#verbinde');
       const weg = s === 'host_weg';   // online: Gastgeber kurz weg (Vermittler-Code 4503)
       const zeigen = (s === 'getrennt' || weg) && this.beigetreten;
@@ -359,10 +362,24 @@
       $('#beitreten').disabled = false; this._startTexte();
       this._startFehler(text);
     },
-    wecken() {
-      if (this.verbindung) this.verbindung.wecken();
+    wecken(zurueck) {
+      if (this.verbindung) {
+        if (zurueck && typeof this.verbindung.zurueck === 'function') this.verbindung.zurueck();
+        else this.verbindung.wecken();
+      }
       M.Ton.wecken();
       if (this._wachAn) { const w = $('#wach'); if (w && w.paused) { const p = w.play(); if (p && p.catch) p.catch(() => {}); } }
+    },
+    wegGehen() {
+      if (this.verbindung && typeof this.verbindung.weg === 'function') this.verbindung.weg();
+    },
+    // Gastgeber kurz in einer anderen App (Beta 1.3.3): deutlicher Hinweis oben, solange die Verbindung offen ist
+    hostApp(name) {
+      const e = $('#host-app');
+      if (!e) return;
+      const zeigen = !!name && !!this.verbindung && this.verbindung.offen;
+      e.hidden = !zeigen;
+      if (zeigen) e.textContent = M.t('%s (Gastgeber) ist kurz in einer anderen App – warte …', name);
     },
     // Vollbild (Android-Browser; iPhone kennt es für Seiten nicht): mehr Höhe im Querformat, nur aus einem Tipp heraus
     vollbild(an) {
@@ -430,6 +447,7 @@
             if (this.tisch) { this.tisch.ablageVerlauf = []; this.tisch.v = null; }
           }
           this.zeigeLobby(m);
+          { const h = (m.players || []).find(p => p.id === m.host_id && p.away); this.hostApp(h ? h.name : ''); }
           break;
         }
         case 'start':
@@ -441,6 +459,7 @@
         case 'state':
           if (!m.view) break;
           this.view = m.view;
+          { const h = (m.view.players || []).find(p => p.host && p.away); this.hostApp(h ? h.name : ''); }
           if (this.screen !== 'tisch') this.zeigeScreen('tisch');
           if (this.offen && (m.seq_ack === undefined || m.seq_ack >= this.offen.seq)) this.offen = null;
           this.tisch.regie.neu(m.events || [], m.view);
@@ -494,7 +513,7 @@
           '<span class="nm">' + esc(p.name) + (istIch ? ' <em>(' + M.t('du') + ')</em>' : '') + '</span>' +
           '<span class="art">' + esc(M.t(ART[p.kind] || p.kind || '')) + '</span>' +
           (host ? '<span class="marke gast">' + M.t('Gastgeber') + '</span>' : '') +
-          (p.connected === false ? '<span class="marke weg">' + M.t('getrennt') + '</span>' : '<span class="status ' + (bereit ? 'ja' : '') + '">' + (bereit ? M.t('bereit') : M.t('wartet')) + '</span>') +
+          (p.away ? '<span class="marke weg app">' + M.t('kurz in einer anderen App') + '</span>' : p.connected === false ? '<span class="marke weg">' + M.t('getrennt') + '</span>' : '<span class="status ' + (bereit ? 'ja' : '') + '">' + (bereit ? M.t('bereit') : M.t('wartet')) + '</span>') +
           '</li>';
       }).join('') || '<li class="lz leer">' + M.t('Noch niemand da.') + '</li>';
       const k = $('#bereit');
