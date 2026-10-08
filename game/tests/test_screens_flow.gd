@@ -50,6 +50,10 @@ func run() -> void:
 	GameStarter.test_speed = 0.0
 	var settings_backup: Variant = UiApp.setting("regeln", {})
 	mau_ton_backup = str(UiApp.setting("mau_ton", "normal"))
+	# Feste Ausgangslage: offizielle Regeln statt der zuletzt am PC gespeicherten (Hausregeln machten die Zugschleife unberechenbar).
+	# Die Sicherung oben stellt sie am Ende wieder her.
+	if UiApp.app() != null:
+		UiApp.app().settings.set_value("regeln", {})
 	nav = ScreenNav.new()
 	root.add_child(nav)
 	await frames(3)
@@ -114,8 +118,15 @@ func solo_game() -> void:
 		for e in evs:
 			if str(e.get("e", "")) in ["play", "draw"] and int(e.get("seat", 0)) > 0:
 				bot_events[0] += 1)
-	deadline = Time.get_ticks_msec() + 40000
-	while my_moves < 4 and Time.get_ticks_msec() < deadline:
+	# Frist nach Fortschritt statt fest 40 s: Unter Last (paralleler Gesamttest) laufen die Animationen langsamer. Jeder eigene Zug oder
+	# Zug eines Computergegners verlängert die Frist um 30 s, höchstens 150 s insgesamt; ein echter Stillstand scheitert weiter.
+	var hard_end := Time.get_ticks_msec() + 150000
+	var seen := -1
+	deadline = Time.get_ticks_msec() + 30000
+	while my_moves < 4 and Time.get_ticks_msec() < mini(deadline, hard_end):
+		if my_moves + int(bot_events[0]) != seen:
+			seen = my_moves + int(bot_events[0])
+			deadline = Time.get_ticks_msec() + 30000
 		await wait(0.1)
 		if ts.table.director.is_busy():
 			continue
@@ -200,8 +211,14 @@ func pass_game() -> void:
 	ts.source.state_changed.connect(func(_e: Array, v: Dictionary) -> void: log.append(["view", int(v.get("seat", -1))]))
 	var reveals := 0
 	var covered_ok := true
-	var deadline := Time.get_ticks_msec() + 45000
-	while reveals < 3 and Time.get_ticks_msec() < deadline:
+	# Frist nach Fortschritt (wie bei der Übungspartie): jede neue Sicht verlängert um 30 s, höchstens 150 s.
+	var deadline := Time.get_ticks_msec() + 30000
+	var hard_end := deadline + 120000
+	var seen := 0
+	while reveals < 3 and Time.get_ticks_msec() < mini(deadline, hard_end):
+		if log.size() != seen:
+			seen = log.size()
+			deadline = Time.get_ticks_msec() + 30000
 		await wait(0.1)
 		if ts.table.handover.visible:
 			# Sichtschutz: keine Karten sichtbar (die Hand ist leer bzw. blendet aus) – aufdecken

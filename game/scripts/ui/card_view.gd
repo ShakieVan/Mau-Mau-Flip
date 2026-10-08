@@ -40,6 +40,8 @@ var _body: Node2D
 var _shadow: Sprite2D
 var _glow: Sprite2D
 var _sprite: Sprite2D
+var _edge: Node2D                    # kräftiger Rand im großen Modus (nur Handkarten)
+var _in_hand := false
 var _flip_tween: Tween
 var _shake_tween: Tween
 var _shimmer_tween: Tween
@@ -65,7 +67,65 @@ func _init() -> void:
 	_body.add_child(_glow)
 	_sprite = Sprite2D.new()
 	_body.add_child(_sprite)
+	_edge = Node2D.new()
+	_edge.visible = false
+	_edge.draw.connect(_draw_edge)
+	_body.add_child(_edge)
 	set_width(width)
+
+
+# Kräftiger Rand der Handkarten im großen Modus (Beta 1.2.1, App.settings "grosser_modus"): Überlappende Karten heben sich
+# deutlicher voneinander ab. Nur Karten direkt in der Hand (HandView), live umschaltbar.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_ENTER_TREE:
+		_in_hand = get_parent() is HandView
+		if _in_hand:
+			var st := _settings()
+			if st != null and not st.is_connected("changed", _on_setting_changed):
+				st.connect("changed", _on_setting_changed)
+		_update_edge()
+	elif what == NOTIFICATION_EXIT_TREE:
+		var st := _settings()
+		if st != null and st.is_connected("changed", _on_setting_changed):
+			st.disconnect("changed", _on_setting_changed)
+
+
+static func _settings() -> Object:
+	var app := UiApp.app()
+	var st: Variant = app.get("settings") if app != null else null
+	return st as Object if st is Object and (st as Object).has_signal("changed") else null
+
+
+func _on_setting_changed(key: String, _value: Variant) -> void:
+	if key == "grosser_modus":
+		_update_edge()
+
+
+func has_strong_edge() -> bool:
+	return _edge != null and _edge.visible
+
+
+func _update_edge() -> void:
+	if _edge == null:
+		return
+	var on := _in_hand and HandView.truthy(UiApp.setting("grosser_modus", false))
+	_edge.visible = on
+	if on:
+		_edge.queue_redraw()
+
+
+func _draw_edge() -> void:
+	# Dunkle Karte (Nachtseite): heller Rand, helle Karte: Rand in Druckfarbe
+	var sz := card_size()
+	var bw := maxf(2.5, width * 0.022)
+	var dark := current_key().begins_with("dunkel")
+	var sb := StyleBoxFlat.new()
+	sb.draw_center = false
+	sb.set_border_width_all(int(round(bw)))
+	sb.set_corner_radius_all(int(round(width * SOFT_RADIUS / SOFT_CARD.x)))
+	sb.border_color = Color(UiPalette.CREAM, 0.9) if dark else Color(UiPalette.INK, 0.92)
+	sb.anti_aliasing = true
+	_edge.draw_style_box(sb, Rect2(-sz * 0.5, sz))
 
 
 func setup(id: int, front: String, back: String = "", show_front := true) -> CardView:
@@ -89,6 +149,8 @@ func set_width(w: float) -> void:
 	var tw := float(tex.get_width()) if tex else 300.0
 	var s := width / tw
 	_sprite.scale = Vector2(s, s)
+	if _edge != null and _edge.visible:
+		_edge.queue_redraw()             # Breite oder Seite (über _apply_texture) geändert
 	_update_glow()
 	_update_shadow()
 

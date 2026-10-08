@@ -115,9 +115,9 @@ body[data-screen="tisch"] #tisch { display: block; }
 .mini-logo .flip { background: #1E1A52; padding: .26em .5em .22em .62em; margin-left: -.4em; clip-path: polygon(.4em 0, 100% 0, 100% 100%, 0 100%); }
 .lobby-titel h2 { margin: 0; font: 900 30px/1 var(--f-brand); font-variation-settings: 'SOFT' 100; color: var(--cream); }
 .lobby-titel p { margin: 4px 0 0; font-weight: 700; color: #C9C3E8; }
-.lobby-zahl { margin-left: auto; font: 800 calc(18px * var(--fs)) var(--f-ui); background: rgba(244,234,218,.12); border: 2px solid rgba(244,234,218,.25); padding: 6px 14px; border-radius: 20px; }
+.lobby-zahl { margin-left: auto; flex: none; white-space: nowrap; font: 800 calc(18px * var(--fs)) var(--f-ui); background: rgba(244,234,218,.12); border: 2px solid rgba(244,234,218,.25); padding: 6px 14px; border-radius: 20px; }
 .lobby-inhalt { display: flex; gap: 18px; align-items: flex-start; }
-.lobby-liste { list-style: none; margin: 0; padding: 0; flex: 1 1 auto; display: flex; flex-direction: column; gap: 8px; }
+.lobby-liste { list-style: none; margin: 0; padding: 0; flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
 .lz { display: flex; align-items: center; gap: 12px; background: var(--paper); color: var(--ink); border-radius: 16px; padding: 8px 14px 8px 10px; font-weight: 700; font-size: calc(20px * var(--fs)); box-shadow: 0 6px 16px rgba(0,0,0,.35); }
 .lz.ich { box-shadow: 0 0 0 3px var(--pink), 0 6px 16px rgba(0,0,0,.35); }
 .lz.weg { opacity: .6; }
@@ -126,8 +126,8 @@ body[data-screen="tisch"] #tisch { display: block; }
 .lz .ava { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; border: 2.5px solid var(--ink); flex: none; }
 .lz .nm { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lz .nm em { font-style: normal; color: #A0457E; }
-.lz .art { font-size: calc(16px * var(--fs)); color: #4F4360; }
-.lz .status { font-size: calc(16px * var(--fs)); padding: 3px 10px; border-radius: 10px; background: rgba(33,27,44,.08); color: #4F4360; }
+.lz .art { font-size: calc(16px * var(--fs)); color: #4F4360; flex: none; }
+.lz .status { flex: none; white-space: nowrap; font-size: calc(16px * var(--fs)); padding: 3px 10px; border-radius: 10px; background: rgba(33,27,44,.08); color: #4F4360; }
 .lz .status.ja { background: #CFF1D7; color: #1C6B32; }
 .marke { display: inline-flex; align-items: center; gap: 4px; font: 800 calc(15px * var(--fs)) var(--f-ui); padding: 3px 9px; border-radius: 10px; background: rgba(33,27,44,.1); white-space: nowrap; }
 .marke.gast { background: var(--ink); color: var(--cream); }
@@ -140,7 +140,15 @@ body[data-screen="tisch"] #tisch { display: block; }
 .regeln-box summary { cursor: pointer; font-weight: 800; }
 .regeln-box ul { margin: 8px 0 0; padding-left: 18px; font-size: calc(17px * var(--fs)); line-height: 1.4; }
 .lobby-seite .regeln-box { color: var(--paper); }
-@media (orientation: portrait) { .lobby-inhalt { flex-direction: column; } .lobby-seite { flex: none; width: 100%; } .mini-logo { font-size: 22px; } }
+@media (orientation: portrait) { .lobby-inhalt { flex-direction: column; align-items: stretch; } .lobby-seite { flex: none; width: 100%; } .mini-logo { font-size: 22px; } .lobby-kopf { gap: 12px; } }
+@media (orientation: portrait) and (max-width: 440px) {   /* schmales Hochkant-Handy: Zeilen und Kopf passen in die Breite, der Name behält mindestens ein paar Zeichen */
+  .mini-logo { font-size: 18px; } .lobby-titel h2 { font-size: 26px; } .lobby-zahl { padding: 5px 10px; } .lobby-kopf { gap: 10px; }
+  .lz { gap: 8px; padding: 7px 10px 7px 8px; } .lz .nm { min-width: 4.2em; }
+  .lz .art { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: calc(14px * var(--fs)); }
+  .lz .status { padding: 3px 8px; }
+  .lz .marke { display: block; flex: 0 1 auto; min-width: 2.6em; overflow: hidden; text-overflow: ellipsis; padding: 3px 7px; }
+  .lz:has(.marke) .art { display: none; }   /* Gerätetest 1.2.1 (S10, Schrift Groß): „bereit“ ragte aus der Gastgeber-Zeile, die Art schrumpfte zu „A..“ */
+}
 @media (max-height: 500px) and (orientation: landscape) { .lz { padding: 5px 12px 5px 8px; font-size: calc(18px * var(--fs)); } .lz .ava { width: 30px; height: 30px; } .mini-logo { font-size: 22px; } .lobby-titel h2 { font-size: 24px; } .lobby-kopf { gap: 12px; } .lobby-rahmen { gap: 10px; } }
 #ende { align-items: center; justify-content: center; }
 .ende-karte { position: relative; display: flex; flex-direction: column; align-items: center; gap: 18px; background: rgba(244,234,218,.08); border: 2px solid rgba(244,234,218,.16); border-radius: 24px; padding: 28px 32px; text-align: center; max-width: 90vw; }
@@ -906,6 +914,8 @@ body.ruhig *, body.ruhig *::before, body.ruhig *::after { animation: none !impor
 #tisch.gross .buehne > .offen { font-size: calc(52px * var(--fs)); padding: 4px 20px; border-width: 4px; border-radius: 34px; }
 #tisch.gross .farbanzeige { font-size: calc(44px * var(--fs)); gap: 10px; }
 #tisch.gross .farbanzeige .sym { width: 120px; height: 120px; }
+#tisch.gross.farbe-mitte .farbanzeige { font-size: calc(34px * var(--fs)); gap: 6px; z-index: 7; }   /* schmales Fenster: Farbe zwischen Stapel und Ablage (tisch.js _geometrieGross) */
+#tisch.gross.farbe-mitte .farbanzeige .sym { width: 100px; height: 100px; }
 #tisch.gross .hinweis { font-size: calc(36px * var(--fs)); padding: 12px 28px; max-width: 700px; border-width: 3px; }
 #tisch.gross .knopf.klein { font-size: calc(30px * var(--fs)); padding: 14px 26px; }
 #tisch.gross .mau-knopf { width: 190px; height: 190px; }

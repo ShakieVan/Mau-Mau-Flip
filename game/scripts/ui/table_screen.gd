@@ -303,8 +303,27 @@ func _on_state(events: Array, v: Dictionary) -> void:
 		_handover_pending = false
 	if source != null and source.mode() == "client" and not rules.is_empty():
 		RuleSets.remember_host(rules, _host_name())
+	_record_stats(events, v)
 	table.handle_state(events, v)
 	_refresh_substitute()
+
+
+# Statistik je Gerät (AppStats, Beta 1.2.1): zählt die gelieferten Ereignisse; der kleine Satz („Dein 12. Rundensieg!“) wartet
+# im Rundenende, bis die Regie dort ankommt. Eine neue Runde löscht ihn.
+func _record_stats(events: Array, v: Dictionary) -> void:
+	var app := UiApp.app()
+	var st: Variant = app.get("stats") if app != null else null
+	if source == null or not st is Object or not (st as Object).has_method("record"):
+		return
+	var note := str((st as Object).call("record", events, v, source.mode()))
+	if table == null or table.round_end == null:
+		return
+	if note != "":
+		table.round_end.note = note
+	else:
+		for e in events:
+			if e is Dictionary and str(e.get("e", "")) == "round_start":
+				table.round_end.note = ""
 
 
 # Bots warten, solange die Regie noch abspielt

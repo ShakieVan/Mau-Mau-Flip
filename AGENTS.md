@@ -100,12 +100,12 @@ Großer Modus: Kopf „Reihenfolge“ mit großem Kreispfeil über der Spielerli
 - Später: eigenes Vermittler-Programm (Docker, Cloudflare Tunnel), GitHub Pages, Ende-zu-Ende-Verschlüsselung mit Schlüssel im Link.
 - Das Cloudflare-Konto legt der Nutzer selbst an (Konten anlegen und Zugangsdaten eingeben darf der Assistent nicht). **Stand 08.10.2026:** Konto angelegt, Workers-Unterdomain `shakie.workers.dev`, Gratistarif (100.000 Anfragen/Tag); „Durable Objects“ erscheint im Menü unter Compute. Noch nichts bereitgestellt.
 
-## Offen (nach 1.1.1)
+## Fahrplan nach Release 1.2.0 (Nutzerentscheidungen 08.10.2026)
 
-- Großer Modus: bei 8 Spielern zeigt die Liste 4 Zeilen (84 px); mit 76 px wären es 5 – Nutzerentscheidung. Fertige Spieler bleiben mit 0 Karten in der Liste. Kräftigere Ränder der Handkarten (card_view.gd) fehlen.
-- Am Gerät noch prüfen: großer Modus am S10 und im Browser auf echten Handys, Vibration/Dran-Ton, Wischen zur Gästeliste mit dem Finger, Haken ① aus dem Spiel-WLAN heraus, iPhone als Gast.
-- Browser: Beim eigenen Zug vibriert es nur noch mit „Bei deinem Zug: Vibration“ (Standard aus) – früher über die allgemeine Vibration.
-- test_screens_flow scheiterte unter Last einmal an seiner 40-s-Frist.
+- **Beta 1.2.1:** kleine Restpunkte (kräftigere Ränder der Handkarten im großen Modus; Browser großer Modus: Stapel im großen Desktop-Fenster, Hinweis „Du bist dran“ nicht über dem Stapelrand; Browser hochkant: Lobby-Zeilen; Browser-Vibration beim eigenen Zug **ab Werk an**; wackelige Tests test_screens_flow/test_net_rebind robuster) und **Statistik** ohne neuen Hauptmenü-Knopf: Abschnitt „Deine Statistik“ in den Einstellungen (pro Gerät: Partien, Siege, Mau-Mau, Erwischt, größte Hand, höchster Glücksspiel-Treffer …, Zurücksetzen), dazu höchstens ein kleiner Satz am Rundenende.
+- **Beta 1.2.2:** englische Fassung (App, Browser, Regeltexte; Sprache automatisch nach System, umschaltbar); der Nutzer testet wenig, Prüfung über Kontrollbilder.
+- **Beta 1.3.x:** Online-Spiel (Cloudflare-Vermittler mit Raumcode), dann Godot-Web-Client (volle Optik) für Online-Gäste, dann Gastgeber-Übergabe (zuerst online, WLAN danach prüfen). **Release 1.3**, wenn Online-Spiel und Übergabe zuverlässig laufen.
+- Bestätigt durch den Nutzer: Spieltöne (MOSS) „erste Sahne“, Spiel-WLAN funktioniert. Offen: iPhone als Gast nie getestet; Play-Protect-Warnung.
 
 ## Empfehlung aus der Recherche
 

@@ -3,7 +3,7 @@ extends Node
 #   App.settings.get_value(key, default) / set_value(key, value)  – speichert sofort (AppSettings, user://einstellungen.json)
 #   App.sound.play(name)                                        – "mau", "karte", "ziehen", "mischen", "flip", "sieg", "fehler", "dran"
 #   App.vibrate(ms, strength)   App.set_keep_screen_on(on)   App.version()   App.is_android()
-#   App.updater (Updater)   App.apk_share (ApkShare)
+#   App.updater (Updater)   App.apk_share (ApkShare)   App.stats (AppStats: Statistik je Gerät, Beta 1.2.1)
 # Die automatische Update-Prüfung (höchstens einmal am Tag) läuft nur in der Android-App, nie in Tests oder am PC: Sonst fragte jeder
 # Testlauf GitHub ab (Limit 60 Abfragen je Stunde und Adresse).
 
@@ -15,6 +15,7 @@ signal app_link_received
 var app_link := {}                      # {ok, address, port, error} aus NetAndroid.parse_app_link; {} = keiner
 
 var settings: AppSettings
+var stats: AppStats
 var sound: AppSound
 var updater: Updater
 var apk_share: ApkShare
@@ -25,6 +26,9 @@ var _apk_logged := false
 func _init() -> void:
 	# Schon im Konstruktor, damit andere Autoloads und Testskripte sofort lesen können.
 	settings = AppSettings.new()
+	# Testskripte (godot --script) zählen in eine eigene Datei, die echte Statistik am PC bleibt sauber.
+	var scripted := OS.get_cmdline_args().has("--script") or OS.get_cmdline_args().has("-s")
+	stats = AppStats.new("user://statistik_tests.json" if scripted else AppStats.PATH)
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS

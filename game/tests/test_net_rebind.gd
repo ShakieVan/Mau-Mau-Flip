@@ -6,7 +6,8 @@ extends SceneTree
 
 const CleanExit := preload("res://tests/clean_exit.gd")
 const ANDROID_PATH := "res://scripts/app/net_android.gd"
-const PORT := 24916
+const PORT_FIRST := 24916
+var PORT := PORT_FIRST                  # erster freier Port ab 24916: ein belegter Port soll den Ablauf nicht scheitern lassen
 
 var ok := 0
 var failed := 0
@@ -65,6 +66,15 @@ func _initialize() -> void:
 	call_deferred("run")
 
 
+func free_port(first: int) -> int:
+	for p in range(first, first + 30):
+		var t := TCPServer.new()
+		if t.listen(p) == OK:
+			t.stop()
+			return p
+	return first
+
+
 func home_wifi() -> Dictionary:
 	return {"android": true, "bound": null, "networks": [
 		{"transport": "wifi", "iface": "wlan0", "addresses": ["192.168.178.40/24"], "gateway": "192.168.178.1", "handle": "101",
@@ -92,6 +102,7 @@ func run() -> void:
 		print("RESULT: 0 ok (NetAndroid fehlt – übersprungen)")
 		await CleanExit.finish(self, 0)
 		return
+	PORT = free_port(PORT_FIRST)
 	var fake := FakeAndroid.new()
 	fake.real = load(ANDROID_PATH)
 	NetAddresses.set_helper(fake)
@@ -100,7 +111,10 @@ func run() -> void:
 	root.add_child(host)
 	host.use_discovery = false
 	host.autosave = false
-	check(host.open("Ben", PORT, PORT) == OK, "Gastgeber offen")
+	check(host.open("Ben", PORT, PORT) == OK, "Gastgeber offen (Port %d)" % PORT)
+	var net_log: Array = []
+	if host.session != null:
+		host.session.log_line.connect(func(t: String) -> void: net_log.append(t))
 	check(NetAddresses.bound_to == "wifi" and fake.calls.has("bind_wifi"), "Eröffnen im Heim-WLAN: ans WLAN gebunden %s" % str(fake.calls))
 	var holder := Control.new()
 	holder.size = Vector2(1600, 720)
@@ -147,5 +161,7 @@ func run() -> void:
 	s.players.erase(9999)
 	host.leave()
 	NetAddresses.set_helper(null)
+	if failed > 0:
+		print("Netzprotokoll (für die Fehlersuche): ", " | ".join(net_log))
 	print("RESULT: %d ok" % ok if failed == 0 else "RESULT: %d ok, %d FAIL" % [ok, failed])
 	await CleanExit.finish(self, 1 if failed > 0 else 0)

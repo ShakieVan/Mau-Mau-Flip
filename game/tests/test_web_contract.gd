@@ -279,11 +279,11 @@ func pruefe_tag_details(css: String, tisch: String) -> void:
 		"Flip: ab der Mitte stehen Änderungen (z. B. wer dran ist) sofort in den Farben der neuen Seite; Layout-Aufrufe wechseln die Seite nicht")
 
 
-# Beta 1.1.1: großer Modus (grosser_modus) und „Bei deinem Zug: Vibration“ (zug_vibration), je Gerät, Standard aus
+# Beta 1.1.1: großer Modus (grosser_modus, Standard aus) und „Bei deinem Zug: Vibration“ (zug_vibration, Standard an seit 1.2.1), je Gerät
 func pruefe_111(css: String, tisch: String, autotest: String, app: String, seite: String) -> void:
 	var hand := read_web("hand.js")
-	check(app.contains("grosser_modus: false, zug_vibration: false") and app.contains("Speicher.get('grosser_modus', false)")
-			and app.contains("Speicher.get('zug_vibration', false)") and app.contains("params.get('gross')")
+	check(app.contains("grosser_modus: false, zug_vibration: true") and app.contains("Speicher.get('grosser_modus', false)")
+			and app.contains("Speicher.get('zug_vibration', true) !== false") and app.contains("params.get('gross')")
 			and seite.contains("data-set=\"grosser_modus\"") and seite.contains("data-set=\"zug_vibration\"") and seite.contains("class=\"schrift-wahl gross-wahl\"")
 			and seite.contains("id=\"menue-gross-tipp\""),
 		"Großer Modus und Zug-Vibration: Einstellungen im Menü und auf der Startseite, localStorage, ?gross=1")
@@ -295,9 +295,17 @@ func pruefe_111(css: String, tisch: String, autotest: String, app: String, seite
 			and tisch.contains("w: t.g.sw }") and tisch.contains("w: t.g.aw,") and not tisch.contains("w: 118 }"),
 		"Großer Modus: Blasen, Einsatz und Flüge docken an Liste, Stapel und Ablage an")
 	# Beta 1.1.3 (Nutzerbefund S10): Liste breit wie in der App (big_layout.gd 0,365), Stapel und Ablage nebeneinander mit Abstand
-	check(tisch.contains("Math.min(620, W * 0.365)") and tisch.contains("spalt = 30 + 54 * gk") and tisch.contains("_listeZeilen(nl)")
+	check(tisch.contains("Math.min(620, W * 0.365)") and tisch.contains("spalt = Math.max(mitte ? FARBE_SPALT : 0, 30 + 54 * gk)") and tisch.contains("_listeZeilen(nl)")
 			and css.contains("width: var(--lw, 440px); height: var(--zh0)") and css.contains("calc(48px * var(--fs)), calc(var(--zh0) * .5)"),
 		"Großer Modus im Browser: breite Liste mit großen Namen, Ablage überdeckt den Stapel nicht")
+	# Beta 1.2.1: Stapel enden über der Hinweisleiste, in schmalen Fenstern Farbe zwischen Stapel und Ablage; Lobby hochkant ohne Abschneiden
+	check(tisch.contains("const kwHoch = Math.min(360, (leisteOben - 12 - 18) / VH)") and tisch.contains("setz(this.leiste, mx, leisteY)")
+			and tisch.contains("this.root.classList.toggle('farbe-mitte', mitte)") and tisch.contains("this.root.classList.remove('farbe-mitte')")
+			and css.contains("#tisch.gross.farbe-mitte .farbanzeige {"),
+		"Großer Modus: Stapel nutzen die Höhe, Hinweis liegt nicht auf den Stapelecken, Farbe im Spalt bei schmalem Fenster")
+	check(css.contains(".lobby-inhalt { flex-direction: column; align-items: stretch; }") and css.contains("@media (orientation: portrait) and (max-width: 440px)")
+			and css.contains(".lobby-liste { list-style: none; margin: 0; padding: 0; flex: 1 1 auto; min-width: 0;"),
+		"Lobby hochkant: Spielerzeilen passen in die Breite")
 	check(tisch.contains("this.app.zugVibration()") and app.contains("zugVibration() {") and app.contains("!this.einstellungen.zug_vibration || !navigator.vibrate")
 			and autotest.contains("Großer Modus: Spieler am Zug steht nicht oben"),
 		"Bei deinem Zug: eigene Vibrations-Einstellung; Selbsttest prüft die Liste im großen Modus")

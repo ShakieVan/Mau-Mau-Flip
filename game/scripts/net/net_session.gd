@@ -151,6 +151,12 @@ func rebind(after_close := false) -> String:
 	var p := server.port
 	server.stop()
 	var err := server.start(p, p)
+	for attempt in 4:
+		# Unter Last gibt Windows den eben geschlossenen Port manchmal erst einen Augenblick später frei.
+		if err == OK:
+			break
+		OS.delay_msec(25 * (attempt + 1))
+		err = server.start(p, p)
 	if err != OK:
 		err = server.start(NetProtocol.PORT, NetProtocol.PORT_LAST)
 	if err != OK:

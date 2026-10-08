@@ -2,7 +2,8 @@ class_name SettingsScreen
 extends AppScreen
 # Einstellungen: Name, Ton (Mau-Ton aus/leise/normal mit Probehören der Aufnahmen „Mau!“ und „Mau-Mau!“, Spieltöne
 # aus/leise/normal, Standard aus), Schriftgröße (Normal/Groß/Sehr groß, live), Spielbare Karten hervorheben (nur dieses Gerät), Vibration, Effekte, Updates (Beta-Kanal,
-# Jetzt prüfen, Fortschritt, Installieren, Im Browser herunterladen), App teilen, Info (Version, Lizenz, Schriften).
+# Jetzt prüfen, Fortschritt, Installieren, Im Browser herunterladen), App teilen, Deine Statistik (AppStats, mit Zurücksetzen),
+# Info (Version, Lizenz, Schriften).
 # Alles wird sofort in App.settings gespeichert.
 
 var _name: LineEdit
@@ -13,6 +14,8 @@ var _download_btn: Button
 var _install_btn: Button
 var _browser_btn: Button
 var _share_status: Label
+var _stats_list: VBoxContainer
+var _stats_confirm: ConfirmBox
 
 
 func build() -> void:
@@ -84,6 +87,7 @@ func build() -> void:
 	_share_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_share_status.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	srow.add_child(_share_status)
+	_build_stats(_section(right, AppStats.TITLE))
 	var info := _section(right, "Info")
 	info.add_child(ScreenKit.text_block("Mau-Mau Flip %s\nEin Hobbyprojekt von ShakieVan." % MainMenuScreen._version_text(), UiFonts.size("text")))
 	info.add_child(ScreenKit.hint("Lizenz: CC BY-NC 4.0 (nicht kommerziell). Schriften: Bricolage Grotesque und Fraunces unter der SIL Open Font License 1.1. Quellcode und Versionen auf GitHub: ShakieVan/Mau-Mau-Flip.", UiFonts.size("hinweis")))
@@ -154,6 +158,69 @@ static func personal(parent: Control, section: Callable, tempo := true) -> void:
 	look.add_child(ScreenKit.row("Effekte", fx, 190.0, "Reduziert: kürzer, weniger Teilchen"))
 	if tempo:
 		look.add_child(tempo_row())
+
+
+# „Deine Statistik“ (Beta 1.2.1, AppStats): Zahlen dieses Geräts, Zurücksetzen mit Rückfrage. Kein eigener Knopf im Hauptmenü.
+func _build_stats(box: VBoxContainer) -> void:
+	var intro := ScreenKit.hint(AppStats.INTRO, UiFonts.size("hinweis"))
+	intro.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	box.add_child(intro)
+	_stats_list = ScreenKit.vbox(6)
+	_stats_list.name = "StatistikZahlen"
+	box.add_child(_stats_list)
+	var pass_note := ScreenKit.hint(AppStats.PASS_NOTE, UiFonts.size("klein"))
+	pass_note.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	box.add_child(pass_note)
+	var reset := ScreenKit.button(AppStats.RESET, "GhostButton")
+	reset.name = "StatistikZuruecksetzen"
+	reset.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	reset.pressed.connect(_ask_reset_stats)
+	box.add_child(reset)
+	var st := _stats()
+	if st != null and st.has_signal("changed"):
+		st.connect("changed", _fill_stats)
+	_fill_stats()
+
+
+func _stats() -> Object:
+	var app := UiApp.app()
+	var st: Variant = app.get("stats") if app != null else null
+	return st as Object if st is Object else null
+
+
+func _fill_stats() -> void:
+	if _stats_list == null or not is_instance_valid(_stats_list):
+		return
+	for c in _stats_list.get_children():
+		c.queue_free()
+	var st := _stats()
+	if st == null or bool(st.call("is_empty")):
+		_stats_list.add_child(ScreenKit.text_block(AppStats.EMPTY, UiFonts.size("text")))
+		return
+	for entry in st.call("rows"):
+		var r := ScreenKit.hbox(12)
+		var l := ScreenKit.label(str(entry[0]), "", UiFonts.size("text"))
+		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		r.add_child(l)
+		var v := ScreenKit.label(str(entry[1]), "", UiFonts.size("zeile"))
+		v.add_theme_font_override("font", UiFonts.text(800))
+		v.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		v.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		r.add_child(v)
+		_stats_list.add_child(r)
+
+
+func _ask_reset_stats() -> void:
+	if _stats_confirm != null and is_instance_valid(_stats_confirm):
+		return
+	_stats_confirm = ConfirmBox.ask(self, AppStats.RESET_TITLE, AppStats.RESET_TEXT, AppStats.RESET_YES, AppStats.RESET_NO)
+	_stats_confirm.answered.connect(func(yes: bool) -> void:
+		if yes:
+			var st := _stats()
+			if st != null:
+				st.call("reset")
+			toast(AppStats.RESET_DONE))
 
 
 func _section(parent: Control, title_text: String) -> VBoxContainer:

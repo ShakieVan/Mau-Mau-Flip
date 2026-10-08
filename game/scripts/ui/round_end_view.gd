@@ -13,6 +13,7 @@ var title := "Mau-Mau!"
 var subtitle := ""
 var scoring := false
 var night := 0.0
+var note := ""                      # kleiner Satz aus der Statistik („Dein 12. Rundensieg!“, AppStats.round_note), "" = keiner
 
 var _panel_rect := Rect2()
 var _button: PillButton
@@ -126,7 +127,12 @@ func on_font_scale() -> void:
 
 # Zusatzhöhe des Kopfs, wenn die Einstellung „Schriftgröße“ Titel und Unterzeile vergrößert
 func _head_extra() -> float:
-	return (UiFonts.px(64) - 64) * 0.75 + (UiFonts.px(22) - 22)
+	return (UiFonts.px(64) - 64) * 0.75 + (UiFonts.px(22) - 22) + _note_extra()
+
+
+# Platz für den Statistik-Satz unter der Unterzeile
+func _note_extra() -> float:
+	return UiFonts.px(18) + 12.0 if note != "" else 0.0
 
 
 func _layout() -> void:
@@ -168,6 +174,12 @@ func _draw() -> void:
 	var f := UiFonts.text(700, 100.0)
 	var sw := f.get_string_size(subtitle, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_sub).x
 	draw_string(f, Vector2(r.get_center().x - sw * 0.5, y_title + 38.0 + (fs_sub - 22)), subtitle, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_sub, muted)
+	if note != "":
+		var fs_note := UiFonts.px(18)
+		var nfont := UiFonts.text(800, 90.0)
+		var nw := nfont.get_string_size(note, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_note).x
+		var accent := UiPalette.TURN if dark else Color("#B8530A")
+		draw_string(nfont, Vector2(r.get_center().x - nw * 0.5, y_title + 38.0 + (fs_sub - 22) + fs_note + 10.0), note, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_note, accent)
 	var y := r.position.y + 150.0 + _head_extra()
 	var nf := UiFonts.text(800, 90.0)
 	if scoring:

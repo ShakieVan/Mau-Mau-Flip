@@ -264,6 +264,7 @@
       this.g = { cx, cy, stapel: { x: cx - 177, y: cy }, ablage: { x: cx + 177, y: cy }, sw: 118, aw: 124 };
       const setz = (e, x, y) => { e.style.left = x + 'px'; e.style.top = y + 'px'; };
       this.root.style.removeProperty('--gk');
+      this.root.classList.remove('farbe-mitte');
       setz(this.ring, cx, cy);
       const pw = Math.round(Math.min(330, W * 0.21));
       if (this.ring.dataset.w !== String(pw)) { this.ring.innerHTML = plattform(W); this.ring.dataset.w = String(pw); }
@@ -287,28 +288,44 @@
     // Liste wie in der App (big_layout.gd list_rect, 1.1.2) etwa 36 % der Breite; die Stapel bekommen, was zwischen Menü-Knopf,
     // Farbspalte und Liste bleibt. Der Abstand rechnet die Überstände mit ein: unterste Stapelkarten (8 px versetzt, −3°) und die
     // älteren Ablagekarten (bis 24 px nach links versetzt, bis ±11° gedreht), sonst läge die Ablage auf dem Stapel.
+    // 1.2.1: Die Unterkante der Stapel bleibt über der Hinweisleiste (Ecken lesbar, „Du bist dran“ liegt nicht darauf). In
+    // schmalen Fenstern (z. B. Desktop 1280×800, 1600×900) rückt die Farbe zwischen Stapel und Ablage (#tisch.farbe-mitte),
+    // damit die Stapel die Höhe nutzen, statt klein oben in der Ecke zu liegen.
     _geometrieGross() {
-      const W = this.W, H = this.H, rand = 18, links = 130, FARBE_MIN = 200;
+      const W = this.W, H = this.H, rand = 18, links = 130, FARBE_MIN = 200, FARBE_SPALT = 150;
       const LW = Math.round(Math.max(440, Math.min(620, W * 0.365)));
       const lx0 = W - rand - LW;
       const VH = K().VERHAELTNIS;
-      const frei = lx0 - 16 - links - FARBE_MIN;
+      const leisteY = H - 258, leisteOben = leisteY - 46;   // Hinweisleiste (auch bei Schrift „Sehr groß“ höchstens etwa 92 hoch)
+      const kwHoch = Math.min(360, (leisteOben - 12 - 18) / VH);
       // 2·kw + Spalt(30 + 54·gk) + Ablage-Mehrbreite (6·gk) ≤ frei, gk = kw / 118
-      const kw = Math.max(130, Math.min(360, (H * 0.8) / VH, (frei - 30) / (2 + 60 / 118)));
-      const gk = kw / 118, aw = 124 * gk, kh = kw * VH, spalt = 30 + 54 * gk;
+      const breit = frei => (frei - 30) / (2 + 60 / 118);
+      const kwSpalte = breit(lx0 - 16 - links - FARBE_MIN);
+      let kw = Math.min(kwHoch, kwSpalte), mitte = false;
+      if (kwSpalte < kwHoch) {
+        // Farbe im Spalt: der ist dann mindestens FARBE_SPALT breit, die Farbspalte entfällt
+        const frei = lx0 - 16 - links;
+        let kwM = Math.min(kwHoch, breit(frei));
+        if (30 + 54 * kwM / 118 < FARBE_SPALT) kwM = Math.min(kwHoch, (frei - FARBE_SPALT) / (2 + 6 / 118));
+        if (kwM > kw + 8) { kw = kwM; mitte = true; }
+      }
+      kw = Math.max(130, kw);
+      const gk = kw / 118, aw = 124 * gk, kh = kw * VH, spalt = Math.max(mitte ? FARBE_SPALT : 0, 30 + 54 * gk);
       const cy = Math.round(18 + kh / 2), sx = links + kw / 2, ax = sx + kw / 2 + spalt + aw / 2;
       const mx = Math.round((links + lx0) / 2), cx = W / 2;
       this.g = { cx, cy, mx, stapel: { x: sx, y: cy }, ablage: { x: ax, y: cy }, sw: kw, aw };
       const setz = (e, x, y) => { e.style.left = x + 'px'; e.style.top = y + 'px'; };
       this.root.style.setProperty('--gk', gk.toFixed(3));
       this.root.style.setProperty('--lw', LW + 'px');
+      this.root.classList.toggle('farbe-mitte', mitte);
       setz(this.stapel, sx, cy);
       setz(this.stapelZahl, sx, Math.round(cy + kh * 0.08));   // als Schild auf dem Stapel (unten liegt die Hand)
-      setz(this.farbe, Math.round((ax + aw / 2 + lx0) / 2), Math.round(cy - kh * 0.2));   // Mitte der Farbspalte
+      if (mitte) setz(this.farbe, Math.round(sx + kw / 2 + spalt / 2), Math.round(cy - kh * 0.12));   // zwischen Stapel und Ablage
+      else setz(this.farbe, Math.round((ax + aw / 2 + lx0) / 2), Math.round(cy - kh * 0.2));   // Mitte der Farbspalte
       setz(this.ablage, ax, cy);
       setz(this.seiten, ax + aw / 2 + 40, cy);
       setz(this.offenEl, Math.round(ax + aw * 0.04), Math.round(cy - kh / 2 + 14));   // oben rechts auf der Ablage (oben ist kein Platz, unten liegt die Hand)
-      setz(this.leiste, mx, H - 258);
+      setz(this.leiste, mx, leisteY);
       setz(this.farbwahl, ax, cy);
       setz(this.automat, mx, cy + 10);
       this.g.einsatz = { x: Math.max(120, mx - 340), y: H - 300 };
