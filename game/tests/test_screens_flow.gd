@@ -144,6 +144,9 @@ func solo_game() -> void:
 		elif bool(hints.get("can_draw", false)):
 			ts._act({"a": "draw"})
 			my_moves += 1
+		elif phase in ["gamble", "discard_pick"]:
+			# gespeicherte Hausregeln mit Glücksspiel/Farbe ablegen: wie ein Computergegner weitermachen (sonst bleibt die Schleife hängen)
+			ts._act(MauBot.choose(v, my_moves + 1))
 		await wait(0.3)
 	check(my_moves >= 3, "eigene Züge gespielt (%d)" % my_moves)
 	check(int(bot_events[0]) >= 2, "Computergegner ziehen (%d)" % int(bot_events[0]))
@@ -230,6 +233,8 @@ func pass_game() -> void:
 			ts._act({"a": "accept"})
 		elif bool(hints.get("can_draw", false)):
 			ts._act({"a": "draw"})
+		elif str(v.get("phase", "")) in ["gamble", "discard_pick"]:
+			ts._act(MauBot.choose(v, 7))
 		await wait(0.3)
 	check(reveals >= 2, "Sichtschutz erschienen und aufgedeckt (%d)" % reveals)
 	check(covered_ok, "unter dem Sichtschutz keine Karten")

@@ -70,6 +70,20 @@ Neue Gastgeber-Lobby (① WLAN / ② Spiel nebeneinander, Leuchten und Haken, Bl
 
 Release 1.1.0 am 07.10.2026 veröffentlicht. Beta 1.1.1: großer Modus in App und Browser (`grosser_modus`, `big_layout.gd`, rollende Spielerliste, große Stapel, ruhiger Hintergrund mit Tag/Nacht), „Bei deinem Zug: Vibration“ (`zug_vibration`), Hinweis bei „Schrift: Sehr groß“, restliche Schriftgrößen in Overlays, Neu-Binden nach „Spiel-WLAN schließen“, Sichtschutz „Gib das Handy an …“. Bericht: `docs/geraetetest/1.1.1/BERICHT.md`.
 
+## Erledigt in Beta 1.1.2 und schnellerer Bau (08.10.2026)
+
+- Beta 1.1.2: Menü (☰) im Spiel mit Einstellungen, Regeln, So geht's; großer Modus: Namensbereich doppelt so breit (Stapel 299 statt 399 px), fertige Spieler verschwinden. Bericht: `docs/geraetetest/1.1.2/BERICHT.md`.
+- Schnellerer Bau: Tests 22,4 → 3,5 min (zwei Spuren, Regeltests parallel mit eigenem user://, Dauerläufe per `TEIL=k/n` geteilt, `game/tests/teil.gd`); Testergebnis-Cache über eine Prüfsumme (`.tools/test_cache.json`), Bau eines getesteten Stands ~0,6 min (`tests_cached: true`). Schalter `-NoTestCache`, `-Parallel n`. Die Sperre `Global\MauMauFlipGodot` hält der Bau einmal (`MMF_GODOT_LOCK_OWNER`).
+- Geräte per `adb devices -l` nach Modell ansprechen (drahtloses Debugging, wechselnde Ports): SM-G991B = S21, SM-G973F = S10, SM-S928B = S24 (Gerät des Nutzers, nur nach Absprache).
+
+## Geplant: Online-Spiel, Schritt 1 (Nutzerentscheidung 08.10.2026)
+
+- Vermittler (Relay) als Cloudflare Worker mit Durable Objects (ein Raum = ein Objekt), im Repo samt „Deploy to Cloudflare“-Knopf im README: Jede Gruppe (oder der Nutzer als Standard) richtet sich mit einem Klick einen eigenen Gratis-Vermittler ein; der Gratistarif pausiert bei Überschreiten der Tageslimits, kostet aber nichts. Vor dem Umsetzen die aktuellen Bedingungen (Durable Objects im Gratistarif, WebSocket-Limits) prüfen.
+- Spiellogik bleibt beim Gastgeber-Handy; der Vermittler reicht nur Nachrichten durch. Gastgeber: „Online spielen“ → Raumcode (z. B. KATZE-42) und Link; Gäste geben den Code in der App ein oder öffnen den Link im Browser. Vermittler-Adresse in den Einstellungen, mit Verbindungstest, per QR teilbar.
+- Browser-Gäste: Der Worker kann den Lite-Client gleich mit ausliefern (https), daher zunächst ohne GitHub Pages.
+- Später: eigenes Vermittler-Programm (Docker, Cloudflare Tunnel), GitHub Pages, Ende-zu-Ende-Verschlüsselung mit Schlüssel im Link.
+- Das Cloudflare-Konto legt der Nutzer selbst an (Konten anlegen und Zugangsdaten eingeben darf der Assistent nicht).
+
 ## Offen (nach 1.1.1)
 
 - Großer Modus: bei 8 Spielern zeigt die Liste 4 Zeilen (84 px); mit 76 px wären es 5 – Nutzerentscheidung. Fertige Spieler bleiben mit 0 Karten in der Liste. Kräftigere Ränder der Handkarten (card_view.gd) fehlen.

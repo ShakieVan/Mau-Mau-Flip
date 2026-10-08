@@ -59,6 +59,8 @@ Voreinstellungen „Offiziell“, „Familie“, „Mau-Mau-Tradition“ und „
 ./tools/build.ps1 -Target All  # Browser-Client, Windows- und Android-Build nach builds/
 ```
 
+Die Tests laufen teils parallel. War genau dieser Stand schon vollständig grün, überspringt der Bau sie („Tests für diesen Stand schon grün, übersprungen“); `-NoTestCache` erzwingt sie, `-SkipTests` lässt sie für schnelle Probebauten weg. Einzelheiten: [docs/IMPLEMENTIERUNG.md](docs/IMPLEMENTIERUNG.md#prüfen).
+
 Android benötigt zusätzlich JDK 17, das Android-SDK und den Signaturschlüssel in `.tools/` (nicht im Repo).
 
 ## Unterlagen

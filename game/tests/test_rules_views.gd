@@ -2,7 +2,8 @@ extends SceneTree
 # Modul A: Sichten und Ereignisse. Rückseiten sortiert, keine fremden Vorderseiten, kein Seed (Lecktest über alle view_for und
 # events_for in Bot-Partien), JSON-Tauglichkeit, Determinismus, to_dict/from_dict-Rundreise.
 
-const VIEW_KEYS := ["v", "seat", "side", "phase", "turn", "dir", "color", "wish", "colors", "players", "hand", "top", "draw_back",
+const Teil := preload("res://tests/teil.gd")
+const VIEW_KEYS :=["v", "seat", "side", "phase", "turn", "dir", "color", "wish", "colors", "players", "hand", "top", "draw_back",
 	"draw_count", "discard_count", "pending", "drawn", "hints", "round", "dealer", "ranking", "result", "rules", "discard_log"]
 const PLAYER_KEYS := ["seat", "name", "kind", "count", "backs", "place", "mau", "connected", "score"]
 const HINT_KEYS := ["playable", "wild", "can_draw", "can_keep", "can_challenge", "can_accept", "can_mau", "catch", "need_color",
@@ -58,13 +59,22 @@ func check(ok: bool, message: String) -> void:
 
 
 func _initialize() -> void:
-	_backs_and_hand()
-	_json_views()
-	_events_filter()
-	_leak_runs()
-	_hint_consistency()
-	_determinism()
-	_round_trip()
+	# Aufteilung (tests/teil.gd, TEIL=k/n): kurze Abschnitte in Teil 1, die vier Zufallsabschnitte reihum auf die Teile
+	# (jeder Abschnitt läuft vollständig mit seinen Startwerten in genau einem Teil).
+	if Teil.first():
+		_backs_and_hand()
+	if Teil.slot(1):
+		_json_views()
+	if Teil.first():
+		_events_filter()
+	if Teil.slot(0):
+		_leak_runs()
+	if Teil.slot(3):
+		_hint_consistency()
+	if Teil.first():
+		_determinism()
+	if Teil.slot(2):
+		_round_trip()
 	print("Laufzeit seit Godot-Start: %.1f s" % (Time.get_ticks_msec() / 1000.0))
 	print("RESULT: %d ok" % (checks - failures) if failures == 0 else "RESULT: %d ok, %d FAIL" % [checks - failures, failures])
 	quit(0 if failures == 0 else 1)

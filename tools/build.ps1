@@ -1,18 +1,25 @@
 ﻿param(
     [ValidateSet('Test', 'Windows', 'Android', 'Web', 'All')][string]$Target = 'All',
     [switch]$SkipTests,                 # nur für schnelle Probebauten; tools/release.ps1 nutzt es nie
-    [int]$TestTimeout = 900,            # Sekunden je Testskript
+    [switch]$NoTestCache,               # Tests auch dann laufen lassen, wenn genau dieser Stand schon grün war
+    [int]$Parallel = 0,                 # parallele Godot-Prozesse für reine Tests (0 = automatisch: Kerne − 4, höchstens 10)
+    [int]$TestTimeout = 900,            # Sekunden je Testlauf
     [int]$LockWaitMinutes = 120
 )
 # Bau von Mau-Mau Flip (Muster Draw2Race tools/build.ps1, docs/BETA1_PLAN.md 9):
 #   Web      webclient/ → game/assets/web.zip (läuft auch vor Test, Windows und Android, damit die APK den aktuellen Browser-Client trägt)
-#   Test     Import, dann alle game/tests/test_*.gd (außer *_lang*/*_shot*) nacheinander, Zusammenfassung, Abbruch bei Fehler
+#   Test     Import, dann alle game/tests/test_*.gd (außer *_lang*/*_shot*), reine Tests parallel, Netz-/Bildschirmtests in einer
+#            eigenen Spur nacheinander; Zusammenfassung, Abbruch bei Fehler. Testergebnis-Cache: War genau dieser Stand (Prüfsumme
+#            über game/, webclient/ und dieses Skript, siehe Get-TestStateHash) schon vollständig grün, entfallen die Tests
+#            (.tools/test_cache.json; -NoTestCache erzwingt sie).
 #   Windows  builds/MauMauFlip.exe (pck eingebettet)
 #   Android  RELEASE-Export, signiert mit dem Projektschlüssel .tools/maumauflip-release.keystore; Signatur, Paket und Version der APK
 #            werden nachgeprüft; dann builds/MauMauFlip-<version>.apk (diesen Namen erwartet der Updater)
 #   All      alles zusammen
-# Godot-Läufe des Projekts laufen nie gleichzeitig: Der Bau hält den Systemmutex Global\MauMauFlipGodot (wie tools/godot_run.ps1) vom
-# Import bis zum letzten Export.
+# Godot-Läufe des Projekts laufen nie gleichzeitig mit fremden: Der Bau hält den Systemmutex Global\MauMauFlipGodot (wie
+# tools/godot_run.ps1) vom Import bis zum letzten Export, einmal. Seine eigenen Godot-Kindprozesse (parallele Tests) startet er ohne
+# erneutes Sperren; MMF_GODOT_LOCK_OWNER (seine Prozessnummer) lässt auch godot_run.ps1/godot_import.ps1, wenn sie aus diesem Bau
+# heraus gestartet werden, ohne Sperre laufen. Andere Godot-Läufe warten weiter.
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -136,47 +143,166 @@ function Build-WebZip {
     Write-Output ("web.zip: {0} Dateien, {1:N0} KB" -f $files.Count, ((Get-Item -LiteralPath $zipPath).Length / 1KB))
 }
 
+function Get-TestStateHash {
+    # Prüfsumme über alles, was ein Testergebnis beeinflusst: game/ und webclient/ (Dateien, die git verfolgt oder verfolgen würde –
+    # .gitignore schließt Erzeugtes wie game/.godot/, game/android/build/build/, libs/ und web.zip aus), dazu dieses Bauskript und
+    # die Godot-Fassung. export_presets.cfg geht ein, nachdem der Bau die Versionszeilen gesetzt hat. Ohne git: $null (kein Cache).
+    $git = Get-Command git -ErrorAction SilentlyContinue
+    if (-not $git) { return $null }
+    $list = Invoke-Native $git.Source @('-C', $projectRoot, '-c', 'core.quotepath=off', 'ls-files', '--cached', '--others', '--exclude-standard', '--', 'game', 'webclient', 'tools/build.ps1')
+    if ($script:NativeExit -ne 0) { return $null }
+    $sha = [Security.Cryptography.SHA256]::Create()
+    $sb = New-Object Text.StringBuilder
+    [void]$sb.AppendLine("engine $((Get-Item -LiteralPath $engine).Length)")
+    foreach ($rel in (@($list | Where-Object { $_ }) | Sort-Object -Unique)) {
+        $full = Join-Path $projectRoot $rel
+        if (-not (Test-Path -LiteralPath $full -PathType Leaf)) { [void]$sb.AppendLine("$rel -"); continue }
+        $bytes = [IO.File]::ReadAllBytes($full)
+        [void]$sb.AppendLine("$rel " + [BitConverter]::ToString($sha.ComputeHash($bytes)).Replace('-', ''))
+    }
+    $all = [BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($sb.ToString()))).Replace('-', '').ToLower()
+    $sha.Dispose()
+    return $all
+}
+
+function Read-JsonFile([string]$Path) {
+    try { if (Test-Path -LiteralPath $Path) { return [IO.File]::ReadAllText($Path) | ConvertFrom-Json } } catch { }
+    return $null
+}
+
+function Test-Kind([string]$Name) {
+    # Reine Tests (Regeln, Darstellung ohne Netz: keine festen Ports, keine Server) laufen parallel, je Prozess mit eigenem
+    # user:// (APPDATA in einem Wegwerfordner – Einstellungs- und Spielstanddateien stören sich so nicht). Alles andere (Netz, Lobby,
+    # Bildschirmabläufe, App-Dienste, Updater, Regelsätze) läuft nacheinander in einer eigenen Spur mit dem echten user://. Neue
+    # Testskripte landen ohne Eintrag hier in der sicheren, seriellen Spur.
+    if ($Name -match '^test_(rules_|ui_|card_view$|smoke$|game_local$|b_assets$)') { return 'parallel' }
+    return 'serial'
+}
+
+# Lange Dauerläufe in Teile (Umgebungsvariable TEIL=k/n, tests/teil.gd): zusammen dieselben Startwerte wie ungeteilt.
+$testSplits = @{ 'test_rules_bots_long' = 8; 'test_rules_swap' = 4; 'test_rules_views_long' = 4; 'test_rules_gamble' = 3; 'test_rules_discard' = 2 }
+
+function Start-TestUnit($Unit) {
+    $Unit.Out = Join-Path $env:TEMP ('mmf_test_' + [guid]::NewGuid().ToString('N') + '.txt')
+    $Unit.Err = $Unit.Out + '.err'
+    $arguments = @('--headless', '--path', ('"' + $gamePath + '"'), '--script', "res://tests/$($Unit.Test).gd")
+    $savedAppData = $env:APPDATA
+    try {
+        if ($Unit.Part) { $env:TEIL = $Unit.Part } else { Remove-Item Env:TEIL -ErrorAction SilentlyContinue }
+        if ($Unit.Lane -eq 'parallel') {
+            $Unit.UserDir = Join-Path $env:TEMP ('mmf_ud_' + [guid]::NewGuid().ToString('N'))
+            New-Item -ItemType Directory -Force $Unit.UserDir | Out-Null
+            $env:APPDATA = $Unit.UserDir
+        }
+        $Unit.Watch = [Diagnostics.Stopwatch]::StartNew()
+        $Unit.Proc = Start-Process -FilePath $engine -ArgumentList $arguments -PassThru -NoNewWindow -RedirectStandardOutput $Unit.Out -RedirectStandardError $Unit.Err
+        $null = $Unit.Proc.Handle    # sonst liefert Windows PowerShell nach WaitForExit keinen Exitcode
+    }
+    finally {
+        $env:APPDATA = $savedAppData
+        Remove-Item Env:TEIL -ErrorAction SilentlyContinue
+    }
+}
+
+function Complete-TestUnit($Unit, [bool]$TimedOut) {
+    if ($TimedOut) {
+        Get-CimInstance Win32_Process -Filter "ParentProcessId=$($Unit.Proc.Id)" -ErrorAction SilentlyContinue |
+            ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+        Stop-Process -Id $Unit.Proc.Id -Force -ErrorAction SilentlyContinue
+    }
+    $Unit.Proc.WaitForExit()
+    $Unit.Seconds = $Unit.Watch.Elapsed.TotalSeconds
+    $exitCode = $Unit.Proc.ExitCode
+    $result = @(Get-Content -LiteralPath $Unit.Out, $Unit.Err -Encoding UTF8 -ErrorAction SilentlyContinue | Where-Object { $_.Trim() -ne '' })
+    Remove-Item -LiteralPath $Unit.Out, $Unit.Err -ErrorAction SilentlyContinue
+    if ($Unit.UserDir) { Remove-Item -LiteralPath $Unit.UserDir -Recurse -Force -ErrorAction SilentlyContinue }
+    # Ausgabe am Stück je Lauf (nicht durcheinander), wie bisher ohne Kopfzeilen der Engine.
+    Write-Output ("--- {0}{1} ({2:N0} s)" -f $Unit.Test, $(if ($Unit.Part) { " [Teil $($Unit.Part)]" } else { '' }), $Unit.Seconds)
+    $result | Where-Object { $_ -notmatch '^(Godot Engine|Vulkan|OpenGL)' } | Write-Output
+    $Unit.Failures = @($result | Where-Object { $_ -match 'SCRIPT ERROR|^ERROR:|FAIL:' })
+    $Unit.Result = "$(@($result | Where-Object { $_ -match 'RESULT: ' }) | Select-Object -Last 1)".Trim()
+    $Unit.Problem = ''
+    if ($TimedOut) { $Unit.Problem = "Zeitgrenze $TestTimeout s" }
+    elseif ($exitCode -ne 0) { $Unit.Problem = "Exitcode $exitCode" }
+    elseif (-not $Unit.Result) { $Unit.Problem = 'keine RESULT-Zeile (abgebrochen?)' }
+    elseif ($Unit.Failures.Count -gt 0) { $Unit.Problem = "$($Unit.Failures.Count) Fehlerzeile(n)" }
+}
+
 function Invoke-Tests {
     # Alle Testskripte laufen immer durch (auch wenn einer scheitert); danach eine Zusammenfassung und ein Abbruch, falls einer
     # fehlgeschlagen ist. Bestanden = Exitcode 0, RESULT-Zeile, keine Fehlermuster (SCRIPT ERROR, ERROR:, FAIL:). Jeder Lauf hat eine
     # Zeitgrenze (hängende Coroutine nach einem Skriptfehler).
+    # Zwei Spuren gleichzeitig: reine Tests (Test-Kind) in bis zu $Parallel Godot-Prozessen, die längsten zuerst (Dauer des letzten
+    # Laufs aus .tools/test_times.json); die übrigen nacheinander in einer eigenen Spur. Alle Prozesse sind Kinder dieses Baus, der die
+    # Godot-Sperre hält; der Import ist vorher gelaufen, kein Testprozess importiert.
     $tests = @(Get-ChildItem -LiteralPath (Join-Path $gamePath 'tests') -Filter 'test_*.gd' | Where-Object { $_.BaseName -notmatch '_lang|_shot' } | Sort-Object Name)
     if ($tests.Count -eq 0) { throw 'Keine Testskripte gefunden (game/tests/test_*.gd).' }
-    $suites = @()
+    $timesPath = Join-Path $projectRoot '.tools/test_times.json'
+    $known = @{}
+    $saved = Read-JsonFile $timesPath
+    if ($saved) { foreach ($p in $saved.PSObject.Properties) { $known[$p.Name] = [double]$p.Value } }
+    $units = New-Object Collections.ArrayList
     foreach ($test in $tests) {
-        $out = Join-Path $env:TEMP ('mmf_test_' + [guid]::NewGuid().ToString('N') + '.txt')
-        $err = $out + '.err'
-        $arguments = @('--headless', '--path', ('"' + $gamePath + '"'), '--script', "res://tests/$($test.Name)")
-        $watch = [Diagnostics.Stopwatch]::StartNew()
-        $proc = Start-Process -FilePath $engine -ArgumentList $arguments -PassThru -NoNewWindow -RedirectStandardOutput $out -RedirectStandardError $err
-        $null = $proc.Handle    # sonst liefert Windows PowerShell nach WaitForExit keinen Exitcode
-        $timedOut = -not $proc.WaitForExit($TestTimeout * 1000)
-        if ($timedOut) {
-            Get-CimInstance Win32_Process -Filter "ParentProcessId=$($proc.Id)" -ErrorAction SilentlyContinue |
-                ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
-            Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+        $name = $test.BaseName
+        $lane = Test-Kind $name
+        $n = if ($lane -eq 'parallel' -and $testSplits.ContainsKey($name)) { $testSplits[$name] } else { 1 }
+        for ($k = 1; $k -le $n; $k++) {
+            $part = if ($n -gt 1) { "$k/$n" } else { '' }
+            $key = if ($part) { "$name#$part" } else { $name }
+            $estimate = if ($known.ContainsKey($key)) { $known[$key] } else { 30 }
+            [void]$units.Add([pscustomobject]@{ Test = $name; Part = $part; Key = $key; Lane = $lane; Estimate = $estimate; Proc = $null; Watch = $null
+                    Out = ''; Err = ''; UserDir = ''; Seconds = 0.0; Result = ''; Problem = ''; Failures = @() })
         }
-        $proc.WaitForExit()
-        $exitCode = $proc.ExitCode
-        $result = @(Get-Content -LiteralPath $out, $err -Encoding UTF8 -ErrorAction SilentlyContinue | Where-Object { $_.Trim() -ne '' })
-        Remove-Item -LiteralPath $out, $err -ErrorAction SilentlyContinue
-        $result | Where-Object { $_ -notmatch '^(Godot Engine|Vulkan|OpenGL)' } | Write-Output
-        $failLines = @($result | Where-Object { $_ -match 'SCRIPT ERROR|^ERROR:|FAIL:' })
-        $resultLine = @($result | Where-Object { $_ -match 'RESULT: ' }) | Select-Object -Last 1
-        $problem = ''
-        if ($timedOut) { $problem = "Zeitgrenze $TestTimeout s" }
-        elseif ($exitCode -ne 0) { $problem = "Exitcode $exitCode" }
-        elseif (-not $resultLine) { $problem = 'keine RESULT-Zeile (abgebrochen?)' }
-        elseif ($failLines.Count -gt 0) { $problem = "$($failLines.Count) Fehlerzeile(n)" }
-        $suites += [pscustomobject]@{ Name = $test.BaseName; Ok = ($problem -eq ''); Problem = $problem; Result = "$resultLine".Trim(); Failures = $failLines; Seconds = [int]$watch.Elapsed.TotalSeconds }
+    }
+    $parallelQueue = New-Object Collections.Queue
+    foreach ($u in @($units | Where-Object { $_.Lane -eq 'parallel' } | Sort-Object Estimate -Descending)) { $parallelQueue.Enqueue($u) }
+    $serialQueue = New-Object Collections.Queue
+    foreach ($u in @($units | Where-Object { $_.Lane -eq 'serial' })) { $serialQueue.Enqueue($u) }
+    $slots = if ($Parallel -gt 0) { $Parallel } else { [Math]::Max(1, [Math]::Min(10, [Environment]::ProcessorCount - 4)) }
+    Write-Output ("Tests: {0} Skripte, {1} parallel in bis zu {2} Prozessen ({3} Läufe), {4} nacheinander" -f $tests.Count,
+        @($units | Where-Object { $_.Lane -eq 'parallel' } | Select-Object -ExpandProperty Test -Unique).Count, $slots, $parallelQueue.Count, $serialQueue.Count)
+    $total = [Diagnostics.Stopwatch]::StartNew()
+    $running = New-Object Collections.ArrayList
+    $serialBusy = $false
+    while ($parallelQueue.Count -gt 0 -or $serialQueue.Count -gt 0 -or $running.Count -gt 0) {
+        if (-not $serialBusy -and $serialQueue.Count -gt 0) { $u = $serialQueue.Dequeue(); Start-TestUnit $u; [void]$running.Add($u); $serialBusy = $true }
+        while ($parallelQueue.Count -gt 0 -and @($running | Where-Object { $_.Lane -eq 'parallel' }).Count -lt $slots) {
+            $u = $parallelQueue.Dequeue(); Start-TestUnit $u; [void]$running.Add($u)
+        }
+        Start-Sleep -Milliseconds 200
+        foreach ($u in @($running)) {
+            $done = $u.Proc.HasExited
+            $late = (-not $done) -and $u.Watch.Elapsed.TotalSeconds -gt $TestTimeout
+            if ($done -or $late) {
+                Complete-TestUnit $u $late
+                $running.Remove($u)
+                if ($u.Lane -eq 'serial') { $serialBusy = $false }
+            }
+        }
+    }
+    # Dauer je Lauf merken (Reihenfolge des nächsten Laufs).
+    foreach ($u in $units) { if (-not $u.Problem) { $known[$u.Key] = [Math]::Round($u.Seconds, 1) } }
+    try { [IO.File]::WriteAllText($timesPath, ($known | ConvertTo-Json)) } catch { }
+    # Zusammenfassung je Testskript (Teile zusammengefasst: Dauer = längster Teil, dazu die Summe).
+    $suites = @()
+    foreach ($group in ($units | Group-Object Test | Sort-Object Name)) {
+        $parts = @($group.Group)
+        $problems = @($parts | Where-Object { $_.Problem } | ForEach-Object { if ($_.Part) { "Teil $($_.Part): $($_.Problem)" } else { $_.Problem } })
+        $resultText = if ($parts.Count -eq 1) { $parts[0].Result } else {
+            $ok = 0; foreach ($p in $parts) { if ($p.Result -match 'RESULT: (\d+) ok') { $ok += [int]$Matches[1] } }
+            "RESULT: $ok ok ($($parts.Count) Teile, zusammen $([int]($parts | Measure-Object Seconds -Sum).Sum) s)" }
+        $suites += [pscustomobject]@{ Name = $group.Name; Lane = $parts[0].Lane; Ok = ($problems.Count -eq 0); Problem = ($problems -join '; '); Result = $resultText
+            Failures = @($parts | ForEach-Object { $_.Failures }); Seconds = [int]($parts | Measure-Object Seconds -Maximum).Maximum }
     }
     Write-Output ''
-    Write-Output 'Zusammenfassung der Testläufe:'
+    Write-Output 'Zusammenfassung der Testläufe (P = parallel, S = nacheinander):'
     foreach ($suite in $suites) {
         $status = if ($suite.Ok) { 'OK     ' } else { 'FEHLER ' }
-        Write-Output ("  {0} {1,-30} {2,5} s  {3}{4}" -f $status, $suite.Name, $suite.Seconds, $suite.Result, $(if ($suite.Problem) { "  [$($suite.Problem)]" } else { '' }))
+        $laneMark = if ($suite.Lane -eq 'parallel') { 'P' } else { 'S' }
+        Write-Output ("  {0} {1} {2,-30} {3,5} s  {4}{5}" -f $status, $laneMark, $suite.Name, $suite.Seconds, $suite.Result, $(if ($suite.Problem) { "  [$($suite.Problem)]" } else { '' }))
         foreach ($line in ($suite.Failures | Select-Object -First 5)) { Write-Output ("            {0}" -f $line) }
     }
+    Write-Output ("Testdauer: {0:N1} min (Summe aller Läufe {1:N1} min)" -f $total.Elapsed.TotalMinutes, ((($units | Measure-Object Seconds -Sum).Sum) / 60))
     $failedSuites = @($suites | Where-Object { -not $_.Ok })
     if ($failedSuites.Count -gt 0) { throw ("{0} von {1} Testläufen fehlgeschlagen: {2}" -f $failedSuites.Count, $suites.Count, (($failedSuites | ForEach-Object { $_.Name }) -join ', ')) }
     Write-Output ("Alle {0} Testläufe bestanden." -f $suites.Count)
@@ -240,15 +366,52 @@ if ($Target -in @('All', 'Android')) {
 if ($Target -ne 'Windows' -or (Test-Path -LiteralPath (Join-Path $projectRoot 'webclient/index.html'))) { Build-WebZip }
 if ($Target -eq 'Web') { return }
 
+# Testergebnis-Cache (.tools/test_cache.json): Prüfsummen der zuletzt vollständig grün getesteten Stände.
+$cachePath = Join-Path $projectRoot '.tools/test_cache.json'
+$testsCached = $false
+$stateHash = $null
+if (-not $SkipTests) {
+    $cacheWatch = [Diagnostics.Stopwatch]::StartNew()
+    $stateHash = Get-TestStateHash
+    $cache = Read-JsonFile $cachePath
+    $greens = @(if ($cache -and $cache.green) { $cache.green })
+    if (-not $stateHash) { Write-Output 'Testergebnis-Cache: git nicht gefunden – Tests laufen immer.' }
+    elseif ($NoTestCache) { Write-Output "Testergebnis-Cache abgeschaltet (-NoTestCache), Stand $($stateHash.Substring(0, 12))." }
+    elseif ($greens -contains $stateHash) {
+        $testsCached = $true
+        Write-Output ("Tests für diesen Stand schon grün, übersprungen (Prüfsumme {0}, {1:N1} s; -NoTestCache erzwingt sie)." -f $stateHash.Substring(0, 12), $cacheWatch.Elapsed.TotalSeconds)
+    }
+    else { Write-Output "Testergebnis-Cache: Stand $($stateHash.Substring(0, 12)) noch nicht grün getestet – Tests laufen." }
+}
+if ($Target -eq 'Test' -and $testsCached) { return }
+
 $lock = New-Object System.Threading.Mutex($false, 'Global\MauMauFlipGodot')
 $held = $false
 try {
     try { $held = $lock.WaitOne([TimeSpan]::FromMinutes($LockWaitMinutes)) }
     catch [System.Threading.AbandonedMutexException] { $held = $true }    # Vorbesitzer abgestürzt: die Sperre gilt als erworben
     if (-not $held) { throw "Godot-Sperre (Global\MauMauFlipGodot) nach $LockWaitMinutes min nicht frei" }
+    $env:MMF_GODOT_LOCK_OWNER = "$PID"    # eigene Kindprozesse (godot_run/godot_import) sperren nicht erneut
     Invoke-Godot -Arguments @('--headless', '--path', $gamePath, '--editor', '--import', '--quit')
     if ($SkipTests) { Write-Output 'Tests übersprungen (-SkipTests).' }
-    else { Invoke-Tests }
+    elseif ($testsCached) { Write-Output 'Tests für diesen Stand schon grün, übersprungen (Baubeleg: tests true, tests_cached true).' }
+    else {
+        # Getesteter Stand: nach dem Import (der legt z. B. .uid-Dateien neuer Skripte an).
+        if ($stateHash) { $stateHash = Get-TestStateHash }
+        Invoke-Tests
+        # Nur merken, wenn sich während der Tests nichts geändert hat (sonst wäre ein Mischstand getestet).
+        if ($stateHash) {
+            $after = Get-TestStateHash
+            if ($after -eq $stateHash) {
+                $cache = Read-JsonFile $cachePath
+                $older = @(if ($cache -and $cache.green) { $cache.green })
+                $greens = @(@($stateHash) + @($older | Where-Object { $_ -ne $stateHash }) | Select-Object -First 20)
+                [IO.File]::WriteAllText($cachePath, ([ordered]@{ green = $greens; last = $stateHash; version = $version; time = (Get-Date).ToString('s') } | ConvertTo-Json))
+                Write-Output "Testergebnis-Cache: Stand $($stateHash.Substring(0, 12)) als grün gemerkt."
+            }
+            else { Write-Output 'Testergebnis-Cache: Dateien haben sich während der Tests geändert – Stand nicht gemerkt.' }
+        }
+    }
     if ($Target -eq 'Test') { return }
     New-Item -ItemType Directory -Force $buildsDir | Out-Null
     if ($Target -in @('All', 'Windows')) {
@@ -310,11 +473,12 @@ try {
         $hash = (Get-FileHash -LiteralPath $versioned -Algorithm SHA256).Hash.ToLower()
         Write-Output ("Android: builds/MauMauFlip-{0}.apk ({1:N1} MB, SHA-256 {2})" -f $version, ((Get-Item -LiteralPath $versioned).Length / 1MB), $hash)
         # Baubeleg für tools/release.ps1: zu genau dieser APK, mit oder ohne Tests entstanden.
-        $stamp = [ordered]@{ version = $version; code = $versionCode; sha256 = $hash; size = (Get-Item -LiteralPath $versioned).Length; tests = (-not $SkipTests); time = (Get-Date).ToString('s') }
+        $stamp = [ordered]@{ version = $version; code = $versionCode; sha256 = $hash; size = (Get-Item -LiteralPath $versioned).Length; tests = (-not $SkipTests); tests_cached = $testsCached; time =(Get-Date).ToString('s') }
         [IO.File]::WriteAllText((Join-Path $buildsDir "MauMauFlip-$version.build.json"), ($stamp | ConvertTo-Json))
     }
 }
 finally {
+    Remove-Item Env:MMF_GODOT_LOCK_OWNER -ErrorAction SilentlyContinue
     if ($held) { $lock.ReleaseMutex() }
     $lock.Dispose()
 }

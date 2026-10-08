@@ -83,6 +83,12 @@ func show_tab(which: String) -> void:
 		var b: Button = _tabs[k]
 		b.set_pressed_no_signal(k == tab)
 		b.theme_type_variation = "PrimaryButton" if k == tab else "GhostButton"
+		# nachts ist der nicht gewählte Reiter sonst dunkle Schrift auf dunkler Karte (Gerätetest 1.1.2)
+		for fc in ["font_color", "font_hover_color", "font_focus_color", "font_pressed_color", "font_hover_pressed_color"]:
+			if night and k != tab:
+				b.add_theme_color_override(fc, UiPalette.PAPER)
+			else:
+				b.remove_theme_color_override(fc)
 	for c in _content.get_children():
 		_content.remove_child(c)
 		c.queue_free()

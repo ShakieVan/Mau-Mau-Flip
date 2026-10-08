@@ -287,8 +287,11 @@
         const n = (v.players || []).length, laeuft = v.phase !== 'round_over' && v.phase !== 'game_over';
         if (t.gegnerBox.querySelectorAll('.gg').length !== n) this.fail('Großer Modus: Liste hat ' + t.gegnerBox.querySelectorAll('.gg').length + ' statt ' + n + ' Zeilen');
         const g0 = t.gegnerEls.get(v.turn);
-        if (laeuft && n > 1 && (!g0 || g0.k !== 0)) this.fail('Großer Modus: Spieler am Zug steht nicht oben');
+        const turnP = (v.players || []).find(p => p.seat === v.turn);
+        if (laeuft && n > 1 && !(turnP && turnP.place > 0) && (!g0 || g0.k !== 0)) this.fail('Großer Modus: Spieler am Zug steht nicht oben');
         if (!t.gegnerEls.get(v.seat)) this.fail('Großer Modus: eigene Zeile fehlt');
+        // fertige Spieler („bis zum Letzten“) verschwinden, solange die Runde läuft
+        if (laeuft) (v.players || []).forEach(p => { const g = t.gegnerEls.get(p.seat); if (g && p.place > 0 && !g.e.classList.contains('aus')) this.fail('Großer Modus: fertiger Spieler ' + p.seat + ' bleibt in der Liste'); });
         if (!t.root.classList.contains('gross')) this.fail('Großer Modus: #tisch.gross fehlt');
       }
       // persönliche Einstellung: ohne Hervorhebung weder Leuchten noch Abdunkeln

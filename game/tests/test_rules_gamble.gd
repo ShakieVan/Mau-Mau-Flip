@@ -21,6 +21,12 @@ func gamble_mode() -> bool:
 
 
 func _initialize() -> void:
+	# Aufteilung (tests/teil.gd, TEIL=k/n): Einzel- und Zufallsprüfungen nur in Teil 1, die Partien des Bot-Dauerlaufs reihum.
+	if not Teil.first():
+		_gb_bot_run()
+		print("RESULT: %d ok" % (checks - failures) if failures == 0 else "RESULT: %d ok, %d FAIL" % [checks - failures, failures])
+		quit(0 if failures == 0 else 1)
+		return
 	_gb_cards()
 	_gb_config_and_texts()
 	_gb_start()
@@ -1006,7 +1012,12 @@ func _gb_bot_run() -> void:
 		games = int(OS.get_environment("RULES_GAMBLE_GAMES"))
 	var t0 := Time.get_ticks_msec()
 	var errors := 0
-	for i in games:
+	var all_games := games
+	games = 0
+	for i in all_games:
+		if not Teil.mine(i):
+			continue
+		games += 1
 		var err := _gb_bot_game(i)
 		if err != "":
 			errors += 1
@@ -1020,7 +1031,7 @@ func _gb_bot_run() -> void:
 	check(int(st.get("ablegen", 0)) > games / 4 and int(st.get("tausch", 0)) > games / 4, "Farbe ablegen und Kartentausch kommen vor")
 	check(int(st.get("gluecksspiel_offen", 0)) == 0, "jedes Glücksspiel endet (%d offen)" % int(st.get("gluecksspiel_offen", 0)))
 	check(int(st.get("mau_blind", 0)) == 0, "Bots rufen „Mau!“ nur, wenn danach 1 Karte bleibt (%d blind)" % int(st.get("mau_blind", 0)))
-	print("Bot-Dauerlauf mit allen Hausregeln: %d Partien in %.1f s – %s" % [games, (Time.get_ticks_msec() - t0) / 1000.0, str(st)])
+	print("Bot-Dauerlauf mit allen Hausregeln%s: %d Partien in %.1f s – %s" % [Teil.label(), games, (Time.get_ticks_msec() - t0) / 1000.0, str(st)])
 
 
 func _gb_bot_game(i: int) -> String:

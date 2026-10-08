@@ -132,6 +132,11 @@ func run() -> void:
 		if (n as Label).theme_type_variation == "NightLabel":
 			night_lbl += 1
 	check(night_lbl > 10, "helle Schrift nachts")
+	var other_tab := help.find_child("Reiter_bedienung", true, false) as Button
+	check(other_tab != null and other_tab.get_theme_color("font_color") == UiPalette.PAPER, "nicht gewählter Reiter nachts hell")
+	help.show_tab("bedienung")
+	var rules_tab := help.find_child("Reiter_regeln", true, false) as Button
+	check(rules_tab.get_theme_color("font_color") == UiPalette.PAPER and not other_tab.has_theme_color_override("font_color"), "Reiterwechsel nachts: Farben getauscht")
 	help.close()
 	await frames(1)
 	check(not ts.is_help_open(), "Schließen-Knopf")

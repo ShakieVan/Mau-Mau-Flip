@@ -48,8 +48,8 @@ func _geometry() -> void:
 		var sort := Rect2(BigLayout.sort_pos(sz), Vector2(250, BigLayout.PILL_H))
 		var backs := Rect2(BigLayout.backs_pos(sz), Vector2(250, BigLayout.PILL_H))
 		var tag := "%dx%d" % [sz.x, sz.y]
-		check(h >= sz.y * 0.66, "%s: Ablage fast so hoch wie das Bild (%.0f)" % [tag, h])
-		check(w >= 300.0, "%s: Stapel riesig (%.0f px breit)" % [tag, w])
+		check(h >= sz.y * 0.5, "%s: Ablage mindestens halb so hoch wie das Bild (%.0f)" % [tag, h])   # seit 1.1.2 breitere Namensliste
+		check(w >= 250.0, "%s: Stapel riesig (%.0f px breit, normal ~150)" % [tag, w])
 		var screen := Rect2(Vector2.ZERO, sz)
 		for r: Rect2 in [pile, disc, list, mau, sort, backs]:
 			check(screen.encloses(r), "%s: %s im Bild" % [tag, str(r)])
@@ -137,7 +137,7 @@ func _table() -> void:
 		check(node.list_rect().has_point(node.to_local(node.fan_global_center())), "%d Spieler: Flugziel in der Zeile" % n)
 		# Knöpfe größer, Mau-Knopf an der alten Stelle (rechts unten)
 		check(t.mau_button.size.x == BigLayout.MAU and t._sort_btn.size.y >= BigLayout.PILL_H, "%d Spieler: Knöpfe größer" % n)
-		check(t.pile_w > 300.0 and t._pile.top.width == t.pile_w, "%d Spieler: Stapel riesig" % n)
+		check(t.pile_w >= 280.0 and t._pile.top.width == t.pile_w, "%d Spieler: Stapel riesig" % n)
 		# zurück in den normalen Modus
 		t.set_big(false)
 		await _settle(t, 2)
@@ -147,5 +147,18 @@ func _table() -> void:
 		t.set_big(true)
 		await _settle(t, 2)
 		check(t.list_index(2) == 0, "%d Spieler: wieder groß, Liste sofort richtig" % n)
+		# „bis zum Letzten“: fertige Spieler verschwinden aus der Liste (08.10.2026), am Rundenende sind alle wieder da
+		var v := s.view_for(0)
+		for p in v.players:
+			if int(p.seat) == 1:
+				p["place"] = 1
+		t.apply_view(v)
+		await _settle(t, 4)
+		check(t.list_index(1) == -1 and t.list_index(0) == 1, "%d Spieler: fertiger Spieler fehlt in der Liste (%d, %d)" % [n, t.list_index(1), t.list_index(0)])
+		check(t.seat_node(1).modulate.a == 0.0, "%d Spieler: fertiger Spieler ausgeblendet" % n)
+		v = v.duplicate(true)
+		v["phase"] = "round_over"
+		t.apply_view(v)
+		check(t.list_index(1) >= 0, "%d Spieler: am Rundenende wieder in der Liste" % n)
 		t.queue_free()
 		await process_frame

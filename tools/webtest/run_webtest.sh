@@ -44,6 +44,8 @@ if [ "$MODUS" != "--nur-bilder" ]; then
 	autotest haus_spielrichtung "&haus=1&gegner=5&richtung=spiel&seed=13"
 	autotest gluecksspiel "&szene=gluecksspiel&seed=3"
 	autotest einsatz "&szene=einsatz&seed=4"
+	# großer Modus: Liste; fertiger Spieler (mock.js fertig=2, nur Anzeige) verschwindet
+	autotest gross_fertig "&gross=1&fertig=2&seed=8"
 fi
 
 # ---------- 2. Kontrollbilder ----------

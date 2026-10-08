@@ -121,6 +121,8 @@ static func _body(name: String, m: String, ma: float, c: String, ca: float) -> S
 			return _line("M18 52L40 74L84 26", m, ma, 12)
 		"kreuz":
 			return _line("M24 24L76 76M76 24L24 76", m, ma, 12)
+		"menue":
+			return _line("M18 26H82M18 50H82M18 74H82", m, ma, 10)
 		"stapel":
 			return "<rect x=\"30\" y=\"10\" width=\"46\" height=\"66\" rx=\"7\" fill=\"%s\" fill-opacity=\"%.3f\"/>" % [c, ca] \
 				+ "<rect x=\"30\" y=\"10\" width=\"46\" height=\"66\" rx=\"7\" fill=\"none\" stroke=\"%s\" stroke-opacity=\"%.3f\" stroke-width=\"6\"/>" % [m, ma] \

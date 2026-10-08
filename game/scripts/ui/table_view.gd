@@ -380,6 +380,10 @@ func set_big(on: bool) -> void:
 	me_badge.list_mode = on
 	me_badge.me_entry = on
 	me_badge.header_only = true
+	if not on:                            # Liste blendet Zeilen aus (fertig, unter der letzten Zeile); am Tisch alle sichtbar
+		for s in _seats:
+			(_seats[s] as CanvasItem).modulate.a = 1.0
+		me_badge.modulate.a = 1.0
 	_list_slot.clear()
 	_list_target.clear()
 	_list_flip = -1.0
@@ -849,14 +853,21 @@ func _player_name(seat: int) -> String:
 
 # ================================================================= Spielerliste (großer Modus)
 
-# Einträge der Liste: alle Plätze, dazu die eigene Zeile („Du“), wenn dieses Gerät einen Platz hat
+# Einträge der Liste: alle Plätze, dazu die eigene Zeile („Du“), wenn dieses Gerät einen Platz hat. Fertige Spieler („bis zum
+# Letzten“, place > 0) verschwinden, solange die Runde läuft (Nutzerentscheidung 08.10.2026); am Rundenende stehen alle wieder da.
 func _list_entries() -> Dictionary:
 	var out := {}
 	for s in _seats:
 		out[s] = _seats[s]
 	if me_badge.visible and int(view.get("seat", 0)) >= 0 and not out.has(my_seat):
 		out[my_seat] = me_badge
-	return out
+	if str(view.get("phase", "")) in ["round_over", "game_over"]:
+		return out
+	var playing := {}
+	for s in out:
+		if int(_player(s).get("place", 0)) == 0:
+			playing[s] = out[s]
+	return playing if not playing.is_empty() else out
 
 
 # Reihenfolge neu (wer dran ist oben, darunter der Nächste in Spielrichtung). animate: Zugwechsel rollt die Liste weiter (oben
@@ -918,6 +929,11 @@ func _position_list() -> void:
 	var rows := BigLayout.list_rows(sz, n)
 	var k := int(rows["k"])
 	var fy := absf(cos(_list_flip * PI)) if _list_flip >= 0.0 else 1.0
+	for s in _seats:                      # nicht (mehr) in der Liste: fertige Spieler ausblenden
+		if not entries.has(s):
+			(_seats[s] as CanvasItem).modulate.a = 0.0
+	if not entries.has(my_seat) or entries[my_seat] != me_badge:
+		me_badge.modulate.a = 0.0
 	for s in entries:
 		var node: OpponentSeat = entries[s]
 		var w := BigLayout.wrap(float(_list_slot.get(s, 0.0)), n)

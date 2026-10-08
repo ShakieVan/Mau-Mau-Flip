@@ -14,15 +14,21 @@ param(
 # Weitere Godot-Argumente in -Extra, z. B. -Extra '--audio-driver','Dummy' (Tonaufnahme ohne Lautsprecher).
 # Godot-Läufe des Projekts laufen nie gleichzeitig: Alle Skripte (godot_run, build) halten dazu den benannten
 # Systemmutex Global\MauMauFlipGodot (mehrere Agenten teilen game/.godot und die Importe). Innerhalb desselben Prozesses
-# ist die Sperre wiederholt nehmbar.
+# ist die Sperre wiederholt nehmbar. Kindprozesse eines laufenden Baus (MMF_GODOT_LOCK_OWNER) sperren nicht erneut.
 $root = Split-Path $PSScriptRoot -Parent
 $exe = Join-Path $root '.tools\Godot_v4.6.1-stable_win64_console.exe'
 $lock = New-Object System.Threading.Mutex($false, 'Global\MauMauFlipGodot')
 $held = $false
 try {
-    try { $held = $lock.WaitOne([TimeSpan]::FromMinutes($LockWaitMinutes)) }
-    catch [System.Threading.AbandonedMutexException] { $held = $true }    # Vorbesitzer abgestürzt: die Sperre gilt als erworben
-    if (-not $held) { throw "Godot-Sperre (Global\MauMauFlipGodot) nach $LockWaitMinutes min nicht frei" }
+    # Aus einem laufenden Bau (tools/build.ps1 haelt die Sperre, MMF_GODOT_LOCK_OWNER = seine Prozessnummer) heraus nicht erneut sperren.
+    $owner = $env:MMF_GODOT_LOCK_OWNER
+    $insideBuild = $owner -match '^[0-9]+$' -and $null -ne (Get-Process -Id ([int]$owner) -ErrorAction SilentlyContinue)
+    if ($insideBuild) { $held = $false }
+    else {
+        try { $held = $lock.WaitOne([TimeSpan]::FromMinutes($LockWaitMinutes)) }
+        catch [System.Threading.AbandonedMutexException] { $held = $true }    # Vorbesitzer abgestürzt: die Sperre gilt als erworben
+    }
+    if (-not $held -and -not $insideBuild) { throw "Godot-Sperre (Global\MauMauFlipGodot) nach $LockWaitMinutes min nicht frei" }
     foreach ($p in $EnvPairs) { $k, $v = $p.Split('=', 2); Set-Item -Path "Env:$k" -Value $v }
     $out = Join-Path $env:TEMP ("godot_run_" + [guid]::NewGuid().ToString('N') + '.txt')
     $err = $out + '.err'

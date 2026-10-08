@@ -40,61 +40,7 @@ func build() -> void:
 	_name.text_changed.connect(func(t: String) -> void: _store("name", AppSettings.clean_name(t)))
 	_name.text_submitted.connect(func(_t: String) -> void: _name.release_focus())
 	player.add_child(ScreenKit.row("Name", _name, 190.0))
-	var sound := _section(left, "Ton")
-	var levels := [["aus", "Aus"], ["leise", "Leise"], ["normal", "Normal"]]
-	var ton := ScreenKit.choice(levels, MauSound.level(), _on_mau_ton, UiFonts.size("text"))
-	ton.name = "MauTon"
-	sound.add_child(ScreenKit.row("Mau-Ton", ton, 190.0))
-	var probe_row := ScreenKit.hbox(12)
-	var probe := ScreenKit.button("Mau!", "GhostButton", "mau")
-	probe.name = "Probehoeren"
-	probe.tooltip_text = "Probehören: „Mao“"
-	probe.pressed.connect(func() -> void: MauSound.probe("mau"))
-	probe_row.add_child(probe)
-	var probe2 := ScreenKit.button("Mau-Mau!", "GhostButton", "mau")
-	probe2.name = "ProbehoerenMauMau"
-	probe2.tooltip_text = "Probehören: „Mao-Mao“"
-	probe2.pressed.connect(func() -> void: MauSound.probe("mau_mau"))
-	probe_row.add_child(probe2)
-	sound.add_child(ScreenKit.row("Probehören", probe_row, 190.0))
-	var cat := ScreenKit.hint("Der Mau-Ton klingt auf allen Geräten am Tisch, wenn jemand „Mau!“ ruft oder fertig wird. Die Sprechblase sieht man auch ohne Ton. Katze im Raum? Leise stellen.", UiFonts.size("hinweis"))
-	cat.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	sound.add_child(cat)
-	var toene_val := str(UiApp.setting("toene", "aus"))
-	var toene := ScreenKit.choice(levels, toene_val if AppSettings.TOENE.has(toene_val) else "aus", _on_toene, UiFonts.size("text"))
-	toene.name = "Toene"
-	sound.add_child(ScreenKit.row("Spieltöne", toene, 190.0, "Karte, Ziehen, Mischen, Flip, Sieg"))
-	var look := _section(left, "Bedienung und Optik")
-	# Schriftgröße je Gerät (Beta 1.0.1): wirkt sofort auf alle Bildschirme und den Tisch (ScreenNav → UiFonts.set_level)
-	var big_hint := ScreenKit.hint("Tipp: Im großen Modus werden auch Karten, Ablage und Mitspieler riesig.", UiFonts.size("hinweis"))
-	big_hint.name = "HinweisGrosserModus"
-	big_hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	big_hint.visible = str(UiApp.setting("schrift", "normal")) == "sehr_gross" and not bool(UiApp.setting("grosser_modus", false))
-	var schrift := ScreenKit.choice(UiFonts.LEVEL_NAMES, str(UiApp.setting("schrift", "normal")), func(v: String) -> void:
-		_store("schrift", v)
-		if is_instance_valid(big_hint):
-			big_hint.visible = v == "sehr_gross" and not bool(UiApp.setting("grosser_modus", false)))
-	schrift.name = "Schrift"
-	look.add_child(ScreenKit.row("Schrift", schrift, 190.0))
-	look.add_child(big_hint)
-	# Großer Modus (Beta 1.1.1): riesiger Stapel und Ablage, Mitspieler als Liste rechts; wirkt sofort am Tisch (TableView hört
-	# auf App.settings.changed). Persönlich je Gerät.
-	var on_big := func(on: bool) -> void:
-		_store("grosser_modus", on)
-		if is_instance_valid(big_hint):
-			big_hint.visible = str(UiApp.setting("schrift", "normal")) == "sehr_gross" and not on
-	look.add_child(ScreenKit.switch_row("Großer Modus", "Riesige Karten, Ablage und Farbe, Mitspieler als Liste rechts. Für schlechte Augen oder schlechtes Licht.",
-		bool(UiApp.setting("grosser_modus", false)), on_big, "GrosserModus"))
-	look.add_child(ScreenKit.switch_row("Bei deinem Zug: Vibration", "Kurz vibrieren, wenn du dran bist. Den Dran-Ton schaltest du mit den Spieltönen.",
-		bool(UiApp.setting("zug_vibration", false)), func(on: bool) -> void: _store("zug_vibration", on), "ZugVibration"))
-	# Persönliche Hilfe, nie eine Regel des Gastgebers (AGENTS.md 24); der Tisch (HandView) hört auf App.settings.changed.
-	look.add_child(ScreenKit.switch_row("Spielbare Karten hervorheben", "Nur auf diesem Gerät: Karten, die du gerade legen kannst, werden in deiner Hand hervorgehoben.",
-		bool(UiApp.setting("hervorheben", true)), func(on: bool) -> void: _store("hervorheben", on), "Hervorheben"))
-	look.add_child(ScreenKit.switch_row("Vibration", "", bool(UiApp.setting("vibration", true)), func(on: bool) -> void: _store("vibration", on), "Vibration"))
-	var fx := ScreenKit.choice([["voll", "Voll"], ["reduziert", "Reduziert"]], str(UiApp.setting("effekte", "voll")), func(v: String) -> void: _store("effekte", v), UiFonts.size("text"))
-	fx.name = "Effekte"
-	look.add_child(ScreenKit.row("Effekte", fx, 190.0, "Reduziert: kürzer, weniger Teilchen"))
-	look.add_child(tempo_row())
+	personal(left, _section, true)
 	# --- Updates, Teilen, Info
 	var upd := _section(right, "Updates")
 	var beta := ScreenKit.switch("Testversionen (Beta-Kanal)", _beta(), _on_beta)
@@ -149,6 +95,67 @@ func build() -> void:
 	_refresh()
 
 
+# Persönliche Einstellungen „Ton“ und „Bedienung und Optik“ (Beta 1.1.2): hier und im Spiel (IngameSettings über den ☰-Knopf)
+# dieselben Zeilen. section(parent, titel) → VBoxContainer legt einen Abschnitt an; tempo = Regler der Computergegner zeigen.
+static func personal(parent: Control, section: Callable, tempo := true) -> void:
+	var sound: Control = section.call(parent, "Ton")
+	var levels := [["aus", "Aus"], ["leise", "Leise"], ["normal", "Normal"]]
+	var ton := ScreenKit.choice(levels, MauSound.level(), _on_mau_ton, UiFonts.size("text"))
+	ton.name = "MauTon"
+	sound.add_child(ScreenKit.row("Mau-Ton", ton, 190.0))
+	var probe_row := ScreenKit.hbox(12)
+	var probe := ScreenKit.button("Mau!", "GhostButton", "mau")
+	probe.name = "Probehoeren"
+	probe.tooltip_text = "Probehören: „Mao“"
+	probe.pressed.connect(func() -> void: MauSound.probe("mau"))
+	probe_row.add_child(probe)
+	var probe2 := ScreenKit.button("Mau-Mau!", "GhostButton", "mau")
+	probe2.name = "ProbehoerenMauMau"
+	probe2.tooltip_text = "Probehören: „Mao-Mao“"
+	probe2.pressed.connect(func() -> void: MauSound.probe("mau_mau"))
+	probe_row.add_child(probe2)
+	sound.add_child(ScreenKit.row("Probehören", probe_row, 190.0))
+	var cat := ScreenKit.hint("Der Mau-Ton klingt auf allen Geräten am Tisch, wenn jemand „Mau!“ ruft oder fertig wird. Die Sprechblase sieht man auch ohne Ton. Katze im Raum? Leise stellen.", UiFonts.size("hinweis"))
+	cat.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sound.add_child(cat)
+	var toene_val := str(UiApp.setting("toene", "aus"))
+	var toene := ScreenKit.choice(levels, toene_val if AppSettings.TOENE.has(toene_val) else "aus", _on_toene, UiFonts.size("text"))
+	toene.name = "Toene"
+	sound.add_child(ScreenKit.row("Spieltöne", toene, 190.0, "Karte, Ziehen, Mischen, Flip, Sieg"))
+	var look: Control = section.call(parent, "Bedienung und Optik")
+	# Schriftgröße je Gerät (Beta 1.0.1): wirkt sofort auf alle Bildschirme und den Tisch (ScreenNav → UiFonts.set_level)
+	var big_hint := ScreenKit.hint("Tipp: Im großen Modus werden auch Karten, Ablage und Mitspieler riesig.", UiFonts.size("hinweis"))
+	big_hint.name = "HinweisGrosserModus"
+	big_hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	big_hint.visible = str(UiApp.setting("schrift", "normal")) == "sehr_gross" and not bool(UiApp.setting("grosser_modus", false))
+	var schrift := ScreenKit.choice(UiFonts.LEVEL_NAMES, str(UiApp.setting("schrift", "normal")), func(v: String) -> void:
+		_store("schrift", v)
+		if is_instance_valid(big_hint):
+			big_hint.visible = v == "sehr_gross" and not bool(UiApp.setting("grosser_modus", false)))
+	schrift.name = "Schrift"
+	look.add_child(ScreenKit.row("Schrift", schrift, 190.0))
+	look.add_child(big_hint)
+	# Großer Modus (Beta 1.1.1): riesiger Stapel und Ablage, Mitspieler als Liste rechts; wirkt sofort am Tisch (TableView hört
+	# auf App.settings.changed). Persönlich je Gerät.
+	var on_big := func(on: bool) -> void:
+		_store("grosser_modus", on)
+		if is_instance_valid(big_hint):
+			big_hint.visible = str(UiApp.setting("schrift", "normal")) == "sehr_gross" and not on
+	look.add_child(ScreenKit.switch_row("Großer Modus", "Riesige Karten, Ablage und Farbe, Mitspieler als Liste rechts. Für schlechte Augen oder schlechtes Licht.",
+		bool(UiApp.setting("grosser_modus", false)), on_big, "GrosserModus"))
+	look.add_child(ScreenKit.switch_row("Bei deinem Zug: Vibration", "Kurz vibrieren, wenn du dran bist. Den Dran-Ton schaltest du mit den Spieltönen.",
+		bool(UiApp.setting("zug_vibration", false)), func(on: bool) -> void: _store("zug_vibration", on), "ZugVibration"))
+	# Persönliche Hilfe, nie eine Regel des Gastgebers (AGENTS.md 24); der Tisch (HandView) hört auf App.settings.changed.
+	look.add_child(ScreenKit.switch_row("Spielbare Karten hervorheben", "Nur auf diesem Gerät: Karten, die du gerade legen kannst, werden in deiner Hand hervorgehoben.",
+		bool(UiApp.setting("hervorheben", true)), func(on: bool) -> void: _store("hervorheben", on), "Hervorheben"))
+	look.add_child(ScreenKit.switch_row("Vibration", "", bool(UiApp.setting("vibration", true)), func(on: bool) -> void: _store("vibration", on), "Vibration"))
+	var fx := ScreenKit.choice([["voll", "Voll"], ["reduziert", "Reduziert"]], str(UiApp.setting("effekte", "voll")), func(v: String) -> void: _store("effekte", v), UiFonts.size("text"))
+	fx.name = "Effekte"
+	look.add_child(ScreenKit.row("Effekte", fx, 190.0, "Reduziert: kürzer, weniger Teilchen"))
+	if tempo:
+		look.add_child(tempo_row())
+
+
 func _section(parent: Control, title_text: String) -> VBoxContainer:
 	var card := ScreenKit.card(26.0)
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -160,7 +167,7 @@ func _section(parent: Control, title_text: String) -> VBoxContainer:
 
 
 # Regler „Tempo der Computergegner“ (persönlich je Gerät, stufenlos; Mitte = Standard). Gespeichert wird beim Loslassen.
-func tempo_row() -> Control:
+static func tempo_row() -> Control:
 	var v := ScreenKit.vbox(4)
 	v.name = "Tempo"
 	var l := ScreenKit.label("Tempo der Computergegner", "", UiFonts.size("zeile"))
@@ -197,26 +204,26 @@ func tempo_row() -> Control:
 	return v
 
 
-func _settings() -> Object:
+static func _settings() -> Object:
 	var app := UiApp.app()
 	var st: Variant = app.get("settings") if app != null else null
 	return st as Object if st is Object else null
 
 
-func _store(key: String, value: Variant) -> void:
+static func _store(key: String, value: Variant) -> void:
 	var st := _settings()
 	if st != null:
 		st.call("set_value", key, value)
 
 
 # Neue Lautstärke gleich hörbar machen (bei „aus“ still)
-func _on_mau_ton(v: String) -> void:
+static func _on_mau_ton(v: String) -> void:
 	_store("mau_ton", v)
 	if v != "aus":
 		MauSound.probe("mau")
 
 
-func _on_toene(v: String) -> void:
+static func _on_toene(v: String) -> void:
 	_store("toene", v)
 	if v != "aus":
 		UiApp.sound("karte")

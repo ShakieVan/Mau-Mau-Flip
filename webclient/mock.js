@@ -446,7 +446,7 @@
         players: this.sp.map((p, s) => ({
           seat: s, name: p.name, kind: p.kind, count: this.haende[s].length,
           backs: s === ich || !REGELN.backs_visible ? [] : sortiereFaces(this.haende[s].map(id => this.b(id))),
-          place: this.phase === 'round_over' ? (this.ranking.find(r => r.seat === s) || {}).place || 0 : 0,
+          place: this.phase === 'round_over' ? (this.ranking.find(r => r.seat === s) || {}).place || 0 : (P('fertig') !== null && P('fertig') !== '' && +P('fertig') === s ? 1 : 0),   // fertig=<Platz>: nur Anzeige (Liste im großen Modus)
           mau: this.mau.has(s), connected: p.connected !== false, score: this.punkte[s],
         })),
         hand: hand.map(id => ({ id, face: this.f(id), back: REGELN.peek_own_backs ? this.b(id) : undefined })),

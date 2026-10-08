@@ -56,6 +56,9 @@ var _save_opt: Button                # Spielmenü des App-Gasts: „Regeln diese
 var _confirm: ConfirmBox
 var _save_box: RuleSetSaveBox
 var _help: IngameHelp                # Spielmenü: „Regeln ansehen“ / „So geht's“ (1.0.2)
+var _burger: Button                  # ☰ neben dem Zurück-Knopf: Menü im Spiel (Beta 1.1.2)
+var _ingame_menu: IngameMenu
+var _settings_ov: IngameSettings     # ☰ → „Einstellungen“: persönliche Einstellungen über dem Tisch
 var _wild_drag := -1                # Wünscher, der gerade gezogen wird (Farbfelder offen)
 var _pending_wild := -1              # Wünscher wartet auf das Farbrad
 var _last_play := -1                 # optimistisch ausgespielt, Antwort steht aus
@@ -163,6 +166,14 @@ func _build_top() -> void:
 	_menu_btn.modulate.a = 0.85
 	_menu_btn.pressed.connect(func() -> void: on_back())
 	_top.add_child(_menu_btn)
+	_burger = ScreenKit.button("", "GhostButton", "", ScreenKit.TOUCH)
+	_burger.name = "MenueKnopf"
+	_burger.tooltip_text = "Menü: Einstellungen, Regeln, So geht's"
+	_burger.size = Vector2(ScreenKit.TOUCH, ScreenKit.TOUCH)
+	_burger.modulate.a = 0.85
+	_burger.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_burger.pressed.connect(open_menu)
+	_top.add_child(_burger)
 	_round_menu = ScreenKit.button("Zum Menü", "", "zurueck")
 	_round_menu.name = "ZumMenue"
 	_round_menu.visible = false
@@ -232,13 +243,17 @@ func _layout() -> void:
 	var mb := BigLayout.MENU if table.big else ScreenKit.TOUCH
 	_menu_btn.size = Vector2(mb, mb)
 	_menu_btn.custom_minimum_size = Vector2(mb, mb)
+	# ☰ rechts neben dem Zurück-Knopf; im großen Modus darunter (rechts daneben beginnt dort der riesige Stapel)
+	_burger.size = Vector2(mb, mb)
+	_burger.custom_minimum_size = Vector2(mb, mb)
+	_burger.position = Vector2(14.0, 10.0 + _menu_btn.size.y + 12.0) if table.big else Vector2(14.0 + _menu_btn.size.x + 12.0, 10.0)
 	table.update_hand_target()          # Ablage bzw. Einsatzstapel (Glücksspiel), neue Karten vom Nachziehstapel
 	_round_menu.size = Vector2(_round_menu.get_combined_minimum_size().x + 20.0, ScreenKit.TOUCH)
 	_round_menu.position = Vector2(sz.x - _round_menu.size.x - 22.0, 14.0)
 	_conn.reset_size()
 	_conn.position = Vector2((sz.x - _conn.size.x) * 0.5, 16.0)
 	_sub_btn.size = Vector2(_sub_btn.get_combined_minimum_size().x + 20.0, ScreenKit.TOUCH)
-	_sub_btn.position = Vector2(14.0 + ScreenKit.TOUCH + 14.0, 10.0)
+	_sub_btn.position = Vector2((_burger.position.x + _burger.size.x if not table.big else 14.0 + _menu_btn.size.x) + 14.0, 10.0)
 
 
 func _process(_delta: float) -> void:
@@ -246,8 +261,14 @@ func _process(_delta: float) -> void:
 		return
 	_round_menu.visible = table.round_end.visible and not table.handover.visible
 	_menu_btn.visible = not table.handover.visible
-	if table.handover.visible and is_help_open():
-		_help.close()                    # Regel 15: beim Weitergeben keine Karten, auch keine Regelbilder
+	_burger.visible = _menu_btn.visible
+	if table.handover.visible:
+		if is_help_open():
+			_help.close()                # Regel 15: beim Weitergeben keine Karten, auch keine Regelbilder
+		if is_menu_open():
+			_ingame_menu.close()
+		if is_settings_open():
+			_settings_ov.close()
 	_sync_menu_night()
 	# „Computer spielt für …“ verdeckt sonst die Frage über dem Farbrad (Ablegen-Joker)
 	if _sub_btn != null:
@@ -561,21 +582,24 @@ func _sync_menu_night() -> void:
 		_menu_icon_night = _tinted(_menu_icon_day, UiPalette.PAPER)
 	_menu_btn.icon = _menu_icon_night if n == 1 else _menu_icon_day
 	_menu_btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	for ic in ["icon_normal_color", "icon_hover_color", "icon_pressed_color", "icon_focus_color", "icon_hover_pressed_color"]:
-		if n == 1:
-			_menu_btn.add_theme_color_override(ic, Color.WHITE)
-		else:
-			_menu_btn.remove_theme_color_override(ic)
-	for st in ["normal", "hover", "pressed", "focus"]:
-		if n == 1:
-			var sb := StyleBoxFlat.new()
-			sb.bg_color = Color(UiPalette.PAPER, 0.10 if st == "normal" else 0.2)
-			sb.border_color = Color(UiPalette.PAPER, 0.75)
-			sb.set_border_width_all(2)
-			sb.set_corner_radius_all(int(ScreenKit.TOUCH * 0.5))
-			_menu_btn.add_theme_stylebox_override(st, sb)
-		else:
-			_menu_btn.remove_theme_stylebox_override(st)
+	# ☰ (Beta 1.1.2) im selben Stil: gezeichnete Striche, tagsüber Druckfarbe, nachts hell
+	_burger.icon = UiIcons.icon("menue", 40, UiPalette.PAPER if n == 1 else UiPalette.INK)
+	for b: Button in [_menu_btn, _burger]:
+		for ic in ["icon_normal_color", "icon_hover_color", "icon_pressed_color", "icon_focus_color", "icon_hover_pressed_color"]:
+			if n == 1:
+				b.add_theme_color_override(ic, Color.WHITE)
+			else:
+				b.remove_theme_color_override(ic)
+		for st in ["normal", "hover", "pressed", "focus"]:
+			if n == 1:
+				var sb := StyleBoxFlat.new()
+				sb.bg_color = Color(UiPalette.PAPER, 0.10 if st == "normal" else 0.2)
+				sb.border_color = Color(UiPalette.PAPER, 0.75)
+				sb.set_border_width_all(2)
+				sb.set_corner_radius_all(int(ScreenKit.TOUCH * 0.5))
+				b.add_theme_stylebox_override(st, sb)
+			else:
+				b.remove_theme_stylebox_override(st)
 
 
 static func _tinted(tex: Texture2D, col: Color) -> Texture2D:
@@ -597,6 +621,12 @@ static func _tinted(tex: Texture2D, col: Color) -> Texture2D:
 
 func on_back() -> bool:
 	if leaving:
+		return true
+	if is_settings_open():
+		_settings_ov.close()
+		return true
+	if is_menu_open():
+		_ingame_menu.close()
 		return true
 	if is_help_open():
 		_help.close()
@@ -668,6 +698,52 @@ func open_help(which := "regeln") -> void:
 
 func is_help_open() -> bool:
 	return _help != null and is_instance_valid(_help) and not _help.is_queued_for_deletion()
+
+
+# ☰ (Beta 1.1.2): Menü unter dem Knopf mit „Einstellungen“, „Regeln ansehen“, „So geht's“. Nicht während des Sichtschutzes.
+func open_menu() -> void:
+	if table == null or table.handover.visible or leaving or is_menu_open():
+		return
+	if _confirm != null and is_instance_valid(_confirm):
+		_confirm.queue_free()
+		_confirm = null
+	var at := _burger.position + Vector2(_burger.size.x + 12.0, 0.0) if table.big else _burger.position + Vector2(0.0, _burger.size.y + 10.0)
+	_ingame_menu = IngameMenu.open(_top, at)
+	_ingame_menu.chosen.connect(func(key: String) -> void:
+		if key == "einstellungen":
+			open_settings()
+		else:
+			open_help(key))
+	_ingame_menu.closed.connect(func() -> void: _ingame_menu = null)
+
+
+func is_menu_open() -> bool:
+	return _ingame_menu != null and is_instance_valid(_ingame_menu) and not _ingame_menu.is_queued_for_deletion()
+
+
+# Persönliche Einstellungen über dem Tisch; die Partie läuft weiter, Änderungen wirken sofort (App.settings.changed).
+func open_settings() -> void:
+	if table == null or table.handover.visible or is_settings_open():
+		return
+	if is_help_open():
+		_help.close()
+	_settings_ov = IngameSettings.open(_top, _has_bots())
+	_settings_ov.closed.connect(func() -> void: _settings_ov = null)
+
+
+func is_settings_open() -> bool:
+	return _settings_ov != null and is_instance_valid(_settings_ov) and not _settings_ov.is_queued_for_deletion()
+
+
+# Tempo-Regler nur, wo er wirkt: Computergegner an diesem Tisch, den dieses Gerät rechnet (nicht als WLAN-Gast)
+func _has_bots() -> bool:
+	var gt := source as GameTable
+	if gt == null:
+		return false
+	for p in gt.seats:
+		if p is Dictionary and str((p as Dictionary).get("kind", "")) == "bot":
+			return true
+	return false
 
 
 # App-Gast: Regeln des Gastgebers aus der Sicht (null = kein Gast oder noch keine Sicht)

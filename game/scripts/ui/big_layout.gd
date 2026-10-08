@@ -24,7 +24,9 @@ const COLOR_SCALE := 2.1         # aktuelle Farbe (Symbol und Wort)
 
 # Spalte der Spielerliste: rechts, von oben bis über den Mau-Knopf
 static func list_rect(sz: Vector2) -> Rect2:
-	var w := clampf(sz.x * 0.24, 300.0, 420.0)
+	# Namensbereich doppelt so breit wie in 1.1.1 (Nutzerwunsch 08.10.2026: Namen bei großer Schrift abgeschnitten); Stapel und
+	# Ablage werden dafür entsprechend schmaler (pile_w rechnet mit dem Rest).
+	var w := clampf(sz.x * 0.365, 440.0, 620.0)
 	var bottom := mau_pos(sz).y - 14.0
 	return Rect2(sz.x - MARGIN - w, MARGIN, w, maxf(bottom - MARGIN, ROW_MIN))
 
@@ -139,7 +141,7 @@ static func wrap(slot: float, n: int) -> float:
 	return fposmod(slot + 0.5, float(maxi(n, 1))) - 0.5
 
 
-# Reihenfolge der Liste: wer dran ist zuerst, dann in Spielrichtung (dir 1 = Platz + 1). Fertige Spieler bleiben in der Liste.
+# Reihenfolge der Liste: wer dran ist zuerst, dann in Spielrichtung (dir 1 = Platz + 1). Fertige Spieler filtert TableView._list_entries vorher heraus.
 static func list_order(seats: Array, turn: int, dir: int) -> Array[int]:
 	var sorted: Array[int] = []
 	for s in seats:

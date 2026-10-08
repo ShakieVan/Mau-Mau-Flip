@@ -52,7 +52,12 @@
 
 ## Prüfen
 
-`tools/build.ps1 -Target Test` packt den Browser-Client, importiert das Projekt und führt alle `game/tests/test_*.gd` nacheinander aus (außer `*_shot*`).
+`tools/build.ps1 -Target Test` packt den Browser-Client, importiert das Projekt und führt alle `game/tests/test_*.gd` aus (außer `*_lang*` und `*_shot*`).
+
+- **Zwei Spuren:** Reine Tests (`test_rules_*`, `test_ui_*`, `test_card_view`, `test_smoke`, `test_game_local`, `test_b_assets`) laufen gleichzeitig in mehreren Godot-Prozessen, jeder mit eigenem `user://` (APPDATA in einem Wegwerfordner). Netz-, Lobby-, Bildschirm- und App-Tests laufen nacheinander in einer eigenen Spur mit dem echten `user://`. Neue Testskripte, die nicht zum Muster passen, landen automatisch in der seriellen Spur (`Test-Kind` in `tools/build.ps1`).
+- **Teile:** Lange Dauerläufe (`test_rules_bots_long`, `_swap`, `_views_long`, `_gamble`, `_discard`) laufen in Teilen mit der Umgebungsvariable `TEIL=k/n` (`game/tests/teil.gd`): Partie i gehört zu Teil i % n + 1, feste Einzelprüfungen zu Teil 1. Alle Teile zusammen prüfen dieselben Startwerte; ein Einzelaufruf ohne `TEIL` prüft alles.
+- **Sperre:** Der Bau hält `Global\MauMauFlipGodot` einmal und startet seine Testprozesse ohne erneutes Sperren; fremde Godot-Läufe (`godot_run.ps1`, `godot_import.ps1`) warten wie bisher.
+- **Testergebnis-Cache:** Nach einem vollständig grünen Lauf merkt sich der Bau die Prüfsumme des Stands (alle von git erfassten oder erfassbaren Dateien in `game/` und `webclient/`, dazu `tools/build.ps1`; Erzeugtes wie `.godot/`, `android/build/build/` und `web.zip` nicht) in `.tools/test_cache.json`. Ist der Stand unverändert, überspringen `-Target Test`, `Android` und `All` die Tests („Tests für diesen Stand schon grün, übersprungen“); der Baubeleg vermerkt dann `tests: true, tests_cached: true`. Jede Änderung einer erfassten Datei erzwingt neue Tests. `-NoTestCache` lässt die Tests immer laufen, `-SkipTests` lässt sie wie bisher weg (`tests: false`), `-Parallel n` legt die Zahl paralleler Prozesse fest. Die Laufzeiten je Lauf stehen in `.tools/test_times.json` (längste zuerst beim nächsten Mal).
 
 Bestanden heißt:
 - Exitcode 0,
@@ -116,7 +121,7 @@ Nachbesserung nach dem Gerätetest (06.10., `docs/geraetetest/0.1.1/BERICHT.md`,
 - **Hand:** Gestenschwellen, dp-Umrechnung und Federn sind nur am PC abgestimmt. Übersichtsblatt ab 25 Karten und Randmarken fehlen (`F1a.md`).
 - **Netz:** Kein Neubinden bei WLAN-Wechsel während des Spiels. Die Windows-Firewall blockiert eingehende Verbindungen zum PC-Gastgeber (`D.md`).
 - **Windows-Build** ohne eigenes Programmsymbol.
-- **`tools/build.ps1`** nimmt nur `*_lang*` und `*_shot*` vom Testlauf aus. Die langen Tests heißen aber `*_long` und laufen deshalb mit (zusammen etwa 6 Minuten). Das deckt die Pflichtprüfung „10 000 Bot-Partien“ bei jedem Bau ab, kostet aber Zeit.
+- **`tools/build.ps1`** nimmt nur `*_lang*` und `*_shot*` vom Testlauf aus. Die langen Tests heißen aber `*_long` und laufen deshalb mit. Das deckt die Pflichtprüfung „10 000 Bot-Partien“ bei jedem Bau ab; seit dem parallelen Lauf in Teilen und dem Testergebnis-Cache kostet es kaum noch Zeit (siehe „Prüfen“).
 
 ## Builds und Quellen
 

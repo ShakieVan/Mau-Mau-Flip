@@ -5,7 +5,8 @@ extends SceneTree
 # RULES_STRENGTH (godot_run.ps1 -EnvPairs "RULES_GAMES=200").
 # Dazu Einzelprüfungen der Bot-Entscheidungen in gezielten Situationen und die Zählung „blinder“ Mau-Rufe (muss 0 sein).
 
-const STEP_LIMIT := 5000          # Aktionen je Runde; mehr = Endlosschleife
+const Teil := preload("res://tests/teil.gd")
+const STEP_LIMIT := 5000         # Aktionen je Runde; mehr = Endlosschleife
 const ROUND_LIMIT := 40           # Runden je Partie (Punktewertung)
 
 var failures := 0
@@ -32,15 +33,22 @@ func _initialize() -> void:
 	var games := game_count()
 	if OS.get_environment("RULES_GAMES").is_valid_int():
 		games = int(OS.get_environment("RULES_GAMES"))
-	_bot_decisions()
+	# Aufteilung (tests/teil.gd, TEIL=k/n): Einzelprüfungen samt Stärketest in Teil 1, Partie i im Teil i % n + 1.
+	if Teil.first():
+		_bot_decisions()
 	var t0 := Time.get_ticks_msec()
 	var errors := 0
+	var played := 0
 	for i in games:
+		if not Teil.mine(i):
+			continue
+		played += 1
 		var err := _run_game(i)
 		if err != "":
 			errors += 1
 			if errors <= 10:
 				print("FAIL: Partie %d: %s" % [i, err])
+	games = played
 	checks += 1
 	if errors > 0:
 		failures += 1
@@ -48,7 +56,7 @@ func _initialize() -> void:
 	check(int(stats.get("mau_rufe", 0)) > 0 and int(stats.get("mau_blind", 0)) == 0,
 		"Bots rufen „Mau!“ nur, wenn sie danach legen (%d Rufe, %d blind)" % [int(stats.get("mau_rufe", 0)), int(stats.get("mau_blind", 0))])
 	var secs := (Time.get_ticks_msec() - t0) / 1000.0
-	print("Bot-Partien: %d in %.1f s – %s" % [games, secs, str(stats)])
+	print("Bot-Partien%s: %d in %.1f s – %s" % [Teil.label(), games, secs, str(stats)])
 	print("Laufzeit seit Godot-Start: %.1f s" % (Time.get_ticks_msec() / 1000.0))
 	print("RESULT: %d ok" % (checks - failures) if failures == 0 else "RESULT: %d ok, %d FAIL" % [checks - failures, failures])
 	quit(0 if failures == 0 else 1)

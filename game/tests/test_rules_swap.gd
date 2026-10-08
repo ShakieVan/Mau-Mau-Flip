@@ -19,6 +19,12 @@ func swap_mode() -> bool:
 
 
 func _initialize() -> void:
+	# Aufteilung (tests/teil.gd, TEIL=k/n): Einzel- und Zufallsprüfungen nur in Teil 1, die Partien des Bot-Dauerlaufs reihum.
+	if not Teil.first():
+		_sw_bot_run()
+		print("RESULT: %d ok" % (checks - failures) if failures == 0 else "RESULT: %d ok, %d FAIL" % [checks - failures, failures])
+		quit(0 if failures == 0 else 1)
+		return
 	_sw_cards()
 	_sw_config_and_texts()
 	_sw_start()
@@ -684,7 +690,12 @@ func _sw_bot_run() -> void:
 		games = int(OS.get_environment("RULES_SWAP_GAMES"))
 	var t0 := Time.get_ticks_msec()
 	var errors := 0
-	for i in games:
+	var all_games := games
+	games = 0
+	for i in all_games:
+		if not Teil.mine(i):
+			continue
+		games += 1
 		var err := _sw_bot_game(i)
 		if err != "":
 			errors += 1
@@ -695,7 +706,7 @@ func _sw_bot_run() -> void:
 	check(int(swap_stats.get("tausch_spielrichtung", 0)) > 0 and int(swap_stats.get("tausch_letzte_karte", 0)) > 0,
 		"Dauerlauf: Tausch gegen den Uhrzeigersinn und als letzte Karte kommen vor")
 	check(int(swap_stats.get("mau_blind", 0)) == 0, "Bots rufen „Mau!“ nur vor dem Legen (%d blind)" % int(swap_stats.get("mau_blind", 0)))
-	print("Bot-Dauerlauf mit Kartentausch: %d Partien in %.1f s – %s" % [games, (Time.get_ticks_msec() - t0) / 1000.0, str(swap_stats)])
+	print("Bot-Dauerlauf mit Kartentausch%s: %d Partien in %.1f s – %s" % [Teil.label(), games, (Time.get_ticks_msec() - t0) / 1000.0, str(swap_stats)])
 
 
 func _sw_bot_game(i: int) -> String:

@@ -456,7 +456,11 @@
       const laeuft = v.phase !== 'round_over' && v.phase !== 'game_over';
       // Großer Modus: Liste in Spielrichtung ab dem Spieler, der dran ist (k = 0 oben); eigene Zeile „Du“ gehört dazu
       const dir = v.dir === -1 ? -1 : 1;
-      const ti = Math.max(0, spieler.findIndex(p => p.seat === v.turn));
+      // Fertige Spieler („bis zum Letzten“) verschwinden aus der Liste, solange die Runde läuft (Nutzerentscheidung 08.10.2026)
+      const imSpiel = spieler.filter(p => !(p.place > 0));
+      const listeSp = laeuft && imSpiel.length ? imSpiel : spieler;
+      const nl = listeSp.length;
+      const ti = Math.max(0, listeSp.findIndex(p => p.seat === v.turn));
       const richtungNeu = this._listeDir !== undefined && this._listeDir !== dir;
       this._listeDir = dir;
       if (gross) {
@@ -480,8 +484,9 @@
         e.classList.toggle('kompakt', kompakt && !gross);
         e.classList.toggle('ich', p.seat === ich);
         if (gross) {
-          const L = this.g.liste, k = ((i - ti) * dir % n + n) % n;
-          const sprung = g.k !== undefined && k > g.k && !richtungNeu;   // oben raus, unten wieder rein (endlose Liste)
+          const L = this.g.liste, li = listeSp.indexOf(p), fertig = li < 0;
+          const k = fertig ? L.cap : ((li - ti) * dir % nl + nl) % nl;
+          const sprung = g.k !== undefined && k > g.k && !richtungNeu && !fertig;   // oben raus, unten wieder rein (endlose Liste)
           g.k = k;
           const y = L.top + (k + 0.5) * L.zeile;
           g.px = L.x; g.py = L.top + (Math.min(k, L.cap - 1) + 0.5) * L.zeile - 26;   // Unsichtbare docken an der letzten Zeile an
@@ -494,7 +499,7 @@
           }
           e.style.transform = 'translateY(' + y + 'px)';
           e.classList.toggle('aus', k >= L.cap);
-          e.querySelector('.zug').textContent = !laeuft || n < 2 ? '' : (k === 0 ? (p.seat === ich ? 'Du bist dran' : 'ist dran') : (k === 1 ? 'gleich dran' : ''));
+          e.querySelector('.zug').textContent = !laeuft || nl < 2 || fertig ? '' : (k === 0 ? (p.seat === ich ? 'Du bist dran' : 'ist dran') : (k === 1 ? 'gleich dran' : ''));
         } else {
           const pos = this._gegnerPos((p.seat - ich + n) % n, n);
           g.px = pos.x; g.py = pos.y;
