@@ -2,7 +2,7 @@
 
 Mau-Mau mit Wendekarten für Android. Jede Karte hat eine **helle Seite** (Rot, Gelb, Grün, Blau) und eine **dunkle Seite** (Pink, Türkis, Orange, Lila). Wer eine Flip-Karte legt, dreht den ganzen Tisch um – aus Tag wird Nacht, aus „Zieh 1“ wird „Zieh 5“. Und weil man von den Karten der anderen immer die Gegenseite sieht, weiß man ungefähr, was nach dem nächsten Flip auf einen zukommt.
 
-**Version 1.3.0** · Deutsch und English · Godot 4.6.1 · offline spielbar · nicht-kommerzielles Hobbyprojekt
+**Version 1.4.0** · Deutsch und English · Godot 4.6.1 · offline und online spielbar · nicht-kommerzielles Hobbyprojekt
 
 <p align="center"><img src="docs/screenshots/hauptmenue.jpg" alt="Hauptmenü von Mau-Mau Flip mit der Mau-Katze zwischen Tag- und Nachtkarte" width="100%"></p>
 
@@ -20,28 +20,29 @@ Mau-Mau mit Wendekarten für Android. Jede Karte hat eine **helle Seite** (Rot, 
 1. Unter [Releases](../../releases) (reguläre Versionen) bzw. im [Beta-Repo](https://github.com/ShakieVan/Mau-Mau-Flip-Beta/releases) (Testversionen) die Datei `MauMauFlip-<Version>.apk` herunterladen. Spätere Updates bietet die App selbst an.
 2. Auf dem Android-Handy öffnen und die Installation erlauben („Installation aus unbekannten Quellen“).
 
-### Drei Spielarten
+### Vier Spielarten
 
 - **Übungsspiel** gegen 1–5 Computergegner.
 - **Auf einem Handy:** Das Handy wird reihum weitergereicht. Vor jedem Zug verdeckt ein Sichtschutz alle Karten.
 - **Im WLAN:** Ein Handy eröffnet das Spiel. Mitspieler treten mit der App bei (sie finden das Spiel automatisch) oder **im Browser** – etwa auf dem iPhone – über den QR-Code des Gastgebers. Internet braucht dafür niemand.
+- **Online über das Internet:** Im Hauptmenü „Mit anderen spielen“ → Eröffnen → „Online (Internet)“. Der Gastgeber teilt Link oder QR-Code (oder einen Raumcode wie `KATZE-42`); Mitspieler tippen auf den Link – mit App oder einfach im Browser, auch auf dem iPhone. Einstellen muss niemand etwas.
 
 ### Ohne Internet im Urlaub
 
 - **Hotel-WLAN:** Dort sehen sich die Geräte oft nicht. Dann den Hotspot des Gastgeber-Handys einschalten und alle damit verbinden.
 - **App teilen:** Die App gibt sich selbst weiter – über das Teilen-Menü (z. B. Quick Share) oder als Download auf der Seite des Gastgebers (`http://<Adresse>:24690/apk`).
 
-## Online-Spiel: eigener Vermittler
+## Online-Spiel und eigener Vermittler
 
-Über das Internet spielt ihr mit einem **Vermittler**: Er reicht nur Nachrichten zwischen den Handys durch, das Spiel selbst läuft weiter auf dem Handy des Gastgebers. Der Gastgeber öffnet einen Raum und bekommt einen Raumcode (z. B. `KATZE-42`); Mitspieler geben ihn in der App ein oder öffnen den Link im Browser.
+Über das Internet spielt ihr mit einem **Vermittler**: Er reicht nur Nachrichten zwischen den Handys durch, das Spiel selbst läuft weiter auf dem Handy des Gastgebers. In der App ist ein Vermittler bereits eingebaut – ihr müsst nichts einrichten.
 
-Jede Gruppe kann sich mit einem Klick einen eigenen, kostenlosen Vermittler bei Cloudflare einrichten (Gratistarif; bei Überschreiten der Tageslimits pausiert er bis zum nächsten Tag, kostet aber nichts):
+Wer lieber einen eigenen, kostenlosen Vermittler betreiben möchte (z. B. weil ihr sehr viel spielt), richtet ihn mit einem Klick bei Cloudflare ein (Gratistarif; bei Überschreiten der Tageslimits pausiert er bis zum nächsten Tag, kostet aber nichts):
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/ShakieVan/Mau-Mau-Flip/tree/main/relay)
 
 1. Auf den Knopf tippen, mit GitHub und Cloudflare anmelden (Konten legt ihr selbst an) und „Deploy“ bestätigen. Cloudflare legt dabei eine Kopie des Ordners `relay/` in eurem GitHub-Konto an und stellt sie bereit.
-2. Die angezeigte Adresse (z. B. `https://mau-mau-flip-relay.<name>.workers.dev`) in der App unter **Einstellungen → Online** eintragen und „Verbindung testen“.
-3. Fertig – auch nach App-Updates ist nichts zu tun. Browser-Mitspieler brauchen genau die Spielversion des Gastgebers; den passenden Browser-Client holt sich der Vermittler selbst aus diesem Repository (Tag `v<Version>`) und merkt ihn sich. Neu bereitstellen müsst ihr ihn nur, wenn sich der Vermittler selbst ändert (selten, steht dann in den Release-Notizen).
+2. Die angezeigte Adresse (z. B. `https://mau-mau-flip-relay.<name>.workers.dev`) in der App unter **Einstellungen → Für Fortgeschrittene** eintragen und „Verbindung testen“. Mitspieler brauchen dann den Link oder QR-Code des Gastgebers (der Raumcode allein gilt nur für den eingebauten Vermittler).
+3. Fertig – auch nach App-Updates ist nichts zu tun: Den passenden Browser-Client holt sich der Vermittler selbst aus diesem Repository (Tag `v<Version>`). Neu bereitstellen müsst ihr ihn nur, wenn sich der Vermittler selbst ändert (selten, steht dann in den Release-Notizen).
 
 Einzelheiten, Grenzen und Datenschutz: [relay/README.md](relay/README.md).
 
