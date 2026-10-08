@@ -121,7 +121,7 @@
       this.el.classList.toggle('dran', !!opt.dran);
       // neue Karten kurz markieren; im Band zur einzelnen neuen Karte rollen
       neu.forEach(id => { const el = this.els.get(id); el.classList.add('neu'); setTimeout(() => el.classList.remove('neu'), 2600); });
-      const lay = layout(this.reihe.length, this.t.W, this.t.H, {});
+      const lay = layout(this.reihe.length, this._W(), this._H(), {});
       const warBand = !!(this.letztesLayout && this.letztesLayout.band);
       const g = this.grenzen(lay);
       if (lay.band && !warBand) this.scroll = g.lo;
@@ -143,7 +143,7 @@
         fokus: this.fokus === null ? null : this.index(this.fokus),
         zug: this.zug ? { index: this.index(this.zug.id), dy: this.zug.dy } : null,
       };
-      const lay = layout(n, this.t.W, this.t.H, o);
+      const lay = layout(n, this._W(), this._H(), o);
       this.letztesLayout = lay;
       this.el.classList.toggle('band', lay.band);
       this.el.classList.toggle('ohne-tr', !!ohneUebergang);
@@ -160,7 +160,7 @@
     // Rollgrenzen im Band: das Band bleibt gefüllt (erste Karte am linken, letzte am rechten Rand)
     grenzen(lay) {
       const n = this.reihe.length;
-      lay = lay || this.letztesLayout || layout(n, this.t.W, this.t.H, {});
+      lay = lay || this.letztesLayout || layout(n, this._W(), this._H(), {});
       if (!lay.band) return { lo: 0, hi: Math.max(0, n - 1) };
       const m = Math.floor((lay.breite - KW) / 2 / lay.step);
       const mitte = (n - 1) / 2;
@@ -177,8 +177,16 @@
       const i = this.index(id);
       if (i < 0 || !this.letztesLayout) return null;
       const k = this.letztesLayout.karten[i];
-      return { x: k.x, y: k.y + KH / 2, rot: k.rot, w: KW * k.sc };
+      const f = this._f();
+      return { x: k.x * f, y: (k.y + KH / 2) * f, rot: k.rot, w: KW * k.sc * f };
     }
+    // Großer Modus: #hand ist um f vergrößert (scale(f), Ursprung oben links). Layout und Trefferprüfung rechnen in
+    // Hand-Koordinaten (Bühne / f), position() gibt Bühnenkoordinaten zurück.
+    _f() { return this.t.handF || 1; }
+    _W() { return this.t.W / this._f(); }
+    _H() { return this.t.H / this._f(); }
+    _s() { return this.t.s * this._f(); }
+    _zu(cx, cy) { const p = this.t.zuBuehne(cx, cy), f = this._f(); return { x: p.x / f, y: p.y / f }; }
     trefferId(px, py) {
       if (!this.letztesLayout) return null;
       const ks = this.letztesLayout.karten;
@@ -231,7 +239,7 @@
       if (this.geste) return;
       e.preventDefault();
       try { this.zone.setPointerCapture(e.pointerId); } catch (err) { /* synthetische Ereignisse */ }
-      const p = this.t.zuBuehne(e.clientX, e.clientY);
+      const p = this._zu(e.clientX, e.clientY);
       const id = this.trefferId(p.x, p.y);
       const lay = this.letztesLayout || { band: false, step: 66 };
       this.geste = {
@@ -263,7 +271,7 @@
         else if (g.band) g.art = 'wisch';
         else g.art = 'gleiten';
       }
-      const s = this.t.s;
+      const s = this._s();
       if (g.art === 'hoch') {
         this.zug = { id: g.id, dy: Math.min(0, dy / s) };
         this.ordne(true);
@@ -271,7 +279,7 @@
         this.scroll = g.scroll0 - (dx / s) / g.step;
         this.ordne(true);
       } else if (g.art === 'gleiten') {
-        const p = this.t.zuBuehne(e.clientX, e.clientY);
+        const p = this._zu(e.clientX, e.clientY);
         const id = this.trefferId(p.x, p.y);
         if (id !== this.fokus) { this.fokus = id; this.ordne(); }
       }
@@ -283,13 +291,13 @@
       clearTimeout(this._halteTimer);
       try { this.zone.releasePointerCapture(g.pid); } catch (err) { /* egal */ }
       if (g.art === 'hoch') {
-        const dy = (e.clientY - g.y0) / this.t.s;
+        const dy = (e.clientY - g.y0) / this._s();
         const v = this._tempo(g, 'y');  // px/ms (Bildschirm)
         this.zug = null;
         if (!abbruch && (dy < -AUSSPIELEN || (v < -0.9 && dy < -30))) { this.ordne(); this.cb.spielen(g.id); }
         else this.ordne();
       } else if (g.art === 'wisch') {
-        const v = this._tempo(g, 'x') / this.t.s / g.step;   // Karten pro ms
+        const v = this._tempo(g, 'x') / this._s() / g.step;   // Karten pro ms
         const ziel = this.scroll - v * 260;
         const gr = this.grenzen();
         this.scroll = Math.round(clamp(ziel, gr.lo, gr.hi));

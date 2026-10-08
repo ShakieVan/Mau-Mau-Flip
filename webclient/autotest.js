@@ -190,7 +190,8 @@
       const r = t.root.getBoundingClientRect();
       for (const dy of [30, 60, 15, 90]) for (const fx of [0.15, 0.3, 0.05, 0.5, 0.7]) {
         const x = k.x - M.Hand.KW / 2 + M.Hand.KW * fx, y = k.y + dy;
-        if (h.trefferId(x, y) === id) return { x: r.left + t.ox + x * t.s, y: r.top + t.oy + y * t.s };
+        const f = h._f ? h._f() : 1;
+        if (h.trefferId(x, y) === id) return { x: r.left + t.ox + x * f * t.s, y: r.top + t.oy + y * f * t.s };
       }
       return null;
     },
@@ -202,7 +203,7 @@
       const i = h.index(id);
       const r = t.root.getBoundingClientRect();
       const x0 = r.left + t.ox + t.W / 2 * t.s, y0 = r.top + (t.H - 60) * t.s;
-      const dx = (h.scroll - i) * lay.step * t.s;
+      const dx = (h.scroll - i) * lay.step * t.s * (h._f ? h._f() : 1);
       this.zeiger('pointerdown', x0, y0);
       for (let k = 1; k <= 8; k++) { await schlaf(20); this.zeiger('pointermove', x0 + dx * k / 8, y0); }
       await schlaf(160);
@@ -281,6 +282,15 @@
         if (g.last >= 0 && t.walze.textContent.trim() !== String(g.last)) this.fail('Zahlenwerk zeigt ' + t.walze.textContent + ' statt ' + g.last);
         if (t.automat.classList.contains('drueckbar') !== !!(v.hints || {}).can_press) this.fail('Glücksspielknopf-Zustand passt nicht zu can_press');
       } else if (t.automatAktiv || !t.einsatz.hidden) this.fail('Automat oder Einsatz bleibt nach dem Glücksspiel');
+      // großer Modus (?gross=1): Liste mit allen Plätzen, wer dran ist, steht oben (k = 0), der Nächste in Spielrichtung darunter
+      if (t.gross) {
+        const n = (v.players || []).length, laeuft = v.phase !== 'round_over' && v.phase !== 'game_over';
+        if (t.gegnerBox.querySelectorAll('.gg').length !== n) this.fail('Großer Modus: Liste hat ' + t.gegnerBox.querySelectorAll('.gg').length + ' statt ' + n + ' Zeilen');
+        const g0 = t.gegnerEls.get(v.turn);
+        if (laeuft && n > 1 && (!g0 || g0.k !== 0)) this.fail('Großer Modus: Spieler am Zug steht nicht oben');
+        if (!t.gegnerEls.get(v.seat)) this.fail('Großer Modus: eigene Zeile fehlt');
+        if (!t.root.classList.contains('gross')) this.fail('Großer Modus: #tisch.gross fehlt');
+      }
       // persönliche Einstellung: ohne Hervorhebung weder Leuchten noch Abdunkeln
       if (!this.app.hervorheben() && t.hand.el.querySelector('.hk.spielbar, .hk.matt')) this.fail('Hervorhebung trotz Einstellung „aus“');
     },

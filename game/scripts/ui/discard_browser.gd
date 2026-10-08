@@ -28,6 +28,9 @@ var _rest: CardView                # nächste noch liegende Karte an der Ablage
 var _labels: Node2D
 var _anim := 0                     # laufende Rückschiebungen
 var _tweens: Array[Tween] = []
+var card_w := CARD_W                # Kartenbreite (großer Modus: wie die riesige Ablage)
+var side_x := SIDE.x                 # Seitenstapel relativ zur Ablage (großer Modus: links über dem Nachziehstapel)
+var labels_inside := false          # großer Modus: Beschriftung auf der oberen Kartenhälfte (unten liegt die Hand)
 
 
 func _init() -> void:
@@ -182,11 +185,11 @@ func _dur() -> float:
 
 
 func _side_pos(i: int) -> Vector2:
-	return SIDE + LAYER * float(mini(i, MAX_LAYERS - 1))
+	return Vector2(side_x, SIDE.y) + LAYER * float(mini(i, MAX_LAYERS - 1))
 
 
 func _card_rect(center: Vector2) -> Rect2:
-	var sz := Vector2(CARD_W, CARD_W * CardView.ASPECT)
+	var sz := Vector2(card_w, card_w * CardView.ASPECT)
 	return Rect2(center - sz * 0.5, sz)
 
 
@@ -199,7 +202,7 @@ func _restack() -> void:
 func _make_card(idx: int) -> CardView:
 	var e: Dictionary = entries[idx]
 	var c := CardView.new()
-	c.width = CARD_W
+	c.width = card_w
 	var f := str(e.get("f", ""))
 	c.setup(-1, f if f != "" else CardTextures.BACK, "", true)
 	c.day = night < 0.5
@@ -239,20 +242,27 @@ func _draw_labels() -> void:
 		return
 	var e: Dictionary = entries[entries.size() - moved]
 	var top := _side_pos(moved - 1)
-	var sz := Vector2(CARD_W, CARD_W * CardView.ASPECT)
+	var sz := Vector2(card_w, card_w * CardView.ASPECT)
 	var f := UiFonts.text(800, 90.0)
 	var bg := UiPalette.PAPER if night > 0.5 else UiPalette.INK
 	var fg := UiPalette.INK if night > 0.5 else UiPalette.PAPER
 	# unter dem Stapel: Leger, Wunschfarbe, Zähler (darüber sitzen oft Gegner)
 	# Größen folgen der Einstellung „Schriftgröße“ (UiFonts.px)
-	var step := float(UiFonts.px(19)) + 15.0
+	var lk := 1.5 if labels_inside else 1.0
+	var step := float(UiFonts.px(19 * lk)) + 15.0 * lk
 	var y := top.y + sz.y * 0.5 + 20.0
-	_pill(f, entry_label(e), Vector2(top.x, y), UiFonts.px(19), bg, fg, Color(0, 0, 0, 0))
+	if labels_inside:
+		y = top.y - sz.y * 0.5 + sz.y * 0.30
+	_pill(f, entry_label(e), Vector2(top.x, y), UiFonts.px(19 * lk), bg, fg, Color(0, 0, 0, 0))
 	var c := str(e.get("c", ""))
 	if c != "":
-		_pill(f, "Wunsch: " + UiPalette.color_name(c), Vector2(top.x, y + step), UiFonts.px(18), bg, fg, UiPalette.fill(c))
+		_pill(f, "Wunsch: " + UiPalette.color_name(c), Vector2(top.x, y + step), UiFonts.px(18 * lk), bg, fg, UiPalette.fill(c))
+		if not labels_inside:
+			# mit Wunschfarbe sitzt der Zähler auf der Oberkante der Karte (sonst berührt er bei „Sehr groß“ die Hinweisleiste)
+			_pill(f, counter_text(), Vector2(top.x, top.y - sz.y * 0.5 + 4.0), UiFonts.px(17), Color(bg, 0.9), fg, Color(0, 0, 0, 0))
+			return
 		y += step
-	_pill(f, counter_text(), Vector2(top.x, y + step), UiFonts.px(17), Color(bg, 0.75), fg, Color(0, 0, 0, 0))
+	_pill(f, counter_text(), Vector2(top.x, y + step), UiFonts.px(17 * lk), Color(bg, 0.75), fg, Color(0, 0, 0, 0))
 
 
 # Pille mit Mittelpunkt at; dot.a > 0 zeichnet links einen Farbpunkt
@@ -274,3 +284,15 @@ func _pill(f: Font, txt: String, at: Vector2, fs: int, bg: Color, fg: Color, dot
 		_labels.draw_arc(Vector2(x + 6.0, at.y), 6.5, 0.0, TAU, 20, Color(fg, 0.6), 1.2, true)
 		x += extra
 	_labels.draw_string(f, Vector2(x, at.y + float(fs) * 0.36), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, fg)
+
+
+# Großer Modus (Beta 1.1.1): Karten so groß wie die Ablage, Seitenstapel links über dem Nachziehstapel, Beschriftung auf der Karte.
+# Nur bei geschlossenem Browser (sonst erst alles zurück).
+func set_big(on: bool, w: float) -> void:
+	if is_equal_approx(w, card_w) and labels_inside == on:
+		return
+	close_now()
+	card_w = w
+	side_x = -(w + 22.0) if on else SIDE.x
+	labels_inside = on
+	_labels.queue_redraw()

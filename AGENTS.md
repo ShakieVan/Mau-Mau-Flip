@@ -66,27 +66,16 @@ Release 1.0.0 am 07.10.2026 veröffentlicht (`ShakieVan/Mau-Mau-Flip`). Beta 1.0
 
 Neue Gastgeber-Lobby (① WLAN / ② Spiel nebeneinander, Leuchten und Haken, Blättern zur Gästeliste, „So geht's“, „Regeln“, „▶ Start“), „In der App spielen“ (Schema `maumauflip://join?h=…&p=…`, Alias `.GodotAppLink`, `AppLink.java`), Regeln und Hilfe im Spiel (App und Browser), Hausregel „Flip dreht nur die gelegte Karte“ (`flip_mode`, Familie `card`), Roboterkopf statt „KI“, Update-Prüfung löst die Netzbindung (Spiel-WLAN) kurz und wartet höchstens 12 s je Quelle. Bericht: `docs/geraetetest/1.0.2/BERICHT.md`. Offen: Wischen mit echtem Finger, Haken ① aus dem Spiel-WLAN heraus, iPhone.
 
-## Geplant nach 1.0.2 (Nutzerentscheidungen 07.10.2026; 1.0.2 wird evtl. Release 1.1)
+## Erledigt in Beta 1.1.1 (veröffentlicht 08.10.2026)
 
-- **Großer Modus („BIG-Mode“)** für Sehschwäche und schlechte Lichtverhältnisse, persönliche Einstellung je Gerät (App und Browser; Browser notfalls eine Beta später):
-  - Links riesig der Ziehstapel, daneben riesig die Ablage, fast über die ganze Bildschirmhöhe – die Hand darf die untere Hälfte überdecken, weil die Karten symmetrisch sind (obere Hälfte reicht).
-  - Unten wie gewohnt die eigene Hand mit größeren Karten (Karussell bei vielen Karten).
-  - Rechts eine endlos rollende Liste der Mitspieler: wer dran ist, steht oben, darunter der Nächste; beim Zugwechsel rollt sie weiter, beim Richtungswechsel sichtbar andersherum; große Kartenzahl, „dran/gleich dran“; Tipp öffnet die Rückseiten (falls die Regel es erlaubt).
-  - Knöpfe (Mau!, Farbe/Sortieren, Rückseiten, Zurück) an den bisherigen Stellen, größer.
-  - Aktuelle Farbe groß als Wort und Symbol neben der Ablage; Hinweisleiste groß.
-  - Ruhiger, kontrastreicher Hintergrund mit kräftigeren Kartenrändern, **der Tag-/Nachtwechsel bleibt** (Nutzerwunsch).
-  - „Du bist dran“ auf Wunsch mit kurzer Vibration und Dran-Ton.
-  - Bei „Schrift: Sehr groß“ ein kleiner Hinweis auf den großen Modus.
-  - Effekte (Karten zu Mitspielern, Mau-Blasen, Kartentausch, Glücksspiel, Ablage durchsehen) docken an die Listeneinträge an.
+Release 1.1.0 am 07.10.2026 veröffentlicht. Beta 1.1.1: großer Modus in App und Browser (`grosser_modus`, `big_layout.gd`, rollende Spielerliste, große Stapel, ruhiger Hintergrund mit Tag/Nacht), „Bei deinem Zug: Vibration“ (`zug_vibration`), Hinweis bei „Schrift: Sehr groß“, restliche Schriftgrößen in Overlays, Neu-Binden nach „Spiel-WLAN schließen“, Sichtschutz „Gib das Handy an …“. Bericht: `docs/geraetetest/1.1.1/BERICHT.md`.
 
-## Offen (nach 1.0.1)
+## Offen (nach 1.1.1)
 
-- **Update-Prüfung bei gesperrtem Internet** (Nutzerbefund 07.10.2026, S24 mit NetGuard-VPN): Die Prüfung wartete sehr lange und meldete dann nur „keine Verbindung“. Besser: nach etwa 10 s ohne Antwort aufgeben und erklären („Keine Verbindung zu GitHub. Prüfe Internet, VPN oder Firewall-Apps wie NetGuard.“), Ausweg „Im Browser herunterladen“ anbieten.
-
-- Beitritt eines zweiten Geräts ins Spiel-WLAN per QR (Android, iPhone) und Spiel-WLAN auf dem S10 (Standortabfrage) – Test durch den Nutzer.
-- Restliche feste Schriftgrößen: round_end_view, wish_picker, handover_screen, help_popup, pill_button, mau_button, backs_viewer.
-- Bei „Sehr groß“ und Joker berührt der Zähler unter dem Seitenstapel (Ablage durchsehen) die Hinweisleiste.
-- Lite-Client auf echten Handys mit Schrift-Einstellung und Ablage durchsehen prüfen.
+- Großer Modus: bei 8 Spielern zeigt die Liste 4 Zeilen (84 px); mit 76 px wären es 5 – Nutzerentscheidung. Fertige Spieler bleiben mit 0 Karten in der Liste. Kräftigere Ränder der Handkarten (card_view.gd) fehlen.
+- Am Gerät noch prüfen: großer Modus am S10 und im Browser auf echten Handys, Vibration/Dran-Ton, Wischen zur Gästeliste mit dem Finger, Haken ① aus dem Spiel-WLAN heraus, iPhone als Gast.
+- Browser: Beim eigenen Zug vibriert es nur noch mit „Bei deinem Zug: Vibration“ (Standard aus) – früher über die allgemeine Vibration.
+- test_screens_flow scheiterte unter Last einmal an seiner 40-s-Frist.
 
 ## Empfehlung aus der Recherche
 

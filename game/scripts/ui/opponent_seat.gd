@@ -21,6 +21,10 @@ var show_score := false
 var catchable := false: set = set_catchable
 var keys: Array[String] = []            # angezeigte Rückseiten (Fächerreihenfolge)
 var header_only := false                # eigener Platz (0.1.4): nur Kopfzeile mit Name und Kartenzahl, kein Fächer
+var list_mode := false: set = set_list_mode   # großer Modus (Beta 1.1.1): Zeile der Spielerliste rechts, Ursprung = Zeilenmitte
+var row_size := Vector2(360, 96): set = set_row_size
+var me_entry := false                   # Zeile des eigenen Platzes („Du“)
+var flip_y := 1.0                       # Richtungswechsel: Zeile klappt kurz zusammen (1 = offen)
 var reduced := false: set = set_reduced
 const THINK_AFTER := 5.0                # Denkblase, wenn der Spieler am Zug so lange nichts tut
 const TurnHaloScript := preload("res://scripts/ui/turn_halo.gd")
@@ -156,8 +160,10 @@ func backs_visible() -> bool:
 	return not keys.is_empty() and keys[0] != CardTextures.BACK
 
 
-# Fächermitte (Ziel für Kartenflüge) in globalen Koordinaten
+# Fächermitte (Ziel für Kartenflüge) in globalen Koordinaten; als Listenzeile die große Kartenzahl rechts
 func fan_global_center() -> Vector2:
+	if list_mode:
+		return to_global(count_rect().get_center())
 	return to_global(_fan.position + Vector2(0, card_w * 0.78))
 
 
@@ -165,7 +171,49 @@ func avatar_global() -> Vector2:
 	return to_global(_avatar_center())
 
 
+# ---------------------------------------------------------------- Listenzeile (großer Modus)
+
+func set_list_mode(on: bool) -> void:
+	if list_mode == on:
+		return
+	list_mode = on
+	if not on:
+		flip_y = 1.0
+		scale = Vector2.ONE
+		modulate.a = 1.0
+	_rebuild()
+
+
+func set_row_size(v: Vector2) -> void:
+	if v.is_equal_approx(row_size):
+		return
+	row_size = v
+	if list_mode:
+		_update_halo()
+		queue_redraw()
+
+
+# Umriss der Zeile relativ zum Ursprung (Zeilenmitte)
+func list_rect() -> Rect2:
+	return Rect2(-row_size * 0.5, row_size)
+
+
+func avatar_radius() -> float:
+	if list_mode:
+		return clampf(row_size.y * 0.34, 18.0, 40.0)
+	return AVATAR_R_COMPACT if compact else AVATAR_R
+
+
+# Feld der großen Kartenzahl rechts in der Zeile
+func count_rect() -> Rect2:
+	var h := row_size.y - 16.0
+	var w := maxf(h * (1.0 if count() < 10 else 1.15), 64.0)
+	return Rect2(row_size.x * 0.5 - 8.0 - w, -h * 0.5, w, h)
+
+
 func header_height() -> float:
+	if list_mode:
+		return row_size.y
 	if compact:
 		return AVATAR_R_COMPACT * 2.0
 	# Nebenzeile („gleich dran“) wächst mit der Schriftgröße (UiFonts): der Fächer rückt entsprechend tiefer
@@ -251,6 +299,8 @@ func sleep_for(t: float) -> void:
 
 func hit_fan(global_pos: Vector2) -> bool:
 	var local := to_local(global_pos)
+	if list_mode:
+		return visible and modulate.a > 0.5 and list_rect().grow(4.0).has_point(local)
 	var r := Rect2(-maxf(fan_max_w, BAR_W) * 0.5 - 10.0, -header_height() * 0.6, maxf(fan_max_w, BAR_W) + 20.0, header_height() + card_w * 1.9 + 20.0)
 	return r.has_point(local)
 
@@ -260,6 +310,8 @@ func hit_catch(global_pos: Vector2) -> bool:
 
 
 func _catch_rect() -> Rect2:
+	if list_mode:                       # links neben der Zeile, zur Tischmitte hin
+		return Rect2(-row_size.x * 0.5 - 158.0, -23.0, 150.0, 46.0)
 	var y := header_height() * 0.5 + 6.0
 	return Rect2(-70.0, y, 140.0, 46.0)
 
@@ -272,7 +324,7 @@ func _rebuild() -> void:
 	var xfs: Array[Transform2D] = []
 	var w := card_w
 	_more = 0
-	if header_only or (compact and not (n == 1 and backs_visible())):
+	if header_only or list_mode or (compact and not (n == 1 and backs_visible())):
 		n = 0
 	elif n == 1:
 		# letzte Karte groß (auch im Abzeichen)
@@ -315,6 +367,12 @@ func _rebuild() -> void:
 func _update_halo() -> void:
 	if _halo == null:
 		return
+	if list_mode:
+		_halo.reach = 40.0
+		var lr := list_rect().grow(2.0)
+		if lr != _halo.box:
+			_halo.set_box(lr, 30.0)
+		return
 	var ar := AVATAR_R_COMPACT if compact else AVATAR_R
 	var r := Rect2(_header_x0() - 6.0, -ar - 6.0, _header_w + 12.0, ar * 2.0 + 12.0)
 	for c in _cards:
@@ -331,11 +389,15 @@ func _update_halo() -> void:
 # ---------------------------------------------------------------- Zeichnen
 
 func _avatar_center() -> Vector2:
+	if list_mode:
+		return Vector2(-row_size.x * 0.5 + 12.0 + avatar_radius(), 0.0)
 	return Vector2(_header_x0() + (AVATAR_R_COMPACT if compact else AVATAR_R), 0.0)
 
 
 # Linker Rand der Kopfzeile: mittig um den Ursprung, beim eigenen Platz (header_only) linksbündig ab dem Ursprung
 func _header_x0() -> float:
+	if list_mode:
+		return -row_size.x * 0.5
 	return 0.0 if header_only else -_header_w * 0.5
 
 
@@ -344,6 +406,9 @@ func header_width() -> float:
 
 
 func _draw() -> void:
+	if list_mode:
+		_draw_row()
+		return
 	var ink := UiPalette.ui_text(night)
 	var name_font := UiFonts.text(700, 100.0)
 	var num_font := UiFonts.text(800, 90.0)
@@ -424,6 +489,124 @@ func _draw() -> void:
 		_draw_bar(Vector2(-BAR_W * 0.5, ar + 10.0))
 	if thinking():
 		_draw_think(ac, ar)
+
+
+# Listenzeile (großer Modus): kräftig umrandeter Kasten mit Avatar, großem Namen, „dran“/„gleich dran“ und großer Kartenzahl.
+# Tag: helles Papier mit Druckfarbenrand, Nacht: dunkler Grund mit hellem Rand; am Zug ein dicker warmer Rand (dazu der Schein).
+func _draw_row() -> void:
+	_header_w = row_size.x
+	if flip_y < 0.999:
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2(1.0, maxf(flip_y, 0.02)))
+	var r := list_rect()
+	var dark := night > 0.5
+	var substituted := bool(player.get("substituted", false))
+	var connected := bool(player.get("connected", true)) or substituted
+	var bg := Color(UiPalette.NIGHT, 0.94) if dark else Color(UiPalette.PAPER, 0.97)
+	var line := Color(UiPalette.CREAM, 0.9) if dark else UiPalette.INK
+	if _turn:
+		var pulse := 0.5 + 0.5 * sin(_time * 4.0) if not reduced else 1.0
+		bg = bg.lerp(UiPalette.TURN, (0.20 if dark else 0.28) + 0.06 * pulse)
+		line = UiPalette.TURN
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = bg
+	sb.border_color = line
+	sb.set_border_width_all(6 if _turn else 3)
+	sb.set_corner_radius_all(int(minf(row_size.y * 0.28, 26.0)))
+	sb.anti_aliasing = true
+	sb.shadow_color = Color(0, 0, 0, 0.28)
+	sb.shadow_size = 5
+	draw_style_box(sb, r)
+	# Avatar
+	var ar := avatar_radius()
+	var ac := _avatar_center()
+	var base := UiPalette.avatar(seat)
+	if _sleep > 0.0:
+		var g := base.get_luminance()
+		base = base.lerp(Color(g, g, g), _sleep * 0.85)
+	if not connected:
+		base = Color(base, 0.45)
+	var bump := 1.0 + 0.08 * _bump
+	draw_circle(ac, ar * bump + 3.0, UiPalette.PAPER if dark else UiPalette.INK)
+	draw_circle(ac, ar * bump, base)
+	var initial := ("D" if me_entry else player_name().substr(0, 1)).to_upper()
+	var ini_font := UiFonts.text(800, 100.0)
+	var ini_size := int(ar * 0.95)
+	var iw := ini_font.get_string_size(initial, HORIZONTAL_ALIGNMENT_LEFT, -1, ini_size)
+	draw_string(ini_font, ac + Vector2(-iw.x * 0.5, ini_size * 0.36), initial, HORIZONTAL_ALIGNMENT_LEFT, -1, ini_size, UiPalette.INK)
+	if str(player.get("kind", "human")) == "bot":
+		ScreenKit.draw_bot_badge(self, ac + Vector2(ar * 0.72, ar * 0.72), UiFonts.size("mini") * 0.85)
+	# Kartenzahl: groß, in der Gegenfarbe
+	var cr := count_rect()
+	var cbg := UiPalette.CREAM if dark else UiPalette.INK
+	var cfg := UiPalette.INK if dark else UiPalette.CREAM
+	_draw_round_rect(cr, minf(cr.size.y * 0.3, 18.0), cbg)
+	var nf := UiFonts.text(800, 90.0)
+	var cnt := str(count())
+	var cfs := int(cr.size.y * 0.74)
+	var cw := nf.get_string_size(cnt, HORIZONTAL_ALIGNMENT_LEFT, -1, cfs).x
+	if cw > cr.size.x - 12.0:
+		cfs = int(cfs * (cr.size.x - 12.0) / cw)
+		cw = nf.get_string_size(cnt, HORIZONTAL_ALIGNMENT_LEFT, -1, cfs).x
+	draw_string(nf, Vector2(cr.get_center().x - cw * 0.5, cr.get_center().y + cfs * 0.36), cnt, HORIZONTAL_ALIGNMENT_LEFT, -1, cfs, cfg)
+	# Name und Nebenzeile („dran“, „gleich dran“, getrennt, Punkte)
+	var ink := UiPalette.ui_text(night)
+	var name_font := UiFonts.text(800, 100.0)
+	var nx := ac.x + ar + 14.0
+	var room := cr.position.x - 10.0 - nx
+	var sub := row_status()
+	var name_fs := mini(UiFonts.px(36), int(row_size.y * (0.38 if sub != "" else 0.46)))
+	var sub_fs := mini(UiFonts.px(25), int(row_size.y * 0.25))
+	var nm := fit_text(name_font, "Du" if me_entry else player_name(), name_fs, room)
+	var total := float(name_fs) + (4.0 + float(sub_fs) if sub != "" else 0.0)
+	var name_base := -total * 0.5 + name_fs * 0.78
+	draw_string(name_font, Vector2(nx, name_base), nm, HORIZONTAL_ALIGNMENT_LEFT, -1, name_fs, Color(ink, 1.0 if connected else 0.55))
+	if sub != "":
+		var sub_font := UiFonts.text(800 if _turn else 700, 95.0)
+		var sub_col := ink if _turn else UiPalette.ui_muted(night)
+		var st := fit_text(sub_font, sub, sub_fs, room)
+		draw_string(sub_font, Vector2(nx, name_base + 4.0 + sub_fs * 0.92), st, HORIZONTAL_ALIGNMENT_LEFT, -1, sub_fs, sub_col)
+	if bool(player.get("mau", false)):
+		_draw_mau_tag(ac + Vector2(0.0, -ar - 4.0))
+	var place := int(player.get("place", 0))
+	if place > 0:
+		var pfs := UiFonts.size("pille")
+		var mc := ac + Vector2(-ar * 0.75, ar * 0.75)
+		draw_circle(mc, pfs * 0.85, UiPalette.TURN)
+		var pt := "%d." % place
+		var pw := nf.get_string_size(pt, HORIZONTAL_ALIGNMENT_LEFT, -1, pfs).x
+		draw_string(nf, mc + Vector2(-pw * 0.5, pfs * 0.36), pt, HORIZONTAL_ALIGNMENT_LEFT, -1, pfs, UiPalette.INK)
+	if _sleep > 0.0:
+		var cat := UiIcons.icon("katze", 40, Color(UiPalette.MOON, _sleep), UiPalette.INK)
+		draw_texture_rect(cat, Rect2(ac + Vector2(-20, -ar - 40), Vector2(40, 40)), false)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	if thinking():
+		_draw_think(ac, ar)
+
+
+# Nebenzeile der Listenzeile
+func row_status() -> String:
+	var parts: Array[String] = []
+	if _turn:
+		parts.append("dran")
+	elif _next:
+		parts.append("gleich dran")
+	if bool(player.get("substituted", false)):
+		parts.append("Computer spielt")
+	elif not bool(player.get("connected", true)):
+		parts.append("getrennt")
+	if show_score:
+		parts.append("%d P" % int(player.get("score", 0)))
+	return " · ".join(parts)
+
+
+# Text auf Breite kürzen (mit „…“)
+static func fit_text(font: Font, text: String, fs: int, width: float) -> String:
+	if font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x <= width:
+		return text
+	var t := text
+	while t.length() > 1 and font.get_string_size(t + "…", HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > width:
+		t = t.substr(0, t.length() - 1)
+	return t + "…"
 
 
 # Denkblase (0.1.4): Wolke über dem Avatar mit drei wandernden Pünktchen, blendet nach THINK_AFTER Sekunden ein

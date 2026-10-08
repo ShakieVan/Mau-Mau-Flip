@@ -66,9 +66,27 @@ func build() -> void:
 	sound.add_child(ScreenKit.row("Spieltöne", toene, 190.0, "Karte, Ziehen, Mischen, Flip, Sieg"))
 	var look := _section(left, "Bedienung und Optik")
 	# Schriftgröße je Gerät (Beta 1.0.1): wirkt sofort auf alle Bildschirme und den Tisch (ScreenNav → UiFonts.set_level)
-	var schrift := ScreenKit.choice(UiFonts.LEVEL_NAMES, str(UiApp.setting("schrift", "normal")), func(v: String) -> void: _store("schrift", v))
+	var big_hint := ScreenKit.hint("Tipp: Im großen Modus werden auch Karten, Ablage und Mitspieler riesig.", UiFonts.size("hinweis"))
+	big_hint.name = "HinweisGrosserModus"
+	big_hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	big_hint.visible = str(UiApp.setting("schrift", "normal")) == "sehr_gross" and not bool(UiApp.setting("grosser_modus", false))
+	var schrift := ScreenKit.choice(UiFonts.LEVEL_NAMES, str(UiApp.setting("schrift", "normal")), func(v: String) -> void:
+		_store("schrift", v)
+		if is_instance_valid(big_hint):
+			big_hint.visible = v == "sehr_gross" and not bool(UiApp.setting("grosser_modus", false)))
 	schrift.name = "Schrift"
 	look.add_child(ScreenKit.row("Schrift", schrift, 190.0))
+	look.add_child(big_hint)
+	# Großer Modus (Beta 1.1.1): riesiger Stapel und Ablage, Mitspieler als Liste rechts; wirkt sofort am Tisch (TableView hört
+	# auf App.settings.changed). Persönlich je Gerät.
+	var on_big := func(on: bool) -> void:
+		_store("grosser_modus", on)
+		if is_instance_valid(big_hint):
+			big_hint.visible = str(UiApp.setting("schrift", "normal")) == "sehr_gross" and not on
+	look.add_child(ScreenKit.switch_row("Großer Modus", "Riesige Karten, Ablage und Farbe, Mitspieler als Liste rechts. Für schlechte Augen oder schlechtes Licht.",
+		bool(UiApp.setting("grosser_modus", false)), on_big, "GrosserModus"))
+	look.add_child(ScreenKit.switch_row("Bei deinem Zug: Vibration", "Kurz vibrieren, wenn du dran bist. Den Dran-Ton schaltest du mit den Spieltönen.",
+		bool(UiApp.setting("zug_vibration", false)), func(on: bool) -> void: _store("zug_vibration", on), "ZugVibration"))
 	# Persönliche Hilfe, nie eine Regel des Gastgebers (AGENTS.md 24); der Tisch (HandView) hört auf App.settings.changed.
 	look.add_child(ScreenKit.switch_row("Spielbare Karten hervorheben", "Nur auf diesem Gerät: Karten, die du gerade legen kannst, werden in deiner Hand hervorgehoben.",
 		bool(UiApp.setting("hervorheben", true)), func(on: bool) -> void: _store("hervorheben", on), "Hervorheben"))

@@ -30,7 +30,7 @@ func _init() -> void:
 	add_child(_dim)
 	_strip = Node2D.new()
 	add_child(_strip)
-	_title = UiTheme.label("", UiFonts.title(800, false, 50.0, 48.0), 36, UiPalette.PAPER, HORIZONTAL_ALIGNMENT_CENTER)
+	_title = UiTheme.label("", UiFonts.title(800, false, 50.0, 48.0), UiFonts.px(36), UiPalette.PAPER, HORIZONTAL_ALIGNMENT_CENTER)
 	_title.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
 	_title.position.y = 40
 	add_child(_title)
@@ -46,6 +46,7 @@ func show_backs(name: String, keys: Array) -> void:
 		c.setup(i, str(keys[i]), "", true)
 		_strip.add_child(c)
 		_cards.append(c)
+	_title.add_theme_font_size_override("font_size", UiFonts.px(36))   # Einstellung „Schriftgröße“
 	_title.text = "%s · %d %s" % [name, keys.size(), "Rückseite" if keys.size() == 1 else "Rückseiten"]
 	_scroll = 0.0
 	_vel = 0.0

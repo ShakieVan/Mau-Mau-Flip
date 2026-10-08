@@ -886,3 +886,58 @@ body.ruhig *, body.ruhig *::before, body.ruhig *::after { animation: none !impor
 .sogehts-liste dt { font-weight: 800; }
 .sogehts-liste dd { margin: 0; }
 @media (max-width: 620px) { .sogehts-liste { grid-template-columns: 1fr; gap: 2px; } .sogehts-liste dd { margin-bottom: 8px; } }
+
+/* ---------------- Großer Modus (Einstellung grosser_modus je Gerät; tisch.js setzeGross, _geometrieGross) ----------------
+   Links riesig Stapel und Ablage (--gk), die Hand (×1,3) darf ihre untere Hälfte überdecken; rechts die Spielerliste in
+   Spielrichtung, wer dran ist, steht oben. Ruhiger Grund ohne Strahlen und Sterne, Tag/Nacht bleibt. Sparsam: Zeilen rollen
+   nur per transform, keine Fächer, kein Kranz. */
+.liste-kopf, .gg .zug { display: none; }
+#tisch.gross .richtung, #tisch.gross .ich-zahl, #tisch.gross .gg .faecher, #tisch.gross .gg .kranz, #tisch.gross .gg .denk { display: none; }
+#tisch.gross .himmel .tag::before, #tisch.gross .himmel .strahlen, #tisch.gross .himmel .sterne { display: none; }
+#tisch.gross .stapel { transform: translate(-50%, -50%) scale(var(--gk, 1)); }
+#tisch.gross .stapel.mischen { animation: none; }
+#tisch.gross .ablage { transform: scale(var(--gk, 1)); }
+#tisch.gross .stapel .oben, #tisch.gross .ablage .karten .karte.top { box-shadow: 0 0 0 1.6px var(--t-text), 0 6px 14px rgba(0,0,0,.45); }
+#tisch.gross .hk:not(.spielbar):not(.gewaehlt):not(.kandidat) .seite { box-shadow: 0 0 0 2.5px var(--t-text), 0 6px 14px rgba(0,0,0,.45); }
+#tisch.gross #hand { transform: scale(1.3); transform-origin: 0 0; }
+#tisch.gross #hand-zone { height: 330px; }
+#tisch.gross .stapelzahl { z-index: 6; font-size: calc(30px * var(--fs)); color: var(--t-text); background: var(--t-hinweis); border: 2px solid var(--t-hinweis-rand); border-radius: 20px; padding: 2px 14px; pointer-events: none; }
+#tisch.gross .farbanzeige { font-size: calc(44px * var(--fs)); gap: 10px; }
+#tisch.gross .farbanzeige .sym { width: 120px; height: 120px; }
+#tisch.gross .hinweis { font-size: calc(36px * var(--fs)); padding: 12px 28px; max-width: 700px; border-width: 3px; }
+#tisch.gross .knopf.klein { font-size: calc(30px * var(--fs)); padding: 14px 26px; }
+#tisch.gross .mau-knopf { width: 190px; height: 190px; }
+#tisch.gross .mau-knopf span { font-size: 58px; }
+#tisch.gross .pill { font-size: calc(30px * var(--fs)); padding: 15px 26px; }
+#tisch.gross .pill svg { width: 34px; height: 34px; }
+#tisch.gross .menue-knopf, #tisch.gross .ton-knopf { width: 84px; height: 84px; }
+#tisch.gross .menue-knopf svg, #tisch.gross .ton-knopf svg { width: 38px; height: 38px; }
+/* Spielerliste: Zeile = .gg (Mitspieler und „Du“), translateY aus tisch.js; .sprung = oben raus, unten wieder rein */
+#tisch.gross .gg { width: 330px; height: 74px; margin: -37px 0 0 -165px; flex-direction: row; align-items: center; gap: 0; padding: 0 14px 0 10px; box-sizing: border-box;
+  border-radius: 20px; background: var(--t-hinweis); border: 2.5px solid var(--t-hinweis-rand); transition: transform .45s cubic-bezier(.3,.8,.3,1), opacity .3s; }
+#tisch.gross .gg.sprung { transition: none; opacity: 0; }
+#tisch.gross .gg.aus { opacity: 0; pointer-events: none; }
+#tisch.gross .gg .kopf { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; grid-template-rows: auto auto; column-gap: 12px; width: 100%; align-items: center; }
+#tisch.gross .gg .ava { grid-column: 1; grid-row: 1 / 3; width: 54px; height: 54px; font-size: 27px; }
+#tisch.gross .gg .name { grid-column: 2; grid-row: 1; font-size: calc(30px * var(--fs)); line-height: 1.1; max-width: none; }
+#tisch.gross .gg .zug { display: block; grid-column: 2; grid-row: 2; font: 800 calc(19px * var(--fs)) var(--f-ui); line-height: 1.1; color: var(--t-muted); }
+#tisch.gross .gg .zug:empty { display: none; }
+#tisch.gross .gg .zahl { grid-column: 3; grid-row: 1 / 3; font-size: calc(32px * var(--fs)); padding: 3px 14px; min-width: 52px; text-align: center; }
+#tisch.gross .gg.dran { background: var(--t-dran); border-color: var(--gold); box-shadow: 0 0 0 4px rgba(255,214,90,.55), 0 6px 16px rgba(0,0,0,.3); }
+#tisch.gross .gg.dran .name, #tisch.gross .gg.dran .zug { color: var(--t-dran-fg); text-shadow: none; }
+#tisch.gross .gg.dran .zahl { background: var(--t-dran-fg); color: var(--t-dran); }
+#tisch.gross .gg.dran .ava { animation: none; box-shadow: none; }
+#tisch.gross .gg.ich:not(.dran) { border-style: dashed; }
+#tisch.gross .gg .marken { position: absolute; right: 10px; top: -15px; }
+#tisch.gross .gg .erwischen { position: absolute; right: 100%; top: 10px; margin: 0 10px 0 0; font-size: 24px; }
+#tisch.gross .liste-kopf { display: flex; align-items: center; gap: 8px; transform: translate(-50%, -50%); font: 800 calc(20px * var(--fs)) var(--f-ui); color: var(--t-muted); white-space: nowrap; z-index: 36; pointer-events: none; }
+#tisch.gross .liste-kopf .dreh { font-style: normal; font-size: 30px; display: inline-block; transition: transform .5s; }
+#tisch.gross .liste-kopf.gegen .dreh { transform: scaleX(-1); }
+#tisch.gross .liste-kopf.wendet { animation: listeWende .7s ease-out; }
+@keyframes listeWende { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 40% { transform: translate(-50%, -50%) scale(1.3); } }
+body.reduziert #tisch.gross .gg, body.reduziert #tisch.gross .liste-kopf .dreh { transition: opacity .2s; }
+@media (prefers-reduced-motion: reduce) { #tisch.gross .gg, #tisch.gross .liste-kopf .dreh { transition: opacity .2s; } #tisch.gross .liste-kopf.wendet { animation: none; } }
+#tisch.gross .farbring { display: none; }
+#tisch.gross .pill { z-index: 40; }
+#tisch.gross .pill:not(.aktiv) { background: #FBF5EA; }
+#tisch.gross[data-seite="dunkel"] .pill:not(.aktiv) { background: #1A1838; }

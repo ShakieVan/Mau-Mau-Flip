@@ -131,10 +131,12 @@ func stop(text := "") -> void:
 func port() -> int:
 	return server.port if server != null else 0
 
-func rebind() -> String:
+func rebind(after_close := false) -> String:
 	# Nach dem Öffnen des Spiel-WLANs (LocalOnlyHotspot): Bindung neu bewerten (NetAddresses.bind_for, Draw2Race-Regeln). Waren Server
 	# und Suche ans WLAN gebunden, erreichen sie die Spiel-WLAN-Gäste nicht; dann entstehen beide neu auf demselben Port, solange noch
 	# kein Mitspieler verbunden ist. "" = passt, sonst deutscher Hinweis.
+	# after_close (Beta 1.1.1): Spiel-WLAN wieder zu – zurück zur Bindung wie beim Eröffnen (meist ans WLAN). War die Sitzung ans
+	# Spiel-WLAN gebunden, ist dessen Netz weg; dann entsteht der Server auch mit (nun getrennten) Mitspielern neu.
 	if server == null:
 		return ""
 	var before := NetAddresses.bound_to
@@ -142,7 +144,9 @@ func rebind() -> String:
 	if now == before:
 		return ""
 	var guests := players.values().filter(func(p): return not bool(p.get("local", false)) and int(p.get("conn", -1)) >= 0)
-	if not guests.is_empty():
+	if not guests.is_empty() and not (after_close and before == "hotspot"):
+		if after_close:
+			return "Spiel-WLAN ist zu. Kommt jemand aus dem WLAN nicht rein, eröffne das Spiel neu."
 		return "Mitspieler sind schon verbunden. Damit das Spiel-WLAN klappt, eröffne das Spiel neu."
 	var p := server.port
 	server.stop()

@@ -15,6 +15,7 @@ var visual_h := 56.0
 var style := "ghost": set = set_style        # ghost | primary | alert
 var font_size := 20
 var disabled := false: set = set_disabled
+var big := 1.0: set = set_big            # großer Modus (Beta 1.1.1): Pille, Symbol und Trefferfläche größer
 
 var _down := false
 
@@ -35,6 +36,16 @@ func set_icon_name(n: String) -> void:
 	_fit()
 
 
+func set_big(k: float) -> void:
+	big = maxf(k, 1.0)
+	visual_h = 56.0 * big
+	_fit()
+
+
+func touch_h() -> float:
+	return TOUCH_MIN * big
+
+
 func set_night(v: float) -> void:
 	night = clampf(v, 0.0, 1.0)
 	queue_redraw()
@@ -52,15 +63,15 @@ func set_disabled(d: bool) -> void:
 
 func preferred_width() -> float:
 	var f := UiFonts.text(700, 100.0)
-	var w := f.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x + 44.0
+	var w := f.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x + 44.0 * big
 	if icon_name != "":
-		w += 34.0
-	return maxf(w, TOUCH_MIN)
+		w += 34.0 * big
+	return maxf(w, touch_h())
 
 
 func _fit() -> void:
-	custom_minimum_size = Vector2(preferred_width(), TOUCH_MIN)
-	size = Vector2(maxf(size.x, custom_minimum_size.x), maxf(size.y, TOUCH_MIN))
+	custom_minimum_size = Vector2(preferred_width(), touch_h())
+	size = Vector2(maxf(size.x, custom_minimum_size.x), maxf(size.y, touch_h()))
 	queue_redraw()
 
 
@@ -103,7 +114,10 @@ func _draw() -> void:
 		_:
 			sb.bg_color = UiPalette.ui_fill(night)
 			sb.border_color = UiPalette.ui_line(night)
-			sb.set_border_width_all(2)
+			sb.set_border_width_all(2 if big <= 1.0 else 4)
+			if big > 1.0:                # großer Modus: deckend, liegt über dem riesigen Stapel
+				sb.bg_color = (UiPalette.NIGHT if night > 0.5 else UiPalette.PAPER).lerp(Color(sb.bg_color, 1.0), sb.bg_color.a)
+				sb.border_color = UiPalette.ui_text(night)
 	if _down:
 		sb.bg_color = sb.bg_color.lerp(fg, 0.15)
 	if disabled:
@@ -112,11 +126,11 @@ func _draw() -> void:
 	draw_style_box(sb, r)
 	var f := UiFonts.text(700, 100.0)
 	var tw := f.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
-	var content_w := tw + (34.0 if icon_name != "" else 0.0)
+	var content_w := tw + (34.0 * big if icon_name != "" else 0.0)
 	var x := r.position.x + (r.size.x - content_w) * 0.5
 	var cy := r.position.y + r.size.y * 0.5
 	if icon_name != "":
 		var cut := sb.bg_color if sb.bg_color.a > 0.5 else (UiPalette.NIGHT if night > 0.5 else UiPalette.PAPER)
-		draw_texture_rect(UiIcons.icon(icon_name, 48, fg, cut), Rect2(x, cy - 13.0, 26, 26), false)
-		x += 34.0
+		draw_texture_rect(UiIcons.icon(icon_name, 64 if big > 1.0 else 48, fg, cut), Rect2(x, cy - 13.0 * big, 26.0 * big, 26.0 * big), false)
+		x += 34.0 * big
 	draw_string(f, Vector2(x, cy + font_size * 0.36), text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, fg)

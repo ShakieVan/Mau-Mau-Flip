@@ -61,7 +61,7 @@ func _init() -> void:
 
 func show_for(name: String, from_seat: int, to_seat: int, n: int, discard := 0, pile := 0, active_side := "hell") -> void:
 	to_name = name
-	info = direction_info(from_seat, to_seat, n)
+	info = direction_info(from_seat, to_seat, n) if from_seat >= 0 else {}   # Partiebeginn: kein Vorgänger, nur „Gib das Handy an …“
 	discard_count = discard
 	draw_count = pile
 	side = active_side
@@ -129,7 +129,7 @@ func _draw() -> void:
 	var arrow: Vector2 = info.get("arrow", Vector2.ZERO)
 	var title_f := UiFonts.title(800, false, 50.0, 72.0)
 	var head := headline(to_name, info)
-	var fs := 46
+	var fs := UiFonts.px(46)   # Schriftgrößen folgen der Einstellung „Schriftgröße“
 	var tw := title_f.get_string_size(head, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 	if tw > size.x - 120.0:
 		fs = int(fs * (size.x - 120.0) / tw)
@@ -144,9 +144,11 @@ func _draw() -> void:
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	# nur Zahlen, keine Karten
 	var f := UiFonts.text(700, 100.0)
-	var line := "Ablage: %d Karten  ·  Stapel: %d Karten" % [discard_count, draw_count]
-	var lw := f.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, 20).x
-	draw_string(f, Vector2(c.x - lw * 0.5, size.y * 0.52), line, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, muted)
+	if discard_count + draw_count > 0:      # vor dem Austeilen (Partiebeginn) noch keine Zahlen
+		var line := "Ablage: %d Karten  ·  Stapel: %d Karten" % [discard_count, draw_count]
+		var ls := UiFonts.px(20)
+		var lw := f.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, ls).x
+		draw_string(f, Vector2(c.x - lw * 0.5, size.y * 0.52), line, HORIZONTAL_ALIGNMENT_LEFT, -1, ls, muted)
 	# Halteknopf mit Fortschrittsring
 	var bc := _button_center()
 	var r := 74.0
@@ -158,5 +160,6 @@ func _draw() -> void:
 	var eye := UiIcons.icon("katze_wach", 96, UiPalette.INK if night > 0.5 else UiPalette.CREAM, UiPalette.CREAM if night > 0.5 else UiPalette.INK)
 	draw_texture_rect(eye, Rect2(bc - Vector2(40, 44), Vector2(80, 80)), false, Color(1, 1, 1, 0.5 if locked else 1.0))
 	var hint := "%s: zum Aufdecken halten" % to_name
-	var hw := f.get_string_size(hint, HORIZONTAL_ALIGNMENT_LEFT, -1, 22).x
-	draw_string(f, Vector2(c.x - hw * 0.5, bc.y + r + 46.0), hint, HORIZONTAL_ALIGNMENT_LEFT, -1, 22, ink)
+	var hs := UiFonts.px(22)
+	var hw := f.get_string_size(hint, HORIZONTAL_ALIGNMENT_LEFT, -1, hs).x
+	draw_string(f, Vector2(c.x - hw * 0.5, bc.y + r + 24.0 + hs), hint, HORIZONTAL_ALIGNMENT_LEFT, -1, hs, ink)

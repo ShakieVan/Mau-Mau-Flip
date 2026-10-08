@@ -43,8 +43,10 @@ var _stop: Button
 var _poll := 0.0
 var _net_poll := 0.0
 var _on_since := 0
-var _rebound := false
-var _started := false                    # ein Öffnen wurde angestoßen (Fehlschlag zählt dann als problem)
+var _rebound := false                    # Sitzung ist aufs offene Spiel-WLAN neu gebunden (nach dem Schließen zurückbinden)
+var _close_at := 0                       # Spiel-WLAN zu seit (ms); Rückbindung spätestens nach REBIND_WAIT_MS
+const REBIND_WAIT_MS := 5000
+var _started := false                   # ein Öffnen wurde angestoßen (Fehlschlag zählt dann als problem)
 var _waiting_permission := false
 
 
@@ -157,6 +159,15 @@ func refresh_net(force := false) -> void:
 			_rebound = true
 			if host != null and host.session != null:
 				hint = host.session.rebind()
+	elif _rebound and not (st in ["on", "starting"]):
+		# Spiel-WLAN zu (Knopf oder Android): Gastgeber-Sitzung wieder wie beim Eröffnen binden, sobald dessen Adresse weg ist
+		if _close_at == 0:
+			_close_at = Time.get_ticks_msec()
+		if _game_wifi_gone() or Time.get_ticks_msec() - _close_at >= REBIND_WAIT_MS:
+			_rebound = false
+			_close_at = 0
+			if host != null and host.session != null:
+				hint = host.session.rebind(true)
 	if net_stub is Dictionary:
 		var m := detect_mode({}, wifi, problem, [])
 		mode = m if m in ["problem", "game_wifi", "starting"] else str(net_stub.get("mode", "none"))
@@ -212,7 +223,7 @@ func close_wifi() -> void:
 	hint = ""
 	address = ""
 	_started = false
-	_rebound = false
+	_close_at = 0                           # _rebound bleibt: refresh_net bindet die Sitzung zurück
 	wifi = NetAndroid.game_wifi_state()
 	refresh_net()
 
@@ -294,6 +305,13 @@ func _find_address() -> String:
 	if NetAndroid.wifi_stub is Dictionary:
 		return str(NetAndroid.wifi_stub.get("address", ""))
 	return NetAndroid.game_wifi_address(NetAndroid.state(), _before)
+
+
+# Spiel-WLAN-Schnittstelle verschwunden (Stub: sofort)
+func _game_wifi_gone() -> bool:
+	if NetAndroid.wifi_stub is Dictionary:
+		return true
+	return NetAndroid.game_wifi_address(NetAndroid.state(), _before) == ""
 
 
 # --- Anzeige ---

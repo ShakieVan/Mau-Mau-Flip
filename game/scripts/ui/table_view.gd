@@ -26,6 +26,7 @@ signal action(a: Dictionary)
 signal sort_pressed
 signal backs_pressed
 signal seat_tapped(seat: int)
+signal big_changed(on: bool)          # großer Modus umgeschaltet (TableScreen legt die Hand neu)
 
 const CARD_W := 116.0                 # Stapel und Ablage
 const HAND_CARD_W := 150.0            # Ersatzbreite, wenn keine Hand angeschlossen ist
@@ -110,6 +111,17 @@ var _hand_halo_cards := 0                                   # so viele Karten mu
 var _center := Vector2(800, 320)
 var _draw_pos := Vector2(623, 320)
 var _discard_pos := Vector2(977, 320)
+
+# Großer Modus (Beta 1.1.1, BigLayout): riesiger Stapel und Ablage, Spielerliste rechts (die Plätze werden zu Listenzeilen und
+# rollen: wer dran ist oben, darunter der Nächste). Persönliche Einstellung "grosser_modus", live umschaltbar.
+var big := false
+var pile_w := CARD_W                  # Breite von Stapel und Ablage (groß: BigLayout.pile_w)
+var _list_slot := {}                  # Platz → fortlaufende Stelle in der Liste (rollt weich zum Ziel)
+var _list_target := {}
+var _list_turn := -1
+var _list_dir := 0
+var _list_flip := -1.0                # Richtungswechsel: 0 … 1 (Zeilen klappen zu, Reihenfolge dreht, klappen auf); < 0 = aus
+var _was_my_turn := false
 
 
 # ================================================================= Aufbau
@@ -233,13 +245,15 @@ func _ready() -> void:
 	var st: Variant = app.get("settings") if app != null else null
 	if st is Object and (st as Object).has_signal("changed"):
 		(st as Object).connect("changed", _on_setting_changed)
-	_layout()
+	set_big(HandView.truthy(UiApp.setting("grosser_modus", false)))
 	set_night(night)
 
 
-# Effektstufe und Hervorheben live umschalten (Einstellungen; die Hand hört selbst auf „hervorheben“)
+# Effektstufe, Hervorheben und großen Modus live umschalten (Einstellungen; die Hand hört selbst auf „hervorheben“)
 func _on_setting_changed(key: String, value: Variant) -> void:
-	if key == "effekte":
+	if key == "grosser_modus":
+		set_big(HandView.truthy(value))
+	elif key == "effekte":
 		reduced = str(value) == "reduziert"
 	elif key == "hervorheben":
 		highlight = HandView.truthy(value)
@@ -297,39 +311,89 @@ func _update_avoid() -> void:
 
 func _layout() -> void:
 	var sz := size if size.x > 10.0 else TableLayout.BASE
-	_center = TableLayout.table_center(sz)
-	_draw_pos = TableLayout.draw_pile_pos(sz)
-	_discard_pos = TableLayout.discard_pos(sz)
+	if big:
+		pile_w = BigLayout.pile_w(sz)
+		_center = BigLayout.table_center(sz)
+		_draw_pos = BigLayout.draw_pile_pos(sz)
+		_discard_pos = BigLayout.discard_pos(sz)
+	else:
+		pile_w = CARD_W
+		_center = TableLayout.table_center(sz)
+		_draw_pos = TableLayout.draw_pile_pos(sz)
+		_discard_pos = TableLayout.discard_pos(sz)
 	_bg.table_center = _center
 	_ring.position = _center
 	_ring.radii = TableLayout.ring_radii(sz)
 	_pile.position = _draw_pos
+	_pile.set_width(pile_w)
 	_color_ring.position = _discard_pos
+	_color_ring.card_size = Vector2(pile_w, pile_w * CardView.ASPECT) if big else Vector2.ZERO
+	_color_ring.queue_redraw()
 	_discard_layer.position = _discard_pos
+	for c in _discard:
+		c.width = pile_w
 	discard_browser.position = _discard_pos
-	_color_mark.position = _center
+	discard_browser.set_big(big, pile_w)
+	_color_mark.position = BigLayout.color_mark_pos(sz) if big else _center
+	_color_mark.k = BigLayout.COLOR_SCALE if big else 1.0
 	gamble_machine.position = _center
 	wish_picker.position = _discard_pos
 	wish_picker.wheel_center = Vector2(sz.x * 0.5, sz.y * 0.47) - _discard_pos
-	_sort_btn.size = Vector2(_sort_btn.preferred_width(), PillButton.TOUCH_MIN)
-	_backs_btn.size = Vector2(_backs_btn.preferred_width(), PillButton.TOUCH_MIN)
-	_sort_btn.position = Vector2(40.0, sz.y - 190.0)
-	_backs_btn.position = Vector2(40.0, sz.y - 108.0)
-	mau_button.position = Vector2(sz.x - 46.0 - MauButton.SIZE, sz.y - 40.0 - MauButton.SIZE)
-	me_badge.position = Vector2(44.0, sz.y - 238.0)
+	var pk := 1.0 if not big else BigLayout.PILL_H / PillButton.TOUCH_MIN
+	for b: PillButton in [_sort_btn, _backs_btn] + _act_btns.values():
+		b.font_size = UiFonts.px(BigLayout.PILL_FONT if big else 20)
+		b.big = pk
+	_sort_btn.size = Vector2(_sort_btn.preferred_width(), _sort_btn.touch_h())
+	_backs_btn.size = Vector2(_backs_btn.preferred_width(), _backs_btn.touch_h())
+	_sort_btn.position = BigLayout.sort_pos(sz) if big else Vector2(40.0, sz.y - 190.0)
+	_backs_btn.position = BigLayout.backs_pos(sz) if big else Vector2(40.0, sz.y - 108.0)
+	var ms := BigLayout.MAU if big else MauButton.SIZE
+	mau_button.custom_minimum_size = Vector2(ms, ms)
+	mau_button.size = Vector2(ms, ms)
+	mau_button.position = BigLayout.mau_pos(sz) if big else Vector2(sz.x - 46.0 - MauButton.SIZE, sz.y - 40.0 - MauButton.SIZE)
+	if not big:
+		me_badge.position = Vector2(44.0, sz.y - 238.0)
 	_update_avoid()
-	hint_bar.hint_y = sz.y - 207.0
-	var x := sz.x - 46.0
-	for key in ["pick", "accept", "challenge", "keep"]:
-		var b: PillButton = _act_btns[key]
-		b.size = Vector2(b.preferred_width(), PillButton.TOUCH_MIN)
-		x -= b.size.x
-		b.position = Vector2(x, sz.y - 300.0)
-		x -= 10.0
+	hint_bar.hint_y = BigLayout.hint_y(sz) if big else sz.y - 207.0
+	hint_bar.pivot_offset = Vector2(sz.x * 0.5, hint_bar.hint_y)
+	hint_bar.scale = Vector2.ONE * (BigLayout.HINT_SCALE if big else 1.0)
+	hint_bar.opaque = big
+	hint_bar.queue_redraw()
+	_layout_action_buttons(true)
 	_place_seats(false)
 	if _house != null:
 		_house.place_pile()
 	update_hand_target()
+
+
+# Großer Modus an/aus (Einstellung "grosser_modus", live): Plätze werden zu Listenzeilen, Stapel und Ablage riesig, Knöpfe größer,
+# ruhiger Hintergrund. Die Hand legt TableScreen über big_changed neu (BigLayout.hand_rect).
+func set_big(on: bool) -> void:
+	var changed := on != big
+	big = on
+	_bg.calm = on
+	_ring.visible = not on
+	for s in _seats:
+		var node: OpponentSeat = _seats[s]
+		node.compact = TableLayout.compact(_n) and not on
+		node.list_mode = on
+	me_badge.list_mode = on
+	me_badge.me_entry = on
+	me_badge.header_only = true
+	_list_slot.clear()
+	_list_target.clear()
+	_list_flip = -1.0
+	_layout()
+	_update_rays()                        # Joker-Strahlen passend zur neuen Kartengröße
+	if changed:
+		big_changed.emit(on)
+
+
+# Handbereich für TableScreen (normal wie bisher, groß mit größeren Karten)
+func hand_rect(sz: Vector2) -> Rect2:
+	if big:
+		return BigLayout.hand_rect(sz)
+	return Rect2(270.0, sz.y - 220.0, maxf(sz.x - 540.0, 400.0), 220.0)
 
 
 func table_center() -> Vector2:
@@ -393,7 +457,13 @@ func stake_point(seat: int) -> Vector2:
 	var sz := size if size.x > 10.0 else TableLayout.BASE
 	var node := seat_node(seat)
 	if node == null or (seat == my_seat and int(view.get("seat", -1)) >= 0):
+		if big:                           # großer Modus: über dem Nachziehstapel, links neben der Hand
+			return Vector2(BigLayout.hand_rect(sz).position.x + 30.0, BigLayout.hint_y(sz) - 90.0)
 		return TableLayout.own_stake_pos(sz)
+	if big:                               # großer Modus: links neben der Listenzeile
+		var bw := stake_card_w(seat)
+		var by := clampf(node.position.y, bw * CardView.ASPECT * 0.5 + 8.0, sz.y - bw * CardView.ASPECT * 0.5 - 40.0)
+		return Vector2(node.position.x - node.row_size.x * 0.5 - bw * 0.6 - 14.0, by)
 	var side := 1.0 if node.position.x <= _center.x + 40.0 else -1.0
 	var half := (OpponentSeat.BAR_W if node.compact else node.fan_max_w) * 0.5
 	var w := stake_card_w(seat)
@@ -406,7 +476,9 @@ func stake_point(seat: int) -> Vector2:
 func stake_card_w(seat: int) -> float:
 	var node := seat_node(seat)
 	if node == null or (seat == my_seat and int(view.get("seat", -1)) >= 0):
-		return 70.0
+		return 96.0 if big else 70.0
+	if big:
+		return 80.0
 	return clampf(node.card_w, 48.0, 64.0)
 
 
@@ -426,7 +498,8 @@ func update_hand_target() -> void:
 		hand.set("play_target_scale", stake_pile.card_w / maxf(cw, 1.0))
 	else:
 		hand.set("play_target", xf * _discard_pos)
-		hand.set("play_target_scale", 0.66)
+		var hw := HandLayout.card_width(float((hand.get("layout_rect") as Rect2).size.y)) if "layout_rect" in hand else HAND_CARD_W
+		hand.set("play_target_scale", pile_w / maxf(hw, 1.0) if big else 0.66)
 	if "spawn_from" in hand:
 		hand.set("spawn_from", xf * _draw_pos)
 
@@ -484,13 +557,15 @@ func apply_view(v: Dictionary) -> void:
 			_seat_layer.add_child(node)
 			_seats[s] = node
 		node.show_score = show_score
-		node.compact = TableLayout.compact(_n)
+		node.compact = TableLayout.compact(_n) and not big
+		node.list_mode = big
 		var fm := TableLayout.fan_metrics(_n)
 		node.card_w = fm.x
 		node.fan_max_w = fm.y
 		node.night = night
 		node.set_player(wanted[s], backs_visible)
-	_place_seats(false)
+	if not big:
+		_place_seats(false)
 	# Stapel, Ablage, Farbe, Richtung
 	_pile.set_pile(str(v.get("draw_back", "")), int(v.get("draw_count", 0)))
 	var top: Dictionary = v.get("top", {})
@@ -511,6 +586,8 @@ func apply_view(v: Dictionary) -> void:
 		var node: OpponentSeat = _seats[s]
 		node.set_turn(s == turn and not str(v.get("phase", "")) in ["round_over", "game_over"], s == next)
 	_apply_me(v, turn, next)
+	if big:
+		_update_list(true)
 	_apply_hints(v.get("hints", {}), turn)
 	if hand != null and hand.has_method("apply_view"):
 		hand.call("apply_view", v)
@@ -544,6 +621,16 @@ func _apply_me(v: Dictionary, turn: int, next: int) -> void:
 	_hand_halo_want = mine and turn == my_seat and playing
 	_hand_halo_cards = (v.get("hand", []) as Array).size()
 	_sync_hand_halo(0.0)
+	if _hand_halo_want and not _was_my_turn:
+		_notify_my_turn()
+	_was_my_turn = _hand_halo_want
+
+
+# „Du bist dran“ (Beta 1.1.1): Dran-Ton nach der Einstellung Spieltöne (AppSound), kurze Vibration nur mit "zug_vibration"
+func _notify_my_turn() -> void:
+	UiApp.sound("dran")
+	if HandView.truthy(UiApp.setting("zug_vibration", false)) and (OS.has_feature("mobile") or OS.get_name() == "Android"):
+		Input.vibrate_handheld(160)
 
 
 # Schein hinter der eigenen Hand: erst an, wenn Austeilen und andere Animationen fertig sind (Nutzerbefund 06.10.2026: beim
@@ -730,16 +817,20 @@ func hint_text(text: String) -> String:
 	return text
 
 
-func _layout_action_buttons() -> void:
+func _layout_action_buttons(all := false) -> void:
 	var sz := size if size.x > 10.0 else TableLayout.BASE
 	var x := sz.x - 46.0
+	var y := sz.y - 300.0
+	if big:                               # vor der Spielerliste, über der Hinweisleiste
+		x = BigLayout.list_rect(sz).position.x - 16.0
+		y = BigLayout.hint_y(sz) - 44.0 - BigLayout.PILL_H
 	for key in ["pick", "accept", "challenge", "keep"]:
 		var b: PillButton = _act_btns[key]
-		if not b.visible:
+		if not b.visible and not all:
 			continue
-		b.size = Vector2(b.preferred_width(), PillButton.TOUCH_MIN)
+		b.size = Vector2(b.preferred_width(), b.touch_h())
 		x -= b.size.x
-		b.position = Vector2(x, sz.y - 300.0)
+		b.position = Vector2(x, y)
 		x -= 10.0
 
 
@@ -756,8 +847,102 @@ func _player_name(seat: int) -> String:
 	return str(_player(seat).get("name", "Platz %d" % (seat + 1)))
 
 
+# ================================================================= Spielerliste (großer Modus)
+
+# Einträge der Liste: alle Plätze, dazu die eigene Zeile („Du“), wenn dieses Gerät einen Platz hat
+func _list_entries() -> Dictionary:
+	var out := {}
+	for s in _seats:
+		out[s] = _seats[s]
+	if me_badge.visible and int(view.get("seat", 0)) >= 0 and not out.has(my_seat):
+		out[my_seat] = me_badge
+	return out
+
+
+# Reihenfolge neu (wer dran ist oben, darunter der Nächste in Spielrichtung). animate: Zugwechsel rollt die Liste weiter (oben
+# raus, unten wieder rein); ein Richtungswechsel klappt die Zeilen kurz zu und zeigt die Reihenfolge andersherum.
+func _update_list(animate: bool) -> void:
+	var entries := _list_entries()
+	var seats: Array = entries.keys()
+	var n := seats.size()
+	if n == 0:
+		return
+	var turn := int(view.get("turn", -1))
+	var dir := -1 if int(view.get("dir", 1)) < 0 else 1
+	if turn < 0 or not entries.has(turn) or str(view.get("phase", "")) in ["round_over", "game_over"]:
+		turn = _list_turn if entries.has(_list_turn) else turn
+	var order := BigLayout.list_order(seats, turn, dir)
+	var reverse := animate and _list_dir != 0 and dir != _list_dir and n > 2 and not reduced
+	_list_turn = turn
+	_list_dir = dir
+	for s in _list_slot.keys():
+		if not entries.has(s):
+			_list_slot.erase(s)
+			_list_target.erase(s)
+	for i in n:
+		var s: int = order[i]
+		if not animate or not _list_slot.has(s):
+			_list_slot[s] = float(i)
+			_list_target[s] = float(i)
+		elif reverse:
+			_list_target[s] = float(i)      # Sprung zur Hälfte des Zuklappens
+		else:
+			_list_target[s] = BigLayout.roll_target(float(_list_slot[s]), i, n)
+	if reverse:
+		_list_flip = 0.0
+	_position_list()
+
+
+func _step_list(delta: float) -> void:
+	if _list_flip >= 0.0:
+		var before := _list_flip
+		_list_flip += delta / 0.6
+		if before < 0.5 and _list_flip >= 0.5:
+			for s in _list_target:
+				_list_slot[s] = float(_list_target[s])
+		if _list_flip >= 1.0:
+			_list_flip = -1.0
+	else:
+		var a := 1.0 - exp(-delta * (16.0 if reduced else 9.0))
+		for s in _list_target:
+			var cur := float(_list_slot.get(s, 0.0))
+			var to := float(_list_target[s])
+			_list_slot[s] = to if absf(to - cur) < 0.002 else lerpf(cur, to, a)
+	_position_list()
+
+
+func _position_list() -> void:
+	var entries := _list_entries()
+	var n := entries.size()
+	var sz := size if size.x > 10.0 else TableLayout.BASE
+	var rows := BigLayout.list_rows(sz, n)
+	var k := int(rows["k"])
+	var fy := absf(cos(_list_flip * PI)) if _list_flip >= 0.0 else 1.0
+	for s in entries:
+		var node: OpponentSeat = entries[s]
+		var w := BigLayout.wrap(float(_list_slot.get(s, 0.0)), n)
+		# verdeckte Zeilen liegen unter der letzten sichtbaren (Flüge zu ihnen enden am Listenende)
+		var wy := minf(w, float(k) - 0.5)
+		node.position = Vector2(float(rows["x"]), BigLayout.row_y(wy, rows))
+		node.row_size = Vector2(float(rows["w"]), BigLayout.row_h(w, rows))
+		node.modulate.a = BigLayout.row_alpha(w, n, k)
+		if not is_equal_approx(node.flip_y, fy):
+			node.flip_y = fy
+			node.queue_redraw()
+
+
+# Stelle eines Platzes in der Liste (0 = oben, wer dran ist); -1 = nicht in der Liste (Tests)
+func list_index(seat: int) -> int:
+	if not _list_target.has(seat):
+		return -1
+	return posmod(roundi(float(_list_target[seat])), maxi(_list_entries().size(), 1))
+
+
 func _place_seats(animate: bool) -> void:
 	if _n <= 0:
+		return
+	if big:
+		_update_list(animate)
 		return
 	var sz := size if size.x > 10.0 else TableLayout.BASE
 	var pos := TableLayout.seat_positions(_n, my_seat, sz)
@@ -802,7 +987,7 @@ func _set_top(face: String, id: int) -> void:
 
 func _push_discard(face: String, id: int) -> CardView:
 	var c := CardView.new()
-	c.width = CARD_W
+	c.width = pile_w
 	c.setup(id, face, "", true)
 	var k := _discard.size() + face.hash()
 	c.rotation = deg_to_rad(float(posmod(k * 37, 15) - 7))
@@ -965,7 +1150,7 @@ func _tap(p: Vector2) -> bool:
 		if _gamble_pressable():
 			press_gamble()
 		return true
-	if Rect2(_draw_pos - Vector2(CARD_W, CARD_W * 1.6) * 0.62, Vector2(CARD_W, CARD_W * 1.6) * 1.24).has_point(wp):
+	if Rect2(_draw_pos - Vector2(pile_w, pile_w * 1.6) * 0.62, Vector2(pile_w, pile_w * 1.6) * 1.24).has_point(wp):
 		if _pile.highlight and not input_locked:
 			_emit_action({"a": "draw"})
 			return true
@@ -1129,7 +1314,7 @@ func _ev_play(ev: Dictionary) -> float:
 	var face := str(ev.get("face", ""))
 	var id := int(ev.get("card", -1))
 	var dur := _d(0.42)
-	var start := {"pos": _center, "rot": 0.0, "width": CARD_W * 0.6, "key": face}
+	var start := {"pos": _center, "rot": 0.0, "width": pile_w * 0.6, "key": face}
 	if seat == my_seat:
 		start = {"pos": _hand_point(), "rot": 0.0, "width": HAND_CARD_W, "key": face}
 		if hand != null and hand.has_method("take_card"):
@@ -1150,7 +1335,7 @@ func _ev_play(ev: Dictionary) -> float:
 	var k := _discard.size() + 1 + face.hash()
 	var to_rot := deg_to_rad(float(posmod(k * 37, 15) - 7))
 	var flip_to := face if str(start["key"]) != face else ""
-	fx.fly_card(str(start["key"]), start["pos"], float(start["rot"]), float(start["width"]), _discard_pos, to_rot, CARD_W, dur,
+	fx.fly_card(str(start["key"]), start["pos"], float(start["rot"]), float(start["width"]), _discard_pos, to_rot, pile_w, dur,
 		{"flip_to": flip_to, "on_land": func() -> void: _land(face, id, seat)})
 	_last_player = seat
 	_jagd_armed = face.ends_with("_farbjagd")
@@ -1168,7 +1353,7 @@ func _land(face: String, id: int, seat: int) -> void:
 	var col := CardTextures.color_of(face)
 	var dark := face.begins_with("dunkel")
 	var tint := UiPalette.glow(col) if col != "" else (UiPalette.MOON if dark else UiPalette.CREAM)
-	fx.land_burst(_discard_pos, tint, dark, CARD_W * 0.55)
+	fx.land_burst(_discard_pos, tint, dark, pile_w * 0.55)
 	UiApp.sound("karte")
 	if seat == my_seat:
 		UiApp.vibrate(15, 0.5)
@@ -1238,7 +1423,7 @@ func _ev_draw(ev: Dictionary, penalty: bool) -> float:
 		var nxt := fly_keys[i + 1] if i + 1 < count else final_back
 		var left := maxi(_pile.count - i - 1, 0)
 		var take := func() -> void: _pile.set_pile(nxt, left)
-		fx.fly_card(key, _draw_pos, 0.0, CARD_W, dest, 0.0, to_w, fly, {"flip_to": flip_to, "delay": t, "on_land": land})
+		fx.fly_card(key, _draw_pos, 0.0, pile_w, dest, 0.0, to_w, fly, {"flip_to": flip_to, "delay": t, "on_land": land})
 		var tw := create_tween()
 		tw.tween_interval(t + 0.01)
 		tw.tween_callback(take)
@@ -1302,7 +1487,7 @@ func _ev_deal(ev: Dictionary) -> float:
 			var w := HAND_CARD_W * 0.6 if s == my_seat else (node.card_w if node != null else 60.0)
 			if node != null:
 				dest = _world.to_local(node.fan_global_center())
-			fx.fly_card(_pile.back_key if _pile.back_key != "" else CardTextures.BACK, _draw_pos, 0.0, CARD_W, dest, 0.0, w, fly, {"delay": t, "arc": 30.0})
+			fx.fly_card(_pile.back_key if _pile.back_key != "" else CardTextures.BACK, _draw_pos, 0.0, pile_w, dest, 0.0, w, fly, {"delay": t, "arc": 30.0})
 			t += step
 	return t + fly
 
@@ -1318,7 +1503,7 @@ func _ev_flip_surprise(ev: Dictionary) -> float:
 		if face.ends_with("_" + kind):
 			_plus_armed = int(kind.right(1))
 	var col := Color("#FF7FCF") if night > 0.5 else UiPalette.ALERT
-	fx.stamp(_discard_pos + Vector2(0, -CARD_W * 0.95), "Flip-Überraschung!", col, 34, 0.75)
+	fx.stamp(_discard_pos + Vector2(0, -minf(pile_w * 0.95, _discard_pos.y - 60.0)), "Flip-Überraschung!", col, 34, 0.75)
 	if not reduced:
 		fx.ring_wave(_discard_pos, col, 30.0, 170.0, _d(0.5), 7.0)
 	UiApp.vibrate(20, 0.4)
@@ -1490,7 +1675,7 @@ func show_mau(seat: int, big := false, variant := "") -> TableEffects.MauBubbleF
 	var b := TableEffects.MauBubbleFx.new()
 	b.variant = v
 	b.night = night
-	b.k = 0.86 if TableLayout.compact(_n) else 1.0
+	b.k = 1.2 if big else (0.86 if TableLayout.compact(_n) else 1.0)
 	b.accent = UiPalette.avatar(seat)
 	b.seed_v = _mau_rng.randi()
 	var center := mau_place(sp, b.extent(), b.k, seat)
@@ -1508,7 +1693,7 @@ func mau_speaker(seat: int) -> Dictionary:
 	var node := seat_node(seat)
 	if node != null:
 		var p := to_table * node.avatar_global()
-		var r := OpponentSeat.AVATAR_R_COMPACT if node.compact else OpponentSeat.AVATAR_R
+		var r := node.avatar_radius()
 		var right := (to_table * node.to_global(Vector2(float(node.get("_header_w")) * 0.5, 0.0))).x - p.x
 		return {"pos": p, "r": r + 3.0, "right": maxf(right, r)}
 	if mau_button.visible and mau_button.is_inside_tree():
@@ -1566,6 +1751,18 @@ func mau_place(sp: Dictionary, ext: Rect2, k := 1.0, seat := -1) -> Vector2:
 # Flächen, die eine Mau-Blase möglichst frei lässt: die anderen Plätze (Kopfzeile und Fächer), die Ablage, der Mau-Knopf
 func _mau_avoid(seat: int) -> Array[Rect2]:
 	var out: Array[Rect2] = []
+	var dh := pile_w * 466.0 / 300.0
+	if big:                               # großer Modus: die anderen Listenzeilen und die obere Hälfte der Ablage
+		var entries := _list_entries()
+		for s in entries:
+			var e: OpponentSeat = entries[s]
+			if s != seat and e.modulate.a > 0.5:
+				var lr := e.list_rect()
+				out.append(Rect2(_world.transform * (e.position + lr.position), lr.size))
+		out.append(Rect2(_world.transform * _discard_pos - Vector2(pile_w * 0.5, dh * 0.5), Vector2(pile_w, dh * 0.5)))
+		if seat != my_seat and mau_button.visible:
+			out.append(Rect2(mau_button.position, mau_button.size))
+		return out
 	for s in _seats:
 		if s == seat:
 			continue
@@ -1576,8 +1773,7 @@ func _mau_avoid(seat: int) -> Array[Rect2]:
 		var w := maxf(hw, node.fan_max_w * 0.8)
 		var h := r * 2.0 + 8.0 + (44.0 if node.compact else node.card_w * 2.0)
 		out.append(Rect2(p.x - w * 0.5, p.y - r - 4.0, w, h))
-	var dh := CARD_W * 466.0 / 300.0
-	out.append(Rect2(_world.transform * _discard_pos - Vector2(CARD_W * 0.6, dh * 0.6), Vector2(CARD_W * 1.2, dh * 1.2)))
+	out.append(Rect2(_world.transform * _discard_pos - Vector2(pile_w * 0.6, dh * 0.6), Vector2(pile_w * 1.2, dh * 1.2)))
 	if seat != my_seat and mau_button.visible:
 		out.append(Rect2(mau_button.position, mau_button.size))
 	return out
@@ -1775,6 +1971,8 @@ func is_flipping() -> bool:
 
 
 func _process(delta: float) -> void:
+	if big:
+		_step_list(delta)
 	if _hand_halo_want or _hand_halo.visible:
 		_sync_hand_halo(delta)
 	if _shake > 0.0 and not reduced:
@@ -1807,11 +2005,20 @@ class PileView:
 			queue_redraw()
 	var _time := 0.0
 	var _riffle := 0.0
+	var w := TableView.CARD_W            # Kartenbreite (großer Modus: BigLayout.pile_w, dann kräftiger Rand)
+	var _label: Node2D
 
 	func _init() -> void:
 		top = CardView.new()
 		top.width = TableView.CARD_W
 		add_child(top)
+
+	func set_width(v: float) -> void:
+		if is_equal_approx(v, w):
+			return
+		w = v
+		top.width = v
+		queue_redraw()
 
 	func set_pile(key: String, n: int) -> void:
 		count = n
@@ -1845,7 +2052,6 @@ class PileView:
 			queue_redraw()
 
 	func _draw() -> void:
-		var w := TableView.CARD_W
 		var h := w * 466.0 / 300.0
 		var dark := back_key.begins_with("dunkel") or back_key == CardTextures.BACK
 		var layers := clampi(int(ceil(count / 12.0)), 0, 4)
@@ -1867,30 +2073,65 @@ class PileView:
 			e.set_border_width_all(3)
 			e.set_corner_radius_all(int(w * 0.07))
 			draw_style_box(e, Rect2(-w * 0.5, -h * 0.5, w, h))
+		if w > 200.0:                    # großer Modus: kräftiger Rand um den Stapel
+			var o := StyleBoxFlat.new()
+			o.draw_center = false
+			o.border_color = UiPalette.CREAM if night > 0.5 else UiPalette.INK
+			o.set_border_width_all(5)
+			o.set_corner_radius_all(int(w * 0.075))
+			o.expand_margin_left = 4
+			o.expand_margin_right = 4
+			o.expand_margin_top = 4
+			o.expand_margin_bottom = 4
+			o.anti_aliasing = true
+			draw_style_box(o, Rect2(-w * 0.5, -h * 0.5, w, h))
 		if highlight:
 			var p := 0.5 + 0.5 * sin(_time * 4.0)
 			var g := StyleBoxFlat.new()
 			g.draw_center = false
 			g.border_color = Color(UiPalette.TURN, 0.55 + 0.35 * p)
-			g.set_border_width_all(4)
+			g.set_border_width_all(4 if w <= 200.0 else 9)
 			g.set_corner_radius_all(int(w * 0.09))
-			g.expand_margin_left = 7
-			g.expand_margin_right = 7
-			g.expand_margin_top = 7
-			g.expand_margin_bottom = 7
+			var em := 7 if w <= 200.0 else 12
+			g.expand_margin_left = em
+			g.expand_margin_right = em
+			g.expand_margin_top = em
+			g.expand_margin_bottom = em
 			g.anti_aliasing = true
 			draw_style_box(g, Rect2(-w * 0.5, -h * 0.5, w, h))
-		var f := UiFonts.text(700, 100.0)
+		if _label == null:
+			_label = Node2D.new()
+			add_child(_label)
+			_label.draw.connect(_draw_label)
+		_label.queue_redraw()
+
+	# Zahl der Karten: unter dem Stapel; im großen Modus groß oben auf dem Stapel (unten liegt die Hand)
+	func _draw_label() -> void:
+		var h := w * 466.0 / 300.0
+		var f := UiFonts.text(700 if w <= 200.0 else 800, 100.0)
 		var t := "Stapel · %d" % count
-		var sfs := UiFonts.size("hinweis")
-		var tw := f.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, sfs).x
-		draw_string(f, Vector2(-tw * 0.5, h * 0.5 + 12.0 + sfs * 0.75), t, HORIZONTAL_ALIGNMENT_LEFT, -1, sfs, UiPalette.ui_muted(night))
+		if w <= 200.0:
+			var sfs := UiFonts.size("hinweis")
+			var tw := f.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, sfs).x
+			_label.draw_string(f, Vector2(-tw * 0.5, h * 0.5 + 12.0 + sfs * 0.75), t, HORIZONTAL_ALIGNMENT_LEFT, -1, sfs, UiPalette.ui_muted(night))
+			return
+		var bfs := UiFonts.px(34)
+		var bw := f.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, bfs).x + 32.0
+		var bh := bfs + 18.0
+		var r := Rect2(w * 0.5 - bw - 16.0, -h * 0.5 + 22.0, bw, bh)   # rechts oben: der Eckindex links oben bleibt frei
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = UiPalette.CREAM if night > 0.5 else UiPalette.INK
+		sb.set_corner_radius_all(int(bh * 0.5))
+		sb.anti_aliasing = true
+		_label.draw_style_box(sb, r)
+		_label.draw_string(f, Vector2(r.position.x + 16.0, r.get_center().y + bfs * 0.36), t, HORIZONTAL_ALIGNMENT_LEFT, -1, bfs, UiPalette.INK if night > 0.5 else UiPalette.CREAM)
 
 
 class ColorRingView:
 	extends Node2D
 	# Farbring um die Ablage (Glühen in der aktuellen Farbe) und „+N“-Marke für aufgelaufene Ziehkarten
 	const R := 116.0
+	var card_size := Vector2.ZERO        # großer Modus: Kartenmaß der Ablage (Rahmen statt Ring)
 	var color_key := ""
 	var color := Color(1, 1, 1, 0)
 	var night := 0.0:
@@ -1923,14 +2164,42 @@ class ColorRingView:
 			queue_redraw(), 1.0, 0.0, 0.4)
 
 	func _draw() -> void:
-		if color.a > 0.0:
+		var big := card_size.x > 0.0
+		if color.a > 0.0 and big:
+			# großer Modus: kräftiger Rahmen in der aktuellen Farbe um die Ablagekarte statt des Rings
+			var r := Rect2(-card_size * 0.5, card_size)
+			for g in [[22.0, 0.10 + 0.08 * night], [12.0, 0.25]]:
+				var sb := StyleBoxFlat.new()
+				sb.draw_center = false
+				sb.border_color = Color(color, float(g[1]))
+				sb.set_border_width_all(int(g[0]))
+				sb.set_corner_radius_all(int(card_size.x * 0.08 + float(g[0])))
+				sb.expand_margin_left = float(g[0])
+				sb.expand_margin_right = float(g[0])
+				sb.expand_margin_top = float(g[0])
+				sb.expand_margin_bottom = float(g[0])
+				sb.anti_aliasing = true
+				draw_style_box(sb, r)
+			var edge := StyleBoxFlat.new()
+			edge.draw_center = false
+			edge.border_color = color
+			edge.set_border_width_all(8)
+			edge.set_corner_radius_all(int(card_size.x * 0.08 + 6.0))
+			edge.expand_margin_left = 7
+			edge.expand_margin_right = 7
+			edge.expand_margin_top = 7
+			edge.expand_margin_bottom = 7
+			edge.anti_aliasing = true
+			draw_style_box(edge, r)
+		elif color.a > 0.0:
 			draw_circle(Vector2.ZERO, R + 16.0, Color(color, 0.07 + 0.08 * night))
 			draw_arc(Vector2.ZERO, R + 6.0, 0.0, TAU, 96, Color(color, 0.22), 18.0, true)
 			draw_arc(Vector2.ZERO, R, 0.0, TAU, 96, color, 5.0, true)
 			draw_arc(Vector2.ZERO, R - 7.0, 0.0, TAU, 96, Color(color, 0.18), 10.0, true)
 		if pending > 0:
-			var c := Vector2(R * 0.78, -R * 0.78)
-			var s := 1.0 + 0.35 * sin(_pop * PI)
+			var k := 1.8 if big else 1.0
+			var c := Vector2(card_size.x * 0.5 - 10.0, -card_size.y * 0.5 + 10.0) if big else Vector2(R * 0.78, -R * 0.78)
+			var s := (1.0 + 0.35 * sin(_pop * PI)) * k
 			draw_circle(c, 30.0 * s, UiPalette.INK if night < 0.5 else Color("#FF7FCF"))
 			draw_circle(c, 26.0 * s, UiPalette.CREAM)
 			var f := UiFonts.text(800, 85.0)
@@ -1942,11 +2211,16 @@ class ColorRingView:
 
 class ColorMark:
 	extends Node2D
-	# Aktuelle Farbe zwischen den Stapeln: Formsymbol und Name (Farbe nie allein: Symbol + Wort)
+	# Aktuelle Farbe zwischen den Stapeln: Formsymbol und Name (Farbe nie allein: Symbol + Wort). Großer Modus: k > 1, auf einem
+	# kontrastreichen Schild neben der Ablage.
 	var color_key := ""
 	var night := 0.0:
 		set(v):
 			night = v
+			queue_redraw()
+	var k := 1.0:
+		set(v):
+			k = v
 			queue_redraw()
 	var _pop := 0.0
 
@@ -1964,13 +2238,27 @@ class ColorMark:
 			return
 		var s := 1.0 + 0.3 * sin(_pop * PI)
 		var col := UiPalette.glow(color_key)
-		var isz := 46.0 * s
+		var isz := 46.0 * s * k
 		var bg := UiPalette.NIGHT if night > 0.5 else UiPalette.PAPER
-		if night > 0.5:
-			draw_circle(Vector2(0, -16), 40.0 * s, Color(col, 0.16))
-		draw_texture_rect(UiIcons.symbol(color_key, 96, col, bg.lerp(col, 0.25)), Rect2(Vector2(-isz * 0.5, -16.0 - isz * 0.5), Vector2(isz, isz)), false)
 		var f := UiFonts.text(800, 100.0)
 		var t := UiPalette.color_name(color_key)
-		var cfs := UiFonts.size("text")
+		var cfs := int(UiFonts.size("text") * k)
 		var tw := f.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, cfs).x
-		draw_string(f, Vector2(-tw * 0.5, 22.0 + cfs * 0.45), t, HORIZONTAL_ALIGNMENT_LEFT, -1, cfs, UiPalette.ui_text(night))
+		var sy := -16.0 * k
+		var ty := 22.0 * k + cfs * 0.45
+		if k > 1.0:                          # Schild: hebt Symbol und Wort klar vom Hintergrund ab
+			var pw := maxf(isz, tw) + 40.0
+			var plate := Rect2(-pw * 0.5, sy - isz * 0.5 - 18.0, pw, ty - (sy - isz * 0.5 - 18.0) + 20.0)
+			var sb := StyleBoxFlat.new()
+			sb.bg_color = Color(bg, 0.94)
+			sb.border_color = col
+			sb.set_border_width_all(6)
+			sb.set_corner_radius_all(26)
+			sb.anti_aliasing = true
+			sb.shadow_color = Color(0, 0, 0, 0.25)
+			sb.shadow_size = 5
+			draw_style_box(sb, plate)
+		elif night > 0.5:
+			draw_circle(Vector2(0, -16), 40.0 * s, Color(col, 0.16))
+		draw_texture_rect(UiIcons.symbol(color_key, 128 if k > 1.0 else 96, col, bg.lerp(col, 0.25)), Rect2(Vector2(-isz * 0.5, sy - isz * 0.5), Vector2(isz, isz)), false)
+		draw_string(f, Vector2(-tw * 0.5, ty), t, HORIZONTAL_ALIGNMENT_LEFT, -1, cfs, UiPalette.ui_text(night))

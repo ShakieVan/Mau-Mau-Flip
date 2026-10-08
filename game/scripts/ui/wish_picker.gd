@@ -184,7 +184,7 @@ func _draw_fields() -> void:
 		var label := "×%d" % n
 		if s < 0.35:
 			continue
-		var fs := maxi(int(18 * s), 1)
+		var fs := maxi(int(UiFonts.px(18) * s), 1)
 		var lw := nf.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 		draw_string(nf, c + Vector2(-lw * 0.5, FIELD * 0.36 * s), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, sym_col)
 
@@ -219,22 +219,25 @@ func _draw_wheel() -> void:
 		var sym_col := UiPalette.CREAM if UiPalette.fill(col).get_luminance() < 0.6 else UiPalette.INK
 		draw_texture_rect(UiIcons.symbol(col, 96, sym_col, UiPalette.fill(col)), Rect2(mid - Vector2(26, 38) * o, Vector2(52, 52) * o), false)
 		var label := "%s ×%d" % [UiPalette.color_name(col), int(counts.get(col, 0))]
-		var fs := maxi(int(17 * o), 1)
+		var fs := maxi(int(UiFonts.px(17) * o), 1)
 		var lw := nf.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 		draw_string(nf, mid + Vector2(-lw * 0.5, 34.0 * o), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, sym_col)
 	if title != "":
 		var qf := UiFonts.title(800, true, 100.0, 36.0)
-		var qw := qf.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, 34).x
+		var qs := UiFonts.px(34)
+		var qw := qf.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, qs).x
 		var qy := c.y - (WHEEL_R + 60.0) * o
-		var qr := Rect2(Vector2(c.x - qw * 0.5 - 24.0, qy - 40.0), Vector2(qw + 48.0, 56.0))
+		var qr := Rect2(Vector2(c.x - qw * 0.5 - 24.0, qy - qs - 6.0), Vector2(qw + 48.0, qs + 22.0))
 		var qb := StyleBoxFlat.new()
 		qb.bg_color = Color(UiPalette.CREAM, 0.95)
 		qb.set_corner_radius_all(28)
 		draw_style_box(qb, qr)
-		draw_string(qf, Vector2(c.x - qw * 0.5, qy), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 34, UiPalette.INK)
+		draw_string(qf, Vector2(c.x - qw * 0.5, qy), title, HORIZONTAL_ALIGNMENT_LEFT, -1, qs, UiPalette.INK)
 	draw_circle(c, (WHEEL_INNER - 10.0) * o, UiPalette.CREAM)
 	var tf := UiFonts.title(800, true, 100.0, 36.0)
+	var ts := maxi(int(UiFonts.px(22) * o), 1)
+	var k := UiFonts.px(22) / 22.0
 	for line in [["Farbe", -6.0], ["wählen", 20.0]]:
 		var t: String = line[0]
-		var tw := tf.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, 22).x
-		draw_string(tf, c + Vector2(-tw * 0.5, float(line[1]) * o), t, HORIZONTAL_ALIGNMENT_LEFT, -1, maxi(int(22 * o), 1), UiPalette.INK)
+		var tw := tf.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, ts).x
+		draw_string(tf, c + Vector2(-tw * 0.5, float(line[1]) * k * o), t, HORIZONTAL_ALIGNMENT_LEFT, -1, ts, UiPalette.INK)

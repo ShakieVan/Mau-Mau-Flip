@@ -279,6 +279,26 @@ func pruefe_tag_details(css: String, tisch: String) -> void:
 		"Flip: ab der Mitte stehen Änderungen (z. B. wer dran ist) sofort in den Farben der neuen Seite; Layout-Aufrufe wechseln die Seite nicht")
 
 
+# Beta 1.1.1: großer Modus (grosser_modus) und „Bei deinem Zug: Vibration“ (zug_vibration), je Gerät, Standard aus
+func pruefe_111(css: String, tisch: String, autotest: String, app: String, seite: String) -> void:
+	var hand := read_web("hand.js")
+	check(app.contains("grosser_modus: false, zug_vibration: false") and app.contains("Speicher.get('grosser_modus', false)")
+			and app.contains("Speicher.get('zug_vibration', false)") and app.contains("params.get('gross')")
+			and seite.contains("data-set=\"grosser_modus\"") and seite.contains("data-set=\"zug_vibration\"") and seite.contains("class=\"schrift-wahl gross-wahl\"")
+			and seite.contains("id=\"menue-gross-tipp\""),
+		"Großer Modus und Zug-Vibration: Einstellungen im Menü und auf der Startseite, localStorage, ?gross=1")
+	check(tisch.contains("setzeGross(an) {") and tisch.contains("_geometrieGross() {") and tisch.contains("this.handF = an ? 1.3 : 1")
+			and hand.contains("_zu(cx, cy)") and hand.contains("this.t.handF") and css.contains("#tisch.gross #hand { transform: scale(1.3)")
+			and css.contains("#tisch.gross .gg.sprung") and css.contains("#tisch.gross .himmel .sterne") and css.contains("body.reduziert #tisch.gross .gg"),
+		"Großer Modus: riesiger Stapel und Ablage, Hand ×1,3, rollende Spielerliste, ruhiger Grund, reduzierte Effekte")
+	check(tisch.contains("const blaseLinks = this.gross ||") and tisch.contains("if (this.gross) return { x: g.px - this.g.liste.w / 2 - 60")
+			and tisch.contains("w: t.g.sw }") and tisch.contains("w: t.g.aw,") and not tisch.contains("w: 118 }"),
+		"Großer Modus: Blasen, Einsatz und Flüge docken an Liste, Stapel und Ablage an")
+	check(tisch.contains("this.app.zugVibration()") and app.contains("zugVibration() {") and app.contains("!this.einstellungen.zug_vibration || !navigator.vibrate")
+			and autotest.contains("Großer Modus: Spieler am Zug steht nicht oben"),
+		"Bei deinem Zug: eigene Vibrations-Einstellung; Selbsttest prüft die Liste im großen Modus")
+
+
 func run() -> void:
 	var t0 := Time.get_ticks_msec()
 	web_dir = ProjectSettings.globalize_path("res://").path_join("../webclient").simplify_path()
@@ -383,6 +403,7 @@ func run() -> void:
 	pruefe_tag_nacht(css, tisch)
 	pruefe_014(css, tisch, karten, mock, autotest, app, seite)
 	pruefe_102(css, karten, app, seite)
+	pruefe_111(css, tisch, autotest, app, seite)
 	# Pegel der Spieltöne relativ zum Mau-Ton (normal) wie in der App (AppSound.TON_DB gegen MAU_DB), auf 0,5 dB genau
 	var stufen := RegEx.create_from_string("STUFEN_SPIEL = \\{ aus: 0, leise: ([0-9.]+), normal: ([0-9.]+) \\}").search(ton)
 	var pegel := []

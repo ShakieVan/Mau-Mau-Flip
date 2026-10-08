@@ -111,6 +111,7 @@
     constructor(root, app) {
       this.root = root; this.app = app;
       this.s = 1; this.W = 1600; this.H = H0; this.ox = 0; this.oy = 0;
+      this.gross = false; this.handF = 1;   // großer Modus (persönliche Einstellung grosser_modus): setzeGross()
       this.v = null;
       this.ablageVerlauf = [];   // [{id, face}] die letzten Karten der Ablage (für den kleinen Stapel)
       this.gegnerEls = new Map();
@@ -129,6 +130,7 @@
       this.ring = el('div', 'richtung');   // Richtungs-Plattform, Inhalt aus plattform() in _geometrie (hängt von der Bühnenbreite ab)
       b.appendChild(this.ring);
       this.gegnerBox = el('div', 'gegner-box'); b.appendChild(this.gegnerBox);
+      this.listeKopf = el('div', 'liste-kopf', '<i class="dreh">↻</i><span>Reihenfolge</span>'); this.listeKopf.id = 'liste-kopf'; b.appendChild(this.listeKopf);
       this.stapel = el('div', 'stapel'); b.appendChild(this.stapel);
       this.stapel.innerHTML = '<div class="leer"></div>';
       this.stapelUnter = [K().element('rueckseite', 118, 'unter u2'), K().element('rueckseite', 118, 'unter u1')];
@@ -211,7 +213,7 @@
         if (!g) return;
         e.preventDefault();
         if (k) this.app.aktion({ a: 'catch', target: +g.dataset.seat });
-        else this.app.gegnerAnsicht(+g.dataset.seat);
+        else if (!this.v || +g.dataset.seat !== this.v.seat) this.app.gegnerAnsicht(+g.dataset.seat);   // eigene Zeile (großer Modus): nichts
       });
     }
     // langes Drücken auf Stapel/Ablage → Kartenhilfe
@@ -241,11 +243,23 @@
       const r = this.root.getBoundingClientRect();
       return { x: (cx - r.left - this.ox) / this.s, y: (cy - r.top - this.oy) / this.s };
     }
+    // Großer Modus an/aus (persönliche Einstellung je Gerät): #tisch.gross, Hand um handF vergrößert, eigene Geometrie
+    setzeGross(an) {
+      an = !!an;
+      if (an === this.gross) return;
+      this.gross = an; this.handF = an ? 1.3 : 1;
+      this.root.classList.toggle('gross', an);
+      for (const g of this.gegnerEls.values()) { g.sig = ''; g.k = undefined; g.e.style.transform = ''; }
+      this._geometrie();
+      if (this.v) this.zeige(this.v, true);
+    }
     _geometrie() {
+      if (this.gross) return this._geometrieGross();
       const W = this.W, H = this.H;
       const cx = W / 2, cy = Math.round(H * 0.446);
-      this.g = { cx, cy, stapel: { x: cx - 177, y: cy }, ablage: { x: cx + 177, y: cy } };
+      this.g = { cx, cy, stapel: { x: cx - 177, y: cy }, ablage: { x: cx + 177, y: cy }, sw: 118, aw: 124 };
       const setz = (e, x, y) => { e.style.left = x + 'px'; e.style.top = y + 'px'; };
+      this.root.style.removeProperty('--gk');
       setz(this.ring, cx, cy);
       const pw = Math.round(Math.min(330, W * 0.21));
       if (this.ring.dataset.w !== String(pw)) { this.ring.innerHTML = plattform(W); this.ring.dataset.w = String(pw); }
@@ -262,6 +276,36 @@
       this.knRueck.style.top = (H - 88) + 'px';
       this.ichZahl.style.top = (H - 222) + 'px';
       setz(this.ichKranz, cx, H);
+    }
+    // Großer Modus: links riesig Stapel und Ablage (Hand darf die untere Hälfte überdecken), daneben die Farbe groß, rechts die
+    // Spielerliste (wer dran ist, oben). Stapel und Ablage werden per --gk vergrößert (style.css #tisch.gross).
+    _geometrieGross() {
+      const W = this.W, H = this.H, LW = 330, rand = 18, links = 116;
+      const frei = W - LW - rand - 30 - links;
+      const VH = K().VERHAELTNIS;
+      const kw = Math.max(150, Math.min(360, (frei - 40 - 200) / 2.05, (H * 0.8) / VH));
+      const gk = kw / 118, aw = 124 * gk, kh = kw * VH;
+      const cy = Math.round(18 + kh / 2), sx = links + kw / 2, ax = sx + kw / 2 + 40 + aw / 2;
+      const mx = Math.round((W - LW - rand) / 2), cx = W / 2;
+      this.g = { cx, cy, mx, stapel: { x: sx, y: cy }, ablage: { x: ax, y: cy }, sw: kw, aw };
+      const setz = (e, x, y) => { e.style.left = x + 'px'; e.style.top = y + 'px'; };
+      this.root.style.setProperty('--gk', gk.toFixed(3));
+      setz(this.stapel, sx, cy);
+      setz(this.stapelZahl, sx, Math.round(cy + kh * 0.08));   // als Schild auf dem Stapel (unten liegt die Hand)
+      setz(this.farbe, Math.min(ax + aw / 2 + 105, W - LW - rand - 90), Math.round(cy - kh * 0.2));
+      setz(this.ablage, ax, cy);
+      setz(this.seiten, ax + aw / 2 + 40, cy);
+      setz(this.leiste, mx, H - 258);
+      setz(this.farbwahl, ax, cy);
+      setz(this.automat, mx, cy + 10);
+      this.g.einsatz = { x: Math.max(120, mx - 340), y: H - 300 };
+      this.knSort.style.top = (H - 178) + 'px';
+      this.knRueck.style.top = (H - 96) + 'px';
+      setz(this.ichKranz, cx, H);
+      // Spielerliste: Zeilen ab oben (unter dem Ton-Knopf) bis über den Mau-Knopf
+      const top = 150, zeile = 80, unten = H - 250;
+      this.g.liste = { x: W - rand - LW / 2, top, zeile, cap: Math.max(2, Math.floor((unten - top) / zeile)), w: LW };
+      setz(this.listeKopf, W - rand - LW / 2, top - 22);
     }
     // Position eines Platzes (Bühnenkoordinaten) für Flüge und Abzeichen
     platzPos(seat) {
@@ -380,7 +424,7 @@
       else this.hand.setze(reihe, { spielbar: hervor ? markiert : [], dran: hervor && aktiv });
       if (!nurLayout && alt && alt.turn !== ich && v.turn === ich && dran) {
         M.Ton.spiele('dran');
-        if (this.app.vibrieren) this.app.vibrieren(25);
+        if (this.app.zugVibration) this.app.zugVibration();   // eigene Einstellung „Bei deinem Zug: Vibration“
       }
     }
     // Hinweis des Gastgebers; ohne „Spielbare Karten hervorheben“ verrät er nicht, dass nichts passt (sonst wäre das die
@@ -404,36 +448,67 @@
       const ich = v.seat;
       const spieler = (v.players || []).slice().sort((a, b) => a.seat - b.seat);
       const n = spieler.length;
-      const kompakt = n >= 7;
+      const gross = this.gross;
+      const kompakt = gross || n >= 7;
       const h = v.hints || {};
       const fangbar = new Set(h.catch || []);
       const da = new Set();
-      spieler.forEach(p => {
-        if (p.seat === ich) return;
+      const laeuft = v.phase !== 'round_over' && v.phase !== 'game_over';
+      // Großer Modus: Liste in Spielrichtung ab dem Spieler, der dran ist (k = 0 oben); eigene Zeile „Du“ gehört dazu
+      const dir = v.dir === -1 ? -1 : 1;
+      const ti = Math.max(0, spieler.findIndex(p => p.seat === v.turn));
+      const richtungNeu = this._listeDir !== undefined && this._listeDir !== dir;
+      this._listeDir = dir;
+      if (gross) {
+        this.listeKopf.classList.toggle('gegen', dir === -1);
+        if (richtungNeu && !this.app.effekteReduziert()) { this.listeKopf.classList.remove('wendet'); void this.listeKopf.offsetWidth; this.listeKopf.classList.add('wendet'); }
+      }
+      spieler.forEach((p, i) => {
+        if (p.seat === ich && !gross) return;
         da.add(p.seat);
         let g = this.gegnerEls.get(p.seat);
         if (!g) {
           const e = el('div', 'gg');
           e.dataset.seat = p.seat;
-          e.innerHTML = '<i class="kranz"></i><div class="denk" aria-hidden="true"><i></i><i></i><b>…</b></div><div class="kopf"><div class="ava"></div><div class="name"></div><div class="zahl"></div></div><div class="faecher"></div><div class="marken"></div><button class="erwischen">Erwischt!</button>';
+          e.innerHTML = '<i class="kranz"></i><div class="denk" aria-hidden="true"><i></i><i></i><b>…</b></div><div class="kopf"><div class="ava"></div><div class="name"></div><div class="zahl"></div><span class="zug"></span></div><div class="faecher"></div><div class="marken"></div><button class="erwischen">Erwischt!</button>';
           this.gegnerBox.appendChild(e);
           g = { e, sig: '' };
           this.gegnerEls.set(p.seat, g);
         }
-        const rel = (p.seat - ich + n) % n;
-        const pos = this._gegnerPos(rel, n);
-        g.px = pos.x; g.py = pos.y; g.kompakt = kompakt;
         const e = g.e;
-        e.classList.toggle('kompakt', kompakt);
-        e.style.left = pos.x + 'px'; e.style.top = pos.y + 'px';
-        e.classList.toggle('dran', v.turn === p.seat && v.phase !== 'round_over' && v.phase !== 'game_over');
+        g.kompakt = kompakt;
+        e.classList.toggle('kompakt', kompakt && !gross);
+        e.classList.toggle('ich', p.seat === ich);
+        if (gross) {
+          const L = this.g.liste, k = ((i - ti) * dir % n + n) % n;
+          const sprung = g.k !== undefined && k > g.k && !richtungNeu;   // oben raus, unten wieder rein (endlose Liste)
+          g.k = k;
+          const y = L.top + (k + 0.5) * L.zeile;
+          g.px = L.x; g.py = L.top + (Math.min(k, L.cap - 1) + 0.5) * L.zeile - 26;   // Unsichtbare docken an der letzten Zeile an
+          e.style.left = L.x + 'px'; e.style.top = '0px';
+          if (sprung) {
+            e.classList.add('sprung');
+            e.style.transform = 'translateY(' + (y + L.zeile) + 'px)';
+            void e.offsetWidth;
+            e.classList.remove('sprung');
+          }
+          e.style.transform = 'translateY(' + y + 'px)';
+          e.classList.toggle('aus', k >= L.cap);
+          e.querySelector('.zug').textContent = !laeuft || n < 2 ? '' : (k === 0 ? (p.seat === ich ? 'Du bist dran' : 'ist dran') : (k === 1 ? 'gleich dran' : ''));
+        } else {
+          const pos = this._gegnerPos((p.seat - ich + n) % n, n);
+          g.px = pos.x; g.py = pos.y;
+          e.style.left = pos.x + 'px'; e.style.top = pos.y + 'px'; e.classList.remove('aus');
+        }
+        e.classList.toggle('dran', v.turn === p.seat && laeuft);
         e.classList.toggle('weg', p.connected === false);
         e.classList.toggle('fangbar', fangbar.has(p.seat));
         const ava = e.querySelector('.ava');
         ava.textContent = (p.name || '?').trim().charAt(0).toUpperCase();
         ava.style.background = AVA_FARBEN[p.seat % AVA_FARBEN.length];
-        e.querySelector('.name').textContent = p.name || ('Platz ' + (p.seat + 1));
-        e.querySelector('.zahl').textContent = p.count;
+        e.querySelector('.name').textContent = p.seat === ich ? 'Du' : (p.name || ('Platz ' + (p.seat + 1)));
+        const zahl = p.seat === ich ? (v.hand || []).length : p.count;
+        e.querySelector('.zahl').textContent = zahl;
         let marken = '';
         if (p.mau) marken += '<span class="marke mau">Mau!</span>';
         if (p.kind === 'bot' && !kompakt) marken += '<span class="marke">Computer</span>';
@@ -442,7 +517,8 @@
         else if (p.connected === false) marken += '<span class="marke weg">' + ICON_GETRENNT + 'getrennt</span>';
         const mk = e.querySelector('.marken');
         if (mk.innerHTML !== marken) mk.innerHTML = marken;
-        // Fächer der sichtbaren Rückseiten (sortiert vom Gastgeber) oder neutrale Rückseiten
+        // Fächer der sichtbaren Rückseiten (sortiert vom Gastgeber) oder neutrale Rückseiten; im großen Modus keiner (sparsam)
+        if (gross) { if (g.sig !== 'gross') { g.sig = 'gross'; e.querySelector('.faecher').innerHTML = ''; } return; }
         const backs = (p.backs && p.backs.length) ? p.backs : new Array(Math.min(p.count | 0, 14)).fill('rueckseite');
         const sig = backs.join(',') + '|' + kompakt + '|' + p.count;
         if (g.sig !== sig) { g.sig = sig; this._faecher(e.querySelector('.faecher'), backs, kompakt, p.count); }
@@ -523,6 +599,7 @@
       const vor = this.durch;
       this.durch = n;
       if (n === 0) { this.ablageKarten.dataset.sig = ''; this._ablageZeichnen(); } else this._durchZeichnen();
+      this.farbe.style.visibility = this.gross && n ? 'hidden' : '';   // großer Modus: Seitenstapel liegt über der Farbanzeige
       this._seitenZeichnen(n > vor);
     }
     _durchGesicht(e) { return e && e.f && !e.h ? e.f : 'rueckseite'; }
@@ -657,6 +734,7 @@
       if (!this.v || seat === this.v.seat) return { x: this.g.einsatz.x, y: this.g.einsatz.y, w: 56 };
       const g = this.gegnerEls.get(seat);
       if (!g) return { x: this.g.cx, y: 80, w: 46 };
+      if (this.gross) return { x: g.px - this.g.liste.w / 2 - 60, y: g.py + 26, w: 44 };   // links neben der Listenzeile
       const rechts = g.px <= this.g.cx + 40;
       return { x: g.px + (rechts ? 1 : -1) * (g.kompakt ? 106 : 130), y: g.py + 30, w: g.kompakt ? 40 : 48 };
     }
@@ -688,12 +766,17 @@
     }
 
     /* ---------- Kartentausch: eigene Hand wandert zum Nächsten, die neue kommt vom Vorigen ---------- */
+    // Transformation der Hand: um (ox, oy) auf sc verkleinert und um (dx, dy) verschoben; handF = Grundmaßstab (großer Modus)
+    _handTf(dx, dy, sc) {
+      const ox = this.g.cx, oy = this.H - 110;
+      return 'translate(' + dx.toFixed(0) + 'px,' + dy.toFixed(0) + 'px) translate(' + ox + 'px,' + oy + 'px) scale(' + sc + ') translate(' + (-ox) + 'px,' + (-oy) + 'px) scale(' + this.handF + ')';
+    }
     handWeg(ziel, dauer) {
       const h = this.hand.el, ox = this.g.cx, oy = this.H - 110;
       this._tauschLaeuft = true;
-      h.style.transformOrigin = ox + 'px ' + oy + 'px';
+      h.style.transformOrigin = '0 0';
       h.style.transition = 'transform ' + dauer + 'ms cubic-bezier(.5,0,.75,.45), opacity ' + dauer + 'ms ease-in';
-      h.style.transform = 'translate(' + ((ziel.x - ox) * 0.8).toFixed(0) + 'px,' + ((ziel.y - oy) * 0.8).toFixed(0) + 'px) scale(.3)';
+      h.style.transform = this._handTf((ziel.x - ox) * 0.8, (ziel.y - oy) * 0.8, 0.3);
       h.style.opacity = '0';
     }
     handRein(reihe, quelle, dauer) {
@@ -701,12 +784,12 @@
       this.hand.waehle(null);
       this.hand.setze(reihe, { spielbar: [], dran: false });
       h.style.transition = 'none';
-      h.style.transformOrigin = ox + 'px ' + oy + 'px';
-      h.style.transform = 'translate(' + ((quelle.x - ox) * 0.8).toFixed(0) + 'px,' + ((quelle.y - oy) * 0.8).toFixed(0) + 'px) scale(.3)';
+      h.style.transformOrigin = '0 0';
+      h.style.transform = this._handTf((quelle.x - ox) * 0.8, (quelle.y - oy) * 0.8, 0.3);
       h.style.opacity = '0';
       void h.offsetWidth;
       h.style.transition = 'transform ' + dauer + 'ms cubic-bezier(.2,.75,.3,1), opacity ' + Math.round(dauer * 0.6) + 'ms ease-out';
-      h.style.transform = 'translate(0,0) scale(1)';
+      h.style.transform = this._handTf(0, 0, 1);
       h.style.opacity = '1';
       return schlaf(dauer + 30).then(() => { this._tauschLaeuft = false; h.removeAttribute('style'); });
     }
@@ -852,7 +935,7 @@
       const g = this.gegnerEls.get(seat);
       const p = g ? { x: g.px, y: g.py } : this.platzPos(seat);
       const oben = p.y < this.H * 0.32, rechts = p.x > this.g.cx + 60, links = p.x < this.g.cx - 60;
-      const blaseLinks = oben ? links : rechts;      // Blase links vom Kopf (Schwanz zeigt nach rechts)
+      const blaseLinks = this.gross || (oben ? links : rechts);   // Blase links vom Kopf (Schwanz nach rechts); großer Modus: Liste rechts, Blase immer links
       const kopf = g && g.e.querySelector('.kopf');
       if (kopf && kopf.getBoundingClientRect().width > 0) {
         const r = kopf.getBoundingClientRect();
@@ -945,7 +1028,7 @@
           const back = t.v.draw_back || 'rueckseite';
           const fluege = [];
           plaetze.forEach((s, i) => {
-            fluege.push(schlaf(d(i * 70)).then(() => t.fliege(back, { x: t.g.stapel.x, y: t.g.stapel.y, w: 118 }, Object.assign({ rot: kartenRot(i * 7) }, t.platzPos(s)), d(380), { ausblenden: true })));
+            fluege.push(schlaf(d(i * 70)).then(() => t.fliege(back, { x: t.g.stapel.x, y: t.g.stapel.y, w: t.g.sw }, Object.assign({ rot: kartenRot(i * 7) }, t.platzPos(s)), d(380), { ausblenden: true })));
           });
           await Promise.all(fluege);
           break;
@@ -953,7 +1036,7 @@
         case 'play': {
           M.Ton.spiele('karte');
           const face = e.face || 'rueckseite';
-          const ziel = { x: t.g.ablage.x, y: t.g.ablage.y, w: 124, rot: kartenRot(e.card) * 0.4 };
+          const ziel = { x: t.g.ablage.x, y: t.g.ablage.y, w: t.g.aw, rot: kartenRot(e.card) * 0.4 };
           let von;
           if (e.seat === ich) {
             const p = t.hand.position(e.card);
@@ -974,7 +1057,7 @@
           const fluege = [];
           for (let i = 0; i < n; i++) {
             const face = (e.seat === ich && e.faces && e.faces[i]) ? e.faces[i] : back;
-            fluege.push(schlaf(d(i * 90)).then(() => t.fliege(face, { x: t.g.stapel.x, y: t.g.stapel.y, w: 118 }, Object.assign({ rot: kartenRot(i * 13) * 0.5 }, ziel), d(360), { ausblenden: e.seat !== ich })));
+            fluege.push(schlaf(d(i * 90)).then(() => t.fliege(face, { x: t.g.stapel.x, y: t.g.stapel.y, w: t.g.sw }, Object.assign({ rot: kartenRot(i * 13) * 0.5 }, ziel), d(360), { ausblenden: e.seat !== ich })));
           }
           if ((e.count | 0) > 1) t.abzeichen(e.seat, '+' + e.count, 'zieh', d(1100));
           await Promise.all(fluege);
@@ -1189,7 +1272,7 @@
           } else t.banner('Alles gesetzt!', 'Der Einsatz kommt unter die Ablage', 'gut klein', d(1500), true);
           const fluege = [];
           for (let i = 0; i < n; i++) fluege.push(schlaf(d(i * 80)).then(() => t.fliege('rueckseite', { x: a.x, y: a.y, w: a.w, rot: kartenRot(i * 9) * 0.4 },
-            { x: t.g.ablage.x - 10 + i * 4, y: t.g.ablage.y + 4, w: 124, rot: kartenRot(i * 7) }, d(420))));
+            { x: t.g.ablage.x - 10 + i * 4, y: t.g.ablage.y + 4, w: t.g.aw, rot: kartenRot(i * 7) }, d(420))));
           await Promise.all(fluege);
           if (Array.isArray(e.faces) && e.faces.length) t.unterAblage(e.faces.slice(-2).map((f, i) => ({ id: (e.cards || [])[i] | 0, face: f })));
           await schlaf(d(400));
@@ -1213,7 +1296,7 @@
                 von = p ? { x: p.x, y: p.y, w: p.w, rot: p.rot } : { x: t.g.cx, y: t.H - 100, w: 190 };
                 if (he) he.style.visibility = 'hidden';
               } else von = Object.assign({ rot: -8 }, t.platzPos(e.seat));
-              const ziel = { x: t.g.ablage.x - 16 + (i % 3) * 8, y: t.g.ablage.y + 6, w: 124, rot: kartenRot(karten[i] | 0) };
+              const ziel = { x: t.g.ablage.x - 16 + (i % 3) * 8, y: t.g.ablage.y + 6, w: t.g.aw, rot: kartenRot(karten[i] | 0) };
               fluege.push(schlaf(d(i * 110)).then(() => t.fliege(f, von, ziel, d(440))));
             });
             t.banner('Farbe ablegen', (e.seat === ich ? 'Du legst ' : t.name(e.seat) + ' legt ') + n + (n === 1 ? ' Karte' : ' Karten') + ' in ' + fname + ' mit ab', 'farbe', d(1600));

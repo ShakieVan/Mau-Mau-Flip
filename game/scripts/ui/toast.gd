@@ -11,6 +11,7 @@ var night := 1.0: set = set_night
 var hint_y := 513.0                   # Mitte der Hinweisleiste (Basis 720 px Höhe)
 var hint := ""
 var highlight := false
+var opaque := false                   # großer Modus: Leiste liegt über der Ablage, darum deckender Grund
 var _toasts: Array[Dictionary] = []   # {text, kind, t, life}
 var _hint_pop := 0.0
 
@@ -99,7 +100,10 @@ func _draw() -> void:
 		if highlight:
 			_pill(Vector2(cx, hint_y), hint, f, UiFonts.size("hinweisleiste"), UiPalette.CREAM if night > 0.5 else UiPalette.INK, UiPalette.INK if night > 0.5 else UiPalette.CREAM, hint_h())
 		else:
-			_pill(Vector2(cx, hint_y), hint, f, UiFonts.size("hinweisleiste") - 1, UiPalette.ui_fill(night), UiPalette.ui_text(night), hint_h() - 4.0, UiPalette.ui_line(night))
+			var fill := UiPalette.ui_fill(night)
+			if opaque:
+				fill = UiPalette.INK if night > 0.5 else UiPalette.CREAM
+			_pill(Vector2(cx, hint_y), hint, f, UiFonts.size("hinweisleiste") - 1, fill, UiPalette.ui_text(night), hint_h() - 4.0, UiPalette.ui_line(night))
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	var y := hint_y - hint_h() * 0.5 - 14.0 - toast_h() * 0.5
 	for i in range(_toasts.size() - 1, -1, -1):

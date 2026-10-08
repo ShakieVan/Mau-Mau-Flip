@@ -13,6 +13,7 @@ uniform float tageszeit : hint_range(0.0, 1.0) = 0.0;
 uniform vec2 size = vec2(1600.0, 720.0);     // Pixelgröße der Fläche
 uniform vec2 center = vec2(800.0, 320.0);    // Tischmitte in Pixeln
 uniform float motion = 1.0;                  // 0 = keine Daueranimation (Effekte reduziert): Strahlen stehen still
+uniform float calm = 0.0;                    // 1 = ruhige Variante (großer Modus, Beta 1.1.1): keine Strahlen, kaum Sterne, mehr Kontrast
 
 const float HOUR = 0.00174532925;            // 2π / 3600 s: Zeitfrequenzen sind Vielfache davon
 
@@ -67,17 +68,18 @@ void fragment() {
 		float along = smoothstep(50.0 * sc, 210.0 * sc, sd) * exp(-sd / reach);
 		float zone = exp(-sd / (760.0 * sc));
 		float breathe = 0.9 + 0.1 * sin(tm * HOUR * 240.0);          // 15 s
-		float lit = beam * along;
+		float lit = beam * along * (1.0 - calm);
 		day *= 1.0 - zone * (1.0 - lit) * vec3(0.032, 0.042, 0.056);  // zwischen den Strahlen eine Spur warmer Dunst-Schatten
 		day = mix(day, vec3(1.0, 0.86, 0.50), lit * breathe * 0.5);  // Strahlen: goldenes Licht
 
+		day = mix(day, vec3(0.972, 0.948, 0.900), calm * 0.75);  // ruhig: glattes helles Papier, die Sonne bleibt
 		// Sonne mit weichem Lichthof
 		vec3 sun_col = vec3(1.0, 0.80, 0.22);
 		day += sun_col * 0.16 * exp(-sd / (150.0 * sc));
 		day += sun_col * 0.10 * exp(-max(sd - 64.0, 0.0) / 34.0);
 		day = mix(day, sun_col, smoothstep(66.0, 62.0, sd));
 		day = mix(day, vec3(1.0, 0.90, 0.55), smoothstep(52.0, 40.0, sd) * 0.6);
-		day *= 0.982 + 0.036 * hash(floor(px / 2.0));
+		day *= 0.982 + 0.036 * hash(floor(px / 2.0)) * (1.0 - calm);
 	}
 
 	vec3 night = vec3(0.0);
@@ -90,6 +92,7 @@ void fragment() {
 		vec2 sp = (cell + vec2(0.2 + 0.6 * hash(cell + 1.3), 0.2 + 0.6 * hash(cell + 7.1))) * 28.0;
 		float star = step(0.86, h) * smoothstep(1.7, 0.2, length(px - sp));
 		float tw = 0.65 + 0.35 * sin(tm * (0.8 + h * 1.6) + h * 40.0);
+		star *= 1.0 - calm * 0.85;
 		night += vec3(0.86, 0.86, 1.0) * star * tw * smoothstep(0.25, 0.75, r) * smoothstep(0.35, 0.9, t);
 		vec2 moon = vec2(size.x * 0.94, size.y * (1.12 - 1.04 * t));
 		float md = length(px - moon);
@@ -97,6 +100,7 @@ void fragment() {
 		float crescent = smoothstep(40.0, 37.5, md) * smoothstep(31.0, 34.0, md2);
 		// Mondschein: enger Schein und weiter, sehr schwacher Dunst
 		night += vec3(0.62, 0.56, 1.0) * (0.16 * exp(-md / 150.0) + 0.05 * exp(-md / (480.0 * sc)));
+		night = mix(night, vec3(0.055, 0.066, 0.150), calm * 0.55 * (1.0 - crescent));  // ruhig: dunkler, gleichmäßiger Grund
 		night = mix(night, vec3(0.957, 0.941, 1.0), crescent);
 	}
 

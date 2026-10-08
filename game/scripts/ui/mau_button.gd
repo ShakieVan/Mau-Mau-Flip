@@ -79,7 +79,7 @@ func _draw() -> void:
 	draw_circle(c, r * s, UiPalette.INK)
 	draw_circle(c, (r - 5.0) * s, fill)
 	var f := UiFonts.mau()
-	var fs := int(46.0 * s)
+	var fs := int(46.0 * s * r / 63.0)          # wächst mit dem Knopf (großer Modus: 190 px)
 	var t := "Mau!"
 	var tw := f.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 	var room := (r - 5.0) * s * 2.0 * 0.80
@@ -90,5 +90,6 @@ func _draw() -> void:
 	draw_string(f, c + Vector2(-tw * 0.5, fs * 0.34), t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, ink)
 	if mode == Mode.CALLED:
 		var hk := c + Vector2(r * 0.52, r * 0.52)
-		draw_circle(hk, 17.0, UiPalette.INK)
-		draw_texture_rect(UiIcons.icon("haken", 40, UiPalette.CREAM), Rect2(hk - Vector2(11, 11), Vector2(22, 22)), false)
+		var hr := 17.0 * r / 63.0
+		draw_circle(hk, hr, UiPalette.INK)
+		draw_texture_rect(UiIcons.icon("haken", 40, UiPalette.CREAM), Rect2(hk - Vector2(hr, hr) * 0.65, Vector2(hr, hr) * 1.3), false)

@@ -13,6 +13,8 @@ var _card: CardView
 var _title: Label
 var _kicker: Label
 var _body: RichTextLabel
+var _col: VBoxContainer
+var _close_btn: PillButton
 
 
 func _init() -> void:
@@ -75,13 +77,30 @@ func _init() -> void:
 	close_btn.icon_name = "haken"
 	close_btn.style = "primary"
 	close_btn.night = 0.0
-	close_btn.font_size = 22
+	close_btn.font_size = UiFonts.px(22)
 	close_btn.size_flags_horizontal = Control.SIZE_SHRINK_END
 	close_btn.pressed.connect(close)
 	col.add_child(close_btn)
+	_col = col
+	_close_btn = close_btn
+	_apply_font_sizes()
+
+
+# Schriftgrößen aus UiFonts (Einstellung „Schriftgröße“); die Textspalte wächst mit, damit der Text nicht zu hoch wird
+func _apply_font_sizes() -> void:
+	_kicker.add_theme_font_size_override("font_size", UiFonts.px(15))
+	_title.add_theme_font_size_override("font_size", UiFonts.px(46))
+	for k in ["normal_font_size", "bold_font_size", "italics_font_size"]:
+		_body.add_theme_font_size_override(k, UiFonts.size("text"))
+	var w := roundf(640.0 * (1.0 + (UiFonts.scale - 1.0) * 0.8))
+	for c: Control in [_col, _title, _body]:
+		c.custom_minimum_size.x = w
+	_close_btn.font_size = UiFonts.px(22)
+	_close_btn.text = _close_btn.text   # Breite neu anpassen
 
 
 func show_help(face: String, title: String, body: String, kicker := "Kartenhilfe") -> void:
+	_apply_font_sizes()
 	_card.setup(-1, face, "", true)
 	_title.text = title
 	_kicker.text = kicker.to_upper()

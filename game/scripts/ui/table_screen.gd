@@ -112,6 +112,7 @@ func build() -> void:
 	_build_top()
 	# Verdrahtung Tisch und Hand
 	table.action.connect(_on_table_action)
+	table.big_changed.connect(func(_on: bool) -> void: _layout())
 	table.sort_pressed.connect(_cycle_sort)
 	if table.mau_button.mau_pressed.is_connected(table._on_mau_pressed):
 		table.mau_button.mau_pressed.disconnect(table._on_mau_pressed)
@@ -227,7 +228,10 @@ static func _keep_screen(on: bool) -> void:
 
 func _layout() -> void:
 	var sz := size if size.x > 10.0 else Vector2(1600, 720)
-	hand.layout_rect = Rect2(270.0, sz.y - 220.0, maxf(sz.x - 540.0, 400.0), 220.0)
+	hand.layout_rect = table.hand_rect(sz)   # großer Modus: größere Karten (BigLayout.hand_rect)
+	var mb := BigLayout.MENU if table.big else ScreenKit.TOUCH
+	_menu_btn.size = Vector2(mb, mb)
+	_menu_btn.custom_minimum_size = Vector2(mb, mb)
 	table.update_hand_target()          # Ablage bzw. Einsatzstapel (Glücksspiel), neue Karten vom Nachziehstapel
 	_round_menu.size = Vector2(_round_menu.get_combined_minimum_size().x + 20.0, ScreenKit.TOUCH)
 	_round_menu.position = Vector2(sz.x - _round_menu.size.x - 22.0, 14.0)
@@ -305,7 +309,7 @@ func _on_handover(next_seat: int, player_name: String) -> void:
 	table.wish_picker.close()
 	table.help_popup.close()
 	var n: int = (view.get("players", []) as Array).size()
-	var from := _last_seat if _last_seat >= 0 else next_seat
+	var from := _last_seat               # -1 zu Partiebeginn: Sichtschutz ohne Richtung
 	table.handover.show_for(player_name, from, next_seat, maxi(n, 1), int(view.get("discard_count", 0)), int(view.get("draw_count", 0)), str(view.get("side", "hell")))
 	hand.set_cards([])
 

@@ -19,6 +19,7 @@ const RENDER_SCALE := 1.0
 var tageszeit := 0.0: set = set_tageszeit
 var table_center := Vector2(800, 320): set = set_table_center
 var motion := true: set = set_motion
+var calm := false: set = set_calm           # ruhige Variante (großer Modus): keine Strahlen, kaum Sterne, mehr Kontrast
 var shader_material: ShaderMaterial      # Material des Shaders (liegt auf der Fläche im Zwischenbild)
 var renders := 0                         # Anzahl Neuberechnungen (Tests)
 
@@ -68,6 +69,11 @@ func set_tageszeit(v: float) -> void:
 func set_table_center(p: Vector2) -> void:
 	table_center = p
 	_param("center", p)
+
+
+func set_calm(on: bool) -> void:
+	calm = on
+	_param("calm", 1.0 if on else 0.0)
 
 
 func set_motion(on: bool) -> void:

@@ -5,7 +5,7 @@
 (function (M) {
   'use strict';
 
-  const VERSION = '1.1.0';
+  const VERSION = '1.1.1';
   const PROTO = 1;
   // wach.mp4 (32×32, 2 s, H.264 Baseline, ohne Ton; erzeugt mit ffmpeg) als data:-URI
   const WACH_VIDEO = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAMzbW9vdgAAAGxtdmhkAAAAAAAAAAAAAAAAAAAD6AAAB9AAAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAl50cmFrAAAAXHRraGQAAAADAAAAAAAAAAAAAAABAAAAAAAAB9AAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAACAAAAAgAAAAAAAkZWR0cwAAABxlbHN0AAAAAAAAAAEAAAfQAAAAAAABAAAAAAHWbWRpYQAAACBtZGhkAAAAAAAAAAAAAAAAAABAAAAAgABVxAAAAAAALWhkbHIAAAAAAAAAAHZpZGUAAAAAAAAAAAAAAABWaWRlb0hhbmRsZXIAAAABgW1pbmYAAAAUdm1oZAAAAAEAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAAUFzdGJsAAAAuXN0c2QAAAAAAAAAAQAAAKlhdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAACAAIABIAAAASAAAAAAAAAABFExhdmM2My4xLjEwMSBsaWJ4MjY0AAAAAAAAAAAAAAAAGP//AAAAL2F2Y0MBQsAe/+EAFmdCwB7ZCWwEQAAAAwBAAAADAQPFi5IBAAZoy4DkTIAAAAAQcGFzcAAAAAEAAAABAAAAFGJ0cnQAAAAAAAAKpAAAAAAAAAAYc3R0cwAAAAAAAAABAAAABAAAIAAAAAAUc3RzcwAAAAAAAAABAAAAAQAAABxzdHNjAAAAAAAAAAEAAAABAAAABAAAAAEAAAAkc3RzegAAAAAAAAAAAAAABAAAAogAAAALAAAACwAAAAsAAAAUc3RjbwAAAAAAAAABAAADYwAAAGF1ZHRhAAAAWW1ldGEAAAAAAAAAIWhkbHIAAAAAAAAAAG1kaXJhcHBsAAAAAAAAAAAAAAAALGlsc3QAAAAkqXRvbwAAABxkYXRhAAAAAQAAAABMYXZmNjMuMS4xMDEAAAAIZnJlZQAAArFtZGF0AAACcgYF//9u3EXpvebZSLeWLNgg2SPu73gyNjQgLSBjb3JlIDE2NSByMzIyMyAwNDgwY2IwIC0gSC4yNjQvTVBFRy00IEFWQyBjb2RlYyAtIENvcHlsZWZ0IDIwMDMtMjAyNSAtIGh0dHA6Ly93d3cudmlkZW9sYW4ub3JnL3gyNjQuaHRtbCAtIG9wdGlvbnM6IGNhYmFjPTAgcmVmPTMgZGVibG9jaz0xOi0zOi0zIGFuYWx5c2U9MHgxOjB4MTExIG1lPWhleCBzdWJtZT03IHBzeT0xIHBzeV9yZD0yLjAwOjAuNzAgbWl4ZWRfcmVmPTEgbWVfcmFuZ2U9MTYgY2hyb21hX21lPTEgdHJlbGxpcz0xIDh4OGRjdD0wIGNxbT0wIGRlYWR6b25lPTIxLDExIGZhc3RfcHNraXA9MSBjaHJvbWFfcXBfb2Zmc2V0PS00IHRocmVhZHM9MSBsb29rYWhlYWRfdGhyZWFkcz0xIHNsaWNlZF90aHJlYWRzPTAgbnI9MCBkZWNpbWF0ZT0xIGludGVybGFjZWQ9MCBibHVyYXlfY29tcGF0PTAgY29uc3RyYWluZWRfaW50cmE9MCBiZnJhbWVzPTAgd2VpZ2h0cD0wIGtleWludD0yNTAga2V5aW50X21pbj0yIHNjZW5lY3V0PTQwIGludHJhX3JlZnJlc2g9MCByY19sb29rYWhlYWQ9NDAgcmM9Y3JmIG1idHJlZT0xIGNyZj00MC4wIHFjb21wPTAuNjAgcXBtaW49MCBxcG1heD02OSBxcHN0ZXA9NCBpcF9yYXRpbz0xLjQwIGFxPTE6MS4yMACAAAAADmWIhAXznJigACX3J114AAAAB0GaOAvnOWAAAAAHQZpUAvnOWAAAAAdBmmAVznLA';
@@ -48,7 +48,8 @@
     logPuffer: [],
     // ton = Mau-Ton (Aufnahmen, Standard normal), toene = übrige Spieltöne (Dateien aus sfx/, sonst synthetisch; Standard aus), stumm = Ton-Knopf in der Ecke
     // hervorheben = spielbare Karten hervorheben (persönliche Einstellung je Gerät, AGENTS.md Nr. 24; Standard an)
-    einstellungen: { ton: 'normal', toene: 'aus', stumm: false, effekte: 'voll', sort: 'farbe', vibration: true, vollbild: true, hervorheben: true, schrift: 'normal' },
+    // grosser_modus = großer Modus, zug_vibration = „Bei deinem Zug: Vibration“ (beide je Gerät, Standard aus; wie App.settings)
+    einstellungen: { ton: 'normal', toene: 'aus', stumm: false, effekte: 'voll', sort: 'farbe', vibration: true, vollbild: true, hervorheben: true, schrift: 'normal', grosser_modus: false, zug_vibration: false },
     _mauZuletzt: {},       // „art:Platz“ → Zeitpunkt des letzten Mau-Tons (Entprellung)
 
     /* ---------------- Start ---------------- */
@@ -65,6 +66,9 @@
       e.hervorheben = Speicher.get('hervorheben', true) !== false;
       e.schrift = params.get('schrift') || Speicher.get('schrift', 'normal');   // ?schrift=… nur für Kontrollbilder
       this._schrift(e.schrift);
+      e.grosser_modus = params.get('gross') ? params.get('gross') === '1' : Speicher.get('grosser_modus', false) === true;   // ?gross=1 für Test und Kontrollbilder
+      e.zug_vibration = Speicher.get('zug_vibration', false) === true;
+      this._gross(e.grosser_modus);
       M.Ton.setzeStufe(e.ton);
       M.Ton.setzeToene(e.toene);
       M.Ton.setzeStumm(e.stumm);
@@ -161,6 +165,13 @@
         ev.preventDefault();
         this.einstellungen.schrift = b.dataset.schrift; Speicher.set('schrift', b.dataset.schrift); this._schrift(b.dataset.schrift);
       }));
+      document.querySelectorAll('.gross-wahl').forEach(w => w.addEventListener('click', ev => {
+        const b = ev.target.closest('button[data-gross]');
+        if (!b) return;
+        ev.preventDefault();
+        const an = b.dataset.gross === 'true';
+        this.einstellungen.grosser_modus = an; Speicher.set('grosser_modus', an); this._gross(an);
+      }));
       $('#menue').addEventListener('click', ev => {
         const b = ev.target.closest('button[data-set]');
         if (b) { ev.preventDefault(); this.einstellen(b.dataset.set, b.dataset.wert); return; }
@@ -201,6 +212,7 @@
       if (name === 'tisch') this._querSperren();
       if (name === 'tisch' && !this.tisch) {
         this.tisch = new M.Tisch.Tisch($('#tisch'), this);
+        this.tisch.setzeGross(this.einstellungen.grosser_modus);
         this.groesse();
       }
       if (name !== 'tisch') ['hilfe', 'ansicht', 'runde', 'regeln', 'sogehts'].forEach(id => this.schliesse(id));
@@ -776,6 +788,8 @@
       const el = document.documentElement;
       $('#zeile-vollbild').hidden = IST_IOS || !(el.requestFullscreen || el.webkitRequestFullscreen);
       $('#zeile-vibration').hidden = !navigator.vibrate;
+      $('#zeile-zugvib').hidden = !navigator.vibrate;
+      $('#menue-gross-tipp').hidden = !(e.schrift === 'sehr_gross' && !e.grosser_modus);
       $('#menue-stumm').hidden = !e.stumm;
       $('#menue-info').textContent = 'Mau-Mau Flip ' + this.version + ' · Browser · ' + this.name + (this.view ? ' · Platz ' + (this.view.seat + 1) : '');
       this.oeffne('menue');
@@ -793,7 +807,7 @@
     },
     einstellen(k, wert) {
       const e = this.einstellungen;
-      if (k === 'vibration' || k === 'vollbild' || k === 'hervorheben') wert = wert === 'true';
+      if (k === 'vibration' || k === 'vollbild' || k === 'hervorheben' || k === 'grosser_modus' || k === 'zug_vibration') wert = wert === 'true';
       if (k === 'vollbild') { this.vollbild(wert); if (wert) setTimeout(() => this._querSperren(), 300); }
       e[k] = wert;
       Speicher.set(k, wert);
@@ -807,6 +821,8 @@
       if (k === 'effekte') document.body.classList.toggle('reduziert', wert === 'reduziert');
       if (k === 'hervorheben' && this.tisch && this.view) this.tisch.zeige(this.view, true);
       if (k === 'schrift') { this._schrift(wert); if (this.tisch && this.view) this.tisch.zeige(this.view, true); }
+      if (k === 'grosser_modus') this._gross(wert);
+      if (k === 'zug_vibration' && wert) this.zugVibration();   // zum Ausprobieren
       this.menue();
     },
     // Schriftgröße je Gerät: html[data-schrift] setzt --fs (style.css); Kartenbilder bleiben gleich
@@ -814,6 +830,18 @@
       if (['normal', 'gross', 'sehr_gross'].indexOf(w) < 0) w = 'normal';
       document.documentElement.dataset.schrift = w;
       document.querySelectorAll('.schrift-wahl button[data-schrift]').forEach(b => b.classList.toggle('an', b.dataset.schrift === w));
+    },
+    // Großer Modus je Gerät: Tisch mit riesigem Stapel und Ablage, Spielerliste rechts (tisch.js setzeGross)
+    _gross(an) {
+      an = !!an;
+      document.documentElement.classList.toggle('gross', an);
+      document.querySelectorAll('.gross-wahl button[data-gross]').forEach(b => b.classList.toggle('an', b.dataset.gross === String(an)));
+      if (this.tisch) this.tisch.setzeGross(an);
+    },
+    // „Bei deinem Zug: Vibration“ (eigene Einstellung, unabhängig von „Vibration“; nur wo navigator.vibrate da ist)
+    zugVibration() {
+      if (!this.einstellungen.zug_vibration || !navigator.vibrate) return;
+      try { navigator.vibrate([70, 60, 70]); } catch (e) { /* egal */ }
     },
     toast(text, art, dauer) {
       const box = $('#toasts');
