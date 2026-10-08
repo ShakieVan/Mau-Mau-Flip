@@ -87,9 +87,9 @@ static func handle_link(nav: ScreenNav, link: Dictionary) -> void:
 		# Online-Link: Vermittler aus dem Link, sonst aus den Einstellungen; als Ziel gilt der Raum-Link
 		var relay := str(link.get("relay", ""))
 		if relay == "":
-			relay = NetProtocol.normalize_relay_url(str(UiApp.setting("vermittler", NetProtocol.RELAY_DEFAULT)))
+			relay = NetProtocol.effective_relay(str(UiApp.setting("vermittler", "")))
 		if relay == "":
-			nav.toast("Für Online-Spiele fehlt die Vermittler-Adresse – bitte in den Einstellungen unter „Online“ eintragen.")
+			nav.toast("Für Online-Spiele fehlt die Vermittler-Adresse – bitte in den Einstellungen unter „Für Fortgeschrittene“ eintragen.")
 			return
 		address = NetProtocol.room_link(relay, str(link.room))
 		port = 0
@@ -290,10 +290,10 @@ func join_room(code_text: String, relay: String) -> void:
 		toast("Bitte den Raumcode eingeben, z. B. KATZE-42.")
 		return
 	_room.text = code
-	var own := NetProtocol.normalize_relay_url(str(UiApp.setting("vermittler", NetProtocol.RELAY_DEFAULT)))
+	var own := NetProtocol.effective_relay(str(UiApp.setting("vermittler", "")))
 	var url := NetProtocol.normalize_relay_url(relay) if relay != "" else own
 	if url == "":
-		_status.text = I18n.t("Für Online-Spiele fehlt die Vermittler-Adresse – bitte in den Einstellungen unter „Online“ eintragen.")
+		_status.text = I18n.t("Für Online-Spiele fehlt die Vermittler-Adresse – bitte in den Einstellungen unter „Für Fortgeschrittene“ eintragen.")
 		return
 	if own == "" and relay != "":
 		var app := UiApp.app()
@@ -325,7 +325,7 @@ func _on_room_checked(result: int, status: int, _headers: PackedStringArray, bod
 	var info: Variant = JSON.parse_string(body.get_string_from_utf8())
 	var room: Variant = info.get("room") if info is Dictionary else null
 	if room is Dictionary and not bool(room.get("open", false)):
-		_status.text = I18n.t("Raum %s nicht gefunden. Stimmt der Code?") % room_text
+		_status.text = I18n.t("Raum nicht gefunden. Prüf den Code – oder lass dir am besten den Link schicken.")
 		return
 	if room is Dictionary and str(room.get("version", "")) != "" and str(room.version) != NetProtocol.game_version():
 		_status.text = I18n.t("Der Gastgeber spielt mit Version %s, du mit %s. Bitte beide auf dieselbe Version bringen.") % [str(room.version), NetProtocol.game_version()]

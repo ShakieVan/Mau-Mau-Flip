@@ -106,7 +106,7 @@ func build() -> void:
 	_share_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_share_status.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	srow.add_child(_share_status)
-	_build_online(_section(right, "Online"))
+	_build_online(_section(right, "Für Fortgeschrittene"))
 	_build_stats(_section(right, AppStats.TITLE))
 	var info := _section(right, "Info")
 	var ver := ScreenKit.text_block("Mau-Mau Flip %s" % MainMenuScreen._version_text(), UiFonts.size("text"))
@@ -185,14 +185,29 @@ static func personal(parent: Control, section: Callable, tempo := true) -> void:
 
 # „Online“ (docs/online/ENTWURF.md 3): Adresse des Vermittlers, „Verbindung testen“ (GET /info: Antwortzeit und ob er diese
 # Version ausliefert) und ein QR-Code mit der Startseite des Vermittlers zum Weitergeben der Adresse.
-func _build_online(box: VBoxContainer) -> void:
+func _build_online(outer: VBoxContainer) -> void:
+	# Zugeklappt ab Werk (Beta 1.3.1): Normale Mitspieler brauchen den Vermittler nicht, der Standard ist eingebaut.
+	var lead := ScreenKit.hint("Nur nötig, wenn du einen eigenen Online-Vermittler betreibst. Normal spielst du einfach mit dem eingebauten, ohne etwas einzustellen.", UiFonts.size("hinweis"))
+	lead.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	outer.add_child(lead)
+	var toggle := ScreenKit.button("Online-Vermittler anzeigen", "GhostButton")
+	toggle.name = "VermittlerAufklappen"
+	toggle.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	outer.add_child(toggle)
+	var box := ScreenKit.vbox(12)
+	box.name = "VermittlerBereich"
+	box.visible = false
+	outer.add_child(box)
+	toggle.pressed.connect(func() -> void:
+		box.visible = not box.visible
+		toggle.text = I18n.t("Online-Vermittler ausblenden") if box.visible else I18n.t("Online-Vermittler anzeigen"))
 	var intro := ScreenKit.hint("Für Spiele über das Internet: Ein Vermittler reicht die Nachrichten weiter, die Spiellogik bleibt beim Gastgeber. Einrichten kostenlos bei Cloudflare, Anleitung auf GitHub (ShakieVan/Mau-Mau-Flip). Gäste brauchen nur Raumcode oder Link.", UiFonts.size("hinweis"))
 	intro.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	box.add_child(intro)
 	_relay = LineEdit.new()
 	_relay.name = "Vermittler"
-	_relay.placeholder_text = "z. B. mau.dein-name.workers.dev"
-	_relay.text = NetProtocol.relay_host(str(UiApp.setting("vermittler", NetProtocol.RELAY_DEFAULT)))
+	_relay.placeholder_text = "Standard"
+	_relay.text = _own_relay_text(str(UiApp.setting("vermittler", "")))
 	_relay.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_relay.custom_minimum_size = Vector2(0, ScreenKit.TOUCH)
 	_relay.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_URL
@@ -231,7 +246,13 @@ func _build_online(box: VBoxContainer) -> void:
 	box.add_child(_relay_qr_label)
 
 
-# Eingabe übernehmen ("" = keiner). Ungültig → Hinweis, gespeichert bleibt der alte Wert.
+# Feldinhalt: nur ein eigener Vermittler steht drin, der Standard zeigt den Platzhalter
+func _own_relay_text(url: String) -> String:
+	var u := NetProtocol.normalize_relay_url(url)
+	return "" if u == "" or NetProtocol.is_default_relay(u) else NetProtocol.relay_host(u)
+
+
+# Eingabe übernehmen ("" = Standard). Ungültig → Hinweis, gespeichert bleibt der alte Wert.
 func store_relay() -> void:
 	if _relay == null:
 		return
@@ -241,7 +262,7 @@ func store_relay() -> void:
 		_relay_status.text = I18n.t("Diese Adresse passt nicht. Beispiel: mau.dein-name.workers.dev")
 		return
 	_store("vermittler", url)
-	_relay.text = NetProtocol.relay_host(url)
+	_relay.text = _own_relay_text(url)
 	if _relay_qr.visible:
 		show_relay_qr(true)
 
@@ -249,7 +270,7 @@ func store_relay() -> void:
 # GET <vermittler>/info: Antwortzeit und unterstützte Versionen
 func test_relay() -> void:
 	store_relay()
-	var url := NetProtocol.normalize_relay_url(str(UiApp.setting("vermittler", "")))
+	var url := NetProtocol.effective_relay(str(UiApp.setting("vermittler", "")))
 	if url == "":
 		_relay_status.text = I18n.t("Bitte zuerst die Adresse des Vermittlers eintragen.")
 		return
@@ -275,7 +296,7 @@ func _on_relay_tested(result: int, status: int, _headers: PackedStringArray, bod
 		_relay_ms = Time.get_ticks_msec() - _relay_test_ms
 		_relay_info_body = body.get_string_from_utf8()
 		if good and status == 200 and relay_info_ok(_relay_info_body):
-			var url := NetProtocol.normalize_relay_url(str(UiApp.setting("vermittler", "")))
+			var url := NetProtocol.effective_relay(str(UiApp.setting("vermittler", "")))
 			_relay_step = 1
 			if _relay_test.request(url + "/c/" + version + "/index.html") == OK:
 				_relay_status.text = I18n.t("Prüfe den Browser-Client für Version %s …") % version
@@ -312,7 +333,7 @@ static func relay_test_text(ok: bool, body: String, ms: int, version: String, c_
 
 # QR-Code mit der Startseite des Vermittlers (https://<v>/), darunter die Adresse
 func show_relay_qr(on: bool) -> void:
-	var url := NetProtocol.normalize_relay_url(str(UiApp.setting("vermittler", "")))
+	var url := NetProtocol.effective_relay(str(UiApp.setting("vermittler", "")))
 	_relay_qr.visible = on and url != ""
 	_relay_qr_label.visible = _relay_qr.visible
 	if on and url == "":

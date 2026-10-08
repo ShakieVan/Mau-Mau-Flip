@@ -36,6 +36,7 @@ var _on_link: Label
 var _on_status: Label
 var _on_error: Label
 var _on_relay: Label
+var _on_custom: Label
 var online_guests := 0
 
 
@@ -148,7 +149,7 @@ func set_online_guests(n: int) -> void:
 
 
 func relay_url() -> String:
-	return NetProtocol.normalize_relay_url(str(UiApp.setting("vermittler", NetProtocol.RELAY_DEFAULT)))
+	return NetProtocol.effective_relay(str(UiApp.setting("vermittler", "")))
 
 
 func online_state() -> String:
@@ -216,6 +217,7 @@ func refresh_online() -> void:
 		view = "open"
 	for k in _on_views:
 		(_on_views[k] as Control).visible = k == view
+	_on_custom.visible = not NetProtocol.is_default_relay(relay_url())
 	_on_relay.text = I18n.t("Vermittler: %s") % NetProtocol.relay_host(relay_url()) if relay_url() != "" else ""
 	if view == "open":
 		var code := str(info.get("room", ""))
@@ -299,7 +301,7 @@ func _build_online() -> Control:
 	open.name = "Offen"
 	_on_qr = TextureRect.new()
 	_on_qr.name = "QR"
-	_on_qr.custom_minimum_size = Vector2(GameWifiPanel.QR_SIZE, GameWifiPanel.QR_SIZE)
+	_on_qr.custom_minimum_size = Vector2(260, 260)
 	_on_qr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_on_qr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	_on_qr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
@@ -308,7 +310,17 @@ func _build_online() -> Control:
 	var ov := ScreenKit.vbox(8)
 	ov.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	open.add_child(ov)
-	ov.add_child(ScreenKit.label("Raumcode", "HintLabel", UiFonts.size("text")))
+	# Ganz vorn: Link teilen (Teilen-Menü) und der QR-Code links; der Raumcode zum Abtippen folgt darunter.
+	var share := ScreenKit.button("Link teilen", "PrimaryButton", "teilen")
+	share.name = "Teilen"
+	share.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	share.custom_minimum_size = Vector2(0, ScreenKit.TOUCH + 12)
+	share.pressed.connect(share_link)
+	ov.add_child(share)
+	_on_custom = ScreenKit.hint("Schick deinen Mitspielern den Link. Der Code allein klappt nur mit dem Standard-Vermittler.", UiFonts.size("hinweis"))
+	_on_custom.name = "EigenerVermittlerHinweis"
+	ov.add_child(_on_custom)
+	ov.add_child(ScreenKit.label("Oder den Raumcode zum Abtippen:", "HintLabel", UiFonts.size("hinweis")))
 	_on_code = ScreenKit.label("", "", UiFonts.size("titel"))
 	_on_code.name = "Raumcode"
 	_on_code.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
@@ -318,20 +330,18 @@ func _build_online() -> Control:
 	_on_link.name = "Link"
 	_on_link.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 	_on_link.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
+	_on_link.visible = false                 # QR-Code und „Link teilen“ tragen den Link, spart Höhe
 	ov.add_child(_on_link)
 	ov.add_child(ScreenKit.hint("In der App: „Beitreten“ und den Code eingeben. Ohne App: Link oder QR-Code im Browser öffnen.", UiFonts.size("hinweis")))
 	_on_status = ScreenKit.label("", "", UiFonts.size("text"))
 	_on_status.name = "OnlineStatus"
 	_on_status.add_theme_font_override("font", UiFonts.text(700))
-	ov.add_child(_on_status)
 	var btns := HFlowContainer.new()
 	btns.add_theme_constant_override("h_separation", 12)
 	btns.add_theme_constant_override("v_separation", 12)
 	ov.add_child(btns)
-	var share := ScreenKit.button("Teilen", "", "teilen")
-	share.name = "Teilen"
-	share.pressed.connect(share_link)
-	btns.add_child(share)
+	_on_status.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	btns.add_child(_on_status)
 	var close := ScreenKit.button("Online schließen", "GhostButton")
 	close.name = "OnlineSchliessen"
 	close.pressed.connect(close_online)

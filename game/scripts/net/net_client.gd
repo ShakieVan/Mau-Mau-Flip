@@ -216,7 +216,7 @@ func _relay_close(code: int) -> bool:
 	match code:
 		NetProtocol.CLOSE_ROOM_UNKNOWN:
 			_ws = null
-			_final(I18n.t("Raum %s nicht gefunden. Stimmt der Code?") % room)
+			_final(I18n.t("Raum nicht gefunden. Prüf den Code – oder lass dir am besten den Link schicken."))
 			return true
 		NetProtocol.CLOSE_ROOM_FULL:
 			_ws = null

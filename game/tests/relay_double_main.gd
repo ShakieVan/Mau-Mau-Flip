@@ -166,15 +166,32 @@ func shots_run(port: int) -> void:
 	var st := SettingsScreen.new()
 	nav.push(st, false)
 	await _frames(30)
+	var toggle := st.find_child("VermittlerAufklappen", true, false) as Button
+	var area := st.find_child("VermittlerBereich", true, false) as Control
+	check(toggle != null and area != null and not area.visible, "Einstellungen: Vermittler-Bereich zugeklappt ab Werk")
+	for lang in ["de", "en"]:
+		I18n.set_language(lang)
+		await _frames(10)
+		for s in st.find_children("*", "ScrollContainer", true, false):
+			(s as ScrollContainer).ensure_control_visible(toggle)
+		await _frames(10)
+		await _save("online_einstellungen_zu_" + lang)
+	I18n.set_language("de")
+	toggle.pressed.emit()
+	check(area.visible, "Einstellungen: Aufklappen zeigt den Bereich")
 	st.test_relay()
 	var status := st.find_child("VermittlerStatus", true, false) as Label
 	check(await _until(func() -> bool: return status.text.contains("ms"), 5000), "Verbindung testen: " + status.text)
 	st.show_relay_qr(true)
 	await _frames(10)
-	for s in st.find_children("*", "ScrollContainer", true, false):
-		(s as ScrollContainer).ensure_control_visible(st.find_child("VermittlerQRBild", true, false) as Control)
-	await _frames(20)
-	await _save("online_einstellungen")
+	for lang in ["de", "en"]:
+		I18n.set_language(lang)
+		await _frames(10)
+		for s in st.find_children("*", "ScrollContainer", true, false):
+			(s as ScrollContainer).ensure_control_visible(st.find_child("VermittlerQRBild", true, false) as Control)
+		await _frames(20)
+		await _save("online_einstellungen_" + lang)
+	I18n.set_language("de")
 	nav.queue_free()
 	await _frames(5)
 	if had:

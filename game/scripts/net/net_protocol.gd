@@ -33,7 +33,7 @@ const ACTION_FIELDS := {"a": TYPE_STRING, "card": TYPE_INT, "color": TYPE_STRING
 const MAX_DEPTH := 12
 
 # --- Online-Spiel über einen Vermittler (docs/online/ENTWURF.md) ---
-const RELAY_DEFAULT := ""                 # Standard-Vermittler; setzt der Nutzer nach seiner Bereitstellung
+const RELAY_DEFAULT := "https://mau-mau-flip-relay.shakie.workers.dev"   # Standard-Vermittler (bereitgestellt vom Nutzer 08.10.2026)
 const RELAY_CONN_BASE := 1000000          # Verbindungsnummern der Online-Gäste beim Gastgeber: RELAY_CONN_BASE + c
 const RELAY_PROTO := 1
 const RELAY_PING_MS := 25000              # Online-Herzschlag: Text „ping“, der Vermittler antwortet „pong“
@@ -75,6 +75,14 @@ static func normalize_room_code(text: String) -> String:
 	if letters.length() < 3 or letters.length() > 6 or digits.length() != 2 or digits.begins_with("0"):
 		return ""
 	return letters + "-" + digits
+
+# Gespeicherte Adresse → wirksamer Vermittler: leer = Standard-Vermittler (RELAY_DEFAULT, kann selbst leer sein).
+static func effective_relay(stored: String) -> String:
+	var u := normalize_relay_url(stored)
+	return u if u != "" else normalize_relay_url(RELAY_DEFAULT)
+
+static func is_default_relay(url: String) -> bool:
+	return normalize_relay_url(url) == normalize_relay_url(RELAY_DEFAULT)
 
 static func normalize_relay_url(text: String) -> String:
 	# Vermittler-Adresse → „https://host[:port]“ (ohne Pfad und Schrägstrich am Ende). Ohne Schema gilt https; „http://“ nur

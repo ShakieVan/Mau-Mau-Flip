@@ -128,7 +128,7 @@ func run() -> void:
 	var lost := new_client("Weg")
 	lost.connect_relay("http://127.0.0.1:%d" % RELAY_PORT, "MOND-11" if code != "MOND-11" else "MOND-12", "Weg")
 	check(wait(func(): return lost.state == "closed"), "unbekannter Raum → endgültig")
-	check(lost.close_text.contains("MOND-1"), "Text nennt den Code: " + lost.close_text)
+	check(lost.close_text.contains("Raum nicht gefunden") and lost.close_text.contains("Link"), "Text: Raum nicht gefunden, Link schicken lassen: " + lost.close_text)
 	# --- Online schließen: Online-Gäste bekommen „bye“, WLAN bleibt
 	host.close_online()
 	check(host.online_state() == "off" and host.relay == null, "online geschlossen")

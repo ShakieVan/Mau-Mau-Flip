@@ -1076,8 +1076,8 @@ msgstr "%d players online"
 msgid "Warte auf Mitspieler …"
 msgstr "Waiting for players …"
 
-msgid "Für das Spiel über das Internet braucht die App die Adresse eines Vermittlers. Trag sie in den Einstellungen unter „Online“ ein."
-msgstr "To play over the internet, the app needs the address of a relay. Enter it in the settings under “Online”."
+msgid "Für das Spiel über das Internet braucht die App die Adresse eines Vermittlers. Trag sie in den Einstellungen unter „Für Fortgeschrittene“ ein."
+msgstr "To play over the internet, the app needs the address of a relay. Enter it in the settings under “Advanced”."
 
 msgid "Mitspieler, die nicht im selben WLAN sind, treten über das Internet bei – mit Raumcode, Link oder QR-Code. Die Spiellogik bleibt auf diesem Handy."
 msgstr "Players who aren't on the same Wi-Fi join over the internet – with the room code, link or QR code. The game itself keeps running on this phone."
@@ -1112,14 +1112,14 @@ msgstr "The host closed the online game."
 msgid "Raumcode oder Vermittler-Adresse ungültig."
 msgstr "Room code or relay address is not valid."
 
-msgid "Raum %s nicht gefunden. Stimmt der Code?"
-msgstr "Room %s not found. Is the code right?"
+msgid "Raum nicht gefunden. Prüf den Code – oder lass dir am besten den Link schicken."
+msgstr "Room not found. Check the code – or better, ask for the link."
 
 msgid "Gastgeber kurz weg – warte …"
 msgstr "Host is away for a moment – waiting …"
 
-msgid "Für Online-Spiele fehlt die Vermittler-Adresse – bitte in den Einstellungen unter „Online“ eintragen."
-msgstr "The relay address for online games is missing – please enter it in the settings under “Online”."
+msgid "Für Online-Spiele fehlt die Vermittler-Adresse – bitte in den Einstellungen unter „Für Fortgeschrittene“ eintragen."
+msgstr "The relay address for online games is missing – please enter it in the settings under “Advanced”."
 
 msgid "Bitte den Raumcode eingeben, z. B. KATZE-42."
 msgstr "Please enter the room code, e.g. KATZE-42."
@@ -1174,3 +1174,27 @@ msgstr "All set for online games."
 
 msgid "Scannen öffnet die Seite des Vermittlers: %s"
 msgstr "Scanning opens the relay's page: %s"
+
+msgid "Für Fortgeschrittene"
+msgstr "Advanced"
+
+msgid "Nur nötig, wenn du einen eigenen Online-Vermittler betreibst. Normal spielst du einfach mit dem eingebauten, ohne etwas einzustellen."
+msgstr "Only needed if you run your own online relay. Normally you just use the built-in one without setting anything up."
+
+msgid "Online-Vermittler anzeigen"
+msgstr "Show online relay"
+
+msgid "Online-Vermittler ausblenden"
+msgstr "Hide online relay"
+
+msgid "Standard"
+msgstr "Default"
+
+msgid "Link teilen"
+msgstr "Share link"
+
+msgid "Schick deinen Mitspielern den Link. Der Code allein klappt nur mit dem Standard-Vermittler."
+msgstr "Send your players the link. The code alone only works with the default relay."
+
+msgid "Oder den Raumcode zum Abtippen:"
+msgstr "Or the room code to type in:"
