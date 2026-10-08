@@ -29,14 +29,14 @@ func _run() -> void:
 
 	# Dateien: alle Töne vorhanden und vorgeladen, Längen wie geschnitten bzw. aufgenommen (Spieltöne mit 20 ms Endstille).
 	var lengths := {"mau": [0.35, 0.7], "mau_mau": [0.45, 0.8], "karte": [0.20, 0.32], "ziehen": [0.50, 0.70], "mischen": [1.05, 1.30],
-		"flip": [1.25, 1.50], "sieg": [1.60, 1.90], "fehler": [0.20, 0.32], "dran": [0.50, 0.70]}
+		"flip": [1.25, 1.50], "sieg": [1.60, 1.90], "fehler": [0.20, 0.32], "dran": [0.50, 0.70], "schnurren": [1.55, 1.75]}
 	for sound_name in lengths:
 		var s: AudioStream = sound.stream(sound_name)
 		var span: Array = lengths[sound_name]
 		check(s != null and sound.is_loaded(sound_name), "Datei %s vorhanden und vorgeladen" % sound_name)
 		if s != null:
 			check(s.get_length() >= float(span[0]) and s.get_length() <= float(span[1]), "Länge %s: %.3f s" % [sound_name, s.get_length()])
-	check(AppSound.NAMES.size() == 9 and sound.preload_all() == 9, "preload_all zählt alle 9 Dateien")
+	check(AppSound.NAMES.size() == 10 and sound.preload_all() == 10, "preload_all zählt alle 10 Dateien")
 	for k in ["stimme", "gesungen", "blubb", "spieluhr", "kalimba"]:
 		check(AppSound.path_for("mau_" + k) == "", "synthetische Mau-Variante mau_%s entfernt" % k)
 	var web := ProjectSettings.globalize_path("res://").path_join("../webclient/sfx/")
@@ -136,10 +136,10 @@ func _run() -> void:
 	sound.stop_all()
 	sound.now_override = 140000
 	var started := 0
-	for sound_name in ["karte", "ziehen", "mischen", "flip", "sieg", "fehler", "dran"]:
+	for sound_name in ["karte", "ziehen", "mischen", "flip", "sieg", "fehler", "dran", "schnurren"]:
 		if sound.play(sound_name):
 			started += 1
-	check(started == 7 and sound.playing_count() == AppSound.VOICES, "7 Töne gestartet, alle %d Abspieler belegt" % AppSound.VOICES)
+	check(started == 8 and sound.playing_count() == AppSound.VOICES, "8 Töne gestartet, alle %d Abspieler belegt" % AppSound.VOICES)
 	sound.stop_all()
 
 	# Fehlende Dateien: alles still, keine Fehler.

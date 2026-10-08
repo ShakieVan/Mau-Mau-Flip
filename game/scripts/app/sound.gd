@@ -19,7 +19,7 @@ extends Node
 # Derselbe Ton wird innerhalb von 40 ms nur einmal gestartet (z. B. mehrere Karten im selben Bild).
 
 const DIR := "res://assets/sfx/"
-const NAMES := ["mau", "mau_mau", "karte", "ziehen", "mischen", "flip", "sieg", "fehler", "dran"]
+const NAMES := ["mau", "mau_mau", "karte", "ziehen", "mischen", "flip", "sieg", "fehler", "dran", "schnurren"]
 const MAU_NAMES := ["mau", "mau_mau"]
 const MAU_DB := {"aus": -80.0, "leise": -12.0, "normal": -2.0}
 const TON_DB := {"aus": -80.0, "leise": -12.5, "normal": -4.5}

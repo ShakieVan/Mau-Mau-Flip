@@ -106,7 +106,7 @@ func kontrast(a: Color, b: Color) -> float:
 # Strahlen am Rundenende, Flip-Überraschung (Regeltext, Kartenhilfe, Stempel, Mock, Selbsttest)
 func pruefe_014(css: String, tisch: String, karten: String, mock: String, autotest: String, app: String, seite: String) -> void:
 	check(css.contains("#start { background: radial-gradient(ellipse 80% 70% at 50% 40%, #FFF7E8") and seite.contains("theme-color\" content=\"#E6D7BC\"")
-			and app.contains("this.screen === 'start' ? '#E6D7BC'"), "Startseite (Name eingeben) ist tagsüber hell, vor Spielbeginn gilt Tag")
+			and app.contains("this.screen === 'start' || (this.screen === 'lobby'"), "Startseite (Name eingeben) ist tagsüber hell, vor Spielbeginn gilt Tag")
 	check(seite.contains("bilder/logo.webp") and FileAccess.file_exists(web_dir.path_join("bilder/logo.webp")) and css.contains(".start-logo.mit-bild"),
 		"Startseite zeigt das volle Logo (Karten und „Mau!“-Blase)")
 	check(app.contains("classList.toggle('rahmen'") and css.contains("body.rahmen #tisch") and css.contains("body.rahmen-hinweis[data-screen=\"tisch\"] .quer")
@@ -712,6 +712,19 @@ func sfx_index_check(server: NetServer) -> void:
 			var d := str(liste[pflicht])
 			check(d.ends_with(".m4a"), "sfx/index.json: „%s“ als m4a (iPhone-Safari spielt kein ogg): %s" % [pflicht, d])
 			check(FileAccess.file_exists(web_dir.path_join("sfx").path_join(d.get_basename() + ".ogg")), "sfx/%s.ogg als Rückfall vorhanden" % d.get_basename())
+	# Schnurren beim Aussetzen (Beta 1.3.4): Spielton über die Ton-Einstellung; Sternenschauer nachts, Konfetti tags, beide bei „Effekte reduziert“ aus
+	check(liste.has("schnurren") and str(liste.get("schnurren", "")).ends_with(".m4a"), "sfx/index.json nennt „schnurren“ als m4a")
+	check(FileAccess.file_exists(web_dir.path_join("sfx/schnurren.ogg")), "sfx/schnurren.ogg als Rückfall vorhanden")
+	var ton_js := read_web("ton.js")
+	var tisch_js := read_web("tisch.js")
+	var css_text := read_web("style.css")
+	check(ton_js.contains("'sieg', 'schnurren']"), "ton.js: „schnurren“ gehört zu den Spieltönen (Ton-Einstellung)")
+	check(tisch_js.contains("case 'skip':\n          M.Ton.spiele('schnurren')") and tisch_js.contains("case 'skip_all':\n          M.Ton.spiele('schnurren')"),
+		"tisch.js: Schnurren bei skip und skip_all")
+	check(tisch_js.contains("sternenschauer()") and tisch_js.contains("dataset.seite === 'dunkel') this.sternenschauer(); else this.konfetti()"),
+		"tisch.js: Partie-Ende nachts Sternenschauer, tagsüber Konfetti")
+	check(css_text.contains("body.reduziert .stern") and css_text.contains("@keyframes sternRegen") and css_text.contains("body:not([data-seite=\"dunkel\"]) #lobby"),
+		"style.css: Sternenschauer (bei reduzierten Effekten aus) und helle Lobby am Tag")
 	for name in liste:
 		var datei: Variant = liste[name]
 		check(datei is String and str(datei) != "" and not str(datei).contains("/") and not str(datei).contains(".."),

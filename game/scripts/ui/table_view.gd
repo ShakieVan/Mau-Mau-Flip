@@ -1646,12 +1646,14 @@ func _ev_skip(ev: Dictionary) -> float:
 	else:
 		fx.zzz(p + Vector2(0, -140), _d(1.0))
 		fx.float_text(p + Vector2(0, -100), "Du setzt aus", 34, UiPalette.MOON, _d(1.1), 30.0)
+	UiApp.sound("schnurren")
 	if seat == my_seat:
 		UiApp.vibrate(10, 0.3)
 	return _d(0.9)
 
 
 func _ev_skip_all(ev: Dictionary) -> float:
+	UiApp.sound("schnurren")
 	var player := int(ev.get("seat", _last_player if _last_player >= 0 else int(view.get("turn", 0))))
 	var dir := int(view.get("dir", 1))
 	var pts := PackedVector2Array()
@@ -1898,10 +1900,7 @@ func _ev_round_over(ev: Dictionary, game_over: bool) -> float:
 	var target := _target()
 	var v := target if not target.is_empty() else view
 	var sz := size if size.x > 10.0 else TableLayout.BASE
-	var colors: Array = []
-	for c in UiPalette.LIGHT_COLORS:
-		colors.append(UiPalette.glow(c))
-	fx_top.confetti(Rect2(0, 0, sz.x, 10), colors, 320 if game_over else 220)
+	fx_top.celebrate(Rect2(0, 0, sz.x, 10), 320 if game_over else 220)
 	_show_round_end(v, ev, game_over)
 	UiApp.sound("sieg")
 	UiApp.vibrate(30, 0.5)

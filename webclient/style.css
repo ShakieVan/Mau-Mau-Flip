@@ -1007,3 +1007,38 @@ body[data-screen="tisch"][data-seite="dunkel"] .rk { background: rgba(244,240,25
    und Farbanzeige, aber unter Hinweisleiste (50) und Knöpfen (60); im großen Modus die vorgezogene Zeile über der letzten sichtbaren */
 .gegner-box.fangbar { z-index: 46; }
 .gg.vorn { z-index: 3; }
+
+/* ---------------- Lobby tagsüber hell, nachts dunkel (AGENTS.md 29) ----------------
+ * Vor Spielbeginn ist Tag; nach einer Nachtpartie bleibt body[data-seite="dunkel"] stehen, dann bleibt auch die Lobby dunkel. */
+body[data-screen="lobby"]:not([data-seite="dunkel"]) { background: #E6D7BC; }
+body:not([data-seite="dunkel"]) #lobby { background: radial-gradient(ellipse 80% 70% at 50% 40%, #FFF7E8 0%, #F4EADA 55%, #E6D7BC 100%); color: var(--ink); }
+body:not([data-seite="dunkel"]) #lobby::before { display: none; }
+body:not([data-seite="dunkel"]) #lobby .mini-logo { box-shadow: 0 6px 14px rgba(33,27,44,.25); }
+body:not([data-seite="dunkel"]) #lobby .lobby-titel h2 { color: var(--ink); }
+body:not([data-seite="dunkel"]) #lobby .lobby-titel p { color: #4F4360; }
+body:not([data-seite="dunkel"]) #lobby .lobby-zahl { background: rgba(33,27,44,.08); border-color: rgba(33,27,44,.25); color: var(--ink); }
+body:not([data-seite="dunkel"]) #lobby .lz { background: #FFFBF2; box-shadow: 0 0 0 2px rgba(33,27,44,.14), 0 5px 12px rgba(33,27,44,.18); }
+body:not([data-seite="dunkel"]) #lobby .lz.ich { box-shadow: 0 0 0 3px var(--pink), 0 5px 12px rgba(33,27,44,.18); }
+body:not([data-seite="dunkel"]) #lobby .lobby-seite { background: rgba(255,251,242,.7); border-color: rgba(33,27,44,.2); }
+body:not([data-seite="dunkel"]) #lobby .lobby-seite .knopf.haupt { background: var(--ink); color: var(--cream); box-shadow: 0 4px 0 #0B0811, 0 10px 20px rgba(33,27,44,.25); }
+body:not([data-seite="dunkel"]) #lobby .lobby-seite .knopf.haupt.an { background: #4FD36E; color: var(--ink); box-shadow: 0 4px 0 #2C8543, 0 10px 20px rgba(44,133,67,.3); }
+body:not([data-seite="dunkel"]) #lobby .lobby-status { color: var(--ink); }
+body:not([data-seite="dunkel"]) #lobby .lobby-hinweis { color: #4A3F57; }
+body:not([data-seite="dunkel"]) #lobby .lobby-seite .regeln-box { color: var(--ink); }
+
+/* ---------------- Sternenschauer (Partie-Ende nachts) ---------------- */
+.stern { width: var(--s, 22px); height: var(--s, 22px); margin: calc(var(--s, 22px) / -2) 0 0 calc(var(--s, 22px) / -2); background: var(--c, #fff); filter: drop-shadow(0 0 6px var(--c, #fff));
+  clip-path: polygon(50% 0, 61% 36%, 98% 38%, 68% 60%, 79% 96%, 50% 74%, 21% 96%, 32% 60%, 2% 38%, 39% 36%);
+  animation: sternRegen var(--t, 2.8s) cubic-bezier(.25,.5,.45,1) both; }
+@keyframes sternRegen {
+  0% { transform: translate(0, 0) rotate(0) scale(.2); opacity: 0; }
+  12% { opacity: 1; transform: translate(calc(var(--dx) * .25), calc(var(--dy) * .8)) rotate(calc(var(--r) * .15)) scale(1); }
+  30% { opacity: .35; } 42% { opacity: 1; } 56% { opacity: .4; } 70% { opacity: 1; }
+  100% { transform: translate(var(--dx), 760px) rotate(var(--r)) scale(.6); opacity: 0; }
+}
+body.reduziert .stern, body.reduziert .konfetti { display: none; }
+@media (prefers-reduced-motion: reduce) { .stern, .konfetti { display: none; } }
+body:not([data-seite="dunkel"]) #lobby .lobby-seite .schrift-wahl { color: var(--ink); }
+body:not([data-seite="dunkel"]) #lobby .lobby-seite .schrift-wahl .seg { background: rgba(33,27,44,.1); }
+body:not([data-seite="dunkel"]) #lobby .lobby-seite .schrift-wahl .seg button { color: var(--ink); }
+body:not([data-seite="dunkel"]) #lobby .lobby-seite .schrift-wahl .seg button.an { background: var(--ink); color: var(--cream); }

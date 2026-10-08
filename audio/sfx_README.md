@@ -21,6 +21,7 @@ Bis 05.10.2026 stand hier: „synthetisch, eigenes Skript `tools/make_sfx.py`, k
 | Du bist dran | `dran` | `dran_04` | Marimba, drei Anschläge aufwärts (etwa A4 – D5 – A5) | 0,60 s |
 | Fehler | `fehler` | `fehler_09` | hohles, holziges „Tock“ | 0,25 s |
 | Sieg | `sieg` | `sieg_03` | Glockenspiel und Marimba, Tonfolge aufwärts (etwa C4 – E4 – G4 – C5) | 1,76 s |
+| Aussetzen | `schnurren` | `schnurren3_03` (Runde 3, `tools/make_schnurren.py --runde3`) | sanftes Katzenschnurren, spielt beim Legen von „Aussetzen“ und „Alle aussetzen“ auf allen Geräten | 1,64 s |
 
 Ausgabe (alle mono, 48 kHz, 20 ms Stille am Ende):
 
@@ -61,7 +62,8 @@ tools\godot_import.ps1                        # Godot-Import auffrischen
 - **Kein Rauschen über 6 kHz:** über 6/10/12 kHz höchstens −30/−50/−60 dB gegenüber dem ganzen Ton, auch nach dem Kodieren. Die Papiergeräusche und der Flip liegen knapp unter −30 dB (−30,3 bis −30,8 dB): Die Grenzfrequenz ist so gewählt. Die tonalen Töne liegen weit darunter (−48 bis −81 dB).
 - **Kein Piepen bei 3–4 kHz:** keine schmale Linie zwischen 2 und 6 kHz (Suche nach Spitzen mehr als 12 dB über der Umgebung). Die Papiergeräusche haben dort viel breitbandige Energie (−4 bis −6 dB Anteil, stärkster Teil des Spektrums), aber keine Spitze. Bei Flip, dran, sieg und fehler liegt der Anteil bei −17 bis −68 dB.
 - **Keine Tierlaute, Stimmen, Zischen:** keine Prompts mit Vögeln, Quietschen, Miauen oder Zischlauten. Der AudioSet-Klassifikator findet bei keinem Kandidaten Katze, Tier oder Vogel (unter 0,03). Der zischende Kandidat `flip_03` ist nicht im Spiel.
-- **Kein Schnurren:** Die Hüllkurve pulsiert im Bereich 15–50 Hz nirgends deutlich (Schärfe höchstens 6,9; Warnschwelle 10).
+- **Schnurren (Ausnahme):** Der Ton `schnurren` ist ein absichtliches Schnurren (Nutzerentscheidung 08.10.2026) und fällt unter keine dieser Prüfungen. Er liegt wie die übrigen Spieltöne unter der Einstellung „Spieltöne“ (ab Werk aus), Lautheit −23,6 LUFS, Spitze −1,1 dBFS; Herkunft wie oben (MOSS-SoundEffect v2.0, Apache 2.0), Datei unverändert kopiert aus `audio/entwurf/schnurren3/schnurren3_03.ogg` nach `game/assets/sfx/schnurren.ogg`.
+- **Kein Schnurren (bei allen anderen Tönen):** Die Hüllkurve pulsiert im Bereich 15–50 Hz nirgends deutlich (Schärfe höchstens 6,9; Warnschwelle 10).
 - **Weicher Einsatz:** Kosinus-Anstieg 3 ms. Karte, dran und sieg sind bewusst klare Anschläge.
 
 ## Pegel im Spiel

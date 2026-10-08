@@ -114,10 +114,10 @@ Online-Spiel Schritt 1: Vermittler (`relay/`, Cloudflare Worker + Durable Object
 
 Anlass: erstes echtes Online-Spiel des Nutzers (S24 Gastgeber, Freundin als Gast in anderer Stadt); Anzeigen liefen nach App-Wechseln (Threema) auseinander, „Computer spielt für …“ wirkte wie ein Zustand, schwarzes Quadrat statt Zurück-Pfeil auf dem Gerät der Freundin. Umgesetzt: Herzschlag 10 s/25 s + Prüfung 6 s nach eigener Aktion, Hinweise „Online-Verbindung unterbrochen …“/„Verbindung zum Gastgeber unterbrochen …“, Code 4012 (Gäste melden sich nach Gastgeber-Rückkehr neu an), App-Wechsel mit `away`/`back` („… ist kurz in einer anderen App“, Gastgeber-Abwesenheit bei Gästen, Prüfung beim Zurückkehren ~3 s), Knopf „Computer für %s spielen lassen“ erst nach 30 s, Netzbindung beim Vermittler-Verbinden zählend ausgesetzt, letzter Raumcode vorbelegt, Lite-Startseite tagsüber hell, Zurück-Pfeil/Roboter ohne `get_image()`. Gerätetest S24 (Android 16, Daten behalten), S21, S10: `docs/geraetetest/1.3.3/BERICHT.md`. Offen (niedrig): Online-Raum blieb nach Verlassen zweimal ~10 min offen (nach Gast-Abwesenheit; `{k:"end"}`?), Lite-Lobby tagsüber dunkel, Spiel-WLAN bleibt nach Verlassen offen, Android 16 nur Spiel-WLAN + Mobilfunk ungetestet.
 
-## Geplant für Beta 1.3.4 (Nutzerwünsche 08.10.2026)
+## Erledigt in Beta 1.3.4 (veröffentlicht 08.10.2026; Nutzerwünsche vom selben Tag)
 
-- **Aussetzen-Karten:** beim Legen ein Katzenschnurren (Spieltöne; Kandidaten aus MOSS-SoundEffect wie die übrigen Spieltöne, Nutzer wählt per Hörseite; nichts aus `audio/referenz`). Runde 1 (`audio/entwurf/schnurren/`) war dem Nutzer „zu dumpf für den Handylautsprecher“; Runde 2 heller (`audio/entwurf/schnurren2/`, Handy-Simulation).
-- **Partie-Ende nachts:** statt Konfettiregen ein bunter Sternenschauer (App und Browser; tagsüber bleibt Konfetti).
+- **Aussetzen-Karten:** beim Legen ein Katzenschnurren (Spieltöne; Kandidaten aus MOSS-SoundEffect wie die übrigen Spieltöne, Nutzer wählt per Hörseite; nichts aus `audio/referenz`). Runde 1 (`audio/entwurf/schnurren/`) war dem Nutzer „zu dumpf für den Handylautsprecher“; Runde 2 heller (`audio/entwurf/schnurren2/`, Handy-Simulation) war „zu hell und kratzig“, 2_09 die Richtung; **gewählt: `audio/entwurf/schnurren3/schnurren3_03.ogg`** (2_09 weich, Puls etwas deutlicher) → `game/assets/sfx/schnurren.ogg`, `webclient/sfx/schnurren.ogg|m4a`.
+- **Partie-Ende nachts:** statt Konfettiregen ein bunter Sternenschauer (App `Effects.celebrate/star_shower`, Browser `feier()`; tagsüber bleibt Konfetti). Browser-Lobby tagsüber hell (nach einer Nachtpartie bleibt sie dunkel). Bericht `docs/geraetetest/1.3.4/BERICHT.md`; Schnurren am Gerät noch nicht gehört.
 
 ## Geplant: Online-Spiel, Schritt 1 (Nutzerentscheidung 08.10.2026)
 

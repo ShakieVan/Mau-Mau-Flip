@@ -12,6 +12,9 @@ var night := 0.0
 static var _glow_tex: Texture2D
 static var _dot_tex: Texture2D
 static var _rect_tex: Texture2D
+static var _star_tex: Texture2D
+
+var last_celebration := ""      # für Tests: "konfetti" oder "sterne" (zuletzt gestartet)
 
 
 func factor() -> float:
@@ -56,6 +59,24 @@ static func rect_texture() -> Texture2D:
 		img.fill(Color.WHITE)
 		_rect_tex = ImageTexture.create_from_image(img)
 	return _rect_tex
+
+
+static func star_texture() -> Texture2D:
+	# Fünfzackiger Stern (weiß, weiche Kante), wird über modulate bzw. Teilchenfarbe eingefärbt
+	if _star_tex == null:
+		var n := 32
+		var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
+		var c := Vector2(n, n) * 0.5
+		for y in n:
+			for x in n:
+				var v := Vector2(x + 0.5, y + 0.5) - c
+				var ang := atan2(v.y, v.x) + PI * 0.5
+				var k := fposmod(ang, TAU / 5.0) - PI / 5.0           # Abstand zur Zackenmitte
+				var edge := lerpf(0.30, 1.0, 1.0 - clampf(absf(k) / (PI / 5.0), 0.0, 1.0)) * (n * 0.5 - 1.0)
+				var a := clampf((edge - v.length()) / 1.5 + 0.5, 0.0, 1.0)
+				img.set_pixel(x, y, Color(1, 1, 1, a))
+		_star_tex = ImageTexture.create_from_image(img)
+	return _star_tex
 
 
 static func additive() -> CanvasItemMaterial:
@@ -205,6 +226,94 @@ func confetti(area: Rect2, colors: Array, amount := 220) -> void:
 	fade.colors = PackedColorArray([Color.WHITE, Color.WHITE, Color(1, 1, 1, 0)])
 	p.color_ramp = fade
 	_one_shot(p, p.lifetime)
+
+
+# Partie- bzw. Rundenende: tagsüber Konfetti, auf der Nachtseite ein bunter Sternenschauer (gleiche Dauer und Breite)
+func celebrate(area: Rect2, amount := 220) -> void:
+	if night > 0.5:
+		last_celebration = "sterne"
+		var colors: Array = []
+		for c in UiPalette.DARK_COLORS:
+			colors.append(UiPalette.glow(c))
+		colors.append(Color.WHITE)
+		colors.append(Color("#FFD76A"))
+		star_shower(area, colors, amount)
+	else:
+		last_celebration = "konfetti"
+		var colors: Array = []
+		for c in UiPalette.LIGHT_COLORS:
+			colors.append(UiPalette.glow(c))
+		confetti(area, colors, amount)
+
+
+# Sternenschauer: Sterne in den übergebenen Farben fallen langsam, drehen sich sanft und funkeln; dazu ein Glitzerschweif aus
+# additiven Punkten. „Reduziert“: wenige ruhige Sterne ohne Funkeln und Schweif.
+func star_shower(area: Rect2, colors: Array, amount := 220) -> void:
+	var calm := reduced
+	var p := CPUParticles2D.new()
+	p.position = Vector2(area.get_center().x, area.position.y - 10.0)
+	p.one_shot = true
+	p.explosiveness = 0.75
+	p.amount = maxi(10, int(amount * (0.06 if calm else 0.45)))
+	p.lifetime = 2.6
+	p.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	p.emission_rect_extents = Vector2(area.size.x * 0.5, 8.0)
+	p.direction = Vector2(0, 1)
+	p.spread = 25.0
+	p.initial_velocity_min = 60.0
+	p.initial_velocity_max = 200.0
+	p.gravity = Vector2(0, 220)
+	p.damping_min = 20.0
+	p.damping_max = 50.0
+	p.angular_velocity_min = -90.0
+	p.angular_velocity_max = 90.0
+	p.angle_min = 0.0
+	p.angle_max = 72.0
+	p.scale_amount_min = 0.7
+	p.scale_amount_max = 1.5
+	if not calm:
+		var tw := Curve.new()                      # Funkeln: die Größe pulsiert zweimal
+		for pt in [[0.0, 0.6], [0.2, 1.0], [0.4, 0.55], [0.6, 1.0], [0.8, 0.6], [1.0, 0.2]]:
+			tw.add_point(Vector2(pt[0], pt[1]))
+		p.scale_amount_curve = tw
+	p.texture = star_texture()
+	var g := Gradient.new()
+	g.interpolation_mode = Gradient.GRADIENT_INTERPOLATE_CONSTANT
+	var offs := PackedFloat32Array()
+	var cols := PackedColorArray()
+	for i in colors.size():
+		offs.append(float(i) / colors.size())
+		cols.append(colors[i])
+	g.offsets = offs
+	g.colors = cols
+	p.color_initial_ramp = g
+	var fade := Gradient.new()
+	fade.offsets = PackedFloat32Array([0.0, 0.8, 1.0])
+	fade.colors = PackedColorArray([Color.WHITE, Color.WHITE, Color(1, 1, 1, 0)])
+	p.color_ramp = fade
+	_one_shot(p, p.lifetime)
+	if calm:
+		return
+	var s := CPUParticles2D.new()                  # Glitzerschweif
+	s.position = p.position
+	s.one_shot = true
+	s.explosiveness = 0.2
+	s.amount = int(amount * 0.9)
+	s.lifetime = 2.6
+	s.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	s.emission_rect_extents = p.emission_rect_extents
+	s.direction = Vector2(0, 1)
+	s.spread = 20.0
+	s.initial_velocity_min = 40.0
+	s.initial_velocity_max = 160.0
+	s.gravity = Vector2(0, 160)
+	s.scale_amount_min = 0.25
+	s.scale_amount_max = 0.7
+	s.texture = dot_texture()
+	s.material = additive()
+	s.color_initial_ramp = g
+	s.color_ramp = fade
+	_one_shot(s, s.lifetime)
 
 
 # Kurzes additives Aufleuchten (Neon zündet, Treffer)

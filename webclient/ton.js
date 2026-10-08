@@ -2,7 +2,7 @@
  * Zwei Gruppen mit eigener Lautstärke (wie in der App, game/scripts/app/sound.gd):
  *  - Mau-Töne „mau“ und „mau_mau“: die Aufnahmen des Nutzers (sfx/mau.m4a bzw. .ogg, sfx/mau_mau.*). Sie spielen auf JEDEM
  *    Gerät, sobald das Ereignis vom Gastgeber kommt (AGENTS.md Nr. 21), Stufe aus/leise/normal (Standard normal).
- *  - Spieltöne (karte, ziehen, mischen, flip, sieg, fehler, dran): dieselben Dateien wie in der App (sfx/<name>.m4a bzw. .ogg),
+ *  - Spieltöne (karte, ziehen, mischen, flip, sieg, fehler, dran, schnurren – Schnurren beim Aussetzen, MOSS-SoundEffect v2.0, Apache 2.0): dieselben Dateien wie in der App (sfx/<name>.m4a bzw. .ogg),
  *    eigener Schalter „Spieltöne“, Standard AUS (Nutzerwunsch 05.10.2026). Fehlt eine Datei, klingt ein synthetischer Ersatz.
  *    Pegel wie in der App: dort Mau normal −2 dB, Spieltöne normal −4,5 dB und leise −12,5 dB, also 2,5 bzw. 10,5 dB unter dem Mau-Ton.
  * Darüber ein Stummschalter (Ton-Knopf in der Ecke). sfx/index.json ({"mau":"mau.m4a", …}) nennt die Dateien; je Browser wird
@@ -13,7 +13,7 @@
   'use strict';
 
   const MAU_TOENE = ['mau', 'mau_mau'];
-  const SPIEL_TOENE = ['karte', 'ziehen', 'mischen', 'flip', 'dran', 'fehler', 'sieg'];
+  const SPIEL_TOENE = ['karte', 'ziehen', 'mischen', 'flip', 'dran', 'fehler', 'sieg', 'schnurren'];
   // Pegel je Stufe: Die Aufnahmen sind auf −1 dBTP ausgesteuert und verdichtet → „normal“ = volle Lautstärke (Handy-Lautsprecher)
   const STUFEN_MAU = { aus: 0, leise: 0.4, normal: 1.0 };
   const STUFEN_SPIEL = { aus: 0, leise: 0.3, normal: 0.75 };      // −10,5 bzw. −2,5 dB unter dem Mau-Ton (wie in der App, sound.gd TON_DB)

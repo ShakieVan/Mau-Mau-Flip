@@ -1035,6 +1035,29 @@
       this.flug.appendChild(w);
       setTimeout(() => w.remove(), 1000);
     }
+    // Partie-Ende: nachts Sternenschauer (Farben der dunklen Seite, Weiß und Gold), tagsüber Konfetti
+    feier() {
+      this._feierZeit = Date.now();
+      if (this.root.dataset.seite === 'dunkel') this.sternenschauer(); else this.konfetti();
+    }
+    sternenschauer() {
+      const farben = ['#FF7FCF', '#19C6D4', '#FF8A1F', '#9A86FF', '#FFFFFF', '#FFD65A', '#FFFFFF', '#FFD65A'];
+      for (let i = 0; i < 40; i++) {
+        const s = el('div', 'stern');
+        const dauer = 2200 + Math.random() * 1200;
+        s.style.left = (this.g.cx + (Math.random() - 0.5) * 240) + 'px';
+        s.style.top = (this.g.cy - 40) + 'px';
+        s.style.setProperty('--c', farben[i % farben.length]);
+        s.style.setProperty('--s', (20 + Math.random() * 26).toFixed(0) + 'px');
+        s.style.setProperty('--dx', ((Math.random() - 0.5) * 1300).toFixed(0) + 'px');
+        s.style.setProperty('--dy', (-220 - Math.random() * 280).toFixed(0) + 'px');
+        s.style.setProperty('--r', ((Math.random() < 0.5 ? -1 : 1) * (90 + Math.random() * 200)).toFixed(0) + 'deg');   // sanft drehen
+        s.style.setProperty('--t', dauer.toFixed(0) + 'ms');
+        s.style.animationDelay = (Math.random() * 300).toFixed(0) + 'ms';
+        this.flug.appendChild(s);
+        setTimeout(() => s.remove(), dauer + 450);
+      }
+    }
     konfetti() {
       const farben = ['#FF4D57', '#FFDD33', '#4FD36E', '#4C7DFF', '#FF9ECF', '#19C6D4', '#FF8A1F', '#8B6BFF'];
       for (let i = 0; i < 46; i++) {
@@ -1137,10 +1160,12 @@
           break;
         }
         case 'skip':
+          M.Ton.spiele('schnurren');
           t.abzeichen(e.seat, K().iconSVG('schlaf', { main: '#FFF7E8', cut: '#211B2C' }) + '<span>' + esc(M.t('Aussetzen')) + '</span>', 'aussetzen', d(1000));
           await schlaf(d(650));
           break;
         case 'skip_all':
+          M.Ton.spiele('schnurren');
           t.banner(M.t('Alle aussetzen!'), M.t('%s ist gleich noch mal dran', t.name(e.seat)), 'aussetzen', d(1200));
           await schlaf(d(800));
           break;
@@ -1217,12 +1242,13 @@
         case 'round_over': {
           const r = Array.isArray(e.ranking) ? e.ranking : [];
           const erster = r.length ? (typeof r[0] === 'object' ? r[0].seat : r[0]) : -1;
-          if (erster === ich) { M.Ton.spiele('sieg'); if (!reduziert) t.konfetti(); }
+          if (erster === ich) { M.Ton.spiele('sieg'); if (!reduziert) t.feier(); }
           t.banner(erster === ich ? 'Mau-Mau!' : M.t('Runde vorbei'), erster >= 0 ? M.t('%s ist fertig', t.name(erster)) : '', 'gross', d(1500));
           await schlaf(d(1300));
           break;
         }
         case 'game_over':
+          if (e.winner === ich && !reduziert && Date.now() - (t._feierZeit || 0) > 4000) t.feier();
           t.banner(M.t('Partie vorbei'), typeof e.winner === 'number' && e.winner >= 0 ? (e.winner === ich ? M.t('Du gewinnst!') : M.t('%s gewinnt', t.name(e.winner))) : '', 'gross', d(1500));
           await schlaf(d(1000));
           break;

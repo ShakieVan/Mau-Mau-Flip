@@ -1,7 +1,7 @@
 extends Node
 # Autoload „App“ (docs/BETA1_PLAN.md 9, Modul C): Einstellungen, Ton, Updater, ApkShare, Vibration und Bildschirm-an für alle Szenen.
 #   App.settings.get_value(key, default) / set_value(key, value)  – speichert sofort (AppSettings, user://einstellungen.json)
-#   App.sound.play(name)                                        – "mau", "karte", "ziehen", "mischen", "flip", "sieg", "fehler", "dran"
+#   App.sound.play(name)                                        – "mau", "karte", "ziehen", "mischen", "flip", "sieg", "fehler", "dran", "schnurren"
 #   App.vibrate(ms, strength)   App.set_keep_screen_on(on)   App.version()   App.is_android()
 #   App.updater (Updater)   App.apk_share (ApkShare)   App.stats (AppStats: Statistik je Gerät, Beta 1.2.1)
 # Die automatische Update-Prüfung (höchstens einmal am Tag) läuft nur in der Android-App, nie in Tests oder am PC: Sonst fragte jeder
