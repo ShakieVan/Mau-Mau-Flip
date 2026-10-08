@@ -117,7 +117,7 @@ Anlass: erstes echtes Online-Spiel des Nutzers (S24 Gastgeber, Freundin als Gast
 ## Erledigt in Beta 1.3.4 (veröffentlicht 08.10.2026; Nutzerwünsche vom selben Tag)
 
 - **Aussetzen-Karten:** beim Legen ein Katzenschnurren (Spieltöne; Kandidaten aus MOSS-SoundEffect wie die übrigen Spieltöne, Nutzer wählt per Hörseite; nichts aus `audio/referenz`). Runde 1 (`audio/entwurf/schnurren/`) war dem Nutzer „zu dumpf für den Handylautsprecher“; Runde 2 heller (`audio/entwurf/schnurren2/`, Handy-Simulation) war „zu hell und kratzig“, 2_09 die Richtung; **gewählt: `audio/entwurf/schnurren3/schnurren3_03.ogg`** (2_09 weich, Puls etwas deutlicher) → `game/assets/sfx/schnurren.ogg`, `webclient/sfx/schnurren.ogg|m4a`.
-- **Partie-Ende nachts:** statt Konfettiregen ein bunter Sternenschauer (App `Effects.celebrate/star_shower`, Browser `feier()`; tagsüber bleibt Konfetti). Browser-Lobby tagsüber hell (nach einer Nachtpartie bleibt sie dunkel). Bericht `docs/geraetetest/1.3.4/BERICHT.md`; Schnurren am Gerät noch nicht gehört.
+- **Partie-Ende nachts:** statt Konfettiregen ein bunter Sternenschauer (App `Effects.celebrate/star_shower`, Browser `feier()`; tagsüber bleibt Konfetti). Browser-Lobby tagsüber hell (nach einer Nachtpartie bleibt sie dunkel). Bericht `docs/geraetetest/1.3.4/BERICHT.md`; Schnurren am Gerät noch nicht gehört. **1.3.5:** App-Sterne hatten gebogene Kanten und wirkten wie Blumen (Nutzerbefund) → `Effects.star_texture` mit geraden, spitzen Zacken (64 px).
 
 ## Geplant: Online-Spiel, Schritt 1 (Nutzerentscheidung 08.10.2026)
 

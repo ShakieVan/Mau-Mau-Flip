@@ -82,7 +82,13 @@ func _celebration() -> void:
 	calm.celebrate(area, 220)
 	var p := calm.get_child(0) as CPUParticles2D
 	check(calm.get_child_count() == 1 and p.amount <= 20 and p.scale_amount_curve == null, "Reduziert: wenige ruhige Sterne")
-	check(TableEffects.star_texture().get_width() == 32, "Sterntextur")
+	# Gerade, spitze Zacken (Nutzerbefund 1.3.4: gebogene Kanten wirkten wie Blumen): Mitte und Spitze deckend, zwischen Spitze
+	# und Tal bei Radius 18,5 durchsichtig (bei der alten, gebogenen Form lag der Rand dort erst bei ~20 → deckend)
+	var star_img := TableEffects.star_texture().get_image()
+	var c := Vector2(32, 32)
+	var mid := c + Vector2(cos(deg_to_rad(-72.0)), sin(deg_to_rad(-72.0))) * 18.5
+	check(TableEffects.star_texture().get_width() == 64 and star_img.get_pixel(32, 32).a > 0.9 and star_img.get_pixel(32, 6).a > 0.5
+			and star_img.get_pixelv(Vector2i(mid)).a < 0.2, "Sterntextur: gerade, spitze Zacken")
 	fx.queue_free()
 	calm.queue_free()
 	# Tisch: Rundenende wählt nach der Tischseite

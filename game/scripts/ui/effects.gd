@@ -62,19 +62,26 @@ static func rect_texture() -> Texture2D:
 
 
 static func star_texture() -> Texture2D:
-	# Fünfzackiger Stern (weiß, weiche Kante), wird über modulate bzw. Teilchenfarbe eingefärbt
+	# Fünfzackiger Stern mit geraden, spitzen Zacken (weiß, weiche Kante), wird über modulate bzw. Teilchenfarbe eingefärbt.
+	# Nutzerbefund 1.3.4: Die frühere Form (Zackenrand linear über den Winkel) hatte gebogene Kanten und wirkte wie Blumen.
 	if _star_tex == null:
-		var n := 32
-		var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
+		var n := 64
 		var c := Vector2(n, n) * 0.5
+		var outer := n * 0.5 - 2.0
+		var inner := outer * 0.42
+		var pts := PackedVector2Array()
+		for i in 10:
+			var ang := -PI * 0.5 + i * PI / 5.0
+			pts.append(c + Vector2(cos(ang), sin(ang)) * (outer if i % 2 == 0 else inner))
+		var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
 		for y in n:
 			for x in n:
-				var v := Vector2(x + 0.5, y + 0.5) - c
-				var ang := atan2(v.y, v.x) + PI * 0.5
-				var k := fposmod(ang, TAU / 5.0) - PI / 5.0           # Abstand zur Zackenmitte
-				var edge := lerpf(0.30, 1.0, 1.0 - clampf(absf(k) / (PI / 5.0), 0.0, 1.0)) * (n * 0.5 - 1.0)
-				var a := clampf((edge - v.length()) / 1.5 + 0.5, 0.0, 1.0)
-				img.set_pixel(x, y, Color(1, 1, 1, a))
+				var q := Vector2(x + 0.5, y + 0.5)
+				var d := INF
+				for i in 10:
+					d = minf(d, q.distance_to(Geometry2D.get_closest_point_to_segment(q, pts[i], pts[(i + 1) % 10])))
+				var sd := -d if Geometry2D.is_point_in_polygon(q, pts) else d    # negativ = innen
+				img.set_pixel(x, y, Color(1, 1, 1, clampf(0.5 - sd / 1.2, 0.0, 1.0)))
 		_star_tex = ImageTexture.create_from_image(img)
 	return _star_tex
 
@@ -269,8 +276,8 @@ func star_shower(area: Rect2, colors: Array, amount := 220) -> void:
 	p.angular_velocity_max = 90.0
 	p.angle_min = 0.0
 	p.angle_max = 72.0
-	p.scale_amount_min = 0.7
-	p.scale_amount_max = 1.5
+	p.scale_amount_min = 0.4                  # Textur 64 px (vorher 32 px bei 0,7–1,5)
+	p.scale_amount_max = 0.85
 	if not calm:
 		var tw := Curve.new()                      # Funkeln: die Größe pulsiert zweimal
 		for pt in [[0.0, 0.6], [0.2, 1.0], [0.4, 0.55], [0.6, 1.0], [0.8, 0.6], [1.0, 0.2]]:
