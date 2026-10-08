@@ -132,6 +132,7 @@ Anlass: erstes echtes Online-Spiel des Nutzers (S24 Gastgeber, Freundin als Gast
 - **Beta 1.2.1:** kleine Restpunkte (kräftigere Ränder der Handkarten im großen Modus; Browser großer Modus: Stapel im großen Desktop-Fenster, Hinweis „Du bist dran“ nicht über dem Stapelrand; Browser hochkant: Lobby-Zeilen; Browser-Vibration beim eigenen Zug **ab Werk an**; wackelige Tests test_screens_flow/test_net_rebind robuster) und **Statistik** ohne neuen Hauptmenü-Knopf: Abschnitt „Deine Statistik“ in den Einstellungen (pro Gerät: Partien, Siege, Mau-Mau, Erwischt, größte Hand, höchster Glücksspiel-Treffer …, Zurücksetzen), dazu höchstens ein kleiner Satz am Rundenende.
 - **Beta 1.2.2:** englische Fassung (App, Browser, Regeltexte; Sprache automatisch nach System, umschaltbar); der Nutzer testet wenig, Prüfung über Kontrollbilder.
 - **Beta 1.3.x** (nach Release 1.3.0 mit Englisch und Statistik): Online-Spiel (Cloudflare-Vermittler mit Raumcode), dann Godot-Web-Client (volle Optik) für Online-Gäste, dann Gastgeber-Übergabe (zuerst online, WLAN danach prüfen). **Release 1.4**, wenn Online-Spiel und Übergabe zuverlässig laufen.
+- **Pause (Nutzer 08.10.2026, nach Beta 1.3.5):** Godot-Web-Client und Gastgeber-Übergabe vorerst zurückgestellt – erst wieder anfangen, wenn der Nutzer es sagt (Wochenkontingent stand bei 77 %, Neustart Montag 12.10. 20 Uhr).
 - Bestätigt durch den Nutzer: Spieltöne (MOSS) „erste Sahne“, Spiel-WLAN funktioniert. Offen: iPhone als Gast nie getestet; Play-Protect-Warnung.
 
 ## Empfehlung aus der Recherche
