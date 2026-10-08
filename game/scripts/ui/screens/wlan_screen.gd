@@ -70,7 +70,7 @@ func my_name() -> String:
 	var st: Variant = app.get("settings") if app != null else null
 	if st is Object and (st as Object).has_method("player_name"):
 		return str((st as Object).call("player_name"))
-	return "Gastgeber"
+	return I18n.t("Gastgeber")
 
 
 func _host() -> void:

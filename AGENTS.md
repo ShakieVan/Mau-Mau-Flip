@@ -92,6 +92,14 @@ Stand von Beta 1.1.4 als reguläres Release in `ShakieVan/Mau-Mau-Flip`.
 
 Großer Modus: Kopf „Reihenfolge“ mit großem Kreispfeil über der Spielerliste auch in der App (`list_header.gd`), dreht sich beim Richtungswechsel; im Browser größer. Offen: Drehung/Gegenrichtung im Browser nicht im Bild geprüft.
 
+## Erledigt in Beta 1.2.1 (veröffentlicht 08.10.2026)
+
+Statistik je Gerät (`game/scripts/app/stats.gd`, `user://statistik.json`, Abschnitt „Deine Statistik“ in den Einstellungen mit Zurücksetzen, Satz am Rundenende bei Sieg), kräftiger Rand der Handkarten im großen Modus, Browser: große Stapel im Desktop-Fenster, „Du bist dran“ nicht mehr über den Stapeln, Lobby hochkant ohne Abschneiden, Vibration ab Werk an; test_screens_flow/test_net_rebind robuster (`rebind()` versucht den alten Port mehrmals). Bericht: `docs/geraetetest/1.2.1/BERICHT.md`. Kosten der schlanken Beta: etwa 1 % des Wochenkontingents. Offen: App großer Modus – „Du bist dran“ überdeckt die untere Ecke der Ablage (niedrig). App: „Bei deinem Zug: Vibration“ ab 1.2.2 ab Werk an (Nutzerentscheidung 08.10.2026; wer es ausgeschaltet hat, behält das).
+
+## Erledigt in Beta 1.2.2 (veröffentlicht 08.10.2026)
+
+Englische Fassung: gettext (`game/i18n/en_screens.po`, `en_table.po`, `en_rules.po`, msgid = deutscher Text), Klasse `I18n` (`game/scripts/app/i18n.gd`, `I18n.t`, Live-Wechsel über NOTIFICATION_TRANSLATION_CHANGED), Einstellung `sprache` (auto/de/en), Glossar `game/i18n/GLOSSAR.md`. Protokoll: Hinweise/Meldungen tragen zusätzlich `lt` (Bausteine), `text` bleibt deutsch für alte Geräte – jedes Gerät zeigt seine Sprache. Browser: `webclient/i18n.js`, `i18n_en.js`, `i18n_po.js` (beim Bauen aus den .po erzeugt), Umschalter im Lite-Menü, `?lang=en`. Lückentest `test_i18n` (streng, 0 Lücken). App-Vibration beim eigenen Zug ab Werk an. Bericht: `docs/geraetetest/1.2.2/BERICHT.md`. Neue Texte immer mit `I18n.t`/`M.t` und Eintrag in der passenden .po. Offen (niedrig): HTTP-Fehler-/APK-Hinweisseiten des Hosts nur deutsch; Sprachwahl im Browser nicht auf der Startseite; teils doppelte Texte in `i18n_en.js` und .po; manche zusammengesetzte Texte wechseln erst beim Neuaufbau.
+
 ## Geplant: Online-Spiel, Schritt 1 (Nutzerentscheidung 08.10.2026)
 
 - Vermittler (Relay) als Cloudflare Worker mit Durable Objects (ein Raum = ein Objekt), im Repo samt „Deploy to Cloudflare“-Knopf im README: Jede Gruppe (oder der Nutzer als Standard) richtet sich mit einem Klick einen eigenen Gratis-Vermittler ein; der Gratistarif pausiert bei Überschreiten der Tageslimits, kostet aber nichts. Vor dem Umsetzen die aktuellen Bedingungen (Durable Objects im Gratistarif, WebSocket-Limits) prüfen.

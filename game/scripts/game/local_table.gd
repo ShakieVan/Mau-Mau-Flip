@@ -104,14 +104,14 @@ func act(action: Dictionary) -> void:
 	if str(action.get("a", "")) == "next_round":
 		var r := _apply(host_seat, action)
 		if not bool(r.ok):
-			notice.emit(str(r.reason))
+			notice.emit(I18n.reason(r))
 		return
 	if _shown < 0:
 		notice.emit("Erst das Handy weitergeben.")
 		return
 	var res := _apply(_shown, action)
 	if not bool(res.ok):
-		notice.emit(str(res.reason))
+		notice.emit(I18n.reason(res))
 
 
 func reveal() -> void:

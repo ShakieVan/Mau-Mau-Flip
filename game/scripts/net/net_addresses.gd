@@ -191,7 +191,7 @@ static func bind_for(purpose: String, address := "") -> String:
 	elif purpose == "join" and bool(_helper.callv("in_hotspot", [s, address])):
 		target = str(_helper.callv("join_binding", [s, address]))
 	if target == "hotspot":
-		var problem := str(_helper.callv("bind_network", [_helper.callv("hotspot_handle", [s])]))
+		var problem := Updater.java_text(str(_helper.callv("bind_network", [_helper.callv("hotspot_handle", [s])])))
 		if problem == "":
 			bound_to = "hotspot"
 			return bound_to
@@ -202,12 +202,12 @@ static func bind_for(purpose: String, address := "") -> String:
 			_call("unbind")
 		bound_to = ""
 		if target != "" and wifi == "":
-			bind_problem = "Kein WLAN verbunden."
+			bind_problem = I18n.t("Kein WLAN verbunden.")
 		return ""
 	if bool(_helper.callv("bound_to_wifi", [s])):
 		bound_to = "wifi"
 		return bound_to
-	var err := str(_call("bind_wifi"))
+	var err := Updater.java_text(str(_call("bind_wifi")))
 	bound_to = "wifi" if err == "" else ""
 	bind_problem = err
 	return bound_to

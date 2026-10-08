@@ -111,6 +111,40 @@ function Read-KeyProperties([string]$Path) {
     return $props
 }
 
+function Build-I18nPo {
+    # game/i18n/*.po → webclient/i18n_po.js (Beta 1.2.2): die englischen Texte der App auch für den Browser-Client (Hinweise und
+    # Gründe des Gastgebers als Bausteine, Regeltexte, Kartennamen, Netz-Meldungen). Nur Einträge mit msgstr; sortiert, damit die
+    # Datei bei gleichem Inhalt gleich bleibt (Testcache). Format: window.MMF_I18N_PO = {JSON}; (test_web_contract liest es).
+    $dir = Join-Path $gamePath 'i18n'
+    $target = Join-Path $projectRoot 'webclient/i18n_po.js'
+    $map = New-Object 'System.Collections.Generic.SortedDictionary[string,string]' ([StringComparer]::Ordinal)
+    $unq = {
+        param([string]$q)
+        $t = $q.Trim()
+        if ($t.Length -ge 2 -and $t.StartsWith('"') -and $t.EndsWith('"')) { $t = $t.Substring(1, $t.Length - 2) }
+        return $t.Replace('\n', "`n").Replace('\"', '"').Replace('\\', '\')
+    }
+    foreach ($po in @(Get-ChildItem -LiteralPath $dir -Filter '*.po' -ErrorAction SilentlyContinue | Sort-Object Name)) {
+        $id = $null; $str = $null; $field = ''
+        $flush = { if ($null -ne $id -and $id -ne '' -and $str -ne '') { $map[$id] = $str } }
+        foreach ($raw in [IO.File]::ReadAllLines($po.FullName, [Text.Encoding]::UTF8)) {
+            $line = $raw.Trim()
+            if ($line -eq '' -or $line.StartsWith('#')) { continue }
+            if ($line.StartsWith('msgid ')) { . $flush; $id = & $unq $line.Substring(6); $str = ''; $field = 'id' }
+            elseif ($line.StartsWith('msgstr ')) { $str = & $unq $line.Substring(7); $field = 'str' }
+            elseif ($line.StartsWith('"')) { if ($field -eq 'id') { $id += & $unq $line } elseif ($field -eq 'str') { $str += & $unq $line } }
+        }
+        . $flush
+    }
+    $esc = { param([string]$s) '"' + $s.Replace('\', '\\').Replace('"', '\"').Replace("`n", '\n').Replace("`r", '').Replace("`t", '\t') + '"' }
+    $lines = New-Object System.Collections.Generic.List[string]
+    foreach ($k in $map.Keys) { $lines.Add('  ' + (& $esc $k) + ': ' + (& $esc $map[$k])) }
+    $body = "/* Erzeugt von tools/build.ps1 (Build-I18nPo) aus game/i18n/*.po – nicht von Hand ändern. */`nwindow.MMF_I18N_PO = {`n" + ($lines -join ",`n") + "`n};`n"
+    $old = if (Test-Path -LiteralPath $target) { [IO.File]::ReadAllText($target) } else { '' }
+    if ($old -cne $body) { [IO.File]::WriteAllText($target, $body, (New-Object Text.UTF8Encoding($false))) }
+    Write-Output ("i18n_po.js: {0} Texte" -f $map.Count)
+}
+
 function Build-WebZip {
     # webclient/ → game/assets/web.zip: Einträge mit Pfaden relativ zu webclient/ und „/“ als Trenner (Compress-Archive aus Windows
     # PowerShell 5.1 schriebe „\“), ohne Ordnereinträge und ohne versteckte Dateien. Der Netz-Server (Modul D) liefert daraus aus.
@@ -121,6 +155,7 @@ function Build-WebZip {
         Write-Output 'Hinweis: webclient/index.html fehlt noch – game/assets/web.zip bleibt, wie es ist.'
         return
     }
+    Build-I18nPo
     $base = (Resolve-Path -LiteralPath $source).Path.TrimEnd('\') + '\'
     $files = @(Get-ChildItem -LiteralPath $source -Recurse -File | Where-Object {
             $rel = $_.FullName.Substring($base.Length)

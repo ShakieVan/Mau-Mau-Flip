@@ -224,86 +224,84 @@ func describe() -> Array[String]:
 	var out: Array[String] = []
 	var p := preset_name()
 	if p != "":
-		out.append("Voreinstellung: %s." % PRESET_TITLES[p])
+		out.append(I18n.t("Voreinstellung: %s.") % I18n.t(PRESET_TITLES[p]))
 	if round_end == "first":
-		out.append("Wer zuerst alle Karten los ist, gewinnt die Runde.")
+		out.append(I18n.t("Wer zuerst alle Karten los ist, gewinnt die Runde."))
 	else:
-		out.append("Bis zum Letzten: Wer fertig ist, scheidet aus. Gespielt wird um die Plätze, bis nur einer Karten hat.")
+		out.append(I18n.t("Bis zum Letzten: Wer fertig ist, scheidet aus. Gespielt wird um die Plätze, bis nur einer Karten hat."))
 	if effective_scoring() == "points500":
-		out.append("Wertung: Der Sieger bekommt die Punkte aller übrigen Handkarten. Wer zuerst %d Punkte hat, gewinnt die Partie." % target)
+		out.append(I18n.t("Wertung: Der Sieger bekommt die Punkte aller übrigen Handkarten. Wer zuerst %d Punkte hat, gewinnt die Partie.") % target)
 	elif scoring == "points500":
-		out.append("Wertung: Platzierungen (Punkte zählen nur, wenn die Runde beim ersten Fertigen endet).")
+		out.append(I18n.t("Wertung: Platzierungen (Punkte zählen nur, wenn die Runde beim ersten Fertigen endet)."))
 	else:
-		out.append("Wertung: keine – jede Runde zählt für sich, gezählt werden die Siege.")
-	out.append("%d Handkarten zu Beginn." % hand_size)
+		out.append(I18n.t("Wertung: keine – jede Runde zählt für sich, gezählt werden die Siege."))
+	out.append(I18n.t("%d Handkarten zu Beginn.") % hand_size)
 	if draw_rule == "one":
-		out.append("Passt nichts, ziehst du eine Karte.")
+		out.append(I18n.t("Passt nichts, ziehst du eine Karte."))
 	else:
-		out.append("Passt nichts, ziehst du so lange, bis eine Karte passt.")
+		out.append(I18n.t("Passt nichts, ziehst du so lange, bis eine Karte passt."))
 	match drawn_card:
 		"may":
-			out.append("Eine passende gezogene Karte darfst du sofort legen.")
+			out.append(I18n.t("Eine passende gezogene Karte darfst du sofort legen."))
 		"must":
-			out.append("Eine passende gezogene Karte musst du sofort legen.")
+			out.append(I18n.t("Eine passende gezogene Karte musst du sofort legen."))
 		"may_not":
-			out.append("Eine gezogene Karte darfst du erst im nächsten Zug legen.")
+			out.append(I18n.t("Eine gezogene Karte darfst du erst im nächsten Zug legen."))
 	if draw_play == "any" and draw_rule == "one":
-		out.append("Nach dem Ziehen darfst du %s passende Karte legen oder alles behalten." % ("eine andere" if drawn_card == "may_not" else "jede"))
+		out.append(I18n.t("Nach dem Ziehen darfst du eine andere passende Karte legen oder alles behalten.") if drawn_card == "may_not" else I18n.t("Nach dem Ziehen darfst du jede passende Karte legen oder alles behalten."))
 	if stacking == "same":
-		out.append("Stapeln: Wer eine Ziehkarte abbekommt, darf die gleiche drauflegen. Die Summe wandert weiter; bei der Farbjagd zieht das letzte Opfer bis zur Farbe.")
+		out.append(I18n.t("Stapeln: Wer eine Ziehkarte abbekommt, darf die gleiche drauflegen. Die Summe wandert weiter; bei der Farbjagd zieht das letzte Opfer bis zur Farbe."))
 	else:
-		out.append("Kein Stapeln: Wer eine Ziehkarte abbekommt, zieht und %s." % penalty_tail())
+		out.append(I18n.t("Kein Stapeln: Wer eine Ziehkarte abbekommt, zieht und %s.") % penalty_tail())
 	if penalty_turn == "play":
-		out.append("Nach dem Strafziehen bist du trotzdem dran: Du darfst legen – oder ziehst ganz normal, wenn nichts passt.")
-	var cond := "keine Karte in der aktuellen Farbe hat"
-	if wild_counts_for_bluff:
-		cond += " und keinen anderen Joker"
+		out.append(I18n.t("Nach dem Strafziehen bist du trotzdem dran: Du darfst legen – oder ziehst ganz normal, wenn nichts passt."))
+	var cond := I18n.t("keine Karte in der aktuellen Farbe und keinen anderen Joker hat") if wild_counts_for_bluff else I18n.t("keine Karte in der aktuellen Farbe hat")
 	match wild_restriction:
 		"bluff":
-			out.append("Wünscher +2 und Farbjagd nur, wenn man %s. Der Nächste darf anzweifeln." % cond)
+			out.append(I18n.t("Wünscher +2 und Farbjagd nur, wenn man %s. Der Nächste darf anzweifeln.") % cond)
 		"enforce":
-			out.append("Wünscher +2 und Farbjagd nur, wenn man %s – die App achtet darauf." % cond)
+			out.append(I18n.t("Wünscher +2 und Farbjagd nur, wenn man %s – die App achtet darauf.") % cond)
 		"free":
-			out.append("Wünscher +2 und Farbjagd dürfen immer gelegt werden.")
+			out.append(I18n.t("Wünscher +2 und Farbjagd dürfen immer gelegt werden."))
 	if jagd_wild_stops:
-		out.append("Farbjagd: Ein gezogener Joker beendet das Ziehen.")
+		out.append(I18n.t("Farbjagd: Ein gezogener Joker beendet das Ziehen."))
 	match mau_call:
 		"catch":
-			out.append("„Mau!“ bei der vorletzten Karte rufen. Wer es vergisst und erwischt wird, zieht %d." % mau_penalty)
+			out.append(I18n.t("„Mau!“ bei der vorletzten Karte rufen. Wer es vergisst und erwischt wird, zieht %d.") % mau_penalty)
 		"auto":
-			out.append("„Mau!“ bei der vorletzten Karte rufen. Wer es vergisst, zieht automatisch %d." % mau_penalty)
+			out.append(I18n.t("„Mau!“ bei der vorletzten Karte rufen. Wer es vergisst, zieht automatisch %d.") % mau_penalty)
 		"reminder":
-			out.append("„Mau!“ rufen ist freiwillig, die App erinnert nur daran.")
+			out.append(I18n.t("„Mau!“ rufen ist freiwillig, die App erinnert nur daran."))
 		"off":
-			out.append("Ohne „Mau!“-Ansage.")
+			out.append(I18n.t("Ohne „Mau!“-Ansage."))
 	if backs_visible:
-		out.append("Die Rückseiten der Mitspielerkarten sind sichtbar.")
+		out.append(I18n.t("Die Rückseiten der Mitspielerkarten sind sichtbar."))
 	else:
-		out.append("Die Rückseiten der Mitspielerkarten sind verdeckt.")
+		out.append(I18n.t("Die Rückseiten der Mitspielerkarten sind verdeckt."))
 	if peek_own_backs:
-		out.append("Eigene Rückseiten darfst du ansehen.")
+		out.append(I18n.t("Eigene Rückseiten darfst du ansehen."))
 	if two_player_reverse_skips:
-		out.append("Zu zweit wirkt der Richtungswechsel wie Aussetzen.")
+		out.append(I18n.t("Zu zweit wirkt der Richtungswechsel wie Aussetzen."))
 	if flip_last_card == "execute":
-		out.append("Ein Flip als letzte Karte wird noch ausgeführt; gewertet wird die neue Seite.")
+		out.append(I18n.t("Ein Flip als letzte Karte wird noch ausgeführt; gewertet wird die neue Seite."))
 	else:
-		out.append("Ein Flip als letzte Karte wird nicht mehr ausgeführt.")
+		out.append(I18n.t("Ein Flip als letzte Karte wird nicht mehr ausgeführt."))
 	if flip_mode == "card":
-		out.append("Flip dreht nur die gelegte Karte: Oben liegt ihre andere Seite, die übrige Ablage bleibt zur Seite gelegt.")
+		out.append(I18n.t("Flip dreht nur die gelegte Karte: Oben liegt ihre andere Seite, die übrige Ablage bleibt zur Seite gelegt."))
 	if flip_surprise == "on":
-		out.append("Flip-Überraschung: Die Aktionskarte, die nach dem Flip oben liegt, wirkt auf den Nächsten.")
+		out.append(I18n.t("Flip-Überraschung: Die Aktionskarte, die nach dem Flip oben liegt, wirkt auf den Nächsten."))
 	# Zusatzkarten: Mit genau einer Hausregel steht die Kartenzahl in ihrer Zeile (Kartentausch wie bisher „(116)“), mit mehreren
 	# in einer eigenen Zeile.
 	var extras := (1 if swap_cards == "on" else 0) + (1 if gamble_cards == "on" else 0) + (1 if discard_color == "on" else 0)
 	var total := " (%d)" % card_count() if extras == 1 else ""
 	if swap_cards == "on":
-		out.append("Kartentausch: 4 zusätzliche Karten%s. Wer eine legt, lässt alle ihre ganze Hand weitergeben, %s." % [total, swap_direction_text()])
+		out.append(I18n.t("Kartentausch: 4 zusätzliche Karten%s. Wer eine legt, lässt alle ihre ganze Hand weitergeben, %s.") % [total, swap_direction_text()])
 	if gamble_cards == "on":
-		out.append("Glücksspiel: 2 zusätzliche Joker%s. Wer einen legt, setzt Karte um Karte verdeckt und drückt den Glücksspielknopf – bei einem Treffer 1 bis 10 Karten ziehen und den Einsatz zurücknehmen. Nach einem Druck ohne Treffer weiter riskieren oder aufhören (der Einsatz kommt unter die Ablage); mit leerer Hand bist du fertig." % total)
+		out.append(I18n.t("Glücksspiel: 2 zusätzliche Joker%s. Wer einen legt, setzt Karte um Karte verdeckt und drückt den Glücksspielknopf – bei einem Treffer 1 bis 10 Karten ziehen und den Einsatz zurücknehmen. Nach einem Druck ohne Treffer weiter riskieren oder aufhören (der Einsatz kommt unter die Ablage); mit leerer Hand bist du fertig.") % total)
 	if discard_color == "on":
-		out.append("Farbe ablegen: 6 zusätzliche Karten%s. Wer eine legt, legt dazu eigene Karten dieser Farbe ab, du wählst aus; Joker bleiben auf der Hand. Beim Ablege-Joker wählst du erst die Ablegefarbe, danach die Farbe, mit der es weitergeht." % total)
+		out.append(I18n.t("Farbe ablegen: 6 zusätzliche Karten%s. Wer eine legt, legt dazu eigene Karten dieser Farbe ab, du wählst aus; Joker bleiben auf der Hand. Beim Ablege-Joker wählst du erst die Ablegefarbe, danach die Farbe, mit der es weitergeht.") % total)
 	if extras > 1:
-		out.append("Gespielt wird mit %d Karten." % card_count())
+		out.append(I18n.t("Gespielt wird mit %d Karten.") % card_count())
 	return out
 
 
@@ -311,26 +309,26 @@ func describe() -> Array[String]:
 func swap_direction_text() -> String:
 	match swap_direction:
 		"counter":
-			return "immer gegen den Uhrzeigersinn"
+			return I18n.t("immer gegen den Uhrzeigersinn")
 		"play":
-			return "in der aktuellen Spielrichtung"
+			return I18n.t("in der aktuellen Spielrichtung")
 		"against":
-			return "gegen die aktuelle Spielrichtung"
-	return "immer im Uhrzeigersinn"
+			return I18n.t("gegen die aktuelle Spielrichtung")
+	return I18n.t("immer im Uhrzeigersinn")
 
 
 # Kurzname einer Tauschrichtung für Auswahllisten.
 static func swap_direction_title(value: String) -> String:
 	match value:
 		"counter":
-			return "Gegen den Uhrzeigersinn"
+			return I18n.t("Gegen den Uhrzeigersinn")
 		"play":
-			return "In Spielrichtung"
+			return I18n.t("In Spielrichtung")
 		"against":
-			return "Gegen die Spielrichtung"
-	return "Im Uhrzeigersinn"
+			return I18n.t("Gegen die Spielrichtung")
+	return I18n.t("Im Uhrzeigersinn")
 
 
 # Was nach dem Strafziehen passiert, als Satzende: „… zieht 5 und setzt aus.“ bzw. „… und ist danach trotzdem dran.“
 func penalty_tail() -> String:
-	return "setzt aus" if penalty_turn == "skip" else "ist danach trotzdem dran"
+	return I18n.t("setzt aus") if penalty_turn == "skip" else I18n.t("ist danach trotzdem dran")

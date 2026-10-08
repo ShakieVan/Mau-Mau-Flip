@@ -99,14 +99,14 @@ func show_tab(which: String) -> void:
 
 func _fill_rules() -> void:
 	var p := cfg.preset_name()
-	var head := ("Voreinstellung: " + str(RuleConfig.PRESET_TITLES[p])) if p != "" else "Eigene Regeln"
-	head += " · %d Karten" % cfg.card_count()
+	var head := (I18n.t("Voreinstellung: %s") % I18n.t(str(RuleConfig.PRESET_TITLES[p]))) if p != "" else I18n.t("Eigene Regeln")
+	head += " · " + I18n.t("%d Karten") % cfg.card_count()
 	var extras := RulesBar.extra_names(cfg)
 	if not extras.is_empty():
-		head += " · Hausregeln: " + RulesBar.join_and(extras)
+		head += " · " + I18n.t("Hausregeln: %s") % RulesBar.join_and(extras)
 	_content.add_child(_text(head, UiFonts.size("text"), true))
 	for sec in RulesText.overview(cfg):
-		if str(sec.title) == "Weitere besondere Karten":
+		if str(sec.title) == I18n.t("Weitere besondere Karten"):
 			continue        # Hinweis aufs Einschalten unter „Anpassen“ passt nicht in eine laufende Partie
 		_section(str(sec.title), str(sec.text))
 	_content.add_child(_heading("Besondere Karten", UiFonts.size("zwischen")))

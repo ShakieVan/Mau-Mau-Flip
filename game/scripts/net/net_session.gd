@@ -146,8 +146,8 @@ func rebind(after_close := false) -> String:
 	var guests := players.values().filter(func(p): return not bool(p.get("local", false)) and int(p.get("conn", -1)) >= 0)
 	if not guests.is_empty() and not (after_close and before == "hotspot"):
 		if after_close:
-			return "Spiel-WLAN ist zu. Kommt jemand aus dem WLAN nicht rein, eröffne das Spiel neu."
-		return "Mitspieler sind schon verbunden. Damit das Spiel-WLAN klappt, eröffne das Spiel neu."
+			return I18n.t("Spiel-WLAN ist zu. Kommt jemand aus dem WLAN nicht rein, eröffne das Spiel neu.")
+		return I18n.t("Mitspieler sind schon verbunden. Damit das Spiel-WLAN klappt, eröffne das Spiel neu.")
 	var p := server.port
 	server.stop()
 	var err := server.start(p, p)
@@ -160,7 +160,7 @@ func rebind(after_close := false) -> String:
 	if err != OK:
 		err = server.start(NetProtocol.PORT, NetProtocol.PORT_LAST)
 	if err != OK:
-		return "Das Spiel ließ sich nicht neu öffnen. Bitte zurück und neu eröffnen."
+		return I18n.t("Das Spiel ließ sich nicht neu öffnen. Bitte zurück und neu eröffnen.")
 	if discovery != null:
 		discovery.start_host(info(), discovery_port)
 	_log("Neu gebunden (%s → %s) auf Port %d" % [before if before != "" else "ungebunden", now if now != "" else "ungebunden", server.port])
@@ -374,7 +374,7 @@ func _on_closed(conn: int, code: int, reason: String) -> void:
 
 func _on_dropped(conn: int, why: String, size: int) -> void:
 	if why == "size":
-		server.send_text(conn, NetProtocol.encode({"t": "err", "text": "Nachricht zu groß (%d Byte) – verworfen." % size}))
+		server.send_text(conn, NetProtocol.encode(I18n.with_lt({"t": "err"}, [I18n.part("Nachricht zu groß (%d Byte) – verworfen.", [size])])))
 
 func _on_message(conn: int, text: String) -> void:
 	if _finish_at > 0:
@@ -421,10 +421,13 @@ func _hello(conn: int, msg: Dictionary, conn_info: Dictionary) -> void:
 		if running:
 			problem = {"code": "running", "text": "Die Partie läuft schon. Warte, bis der Gastgeber eine neue Runde eröffnet."}
 		elif players.size() >= max_players:
-			problem = {"code": "full", "text": "Die Runde ist voll (höchstens %d Spieler)." % max_players}
+			problem = I18n.with_lt({"code": "full"}, [I18n.part("Die Runde ist voll (höchstens %d Spieler).", [max_players])])
 	if not problem.is_empty():
 		_log("Anmeldung von %s abgelehnt (%s): %s" % [conn_info.get("address", "?"), problem.code, problem.text])
-		server.send_text(conn, NetProtocol.encode({"t": "reject", "code": problem.code, "text": problem.text}))
+		var rej := {"t": "reject", "code": problem.code, "text": problem.text}
+		if problem.get("lt") is Array:
+			rej["lt"] = problem.lt   # Bausteine (I18n): Anzeige in der Sprache des Gastes
+		server.send_text(conn, NetProtocol.encode(rej))
 		server.close_ws(conn, NetWs.CLOSE_NORMAL, problem.code, CLOSE_GRACE_MS)
 		return
 	if known >= 0:

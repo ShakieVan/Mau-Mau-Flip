@@ -85,7 +85,7 @@ func close(text := "") -> void:
 		_ws = null
 	_retry_at = -1
 	if state != "idle" and state != "closed":
-		_final(text if text != "" else "Verbindung beendet.")
+		_final(text if text != "" else I18n.t("Verbindung beendet."))
 
 func forget_token() -> void:
 	token = ""
@@ -149,19 +149,19 @@ func poll() -> void:
 			_next_ping_ms = now + ping_ms
 			_ws.send_text(NetProtocol.encode({"t": "ping", "ts": now}))
 		if now - _last_rx_ms > timeout_ms:
-			_lost("Gastgeber antwortet nicht (%d s)." % (timeout_ms / 1000))
+			_lost(I18n.t("Gastgeber antwortet nicht (%d s).") % (timeout_ms / 1000))
 		elif not _welcomed and now - _opened_ms > connect_timeout_ms:
-			_lost("Anmeldung nicht beantwortet.")
+			_lost(I18n.t("Anmeldung nicht beantwortet."))
 	elif st == WebSocketPeer.STATE_CONNECTING:
 		if now - _opened_ms > connect_timeout_ms:
-			_lost("Gastgeber %s:%d nicht erreichbar." % [address, port])
+			_lost(I18n.t("Gastgeber %s:%d nicht erreichbar.") % [address, port])
 	elif st == WebSocketPeer.STATE_CLOSED:
 		var code := _ws.get_close_code()
 		if code == NetWs.CLOSE_REPLACED:
 			_ws = null
-			_final("Diese Verbindung wurde durch eine neuere ersetzt.")
+			_final(I18n.t("Diese Verbindung wurde durch eine neuere ersetzt."))
 			return
-		_lost("Verbindung getrennt (%d)." % code if code > 0 else "Verbindung getrennt.")
+		_lost(I18n.t("Verbindung getrennt (%d).") % code if code > 0 else I18n.t("Verbindung getrennt."))
 
 func _open() -> Error:
 	_ws = WebSocketPeer.new()
@@ -174,7 +174,7 @@ func _open() -> Error:
 	attempts += 1
 	var err := _ws.connect_to_url("ws://%s:%d%s" % [address, port, NetProtocol.WS_PATH])
 	if err != OK:
-		_lost("Verbindung zu %s:%d nicht möglich (%s)." % [address, port, error_string(err)])
+		_lost(I18n.t("Verbindung zu %s:%d nicht möglich (%s).") % [address, port, error_string(err)])
 	return err
 
 func _handle(msg: Dictionary) -> void:
@@ -194,7 +194,7 @@ func _handle(msg: Dictionary) -> void:
 			welcomed.emit(my_id, host_name)
 		"reject":
 			reject_code = str(msg.get("code", "")).left(16)
-			var text := str(msg.get("text", "Abgelehnt.")).left(400)
+			var text := I18n.msg_text(msg, "Abgelehnt.").left(400)   # Bausteine (lt) bzw. deutsche msgid → eigene Sprache
 			_log("Abgelehnt (%s): %s" % [reject_code, text])
 			if _ws != null:
 				_ws.close()
@@ -204,7 +204,7 @@ func _handle(msg: Dictionary) -> void:
 			rejected.emit(reject_code, text)
 			_final(text)
 		"bye":
-			var text := str(msg.get("text", "Der Gastgeber hat das Spiel beendet.")).left(400)
+			var text := I18n.msg_text(msg, "Der Gastgeber hat das Spiel beendet.").left(400)
 			if _ws != null:
 				_ws.close()
 				_closing = _ws

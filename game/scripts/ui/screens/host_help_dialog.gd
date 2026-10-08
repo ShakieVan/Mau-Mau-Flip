@@ -67,7 +67,7 @@ func _build() -> void:
 		body.add_child(r)
 	body.add_child(ScreenKit.heading("Ohne App spielen", UiFonts.size("zwischen")))
 	for tip in TIPS:
-		body.add_child(ScreenKit.hint("• " + str(tip), UiFonts.size("hinweis")))
+		body.add_child(ScreenKit.hint("• " + I18n.t(str(tip)), UiFonts.size("hinweis")))
 	var row := ScreenKit.hbox(12)
 	v.add_child(row)
 	row.add_child(ScreenKit.spacer())

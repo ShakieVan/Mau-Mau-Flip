@@ -74,10 +74,16 @@ func view_of(seat: int) -> Dictionary:
 	if bool(h.get("can_next_round", false)) != can:
 		h.can_next_round = can
 		var t := str(h.get("text", ""))
+		var lt: Array = h.get("lt", []) if h.get("lt") is Array else []
+		var tail := NEXT_ROUND_TAIL.strip_edges()
 		if can and not t.ends_with(NEXT_ROUND_TAIL):
 			h.text = t + NEXT_ROUND_TAIL
+			if not lt.has(tail):
+				lt.append(tail)
 		elif not can and t.ends_with(NEXT_ROUND_TAIL):
 			h.text = t.trim_suffix(NEXT_ROUND_TAIL)
+			lt.erase(tail)
+		h["lt"] = lt
 	# Vertretener Mensch (Computer spielt für ihn): Anzeige „Computer spielt“ statt „getrennt“
 	if not _substitute.is_empty():
 		for p in v.get("players", []):

@@ -108,13 +108,13 @@ func poke() -> void:
 func status_text() -> String:
 	var sub := ""
 	if bool(player.get("substituted", false)):
-		sub = "Computer spielt"
+		sub = I18n.t("Computer spielt")
 	elif not bool(player.get("connected", true)):
-		sub = "getrennt"
+		sub = I18n.t("getrennt")
 	elif _next:
-		sub = "gleich dran"
+		sub = I18n.t("gleich dran")
 	if show_score:
-		sub = (sub + " · " if sub != "" else "") + "%d P" % int(player.get("score", 0))
+		sub = (sub + " · " if sub != "" else "") + I18n.t("%d P") % int(player.get("score", 0))
 	return sub
 
 
@@ -127,7 +127,7 @@ func halo() -> TurnHaloScript:
 
 
 func player_name() -> String:
-	return str(player.get("name", "Spieler %d" % (seat + 1)))
+	return str(player.get("name", I18n.t("Spieler %d") % (seat + 1)))
 
 
 func count() -> int:
@@ -556,7 +556,7 @@ func _draw_row() -> void:
 	var sub := row_status()
 	var name_fs := mini(UiFonts.px(36), int(row_size.y * (0.38 if sub != "" else 0.46)))
 	var sub_fs := mini(UiFonts.px(25), int(row_size.y * 0.25))
-	var nm := fit_text(name_font, "Du" if me_entry else player_name(), name_fs, room)
+	var nm := fit_text(name_font, I18n.t("Du") if me_entry else player_name(), name_fs, room)
 	var total := float(name_fs) + (4.0 + float(sub_fs) if sub != "" else 0.0)
 	var name_base := -total * 0.5 + name_fs * 0.78
 	draw_string(name_font, Vector2(nx, name_base), nm, HORIZONTAL_ALIGNMENT_LEFT, -1, name_fs, Color(ink, 1.0 if connected else 0.55))
@@ -587,15 +587,15 @@ func _draw_row() -> void:
 func row_status() -> String:
 	var parts: Array[String] = []
 	if _turn:
-		parts.append("dran")
+		parts.append(I18n.t("dran"))
 	elif _next:
-		parts.append("gleich dran")
+		parts.append(I18n.t("gleich dran"))
 	if bool(player.get("substituted", false)):
-		parts.append("Computer spielt")
+		parts.append(I18n.t("Computer spielt"))
 	elif not bool(player.get("connected", true)):
-		parts.append("getrennt")
+		parts.append(I18n.t("getrennt"))
 	if show_score:
-		parts.append("%d P" % int(player.get("score", 0)))
+		parts.append(I18n.t("%d P") % int(player.get("score", 0)))
 	return " · ".join(parts)
 
 
@@ -644,7 +644,7 @@ func _draw_top() -> void:
 		_round_rect(_top, r.grow(3.0 + 2.0 * pulse), 26.0, Color(UiPalette.ALERT, 0.35))
 		_round_rect(_top, r, 23.0, UiPalette.ALERT)
 		var ef := UiFonts.title(800, true, 100.0, 36.0)
-		var et := "Erwischt!"
+		var et := I18n.t("Erwischt!")
 		var ew := ef.get_string_size(et, HORIZONTAL_ALIGNMENT_LEFT, -1, 22).x
 		_top.draw_string(ef, Vector2(-ew * 0.5, r.position.y + 31.0), et, HORIZONTAL_ALIGNMENT_LEFT, -1, 22, UiPalette.CREAM)
 

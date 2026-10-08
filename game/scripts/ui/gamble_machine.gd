@@ -285,13 +285,13 @@ func _draw_stop(base: Transform2D) -> void:
 	draw_style_box(box, Rect2(rect.position - Vector2(0.0, 3.0), rect.size))
 	var f := UiFonts.mau()
 	var fs := 22
-	var tw := f.get_string_size(STOP_LABEL, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	var tw := f.get_string_size(I18n.t(STOP_LABEL), HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 	var tp := Vector2(-tw * 0.5, STOP_Y - 3.0 + fs * 0.34)
 	if neon:
-		draw_string_outline(f, tp, STOP_LABEL, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 6, Color(NEON, 0.3))
-		draw_string(f, tp, STOP_LABEL, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, NEON_CORE)
+		draw_string_outline(f, tp, I18n.t(STOP_LABEL), HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 6, Color(NEON, 0.3))
+		draw_string(f, tp, I18n.t(STOP_LABEL), HORIZONTAL_ALIGNMENT_LEFT, -1, fs, NEON_CORE)
 	else:
-		draw_string(f, tp, STOP_LABEL, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, UiPalette.INK)
+		draw_string(f, tp, I18n.t(STOP_LABEL), HORIZONTAL_ALIGNMENT_LEFT, -1, fs, UiPalette.INK)
 
 
 func _draw_button(base: Transform2D) -> void:
@@ -314,7 +314,7 @@ func _draw_button(base: Transform2D) -> void:
 	draw_circle(bc + Vector2(0.0, 7.0 * (1.0 - pr)), r * k, Color(0, 0, 0, 0.33))
 	var f := UiFonts.mau()
 	var fs := int(36.0 * k)
-	var tw := f.get_string_size(LABEL, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	var tw := f.get_string_size(I18n.t(LABEL), HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 	var tp := c + Vector2(-tw * 0.5, fs * 0.34)
 	if neon:
 		draw_circle(c, r * k, UiPalette.NIGHT_HI)
@@ -322,13 +322,13 @@ func _draw_button(base: Transform2D) -> void:
 		draw_arc(c, (r - 3.0) * k, 0.0, TAU, 72, Color(NEON, 0.30 if live else 0.18), 12.0, true)
 		draw_arc(c, (r - 3.0) * k, 0.0, TAU, 72, Color(NEON, 1.0 if live else 0.7), 3.5, true)
 		draw_arc(c, (r - 3.0) * k, 0.0, TAU, 72, Color(NEON_CORE, 0.9 if live else 0.5), 1.2, true)
-		draw_string_outline(f, tp, LABEL, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 9, Color(NEON, 0.35 if live else 0.18))
-		draw_string(f, tp, LABEL, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(NEON_CORE, 1.0 if live else 0.6))
+		draw_string_outline(f, tp, I18n.t(LABEL), HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 9, Color(NEON, 0.35 if live else 0.18))
+		draw_string(f, tp, I18n.t(LABEL), HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(NEON_CORE, 1.0 if live else 0.6))
 	else:
 		draw_circle(c, r * k, UiPalette.INK)
 		draw_circle(c, (r - 5.0) * k, UiPalette.CREAM if live else UiPalette.PAPER)
 		draw_arc(c, (r - 13.0) * k, PI * 1.12, PI * 1.88, 24, Color(1, 1, 1, 0.7), 4.0 * k, true)
-		draw_string(f, tp, LABEL, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(UiPalette.INK, 1.0 if live else 0.62))
+		draw_string(f, tp, I18n.t(LABEL), HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(UiPalette.INK, 1.0 if live else 0.62))
 
 
 func _draw_reel(base: Transform2D) -> void:

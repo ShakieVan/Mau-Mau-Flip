@@ -332,16 +332,16 @@ func _show() -> void:
 			if str(wifi.get("password", "")) != "":
 				_values.add_child(_value("Passwort", str(wifi.get("password", ""))))
 			if address == "" and Time.get_ticks_msec() - _on_since > ADDRESS_WAIT_MS:
-				small = "Die Adresse im Spiel-WLAN ist noch unbekannt. Schließe es und öffne es neu."
+				small = I18n.t("Die Adresse im Spiel-WLAN ist noch unbekannt. Schließe es und öffne es neu.")
 		"starting":
 			text = "Spiel-WLAN wird geöffnet …"
 		"wlan":
 			text = "Mitspieler verbinden sich mit demselben WLAN wie du."
 			if can:
-				small = "Klappt das nicht, z. B. im Hotel? Dann öffne ein eigenes:"
+				small = I18n.t("Klappt das nicht, z. B. im Hotel? Dann öffne ein eigenes:")
 		"hotspot":
 			text = "Dein Hotspot läuft: Verbinde die anderen Handys damit."
-			small = "Die App ändert deinen Hotspot nie."
+			small = I18n.t("Die App ändert deinen Hotspot nie.")
 		"problem":
 			var msg := NetAndroid.game_wifi_message({"status": "stopped"}) if problem == "stopped" \
 				else NetAndroid.game_wifi_message({"status": "failed", "error": problem, "sdk": int(wifi.get("sdk", 33))})

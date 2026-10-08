@@ -176,9 +176,9 @@ func _open_share() -> void:
 	var a := _android()
 	if a.is_empty():
 		return
-	var problem := str(a[0].share(a[1], ProjectSettings.globalize_path(copy_path), "Mau-Mau Flip %s (Android-App)" % version(), "Mau-Mau Flip teilen"))
+	var problem := str(a[0].share(a[1], ProjectSettings.globalize_path(copy_path), I18n.t("Mau-Mau Flip %s (Android-App)") % version(), I18n.t("Mau-Mau Flip teilen")))
 	shared = shared or problem == ""
-	status = "Teilen-Menü geöffnet – wähle Quick Share, Bluetooth oder eine andere App." if problem == "" else problem
+	status = "Teilen-Menü geöffnet – wähle Quick Share, Bluetooth oder eine andere App." if problem == "" else Updater.java_text(problem)
 	changed.emit()
 
 func release_file() -> void:
@@ -260,7 +260,7 @@ func poll() -> void:
 			job = ""
 			percent = -1
 			_share_pending = false
-			status = "Vorbereitung fehlgeschlagen: %s" % str(st.get("error", "?"))
+			status = I18n.t("Vorbereitung fehlgeschlagen: %s") % Updater.java_text(str(st.get("error", "?")))
 	changed.emit()
 
 func _hash_file(path: String) -> void:

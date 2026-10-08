@@ -272,7 +272,7 @@ func pruefe_tag_details(css: String, tisch: String) -> void:
 			and kontrast(Color("#FFFFFF"), Color("#C4172A")) >= 4.5, "Aktionsknöpfe am Tag voll deckend, „Anzweifeln“ mit kräftigem Rot")
 	check(css_block(css, ".automat .fenster {").contains("background: var(--cream)") and css_block(css, ".automat .walze b {").contains("color: var(--ink)")
 			and css.contains("#tisch[data-seite=\"dunkel\"] .automat .fenster { border-color: var(--pink); background: #0A0D20;")
-			and tisch.contains("<span class=\"frage\">Los!</span>"), "Glücksspiel-Automat: Tag Papier mit Druckfarbe, Nacht Neon")
+			and tisch.contains("<span class=\"frage\" data-t>Los!</span>"), "Glücksspiel-Automat: Tag Papier mit Druckfarbe, Nacht Neon")
 	check(tisch.contains("class=\"pf pf-sch\"") and css.contains(".richtung .pf-sch { opacity: .3; transition: opacity var(--wd) var(--wg); will-change: opacity; }")
 			and css.contains(".pf-sch .pf-schatten { fill: #0E0B14; transition: none; }"), "Plattform-Schatten: eigene Ebene, beim Flip nur Deckkraft (kein Weichzeichner je Bild)")
 	check(tisch.contains("r.classList.add('halb')") and css.contains("#tisch.wechselt.halb { --tr: none; }") and tisch.contains("if (!alt || !nurLayout) this.setzeSeite("),
@@ -407,7 +407,7 @@ func run() -> void:
 		check(karten.contains(k), "Regeltexte (karten.js): Tauschrichtung „%s“" % k)
 	check(not karten.contains("anzweifeln") and not karten.contains("Bluffen"), "Regeltexte (karten.js) ohne Anzweifeln")
 	check(karten.contains("weiter riskieren oder aufhören"), "Regeltexte (karten.js): Glücksspiel nennt das Aufhören")
-	check(tisch.contains("data-a=\"ablegen\">Ablegen (") and app.contains("'Welche Farbe legst du mit ab?'") and app.contains("'Mit welcher Farbe geht es weiter?'")
+	check(tisch.contains("data-a=\"ablegen\">' + M.t('Ablegen (%d)'") and app.contains("'Welche Farbe legst du mit ab?'") and app.contains("'Mit welcher Farbe geht es weiter?'")
 			and app.contains("a: 'discard_pick', cards") and css.contains(".hk.kandidat"),
 		"Farbe mit ablegen: Auswahl in der Hand, Knopf „Ablegen (n)“, zweistufige Farbwahl beim Joker")
 	for k in ["case 'discard_pick'", "can_pick", "pick_color", "e: 'discard_pick'"]:
@@ -422,7 +422,7 @@ func run() -> void:
 	check(seite.contains("data-set=\"hervorheben\"") and app.contains("Speicher.get('hervorheben', true)") and app.contains("'Die Karte passt nicht.'"),
 		"Einstellung „Spielbare Karten hervorheben“ (je Gerät, Standard an, sonst Hinweis „Die Karte passt nicht.“)")
 	var app_tisch := FileAccess.get_file_as_string("res://scripts/ui/table_view.gd")
-	check(tisch.contains("hinweisText(h.text)") and tisch.contains("'Du bist dran – nichts passt'") and app_tisch.contains("\"Du bist dran – nichts passt\""),
+	check(tisch.contains("hinweisLokal(h)") and tisch.contains("this.hinweisText(t)") and tisch.contains("'Du bist dran – nichts passt'") and app_tisch.contains("\"Du bist dran – nichts passt\""),
 		"Ohne Hervorheben verrät der Hinweis „nichts passt“ nicht (Browser wie App)")
 	check(css.contains(".automat .kuppel") and css.contains(".einsatz .zahl") and css.contains("#tisch[data-seite=\"dunkel\"] .automat"),
 		"style.css: Glücksspiel-Automat und Einsatzstapel (Tag und Nacht)")
@@ -431,6 +431,7 @@ func run() -> void:
 	pruefe_102(css, karten, app, seite)
 	pruefe_111(css, tisch, autotest, app, seite)
 	pruefe_113(css, tisch, mock, autotest, app)
+	pruefe_i18n(seite)
 	# Pegel der Spieltöne relativ zum Mau-Ton (normal) wie in der App (AppSound.TON_DB gegen MAU_DB), auf 0,5 dB genau
 	var stufen := RegEx.create_from_string("STUFEN_SPIEL = \\{ aus: 0, leise: ([0-9.]+), normal: ([0-9.]+) \\}").search(ton)
 	var pegel := []
@@ -593,7 +594,7 @@ func run() -> void:
 	check(max_log >= 5 and seen_hints.has("discard_log.h"), "discard_log wächst (bis %d Karten) und zeigt verdeckte Einsätze ohne Gesicht" % max_log)
 	# Browser: Ablage durchsehen (Seitenstapel, Leger, Wunschfarbe, Zähler; springt bei Änderung zurück) und Einstellung „Schriftgröße“
 	check(tisch.contains("v.discard_log") and tisch.contains("'seitenstapel'") and tisch.contains("this.durchsehen(1)") and tisch.contains("this.durchsehen(-1)")
-			and tisch.contains("this.durchsehen(0)") and tisch.contains("'Startkarte'") and tisch.contains("' von ' + L") and tisch.contains("'Wunsch: '")
+			and tisch.contains("this.durchsehen(0)") and tisch.contains("'Startkarte'") and tisch.contains("M.t('%d von %d', n, L)") and tisch.contains("M.t('Wunsch: %s'")
 			and mock.contains("discard_log:") and autotest.contains("durchsehenTest()"),
 		"Browser: Ablage durchsehen nach dem Protokoll (Tipp Ablage/Seitenstapel/daneben, Leger, Wunschfarbe, Zähler)")
 	check(seite.contains("data-set=\"schrift\"") and seite.contains("data-schrift=\"sehr_gross\"") and app.contains("Speicher.get('schrift', 'normal')")
@@ -764,3 +765,110 @@ func http_get(server: NetServer, path: String) -> Dictionary:
 		if line.to_lower().begins_with("content-type:"):
 			ctype = line.substr(13).strip_edges()
 	return {"status": status, "type": ctype, "body": buf.slice(head_end + 4)}
+
+
+# Englische Fassung (Beta 1.2.2): i18n.js, Wörterbücher i18n_en.js (nur Browser) und i18n_po.js (aus game/i18n/*.po erzeugt),
+# Reihenfolge der Skripte; jeder Text in M.t('…')/M.t("…") und in data-t muss im englischen Wörterbuch stehen (streng).
+func pruefe_i18n(seite: String) -> void:
+	var i18n := read_web("i18n.js")
+	check(i18n.contains("M.I18n = I18n") and i18n.contains("render(lt)") and i18n.contains("msgText(m, ersatz)"), "i18n.js: M.I18n mit render und msgText")
+	var a := seite.find("i18n_po.js")
+	var b := seite.find("i18n_en.js")
+	var c := seite.find("src=\"i18n.js\"")
+	var d := seite.find("karten.js")
+	check(a >= 0 and a < b and b < c and c < d, "index.html lädt i18n_po.js, i18n_en.js, i18n.js vor den übrigen Skripten")
+	check(seite.contains("data-set=\"sprache\" data-wert=\"auto\"") and seite.contains("data-wert=\"en\""), "index.html: Umschalter „Sprache“ in den Einstellungen")
+	var en := _dict_js(read_web("i18n_en.js"), "window.MMF_I18N_EN = ")
+	var po := _dict_js(read_web("i18n_po.js"), "window.MMF_I18N_PO = ")
+	check(not en.is_empty() and not po.is_empty(), "Wörterbücher lesbar (i18n_en.js %d, i18n_po.js %d Einträge)" % [en.size(), po.size()])
+	# i18n_po.js aktuell? Jeder übersetzte Eintrag der .po-Dateien muss gleich drinstehen (tools/build.ps1 -Target Web erneuert).
+	var stale := 0
+	for path in I18n.FILES:
+		var text := FileAccess.get_file_as_string(path)
+		for e in _po_entries(text):
+			if str(e[0]) != "" and str(e[1]) != "" and str(po.get(e[0], "")) != str(e[1]):
+				stale += 1
+				if stale <= 3:
+					print("i18n_po.js veraltet: " + str(e[0]).left(80))
+	check(stale == 0, "i18n_po.js passt zu game/i18n/*.po (%d abweichend; tools/build.ps1 -Target Web)" % stale)
+	var clash := 0
+	for k in en:
+		if po.has(k) and str(po[k]) != str(en[k]):
+			clash += 1
+			print("i18n_en.js und .po übersetzen verschieden: " + str(k).left(80))
+	check(clash == 0, "keine widersprüchlichen Übersetzungen zwischen i18n_en.js und .po (%d)" % clash)
+	var used := {}
+	for name in ["app.js", "tisch.js", "hand.js", "karten.js", "netz.js", "ton.js"]:
+		var src := read_web(name)
+		# M.t('…') und die Kurzform tr('…') (karten.js)
+		for m in RegEx.create_from_string(r"\b(?:M\.t|tr)\(\s*'((?:[^'\\]|\\.)*)'").search_all(src):
+			used[m.get_string(1).replace(r"\'", "'")] = name
+		for m in RegEx.create_from_string(r'\b(?:M\.t|tr)\(\s*"((?:[^"\\]|\\.)*)"').search_all(src):
+			used[m.get_string(1).replace(r'\"', '"')] = name
+		# data-t in HTML-Texten der Skripte (Tisch: Rückseiten, Glücksspiel …)
+		for m in RegEx.create_from_string("data-t(?:-title|-aria|-ph)?=\"([^\"]+)\"").search_all(src):
+			used[m.get_string(1)] = name
+		for m in RegEx.create_from_string("data-t>([^<]+)<").search_all(src):
+			used[m.get_string(1)] = name
+	for m in RegEx.create_from_string("data-t(?:-title|-aria|-ph)?=\"([^\"]+)\"").search_all(seite):
+		used[m.get_string(1)] = "index.html"
+	for m in RegEx.create_from_string("data-t>([^<]+)<").search_all(seite):
+		used[m.get_string(1)] = "index.html"
+	var missing: Array = []
+	for k in used:
+		var key := str(k).replace("&amp;", "&")
+		if key in ["Mau!", "Mau-Mau!", "Mau-Mau Flip", "Deutsch", "English"] or en.has(key) or po.has(key):
+			continue
+		missing.append("%s (%s)" % [key, used[k]])
+	for m in missing.slice(0, 20):
+		print("ohne Übersetzung: " + str(m))
+	check(missing.is_empty(), "jeder Text in M.t(…)/data-t steht im englischen Wörterbuch (%d fehlen, %d geprüft)" % [missing.size(), used.size()])
+
+
+# „window.NAME = {JSON};“ → Dictionary
+func _dict_js(src: String, head: String) -> Dictionary:
+	var i := src.find(head)
+	if i < 0:
+		return {}
+	var body := src.substr(i + head.length()).strip_edges()
+	if body.ends_with(";"):
+		body = body.left(body.length() - 1)
+	var d: Variant = JSON.parse_string(body)
+	return d if d is Dictionary else {}
+
+
+func _po_entries(text: String) -> Array:
+	var out: Array = []
+	var id := ""
+	var s := ""
+	var field := ""
+	var have := false
+	for raw in text.split("\n"):
+		var line := raw.strip_edges()
+		if line == "" or line.begins_with("#"):
+			continue
+		if line.begins_with("msgid "):
+			if have:
+				out.append([id, s])
+			id = _po_unq(line.substr(6))
+			s = ""
+			field = "id"
+			have = true
+		elif line.begins_with("msgstr "):
+			s = _po_unq(line.substr(7))
+			field = "str"
+		elif line.begins_with("\""):
+			if field == "id":
+				id += _po_unq(line)
+			else:
+				s += _po_unq(line)
+	if have:
+		out.append([id, s])
+	return out
+
+
+func _po_unq(q: String) -> String:
+	var t := q.strip_edges()
+	if t.length() >= 2 and t.begins_with("\"") and t.ends_with("\""):
+		t = t.substr(1, t.length() - 2)
+	return t.replace(r"\n", "\n").replace(r'\"', '"').replace(r"\\", "\\")

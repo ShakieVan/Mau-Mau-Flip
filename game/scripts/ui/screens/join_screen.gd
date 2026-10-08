@@ -194,7 +194,7 @@ func build() -> void:
 	_ready_btn.toggled.connect(func(on: bool) -> void:
 		if client != null:
 			client.set_ready(on)
-		_ready_btn.text = "Bereit ✓" if on else "Bereit")
+		_ready_btn.text = I18n.t("Bereit ✓") if on else I18n.t("Bereit"))
 	brow.add_child(_ready_btn)
 	_refresh_save_btn()
 	if _adopted != null and is_instance_valid(_adopted):
@@ -312,7 +312,7 @@ func _refresh_games() -> void:
 	if list.is_empty():
 		_games.add_child(ScreenKit.hint("Noch nichts gefunden. Der Gastgeber tippt auf „Spiel eröffnen“; beide Geräte im selben WLAN. Klappt die Suche nicht, die Adresse unter dem QR-Code des Gastgebers oben eintippen.", UiFonts.size("text")))
 		return
-	_status.text = "%d %s gefunden – antippen zum Beitreten." % [list.size(), "Spiel" if list.size() == 1 else "Spiele"]
+	_status.text = I18n.t("1 Spiel gefunden – antippen zum Beitreten.") if list.size() == 1 else I18n.t("%d Spiele gefunden – antippen zum Beitreten.") % list.size()
 	for g in list:
 		_games.add_child(_game_button(g))
 
@@ -333,14 +333,15 @@ func _game_button(g: Dictionary) -> Control:
 	texts.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	texts.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	inner.add_child(texts)
-	var t := ScreenKit.label("Spiel von %s" % name_text, "", UiFonts.size("zwischen"))
+	var t := ScreenKit.label(I18n.t("Spiel von %s") % name_text, "", UiFonts.size("zwischen"))
 	t.add_theme_font_override("font", UiFonts.title(800, false, 50.0, 48.0))
 	texts.add_child(t)
-	var detail := "%d %s · %s" % [int(g.get("players", 0)), "Spieler", str(g.get("address", ""))]
+	var np := int(g.get("players", 0))
+	var detail := "%s · %s" % [I18n.t("1 Spieler") if np == 1 else I18n.t("%d Spieler") % np, str(g.get("address", ""))]
 	if bool(g.get("running", false)):
-		detail += " · Partie läuft"
+		detail += " · " + I18n.t("Partie läuft")
 	if not bool(g.get("compatible", true)):
-		detail += " · andere Version (%s)" % str(g.get("version", "?"))
+		detail += " · " + I18n.t("andere Version (%s)") % str(g.get("version", "?"))
 	texts.add_child(ScreenKit.label(detail, "HintLabel", UiFonts.size("hinweis")))
 	var addr := str(g.get("address", ""))
 	var port := int(g.get("port", NetProtocol.PORT))
@@ -383,7 +384,7 @@ func join(address: String, port: int) -> void:
 	client = GameStarter.client()
 	add_child(client)
 	_wire(client)
-	_status.text = "Verbinde mit %s …" % address
+	_status.text = I18n.t("Verbinde mit %s …") % address
 	var who := str(UiApp.setting("name", ""))
 	if client.join(address, port, who) != OK:
 		_status.text = "Verbindung nicht möglich."
@@ -460,18 +461,18 @@ func _on_lobby(l: Dictionary) -> void:
 		var av := ScreenKit.avatar(i, str(p.get("name", "?")), "bot" if kind == "bot" else "human", 46.0)
 		av.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		row.add_child(av)
-		var n := ScreenKit.label(str(p.get("name", "")) + ("  (du)" if int(p.get("id", -2)) == me else ""), "", UiFonts.size("text"))
+		var n := ScreenKit.label(str(p.get("name", "")) + (("  " + I18n.t("(du)")) if int(p.get("id", -2)) == me else ""), "", UiFonts.size("text"))
 		n.add_theme_font_override("font", UiFonts.text(700))
 		n.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		n.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(n)
-		var tag: String = {"app": "App", "web": "Browser", "bot": "Computer"}.get(kind, kind)
+		var tag: String = I18n.t({"app": "App", "web": "Browser", "bot": "Computer"}.get(kind, kind))
 		if int(p.get("id", -1)) == int(l.get("host_id", -2)):
-			tag = "Gastgeber"
+			tag = I18n.t("Gastgeber")
 		if not bool(p.get("connected", true)):
-			tag += " · getrennt"
+			tag += " · " + I18n.t("getrennt")
 		elif bool(p.get("ready", false)):
-			tag += " · bereit"
+			tag += " · " + I18n.t("bereit")
 		var tl := ScreenKit.label(tag, "HintLabel", UiFonts.size("hinweis"))
 		tl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		row.add_child(tl)
@@ -479,7 +480,7 @@ func _on_lobby(l: Dictionary) -> void:
 	var rules: Variant = l.get("rules", {})
 	var cfg := RuleSets.load_config(rules)
 	var welcomed := client.client.host_name if client != null and client.client != null else ""
-	host_name = RuleSets.host_name_in_lobby(l, welcomed if welcomed != "" else "Gastgeber")
+	host_name = RuleSets.host_name_in_lobby(l, welcomed if welcomed != "" else I18n.t("Gastgeber"))
 	_lobby_rules.text = "\n".join(PackedStringArray(cfg.describe()))
 	_lobby_hint.text = lobby_hint(host_name)
 	# Regeln des Gastgebers zum Speichern bereithalten (gemerkt werden sie erst am Tisch)
@@ -495,7 +496,7 @@ func _show_ready(on: bool) -> void:
 	if _ready_btn == null:
 		return
 	_ready_btn.set_pressed_no_signal(on)
-	_ready_btn.text = "Bereit ✓" if on else "Bereit"
+	_ready_btn.text = I18n.t("Bereit ✓") if on else I18n.t("Bereit")
 
 
 # „Regeln speichern“ bzw. „Gespeichert“, wenn die Regeln des Gastgebers schon einem eigenen Satz entsprechen. Dazu der Regelkopf
@@ -505,8 +506,8 @@ func _refresh_save_btn() -> void:
 		return
 	_save_btn.disabled = host_rules == null
 	var saved := RuleSets.match_name(host_rules) if host_rules != null else ""
-	_save_btn.text = "Gespeichert" if saved != "" else "Regeln speichern"
-	_save_btn.tooltip_text = ("Gespeichert als „%s“" % saved) if saved != "" else "Diese Regeln als eigenen Satz speichern"
+	_save_btn.text = I18n.t("Gespeichert") if saved != "" else I18n.t("Regeln speichern")
+	_save_btn.tooltip_text = (I18n.t("Gespeichert als „%s“") % saved) if saved != "" else I18n.t("Diese Regeln als eigenen Satz speichern")
 	if _lobby_head != null:
 		_lobby_head.text = lobby_head(host_rules, host_name) if host_rules != null else ""
 
@@ -526,7 +527,7 @@ func save_rules() -> void:
 func _on_box_saved(n: String) -> void:
 	_save_box = null
 	_refresh_save_btn()
-	toast("Gespeichert: „%s“ – zu finden unter „Regeln“ bei „Gespeichert“." % n)
+	toast(I18n.t("Gespeichert: „%s“ – zu finden unter „Regeln“ bei „Gespeichert“.") % n)
 
 
 func _on_box_cancelled() -> void:
@@ -535,8 +536,8 @@ func _on_box_cancelled() -> void:
 
 # Hinweis über den Knöpfen: wo die Regeln des Gastgebers nach dem Spielen stehen
 static func lobby_hint(host: String) -> String:
-	var where := ("„%s“" % RuleSets.host_title(host)) if host != "" else "„Zuletzt gespielt bei …“"
-	return "Der Gastgeber setzt die Plätze und startet. Beim Spielen merkt sich dein Gerät seine Regeln unter „Regeln“ als %s." % where
+	var where := ("„%s“" % RuleSets.host_title(host)) if host != "" else "„" + I18n.t("Zuletzt gespielt bei …") + "“"
+	return I18n.t("Der Gastgeber setzt die Plätze und startet. Beim Spielen merkt sich dein Gerät seine Regeln unter „Regeln“ als %s.") % where
 
 
 # Kopfzeile der Regeln für Gäste: „Familie · 116 Karten · mit Kartentausch“; eigene Regeln des Gastgebers heißen nach einem
@@ -548,11 +549,11 @@ static func lobby_head(cfg: RuleConfig, host := "") -> String:
 		if saved != "":
 			title = saved
 		elif host != "":
-			title = "Regeln von %s" % host
-	var t := "%s · %d Karten" % [title, cfg.card_count()]
+			title = I18n.t("Regeln von %s") % host
+	var t := I18n.t("%s · %d Karten") % [title, cfg.card_count()]
 	var names := RulesBar.extra_names(cfg)
 	if not names.is_empty():
-		t += " · mit " + RulesBar.join_and(names)
+		t += " · " + I18n.t("mit") + " " + RulesBar.join_and(names)
 	return t
 
 

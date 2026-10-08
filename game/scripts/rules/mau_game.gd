@@ -108,6 +108,7 @@ var _kind: PackedStringArray
 var _value: PackedInt32Array
 var _points: PackedInt32Array
 var _wild: PackedByteArray
+var _why_lt: Array = []            # Bausteine des letzten Ablehnungsgrunds mit Platzhaltern (_why, reason_lt in apply)
 
 
 func _init() -> void:
@@ -210,6 +211,7 @@ func apply(seat: int, action: Dictionary) -> Dictionary:
 	var a: String = av if av is String else ""
 	var ev: Array = []
 	var why := ""
+	_why_lt = []
 	match a:
 		"play":
 			why = _act_play(seat, action, ev)
@@ -240,7 +242,10 @@ func apply(seat: int, action: Dictionary) -> Dictionary:
 		_:
 			why = "Unbekannte Aktion."
 	if why != "":
-		return {"ok": false, "reason": why, "events": []}
+		# reason_lt: Bausteine für die Anzeige in der Sprache des Empfängers (I18n); ohne Platzhalter ist der Text selbst die msgid.
+		var lt: Array = _why_lt if not _why_lt.is_empty() and I18n.render(_why_lt, false) == why else [why]
+		_why_lt = []
+		return {"ok": false, "reason": why, "reason_lt": lt, "events": []}
 	return {"ok": true, "reason": "", "events": ev}
 
 
@@ -322,7 +327,7 @@ func _act_play(seat: int, action: Dictionary, ev: Array) -> String:
 	if _wild[f] == 1:
 		wish = _str_field(action, "color")
 		if not (CardDB.COLORS[SIDES[side]] as Array).has(wish):
-			return "Wähle eine Farbe der %s." % RulesText.side_name(SIDES[side])
+			return _why("Wähle eine Farbe der %s.", [I18n.tr_arg(RulesText.side_name(SIDES[side]))])
 	# Regelgerechtheit und die Hand fürs Anzweifeln mit der Hand zum Zeitpunkt der Entscheidung, also vor einer auto-Strafe,
 	# die _begin_turn noch verhängen kann (Hinweise und enforce-Prüfung beruhen auf derselben Hand).
 	var legal := true
@@ -467,7 +472,7 @@ func _act_color(seat: int, action: Dictionary, ev: Array) -> String:
 		return "Du bist nicht dran."
 	var c := _str_field(action, "color")
 	if not (CardDB.COLORS[SIDES[side]] as Array).has(c):
-		return "Wähle eine Farbe der %s." % RulesText.side_name(SIDES[side])
+		return _why("Wähle eine Farbe der %s.", [I18n.tr_arg(RulesText.side_name(SIDES[side]))])
 	color = c
 	wished = true
 	_note_wish(c)
@@ -1454,31 +1459,47 @@ func _why_not(seat: int, id: int) -> String:
 		if id == drawn_id and config.drawn_card == "may_not":
 			return "Die gezogene Karte darfst du erst im nächsten Zug legen."
 		if (_kind[f] == PLUS2 or _kind[f] == JAGD) and _matches(f):
-			return "%s nur, wenn du keine Karte in %s hast%s." % [RulesText.kind_name(_kind[f]), RulesText.color_name(color),
-				" und keinen anderen Joker" if config.wild_counts_for_bluff else ""]
-		return "Passt nicht – " + _lay_phrase() + "."
+			return _why_bluff(f)
+		return _why("Passt nicht – %s.", [I18n.tr_arg(_lay_part())])
 	if state == "drawn":
 		if config.drawn_card == "may_not":
 			return "Die gezogene Karte darfst du erst im nächsten Zug legen."
 		return "Jetzt darfst du nur die gezogene Karte legen." if id != drawn_id else "Die gezogene Karte passt nicht."
 	if not pending.is_empty():
-		var kname := RulesText.kind_name(str(pending.kind))
+		var karg := I18n.tr_arg(RulesText.kind_name(str(pending.kind)))
 		if config.stacking == "same" and not bool(pending.get("finisher", false)) and _kind[f] == str(pending.kind):
-			return "%s nur, wenn du keine Karte in %s hast." % [kname, RulesText.color_name(color)]
+			return _why("%s nur, wenn du keine Karte in %s hast.", [karg, I18n.tr_arg(RulesText.color_name(color))])
 		if state == "challenge":
 			return "Anzweifeln oder ziehen."
-		return "Lege %s drauf oder nimm die Strafe." % kname if config.stacking == "same" else "Erst die Strafe ziehen."
+		return _why("Lege %s drauf oder nimm die Strafe.", [karg]) if config.stacking == "same" else "Erst die Strafe ziehen."
 	if (_kind[f] == PLUS2 or _kind[f] == JAGD) and _matches(f):
-		return "%s nur, wenn du keine Karte in %s hast%s." % [RulesText.kind_name(_kind[f]), RulesText.color_name(color),
-			" und keinen anderen Joker" if config.wild_counts_for_bluff else ""]
-	return "Passt nicht – " + _lay_phrase() + "."
+		return _why_bluff(f)
+	return _why("Passt nicht – %s.", [I18n.tr_arg(_lay_part())])
+
+
+func _why_bluff(f: int) -> String:
+	var tmpl := "%s nur, wenn du keine Karte in %s hast und keinen anderen Joker." if config.wild_counts_for_bluff \
+		else "%s nur, wenn du keine Karte in %s hast."
+	return _why(tmpl, [I18n.tr_arg(RulesText.kind_name(_kind[f])), I18n.tr_arg(RulesText.color_name(color))])
+
+
+# Ablehnungsgrund mit Platzhaltern: merkt sich die Bausteine (reason_lt in apply, I18n) und liefert den deutschen Text.
+func _why(template: String, args: Array) -> String:
+	_why_lt = [I18n.part(template, args)]
+	return I18n.render(_why_lt, false)
+
+
+# „lege Blau“ bzw. „lege Blau oder eine 9“ als Baustein (I18n.part)
+func _lay_part() -> Variant:
+	var t := faces[side * n_cards + int(discard.back())] if not discard.is_empty() else -1
+	var carg := I18n.tr_arg(RulesText.color_name(color))
+	if t < 0 or _wild[t] == 1:
+		return I18n.part("lege %s", [carg])
+	return I18n.part("lege %s oder %s", [carg, I18n.tr_arg(RulesText.match_part(_key[t]))])
 
 
 func _lay_phrase() -> String:
-	var t := faces[side * n_cards + int(discard.back())] if not discard.is_empty() else -1
-	if t < 0 or _wild[t] == 1:
-		return "lege %s" % RulesText.color_name(color)
-	return "lege %s oder %s" % [RulesText.color_name(color), RulesText.match_phrase(_key[t])]
+	return I18n.render_part(_lay_part(), false)
 
 
 func _draw_back() -> String:
@@ -1591,99 +1612,105 @@ func _name(s: int) -> String:
 	return str(players[s].name) if s >= 0 and s < players.size() else "?"
 
 
+# Hinweiszeile als Bausteine (I18n, Feld hints.lt): jedes Gerät zeigt sie in seiner Sprache; hints.text = deutscher Text wie bisher.
 func _hint_text(me: int, h: Dictionary) -> String:
+	var parts := _hint_parts(me, h)
+	h["lt"] = parts
+	return I18n.render(parts, false)
+
+
+func _hint_parts(me: int, h: Dictionary) -> Array:
+	var out: Array = []
 	match state:
 		"idle":
-			return "Die Runde beginnt gleich."
+			return ["Die Runde beginnt gleich."]
 		"round_over", "game_over":
 			var rk: Array = result.get("ranking", [])
 			var w: int = rk[0] if not rk.is_empty() else -1
-			var head := ""
 			if result.get("reason", "") == "blockiert":
-				head = "Nichts geht mehr – "
+				out.append("Nichts geht mehr –")
 			if state == "game_over":
-				return head + ("Du gewinnst die Partie!" if w == me else "%s gewinnt die Partie." % _name(w))
-			var t := head + ("Du gewinnst die Runde!" if w == me else "%s gewinnt die Runde." % _name(w))
+				out.append("Du gewinnst die Partie!" if w == me else I18n.part("%s gewinnt die Partie.", [_name(w)]))
+				return out
+			out.append("Du gewinnst die Runde!" if w == me else I18n.part("%s gewinnt die Runde.", [_name(w)]))
 			if me >= 0 and w != me and config.round_end == "last":
-				t += " Du bist auf Platz %d." % int(place[me])
+				out.append(I18n.part("Du bist auf Platz %d.", [int(place[me])]))
 			if bool(h.can_next_round):
-				t += " Weiter mit der nächsten Runde."
-			return t
+				out.append("Weiter mit der nächsten Runde.")
+			return out
 	if me < 0 or me != current:
 		var who := _name(current)
-		var t := ""
 		if not (h.catch as Array).is_empty():
-			t = "%s hat nicht „Mau!“ gerufen – erwischen! " % _name(int(h.catch[0]))
+			out.append(I18n.part("%s hat nicht „Mau!“ gerufen – erwischen!", [_name(int(h.catch[0]))]))
 		if me >= 0 and place[me] > 0:
-			t += "Du bist fertig (Platz %d). " % int(place[me])
+			out.append(I18n.part("Du bist fertig (Platz %d).", [int(place[me])]))
 		match state:
 			"challenge":
-				return t + "%s überlegt: anzweifeln oder ziehen?" % who
+				out.append(I18n.part("%s überlegt: anzweifeln oder ziehen?", [who]))
 			"color":
-				return t + "%s wählt eine Farbe." % who
+				out.append(I18n.part("%s wählt eine Farbe.", [who]))
 			"gamble":
 				var n := (gamble.stake as Array).size()
-				return t + "%s spielt Glücksspiel – Einsatz: %d %s." % [who, n, "Karte" if n == 1 else "Karten"]
+				out.append(I18n.part("%s spielt Glücksspiel – Einsatz: %d Karte." if n == 1 else "%s spielt Glücksspiel – Einsatz: %d Karten.", [who, n]))
 			"discard_pick":
-				return t + "%s legt %s mit ab." % [who, RulesText.color_name(str(dpick.get("color", "")))]
-		return t + "%s ist dran." % who
-	var text := ""
+				out.append(I18n.part("%s legt %s mit ab.", [who, I18n.tr_arg(RulesText.color_name(str(dpick.get("color", ""))))]))
+			_:
+				out.append(I18n.part("%s ist dran.", [who]))
+		return out
 	match state:
 		"discard_pick":
-			var cname := RulesText.color_name(str(dpick.get("color", "")))
+			var carg := I18n.tr_arg(RulesText.color_name(str(dpick.get("color", ""))))
 			if (h.can_pick as Array).is_empty():
-				text = "Wähle die Farbe, mit der es weitergeht."
+				out.append("Wähle die Farbe, mit der es weitergeht.")
 			elif bool(h.pick_color):
-				text = "Wähle, welche Karten in %s du mit ablegst, und die Farbe, mit der es weitergeht." % cname
+				out.append(I18n.part("Wähle, welche Karten in %s du mit ablegst, und die Farbe, mit der es weitergeht.", [carg]))
 			else:
-				text = "Wähle, welche Karten in %s du mit ablegst." % cname
+				out.append(I18n.part("Wähle, welche Karten in %s du mit ablegst.", [carg]))
 		"color":
-			text = "Nach dem Flip liegt ein Joker oben – wähle die neue Farbe."
+			out.append("Nach dem Flip liegt ein Joker oben – wähle die neue Farbe.")
 		"gamble":
 			if str(gamble.need) != "stake":
-				text = "Drück den Glücksspielknopf!"
+				out.append("Drück den Glücksspielknopf!")
 			elif bool(h.get("can_stop", false)):
-				text = "Noch eine Karte setzen – oder aufhören?"
+				out.append("Noch eine Karte setzen – oder aufhören?")
 			else:
-				text = "Leg eine Karte verdeckt auf deinen Einsatz."
+				out.append("Leg eine Karte verdeckt auf deinen Einsatz.")
 		"challenge":
 			var by := _name(int(pending.by))
-			var col := RulesText.color_name(str(pending.color))
+			var col := I18n.tr_arg(RulesText.color_name(str(pending.color)))
 			if str(pending.kind) == JAGD:
-				text = "Farbjagd auf %s von %s – anzweifeln oder ziehen, bis %s kommt?" % [col, by, col]
+				out.append(I18n.part("Farbjagd auf %s von %s – anzweifeln oder ziehen, bis %s kommt?", [col, by, col]))
 			else:
-				text = "Wünscher +2 von %s (%s) – anzweifeln oder %d ziehen?" % [by, col, int(pending.amount)]
+				out.append(I18n.part("Wünscher +2 von %s (%s) – anzweifeln oder %d ziehen?", [by, col, int(pending.amount)]))
 			if not (h.playable as Array).is_empty():
-				text += " Du kannst auch %s drauflegen." % RulesText.kind_name(str(pending.kind))
+				out.append(I18n.part("Du kannst auch %s drauflegen.", [I18n.tr_arg(RulesText.kind_name(str(pending.kind)))]))
 		"drawn":
 			if _must_play_drawn(me):
-				text = "Die gezogene Karte passt – du musst sie legen."
+				out.append("Die gezogene Karte passt – du musst sie legen.")
 			elif not _drawn_any_phase(me):
-				text = "Die gezogene Karte passt – legen oder behalten?"
+				out.append("Die gezogene Karte passt – legen oder behalten?")
 			else:
-				text = "Passende Karte legen oder behalten?"
+				out.append("Passende Karte legen oder behalten?")
 		"turn":
 			if not pending.is_empty():
-				var kname := RulesText.kind_name(str(pending.kind))
-				var take := "zieh, bis %s kommt" % RulesText.color_name(str(pending.color)) if str(pending.kind) == JAGD \
-					else "zieh %d" % int(pending.amount)
+				var karg := I18n.tr_arg(RulesText.kind_name(str(pending.kind)))
+				var jagd := str(pending.kind) == JAGD
+				var what: Variant = I18n.tr_arg(RulesText.color_name(str(pending.color))) if jagd else int(pending.amount)
 				if (h.playable as Array).is_empty():
-					text = "%s auf dich – %s." % [kname, take.substr(0, 1).to_upper() + take.substr(1)]
+					out.append(I18n.part("%s auf dich – Zieh, bis %s kommt." if jagd else "%s auf dich – Zieh %d.", [karg, what]))
 				else:
-					text = "%s auf dich – lege %s drauf oder %s." % [kname, kname, take]
+					out.append(I18n.part("%s auf dich – lege %s drauf oder zieh, bis %s kommt." if jagd
+						else "%s auf dich – lege %s drauf oder zieh %d.", [karg, karg, what]))
 			elif (h.playable as Array).is_empty():
-				text = "Du bist dran – nichts passt, zieh eine Karte." if not draw_pile.is_empty() or discard.size() > 1 \
-					else "Du bist dran – nichts passt und beide Stapel sind leer: aussetzen."
+				out.append("Du bist dran – nichts passt, zieh eine Karte." if not draw_pile.is_empty() or discard.size() > 1 \
+					else "Du bist dran – nichts passt und beide Stapel sind leer: aussetzen.")
 			else:
-				text = "Du bist dran – " + _lay_phrase()
-				if wished:
-					text += " (Wunschfarbe)"
-				text += "."
+				out.append(I18n.part("Du bist dran – %s (Wunschfarbe)." if wished else "Du bist dran – %s.", [I18n.tr_arg(_lay_part())]))
 	# Erinnerung vor dem Legen bzw. Setzen (mit 2 Karten; mit Ablegen-Karten auch mit mehr, wenn danach 1 Karte bleiben kann).
 	var size := (hands[me] as Array).size()
 	if bool(h.can_mau) and config.mau_call != "off" and (size == 2 or (size > 2 and mau_open != me)):
-		text += " Denk an „Mau!“"
-	return text
+		out.append("Denk an „Mau!“")
+	return out
 
 
 # Filtert Ereignisse für einen Empfänger: gezogene Gesichter und ids nur für den Ziehenden, die Hand beim Anzweifeln nur für den

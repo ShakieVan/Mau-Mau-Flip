@@ -94,6 +94,16 @@ func test_hello() -> void:
 	var newer_version := "%d.0.0" % (int(v.split(".")[0]) + 1)   # immer neuer als die eigene Version
 	var newer := NetProtocol.check_hello({"proto": 1, "game": newer_version, "kind": "app"}, v, url)
 	check(newer.get("code") == "version" and newer.text.contains("Gastgeber sollte") and not newer.text.contains("/apk"), "neuere App → Gastgeber aktualisieren, keine Rückstufung")
+	# Beta 1.2.2: Bausteine (lt) für die Sprache des Gastes; deutsch gerendert genau der Text
+	var all_ok := true
+	for r in [p, old, web, newer]:
+		all_ok = all_ok and r.get("lt") is Array and I18n.render(r.lt, false) == str(r.text)
+	check(all_ok, "Ablehnungen tragen Bausteine lt, deutsch = text")
+	I18n.set_language("en")
+	var en_text := I18n.msg_text(JSON.parse_string(JSON.stringify(old)))
+	I18n.set_language("de")
+	check(en_text.contains("0.1.0") and en_text.contains(url) and en_text.begins_with("Different version"), "Gast auf Englisch: " + en_text)
+	check(I18n.msg_text({"t": "bye", "text": "Der Gastgeber hat das Spiel beendet."}) == "Der Gastgeber hat das Spiel beendet.", "msgid ohne lt bleibt deutsch")
 	check(NetProtocol.compare_versions("0.1.10", "0.1.9") == 1 and NetProtocol.compare_versions("1.0", "1.0.0") == 0, "Versionsvergleich")
 
 func test_auto_reply() -> void:

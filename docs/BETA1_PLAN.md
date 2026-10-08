@@ -211,7 +211,7 @@ Alle Daten JSON-tauglich: Zahlen als `int`, keine Godot-Typen.
   - **sortiert** nach Seite, Farbe, Art und Wert, nie in der Reihenfolge des Besitzers;
   - leer, wenn `backs_visible=false` oder der Spieler man selbst ist.
 - `hand[].back`: nur gesetzt, wenn `peek_own_backs=true`.
-- `hints`: Der Client braucht keine eigene Regelkenntnis.
+- `hints`: Der Client braucht keine eigene Regelkenntnis. `hints.text` ist deutsch, `hints.lt` (seit 1.2.2) dieselbe Zeile als Bausteine für die eigene Sprache (siehe Abschnitt 5, „Texte in jeder Sprache“).
 - `discard_log` (seit 1.0.1, „Ablage durchsehen“, immer vorhanden, für alle Plätze gleich): die Ablage von unten nach oben, so wie sie gerade liegt (seit dem letzten Mischen; nach einem Flip die andere Seite in umgekehrter Reihenfolge). Eintrag `{f: Gesicht oder "" wenn verdeckt, s: Platz des Legers oder −1 (Startkarte/unbekannt), c: Wunschfarbe bei Jokern oder "", h: true bei verdeckten Glücksspiel-Einsätzen}`; der letzte Eintrag ist die oberste Karte (`top`). Mitabgelegte Karten („Farbe mit ablegen“) tragen den Leger. Verdeckte Einsätze haben nie ein Gesicht; liegt ein Einsatz nach einem Flip oben, ist er offen (`h` bleibt true). Mischen leert das Protokoll bis auf die oberste Karte. Im Spielstand als `dlog` `[[id, s, c, h], …]`.
 - **Nur mit `gamble_cards=on`** (sonst fehlen die Felder, damit Sichten ohne die Hausregel unverändert bleiben):
   - `gamble`: während eines Glücksspiels `{seat, stake: Anzahl der Einsatzkarten, need: "stake"|"press", last: letzter Wert 0–10 oder −1}` für alle Plätze, sonst `{}`. Die Trefferquote und die Einsatzgesichter stehen nie in einer Sicht.
@@ -277,13 +277,25 @@ Host → Client:
 | Nachricht | Inhalt |
 |---|---|
 | `{t:"welcome", id, token, host_name}` | Anmeldung angenommen |
-| `{t:"reject", code, text}` | `code`: `version`, `full`, `running`, `proto` |
+| `{t:"reject", code, text, lt?}` | `code`: `version`, `full`, `running`, `proto`; `lt` siehe „Texte in jeder Sprache“ |
 | `{t:"lobby", rev, players:[{id, name, kind, connected, ready, seat}], rules, host_id}` | Lobby-Stand |
 | `{t:"start", seat}` | Partie beginnt |
 | `{t:"state", seq_ack?, events:[…], view:{…}}` | nach jeder Änderung: gefilterte Ereignisse plus vollständige Sicht (Abschnitt 4) |
-| `{t:"err", text}` | Aktion abgelehnt; Text für den Hinweis |
+| `{t:"err", text, lt?}` | Aktion abgelehnt; Text für den Hinweis |
+| `{t:"notice", text, lt?}` | Meldung an alle (z. B. „Kim ist getrennt – warte …“) |
 | `{t:"pong", ts}` | Antwort auf `ping` |
 | `{t:"bye", text}` | Gastgeber beendet |
+
+**Texte in jeder Sprache** (seit Beta 1.2.2, englische Fassung; `game/scripts/app/i18n.gd`, `webclient/i18n.js`)
+- Jedes Gerät zeigt Texte des Gastgebers in seiner eigenen Sprache. `text` bleibt deutsch (ältere Geräte zeigen ihn wie bisher).
+- Ohne Platzhalter ist `text` selbst der Schlüssel (deutsche msgid); der Empfänger übersetzt ihn.
+- Mit Platzhaltern (Namen, Zahlen, Farben) kommt zusätzlich `lt` (Bausteine): `hints.lt`, `err.lt`, `notice.lt`, `reject.lt`.
+  - `lt` = Liste von Teilen, angezeigt mit Leerzeichen verbunden; Teil = String (msgid) oder `[vorlage, arg…]` (vorlage = msgid mit `%s`/`%d`).
+  - arg = Zahl, String (wörtlich, z. B. Spielername) oder `{t: Teil}` (wird selbst übersetzt, z. B. Farbname „Blau“).
+  - Beispiel: `[["%s ist dran.", "Lena"], "Denk an „Mau!“"]` → „Lena ist dran. Denk an „Mau!““ bzw. „Lena's turn. Remember “Mau!”“.
+  - Deutsch gerendert ergibt `lt` genau `text` (Prüfung in `test_i18n`).
+- `MauGame.apply` liefert bei Ablehnung zusätzlich `reason_lt`; `view_for` liefert `hints.lt`.
+- Lobby, Ereignisse und Regeln enthalten nur Schlüssel (Phasen, Farben, Regeloptionen) und Namen, keine fertigen Sätze.
 
 **Sitzungsregeln**
 - `net_session.gd`, `class_name NetHostSession`; spielunabhängig, kennt nur Spieler, Token und Plätze:

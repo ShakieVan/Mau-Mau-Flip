@@ -217,8 +217,10 @@ func view_for(seat: int) -> Dictionary:
 				playable_ids.append(int(id))
 	var my_turn := turn == seat
 	var text := "Du bist dran." if my_turn else "%s ist dran." % NAMES[turn % NAMES.size()]
+	var lt: Array = [] if my_turn else [I18n.part("%s ist dran.", [NAMES[turn % NAMES.size()]])]
 	if phase == "round_over":
 		text = "Runde vorbei."
+		lt = []
 	var v := {
 		"v": 1, "seat": seat, "side": side, "phase": phase, "turn": turn, "dir": dir, "color": color,
 		"players": players, "hand": hand,
@@ -226,7 +228,7 @@ func view_for(seat: int) -> Dictionary:
 		"draw_back": back(deck[-1]) if not deck.is_empty() else "", "draw_count": deck.size(),
 		"pending": {"kind": "stack", "amount": pending} if pending > 0 else {},
 		"hints": {"playable": playable_ids, "can_draw": my_turn and phase == "turn", "can_keep": false, "can_challenge": false,
-			"can_mau": my_turn and seat >= 0 and hands[seat].size() == 2, "catch": catch_targets.duplicate(), "need_color": false, "text": text},
+			"can_mau": my_turn and seat >= 0 and hands[seat].size() == 2, "catch": catch_targets.duplicate(), "need_color": false, "text": text, "lt": lt},
 		"round": round_no, "ranking": ranking.duplicate(),
 		"rules": {"backs_visible": backs_visible, "scoring": scoring, "hand_size": 7, "peek_own_backs": true},
 	}

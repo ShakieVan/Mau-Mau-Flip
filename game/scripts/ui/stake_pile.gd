@@ -89,7 +89,7 @@ func _draw() -> void:
 			draw_texture_rect(tex, Rect2(p - sz * 0.5, sz), false)
 	# Zähler unter dem Stapel
 	var f := UiFonts.text(800, 90.0)
-	var txt := "Einsatz %d" % count
+	var txt := I18n.t("Einsatz %d") % count
 	var fs := 14
 	var tw := f.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 	var pill := Rect2(-tw * 0.5 - 9.0, sz.y * 0.5 + 8.0, tw + 18.0, 22.0)

@@ -1,0 +1,874 @@
+# Mau-Mau Flip – Englisch, Bereich B: Regeltexte, Kartenhilfe, Kartennamen und Farben (RulesText, Regeln, So geht's).
+# msgid = deutscher Text exakt wie im Code, msgstr = Englisch nach game/i18n/GLOSSAR.md.
+# Entscheidung (Beta 1.2.2): Auch die langen Regel- und Hilfetexte laufen über .po (Satz für Satz), keine eigene englische
+# Struktur: RulesText setzt die Sätze abhängig von den Hausregeln zusammen, eine zweite Fassung müsste diese Logik doppeln.
+msgid ""
+msgstr ""
+"Project-Id-Version: Mau-Mau Flip\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+# --- Farben (RulesText.COLOR_NAMES)
+msgid "Rot"
+msgstr "Red"
+
+msgid "Gelb"
+msgstr "Yellow"
+
+msgid "Grün"
+msgstr "Green"
+
+msgid "Blau"
+msgstr "Blue"
+
+msgid "Pink"
+msgstr "Pink"
+
+msgid "Türkis"
+msgstr "Teal"
+
+msgid "Orange"
+msgstr "Orange"
+
+msgid "Lila"
+msgstr "Purple"
+
+# --- Kartenarten (RulesText.KIND_NAMES)
+msgid "Aussetzen"
+msgstr "Skip"
+
+msgid "Alle aussetzen"
+msgstr "Skip All"
+
+msgid "Richtungswechsel"
+msgstr "Reverse"
+
+msgid "Wünscher"
+msgstr "Wild"
+
+msgid "Wünscher +2"
+msgstr "Wild +2"
+
+msgid "Farbjagd"
+msgstr "Color Hunt"
+
+msgid "Kartentausch"
+msgstr "Card Swap"
+
+msgid "Glücksspiel"
+msgstr "Gamble"
+
+msgid "Farbe ablegen"
+msgstr "Discard Color"
+
+msgid "Ablegen-Joker"
+msgstr "Discard Wild"
+
+# --- Mit Artikel (RulesText.KIND_WITH_ARTICLE)
+msgid "eine +1"
+msgstr "a +1"
+
+msgid "eine +5"
+msgstr "a +5"
+
+msgid "ein Aussetzen"
+msgstr "a Skip"
+
+msgid "ein Alle aussetzen"
+msgstr "a Skip All"
+
+msgid "einen Richtungswechsel"
+msgstr "a Reverse"
+
+msgid "einen Flip"
+msgstr "a Flip"
+
+msgid "einen Wünscher"
+msgstr "a Wild"
+
+msgid "einen Wünscher +2"
+msgstr "a Wild +2"
+
+msgid "eine Farbjagd"
+msgstr "a Color Hunt"
+
+msgid "einen Kartentausch"
+msgstr "a Card Swap"
+
+msgid "ein Glücksspiel"
+msgstr "a Gamble"
+
+msgid "eine Ablegen-Karte"
+msgstr "a Discard Color card"
+
+msgid "einen Ablegen-Joker"
+msgstr "a Discard Wild"
+
+# --- Seiten (RulesText.SIDE_NAMES)
+msgid "helle Seite"
+msgstr "light side"
+
+msgid "dunkle Seite"
+msgstr "dark side"
+
+# --- Beta 1.2.2, Ergänzungen (generiert aus tr_rules.txt)
+
+msgid "%d Handkarten"
+msgstr "%d cards in hand"
+
+msgid "%d Handkarten zu Beginn."
+msgstr "%d cards in hand to start with."
+
+msgid "%d Karte"
+msgstr "%d card"
+
+msgid "%d Karten mit einer hellen und einer dunklen Seite, Zahlen 1 bis 9, dazu je Seite %s."
+msgstr "%d cards with a light and a dark side, numbers 1 to 9, plus %s per side."
+
+msgid "%s darf gestapelt werden: Wer sie abbekommt, kann eine %s drauflegen; die Summe wandert weiter."
+msgstr "%s can be stacked: whoever gets one can play another %s on top; the total moves on."
+
+msgid "%s sowie %s"
+msgstr "%s and %s"
+
+msgid "%s und %s"
+msgstr "%s and %s"
+
+msgid "%s, %s sowie %s"
+msgstr "%s, %s and %s"
+
+msgid "%s, %s und %s"
+msgstr "%s, %s and %s"
+
+msgid "+1: Der Nächste zieht 1 und %s. Aussetzen: Der Nächste wird übersprungen. Richtungswechsel: Die Richtung dreht sich. Wünscher: Farbe wünschen. Wünscher +2: Farbe wünschen, der Nächste zieht 2 und %s."
+msgstr "+1: The next player draws 1 and %s. Skip: The next player is skipped. Reverse: The direction turns around. Wild: Wish for a color. Wild +2: Wish for a color, the next player draws 2 and %s."
+
+msgid "+5: Der Nächste zieht 5 und %s. Alle aussetzen: Du bist sofort noch einmal dran. Richtungswechsel und Wünscher wie hell. Farbjagd: Farbe wünschen, der Nächste zieht, bis er diese Farbe hat, und %s."
+msgstr "+5: The next player draws 5 and %s. Skip All: You go again right away. Reverse and Wild work as on the light side. Color Hunt: Wish for a color, the next player draws until they get that color, and %s."
+
+msgid "112 Karten mit einer hellen und einer dunklen Seite, Zahlen 1 bis 9."
+msgstr "112 cards with a light and a dark side, numbers 1 to 9."
+
+msgid "Alle anderen setzen aus: Du bist sofort noch einmal dran und legst oder ziehst ganz normal."
+msgstr "Everyone else skips: You go again right away and play or draw as usual."
+
+msgid "Alle geben gleichzeitig ihre ganze Hand an den Nächsten weiter, %s. Danach ist ganz normal der Nächste in Spielrichtung dran."
+msgstr "Everyone passes their whole hand to the next player at the same time, %s. Then the next player in the direction of play takes their turn as usual."
+
+msgid "Als letzte Karte bist du einfach fertig; dann gibt es kein Glücksspiel."
+msgstr "As your last card, you're simply out; there's no gamble then."
+
+msgid "Als letzte Karte bist du fertig und gewinnst; getauscht wird dann nicht mehr."
+msgstr "As your last card, you are out and win; no swap happens then."
+
+msgid "Als letzte Karte bist du fertig; die anderen tauschen trotzdem untereinander."
+msgstr "As your last card, you are out; the others still swap among themselves."
+
+msgid "Als letzte Karte wird der Flip nicht mehr ausgeführt."
+msgstr "As the last card, the Flip is no longer carried out."
+
+msgid "Als letzte Karte wird der Flip noch ausgeführt; gewertet wird die neue Seite."
+msgstr "As your last card, the Flip is still carried out; the new side is what counts for scoring."
+
+msgid "Auch als letzte Karte: Der Nächste zieht trotzdem."
+msgstr "Even as the last card: The next player still draws."
+
+msgid "Auch als letzte Karte: Du bist fertig und gewinnst die Runde; getauscht wird dann nicht mehr."
+msgstr "Even as your last card: you're out and win the round; no more swapping after that."
+
+msgid "Auch als letzte Karte: Du bist fertig, die anderen tauschen trotzdem untereinander."
+msgstr "Even as your last card: you're out, and the others still swap among themselves."
+
+msgid "Bis zum Letzten: Wer fertig ist, scheidet aus. Gespielt wird um die Plätze, bis nur einer Karten hat."
+msgstr "Play to the last: Whoever is out drops out. You play for places until only one player still has cards."
+
+msgid "Bist du damit fertig, macht der Nächste weiter."
+msgstr "If that finishes your hand, the next player carries on."
+
+msgid "Bleibt dir 1 Karte, ruf „Mau!“."
+msgstr "If you have 1 card left, call “Mau!”."
+
+msgid "Bleibt dir danach 1 Karte, ruf „Mau!“ (auch schon vorher erlaubt); bleibt keine, bist du fertig."
+msgstr "If you have 1 card left after that, call “Mau!” (also allowed earlier); if none is left, you're out."
+
+msgid "Bleibt dir danach 1 Karte, ruf „Mau!“ (auch schon vorher erlaubt); bleibt keine, gewinnst du die Runde."
+msgstr "If you have 1 card left after that, call “Mau!” (also allowed earlier); if none is left, you win the round."
+
+msgid "Bleibt dir danach keine Karte, bist du fertig."
+msgstr "If you have no card left after that, you're out."
+
+msgid "Bleibt dir danach keine Karte, gewinnst du die Runde."
+msgstr "If you have no card left after that, you win the round."
+
+msgid "Bleibt dir nach dem Setzen nur noch 1 Karte, ruf „Mau!“ – wie beim Legen."
+msgstr "If only 1 card is left after staking, call “Mau!” – just like when playing."
+
+msgid "Bleibt keine Karte, bist du fertig."
+msgstr "If no card is left, you are out."
+
+msgid "Bleibt nach dem Setzen 1 Karte, gilt „Mau!“ wie beim Legen."
+msgstr "If 1 card is left after staking, “Mau!” applies as when playing."
+
+msgid "Danach wählst du die Farbe, mit der es weitergeht – sie darf eine andere sein."
+msgstr "Then you choose the color to continue with – it may be a different one."
+
+msgid "Danach wählst du, welche deiner Karten in %s du mit ablegst (alle, einige oder keine); sie kommen unter diese Karte, die oben bleibt."
+msgstr "Then you choose which of your %s cards to discard with it (all, some or none); they go under this card, which stays on top."
+
+msgid "Dann spielst du um dein Glück: Leg eine beliebige Karte deiner Hand verdeckt auf deinen Einsatz und drück den Glücksspielknopf. Das geht reihum weiter."
+msgstr "Then you play your luck: Put any card from your hand face down on your stake and press the gamble button. This goes on in turn."
+
+msgid "Darf jederzeit gelegt werden."
+msgstr "Can be played at any time."
+
+msgid "Der Flip wendet Ablage, Nachziehstapel und alle Hände. Oben liegt dann die bisher unterste Ablagekarte mit ihrer anderen Seite."
+msgstr "The Flip turns the discard pile, the draw pile and all hands. The card that was at the bottom of the discard pile ends up on top, showing its other side."
+
+msgid "Der Flip wendet Nachziehstapel und alle Hände, von der Ablage aber nur sich selbst (Hausregel): Oben liegt seine andere Seite, die übrige Ablage bleibt zur Seite gelegt."
+msgstr "The Flip turns the draw pile and all hands, but of the discard pile only itself (house rule): Its other side ends up on top, and the rest of the discard pile is set aside."
+
+msgid "Der Nächste darf anzweifeln: Hast du geblufft, ziehst du 2; warst du ehrlich, zieht er 4 und %s."
+msgstr "The next player may challenge: If you bluffed, you draw 2; if you were honest, they draw 4 and %s."
+
+msgid "Der Nächste darf anzweifeln: Hast du geblufft, ziehst du bis zur Farbe; warst du ehrlich, zieht er bis zur Farbe, dann 2 weitere, und %s."
+msgstr "The next player may challenge: If you bluffed, you draw until you get the color; if you were honest, they draw until they get the color, then 2 more, and %s."
+
+msgid "Der Nächste darf anzweifeln: Hast du geblufft, ziehst du die Strafe; warst du ehrlich, zieht er 2 mehr und %s."
+msgstr "The next player may challenge: If you bluffed, you draw the penalty; if you were honest, they draw 2 more and %s."
+
+msgid "Der Nächste wird übersprungen."
+msgstr "The next player is skipped."
+
+msgid "Der Nächste zieht %d Karte und %s."
+msgstr "The next player draws %d card and %s."
+
+msgid "Der Nächste zieht %d Karten und %s."
+msgstr "The next player draws %d cards and %s."
+
+msgid "Der Sieger bekommt die Punkte aller übrigen Handkarten (Zahlen nach Wert, +1 10, +5, Aussetzen, Richtungswechsel%s und Flip 20, Alle aussetzen%s 30, Wünscher 40, %s 50, Farbjagd 60). Wer zuerst %d Punkte hat, gewinnt die Partie."
+msgstr "The winner gets the points of all remaining cards in hand (numbers by value, +1 is 10, +5, Skip, Reverse%s and Flip 20, Skip All%s 30, Wild 40, %s 50, Color Hunt 60). The first to reach %d points wins the game."
+
+msgid "Der Sortierknopf wechselt zwischen Farbe, Wert, Punkte und Eigene. Willst du selbst ordnen, halte eine Karte und schieb sie zur Seite."
+msgstr "The sort button cycles through Color, Value, Points and Custom. To arrange your hand yourself, hold a card and slide it sideways."
+
+msgid "Der Zurück-Knopf oben links öffnet dieses Menü. Dort kannst du die Regeln ansehen oder die Partie verlassen."
+msgstr "The back button at the top left opens this menu. There you can view the rules or leave the game."
+
+msgid "Die Einsatzkarten liegen verdeckt und wirken nicht, auch kein Flip."
+msgstr "The stake cards lie face down and have no effect, not even a Flip."
+
+msgid "Die Rückseiten der Mitspielerkarten sind sichtbar."
+msgstr "The backs of the other players' cards are visible."
+
+msgid "Die Rückseiten der Mitspielerkarten sind verdeckt."
+msgstr "The backs of the other players' cards are hidden."
+
+msgid "Die Spielrichtung dreht sich um."
+msgstr "The direction of play reverses."
+
+msgid "Die gewünschte Farbe bleibt in jedem Fall."
+msgstr "The wished color stays in any case."
+
+msgid "Diese Karten kommen nur mit ihrer Hausregel ins Spiel (einschalten unter „Anpassen“ → „Hausregeln mit Zusatzkarten“):"
+msgstr "These cards only come into play with their house rule (turn it on under “Customize” → “House rules with extra cards”):"
+
+msgid "Du darfst auch freiwillig ziehen. Hausregel: Danach darfst du eine andere passende Karte legen oder alles behalten; passt nichts, ist dein Zug vorbei."
+msgstr "You may also draw voluntarily. House rule: Afterward you may play a different matching card or keep everything; if nothing fits, your turn is over."
+
+msgid "Du darfst auch freiwillig ziehen. Hausregel: Danach darfst du jede passende Karte legen oder alles behalten; passt nichts, ist dein Zug vorbei."
+msgstr "You may also draw voluntarily. House rule: Afterward you may play any matching card or keep everything; if nothing fits, your turn is over."
+
+msgid "Du darfst auch freiwillig ziehen; danach ist dein Zug vorbei."
+msgstr "You may also draw voluntarily; your turn is over afterward."
+
+msgid "Du darfst auch freiwillig ziehen; dann darfst du nur die gezogene Karte legen."
+msgstr "You may also draw voluntarily; then you may only play the drawn card."
+
+msgid "Du darfst ihn auch legen, wenn du andere passende Karten hast."
+msgstr "You may play it even if you have other matching cards."
+
+msgid "Dunkle Seite"
+msgstr "Dark side"
+
+msgid "Eigene Rückseiten darfst du ansehen."
+msgstr "You may look at your own backs."
+
+msgid "Eigentlich nur erlaubt, wenn %s. Bluffen ist möglich."
+msgstr "Only allowed if %s. Bluffing is possible."
+
+msgid "Ein Flip als letzte Karte wird nicht mehr ausgeführt."
+msgstr "A Flip as the last card is no longer carried out."
+
+msgid "Ein Flip als letzte Karte wird noch ausgeführt, gewertet wird die neue Seite."
+msgstr "A Flip as the last card is still carried out, and the new side is scored."
+
+msgid "Ein Flip als letzte Karte wird noch ausgeführt; gewertet wird die neue Seite."
+msgstr "A Flip as the last card is still carried out; the new side is scored."
+
+msgid "Ein gezogener Joker beendet die Jagd nicht."
+msgstr "A drawn wild card does not end the hunt."
+
+msgid "Ein gezogener Joker beendet die Jagd."
+msgstr "A drawn wild card ends the hunt."
+
+msgid "Eine Wunschfarbe verfällt,"
+msgstr "A wished color expires;"
+
+msgid "Eine gezogene Karte darfst du erst im nächsten Zug legen."
+msgstr "You may only play a drawn card on your next turn."
+
+msgid "Eine passende gezogene Karte darfst du sofort legen."
+msgstr "You may play a matching drawn card right away."
+
+msgid "Eine passende gezogene Karte musst du sofort legen."
+msgstr "You must play a matching drawn card right away."
+
+msgid "Farbe ablegen (eine je Farbe, dazu zwei Joker je Seite): Du legst Karten dieser Farbe mit ab, welche, wählst du."
+msgstr "Discard Color (one per color, plus two wild cards per side): You discard cards of that color along with it – you choose which."
+
+msgid "Farbe ablegen: 6 zusätzliche Karten%s. Wer eine legt, legt dazu eigene Karten dieser Farbe ab, du wählst aus; Joker bleiben auf der Hand. Beim Ablege-Joker wählst du erst die Ablegefarbe, danach die Farbe, mit der es weitergeht."
+msgstr "Discard Color: 6 extra cards%s. Whoever plays one discards their own cards of that color too – you choose which; wild cards stay in your hand. With the Discard Wild you first choose the color to discard, then the color to continue with."
+
+msgid "Farbjagd darf weitergegeben werden: Das letzte Opfer zieht bis zur zuletzt gewünschten Farbe."
+msgstr "Color Hunt can be passed on: The last victim draws until they get the most recently wished color."
+
+msgid "Farbjagd: Ein gezogener Joker beendet das Ziehen."
+msgstr "Color Hunt: A drawn wild card ends the drawing."
+
+msgid "Flip dreht nur die gelegte Karte: Oben liegt ihre andere Seite, die übrige Ablage bleibt zur Seite gelegt."
+msgstr "Flip turns only the played card: its other side lies on top, the rest of the discard pile stays put on the side."
+
+msgid "Flip, Wünscher und Zusatzkarten oben wirken nicht; beim Joker wählst du nur die Farbe."
+msgstr "A Flip, Wild or extra card on top has no effect; with a wild card you only choose the color."
+
+msgid "Flip-Überraschung: Die Aktionskarte, die nach dem Flip oben liegt, wirkt auf den Nächsten."
+msgstr "Flip Surprise: The action card lying on top after the Flip affects the next player."
+
+msgid "Flip-Überraschung: Liegt danach eine Aktionskarte oben, wirkt sie auf den Nächsten, als hättest du sie gelegt. Bei Wünscher +2 und Farbjagd wählst du zuerst die Farbe."
+msgstr "Flip Surprise: If an action card ends up on top afterward, it affects the next player as if you had played it. With Wild +2 and Color Hunt you choose the color first."
+
+msgid "Für jedes Glücksspiel wird geheim eine Trefferquote zwischen 1:1 und 1:10 ausgelost."
+msgstr "For each gamble, a hit rate between 1:1 and 1:10 is drawn in secret."
+
+msgid "Gehört zur Hausregel Farbe ablegen (gerade nicht im Spiel)."
+msgstr "Part of the Discard Color house rule (not in play right now)."
+
+msgid "Gehört zur Hausregel Glücksspiel (gerade nicht im Spiel)."
+msgstr "Part of the Gamble house rule (not in play right now)."
+
+msgid "Gehört zur Hausregel Kartentausch (gerade nicht im Spiel)."
+msgstr "Part of the Card Swap house rule (not in play right now)."
+
+msgid "Gelegt wird sie frühestens im nächsten Zug."
+msgstr "You can play it on your next turn at the earliest."
+
+msgid "Gespielt wird bis zum Letzten: Wer fertig ist, scheidet aus, die anderen spielen um die Plätze weiter."
+msgstr "Play goes on to the last: Whoever is out drops out, the others keep playing for places."
+
+msgid "Gespielt wird mit %d Karten."
+msgstr "Playing with %d cards."
+
+msgid "Glücksspiel-Joker (zwei je Seite): Du setzt reihum Karten verdeckt und drückst den Glücksspielknopf. Bei 0 setzt du weiter oder hörst auf (der Einsatz kommt unter die Ablage); ist die Hand leer, bist du fertig. Bei einem Treffer ziehst du 1 bis 10 Karten und nimmst den Einsatz zurück."
+msgstr "Gamble wild card (two per side): You stake cards face down in turn and press the gamble button. On a 0 you keep going or stop (the stake goes under the discard pile); if your hand is empty, you are out. On a hit you draw 1 to 10 cards and take your stake back."
+
+msgid "Glücksspiel: 2 zusätzliche Joker%s. Wer einen legt, setzt Karte um Karte verdeckt und drückt den Glücksspielknopf – bei einem Treffer 1 bis 10 Karten ziehen und den Einsatz zurücknehmen. Nach einem Druck ohne Treffer weiter riskieren oder aufhören (der Einsatz kommt unter die Ablage); mit leerer Hand bist du fertig."
+msgstr "Gamble: 2 extra wild cards%s. Whoever plays one stakes card after card face down and presses the gamble button – on a hit, draw 1 to 10 cards and take the stake back. After a press without a hit, keep risking it or stop (the stake goes under the discard pile); with an empty hand you are out."
+
+msgid "Halte den Rückseiten-Knopf, dann siehst du die Rückseiten deiner Karten."
+msgstr "Hold the backs button to see the backs of your cards."
+
+msgid "Halte eine Karte gedrückt, dann siehst du sie groß. Zieh sie nach unten auf das „?“: Dann steht da kurz, was sie kann."
+msgstr "Press and hold a card to see it close-up. Drag it down onto the “?” for a short explanation of what it does."
+
+msgid "Hand und Rückseiten"
+msgstr "Hand and backs"
+
+msgid "Hast du nur noch 2 Karten und bist dran, tipp auf „Mau!“ – vor oder nach dem Legen."
+msgstr "If you have only 2 cards left and it's your turn, tap “Mau!” – before or after playing."
+
+msgid "Hast du nur noch 2 Karten und bist dran, tipp auf „Mau!“ – vor oder nach dem Legen. Vergisst es jemand, tipp schnell auf seine Karten: erwischt!"
+msgstr "If you have only 2 cards left and it's your turn, tap “Mau!” – before or after playing. If someone forgets, quickly tap their cards: caught!"
+
+msgid "Hausregel: Der Glücksspiel-Joker passt immer; du wünschst eine Farbe, die nach dem Glücksspiel gilt. Dann legst du reihum eine beliebige Karte verdeckt auf deinen Einsatz und drückst den Glücksspielknopf. Je Glücksspiel wird geheim eine Trefferquote zwischen 1:1 und 1:10 ausgelost. Bei einem Treffer zeigt der Knopf 1 bis 10: So viele Karten ziehst du, nimmst den ganzen Einsatz zurück, und dein Zug ist vorbei. Zeigt er 0, geht es weiter; ist deine Hand dann leer, kommt der Einsatz unter den Ablagestapel und du %s. Nach einer 0 darfst du statt weiterzusetzen auch aufhören: Der ganze Einsatz kommt unter den Ablagestapel, dein Zug ist vorbei. Die Einsatzkarten wirken nicht."
+msgstr "House rule: The Gamble wild card always fits; you wish for a color that applies after the gamble. Then, in turn, you put any card face down on your stake and press the gamble button. For each Gamble, a hit rate between 1:1 and 1:10 is drawn in secret. On a hit the button shows 1 to 10: You draw that many cards, take your whole stake back, and your turn is over. If it shows 0, play goes on; if your hand is empty by then, the stake goes under the discard pile and you %s. After a 0 you may also stop instead of staking more: The whole stake goes under the discard pile and your turn is over. The stake cards have no effect."
+
+msgid "Hausregel: Wer eine Ablegen-Karte legt, wählt danach, welche eigenen Karten derselben Farbe er mit ablegt (alle, einige oder keine). Beim Ablegen-Joker wählst du zuerst die Ablegefarbe und danach getrennt die Farbe, mit der es weitergeht. Die Karten kommen unter die Ablegen-Karte, die oben bleibt. Joker bleiben auf der Hand, mitabgelegte Aktionskarten wirken nicht. Die farbige Ablegen-Karte passt auf ihre Farbe und auf jede andere Ablegen-Karte, der Ablegen-Joker immer."
+msgstr "House rule: Whoever plays a Discard Color card then chooses which of their own cards of the same color to discard with it (all, some or none). With the Discard Wild you first choose the color to discard and then, separately, the color to continue with. The cards go under the Discard Color card, which stays on top. Wild cards stay in your hand, and action cards discarded along with it have no effect. The colored Discard Color card fits its color and any other Discard Color card; the Discard Wild always fits."
+
+msgid "Hausregel: Wer einen Kartentausch legt, lässt alle Spieler gleichzeitig ihre ganze Hand an den Nächsten weitergeben, %s. Danach ist der Nächste in Spielrichtung dran; zu zweit tauscht ihr einfach eure Hände. Der Kartentausch passt auf seine Farbe und auf jeden anderen Kartentausch."
+msgstr "House rule: Whoever plays a Card Swap makes all players pass their whole hand to the next player at the same time, %s. Then it's the next player's turn in the direction of play; with two players you simply swap hands. The Card Swap fits its color and any other Card Swap."
+
+msgid "Hausregeln: %s"
+msgstr "House rules: %s"
+
+msgid "Hell: Rot, Gelb, Grün, Blau. Dunkel: Pink, Türkis, Orange, Lila. Alle Karten liegen gleich herum: Du spielst die aktive Seite, die anderen sehen deine Rückseiten nicht (verdeckt)."
+msgstr "Light: Red, Yellow, Green, Blue. Dark: Pink, Teal, Orange, Purple. All cards lie the same way up: You play the active side, and the others do not see your backs (hidden)."
+
+msgid "Hell: Rot, Gelb, Grün, Blau. Dunkel: Pink, Türkis, Orange, Lila. Alle Karten liegen gleich herum: Du spielst die aktive Seite, die anderen sehen deine Rückseiten."
+msgstr "Light: Red, Yellow, Green, Blue. Dark: Pink, Teal, Orange, Purple. All cards lie the same way up: You play the active side, and the others see your backs."
+
+msgid "Helle Seite"
+msgstr "Light side"
+
+msgid "Hilfe zu einer Karte"
+msgstr "Help for a card"
+
+msgid "Im Uhrzeigersinn"
+msgstr "Clockwise"
+
+msgid "In Spielrichtung"
+msgstr "In direction of play"
+
+msgid "In diesen Regeln wird nicht „Mau!“ gerufen."
+msgstr "“Mau!” is not called under these rules."
+
+msgid "Ist der Nachziehstapel leer, wird die Ablage außer der obersten Karte gemischt. Sind beide leer, entfällt das Ziehen. Wiederholt sich bei fast leeren Stapeln dieselbe Lage zum dritten Mal, endet die Runde; vorn liegt, wer die wenigsten Karten hat."
+msgstr "If the draw pile is empty, the discard pile except its top card is shuffled. If both are empty, drawing is skipped. If the same situation repeats a third time with nearly empty piles, the round ends; whoever has the fewest cards is ahead."
+
+msgid "Ist die letzte Karte eine Ziehkarte, zieht der Nächste trotzdem."
+msgstr "If the last card is a draw card, the next player still draws."
+
+msgid "Jeder bekommt %d Karten. Die Runde beginnt auf der hellen Seite. Ist die erste Ablagekarte keine Zahl, bleibt sie liegen und die nächste wird aufgedeckt. Der Geber wechselt jede Runde im Uhrzeigersinn; es beginnt der Spieler links von ihm."
+msgstr "Everyone gets %d cards. The round starts on the light side. If the first discard is not a number, it stays and the next card is turned up. The dealer changes every round, clockwise; the player to their left starts."
+
+msgid "Joker"
+msgstr "Wild cards"
+
+msgid "Joker auf deiner Hand bleiben dort. Mitabgelegte Aktionskarten wirken nicht."
+msgstr "Wild cards in your hand stay there. Action cards discarded with it have no effect."
+
+msgid "Joker: passt immer. Du wählst eine Farbe und dann, welche deiner Karten dieser Farbe du mit ablegst; sie kommen unter den Joker."
+msgstr "Wild card: always fits. You choose a color and then which of your cards of that color to discard with it; they go under the wild card."
+
+msgid "Joker: passt immer. Du wünschst eine Farbe; sie gilt nach dem Glücksspiel."
+msgstr "Wild card: always matches. You wish for a color; it applies after the gamble."
+
+msgid "Karte"
+msgstr "card"
+
+msgid "Karte ausspielen"
+msgstr "Play a card"
+
+msgid "Karten"
+msgstr "Cards"
+
+msgid "Kartentausch (eine je Farbe): Alle geben ihre ganze Hand an den Nächsten weiter."
+msgstr "Card Swap (one per color): Everyone passes their whole hand to the next player."
+
+msgid "Kartentausch! %s und %s tauschen die Hände."
+msgstr "Card Swap! %s and %s swap hands."
+
+msgid "Kartentausch! Alle Hände wandern %s weiter."
+msgstr "Card Swap! All hands move on %s."
+
+msgid "Kartentausch! Alle Hände wandern %s – deine zu %s."
+msgstr "Card Swap! All hands move %s – yours goes to %s."
+
+msgid "Kartentausch! Du tauschst die Hand mit %s."
+msgstr "Card Swap! You swap hands with %s."
+
+msgid "Kartentausch: 4 zusätzliche Karten%s. Wer eine legt, lässt alle ihre ganze Hand weitergeben, %s."
+msgstr "Card Swap: 4 extra cards%s. Whoever plays one makes everyone pass their whole hand on, %s."
+
+msgid "Kein Stapeln: Wer eine Ziehkarte abbekommt, zieht und %s."
+msgstr "No stacking: Whoever gets a draw card draws and %s."
+
+msgid "Kurz gesagt"
+msgstr "In short"
+
+msgid "Lege eine Karte, die in Farbe, Zahl oder Symbol zur obersten Ablagekarte passt. Joker passen immer."
+msgstr "Play a card that matches the top discard in color, number or symbol. Wild cards always fit."
+
+msgid "Liegt danach eine Aktionskarte oben, wirkt sie nicht. Liegt ein Joker oben, wählst du die Farbe."
+msgstr "If an action card ends up on top afterward, it has no effect. If a wild card ends up on top, you choose the color."
+
+msgid "Liegt eine Ziehstrafe auf dir, passt das Glücksspiel nicht (wie jeder andere Joker)."
+msgstr "If a draw penalty is on you, the Gamble card doesn't fit (like any other wild card)."
+
+msgid "Mau rufen"
+msgstr "Calling Mau"
+
+msgid "Nach dem Glücksspiel-Joker ziehst du eine Karte aus deiner Hand auf deinen Einsatz und drückst „Los!“. Bei 0 setzt du weiter oder tippst „Aufhören“."
+msgstr "After the Gamble wild card, you drag a card from your hand onto your stake and press “Go!”. On a 0 you keep staking or tap “Stop”."
+
+msgid "Nach dem Strafziehen bist du trotzdem dran: Du darfst legen – oder ziehst ganz normal, wenn nichts passt."
+msgstr "After a penalty draw it's still your turn: You may play – or draw as usual if nothing fits."
+
+msgid "Nach dem Ziehen darfst du eine andere passende Karte legen oder alles behalten."
+msgstr "After drawing, you may play another matching card or keep everything."
+
+msgid "Nach dem Ziehen darfst du jede passende Karte legen oder alles behalten."
+msgstr "After drawing, you may play any matching card or keep everything."
+
+msgid "Nach der Ablegen-Karte sind die passenden Karten schon ausgewählt. Tipp eine an, um sie zu behalten, und dann auf „Ablegen“."
+msgstr "After the Discard Color card, the matching cards are already selected. Tap one to keep it, then tap “Discard”."
+
+msgid "Nach einem Richtungswechsel wandern die Hände also andersherum."
+msgstr "After a Reverse, the hands therefore travel the other way."
+
+msgid "Nach einer 0 darfst du auch aufhören: Dein ganzer Einsatz kommt unter den Ablagestapel, und dein Zug ist vorbei. Noch eine Karte riskieren oder aufhören?"
+msgstr "After a 0 you may also stop: Your whole stake goes under the discard pile, and your turn is over. Risk one more card or stop?"
+
+msgid "Nicht stapelbar: Wer sie abbekommt, zieht sofort und %s."
+msgstr "Can't be stacked: Whoever gets it draws right away and %s."
+
+msgid "Nur legbar, wenn %s – die App achtet darauf."
+msgstr "Only playable if %s – the app checks."
+
+msgid "Oben liegt dann die andere Seite dieses Flips; die übrige Ablage bleibt zur Seite gelegt. Eine Wunschfarbe verfällt."
+msgstr "The other side of this Flip ends up on top; the rest of the discard pile is set aside. A wished color expires."
+
+msgid "Oben liegt dann die bisher unterste Ablagekarte mit ihrer anderen Seite. Eine Wunschfarbe verfällt."
+msgstr "The card that was at the bottom of the discard pile ends up on top, showing its other side. A wished color expires."
+
+msgid "Ohne „Mau!“-Ansage."
+msgstr "No “Mau!” call."
+
+msgid "Passt auf %s und auf jede %d."
+msgstr "Matches %s and any %d."
+
+msgid "Passt auf %s und auf jede %s."
+msgstr "Matches %s and any %s."
+
+msgid "Passt auf %s und auf jede andere Ablegen-Karte."
+msgstr "Matches %s and any other Discard Color card."
+
+msgid "Passt auf %s und auf jeden Flip – ein Flip ist kein Joker."
+msgstr "Matches %s and any Flip – a Flip is not a wild card."
+
+msgid "Passt auf %s und auf jeden Kartentausch."
+msgstr "Matches %s and any Card Swap."
+
+msgid "Passt auf %s und auf jeden Richtungswechsel."
+msgstr "Matches %s and any Reverse."
+
+msgid "Passt auf %s und auf jedes Alle aussetzen."
+msgstr "Matches %s and any Skip All."
+
+msgid "Passt auf %s und auf jedes Aussetzen."
+msgstr "Matches %s and any Skip."
+
+msgid "Passt auf ihre Farbe und auf jede Karte mit demselben Symbol."
+msgstr "Matches its color and any card with the same symbol."
+
+msgid "Passt immer. Du wünschst dir eine Farbe, auch die bisherige."
+msgstr "Always fits. You wish for a color, even the current one."
+
+msgid "Passt immer. Du wünschst eine Farbe, der Nächste zieht 2 Karten und %s."
+msgstr "Always fits. You wish for a color, the next player draws 2 cards and %s."
+
+msgid "Passt immer. Du wünschst eine Farbe; der Nächste zieht, bis er eine Karte dieser Farbe hat, behält alle gezogenen Karten und %s."
+msgstr "Always fits. You wish for a color; the next player draws until they get a card of that color, keeps all the drawn cards and %s."
+
+msgid "Passt nichts, tipp auf den Nachziehstapel links von der Ablage. Er leuchtet, wenn du ziehen darfst."
+msgstr "If nothing fits, tap the draw pile to the left of the discard pile. It glows when you may draw."
+
+msgid "Passt nichts, ziehst du eine Karte."
+msgstr "If nothing fits, you draw one card."
+
+msgid "Passt nichts, ziehst du so lange, bis eine Karte passt."
+msgstr "If nothing fits, you draw until a card fits."
+
+msgid "Passt sie, darfst du sie sofort legen."
+msgstr "If it fits, you may play it right away."
+
+msgid "Passt sie, musst du sie sofort legen."
+msgstr "If it fits, you must play it right away."
+
+msgid "Punkte bis %d"
+msgstr "points up to %d"
+
+msgid "Sonderfälle"
+msgstr "Special cases"
+
+msgid "Sonst zieht er automatisch %d Karte."
+msgstr "Otherwise they automatically draw %d card."
+
+msgid "Sonst zieht er automatisch %d Karten."
+msgstr "Otherwise they automatically draw %d cards."
+
+msgid "Sortieren"
+msgstr "Sorting"
+
+msgid "Spielmenü"
+msgstr "Game menu"
+
+msgid "Spielzug"
+msgstr "Your turn"
+
+msgid "Stapeln: Wer eine Ziehkarte abbekommt, darf die gleiche drauflegen. Die Summe wandert weiter; bei der Farbjagd zieht das letzte Opfer bis zur Farbe."
+msgstr "Stacking: Whoever gets a draw card may play the same one on top. The total moves on; with Color Hunt the last victim draws until the color."
+
+msgid "Tipp auf die Ablage: Die oberste Karte rutscht zur Seite, und du siehst, was darunter liegt und wer es gelegt hat. Tipp auf den Stapel daneben legt eine zurück, ein Tipp auf den Tisch alle."
+msgstr "Tap the discard pile: The top card slides aside and you see what lies underneath and who played it. Tapping the pile next to it puts one back, tapping the table puts them all back."
+
+msgid "Tipp auf die Karten eines Mitspielers, dann siehst du seine Rückseiten groß."
+msgstr "Tap another player's cards to see their backs close-up."
+
+msgid "Tipp eine Karte an, sie hebt sich. Ein zweiter Tipp legt sie. Du kannst sie auch nach oben auf die Ablage ziehen oder schnippen. Passende Karten leuchten, wenn „Spielbare Karten hervorheben“ in den Einstellungen an ist."
+msgstr "Tap a card and it lifts. A second tap plays it. You can also drag it up onto the discard pile or flick it. Matching cards glow if “Highlight playable cards” is on in the settings."
+
+msgid "Treffer: Der Knopf zeigt 1 bis 10. So viele Karten ziehst du, nimmst deinen ganzen Einsatz zurück, und dein Zug ist vorbei."
+msgstr "Hit: The button shows 1 to 10. You draw that many cards, take your whole stake back, and your turn is over."
+
+msgid "Unbekannte Karte."
+msgstr "Unknown card."
+
+msgid "Viele Karten? Wisch über deine Hand, sie dreht sich wie ein Karussell."
+msgstr "Lots of cards? Swipe across your hand and it spins like a carousel."
+
+msgid "Voreinstellung: %s"
+msgstr "Preset: %s"
+
+msgid "Voreinstellung: %s."
+msgstr "Preset: %s."
+
+msgid "Weitere besondere Karten"
+msgstr "More special cards"
+
+msgid "Wendet Nachziehstapel, alle Hände und sich selbst. Danach gilt die %s."
+msgstr "Turns the draw pile, all hands and itself. Afterward the %s applies."
+
+msgid "Wendet alles: Ablage, Nachziehstapel und alle Hände. Danach gilt die %s."
+msgstr "Turns everything: discard pile, draw pile and all hands. Afterward the %s applies."
+
+msgid "Wer durch den Tausch nur noch 1 Karte hat, muss nicht „Mau!“ rufen."
+msgstr "If the swap leaves you with only 1 card, you don't have to call “Mau!”."
+
+msgid "Wer eine Ziehkarte abbekommt, darf die gleiche drauflegen (+1 auf +1, +5 auf +5, Wünscher +2 auf Wünscher +2, Farbjagd auf Farbjagd). Die Summe wandert weiter; bei der Farbjagd zieht das letzte Opfer bis zur Farbe. Wer am Ende zieht, %s."
+msgstr "Whoever gets a draw card may play the same one on top (+1 on +1, +5 on +5, Wild +2 on Wild +2, Color Hunt on Color Hunt). The total moves on; with Color Hunt the last victim draws until the color. Whoever ends up drawing %s."
+
+msgid "Wer es vergisst und erwischt wird, zieht %d Karte."
+msgstr "Whoever forgets and gets caught draws %d card."
+
+msgid "Wer es vergisst und erwischt wird, zieht %d Karten."
+msgstr "Whoever forgets and gets caught draws %d cards."
+
+msgid "Wer mit 2 Karten dran ist, ruft „Mau!“ – vor oder nach dem Legen, bis der nächste Zug beginnt."
+msgstr "Whoever has 2 cards on their turn calls “Mau!” – before or after playing, until the next turn begins."
+
+msgid "Wer so auf 1 Karte kommt, muss nicht „Mau!“ rufen."
+msgstr "Whoever ends up with 1 card this way does not have to call “Mau!”."
+
+msgid "Wer zuerst alle Karten los ist, gewinnt die Runde."
+msgstr "Whoever gets rid of all their cards first wins the round."
+
+msgid "Wert: %d Punkt."
+msgstr "Value: %d point."
+
+msgid "Wert: %d Punkte."
+msgstr "Value: %d points."
+
+msgid "Wertung: Der Sieger bekommt die Punkte aller übrigen Handkarten. Wer zuerst %d Punkte hat, gewinnt die Partie."
+msgstr "Scoring: The winner gets the points of all remaining cards in hand. The first to reach %d points wins the game."
+
+msgid "Wertung: Platzierungen (Punkte zählen nur, wenn die Runde beim ersten Fertigen endet)."
+msgstr "Scoring: Places (points only count if the round ends when the first player is out)."
+
+msgid "Wertung: keine – jede Runde zählt für sich, gezählt werden die Siege."
+msgstr "Scoring: none – each round counts on its own, wins are counted."
+
+msgid "Wünscher +2 darf gestapelt werden: Wer ihn abbekommt, kann einen Wünscher +2 drauflegen; die Summe wandert weiter."
+msgstr "Wild +2 can be stacked: Whoever gets one can play another Wild +2 on top; the total moves on."
+
+msgid "Wünscher +2 und Farbjagd darf nur legen, wer %s. Der Betroffene darf anzweifeln und sieht dann die Hand. Bluff erwischt: Der Leger zieht die Strafe selbst, der Herausforderer ist normal dran. Leger war ehrlich: Der Herausforderer zieht 2 Karten mehr und %s. Die Wunschfarbe bleibt."
+msgstr "Only someone who %s may play Wild +2 and Color Hunt. The affected player may challenge and then sees the hand. Bluff caught: The player who played it draws the penalty themselves, and the challenger plays on as usual. Player was honest: The challenger draws 2 cards more and %s. The wished color stays."
+
+msgid "Wünscher +2 und Farbjagd darf nur legen, wer %s. Die App lässt nichts anderes zu."
+msgstr "Only someone who %s may play Wild +2 and Color Hunt. The app allows nothing else."
+
+msgid "Wünscher +2 und Farbjagd dürfen immer gelegt werden."
+msgstr "Wild +2 and Color Hunt can always be played."
+
+msgid "Wünscher +2 und Farbjagd nur, wenn man %s – die App achtet darauf."
+msgstr "Wild +2 and Color Hunt only for someone who %s – the app checks."
+
+msgid "Wünscher +2 und Farbjagd nur, wenn man %s. Der Nächste darf anzweifeln."
+msgstr "Wild +2 and Color Hunt only for someone who %s. The next player may challenge."
+
+msgid "Zahlenkarte ohne Sonderwirkung."
+msgstr "Number card with no special effect."
+
+msgid "Zeigt er 0 und deine Hand ist leer, kommt der Einsatz unter den Ablagestapel und du bist fertig."
+msgstr "If it shows 0 and your hand is empty, the stake goes under the discard pile and you're out."
+
+msgid "Zeigt er 0 und deine Hand ist leer, kommt der Einsatz unter den Ablagestapel: Du bist fertig und gewinnst die Runde."
+msgstr "If it shows 0 and your hand is empty, the stake goes under the discard pile: You are out and win the round."
+
+msgid "Ziehen"
+msgstr "Draw"
+
+msgid "Ziehkarten"
+msgstr "Draw cards"
+
+msgid "Ziehkarten weitergeben"
+msgstr "Stack draw cards"
+
+msgid "Ziehkarten werden nicht gestapelt: Wer sie abbekommt, zieht und %s."
+msgstr "Draw cards are not stacked: Whoever gets them draws and %s."
+
+msgid "Ziel"
+msgstr "Goal"
+
+msgid "Zu zweit bist du gleich noch einmal dran."
+msgstr "With two players you go again right away."
+
+msgid "Zu zweit hat er keine Wirkung."
+msgstr "With two players it has no effect."
+
+msgid "Zu zweit tauscht ihr einfach eure Hände."
+msgstr "With two players, you simply swap hands."
+
+msgid "Zu zweit wirkt der Richtungswechsel wie Aussetzen."
+msgstr "With two players, a Reverse works like a Skip."
+
+msgid "Zu zweit wirkt er wie Aussetzen: Du bist gleich noch einmal dran."
+msgstr "With two players it works like a Skip: You go again right away."
+
+msgid "Zählt %d Punkt bei der Wertung."
+msgstr "Counts %d point in scoring."
+
+msgid "Zählt %d Punkte bei der Wertung."
+msgstr "Counts %d points in scoring."
+
+msgid "andere Seite"
+msgstr "other side"
+
+msgid "bis zum Letzten"
+msgstr "play to the last"
+
+msgid "bist fertig"
+msgstr "are out"
+
+msgid "bist fertig und gewinnst die Runde"
+msgstr "are out and win the round"
+
+msgid "du keine Karte in der aktuellen Farbe hast"
+msgstr "you have no card in the current color"
+
+msgid "du keine Karte in der aktuellen Farbe und keinen anderen Joker hast"
+msgstr "you have no card in the current color and no other wild card"
+
+msgid "eine Aktionskarte oben wirkt nicht; liegt ein Joker oben, wählt der Flip-Spieler die Farbe."
+msgstr "an action card on top has no effect; if a wild card is on top, the player who played the Flip chooses the color."
+
+msgid "erster fertig gewinnt"
+msgstr "first one out wins"
+
+msgid "gegen den Uhrzeigersinn"
+msgstr "counterclockwise"
+
+msgid "gegen die aktuelle Spielrichtung"
+msgstr "against the current direction of play"
+
+msgid "im Uhrzeigersinn"
+msgstr "clockwise"
+
+msgid "immer gegen den Uhrzeigersinn"
+msgstr "always counterclockwise"
+
+msgid "immer im Uhrzeigersinn"
+msgstr "always clockwise"
+
+msgid "in der aktuellen Spielrichtung"
+msgstr "in the current direction of play"
+
+msgid "ist danach trotzdem dran"
+msgstr "still gets a turn afterward"
+
+msgid "keine Karte in der aktuellen Farbe hat"
+msgstr "has no card in the current color"
+
+msgid "keine Karte in der aktuellen Farbe und keinen anderen Joker hat"
+msgstr "has no card in the current color and no other wild card"
+
+msgid "liegt ein Joker oben, wählt der Flip-Spieler die Farbe. Flip-Überraschung (Hausregel): Die Aktionskarte, die nach dem Flip oben liegt (+1, +5, Aussetzen, Alle aussetzen, Richtungswechsel, Wünscher +2, Farbjagd), wirkt auf den Nächsten, als hätte der Flip-Spieler sie gelegt; Stapeln gilt wie sonst."
+msgstr "if a wild card is on top, the player who played the Flip chooses the color. Flip Surprise (house rule): The action card that ends up on top after the Flip (+1, +5, Skip, Skip All, Reverse, Wild +2, Color Hunt) affects the next player as if the player who played the Flip had played it; stacking applies as usual."
+
+msgid "mit %s"
+msgstr "with %s"
+
+msgid "mit %s (%d Karten)"
+msgstr "with %s (%d cards)"
+
+msgid "nach Strafziehen weiterspielen"
+msgstr "keep playing after a penalty draw"
+
+msgid "nach dem Ziehen beliebige Karte legen"
+msgstr "play any card after drawing"
+
+msgid "setzt aus"
+msgstr "skips a turn"
+
+msgid "und %s"
+msgstr "and %s"
+
+msgid "vier Ablegen-Karten (eine je Farbe) und zwei Ablegen-Joker"
+msgstr "four Discard Color cards (one per color) and two Discard Wilds"
+
+msgid "vier Kartentausch-Karten (eine je Farbe)"
+msgstr "four Card Swap cards (one per color)"
+
+msgid "zwei Glücksspiel-Joker"
+msgstr "two Gamble wild cards"
+
+msgid "„Mau!“ bei der vorletzten Karte rufen. Wer es vergisst und erwischt wird, zieht %d."
+msgstr "Call “Mau!” on the second-to-last card. Whoever forgets and gets caught draws %d."
+
+msgid "„Mau!“ bei der vorletzten Karte rufen. Wer es vergisst, zieht automatisch %d."
+msgstr "Call “Mau!” on the second-to-last card. Whoever forgets automatically draws %d."
+
+msgid "„Mau!“ rufen ist freiwillig, die App erinnert nur daran."
+msgstr "Calling “Mau!” is optional, the app only reminds you."
+
+msgid "„Mau!“ rufen ist freiwillig; die App erinnert nur daran."
+msgstr "Calling “Mau!” is optional; the app only reminds you."
+
+msgid "Eigene Regeln"
+msgstr "Custom rules"
+
+msgid "Offiziell"
+msgstr "Official"
+
+msgid "Klassisch 500"
+msgstr "Classic 500"
+
+msgid "Familie"
+msgstr "Family"
+
+msgid "Rückseiten sichtbar"
+msgstr "backs visible"
+
+msgid "Rückseiten verdeckt"
+msgstr "backs hidden"
+
+msgid "Bluffen erlaubt"
+msgstr "bluffing allowed"
+
+msgid "+2 nur ohne Farbe"
+msgstr "+2 only without the color"
+
+msgid "Wünscher +2 immer erlaubt"
+msgstr "Wild +2 always allowed"
+
+msgid "Gespeicherte Regeln …"
+msgstr "Saved rules …"
+
+msgid "Gespeichert: %s"
+msgstr "Saved: %s"
+
+msgid "Von %s übernehmen"
+msgstr "Use %s's rules"
+
+msgid "Mit den Regeln weiterspielen, mit denen du zuletzt bei %s gespielt hast"
+msgstr "Keep playing with the rules you last played with at %s"
+
+# --- Beta 1.2.2, Ergänzungen (generiert aus tr_add2.txt)
+
+msgid "500 Punkte"
+msgstr "500 points"
+
+msgid "Bis zum Letzten"
+msgstr "Play to the last"

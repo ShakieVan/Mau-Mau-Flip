@@ -46,7 +46,7 @@ func open(host_name := "", port_first := NetProtocol.PORT, port_last := NetProto
 	var err := session.start(host_name if host_name != "" else _own_name(), port_first, port_last, threaded)
 	if err != OK:
 		_close_session()
-		notice.emit("Das Spiel ließ sich nicht eröffnen (Port %d–%d belegt?)." % [port_first, port_last])
+		notice.emit(I18n.t("Das Spiel ließ sich nicht eröffnen (Port %d–%d belegt?).") % [port_first, port_last])
 		return err
 	session.set_rules(rules.to_dict())
 	return OK
@@ -184,7 +184,7 @@ func substitute_bot(seat: int) -> void:
 		return
 	_substitute[seat] = true
 	_waiting_seat = -1
-	_tell_all("Ein Computergegner spielt für %s." % seat_name(seat))
+	_tell_all([I18n.part("Ein Computergegner spielt für %s.", [seat_name(seat)])])
 	_changed([])
 
 
@@ -214,7 +214,7 @@ func act(action: Dictionary) -> void:
 		return
 	var r := _apply(host_seat, action)
 	if not bool(r.ok):
-		notice.emit(str(r.reason))
+		notice.emit(I18n.reason(r))
 
 
 # Zurück in die Lobby (Partie verwerfen, Spieler bleiben).
@@ -275,7 +275,7 @@ func _after_change() -> void:
 		if _waiting_seat != cur:
 			_waiting_seat = cur
 			_wait_since = Time.get_ticks_msec()
-			_tell_all("%s ist getrennt – warte …" % seat_name(cur))
+			_tell_all([I18n.part("%s ist getrennt – warte …", [seat_name(cur)])])
 	else:
 		_waiting_seat = -1
 
@@ -283,6 +283,7 @@ func _after_change() -> void:
 func _patch_view(seat: int, v: Dictionary) -> void:
 	if _waiting_seat >= 0 and seat != _waiting_seat:
 		(v.hints as Dictionary).text = "%s ist getrennt – warte …" % seat_name(_waiting_seat)
+		(v.hints as Dictionary).lt = [I18n.part("%s ist getrennt – warte …", [seat_name(_waiting_seat)])]
 
 
 func _distribute(events: Array) -> void:
@@ -302,10 +303,11 @@ func _send_state(seat: int, events: Array) -> void:
 	session.send_to(id, msg)
 
 
-func _tell_all(text: String) -> void:
-	notice.emit(text)
+# Meldung an alle: lt = Bausteine (I18n), jedes Gerät zeigt sie in seiner Sprache; "text" bleibt deutsch für ältere Geräte.
+func _tell_all(lt: Array) -> void:
+	notice.emit(I18n.render(lt))
 	if session != null:
-		session.broadcast({"t": "notice", "text": text})
+		session.broadcast(I18n.with_lt({"t": "notice"}, lt))
 
 
 func _on_left(id: int) -> void:
@@ -315,7 +317,7 @@ func _on_left(id: int) -> void:
 	if s < 0:
 		return
 	game.set_connected(s, false)
-	notice.emit("%s ist getrennt." % seat_name(s))
+	notice.emit(I18n.t("%s ist getrennt.") % seat_name(s))
 	_changed([])
 
 
@@ -328,7 +330,7 @@ func _on_rejoined(id: int) -> void:
 	game.set_connected(s, true)
 	if _substitute.has(s):
 		_substitute.erase(s)
-	notice.emit("%s ist wieder da." % seat_name(s))
+	notice.emit(I18n.t("%s ist wieder da.") % seat_name(s))
 	_changed([])                 # schickt allen (auch dem Zurückgekehrten) sofort den aktuellen Stand
 
 
@@ -353,11 +355,13 @@ func _on_message(id: int, msg: Dictionary) -> void:
 		_plan_dirty = true
 	var r := _apply(s, a)
 	if not bool(r.ok):
-		_err(id, str(r.reason))
+		_err(id, str(r.reason), r.get("reason_lt", []))
 
 
-func _err(id: int, text: String) -> void:
+func _err(id: int, text: String, lt: Array = []) -> void:
 	var msg := {"t": "err", "text": text}
+	if not lt.is_empty() and not (lt.size() == 1 and lt[0] is String):   # Bausteine nur bei Platzhaltern (sonst ist text die msgid)
+		msg["lt"] = lt
 	if _seq.has(id):
 		msg.seq_ack = _seq[id]
 	session.send_to(id, msg)

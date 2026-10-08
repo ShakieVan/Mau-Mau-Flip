@@ -161,6 +161,8 @@ func check_message(c: ClientTable, events: Array, view: Dictionary) -> void:
 
 # Jeder Tisch (Gäste und Gastgeber) handelt höchstens einmal je neuem Stand, per MauBot auf der eigenen Sicht.
 # Gäste höchstens alle 70 ms (der Server verwirft mehr als 20 Nachrichten/s still); bleibt der Stand 1 s gleich, noch einmal.
+var no_stop := false
+
 func play_once(t: TableSource, rev_now: int) -> void:
 	var now := Time.get_ticks_msec()
 	var last_ms: int = acted_ms.get(t, 0)
@@ -174,6 +176,8 @@ func play_once(t: TableSource, rev_now: int) -> void:
 	acted[t] = rev_now
 	acted_ms[t] = now
 	var a := MauBot.choose(v, rng.randi(), 1)
+	if no_stop and str(a.get("a", "")) == "stop":
+		return      # der erzwungene Glücksspielverlauf (0, dann Treffer) soll nicht vorzeitig enden
 	if not a.is_empty():
 		t.act(a)
 
@@ -553,12 +557,14 @@ func test_house_game() -> void:
 	cara.act({"a": "play", "card": gid, "color": col})
 	check(wait_until(func(): return g.phase() == "gamble" and int(g.gamble.get("seat", -1)) == cseat), "Hausregeln: Caras Glücksspiel läuft")
 	var gamble_cards := ""
+	no_stop = true
 	var t_g := Time.get_ticks_msec() + 15000
 	while Time.get_ticks_msec() < t_g and g.phase() == "gamble":
 		play_step()
 		if gamble_cards == "":
 			gamble_cards = house_cards(g)
 	check(g.phase() != "gamble" and g.gamble.is_empty(), "Hausregeln: Caras Glücksspiel endet mit dem Treffer")
+	no_stop = false
 	check(gamble_cards == "" and house_cards(g) == "", "Hausregeln: Kartenerhaltung mit Einsatz (%s)" % gamble_cards)
 	check((g.hands[cseat] as Array).size() == hand_before - 1 + 2, "Hausregeln: Cara zieht 2 und bekommt den Einsatz zurück (%d Karten)" % (g.hands[cseat] as Array).size())
 	check(wait_until(func(): return int(house_seen.get("stake", 0)) >= stakes_before + 4 and cara.last_rev == host.rev and dino.last_rev == host.rev),

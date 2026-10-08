@@ -654,10 +654,10 @@ func _apply_me(v: Dictionary, turn: int, next: int) -> void:
 	_was_my_turn = _hand_halo_want
 
 
-# „Du bist dran“ (Beta 1.1.1): Dran-Ton nach der Einstellung Spieltöne (AppSound), kurze Vibration nur mit "zug_vibration"
+# „Du bist dran“ (Beta 1.1.1): Dran-Ton nach der Einstellung Spieltöne (AppSound), kurze Vibration nur mit "zug_vibration" (ab Werk an)
 func _notify_my_turn() -> void:
 	UiApp.sound("dran")
-	if HandView.truthy(UiApp.setting("zug_vibration", false)) and (OS.has_feature("mobile") or OS.get_name() == "Android"):
+	if HandView.truthy(UiApp.setting("zug_vibration", true)) and (OS.has_feature("mobile") or OS.get_name() == "Android"):
 		Input.vibrate_handheld(160)
 
 
@@ -721,9 +721,12 @@ func _apply_hints(h: Dictionary, turn: int) -> void:
 	var me_turn := turn == my_seat and int(view.get("seat", 0)) >= 0
 	var text := str(h.get("text", "Du bist dran." if me_turn else ""))
 	var dp := discard_pick_of(view)
+	var shown := ""
 	if not dp.is_empty() and (int(dp.get("seat", -1)) != my_seat or int(view.get("seat", 0)) < 0):
-		text = "%s wählt aus …" % str(_player(int(dp.get("seat", -1))).get("name", "?"))
-	hint_bar.show_hint(hint_text(text), me_turn)
+		shown = I18n.t("%s wählt aus …") % str(_player(int(dp.get("seat", -1))).get("name", "?"))
+	else:
+		shown = _hint_local(text, h.get("lt", []) if h.get("lt") is Array else [])
+	hint_bar.show_hint(shown, me_turn)
 	var me_player := _player(my_seat)
 	if bool(h.get("can_mau", false)):
 		mau_button.mode = MauButton.Mode.READY
@@ -800,7 +803,7 @@ func picked_cards() -> Array:
 func _update_pick_button() -> void:
 	var b: PillButton = _act_btns["pick"]
 	var cands: Array = (view.get("hints", {}) as Dictionary).get("can_pick", [])
-	b.text = "Ablegen (%d)" % picked_cards().size() if not cands.is_empty() else "Weiter"
+	b.text = I18n.t("Ablegen (%d)") % picked_cards().size() if not cands.is_empty() else "Weiter"
 	_layout_action_buttons()
 
 
@@ -843,6 +846,18 @@ func hint_text(text: String) -> String:
 	if not highlight and text.begins_with(HINT_NOTHING_FITS):
 		return "Du bist dran." + (" Denk an „Mau!“" if text.ends_with("Denk an „Mau!“") else "")
 	return text
+
+
+# Hinweis in der eigenen Sprache (I18n): aus den Bausteinen hints.lt des Gastgebers bzw. der deutschen msgid; die Kürzung von
+# hint_text (Hervorheben aus) wird auf Bausteine übertragen.
+func _hint_local(text: String, lt: Array) -> String:
+	var shown := hint_text(text)
+	if shown == text:
+		return I18n.render(lt) if not lt.is_empty() else I18n.t(text)
+	var parts: Array = ["Du bist dran."]
+	if shown.ends_with("Denk an „Mau!“"):
+		parts.append("Denk an „Mau!“")
+	return I18n.render(parts)
 
 
 func _layout_action_buttons(all := false) -> void:
@@ -1502,7 +1517,7 @@ func _ev_draw(ev: Dictionary, penalty: bool) -> float:
 	if node != null:
 		victim_pos = node.position
 	if penalty:
-		fx.stamp(victim_pos + Vector2(0, 48), "Strafe +%d" % count, UiPalette.ALERT, 34, 0.8)
+		fx.stamp(victim_pos + Vector2(0, 48), I18n.t("Strafe +%d") % count, UiPalette.ALERT, 34, 0.8)
 		if me:
 			_edge_pulse()
 	elif slot:
@@ -1650,7 +1665,7 @@ func _ev_skip_all(ev: Dictionary) -> float:
 	var tw := create_tween()
 	tw.tween_interval(dur)
 	tw.tween_callback(func() -> void:
-		var txt := "Nochmal du!" if player == my_seat else "Nochmal, %s!" % _player_name(player)
+		var txt := I18n.t("Nochmal du!") if player == my_seat else I18n.t("Nochmal, %s!") % _player_name(player)
 		var at := pts[0] + (Vector2(0, -40) if player == my_seat else Vector2(0, 70))
 		fx.float_text(at, txt, 40, UiPalette.CREAM, _d(1.0), 30.0))
 	return dur + _d(0.5)
@@ -2173,7 +2188,7 @@ class PileView:
 	func _draw_label() -> void:
 		var h := w * 466.0 / 300.0
 		var f := UiFonts.text(700 if w <= 200.0 else 800, 100.0)
-		var t := "Stapel · %d" % count
+		var t := I18n.t("Stapel · %d") % count
 		if w <= 200.0:
 			var sfs := UiFonts.size("hinweis")
 			var tw := f.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, sfs).x
@@ -2326,7 +2341,7 @@ class ColorMark:
 		var isz := 46.0 * s * k
 		var bg := UiPalette.NIGHT if night > 0.5 else UiPalette.PAPER
 		var f := UiFonts.text(800, 100.0)
-		var t := UiPalette.color_name(color_key)
+		var t := I18n.t(UiPalette.color_name(color_key))
 		var cfs := int(UiFonts.size("text") * k)
 		var tw := f.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, cfs).x
 		var sy := -16.0 * k

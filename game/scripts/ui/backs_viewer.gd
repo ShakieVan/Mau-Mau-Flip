@@ -47,7 +47,7 @@ func show_backs(name: String, keys: Array) -> void:
 		_strip.add_child(c)
 		_cards.append(c)
 	_title.add_theme_font_size_override("font_size", UiFonts.px(36))   # Einstellung „Schriftgröße“
-	_title.text = "%s · %d %s" % [name, keys.size(), "Rückseite" if keys.size() == 1 else "Rückseiten"]
+	_title.text = "%s · %s" % [name, (I18n.t("%d Rückseite") if keys.size() == 1 else I18n.t("%d Rückseiten")) % keys.size()]
 	_scroll = 0.0
 	_vel = 0.0
 	visible = true

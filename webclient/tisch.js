@@ -85,9 +85,11 @@
     }
     return h;
   }
+  // „1 Karte“ / „5 Karten“ (Mehrzahl je Sprache)
+  const kt = n => (n === 1 ? M.t('1 Karte') : M.t('%d Karten', n));
   function offenText(p) {
     if (!p || !p.kind) return p && p.amount ? '+' + p.amount : '';
-    if (p.kind === 'farbjagd') return 'Jagd!';
+    if (p.kind === 'farbjagd') return M.t('Jagd!');
     return p.amount ? '+' + p.amount : '';
   }
   // Testhilfe: ?tempo=N beschleunigt die Tischregie (nur für Prüfläufe)
@@ -159,38 +161,40 @@
       this.hinweis = this.leiste.firstChild; this.aktionen = this.leiste.lastChild;
       // Eigener Platz: Strahlen hinter der Hand, wenn ich dran bin, und die eigene Kartenzahl (wie bei den Mitspielern)
       this.ichKranz = el('div', 'ich-kranz'); b.insertBefore(this.ichKranz, this.gegnerBox);
-      this.ichZahl = el('div', 'ich-zahl', '<span class="name">Du</span><span class="zahl"></span>'); this.ichZahl.id = 'ich-zahl';
+      this.ichZahl = el('div', 'ich-zahl', '<span class="name" data-t>Du</span><span class="zahl"></span>'); this.ichZahl.id = 'ich-zahl';
       b.appendChild(this.ichZahl);
       this.hand = new M.Hand.Hand(this, {
         antippen: id => this.app.antippen(id), spielen: id => this.app.spielen(id), hilfe: f => this.app.hilfe(f), leer: () => this.app.antippen(null),
       });
       b.appendChild(this.hand.zone); b.appendChild(this.hand.el);
       this.knSort = el('button', 'pill sortieren', ICON_SORT + '<span>Farbe</span>'); b.appendChild(this.knSort);
-      this.knRueck = el('button', 'pill rueckseiten', ICON_RUECK + '<span>Rückseiten</span>'); b.appendChild(this.knRueck);
+      this.knRueck = el('button', 'pill rueckseiten', ICON_RUECK + '<span data-t>Rückseiten</span>'); b.appendChild(this.knRueck);
       this.knMau = el('button', 'mau-knopf', '<span>Mau!</span>'); b.appendChild(this.knMau);
-      this.knMenue = el('button', 'rund menue-knopf', ICON_MENUE); this.knMenue.setAttribute('aria-label', 'Menü'); b.appendChild(this.knMenue);
+      this.knMenue = el('button', 'rund menue-knopf', ICON_MENUE); this.knMenue.setAttribute('aria-label', 'Menü'); this.knMenue.setAttribute('data-t-aria', 'Menü'); b.appendChild(this.knMenue);
       this.knTon = el('button', 'rund ton-knopf', ICON_TON); this.knTon.id = 'ton-knopf'; b.appendChild(this.knTon);
       this.zeigeTon();
       // Glücksspiel (Hausregel gamble_cards): Automat in der Tischmitte (Kuppelknopf wie auf der Karte, Zahlenwerk 0–10) und der
       // verdeckte Einsatzstapel mit Zähler am Platz des Glücksspielers. Beides nur während der Phase „gamble“.
       this.automat = el('div', 'automat',
-        '<div class="schild">Glücksspiel</div>' +
-        '<button class="kuppel" type="button" aria-label="Glücksspielknopf drücken"><span class="frage">Los!</span></button>' +
+        '<div class="schild" data-t>Glücksspiel</div>' +
+        '<button class="kuppel" type="button" aria-label="Glücksspielknopf drücken" data-t-aria="Glücksspielknopf drücken"><span class="frage" data-t>Los!</span></button>' +
         '<div class="sockel"><i class="lampe l1"></i><i class="lampe l2"></i><div class="fenster"><div class="walze"><b>?</b></div></div><i class="lampe l3"></i><i class="lampe l4"></i></div>' +
         '<div class="unter"></div>' +
-        '<button class="knopf klein aufhoeren" type="button" hidden>Aufhören</button>');
+        '<button class="knopf klein aufhoeren" type="button" hidden data-t>Aufhören</button>');
       this.automat.hidden = true; this.automat.id = 'automat';
       b.appendChild(this.automat);
       this.kuppel = this.automat.querySelector('.kuppel'); this.kuppel.id = 'gluecksknopf';
       this.walze = this.automat.querySelector('.walze');
       this.automatUnter = this.automat.querySelector('.unter');
       this.knStop = this.automat.querySelector('.aufhoeren'); this.knStop.id = 'aufhoeren';
-      this.einsatz = el('div', 'einsatz', '<div class="stapelchen"></div><b class="zahl"></b><span class="was">Einsatz</span>');
+      this.einsatz = el('div', 'einsatz', '<div class="stapelchen"></div><b class="zahl"></b><span class="was" data-t>Einsatz</span>');
       this.einsatz.hidden = true; this.einsatz.id = 'einsatz';
       b.appendChild(this.einsatz);
       this.flug = el('div', 'flug'); b.appendChild(this.flug);
       this.farbwahl = el('div', 'farbwahl'); this.farbwahl.hidden = true; b.appendChild(this.farbwahl);
       this.knSort.id = 'sortieren'; this.knRueck.id = 'rueckseiten'; this.knMau.id = 'mau'; this.stapel.id = 'stapel'; this.ablage.id = 'ablage';
+      M.I18n.anwenden(this.root);   // data-t im Tisch (Beta 1.2.2); beim Sprachwechsel neu
+      M.I18n.beiWechsel(() => { M.I18n.anwenden(this.root); this.zeigeTon(); });
 
       const tipp = (e, f) => { e.addEventListener('click', ev => { ev.preventDefault(); f(ev); }); };
       tipp(this.knSort, () => this.app.sortieren());
@@ -425,7 +429,7 @@
       const dran = v.turn === ich && (v.phase === 'turn' || v.phase === 'drawn' || v.phase === 'challenge' || v.phase === 'color' || v.phase === 'gamble' || v.phase === 'discard_pick');
       this._zeigeAutomat(v);
       if (!this._tauschLaeuft && this.hand.el.getAttribute('style')) this.hand.el.removeAttribute('style');   // Rest einer Tausch-Animation
-      this.hinweis.textContent = this.hinweisText(h.text) || this._hinweisErsatz(v);
+      this.hinweis.textContent = this.hinweisLokal(h) || this._hinweisErsatz(v);
       this.hinweis.classList.toggle('dran', v.turn === ich && dran);
       this.ichKranz.classList.toggle('an', dran);
       this.ichZahl.classList.toggle('dran', dran);
@@ -434,13 +438,13 @@
       const jagd = p.kind === 'farbjagd';
       let ak = '';
       // In „challenge“ ist Ziehen dasselbe wie Annehmen → nur ein Knopf
-      if (h.can_draw && !h.can_accept) ak += '<button class="knopf klein" data-a="draw">' + (p.kind && v.turn === ich ? (jagd ? 'Ziehen bis Farbe' : (p.amount | 0) + ' ziehen') : 'Ziehen') + '</button>';
-      if (h.can_keep) ak += '<button class="knopf klein" data-a="keep">Behalten</button>';
-      if (h.can_challenge) ak += '<button class="knopf klein warn" data-a="challenge">Anzweifeln</button>';
-      if (h.can_accept || (h.can_challenge && h.can_accept === undefined)) ak += '<button class="knopf klein" data-a="accept">' + (jagd ? 'Annehmen' : 'Annehmen' + (p.amount ? ' (+' + p.amount + ')' : '')) + '</button>';
-      if (h.need_color) ak += '<button class="knopf klein" data-a="wunsch">Farbe wählen</button>';
+      if (h.can_draw && !h.can_accept) ak += '<button class="knopf klein" data-a="draw">' + (p.kind && v.turn === ich ? (jagd ? M.t('Ziehen bis Farbe') : M.t('%d ziehen', p.amount | 0)) : M.t('Ziehen')) + '</button>';
+      if (h.can_keep) ak += '<button class="knopf klein" data-a="keep">' + M.t('Behalten') + '</button>';
+      if (h.can_challenge) ak += '<button class="knopf klein warn" data-a="challenge">' + M.t('Anzweifeln') + '</button>';
+      if (h.can_accept || (h.can_challenge && h.can_accept === undefined)) ak += '<button class="knopf klein" data-a="accept">' + (jagd || !p.amount ? M.t('Annehmen') : M.t('Annehmen (+%d)', p.amount)) + '</button>';
+      if (h.need_color) ak += '<button class="knopf klein" data-a="wunsch">' + M.t('Farbe wählen') + '</button>';
       const pick = this.app.imAblegen && this.app.imAblegen() ? this.app.pickAuswahl(v) : null;
-      if (pick) ak += '<button class="knopf klein" data-a="ablegen">Ablegen (' + pick.length + ')</button>';
+      if (pick) ak += '<button class="knopf klein" data-a="ablegen">' + M.t('Ablegen (%d)', pick.length) + '</button>';
       if (this.aktionen.innerHTML !== ak) this.aktionen.innerHTML = ak;
       this.stapel.classList.toggle('ziehbar', !!h.can_draw);
       this.knMau.classList.toggle('bereit', !!h.can_mau);
@@ -451,7 +455,7 @@
       this.knRueck.hidden = !peek;
       if (!peek && this.hand.rueck) this.hand.zeigeRueck(false);
       this.knRueck.classList.toggle('aktiv', this.hand.rueck);
-      this.knSort.lastChild.textContent = { farbe: 'Farbe', wert: 'Wert', punkte: 'Punkte' }[this.app.sortModus()] || 'Farbe';
+      this.knSort.lastChild.textContent = { farbe: M.t('Farbe'), wert: M.t('Wert'), punkte: M.t('Punkte') }[this.app.sortModus()] || M.t('Farbe');
       const reihe = K().sortiere(v.hand || [], this.app.sortModus());
       // Hervorgehoben werden die legbaren Karten, im eigenen Glücksspiel die setzbaren (hints.can_stake). Die persönliche
       // Einstellung „Spielbare Karten hervorheben“ (aus) nimmt Leuchten, Anheben und Abdunkeln ganz weg.
@@ -475,14 +479,22 @@
         return 'Du bist dran.' + (/Denk an „Mau!“$/.test(t) ? ' Denk an „Mau!“' : '');
       return t;
     }
+    // Hinweis in der eigenen Sprache (i18n.js): Bausteine hints.lt des Gastgebers bzw. der deutsche Text als msgid; die Kürzung von
+    // hinweisText (Hervorheben aus) gilt für beide Wege.
+    hinweisLokal(h) {
+      const t = h.text || '';
+      const kurz = this.hinweisText(t);
+      if (kurz === t) return Array.isArray(h.lt) && h.lt.length ? M.I18n.render(h.lt) : M.t(t);
+      return M.I18n.render(/Denk an „Mau!“$/.test(kurz) ? ['Du bist dran.', 'Denk an „Mau!“'] : ['Du bist dran.']);
+    }
     _hinweisErsatz(v) {
       const p = (v.players || []).find(x => x.seat === v.turn);
-      if (v.phase === 'round_over') return 'Runde vorbei';
-      if (v.phase === 'game_over') return 'Partie vorbei';
-      if (v.phase === 'gamble') return v.turn === v.seat ? ((v.hints || {}).can_press ? 'Drück den Glücksspielknopf!' : ((v.hints || {}).can_stop ? 'Noch eine Karte setzen – oder aufhören?' : 'Leg eine Karte verdeckt auf deinen Einsatz.')) : (p ? p.name + ' spielt Glücksspiel' : '');
-      if (v.phase === 'discard_pick' && v.discard_pick) return v.discard_pick.seat === v.seat ? 'Wähl die Karten, die du mit ablegst' : ((v.players || []).find(x => x.seat === v.discard_pick.seat) || {}).name + ' wählt Karten in ' + K().farbName(v.discard_pick.color) + ' zum Mitablegen';
-      if (v.turn === v.seat) return 'Du bist dran';
-      return p ? p.name + ' ist dran' : '';
+      if (v.phase === 'round_over') return M.t('Runde vorbei');
+      if (v.phase === 'game_over') return M.t('Partie vorbei');
+      if (v.phase === 'gamble') return v.turn === v.seat ? ((v.hints || {}).can_press ? M.t('Drück den Glücksspielknopf!') : ((v.hints || {}).can_stop ? M.t('Noch eine Karte setzen – oder aufhören?') : M.t('Leg eine Karte verdeckt auf deinen Einsatz.'))) : (p ? M.t('%s spielt Glücksspiel', p.name) : '');
+      if (v.phase === 'discard_pick' && v.discard_pick) return v.discard_pick.seat === v.seat ? M.t('Wähl die Karten, die du mit ablegst') : M.t('%s wählt Karten in %s zum Mitablegen', ((v.players || []).find(x => x.seat === v.discard_pick.seat) || {}).name, K().farbName(v.discard_pick.color));
+      if (v.turn === v.seat) return M.t('Du bist dran');
+      return p ? M.t('%s ist dran', p.name) : '';
     }
     _zeigeGegner(v) {
       const ich = v.seat;
@@ -515,7 +527,8 @@
         if (!g) {
           const e = el('div', 'gg');
           e.dataset.seat = p.seat;
-          e.innerHTML = '<i class="kranz"></i><div class="denk" aria-hidden="true"><i></i><i></i><b>…</b></div><div class="kopf"><div class="ava"></div><div class="name"></div><div class="zahl"></div><span class="zug"></span></div><div class="faecher"></div><div class="marken"></div><button class="erwischen">Erwischt!</button>';
+          e.innerHTML = '<i class="kranz"></i><div class="denk" aria-hidden="true"><i></i><i></i><b>…</b></div><div class="kopf"><div class="ava"></div><div class="name"></div><div class="zahl"></div><span class="zug"></span></div><div class="faecher"></div><div class="marken"></div><button class="erwischen" data-t>Erwischt!</button>';
+          M.I18n.anwenden(e);
           this.gegnerBox.appendChild(e);
           g = { e, sig: '' };
           this.gegnerEls.set(p.seat, g);
@@ -540,7 +553,7 @@
           }
           e.style.transform = 'translateY(' + y + 'px)';
           e.classList.toggle('aus', k >= L.cap);
-          e.querySelector('.zug').textContent = !laeuft || nl < 2 || fertig ? '' : (k === 0 ? (p.seat === ich ? 'Du bist dran' : 'ist dran') : (k === 1 ? 'gleich dran' : ''));
+          e.querySelector('.zug').textContent = !laeuft || nl < 2 || fertig ? '' : (k === 0 ? (p.seat === ich ? M.t('Du bist dran') : M.t('ist dran')) : (k === 1 ? M.t('gleich dran') : ''));
         } else {
           const pos = this._gegnerPos((p.seat - ich + n) % n, n);
           g.px = pos.x; g.py = pos.y;
@@ -552,15 +565,15 @@
         const ava = e.querySelector('.ava');
         ava.textContent = (p.name || '?').trim().charAt(0).toUpperCase();
         ava.style.background = AVA_FARBEN[p.seat % AVA_FARBEN.length];
-        e.querySelector('.name').textContent = p.seat === ich ? 'Du' : (p.name || ('Platz ' + (p.seat + 1)));
+        e.querySelector('.name').textContent = p.seat === ich ? M.t('Du') : (p.name || M.t('Platz %d', p.seat + 1));
         const zahl = p.seat === ich ? (v.hand || []).length : p.count;
         e.querySelector('.zahl').textContent = zahl;
         let marken = '';
         if (p.mau) marken += '<span class="marke mau">Mau!</span>';
-        if (p.kind === 'bot' && !kompakt) marken += '<span class="marke">Computer</span>';
-        if (p.place > 0) marken += '<span class="marke platz">' + p.place + '. Platz</span>';
-        if (p.substituted) marken += '<span class="marke">Computer spielt</span>';
-        else if (p.connected === false) marken += '<span class="marke weg">' + ICON_GETRENNT + 'getrennt</span>';
+        if (p.kind === 'bot' && !kompakt) marken += '<span class="marke">' + esc(M.t('Computer')) + '</span>';
+        if (p.place > 0) marken += '<span class="marke platz">' + esc(M.t('%d. Platz', p.place)) + '</span>';
+        if (p.substituted) marken += '<span class="marke">' + esc(M.t('Computer spielt')) + '</span>';
+        else if (p.connected === false) marken += '<span class="marke weg">' + ICON_GETRENNT + esc(M.t('getrennt')) + '</span>';
         const mk = e.querySelector('.marken');
         if (mk.innerHTML !== marken) mk.innerHTML = marken;
         // Fächer der sichtbaren Rückseiten (sortiert vom Gastgeber) oder neutrale Rückseiten; im großen Modus keiner (sparsam)
@@ -597,7 +610,7 @@
       K().setzeGesicht(this.stapelOben, back);
       this.stapelUnter.forEach((e, i) => { K().setzeGesicht(e, back); e.style.display = n > i + 1 ? '' : 'none'; });
       this.stapelOben.style.display = n > 0 ? '' : 'none';
-      this.stapelZahl.textContent = 'Stapel · ' + n;
+      this.stapelZahl.textContent = M.t('Stapel · %d', n);
     }
     _zeigeAblage(v, alt) {
       const top = v.top;
@@ -676,13 +689,13 @@
       }
       const e = log[oben] || {};
       const s = typeof e.s === 'number' ? e.s : -1;
-      const wer = s < 0 ? 'Startkarte' : (this.v && s === this.v.seat ? 'von dir' : 'von ' + this.name(s));
-      this.seiten.querySelector('.von').textContent = e.h ? 'Einsatz ' + wer : wer;
+      const wer = s < 0 ? M.t('Startkarte') : (this.v && s === this.v.seat ? M.t('von dir') : M.t('von %s', this.name(s)));
+      this.seiten.querySelector('.von').textContent = e.h ? M.t('Einsatz %s', wer) : wer;
       const w = this.seiten.querySelector('.wunsch');
-      w.textContent = e.c ? 'Wunsch: ' + K().farbName(e.c) : '';
+      w.textContent = e.c ? M.t('Wunsch: %s', K().farbName(e.c)) : '';
       w.hidden = !e.c;
       if (e.c) w.dataset.farbe = e.c; else delete w.dataset.farbe;
-      this.seiten.querySelector('.zaehler').textContent = n + ' von ' + L;
+      this.seiten.querySelector('.zaehler').textContent = M.t('%d von %d', n, L);
     }
 
     // Farbe mit ablegen / Einsatz unter die Ablage: Karten landen UNTER der obersten (sie bleibt oben)
@@ -735,8 +748,8 @@
       this.kuppel.disabled = !ich;
       this.knStop.hidden = !stop;   // „Aufhören“ nur mit hints.can_stop (nach einem Druck ohne Treffer)
       const n = this.name(g.seat);
-      this.automatUnter.textContent = ich ? (druck ? 'Drück den Knopf!' : (stop ? '' : 'Tipp eine Karte an'))   // mit can_stop steht dort der Knopf, der Hinweis oben fragt
-        : (g.need === 'press' ? n + ' drückt …' : n + ' setzt …');
+      this.automatUnter.textContent = ich ? (druck ? M.t('Drück den Knopf!') : (stop ? '' : M.t('Tipp eine Karte an')))   // mit can_stop steht dort der Knopf, der Hinweis oben fragt
+        : (g.need === 'press' ? M.t('%s drückt …', n) : M.t('%s setzt …', n));
       if (!this._walzeLaeuft && typeof g.last === 'number') this.walzeZeige(g.last);   // ohne last: Anzeige bleibt
     }
     walzeZeige(wert) {
@@ -768,12 +781,12 @@
       const k = this.kuppel;
       k.classList.remove('druck'); void k.offsetWidth; k.classList.add('druck');
       this.automat.classList.remove('drueckbar');
-      this.automatUnter.textContent = 'Viel Glück …';
+      this.automatUnter.textContent = M.t('Viel Glück …');
     }
     // eigenes Aufhören gesendet: Knopf weg, bis die Antwort kommt
     stopGesendet() {
       this.knStop.hidden = true;
-      this.automatUnter.textContent = 'Du hörst auf …';
+      this.automatUnter.textContent = M.t('Du hörst auf …');
     }
     // Lage des Einsatzstapels: eigener Platz links über der Hand, Mitspieler neben ihrem Fächer (zur Tischmitte hin)
     einsatzPos(seat) {
@@ -793,7 +806,7 @@
       e.style.left = p.x + 'px'; e.style.top = p.y + 'px';
       const meins = !!(this.v && seat === this.v.seat);
       e.classList.toggle('meins', meins);
-      e.querySelector('.was').textContent = meins ? 'Dein Einsatz' : 'Einsatz';
+      e.querySelector('.was').textContent = meins ? M.t('Dein Einsatz') : M.t('Einsatz');
       const sig = seat + ':' + n + ':' + p.w;
       if (e.dataset.sig === sig) return;
       e.dataset.sig = sig;
@@ -843,10 +856,10 @@
     _zeigeFarbe(v) {
       const f = v.color;
       const fi = K().FARB_INFO[f];
-      const sig = f + (K().Bilder.symbole ? 'b' : 's');
+      const sig = f + (K().Bilder.symbole ? 'b' : 's') + M.I18n.sprache;
       if (this.farbe.dataset.sig !== sig) {
         this.farbe.dataset.sig = sig;
-        this.farbe.innerHTML = fi ? K().farbSymbolHTML(f, { kontur: '#F4EADA', konturBreite: 4 }) + '<span>' + esc(fi.name) + '</span>' : '';
+        this.farbe.innerHTML = fi ? K().farbSymbolHTML(f, { kontur: '#F4EADA', konturBreite: 4 }) + '<span>' + esc(K().farbName(f)) + '</span>' : '';
       }
       this.farbring.style.setProperty('--ring', fi ? fi.ring : 'rgba(244,234,218,.35)');
       this.root.style.setProperty('--farbe', fi ? fi.ring : '#9A86FF');
@@ -862,8 +875,8 @@
         const hellGrund = f === 'gelb' || f === 'gruen' || f === 'pink';   // Druckfarbe (style.css .farbwahl .feld)
         return '<button class="feld f' + i + '" data-farbe="' + f + '" style="--f:' + grund + '">' +
           K().symbolSVG(f, { farbe: hellGrund ? K().INK : K().CREAM, grund }) +
-          '<b>' + esc(fi.name) + '</b><i>' + (zaehlung[f] ? zaehlung[f] + '× auf der Hand' : 'keine') + '</i></button>';
-      }).join('') + '<button class="abbrechen rund" aria-label="Abbrechen">✕</button><div class="frage">' + esc(frage || 'Welche Farbe?') + '</div>';
+          '<b>' + esc(K().farbName(f)) + '</b><i>' + (zaehlung[f] ? esc(M.t('%d× auf der Hand', zaehlung[f])) : esc(M.t('keine'))) + '</i></button>';
+      }).join('') + '<button class="abbrechen rund" aria-label="' + esc(M.t('Abbrechen')) + '">✕</button><div class="frage">' + esc(frage || M.t('Welche Farbe?')) + '</div>';
       fw.hidden = false;
       fw.classList.remove('auf'); void fw.offsetWidth; fw.classList.add('auf');
       fw.onclick = e => {
@@ -914,7 +927,7 @@
     zeigeTon() {
       const stumm = !!(this.app.einstellungen && this.app.einstellungen.stumm);
       this.knTon.classList.toggle('stumm', stumm);
-      this.knTon.setAttribute('aria-label', stumm ? 'Ton einschalten' : 'Ton ausschalten');
+      this.knTon.setAttribute('aria-label', stumm ? M.t('Ton einschalten') : M.t('Ton ausschalten'));
       this.knTon.setAttribute('aria-pressed', stumm ? 'true' : 'false');
     }
 
@@ -1036,7 +1049,7 @@
       });
     }
     wendeEnde() { this.buehne.querySelectorAll('.wende-aus,.wende-ein').forEach(k => k.classList.remove('wende-aus', 'wende-ein')); }
-    name(seat) { const p = this.v && (this.v.players || []).find(x => x.seat === seat); return p ? p.name : ('Platz ' + (seat + 1)); }
+    name(seat) { const p = this.v && (this.v.players || []).find(x => x.seat === seat); return p ? p.name : M.t('Platz %d', seat + 1); }
   }
 
   /* ---------- Tischregie: Ereignisse nacheinander abspielen, dann mit der Sicht abgleichen ---------- */
@@ -1110,24 +1123,24 @@
           break;
         }
         case 'skip':
-          t.abzeichen(e.seat, K().iconSVG('schlaf', { main: '#FFF7E8', cut: '#211B2C' }) + '<span>Aussetzen</span>', 'aussetzen', d(1000));
+          t.abzeichen(e.seat, K().iconSVG('schlaf', { main: '#FFF7E8', cut: '#211B2C' }) + '<span>' + esc(M.t('Aussetzen')) + '</span>', 'aussetzen', d(1000));
           await schlaf(d(650));
           break;
         case 'skip_all':
-          t.banner('Alle aussetzen!', t.name(e.seat) + ' ist gleich noch mal dran', 'aussetzen', d(1200));
+          t.banner(M.t('Alle aussetzen!'), M.t('%s ist gleich noch mal dran', t.name(e.seat)), 'aussetzen', d(1200));
           await schlaf(d(800));
           break;
         case 'reverse':
           t.ring.classList.remove('dreh'); void t.ring.offsetWidth; t.ring.classList.add('dreh');
           setTimeout(() => t.ring.classList.toggle('gegen', e.dir === -1), d(300));
-          t.banner('Richtungswechsel', '', 'klein', d(1000));
+          t.banner(M.t('Richtungswechsel'), '', 'klein', d(1000));
           await schlaf(d(700));
           break;
         case 'color': {
           const fi = K().FARB_INFO[e.color];
           if (!reduziert) t.welle(e.color);
           t._zeigeFarbe({ color: e.color });
-          if (fi) t.banner(fi.name, 'neue Farbe', 'farbe', d(1000));
+          if (fi) t.banner(K().farbName(e.color), M.t('neue Farbe'), 'farbe', d(1000));
           await schlaf(d(650));
           break;
         }
@@ -1147,15 +1160,15 @@
             await schlaf(d(620));
             t.wendeEnde();
           } else { t.setzeSeite(e.side); t.zeige(zwischen, true); }
-          t.banner(e.side === 'dunkel' ? 'Nacht!' : 'Tag!', 'Alles gewendet', 'flip', d(1100));
+          t.banner(e.side === 'dunkel' ? M.t('Nacht!') : M.t('Tag!'), M.t('Alles gewendet'), 'flip', d(1100));
           await schlaf(d(600));
           break;
         }
         case 'flip_surprise': {
           // Hausregel flip_surprise: Die Aktionskarte oben nach dem Flip wirkt, als hätte der Flip-Spieler sie gelegt.
           // Die Wirkungs-Ereignisse (skip, pending, reverse …) folgen direkt danach.
-          const name = e.face ? K().kartenName(e.face) : 'Aktionskarte';
-          t.stempel('Überraschung!', name + (e.seat === ich ? ' – von dir' : ' – von ' + t.name(e.seat)), d(1700));
+          const name = e.face ? K().kartenName(e.face) : M.t('Aktionskarte');
+          t.stempel(M.t('Überraschung!'), e.seat === ich ? M.t('%s – von dir', name) : M.t('%s – von %s', name, t.name(e.seat)), d(1700));
           await schlaf(d(900));
           break;
         }
@@ -1165,7 +1178,7 @@
           await schlaf(d(500));
           break;
         case 'challenge':
-          t.banner(e.success ? 'Bluff erwischt!' : 'Kein Bluff!', t.name(e.seat) + (e.success ? ' hat richtig gezweifelt' : ' hat sich geirrt'), e.success ? 'gut' : 'warn', d(1500));
+          t.banner(e.success ? M.t('Bluff erwischt!') : M.t('Kein Bluff!'), e.success ? M.t('%s hat richtig gezweifelt', t.name(e.seat)) : M.t('%s hat sich geirrt', t.name(e.seat)), e.success ? 'gut' : 'warn', d(1500));
           await schlaf(d(1100));
           break;
         case 'mau':      // auf allen Geräten: Aufnahme „Mao“ (außer Ton aus) und Sprechblase beim Rufenden
@@ -1174,44 +1187,44 @@
           await schlaf(d(450));
           break;
         case 'catch':
-          t.banner('Erwischt!', t.name(e.target) + ' hat „Mau!“ vergessen', 'warn', d(1400));
+          t.banner(M.t('Erwischt!'), M.t('%s hat „Mau!“ vergessen', t.name(e.target)), 'warn', d(1400));
           await schlaf(d(900));
           break;
         case 'penalty':
-          t.abzeichen(e.seat, '+' + e.count + ' Strafe', 'strafe', d(1200));
+          t.abzeichen(e.seat, M.t('+%d Strafe', e.count | 0), 'strafe', d(1200));
           await schlaf(d(500));
           break;
         case 'shuffle':
           M.Ton.spiele('mischen');
           t.stapel.classList.remove('mischen'); void t.stapel.offsetWidth; t.stapel.classList.add('mischen');
-          t.banner('Neu gemischt', '', 'klein', d(900));
+          t.banner(M.t('Neu gemischt'), '', 'klein', d(900));
           await schlaf(d(700));
           break;
         case 'round_over': {
           const r = Array.isArray(e.ranking) ? e.ranking : [];
           const erster = r.length ? (typeof r[0] === 'object' ? r[0].seat : r[0]) : -1;
           if (erster === ich) { M.Ton.spiele('sieg'); if (!reduziert) t.konfetti(); }
-          t.banner(erster === ich ? 'Mau-Mau!' : 'Runde vorbei', erster >= 0 ? t.name(erster) + ' ist fertig' : '', 'gross', d(1500));
+          t.banner(erster === ich ? 'Mau-Mau!' : M.t('Runde vorbei'), erster >= 0 ? M.t('%s ist fertig', t.name(erster)) : '', 'gross', d(1500));
           await schlaf(d(1300));
           break;
         }
         case 'game_over':
-          t.banner('Partie vorbei', typeof e.winner === 'number' && e.winner >= 0 ? (e.winner === ich ? 'Du gewinnst!' : t.name(e.winner) + ' gewinnt') : '', 'gross', d(1500));
+          t.banner(M.t('Partie vorbei'), typeof e.winner === 'number' && e.winner >= 0 ? (e.winner === ich ? M.t('Du gewinnst!') : M.t('%s gewinnt', t.name(e.winner))) : '', 'gross', d(1500));
           await schlaf(d(1000));
           break;
         // zusätzliche Ereignisse des Regelwerks (docs/module/A.md)
         case 'finish':   // {seat, place}: fertig → „Mau-Mau!“ (Aufnahme „Mao-Mao“ und große Blase); bei „bis zum Letzten“ mit Platz
           if (t.app.mauTon) t.app.mauTon(e.seat, 'mau_mau');
           t.mauBlase(e.seat, 'mau_mau', blasenDauer(2300, d));
-          if (t.v.rules && t.v.rules.round_end === 'last') t.abzeichen(e.seat, (e.place | 0) + '. Platz', 'platz', d(1500));
+          if (t.v.rules && t.v.rules.round_end === 'last') t.abzeichen(e.seat, M.t('%d. Platz', e.place | 0), 'platz', d(1500));
           await schlaf(d(700));
           break;
         case 'pass':     // {seat}: beide Stapel leer, Ziehen entfällt
-          t.abzeichen(e.seat, 'Nichts zu ziehen', 'aussetzen', d(1100));
+          t.abzeichen(e.seat, M.t('Nichts zu ziehen'), 'aussetzen', d(1100));
           await schlaf(d(500));
           break;
         case 'choose_color':   // {seat}: nach einem Flip liegt ein Joker oben, dieser Platz wählt die Farbe
-          if (e.seat !== ich) t.banner('Farbwahl', t.name(e.seat) + ' wählt die Farbe', 'klein', d(1000));
+          if (e.seat !== ich) t.banner(M.t('Farbwahl'), M.t('%s wählt die Farbe', t.name(e.seat)), 'klein', d(1000));
           await schlaf(d(300));
           break;
 
@@ -1225,7 +1238,7 @@
           const aktiv = (view.players || []).filter(p => !(p.place > 0)).map(p => p.seat).sort((a, b) => a - b);
           const nach = s => aktiv[(aktiv.indexOf(s) + schritt + aktiv.length) % aktiv.length];
           const von = s => aktiv[(aktiv.indexOf(s) - schritt + aktiv.length) % aktiv.length];
-          t.banner('Kartentausch!', 'Alle Hände wandern ' + (schritt === 1 ? 'im Uhrzeigersinn' : 'gegen den Uhrzeigersinn') + ' weiter', 'tausch', d(1700));
+          t.banner(M.t('Kartentausch!'), M.t('Alle Hände wandern %s weiter', schritt === 1 ? M.t('im Uhrzeigersinn') : M.t('gegen den Uhrzeigersinn')), 'tausch', d(1700));
           if (aktiv.length < 2) { await schlaf(d(900)); break; }
           const vorher = new Map((t.v.players || []).map(p => [p.seat, p.count | 0]));
           const ichDabei = aktiv.indexOf(ich) >= 0;
@@ -1248,7 +1261,7 @@
           if (ichDabei) {
             const neu = Array.isArray(e.hand) ? e.hand : (view.hand || []);
             await t.handRein(K().sortiere(neu, t.app.sortModus()), t.platzPos(von(ich)), flug);
-            t.app.toast('Deine neuen Karten kommen von ' + t.name(von(ich)) + '.', 'leise', 2600);
+            t.app.toast(M.t('Deine neuen Karten kommen von %s.', t.name(von(ich))), 'leise', 2600);
           } else await schlaf(d(300));
           break;
         }
@@ -1256,13 +1269,13 @@
         // ---------- Hausregel Glücksspiel ----------
         case 'discard_pick': {  // {seat, color}: Auswahl der mitabgelegten Karten beginnt (Phase discard_pick)
           const fi = K().FARB_INFO[e.color];
-          if (e.seat !== ich) t.banner('Farbe ablegen', t.name(e.seat) + ' wählt Karten in ' + (fi ? fi.name : '') + ' zum Mitablegen', 'farbe', d(1300));
+          if (e.seat !== ich) t.banner(M.t('Farbe ablegen'), M.t('%s wählt Karten in %s zum Mitablegen', t.name(e.seat), fi ? K().farbName(e.color) : ''), 'farbe', d(1300));
           break;
         }
         case 'gamble_start':    // {seat}: Phase „gamble“ beginnt; der Automat erscheint
           t.automatAuf();
           t.automatStand({ seat: e.seat, stake: 0, need: 'stake', last: -1 }, Object.assign({}, t.v, { hints: {} }));
-          t.banner('Glücksspiel!', e.seat === ich ? 'Setz Karte um Karte und drück den Knopf' : t.name(e.seat) + ' spielt Glücksspiel', 'gluecks', d(1500), true);
+          t.banner(M.t('Glücksspiel!'), e.seat === ich ? M.t('Setz Karte um Karte und drück den Knopf') : M.t('%s spielt Glücksspiel', t.name(e.seat)), 'gluecks', d(1500), true);
           await schlaf(d(1000));
           break;
         case 'stake': {         // {seat, count, card*, face*}: eine Karte verdeckt auf den Einsatz
@@ -1285,13 +1298,15 @@
           t.automatAuf();
           M.Ton.spiele('mischen');
           await t.walzeDreh(wert, d(reduziert ? 500 : 1150));
-          const wer = e.seat === ich ? 'Du' : t.name(e.seat);
+          const wer = t.name(e.seat);
           if (wert > 0) {
             M.Ton.spiele('fehler');
-            t.banner('Treffer: ' + wert + '!', wer + (e.seat === ich ? ' ziehst ' : ' zieht ') + wert + (wert === 1 ? ' Karte' : ' Karten') + ' – der Einsatz geht zurück', 'warn klein', d(1600), true);
+            const zieht = e.seat === ich ? (wert === 1 ? M.t('Du ziehst 1 Karte – der Einsatz geht zurück') : M.t('Du ziehst %d Karten – der Einsatz geht zurück', wert))
+              : (wert === 1 ? M.t('%s zieht 1 Karte – der Einsatz geht zurück', wer) : M.t('%s zieht %d Karten – der Einsatz geht zurück', wer, wert));
+            t.banner(M.t('Treffer: %d!', wert), zieht, 'warn klein', d(1600), true);
             await schlaf(d(1100));
           } else {
-            t.banner('0 – Glück gehabt!', e.seat === ich ? 'Kein Treffer, weiter geht’s' : 'Kein Treffer für ' + t.name(e.seat), 'gut klein', d(1300), true);
+            t.banner(M.t('0 – Glück gehabt!'), e.seat === ich ? M.t('Kein Treffer, weiter geht’s') : M.t('Kein Treffer für %s', wer), 'gut klein', d(1300), true);
             await schlaf(d(800));
           }
           break;
@@ -1301,7 +1316,7 @@
           t.zeigeEinsatz(e.seat, 0);
           const fluege = [];
           for (let i = 0; i < n; i++) fluege.push(schlaf(d(i * 80)).then(() => t.fliege('rueckseite', { x: a.x, y: a.y, w: a.w, rot: kartenRot(i * 9) * 0.4 }, Object.assign({ rot: kartenRot(i * 5) * 0.5 }, b), d(380), { ausblenden: e.seat !== ich })));
-          t.abzeichen(e.seat, '+' + (e.count | 0) + ' zurück', 'zieh', d(1200));
+          t.abzeichen(e.seat, M.t('+%d zurück', e.count | 0), 'zieh', d(1200));
           await Promise.all(fluege);
           break;
         }
@@ -1312,10 +1327,10 @@
           t.zeigeEinsatz(e.seat, 0);
           M.Ton.spiele('karte');
           if (stop) {
-            const k = e.count | 0, was = k + (k === 1 ? ' Karte' : ' Karten');
-            t.banner(e.seat === ich ? 'Aufgehört!' : t.name(e.seat) + ' hört auf!', 'Der Einsatz (' + was + ') kommt unter die Ablage', 'gluecks klein', d(1500), true);
-            if (t.automatAktiv) { t.knStop.hidden = true; t.kuppel.disabled = true; t.automat.classList.remove('drueckbar'); t.automatUnter.textContent = e.seat === ich ? 'Du hörst auf' : t.name(e.seat) + ' hört auf'; }
-          } else t.banner('Alles gesetzt!', 'Der Einsatz kommt unter die Ablage', 'gut klein', d(1500), true);
+            const k = e.count | 0;
+            t.banner(e.seat === ich ? M.t('Aufgehört!') : M.t('%s hört auf!', t.name(e.seat)), M.t('Der Einsatz (%s) kommt unter die Ablage', kt(k)), 'gluecks klein', d(1500), true);
+            if (t.automatAktiv) { t.knStop.hidden = true; t.kuppel.disabled = true; t.automat.classList.remove('drueckbar'); t.automatUnter.textContent = e.seat === ich ? M.t('Du hörst auf') : M.t('%s hört auf', t.name(e.seat)); }
+          } else t.banner(M.t('Alles gesetzt!'), M.t('Der Einsatz kommt unter die Ablage'), 'gut klein', d(1500), true);
           const fluege = [];
           for (let i = 0; i < n; i++) fluege.push(schlaf(d(i * 80)).then(() => t.fliege('rueckseite', { x: a.x, y: a.y, w: a.w, rot: kartenRot(i * 9) * 0.4 },
             { x: t.g.ablage.x - 10 + i * 4, y: t.g.ablage.y + 4, w: t.g.aw, rot: kartenRot(i * 7) }, d(420))));
@@ -1330,7 +1345,7 @@
         case 'discard_color': {
           const n = e.count | 0, fi = K().FARB_INFO[e.color];
           const faces = Array.isArray(e.faces) ? e.faces : [], karten = Array.isArray(e.cards) ? e.cards : [];
-          const fname = fi ? fi.name : '';
+          const fname = fi ? K().farbName(e.color) : '';
           t._zeigeFarbe({ color: e.color });
           if (n > 0) {
             M.Ton.spiele('karte');
@@ -1345,13 +1360,13 @@
               const ziel = { x: t.g.ablage.x - 16 + (i % 3) * 8, y: t.g.ablage.y + 6, w: t.g.aw, rot: kartenRot(karten[i] | 0) };
               fluege.push(schlaf(d(i * 110)).then(() => t.fliege(f, von, ziel, d(440))));
             });
-            t.banner('Farbe ablegen', (e.seat === ich ? 'Du legst ' : t.name(e.seat) + ' legt ') + n + (n === 1 ? ' Karte' : ' Karten') + ' in ' + fname + ' mit ab', 'farbe', d(1600));
+            t.banner(M.t('Farbe ablegen'), e.seat === ich ? M.t('Du legst %s in %s mit ab', kt(n), fname) : M.t('%s legt %s in %s mit ab', t.name(e.seat), kt(n), fname), 'farbe', d(1600));
             await Promise.all(fluege);
             t.unterAblage(faces.map((f, i) => ({ id: karten[i] | 0, face: f })));
             if (n > 1) t.abzeichen(e.seat, '−' + n, 'zieh', d(1000));
             await schlaf(d(450));
           } else {
-            t.abzeichen(e.seat, 'Keine weitere ' + fname + '-Karte', 'aussetzen', d(1200));
+            t.abzeichen(e.seat, M.t('Keine weitere %s-Karte', fname), 'aussetzen', d(1200));
             await schlaf(d(500));
           }
           break;

@@ -22,35 +22,35 @@
       <img class="logo-bild" src="bilder/logo.webp" alt="" draggable="false" onload="this.parentNode.classList.add('mit-bild')" onerror="this.remove()">
     </div>
     <form id="start-form" class="start-form" autocomplete="off" novalidate>
-      <h1>Mitspielen</h1>
+      <h1 data-t>Mitspielen</h1>
       <p id="start-host" class="host"></p>
-      <label for="name">Dein Name</label>
-      <input id="name" name="name" type="text" maxlength="14" autocomplete="nickname" autocapitalize="words" spellcheck="false" enterkeyhint="go" placeholder="z. B. Kim">
+      <label for="name" data-t>Dein Name</label>
+      <input id="name" name="name" type="text" maxlength="14" autocomplete="nickname" autocapitalize="words" spellcheck="false" enterkeyhint="go" placeholder="z. B. Kim" data-t-ph="z. B. Kim">
       <button id="beitreten" class="knopf haupt" type="submit">Beitreten</button>
       <p id="start-fehler" class="fehler" hidden></p>
       <div id="app-spielen" class="app-spielen" hidden>
-        <a id="app-link" class="knopf app-knopf" href="#">In der App spielen</a>
-        <p class="app-zusatz">Noch nicht installiert? Dann holst du sie <a id="app-hier" href="?app=1">hier</a>.</p>
+        <a id="app-link" class="knopf app-knopf" href="#" data-t>In der App spielen</a>
+        <p class="app-zusatz"><span data-t>Noch nicht installiert? Dann holst du sie</span> <a id="app-hier" href="?app=1" data-t>hier</a>.</p>
       </div>
       <div id="apk" class="apk" hidden>
-        <p id="apk-hinweis" class="apk-hinweis" hidden>Die App ist noch nicht installiert – hier kannst du sie laden.</p>
-        <a class="knopf neben" href="/apk" download>App installieren (APK)</a>
+        <p id="apk-hinweis" class="apk-hinweis" hidden data-t>Die App ist noch nicht installiert – hier kannst du sie laden.</p>
+        <a class="knopf neben" href="/apk" download data-t>App installieren (APK)</a>
         <details id="apk-anleitung">
-          <summary>So geht’s</summary>
+          <summary data-t>So geht’s</summary>
           <ol>
-            <li>Auf „App installieren“ tippen und die Datei laden.</li>
-            <li>Datei öffnen; falls gefragt, „Installation aus dieser Quelle zulassen“.</li>
-            <li>Zurück auf diese Seite und „In der App spielen“ antippen.</li>
+            <li data-t>Auf „App installieren“ tippen und die Datei laden.</li>
+            <li data-t>Datei öffnen; falls gefragt, „Installation aus dieser Quelle zulassen“.</li>
+            <li data-t>Zurück auf diese Seite und „In der App spielen“ antippen.</li>
           </ol>
         </details>
       </div>
-      <div class="schrift-wahl"><span>Schrift</span><div class="seg"><button type="button" data-schrift="normal">Normal</button><button type="button" data-schrift="gross">Groß</button><button type="button" data-schrift="sehr_gross">Sehr groß</button></div></div>
-      <div class="schrift-wahl gross-wahl"><span>Großer Modus</span><div class="seg"><button type="button" data-gross="false">Aus</button><button type="button" data-gross="true">An</button></div></div>
+      <div class="schrift-wahl"><span data-t>Schrift</span><div class="seg"><button type="button" data-schrift="normal" data-t>Normal</button><button type="button" data-schrift="gross" data-t>Groß</button><button type="button" data-schrift="sehr_gross" data-t>Sehr groß</button></div></div>
+      <div class="schrift-wahl gross-wahl"><span data-t>Großer Modus</span><div class="seg"><button type="button" data-gross="false" data-t>Aus</button><button type="button" data-gross="true" data-t>An</button></div></div>
       <ul class="tipps">
-        <li><b>Bildschirm anlassen:</b> Stell die automatische Sperre für die Partie ab – sonst bricht die Verbindung kurz ab.</li>
-        <li id="tipp-safari" hidden><b>„Kein Internet“ ist normal:</b> Das Spiel läuft nur im WLAN des Gastgebers.</li>
-        <li id="tipp-ios-browser" hidden>Am iPhone klappt es am besten in <b>Safari</b>. In anderen Browsern „Lokales Netzwerk“ erlauben.</li>
-        <li>Am besten <b>quer halten</b>.</li>
+        <li><b data-t>Bildschirm anlassen:</b> <span data-t>Stell die automatische Sperre für die Partie ab – sonst bricht die Verbindung kurz ab.</span></li>
+        <li id="tipp-safari" hidden><b data-t>„Kein Internet“ ist normal:</b> <span data-t>Das Spiel läuft nur im WLAN des Gastgebers.</span></li>
+        <li id="tipp-ios-browser" hidden><span data-t>Am iPhone klappt es am besten in</span> <b>Safari</b>. <span data-t>In anderen Browsern „Lokales Netzwerk“ erlauben.</span></li>
+        <li><span data-t>Am besten</span> <b data-t>quer halten</b>.</li>
       </ul>
     </form>
   </div>
@@ -60,18 +60,18 @@
   <div class="lobby-rahmen">
     <header class="lobby-kopf">
       <div class="mini-logo"><span class="mau">Mau-Mau</span><span class="flip">Flip</span></div>
-      <div class="lobby-titel"><h2>Lobby</h2><p id="lobby-host"></p></div>
+      <div class="lobby-titel"><h2 data-t>Lobby</h2><p id="lobby-host"></p></div>
       <span id="lobby-zahl" class="lobby-zahl"></span>
     </header>
     <div class="lobby-inhalt">
       <ol id="lobby-liste" class="lobby-liste"></ol>
       <aside class="lobby-seite">
-        <button id="bereit" class="knopf haupt">Bereit</button>
+        <button id="bereit" class="knopf haupt" data-t>Bereit</button>
         <p id="lobby-status" class="lobby-status"></p>
-        <p class="lobby-hinweis">Die Sitzordnung legt der Gastgeber fest – so, wie ihr am Tisch sitzt.</p>
-        <div class="schrift-wahl"><span>Schrift</span><div class="seg"><button type="button" data-schrift="normal">Normal</button><button type="button" data-schrift="gross">Groß</button><button type="button" data-schrift="sehr_gross">Sehr groß</button></div></div>
-        <details class="regeln-box"><summary>Regeln dieser Partie</summary><ul id="lobby-regeln"></ul></details>
-        <p class="lobby-hinweis klein"><b>Bildschirm anlassen</b> und das Handy quer halten.</p>
+        <p class="lobby-hinweis" data-t>Die Sitzordnung legt der Gastgeber fest – so, wie ihr am Tisch sitzt.</p>
+        <div class="schrift-wahl"><span data-t>Schrift</span><div class="seg"><button type="button" data-schrift="normal" data-t>Normal</button><button type="button" data-schrift="gross" data-t>Groß</button><button type="button" data-schrift="sehr_gross" data-t>Sehr groß</button></div></div>
+        <details class="regeln-box"><summary data-t>Regeln dieser Partie</summary><ul id="lobby-regeln"></ul></details>
+        <p class="lobby-hinweis klein"><b data-t>Bildschirm anlassen</b> <span data-t>und das Handy quer halten.</span></p>
       </aside>
     </div>
   </div>
@@ -82,8 +82,8 @@
 <section id="ende" class="screen">
   <div class="ende-karte">
     <div class="mini-logo"><span class="mau">Mau-Mau</span><span class="flip">Flip</span></div>
-    <p id="ende-text">Der Gastgeber hat das Spiel beendet.</p>
-    <button id="ende-zurueck" class="knopf haupt">Zur Startseite</button>
+    <p id="ende-text" data-t>Der Gastgeber hat das Spiel beendet.</p>
+    <button id="ende-zurueck" class="knopf haupt" data-t>Zur Startseite</button>
   </div>
 </section>
 
@@ -91,15 +91,15 @@
   <div class="modal-karte hilfe-karte">
     <div id="hilfe-karte" class="gross-karte"></div>
     <div class="hilfe-inhalt"><h3 id="hilfe-titel"></h3><div id="hilfe-text"></div></div>
-    <button class="schliessen rund" aria-label="Schließen">✕</button>
+    <button class="schliessen rund" aria-label="Schließen" data-t-aria="Schließen">✕</button>
   </div>
 </div>
 <div id="ansicht" class="modal" hidden>
   <div class="modal-karte ansicht-karte">
     <h3 id="ansicht-titel"></h3>
-    <p class="klein">So sieht man die Karten von außen (sortiert).</p>
+    <p class="klein" data-t>So sieht man die Karten von außen (sortiert).</p>
     <div id="ansicht-karten" class="ansicht-reihe"></div>
-    <button class="schliessen rund" aria-label="Schließen">✕</button>
+    <button class="schliessen rund" aria-label="Schließen" data-t-aria="Schließen">✕</button>
   </div>
 </div>
 <div id="runde" class="modal" hidden>
@@ -108,66 +108,70 @@
     <p id="runde-sieger" class="sieger"></p>
     <ol id="runde-liste" class="runde-liste"></ol>
     <p id="runde-fuss" class="klein"></p>
-    <button id="runde-weiter" class="knopf haupt" hidden>Nächste Runde</button>
-    <button class="schliessen rund" aria-label="Schließen">✕</button>
+    <button id="runde-weiter" class="knopf haupt" hidden data-t>Nächste Runde</button>
+    <button class="schliessen rund" aria-label="Schließen" data-t-aria="Schließen">✕</button>
   </div>
 </div>
 <div id="menue" class="modal" hidden>
   <div class="modal-karte menue-karte">
-    <h3>Einstellungen</h3>
-    <div class="zeile knoepfe hilfe-knoepfe"><button id="menue-regeln" class="knopf neben">Regeln</button><button id="menue-sogehts" class="knopf neben">So geht’s</button></div>
-    <div class="zeile"><span>Mau-Ton</span><div class="seg"><button data-set="ton" data-wert="aus">Aus</button><button data-set="ton" data-wert="leise">Leise</button><button data-set="ton" data-wert="normal">Normal</button></div></div>
-    <div class="zeile"><span>Spieltöne</span><div class="seg"><button data-set="toene" data-wert="aus">Aus</button><button data-set="toene" data-wert="leise">Leise</button><button data-set="toene" data-wert="normal">Normal</button></div></div>
-    <p id="menue-stumm" class="klein" hidden>Der Ton-Knopf oben rechts hat gerade alles stumm geschaltet.</p>
-    <div class="zeile" id="zeile-hervorheben"><span>Spielbare Karten hervorheben<small>nur auf diesem Gerät</small></span><div class="seg"><button data-set="hervorheben" data-wert="true">An</button><button data-set="hervorheben" data-wert="false">Aus</button></div></div>
-    <div class="zeile"><span>Schriftgröße<small>nur auf diesem Gerät</small></span><div class="seg"><button data-set="schrift" data-wert="normal">Normal</button><button data-set="schrift" data-wert="gross">Groß</button><button data-set="schrift" data-wert="sehr_gross">Sehr groß</button></div></div>
-    <p id="menue-gross-tipp" class="klein" hidden>Tipp: Der große Modus zeigt Stapel, Ablage und Hand noch größer.</p>
-    <div class="zeile" id="zeile-gross"><span>Großer Modus<small>nur auf diesem Gerät</small></span><div class="seg"><button data-set="grosser_modus" data-wert="true">An</button><button data-set="grosser_modus" data-wert="false">Aus</button></div></div>
-    <div class="zeile"><span>Effekte</span><div class="seg"><button data-set="effekte" data-wert="voll">Voll</button><button data-set="effekte" data-wert="reduziert">Reduziert</button></div></div>
-    <div class="zeile" id="zeile-vibration"><span>Vibration</span><div class="seg"><button data-set="vibration" data-wert="true">An</button><button data-set="vibration" data-wert="false">Aus</button></div></div>
-    <div class="zeile" id="zeile-zugvib"><span>Bei deinem Zug: Vibration</span><div class="seg"><button data-set="zug_vibration" data-wert="true">An</button><button data-set="zug_vibration" data-wert="false">Aus</button></div></div>
-    <div class="zeile" id="zeile-vollbild"><span>Vollbild</span><div class="seg"><button data-set="vollbild" data-wert="true">An</button><button data-set="vollbild" data-wert="false">Aus</button></div></div>
-    <div class="zeile knoepfe"><button id="menue-neu" class="knopf neben">Neu verbinden</button><button class="knopf haupt schliessen">Weiter</button></div>
+    <h3 data-t>Einstellungen</h3>
+    <div class="zeile knoepfe hilfe-knoepfe"><button id="menue-regeln" class="knopf neben" data-t>Regeln</button><button id="menue-sogehts" class="knopf neben" data-t>So geht’s</button></div>
+    <div class="zeile" id="zeile-sprache"><span data-t>Sprache</span><div class="seg"><button data-set="sprache" data-wert="auto" data-t>Automatisch</button><button data-set="sprache" data-wert="de">Deutsch</button><button data-set="sprache" data-wert="en">English</button></div></div>
+    <div class="zeile"><span data-t>Mau-Ton</span><div class="seg"><button data-set="ton" data-wert="aus" data-t>Aus</button><button data-set="ton" data-wert="leise" data-t>Leise</button><button data-set="ton" data-wert="normal" data-t>Normal</button></div></div>
+    <div class="zeile"><span data-t>Spieltöne</span><div class="seg"><button data-set="toene" data-wert="aus" data-t>Aus</button><button data-set="toene" data-wert="leise" data-t>Leise</button><button data-set="toene" data-wert="normal" data-t>Normal</button></div></div>
+    <p id="menue-stumm" class="klein" hidden data-t>Der Ton-Knopf oben rechts hat gerade alles stumm geschaltet.</p>
+    <div class="zeile" id="zeile-hervorheben"><span><span data-t>Spielbare Karten hervorheben</span><small data-t>nur auf diesem Gerät</small></span><div class="seg"><button data-set="hervorheben" data-wert="true" data-t>An</button><button data-set="hervorheben" data-wert="false" data-t>Aus</button></div></div>
+    <div class="zeile"><span><span data-t>Schriftgröße</span><small data-t>nur auf diesem Gerät</small></span><div class="seg"><button data-set="schrift" data-wert="normal" data-t>Normal</button><button data-set="schrift" data-wert="gross" data-t>Groß</button><button data-set="schrift" data-wert="sehr_gross" data-t>Sehr groß</button></div></div>
+    <p id="menue-gross-tipp" class="klein" hidden data-t>Tipp: Der große Modus zeigt Stapel, Ablage und Hand noch größer.</p>
+    <div class="zeile" id="zeile-gross"><span><span data-t>Großer Modus</span><small data-t>nur auf diesem Gerät</small></span><div class="seg"><button data-set="grosser_modus" data-wert="true" data-t>An</button><button data-set="grosser_modus" data-wert="false" data-t>Aus</button></div></div>
+    <div class="zeile"><span data-t>Effekte</span><div class="seg"><button data-set="effekte" data-wert="voll" data-t>Voll</button><button data-set="effekte" data-wert="reduziert" data-t>Reduziert</button></div></div>
+    <div class="zeile" id="zeile-vibration"><span data-t>Vibration</span><div class="seg"><button data-set="vibration" data-wert="true" data-t>An</button><button data-set="vibration" data-wert="false" data-t>Aus</button></div></div>
+    <div class="zeile" id="zeile-zugvib"><span data-t>Bei deinem Zug: Vibration</span><div class="seg"><button data-set="zug_vibration" data-wert="true" data-t>An</button><button data-set="zug_vibration" data-wert="false" data-t>Aus</button></div></div>
+    <div class="zeile" id="zeile-vollbild"><span data-t>Vollbild</span><div class="seg"><button data-set="vollbild" data-wert="true" data-t>An</button><button data-set="vollbild" data-wert="false" data-t>Aus</button></div></div>
+    <div class="zeile knoepfe"><button id="menue-neu" class="knopf neben" data-t>Neu verbinden</button><button class="knopf haupt schliessen" data-t>Weiter</button></div>
     <p id="menue-info" class="klein"></p>
   </div>
 </div>
 <div id="regeln" class="modal" hidden>
   <div class="modal-karte regeln-karte">
-    <h3>Regeln dieser Partie</h3>
+    <h3 data-t>Regeln dieser Partie</h3>
     <ul id="regeln-liste" class="regeln-liste"></ul>
     <div id="regeln-karten"></div>
-    <p class="klein">Mehr zu einer Karte: im Spiel lange auf sie drücken.</p>
-    <button class="schliessen rund" aria-label="Schließen">✕</button>
+    <p class="klein" data-t>Mehr zu einer Karte: im Spiel lange auf sie drücken.</p>
+    <button class="schliessen rund" aria-label="Schließen" data-t-aria="Schließen">✕</button>
   </div>
 </div>
 <div id="sogehts" class="modal" hidden>
   <div class="modal-karte sogehts-karte">
-    <h3>So geht’s</h3>
+    <h3 data-t>So geht’s</h3>
     <dl class="sogehts-liste">
-      <dt>Karte legen</dt><dd>Karte antippen, dann noch einmal tippen – oder nach oben wischen.</dd>
-      <dt>Ziehen</dt><dd>Auf den verdeckten Stapel tippen.</dd>
-      <dt>Hilfe zu einer Karte</dt><dd>Karte lange drücken. Das geht auch mit der obersten Karte der Ablage.</dd>
-      <dt>Ablage durchsehen</dt><dd>Auf die Ablage tippen: Die oberste Karte rutscht zur Seite. Weiter tippen zeigt ältere Karten, ein Tipp auf den Stapel daneben geht zurück. Tippst du woanders hin, liegt alles wieder.</dd>
-      <dt>„Mau!“</dt><dd>Bleibt dir nach dem Legen nur noch eine Karte, tipp auf „Mau!“. Alle hören und sehen es. Wer es vergisst, muss je nach Regeln Strafkarten ziehen.</dd>
-      <dt>Hand sortieren</dt><dd>Der Knopf unten links wechselt zwischen Farbe, Wert und Punkte. Viele Karten? Wisch die Hand zur Seite.</dd>
-      <dt>Mitspieler</dt><dd>Tipp auf einen Mitspieler zeigt seine Rückseiten, wenn die Regeln das erlauben.</dd>
-      <dt>Ton</dt><dd>Der Lautsprecher oben schaltet alles stumm. Lautstärke und Schrift stellst du im Menü ein.</dd>
+      <dt data-t>Karte legen</dt><dd data-t>Karte antippen, dann noch einmal tippen – oder nach oben wischen.</dd>
+      <dt data-t>Ziehen</dt><dd data-t>Auf den verdeckten Stapel tippen.</dd>
+      <dt data-t>Hilfe zu einer Karte</dt><dd data-t>Karte lange drücken. Das geht auch mit der obersten Karte der Ablage.</dd>
+      <dt data-t>Ablage durchsehen</dt><dd data-t>Auf die Ablage tippen: Die oberste Karte rutscht zur Seite. Weiter tippen zeigt ältere Karten, ein Tipp auf den Stapel daneben geht zurück. Tippst du woanders hin, liegt alles wieder.</dd>
+      <dt data-t>„Mau!“</dt><dd data-t>Bleibt dir nach dem Legen nur noch eine Karte, tipp auf „Mau!“. Alle hören und sehen es. Wer es vergisst, muss je nach Regeln Strafkarten ziehen.</dd>
+      <dt data-t>Hand sortieren</dt><dd data-t>Der Knopf unten links wechselt zwischen Farbe, Wert und Punkte. Viele Karten? Wisch die Hand zur Seite.</dd>
+      <dt data-t>Mitspieler</dt><dd data-t>Tipp auf einen Mitspieler zeigt seine Rückseiten, wenn die Regeln das erlauben.</dd>
+      <dt data-t>Ton</dt><dd data-t>Der Lautsprecher oben schaltet alles stumm. Lautstärke und Schrift stellst du im Menü ein.</dd>
     </dl>
-    <button class="schliessen rund" aria-label="Schließen">✕</button>
+    <button class="schliessen rund" aria-label="Schließen" data-t-aria="Schließen">✕</button>
   </div>
 </div>
 
 <div id="verbinde" class="verbinde" hidden>
-  <div class="verbinde-karte"><span class="kreisel"></span><b>Verbinde neu …</b><span class="klein">Dein Platz bleibt frei.</span><button id="verbinde-laden" class="knopf neben klein" hidden>Seite neu laden</button></div>
+  <div class="verbinde-karte"><span class="kreisel"></span><b data-t>Verbinde neu …</b><span class="klein" data-t>Dein Platz bleibt frei.</span><button id="verbinde-laden" class="knopf neben klein" hidden data-t>Seite neu laden</button></div>
 </div>
 <div id="quer" class="quer" aria-live="polite">
   <svg viewBox="0 0 120 120" aria-hidden="true"><g class="handy"><rect x="38" y="18" width="44" height="84" rx="9"/><circle cx="60" cy="92" r="3.5"/></g><path class="pfeil" d="M24 66a38 38 0 0 1 22-40M46 26l-11 -1M46 26l-3 10"/></svg>
-  <div class="quer-text"><b class="nur-grob">Quer halten</b><b class="nur-maus">Fenster breiter ziehen</b>
-  <span>Dann wird der Tisch größer.</span></div>
+  <div class="quer-text"><b class="nur-grob" data-t>Quer halten</b><b class="nur-maus" data-t>Fenster breiter ziehen</b>
+  <span data-t>Dann wird der Tisch größer.</span></div>
 </div>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 <video id="wach" muted playsinline loop preload="none" aria-hidden="true" tabindex="-1"></video>
 
+<script src="i18n_po.js"></script>
+<script src="i18n_en.js"></script>
+<script src="i18n.js"></script>
 <script src="karten.js"></script>
 <script src="ton.js"></script>
 <script src="netz.js"></script>

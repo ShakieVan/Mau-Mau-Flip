@@ -225,16 +225,16 @@ func _set_rest(idx: int) -> void:
 
 func entry_label(e: Dictionary) -> String:
 	var s := int(e.get("s", -1))
-	var who := "Startkarte"
+	var who := I18n.t("Startkarte")
 	if s >= 0:
-		who = "von " + (str(names[s]) if s < names.size() else "Platz %d" % (s + 1))
+		who = I18n.t("von %s") % (str(names[s]) if s < names.size() else I18n.t("Platz %d") % (s + 1))
 	if bool(e.get("h", false)):
-		who += " · verdeckt"
+		who += " · " + I18n.t("verdeckt")
 	return who
 
 
 func counter_text() -> String:
-	return "%d von %d" % [moved, entries.size()]
+	return I18n.t("%d von %d") % [moved, entries.size()]
 
 
 func _draw_labels() -> void:
@@ -256,7 +256,7 @@ func _draw_labels() -> void:
 	_pill(f, entry_label(e), Vector2(top.x, y), UiFonts.px(19 * lk), bg, fg, Color(0, 0, 0, 0))
 	var c := str(e.get("c", ""))
 	if c != "":
-		_pill(f, "Wunsch: " + UiPalette.color_name(c), Vector2(top.x, y + step), UiFonts.px(18 * lk), bg, fg, UiPalette.fill(c))
+		_pill(f, I18n.t("Wunsch: %s") % I18n.t(UiPalette.color_name(c)), Vector2(top.x, y + step), UiFonts.px(18 * lk), bg, fg, UiPalette.fill(c))
 		if not labels_inside:
 			# mit Wunschfarbe sitzt der Zähler auf der Oberkante der Karte (sonst berührt er bei „Sehr groß“ die Hinweisleiste)
 			_pill(f, counter_text(), Vector2(top.x, top.y - sz.y * 0.5 + 4.0), UiFonts.px(17), Color(bg, 0.9), fg, Color(0, 0, 0, 0))

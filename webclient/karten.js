@@ -59,18 +59,21 @@
   }
   const istJoker = key => !!JOKER[zerlege(key).art];
   const punkte = key => { const k = zerlege(key); return k.art === 'zahl' ? k.wert : (PUNKTE[k.art] || 0); };
-  const farbName = f => (FARB_INFO[f] ? FARB_INFO[f].name : '');
+  // Anzeigenamen in der eigenen Sprache (Farben und Kartenarten stehen in den .po-Dateien: Rot → Red, Aussetzen → Skip …)
+  const farbName = f => (FARB_INFO[f] ? M.t(FARB_INFO[f].name) : '');
+  const artName = art => M.t(ART_NAME[art] || art);
   function kartenName(key) {
     const k = zerlege(key);
     if (k.art === 'zahl') return farbName(k.farbe) + ' ' + k.wert;
-    if (!k.farbe) return ART_NAME[k.art] || k.art;
-    return farbName(k.farbe) + ' ' + (ART_NAME[k.art] || k.art);
+    if (!k.farbe) return artName(k.art);
+    if (k.art === 'ablegen') return M.t('%s ablegen', farbName(k.farbe));
+    return farbName(k.farbe) + ' ' + artName(k.art);
   }
   // „eine 7“, „ein Aussetzen“, „eine Ablegen-Karte“ (für „Passt nicht – gefragt ist Rot oder …“)
   function passendText(key) {
     const k = zerlege(key);
-    if (k.art === 'zahl') return 'eine ' + k.wert;
-    return ART_PASSEND[k.art] || '';
+    if (k.art === 'zahl') return M.t('eine %d', k.wert);
+    return ART_PASSEND[k.art] ? M.t(ART_PASSEND[k.art]) : '';
   }
   // Zahl der Karten einer Partie nach den Hausregeln (112 bis 124)
   function kartenZahl(r) {
@@ -99,116 +102,136 @@
   }
 
   /* ---------------- Hilfe und Regeltexte ---------------- */
+  // Alle Sätze laufen über M.t (englische Fassung, Beta 1.2.2): ganze Sätze mit Platzhaltern, Varianten als eigene Sätze.
+  const tr = M.t;   // kurz für M.t; test_web_contract liest auch tr-Aufrufe
   // Kein Anzweifeln mehr (0.1.3): „bluff“ eines alten Gastgebers gilt wie „free“ (die Knöpfe in tisch.js bleiben nur dafür)
   function bluffText(r) {
-    if (r.wild_restriction === 'enforce') return 'Nur erlaubt, wenn du keine Karte der aktuellen Farbe hast. Die App prüft das.';
-    return 'Darf immer gelegt werden.';
+    if (r.wild_restriction === 'enforce') return tr('Nur erlaubt, wenn du keine Karte der aktuellen Farbe hast. Die App prüft das.');
+    return tr('Darf immer gelegt werden.');
   }
-  // Kartenhilfe passend zu den aktiven Regeln: {titel, zeilen}
+  // „Der Nächste zieht n Karte(n) …“ mit Folge (Hausregel penalty_turn: danach trotzdem dran oder aussetzen)
+  function ziehtText(n, weiter) {
+    if (weiter) return n === 1 ? tr('Der Nächste zieht 1 Karte und ist danach trotzdem dran.') : tr('Der Nächste zieht %d Karten und ist danach trotzdem dran.', n);
+    return n === 1 ? tr('Der Nächste zieht 1 Karte und setzt aus.') : tr('Der Nächste zieht %d Karten und setzt aus.', n);
+  }
+  // Kartenhilfe passend zu den aktiven Regeln: {titel, zeilen, kern} (kern = ohne „Passt auf“, Wert und Hausregel-Hinweis)
   function hilfe(key, regeln) {
     const r = regeln || {};
     const k = zerlege(key);
     const f = farbName(k.farbe);
     const z = [];
+    const nebenher = new Set();
+    const neben = (...t) => { t.forEach(s => { nebenher.add(s); z.push(s); }); };
     const stapeln = r.stacking === 'same';
-    // Hausregel penalty_turn: nach dem Strafziehen aussetzen (offiziell) oder gleich weiterspielen
-    const ende = r.penalty_turn === 'play' ? ' und ist danach trotzdem dran.' : ' und setzt aus.';
+    const weiter = r.penalty_turn === 'play';
     switch (k.art) {
-      case 'zahl': z.push('Passt auf ' + f + ' oder auf jede ' + k.wert + '.'); break;
+      case 'zahl': neben(tr('Passt auf %s oder auf jede %d.', f, k.wert)); break;
       case 'plus1': case 'plus5': {
         const n = k.art === 'plus1' ? 1 : 5;
-        z.push('Der Nächste zieht ' + n + (n === 1 ? ' Karte' : ' Karten') + ende);
-        z.push('Passt auf ' + f + ' oder auf jede +' + n + '.');
-        if (stapeln) z.push('Stapeln ist an: Wer selbst eine +' + n + ' hat, gibt weiter, und die Summe wächst.');
+        z.push(ziehtText(n, weiter));
+        neben(tr('Passt auf %s oder auf jede +%d.', f, n));
+        if (stapeln) z.push(tr('Stapeln ist an: Wer selbst eine +%d hat, gibt weiter, und die Summe wächst.', n));
         break;
       }
-      case 'aussetzen': z.push('Der Nächste setzt aus.', 'Passt auf ' + f + ' oder auf jedes Aussetzen.'); break;
-      case 'alle_aussetzen': z.push('Alle anderen setzen aus – du bist sofort noch einmal dran.', 'Passt auf ' + f + ' oder auf jedes Alle aussetzen.'); break;
+      case 'aussetzen': z.push(tr('Der Nächste setzt aus.')); neben(tr('Passt auf %s oder auf jedes Aussetzen.', f)); break;
+      case 'alle_aussetzen': z.push(tr('Alle anderen setzen aus – du bist sofort noch einmal dran.')); neben(tr('Passt auf %s oder auf jedes Alle aussetzen.', f)); break;
       case 'richtungswechsel':
-        z.push('Die Spielrichtung dreht sich um.' + (r.two_player_reverse_skips !== false ? ' Zu zweit wirkt sie wie Aussetzen.' : ''));
-        z.push('Passt auf ' + f + ' oder auf jeden Richtungswechsel.');
+        z.push(tr('Die Spielrichtung dreht sich um.') + (r.two_player_reverse_skips !== false ? ' ' + tr('Zu zweit wirkt sie wie Aussetzen.') : ''));
+        neben(tr('Passt auf %s oder auf jeden Richtungswechsel.', f));
         break;
       case 'flip':
         z.push(r.flip_mode === 'card'
-          ? 'Nachziehstapel und alle Hände werden gewendet, von der Ablage nur dieser Flip: Oben liegt seine andere Seite, die übrige Ablage bleibt zur Seite gelegt. Ab jetzt gilt die andere Seite.'
-          : 'Alles wird gewendet: Ablage, Nachziehstapel und alle Hände. Oben liegt dann die bisher unterste Ablagekarte mit ihrer anderen Seite. Ab jetzt gilt die andere Seite.');
-        z.push('Passt auf ' + f + ' oder auf jeden Flip.');
-        if ((r.flip_last_card || 'execute') === 'execute') z.push('Als letzte Karte wird der Flip noch ausgeführt; gewertet wird die neue Seite.');
+          ? tr('Nachziehstapel und alle Hände werden gewendet, von der Ablage nur dieser Flip: Oben liegt seine andere Seite, die übrige Ablage bleibt zur Seite gelegt. Ab jetzt gilt die andere Seite.')
+          : tr('Alles wird gewendet: Ablage, Nachziehstapel und alle Hände. Oben liegt dann die bisher unterste Ablagekarte mit ihrer anderen Seite. Ab jetzt gilt die andere Seite.'));
+        neben(tr('Passt auf %s oder auf jeden Flip.', f));
+        if ((r.flip_last_card || 'execute') === 'execute') z.push(tr('Als letzte Karte wird der Flip noch ausgeführt; gewertet wird die neue Seite.'));
         z.push(r.flip_surprise === 'on'
-          ? 'Flip-Überraschung ist an: Liegt danach eine Aktionskarte oben (+1/+5, Aussetzen, Alle aussetzen, Richtungswechsel, Wünscher +2, Farbjagd), wirkt sie auf den Nächsten – als hättest du sie gelegt. Bei Wünscher +2 und Farbjagd wählst du zuerst die Farbe.'
-          : 'Die Aktionskarte, die danach oben liegt, wirkt nicht.');
+          ? tr('Flip-Überraschung ist an: Liegt danach eine Aktionskarte oben (+1/+5, Aussetzen, Alle aussetzen, Richtungswechsel, Wünscher +2, Farbjagd), wirkt sie auf den Nächsten – als hättest du sie gelegt. Bei Wünscher +2 und Farbjagd wählst du zuerst die Farbe.')
+          : tr('Die Aktionskarte, die danach oben liegt, wirkt nicht.'));
         break;
-      case 'wuenscher': z.push('Passt immer. Du wünschst dir eine Farbe – auch die bisherige.'); break;
+      case 'wuenscher': z.push(tr('Passt immer. Du wünschst dir eine Farbe – auch die bisherige.')); break;
       case 'wuenscher_plus2':
-        z.push('Du wünschst dir eine Farbe. Der Nächste zieht 2 Karten' + ende, bluffText(r));
-        if (stapeln) z.push('Stapeln ist an: Ein Wünscher +2 darf mit einem Wünscher +2 beantwortet werden.');
+        z.push(tr('Du wünschst dir eine Farbe.'), ziehtText(2, weiter), bluffText(r));
+        if (stapeln) z.push(tr('Stapeln ist an: Ein Wünscher +2 darf mit einem Wünscher +2 beantwortet werden.'));
         break;
       case 'farbjagd':
-        z.push('Du wünschst dir eine Farbe. Der Nächste zieht so lange, bis er eine Karte dieser Farbe hat, behält alle' + ende);
-        z.push(r.jagd_wild_stops ? 'Ein gezogener Joker beendet das Ziehen.' : 'Ein gezogener Joker beendet das Ziehen nicht.');
+        z.push(tr('Du wünschst dir eine Farbe.'),
+          weiter ? tr('Der Nächste zieht so lange, bis er eine Karte dieser Farbe hat, behält alle und ist danach trotzdem dran.')
+            : tr('Der Nächste zieht so lange, bis er eine Karte dieser Farbe hat, behält alle und setzt aus.'));
+        z.push(r.jagd_wild_stops ? tr('Ein gezogener Joker beendet das Ziehen.') : tr('Ein gezogener Joker beendet das Ziehen nicht.'));
         z.push(bluffText(r));
         break;
       // Hausregel-Karten (Texte wie RulesText._swap_lines/_gamble_lines/_discard_lines)
       case 'tausch':
-        z.push('Alle geben gleichzeitig ihre ganze Hand an den Nächsten weiter, ' + tauschRichtung(r) + '. Danach ist ganz normal der Nächste in Spielrichtung dran.');
-        if (r.swap_direction === 'play' || r.swap_direction === 'against') z.push('Nach einem Richtungswechsel wandern die Hände also andersherum.');
-        z.push('Passt auf ' + f + ' und auf jeden Kartentausch.', 'Zu zweit tauscht ihr einfach eure Hände.');
-        z.push(r.round_end === 'last' ? 'Auch als letzte Karte: Du bist fertig, die anderen tauschen trotzdem untereinander.'
-          : 'Auch als letzte Karte: Du bist fertig und gewinnst die Runde; getauscht wird dann nicht mehr.');
-        if (r.mau_call !== 'off') z.push('Wer durch den Tausch nur noch 1 Karte hat, muss nicht „Mau!“ rufen.');
-        if (r.swap_cards !== 'on') z.push('Gehört zur Hausregel Kartentausch (gerade nicht im Spiel).');
+        z.push(tr('Alle geben gleichzeitig ihre ganze Hand an den Nächsten weiter, %s. Danach ist ganz normal der Nächste in Spielrichtung dran.', tauschRichtung(r)));
+        if (r.swap_direction === 'play' || r.swap_direction === 'against') z.push(tr('Nach einem Richtungswechsel wandern die Hände also andersherum.'));
+        neben(tr('Passt auf %s und auf jeden Kartentausch.', f));
+        z.push(tr('Zu zweit tauscht ihr einfach eure Hände.'));
+        z.push(r.round_end === 'last' ? tr('Auch als letzte Karte: Du bist fertig, die anderen tauschen trotzdem untereinander.')
+          : tr('Auch als letzte Karte: Du bist fertig und gewinnst die Runde; getauscht wird dann nicht mehr.'));
+        if (r.mau_call !== 'off') z.push(tr('Wer durch den Tausch nur noch 1 Karte hat, muss nicht „Mau!“ rufen.'));
+        if (r.swap_cards !== 'on') neben(tr('Gehört zur Hausregel Kartentausch (gerade nicht im Spiel).'));
         break;
       case 'gluecksspiel':
-        z.push('Joker: passt immer. Du wünschst eine Farbe; sie gilt nach dem Glücksspiel.');
-        z.push('Dann spielst du um dein Glück: Leg eine beliebige Karte verdeckt auf deinen Einsatz und drück den Glücksspielknopf. Zeigt er 0, setzt du die nächste Karte.');
-        z.push('Aufhören darfst du immer nach einem Druck ohne Treffer: Dein Einsatz kommt unter den Ablagestapel, dein Zug ist vorbei.');
-        z.push('Für jedes Glücksspiel wird geheim eine Trefferquote zwischen 1:1 und 1:10 ausgelost.');
-        z.push('Treffer: Der Knopf zeigt 1 bis 10. So viele Karten ziehst du, nimmst deinen ganzen Einsatz zurück, und dein Zug ist vorbei.');
-        z.push('Zeigt er 0 und deine Hand ist leer, kommt der Einsatz unter den Ablagestapel und du bist fertig' + (r.round_end === 'last' ? '.' : ' – du gewinnst die Runde.'));
-        z.push('Die Einsatzkarten liegen verdeckt und wirken nicht, auch kein Flip.');
-        if (r.mau_call !== 'off') z.push('Bleibt dir nach dem Setzen nur noch 1 Karte, ruf „Mau!“ – wie beim Legen, auch wenn du danach aufhörst.');
-        if (stapeln) z.push('Liegt eine Ziehstrafe auf dir, passt das Glücksspiel nicht (wie jeder andere Joker).');
-        z.push('Als letzte Karte bist du einfach fertig; dann gibt es kein Glücksspiel.');
-        if (r.gamble_cards !== 'on') z.push('Gehört zur Hausregel Glücksspiel (gerade nicht im Spiel).');
+        z.push(tr('Joker: passt immer. Du wünschst eine Farbe; sie gilt nach dem Glücksspiel.'));
+        z.push(tr('Dann spielst du um dein Glück: Leg eine beliebige Karte verdeckt auf deinen Einsatz und drück den Glücksspielknopf. Zeigt er 0, setzt du die nächste Karte.'));
+        z.push(tr('Aufhören darfst du immer nach einem Druck ohne Treffer: Dein Einsatz kommt unter den Ablagestapel, dein Zug ist vorbei.'));
+        z.push(tr('Für jedes Glücksspiel wird geheim eine Trefferquote zwischen 1:1 und 1:10 ausgelost.'));
+        z.push(tr('Treffer: Der Knopf zeigt 1 bis 10. So viele Karten ziehst du, nimmst deinen ganzen Einsatz zurück, und dein Zug ist vorbei.'));
+        z.push(r.round_end === 'last' ? tr('Zeigt er 0 und deine Hand ist leer, kommt der Einsatz unter den Ablagestapel und du bist fertig.')
+          : tr('Zeigt er 0 und deine Hand ist leer, kommt der Einsatz unter den Ablagestapel und du bist fertig – du gewinnst die Runde.'));
+        z.push(tr('Die Einsatzkarten liegen verdeckt und wirken nicht, auch kein Flip.'));
+        if (r.mau_call !== 'off') z.push(tr('Bleibt dir nach dem Setzen nur noch 1 Karte, ruf „Mau!“ – wie beim Legen, auch wenn du danach aufhörst.'));
+        if (stapeln) z.push(tr('Liegt eine Ziehstrafe auf dir, passt das Glücksspiel nicht (wie jeder andere Joker).'));
+        z.push(tr('Als letzte Karte bist du einfach fertig; dann gibt es kein Glücksspiel.'));
+        if (r.gamble_cards !== 'on') neben(tr('Gehört zur Hausregel Glücksspiel (gerade nicht im Spiel).'));
         break;
       case 'ablegen': case 'ablegen_joker': {
-        if (k.art === 'ablegen') z.push('Du wählst, welche deiner anderen Karten in ' + f + ' mit abgelegt werden (alle sind vorausgewählt). Sie kommen unter diese Karte, die oben bleibt.', 'Passt auf ' + f + ' und auf jede andere Ablegen-Karte.');
-        else z.push('Joker: passt immer. Erst wählst du die Farbe zum Mitablegen, dann die Karten, zum Schluss die Farbe, mit der es weitergeht (auch eine andere).');
-        z.push('Joker auf deiner Hand bleiben dort. Mitabgelegte Aktionskarten wirken nicht.');
-        const ende = r.round_end === 'last' ? 'bist du fertig' : 'gewinnst du die Runde';
-        z.push(r.mau_call !== 'off' ? 'Bleibt dir danach 1 Karte, ruf „Mau!“ (auch schon vorher erlaubt); bleibt keine, ' + ende + '.' : 'Bleibt dir danach keine Karte, ' + ende + '.');
-        if (r.discard_color !== 'on') z.push('Gehört zur Hausregel Farbe ablegen (gerade nicht im Spiel).');
+        if (k.art === 'ablegen') {
+          z.push(tr('Du wählst, welche deiner anderen Karten in %s mit abgelegt werden (alle sind vorausgewählt). Sie kommen unter diese Karte, die oben bleibt.', f));
+          neben(tr('Passt auf %s und auf jede andere Ablegen-Karte.', f));
+        } else z.push(tr('Joker: passt immer. Erst wählst du die Farbe zum Mitablegen, dann die Karten, zum Schluss die Farbe, mit der es weitergeht (auch eine andere).'));
+        z.push(tr('Joker auf deiner Hand bleiben dort. Mitabgelegte Aktionskarten wirken nicht.'));
+        const fertig = r.round_end === 'last';
+        if (r.mau_call !== 'off') z.push(fertig ? tr('Bleibt dir danach 1 Karte, ruf „Mau!“ (auch schon vorher erlaubt); bleibt keine, bist du fertig.')
+          : tr('Bleibt dir danach 1 Karte, ruf „Mau!“ (auch schon vorher erlaubt); bleibt keine, gewinnst du die Runde.'));
+        else z.push(fertig ? tr('Bleibt dir danach keine Karte, bist du fertig.') : tr('Bleibt dir danach keine Karte, gewinnst du die Runde.'));
+        if (r.discard_color !== 'on') neben(tr('Gehört zur Hausregel Farbe ablegen (gerade nicht im Spiel).'));
         break;
       }
-      default: z.push('Die Gegenseite einer Karte. Welche Seite gilt, entscheidet der letzte Flip.');
+      default: z.push(tr('Die Gegenseite einer Karte. Welche Seite gilt, entscheidet der letzte Flip.'));
     }
-    if (k.art !== 'rueckseite') z.push('Wert bei der Abrechnung: ' + punkte(key) + ' Punkte.');
-    return { titel: kartenName(key), zeilen: z };
+    if (k.art !== 'rueckseite') neben(tr('Wert bei der Abrechnung: %d Punkte.', punkte(key)));
+    return { titel: kartenName(key), zeilen: z, kern: z.filter(s => !nebenher.has(s)) };
   }
-  const tauschRichtung = r => ({ counter: 'immer gegen den Uhrzeigersinn', play: 'in der aktuellen Spielrichtung', against: 'gegen die aktuelle Spielrichtung' }[r && r.swap_direction] || 'immer im Uhrzeigersinn');
+  const tauschRichtung = r => tr({ counter: 'immer gegen den Uhrzeigersinn', play: 'in der aktuellen Spielrichtung', against: 'gegen die aktuelle Spielrichtung' }[r && r.swap_direction] || 'immer im Uhrzeigersinn');
   // Regelübersicht (Lobby, Menü)
   function regelnText(regeln) {
     const r = regeln || {};
     const z = [];
-    z.push(r.round_end === 'last' ? 'Gespielt wird bis zum Letzten (Platzierungen).' : 'Wer zuerst alle Karten los ist, gewinnt die Runde.');
-    if (r.scoring === 'points500') z.push('Punktewertung: Der Sieger bekommt die Restpunkte, Partie bis ' + (r.target || 500) + '.');
-    z.push((r.hand_size || 7) + ' Karten zu Beginn.');
-    z.push(r.draw_rule === 'until_playable' ? 'Ziehen: so lange, bis eine Karte passt.' : 'Ziehen: eine Karte.');
-    z.push({ must: 'Eine passende gezogene Karte muss gelegt werden.', may_not: 'Eine gezogene Karte darf nicht sofort gelegt werden.' }[r.drawn_card] || 'Eine passende gezogene Karte darf sofort gelegt werden.');
-    if (r.draw_play === 'any' && r.draw_rule !== 'until_playable') z.push('Nach dem Ziehen darfst du ' + (r.drawn_card === 'may_not' ? 'eine andere' : 'jede') + ' passende Karte legen oder alles behalten.');
-    if (r.stacking === 'same') z.push('Gleiche Ziehkarten dürfen gestapelt werden.');
-    if (r.penalty_turn === 'play') z.push('Nach dem Strafziehen bist du trotzdem dran und darfst legen.');
-    z.push(r.wild_restriction === 'enforce' ? 'Wünscher +2 und Farbjagd nur ohne Karte der aktuellen Farbe (App prüft).' : 'Wünscher +2 und Farbjagd sind immer erlaubt.');
+    z.push(r.round_end === 'last' ? tr('Gespielt wird bis zum Letzten (Platzierungen).') : tr('Wer zuerst alle Karten los ist, gewinnt die Runde.'));
+    if (r.scoring === 'points500') z.push(tr('Punktewertung: Der Sieger bekommt die Restpunkte, Partie bis %d.', r.target || 500));
+    z.push(tr('%d Karten zu Beginn.', r.hand_size || 7));
+    z.push(r.draw_rule === 'until_playable' ? tr('Ziehen: so lange, bis eine Karte passt.') : tr('Ziehen: eine Karte.'));
+    z.push({ must: tr('Eine passende gezogene Karte muss gelegt werden.'), may_not: tr('Eine gezogene Karte darf nicht sofort gelegt werden.') }[r.drawn_card] || tr('Eine passende gezogene Karte darf sofort gelegt werden.'));
+    if (r.draw_play === 'any' && r.draw_rule !== 'until_playable') z.push(r.drawn_card === 'may_not' ? tr('Nach dem Ziehen darfst du eine andere passende Karte legen oder alles behalten.') : tr('Nach dem Ziehen darfst du jede passende Karte legen oder alles behalten.'));
+    if (r.stacking === 'same') z.push(tr('Gleiche Ziehkarten dürfen gestapelt werden.'));
+    if (r.penalty_turn === 'play') z.push(tr('Nach dem Strafziehen bist du trotzdem dran und darfst legen.'));
+    z.push(r.wild_restriction === 'enforce' ? tr('Wünscher +2 und Farbjagd nur ohne Karte der aktuellen Farbe (App prüft).') : tr('Wünscher +2 und Farbjagd sind immer erlaubt.'));
     const pen = r.mau_penalty || 2;
-    z.push({ auto: 'Vergessenes „Mau!“ kostet sofort ' + (pen === 1 ? 'eine Karte' : pen + ' Karten') + '.', reminder: '„Mau!“ wird nur angezeigt, ohne Strafe.', off: 'Ohne „Mau!“-Ansage.' }[r.mau_call] || 'Wer „Mau!“ vergisst, kann erwischt werden (' + (pen === 1 ? 'eine Strafkarte' : pen + ' Strafkarten') + ').');
-    if (r.backs_visible === false) z.push('Rückseiten der Mitspieler sind verdeckt.');
+    z.push({
+      auto: pen === 1 ? tr('Vergessenes „Mau!“ kostet sofort eine Karte.') : tr('Vergessenes „Mau!“ kostet sofort %d Karten.', pen),
+      reminder: tr('„Mau!“ wird nur angezeigt, ohne Strafe.'),
+      off: tr('Ohne „Mau!“-Ansage.'),
+    }[r.mau_call] || (pen === 1 ? tr('Wer „Mau!“ vergisst, kann erwischt werden (eine Strafkarte).') : tr('Wer „Mau!“ vergisst, kann erwischt werden (%d Strafkarten).', pen)));
+    if (r.backs_visible === false) z.push(tr('Rückseiten der Mitspieler sind verdeckt.'));
     // Hausregeln mit Zusatzkarten (wie RuleConfig.describe)
-    if (r.swap_cards === 'on') z.push('Kartentausch: Wer einen legt, lässt alle ihre ganze Hand an den Nächsten weitergeben, ' + tauschRichtung(r) + '.');
-    if (r.gamble_cards === 'on') z.push('Glücksspiel (2 Joker): verdeckt setzen und drücken – weiter riskieren oder aufhören. Treffer: 1 bis 10 Karten ziehen, Einsatz zurück; Aufhören: Einsatz unter die Ablage.');
-    if (r.discard_color === 'on') z.push('Farbe ablegen: Wer eine Ablegen-Karte legt, wählt eigene Karten dieser Farbe zum Mitablegen; Joker bleiben auf der Hand. Beim Ablegen-Joker wählst du Ablegefarbe und Spielfarbe getrennt.');
-    if (r.flip_mode === 'card') z.push('Flip dreht nur die gelegte Karte: Oben liegt ihre andere Seite, die übrige Ablage bleibt zur Seite gelegt.');
-    if (r.flip_surprise === 'on') z.push('Flip-Überraschung: Die Aktionskarte, die nach dem Flip oben liegt, wirkt auf den Nächsten.');
-    if (kartenZahl(r) > 112) z.push('Gespielt wird mit ' + kartenZahl(r) + ' Karten.');
+    if (r.swap_cards === 'on') z.push(tr('Kartentausch: Wer einen legt, lässt alle ihre ganze Hand an den Nächsten weitergeben, %s.', tauschRichtung(r)));
+    if (r.gamble_cards === 'on') z.push(tr('Glücksspiel (2 Joker): verdeckt setzen und drücken – weiter riskieren oder aufhören. Treffer: 1 bis 10 Karten ziehen, Einsatz zurück; Aufhören: Einsatz unter die Ablage.'));
+    if (r.discard_color === 'on') z.push(tr('Farbe ablegen: Wer eine Ablegen-Karte legt, wählt eigene Karten dieser Farbe zum Mitablegen; Joker bleiben auf der Hand. Beim Ablegen-Joker wählst du Ablegefarbe und Spielfarbe getrennt.'));
+    if (r.flip_mode === 'card') z.push(tr('Flip dreht nur die gelegte Karte: Oben liegt ihre andere Seite, die übrige Ablage bleibt zur Seite gelegt.'));
+    if (r.flip_surprise === 'on') z.push(tr('Flip-Überraschung: Die Aktionskarte, die nach dem Flip oben liegt, wirkt auf den Nächsten.'));
+    if (kartenZahl(r) > 112) z.push(tr('Gespielt wird mit %d Karten.', kartenZahl(r)));
     return z;
   }
 
@@ -218,18 +241,18 @@
     const r = regeln || {};
     const karte = key => {
       const art = zerlege(key).art;
-      const zeilen = hilfe(key, r).zeilen.filter(z => !/^(Passt auf|Wert bei|Gehört zur)/.test(z)).slice(0, 2);
-      return { key, name: art === 'ablegen' ? 'Ablegen-Karte' : (ART_NAME[art] || art), zeilen };
+      const zeilen = hilfe(key, r).kern.slice(0, 2);
+      return { key, name: art === 'ablegen' ? tr('Ablegen-Karte') : artName(art), zeilen };
     };
     const g = [
-      { titel: 'Helle Seite', karten: ['hell_rot_plus1', 'hell_rot_aussetzen', 'hell_rot_richtungswechsel', 'hell_rot_flip', 'hell_wuenscher', 'hell_wuenscher_plus2'].map(karte) },
-      { titel: 'Dunkle Seite (nach einem Flip)', hinweis: 'Richtungswechsel, Flip und Wünscher gibt es hier auch.', karten: ['dunkel_pink_plus5', 'dunkel_pink_alle_aussetzen', 'dunkel_farbjagd'].map(karte) },
+      { titel: tr('Helle Seite'), karten: ['hell_rot_plus1', 'hell_rot_aussetzen', 'hell_rot_richtungswechsel', 'hell_rot_flip', 'hell_wuenscher', 'hell_wuenscher_plus2'].map(karte) },
+      { titel: tr('Dunkle Seite (nach einem Flip)'), hinweis: tr('Richtungswechsel, Flip und Wünscher gibt es hier auch.'), karten: ['dunkel_pink_plus5', 'dunkel_pink_alle_aussetzen', 'dunkel_farbjagd'].map(karte) },
     ];
     const haus = [];
     if (r.swap_cards === 'on') haus.push('hell_rot_tausch');
     if (r.gamble_cards === 'on') haus.push('hell_gluecksspiel');
     if (r.discard_color === 'on') haus.push('hell_rot_ablegen', 'hell_ablegen_joker');
-    if (haus.length) g.push({ titel: 'Zusatzkarten (Hausregeln)', hinweis: 'Gibt es auf beiden Seiten.', karten: haus.map(karte) });
+    if (haus.length) g.push({ titel: tr('Zusatzkarten (Hausregeln)'), hinweis: tr('Gibt es auf beiden Seiten.'), karten: haus.map(karte) });
     return g;
   }
 
@@ -531,7 +554,7 @@
 
   M.Karten = {
     INK, PAPER, CREAM, NIGHT, MOON, FARBEN, FARB_INFO, VERHAELTNIS: CH / CW,
-    zerlege, istJoker, punkte, farbName, kartenName, passendText, kartenZahl, sortiere, hilfe, regelnText, besondereKarten,
+    zerlege, istJoker, punkte, farbName, artName, kartenName, passendText, kartenZahl, sortiere, hilfe, regelnText, besondereKarten,
     symbolSVG, iconSVG, karteSVG, gesichtHTML, farbSymbolHTML, element, setzeGesicht, pruefeBilder, Bilder, mix,
   };
 })(window.MMF = window.MMF || {});

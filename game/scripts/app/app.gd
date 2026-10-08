@@ -26,6 +26,11 @@ var _apk_logged := false
 func _init() -> void:
 	# Schon im Konstruktor, damit andere Autoloads und Testskripte sofort lesen können.
 	settings = AppSettings.new()
+	# Sprache (Beta 1.2.2): beim Start und bei jeder Änderung sofort; Testläufe bleiben auf Deutsch (I18n.forced_test).
+	I18n.apply(str(settings.get_value(I18n.SETTING, "auto")))
+	settings.changed.connect(func(key: String, value: Variant) -> void:
+		if key == I18n.SETTING:
+			I18n.apply(str(value)))
 	# Testskripte (godot --script) zählen in eine eigene Datei, die echte Statistik am PC bleibt sauber.
 	var scripted := OS.get_cmdline_args().has("--script") or OS.get_cmdline_args().has("-s")
 	stats = AppStats.new("user://statistik_tests.json" if scripted else AppStats.PATH)

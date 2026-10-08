@@ -58,7 +58,7 @@ static func build_rows(players: Array, ranking: Array, scores: Variant, my_seat:
 
 
 static func _row(players: Array, seat: int, place: int, pts: int, scores: Variant, my_seat: int) -> Dictionary:
-	var name := "Platz %d" % (seat + 1)
+	var name := I18n.t("Platz %d") % (seat + 1)
 	var count := 0
 	for p in players:
 		if int(p.get("seat", -1)) == seat:
@@ -80,12 +80,12 @@ func show_result(players: Array, ranking: Array, scores: Variant, my_seat: int, 
 	var wname := str(winner.get("name", ""))
 	title = "Mau-Mau!"
 	if game_over:
-		subtitle = "Du gewinnst die Partie!" if bool(winner.get("me", false)) else "%s gewinnt die Partie" % wname
+		subtitle = I18n.t("Du gewinnst die Partie!") if bool(winner.get("me", false)) else I18n.t("%s gewinnt die Partie") % wname
 	else:
-		subtitle = "Du gewinnst Runde %d!" % round_no if bool(winner.get("me", false)) else "%s gewinnt Runde %d" % [wname, round_no]
+		subtitle = I18n.t("Du gewinnst Runde %d!") % round_no if bool(winner.get("me", false)) else I18n.t("%s gewinnt Runde %d") % [wname, round_no]
 	_button.visible = can_next
 	_button.text = "Neue Partie" if game_over else "Nächste Runde"
-	_wait_label = "" if can_next else ("Warte auf %s …" % wait_for if wait_for != "" else "")
+	_wait_label = "" if can_next else (I18n.t("Warte auf %s …") % wait_for if wait_for != "" else "")
 	visible = true
 	if not was_visible:
 		_appear = 0.0
@@ -184,8 +184,8 @@ func _draw() -> void:
 	var nf := UiFonts.text(800, 90.0)
 	if scoring:
 		var hf := UiFonts.text(700, 85.0)
-		draw_string(hf, Vector2(r.end.x - 214.0, y + 4.0), "RUNDE", HORIZONTAL_ALIGNMENT_LEFT, -1, fs_head, muted)
-		draw_string(hf, Vector2(r.end.x - 108.0, y + 4.0), "GESAMT", HORIZONTAL_ALIGNMENT_LEFT, -1, fs_head, muted)
+		draw_string(hf, Vector2(r.end.x - 214.0, y + 4.0), I18n.t("RUNDE"), HORIZONTAL_ALIGNMENT_LEFT, -1, fs_head, muted)
+		draw_string(hf, Vector2(r.end.x - 108.0, y + 4.0), I18n.t("GESAMT"), HORIZONTAL_ALIGNMENT_LEFT, -1, fs_head, muted)
 		y += 10.0
 	for row in rows:
 		var ry := y + ROW_H * 0.5
@@ -204,9 +204,9 @@ func _draw() -> void:
 		var ini := str(row["name"]).substr(0, 1).to_upper()
 		var iw := nf.get_string_size(ini, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_badge).x
 		draw_string(nf, av + Vector2(-iw * 0.5, fs_badge * 0.35), ini, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_badge, UiPalette.INK)
-		var label := str(row["name"]) + ("  (du)" if bool(row["me"]) and str(row["name"]).to_lower() != "du" else "")
+		var label := str(row["name"]) + ("  " + I18n.t("(du)") if bool(row["me"]) and not str(row["name"]).to_lower() in ["du", "you"] else "")
 		draw_string(f, Vector2(r.position.x + 136.0, ry + fs_name * 0.36), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_name, ink)
-		var detail := "fertig" if int(row["count"]) == 0 else "%d %s" % [int(row["count"]), "Karte" if int(row["count"]) == 1 else "Karten"]
+		var detail := I18n.t("fertig") if int(row["count"]) == 0 else (I18n.t("%d Karte") if int(row["count"]) == 1 else I18n.t("%d Karten")) % int(row["count"])
 		if scoring:
 			var pts := "+%d" % int(row["points"]) if int(row["points"]) > 0 else "–"
 			draw_string(nf, Vector2(r.end.x - 214.0, ry + fs_num * 0.38), pts, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_num, ink)

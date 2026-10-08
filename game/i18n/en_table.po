@@ -1,0 +1,881 @@
+# Mau-Mau Flip – Englisch, Bereich B: Tisch, Overlays, Hinweise und Ablehnungsgründe des Regelwerks, Bots.
+# msgid = deutscher Text exakt wie im Code, msgstr = Englisch nach game/i18n/GLOSSAR.md.
+msgid ""
+msgstr ""
+"Project-Id-Version: Mau-Mau Flip\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+# --- Hinweiszeile (MauGame._hint_parts, Bausteine hints.lt)
+msgid "Die Runde beginnt gleich."
+msgstr "The round is about to start."
+
+msgid "Nichts geht mehr –"
+msgstr "Nobody can move –"
+
+msgid "Du gewinnst die Partie!"
+msgstr "You win the game!"
+
+msgid "%s gewinnt die Partie."
+msgstr "%s wins the game."
+
+msgid "Du gewinnst die Runde!"
+msgstr "You win the round!"
+
+msgid "%s gewinnt die Runde."
+msgstr "%s wins the round."
+
+msgid "Du bist auf Platz %d."
+msgstr "You're in place %d."
+
+msgid "Weiter mit der nächsten Runde."
+msgstr "On to the next round."
+
+msgid "%s hat nicht „Mau!“ gerufen – erwischen!"
+msgstr "%s didn't call “Mau!” – catch them!"
+
+msgid "Du bist fertig (Platz %d)."
+msgstr "You're out (place %d)."
+
+msgid "%s überlegt: anzweifeln oder ziehen?"
+msgstr "%s is thinking: challenge or draw?"
+
+msgid "%s wählt eine Farbe."
+msgstr "%s is choosing a color."
+
+msgid "%s spielt Glücksspiel – Einsatz: %d Karte."
+msgstr "%s is gambling – stake: %d card."
+
+msgid "%s spielt Glücksspiel – Einsatz: %d Karten."
+msgstr "%s is gambling – stake: %d cards."
+
+msgid "%s legt %s mit ab."
+msgstr "%s is discarding %s too."
+
+msgid "%s ist dran."
+msgstr "%s's turn."
+
+msgid "Wähle die Farbe, mit der es weitergeht."
+msgstr "Choose the color to continue with."
+
+msgid "Wähle, welche Karten in %s du mit ablegst, und die Farbe, mit der es weitergeht."
+msgstr "Choose which %s cards you discard too, and the color to continue with."
+
+msgid "Wähle, welche Karten in %s du mit ablegst."
+msgstr "Choose which %s cards you discard too."
+
+msgid "Nach dem Flip liegt ein Joker oben – wähle die neue Farbe."
+msgstr "After the Flip, a wild card is on top – choose the new color."
+
+msgid "Drück den Glücksspielknopf!"
+msgstr "Press the gamble button!"
+
+msgid "Noch eine Karte setzen – oder aufhören?"
+msgstr "Stake one more card – or stop?"
+
+msgid "Leg eine Karte verdeckt auf deinen Einsatz."
+msgstr "Put a card face down on your stake."
+
+msgid "Farbjagd auf %s von %s – anzweifeln oder ziehen, bis %s kommt?"
+msgstr "Color Hunt for %s from %s – challenge, or draw until %s comes?"
+
+msgid "Wünscher +2 von %s (%s) – anzweifeln oder %d ziehen?"
+msgstr "Wild +2 from %s (%s) – challenge or draw %d?"
+
+msgid "Du kannst auch %s drauflegen."
+msgstr "You can also play %s on top."
+
+msgid "Die gezogene Karte passt – du musst sie legen."
+msgstr "The card you drew fits – you have to play it."
+
+msgid "Die gezogene Karte passt – legen oder behalten?"
+msgstr "The card you drew fits – play it or keep it?"
+
+msgid "Passende Karte legen oder behalten?"
+msgstr "Play a matching card or keep?"
+
+msgid "%s auf dich – Zieh, bis %s kommt."
+msgstr "%s on you – draw until %s comes."
+
+msgid "%s auf dich – Zieh %d."
+msgstr "%s on you – draw %d."
+
+msgid "%s auf dich – lege %s drauf oder zieh, bis %s kommt."
+msgstr "%s on you – play %s on top or draw until %s comes."
+
+msgid "%s auf dich – lege %s drauf oder zieh %d."
+msgstr "%s on you – play %s on top or draw %d."
+
+msgid "Du bist dran – nichts passt, zieh eine Karte."
+msgstr "Your turn – nothing fits, draw a card."
+
+msgid "Du bist dran – nichts passt und beide Stapel sind leer: aussetzen."
+msgstr "Your turn – nothing fits and both piles are empty: you sit out."
+
+msgid "Du bist dran – %s."
+msgstr "Your turn – %s."
+
+msgid "Du bist dran – %s (Wunschfarbe)."
+msgstr "Your turn – %s (wished color)."
+
+msgid "Du bist dran."
+msgstr "Your turn."
+
+msgid "Denk an „Mau!“"
+msgstr "Remember “Mau!”"
+
+msgid "lege %s"
+msgstr "play %s"
+
+msgid "lege %s oder %s"
+msgstr "play %s or %s"
+
+msgid "eine %d"
+msgstr "a %d"
+
+msgid "%s wählt aus …"
+msgstr "%s is choosing …"
+
+# --- Ablehnungsgründe mit Platzhaltern (MauGame._why, reason_lt)
+msgid "Wähle eine Farbe der %s."
+msgstr "Choose a color of the %s."
+
+msgid "Passt nicht – %s."
+msgstr "Doesn't fit – %s."
+
+msgid "%s nur, wenn du keine Karte in %s hast."
+msgstr "%s only if you have no %s card."
+
+msgid "%s nur, wenn du keine Karte in %s hast und keinen anderen Joker."
+msgstr "%s only if you have no %s card and no other wild card."
+
+msgid "Lege %s drauf oder nimm die Strafe."
+msgstr "Play %s on top or take the penalty."
+
+# --- Meldungen der Spielsteuerung (HostTable)
+msgid "Ein Computergegner spielt für %s."
+msgstr "A computer player is playing for %s."
+
+msgid "%s ist getrennt – warte …"
+msgstr "%s is disconnected – waiting …"
+
+msgid "%s ist getrennt."
+msgstr "%s is disconnected."
+
+msgid "%s ist wieder da."
+msgstr "%s is back."
+
+# --- Beta 1.2.2, Ergänzungen (generiert aus tr_table.txt)
+
+msgid "Anzweifeln oder ziehen."
+msgstr "Challenge or draw."
+
+msgid "Aufhören geht erst nach dem ersten Druck."
+msgstr "You can only stop after the first press."
+
+msgid "Damit legst du alles auf einmal ab – „Mau!“ brauchst du nicht."
+msgstr "This puts down everything at once – you don't need “Mau!”."
+
+msgid "Der Stapel ist leer – lege eine passende Karte."
+msgstr "The pile is empty – play a matching card."
+
+msgid "Dich selbst kannst du nicht erwischen."
+msgstr "You can't catch yourself."
+
+msgid "Die Partie hat noch nicht begonnen."
+msgstr "The game hasn't started yet."
+
+msgid "Die Partie ist vorbei."
+msgstr "The game is over."
+
+msgid "Die Runde hat noch nicht begonnen."
+msgstr "The round hasn't started yet."
+
+msgid "Die Runde ist vorbei."
+msgstr "The round is over."
+
+msgid "Die Runde läuft noch."
+msgstr "The round is still on."
+
+msgid "Die gezogene Karte darfst du erst im nächsten Zug legen."
+msgstr "You can only play the drawn card on your next turn."
+
+msgid "Die gezogene Karte passt nicht."
+msgstr "The drawn card doesn't fit."
+
+msgid "Die nächste Runde startet der Gastgeber."
+msgstr "The host starts the next round."
+
+msgid "Diese Karte hast du nicht."
+msgstr "You don't have that card."
+
+msgid "Diese Karte kannst du nicht mit ablegen."
+msgstr "You can't discard that card along with it."
+
+msgid "Du bist nicht dran."
+msgstr "It's not your turn."
+
+msgid "Du hast schon gezogen – legen oder behalten."
+msgstr "You've already drawn – play or keep."
+
+msgid "Du hast schon „Mau!“ gerufen."
+msgstr "You've already called “Mau!”."
+
+msgid "Du sitzt nicht mit am Tisch."
+msgstr "You're not seated at the table."
+
+msgid "Erst anzweifeln oder annehmen."
+msgstr "Challenge or accept first."
+
+msgid "Erst auswählen, welche Karten mit abgelegt werden."
+msgstr "First choose which cards to discard along with it."
+
+msgid "Erst das Handy weitergeben."
+msgstr "Pass the phone on first."
+
+msgid "Erst den Glücksspielknopf drücken."
+msgstr "Press the gamble button first."
+
+msgid "Erst die Farbe wählen."
+msgstr "Choose the color first."
+
+msgid "Erst die Strafe ziehen."
+msgstr "Draw the penalty first."
+
+msgid "Erst eine Karte verdeckt auf den Einsatz legen."
+msgstr "First put a card face down on the stake."
+
+msgid "Erwischen gibt es in diesen Regeln nicht."
+msgstr "There is no catching under these rules."
+
+msgid "Es braucht mindestens zwei Spieler."
+msgstr "At least two players are needed."
+
+msgid "Es gibt keine gezogene Karte zu behalten."
+msgstr "There's no drawn card to keep."
+
+msgid "Es läuft keine Partie."
+msgstr "No game is running."
+
+msgid "Farbe mit ablegen gibt es in diesen Regeln nicht."
+msgstr "Discard Color doesn't exist under these rules."
+
+msgid "Gerade ist keine Farbwahl offen."
+msgstr "No color choice is open right now."
+
+msgid "Gerade ist nichts zum Mitablegen offen."
+msgstr "There is nothing to discard along with it right now."
+
+msgid "Gerade läuft kein Glücksspiel."
+msgstr "No gamble is running right now."
+
+msgid "Glücksspiel gibt es in diesen Regeln nicht."
+msgstr "Gamble doesn't exist under these rules."
+
+msgid "Hier gibt es nichts anzuzweifeln."
+msgstr "There's nothing to challenge here."
+
+msgid "Jetzt darfst du nur die gezogene Karte legen."
+msgstr "Now you may only play the drawn card."
+
+msgid "Keine Verbindung zum Gastgeber – einen Moment …"
+msgstr "No connection to the host – one moment …"
+
+msgid "Leg erst eine Karte verdeckt auf deinen Einsatz."
+msgstr "First put a card face down on your stake."
+
+msgid "Senden fehlgeschlagen – die Verbindung wird erneuert."
+msgstr "Sending failed – reconnecting."
+
+msgid "Unbekannte Aktion."
+msgstr "Unknown action."
+
+msgid "Unbekannter Platz."
+msgstr "Unknown seat."
+
+msgid "Ungültige Aktion."
+msgstr "Invalid action."
+
+msgid "Ungültige Spielerzahl."
+msgstr "Invalid number of players."
+
+msgid "Zu spät – oder es gibt niemanden zu erwischen."
+msgstr "Too late – or there's nobody to catch."
+
+msgid "„Mau!“ geht erst, wenn du mit 2 Karten dran bist."
+msgstr "“Mau!” only works when it's your turn with 2 cards."
+
+msgid "„Mau!“ geht hier nur, wenn nach dem Ablegen genau 1 Karte bleiben kann."
+msgstr "“Mau!” only works here if exactly 1 card can be left after playing."
+
+msgid "„Mau!“ ist in diesen Regeln ausgeschaltet."
+msgstr "“Mau!” is turned off under these rules."
+
+msgid "„Mau!“ rufst du, bevor du deine vorletzte Karte auf den Einsatz legst."
+msgstr "Call “Mau!” before you put your second-to-last card on the stake."
+
+msgid "„Mau!“ rufst du, wenn du deine vorletzte Karte legen kannst – gerade passt keine."
+msgstr "Call “Mau!” when you can play your second-to-last card – none fits right now."
+
+msgid "Das Spiel ließ sich nicht eröffnen (Port %d–%d belegt?)."
+msgstr "Couldn't open the game (port %d–%d in use?)."
+
+msgid "Ablegen (%d)"
+msgstr "Discard (%d)"
+
+msgid "Weiter"
+msgstr "Continue"
+
+msgid "%d von %d"
+msgstr "%d of %d"
+
+msgid "%d P"
+msgstr "%d pts"
+
+msgid "%s Karte"
+msgstr "%s card"
+
+msgid "%s Karten"
+msgstr "%s cards"
+
+msgid "%s gewinnt Runde %d"
+msgstr "%s wins round %d"
+
+msgid "%s gewinnt die Partie"
+msgstr "%s wins the game"
+
+msgid "%s hört auf – %d Karten unter die Ablage."
+msgstr "%s stops – %d cards go under the discard pile."
+
+msgid "%s hört auf – 1 Karte unter die Ablage."
+msgstr "%s stops – 1 card goes under the discard pile."
+
+msgid "Du hörst auf – %d Karten unter die Ablage."
+msgstr "You stop – %d cards go under the discard pile."
+
+msgid "Du hörst auf – 1 Karte unter die Ablage."
+msgstr "You stop – 1 card goes under the discard pile."
+
+msgid "%s ist wieder dran"
+msgstr "%s is up again"
+
+msgid "%s legt %d %s mit ab."
+msgstr "%s also discards %d %s."
+
+msgid "%s legt eine %s mit ab."
+msgstr "%s also discards 1 %s."
+
+msgid "%s legt keine %s mit ab."
+msgstr "%s discards no %s along with it."
+
+msgid "Du legst %d %s mit ab."
+msgstr "You also discard %d %s."
+
+msgid "Du legst eine %s mit ab."
+msgstr "You also discard 1 %s."
+
+msgid "Du legst keine %s mit ab."
+msgstr "You discard no %s along with it."
+
+msgid "rote"
+msgstr "red"
+
+msgid "gelbe"
+msgstr "yellow"
+
+msgid "grüne"
+msgstr "green"
+
+msgid "blaue"
+msgstr "blue"
+
+msgid "pinke"
+msgstr "pink"
+
+msgid "türkise"
+msgstr "teal"
+
+msgid "orange"
+msgstr "orange"
+
+msgid "lila"
+msgstr "purple"
+
+msgid "%s: zum Aufdecken halten"
+msgstr "%s: hold to reveal"
+
+msgid "Ablage: %d Karten  ·  Stapel: %d Karten"
+msgstr "Discard pile: %d cards  ·  Draw pile: %d cards"
+
+msgid "Gib das Handy an %s"
+msgstr "Pass the phone to %s"
+
+msgid "Gib das Handy an %s gegenüber"
+msgstr "Pass the phone to %s across from you"
+
+msgid "Gib das Handy an %s – %d Plätze nach %s"
+msgstr "Pass the phone to %s – %d seats to the %s"
+
+msgid "Gib das Handy nach %s an %s"
+msgstr "Pass the phone %s to %s"
+
+msgid "links"
+msgstr "left"
+
+msgid "rechts"
+msgstr "right"
+
+msgid "Computer spielt"
+msgstr "Computer plays"
+
+msgid "Computer spielt für %s"
+msgstr "Computer plays for %s"
+
+msgid "dran"
+msgstr "up"
+
+msgid "gleich dran"
+msgstr "next up"
+
+msgid "verdeckt"
+msgstr "hidden"
+
+msgid "von %s"
+msgstr "from %s"
+
+msgid "fertig"
+msgstr "out"
+
+msgid "Die Regeln von %s sind gemerkt. Eröffne selbst, dann spielt ihr mit ihnen weiter."
+msgstr "The rules from %s are saved. Open a game yourself to keep playing with them."
+
+msgid "Du gewinnst Runde %d!"
+msgstr "You win round %d!"
+
+msgid "Ein Computergegner spielt für %s. Kommt %s zurück, spielt er wieder selbst."
+msgstr "A computer player is playing for %s. If %s comes back, they play again themselves."
+
+msgid "Einsatz %d"
+msgstr "Stake %d"
+
+msgid "Erwischt!"
+msgstr "Caught!"
+
+msgid "Farbe wählen"
+msgstr "Choose color"
+
+msgid "Flip"
+msgstr "Flip"
+
+msgid "GESAMT"
+msgstr "TOTAL"
+
+msgid "RUNDE"
+msgstr "ROUND"
+
+msgid "Gelöscht: „%s“"
+msgstr "Deleted: “%s”"
+
+msgid "Gespeichert: „%s“"
+msgstr "Saved: “%s”"
+
+msgid "Kartenhilfe"
+msgstr "Card help"
+
+msgid "Verstanden"
+msgstr "Got it"
+
+msgid "Nochmal du!"
+msgstr "You go again!"
+
+msgid "Nochmal, %s!"
+msgstr "%s goes again!"
+
+msgid "Platz %d"
+msgstr "Seat %d"
+
+msgid "Sortiert nach %s"
+msgstr "Sorted by %s"
+
+msgid "Stapel · %d"
+msgstr "Pile · %d"
+
+msgid "Startkarte"
+msgstr "Starting card"
+
+msgid "Strafe +%d"
+msgstr "Penalty +%d"
+
+msgid "Treffer!"
+msgstr "Hit!"
+
+msgid "Warte auf %s …"
+msgstr "Waiting for %s …"
+
+msgid "Wunsch: %s"
+msgstr "Wish: %s"
+
+msgid "Du setzt aus"
+msgstr "You skip"
+
+msgid "Bluff!"
+msgstr "Bluff!"
+
+msgid "Sauber!"
+msgstr "Honest!"
+
+msgid "Mit welcher Farbe geht es weiter?"
+msgstr "Which color does the game continue with?"
+
+msgid "Welche Farbe legst du mit ab?"
+msgstr "Which color do you discard with it?"
+
+msgid "Glücksspiel!"
+msgstr "Gamble!"
+
+msgid "Nichts!"
+msgstr "Nothing!"
+
+msgid "Aufgehört!"
+msgstr "Stopped!"
+
+msgid "Los!"
+msgstr "Go!"
+
+msgid "Aufhören"
+msgstr "Stop"
+
+msgid "Kartentausch!"
+msgstr "Card Swap!"
+
+msgid "Flip-Überraschung!"
+msgstr "Flip Surprise!"
+
+msgid "Neue Partie"
+msgstr "New game"
+
+msgid "Nächste Runde"
+msgstr "Next round"
+
+msgid "Reihenfolge"
+msgstr "Order"
+
+msgid "%d Rückseite"
+msgstr "%d back"
+
+msgid "%d Rückseiten"
+msgstr "%d backs"
+
+msgid "Rückseiten"
+msgstr "Backs"
+
+msgid "Farbe"
+msgstr "Color"
+
+msgid "Wert"
+msgstr "Value"
+
+msgid "Punkte"
+msgstr "Points"
+
+msgid "Eigene"
+msgstr "Custom"
+
+msgid "Manuell"
+msgstr "Manual"
+
+msgid "Du verlässt das Spiel des Gastgebers."
+msgstr "You are leaving the host's game."
+
+msgid "Die Partie endet für alle."
+msgstr "The game ends for everyone."
+
+msgid "Der Spielstand geht verloren."
+msgstr "The score will be lost."
+
+msgid "Rundenende"
+msgstr "End of round"
+
+msgid "Erster fertig"
+msgstr "First one out"
+
+msgid "Wertung"
+msgstr "Scoring"
+
+msgid "Punkte gelten nur, wenn die Runde beim ersten Fertigen endet."
+msgstr "Points only count if the round ends when the first player is out."
+
+msgid "Ohne Punkte"
+msgstr "No points"
+
+msgid "Punkte bis zum Ziel"
+msgstr "Points to the target"
+
+msgid "Punkteziel"
+msgstr "Target score"
+
+msgid "Karten zu Beginn"
+msgstr "Cards at the start"
+
+msgid "Wenn nichts passt"
+msgstr "If nothing fits"
+
+msgid "Eine Karte"
+msgstr "One card"
+
+msgid "Bis eine passt"
+msgstr "Until one fits"
+
+msgid "Gezogene Karte"
+msgstr "Drawn card"
+
+msgid "Passt sie, …"
+msgstr "If it fits, …"
+
+msgid "darf gelegt werden"
+msgstr "may be played"
+
+msgid "muss gelegt werden"
+msgstr "must be played"
+
+msgid "erst nächster Zug"
+msgstr "next turn only"
+
+msgid "Nach dem Ziehen"
+msgstr "After drawing"
+
+msgid "Freiwillig gezogen: welche Karte du noch legen darfst"
+msgstr "Drawn voluntarily: which card you may still play"
+
+msgid "Nur die gezogene Karte (offiziell)"
+msgstr "Only the drawn card (official)"
+
+msgid "Beliebige Karte"
+msgstr "Any card"
+
+msgid "+1 auf +1, +5 auf +5 …: die Summe wächst"
+msgstr "+1 on +1, +5 on +5 …: the total grows"
+
+msgid "Gleiche Karte"
+msgstr "Same card"
+
+msgid "Nach dem Strafziehen"
+msgstr "After a penalty draw"
+
+msgid "Wer +1, +5 … abbekommt: aussetzen oder gleich weiterspielen"
+msgstr "Whoever gets +1, +5 …: skip or keep playing right away"
+
+msgid "Weiterspielen"
+msgstr "Continue playing"
+
+msgid "Wünscher +2 und Farbjagd"
+msgstr "Wild +2 and Color Hunt"
+
+msgid "„App prüft“: nur, wenn keine Karte der aktuellen Farbe passt"
+msgstr "“App checks”: only if no card of the current color fits"
+
+msgid "Immer erlaubt"
+msgstr "Always allowed"
+
+msgid "App prüft"
+msgstr "App checks"
+
+msgid "Gezogener Joker beendet die Farbjagd"
+msgstr "A drawn wild card ends the Color Hunt"
+
+msgid "„Mau!“ rufen"
+msgstr "Calling “Mau!”"
+
+msgid "Bei der vorletzten Karte"
+msgstr "On the second-to-last card"
+
+msgid "Erwischen"
+msgstr "Catch"
+
+msgid "App bestraft"
+msgstr "App penalizes"
+
+msgid "Nur Hinweis"
+msgstr "Hint only"
+
+msgid "Strafkarten für vergessenes „Mau!“"
+msgstr "Penalty cards for a forgotten “Mau!”"
+
+msgid "Rückseiten der Mitspieler sichtbar"
+msgstr "Other players' backs visible"
+
+msgid "Aus: alle sehen nur eine neutrale Rückseite"
+msgstr "Off: everyone sees only a neutral back"
+
+msgid "Eigene Rückseiten ansehen"
+msgstr "Look at your own backs"
+
+msgid "Knopf „Rückseiten“ am Tisch"
+msgstr "“Backs” button at the table"
+
+msgid "Zu zweit: Richtungswechsel wirkt wie Aussetzen"
+msgstr "With two players: Reverse works like Skip"
+
+msgid "Flip als letzte Karte"
+msgstr "Flip as the last card"
+
+msgid "wird ausgeführt"
+msgstr "is carried out"
+
+msgid "nicht mehr ausgeführt"
+msgstr "no longer carried out"
+
+msgid "Flip dreht"
+msgstr "Flip turns"
+
+msgid "Nur die gelegte Karte: Die übrige Ablage bleibt zur Seite gelegt."
+msgstr "Only the played card: the rest of the discard pile is set aside."
+
+msgid "Ganze Ablage (offiziell)"
+msgstr "Whole discard pile (official)"
+
+msgid "Nur die gelegte Karte"
+msgstr "Only the played card"
+
+msgid "Flip-Überraschung"
+msgstr "Flip Surprise"
+
+msgid "Die Aktionskarte, die nach dem Flip oben liegt, wirkt auf den Nächsten."
+msgstr "The action card that ends up on top after the Flip affects the next player."
+
+msgid "An"
+msgstr "On"
+
+msgid "4 Zusatzkarten: Alle geben ihre ganze Hand weiter"
+msgstr "4 extra cards: everyone passes their whole hand on"
+
+msgid "Tauschrichtung"
+msgstr "Swap direction"
+
+msgid "Wohin die Hände wandern (nur mit Kartentausch)"
+msgstr "Where the hands go (Card Swap only)"
+
+msgid "Gegen den Uhrzeigersinn"
+msgstr "Counterclockwise"
+
+msgid "Gegen die Spielrichtung"
+msgstr "Against the direction of play"
+
+msgid "2 Joker: verdeckt setzen und drücken – weiter riskieren oder aufhören"
+msgstr "2 wild cards: stake face down and press – keep risking it or stop"
+
+msgid "Farbe mit ablegen"
+msgstr "Discard Color"
+
+msgid "6 Zusatzkarten: Karten der Farbe mit ablegen, du wählst aus"
+msgstr "6 extra cards: discard cards of that color too, you choose which"
+
+msgid "Hausregeln mit Zusatzkarten"
+msgstr "House rules with extra cards"
+
+msgid "Jede bringt eigene Karten mit. Ohne sie wird mit 112 Karten gespielt."
+msgstr "Each brings its own cards. Without them the game is played with 112 cards."
+
+msgid "Voreinstellung"
+msgstr "Preset"
+
+msgid "Speichern unter …"
+msgstr "Save as …"
+
+msgid "Die eingestellten Regeln unter einem Namen speichern"
+msgstr "Save the current rules under a name"
+
+msgid "Antippen lädt"
+msgstr "Tap to load"
+
+msgid "Antippen lädt, × löscht"
+msgstr "Tap to load, × deletes"
+
+msgid "Antippen lädt die Regeln"
+msgstr "Tap to load the rules"
+
+msgid "Noch nichts gespeichert. Stell die Regeln ein und tippe oben auf „Speichern unter …“."
+msgstr "Nothing saved yet. Set up the rules and tap “Save as …” above."
+
+msgid "Der gespeicherte Regelsatz wird entfernt. Die eingestellten Regeln bleiben, wie sie sind."
+msgstr "The saved rule set will be removed. The current rules stay as they are."
+
+msgid "Löschen"
+msgstr "Delete"
+
+msgid "Löschen hat nicht geklappt. Ist der Speicher des Geräts voll?"
+msgstr "Deleting didn't work. Is the device storage full?"
+
+msgid "Kartenzahl der Partie"
+msgstr "Number of cards in the game"
+
+msgid "Übersicht"
+msgstr "Overview"
+
+msgid "Anpassen"
+msgstr "Customize"
+
+msgid "Besondere Karten"
+msgstr "Special cards"
+
+msgid "Hausregel, beide Seiten"
+msgstr "House rule, both sides"
+
+msgid "Beide Seiten"
+msgstr "Both sides"
+
+msgid "„%s“ löschen"
+msgstr "Delete “%s”"
+
+msgid "„%s“ löschen?"
+msgstr "Delete “%s”?"
+
+msgid "Regeln, mit denen du zuletzt im WLAN-Spiel von %s gespielt hast"
+msgstr "Rules you last played with in %s's Wi-Fi game"
+
+msgid "Runde vorbei."
+msgstr "Round over."
+
+# --- Beta 1.2.2, Ergänzungen (generiert aus tr_add1.txt)
+
+msgid "%s ablegen"
+msgstr "%s Discard Color"
+
+msgid "Ablage durchsehen"
+msgstr "Browse discard pile"
+
+msgid "Die Karte passt nicht."
+msgstr "That card doesn't match."
+
+msgid "Diese Karte passt gerade nicht."
+msgstr "That card doesn't fit right now."
+
+msgid "Diese Partie ist vorbei. Der Gastgeber hat eine neue Runde eröffnet."
+msgstr "This game is over. The host has opened a new round."
+
+msgid "Du bist gerade nicht dran."
+msgstr "It's not your turn right now."
+
+msgid "Eigene Rückseiten sind bei diesen Regeln aus."
+msgstr "Looking at your own backs is turned off under these rules."
+
+msgid "Eigene Reihenfolge – Karte halten und seitlich ziehen"
+msgstr "Custom order – hold a card and drag it sideways"
+
+
+msgid "Partie verlassen?"
+msgstr "Leave the game?"
+
+msgid "Verlassen"
+msgstr "Leave"
+
+msgid "Regeln ansehen"
+msgstr "View rules"
+
+msgid "Computer übernimmt?"
+msgstr "Let the computer take over?"
+
+msgid "Übernehmen"
+msgstr "Take over"

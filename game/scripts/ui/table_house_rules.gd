@@ -272,15 +272,15 @@ func _announce_swap(dir: int, active: Array[int], dest: Dictionary, me: int) -> 
 	var mine := me >= 0 and active.has(me)
 	if active.size() == 2:
 		if mine:
-			text = "Kartentausch! Du tauschst die Hand mit %s." % _name(int(dest[me]))
+			text = I18n.t("Kartentausch! Du tauschst die Hand mit %s.") % _name(int(dest[me]))
 		else:
-			text = "Kartentausch! %s und %s tauschen die Hände." % [_name(active[0]), _name(active[1])]
+			text = I18n.t("Kartentausch! %s und %s tauschen die Hände.") % [_name(active[0]), _name(active[1])]
 	else:
-		var way := "im Uhrzeigersinn" if dir > 0 else "gegen den Uhrzeigersinn"
+		var way := I18n.t("im Uhrzeigersinn") if dir > 0 else I18n.t("gegen den Uhrzeigersinn")
 		if mine:
-			text = "Kartentausch! Alle Hände wandern %s – deine zu %s." % [way, _name(int(dest[me]))]
+			text = I18n.t("Kartentausch! Alle Hände wandern %s – deine zu %s.") % [way, _name(int(dest[me]))]
 		else:
-			text = "Kartentausch! Alle Hände wandern %s weiter." % way
+			text = I18n.t("Kartentausch! Alle Hände wandern %s weiter.") % way
 	t.hint_bar.toast(text, "info", 3.4)
 
 
@@ -521,10 +521,11 @@ func ev_stake_discard(ev: Dictionary) -> float:
 
 # Meldung beim Aufhören („Mimi hört auf – 3 Karten unter die Ablage.“)
 func stop_text(seat: int, n: int, mine: bool) -> String:
-	var cards := "1 Karte" if n == 1 else "%d Karten" % n
 	if mine:
-		return "Du hörst auf – %s unter die Ablage." % cards
-	return "%s hört auf – %s unter die Ablage." % [_name(seat), cards]
+		return I18n.t("Du hörst auf – 1 Karte unter die Ablage.") if n == 1 else I18n.t("Du hörst auf – %d Karten unter die Ablage.") % n
+	if n == 1:
+		return I18n.t("%s hört auf – 1 Karte unter die Ablage.") % _name(seat)
+	return I18n.t("%s hört auf – %d Karten unter die Ablage.") % [_name(seat), n]
 
 
 # ================================================================= Farbe mit ablegen
@@ -585,11 +586,10 @@ static func under_fan(i: int, n: int) -> Dictionary:
 func discard_text(seat: int, col: String, n: int) -> String:
 	var adj: String = COLOR_ADJ.get(col, "")
 	var me := seat >= 0 and seat == _me()
-	var who := "Du" if me else _name(seat)
-	var card1 := ("%s Karte" % adj) if adj != "" else "Karte"
+	var card1 := (I18n.t("%s Karte") % I18n.t(adj)) if adj != "" else I18n.t("Karte")
+	var cards := (I18n.t("%s Karten") % I18n.t(adj)) if adj != "" else I18n.t("Karten")
 	if n <= 0:
-		return "%s %s keine %s mit ab." % [who, "legst" if me else "legt", card1]
-	var verb := "legst" if me else "legt"
+		return I18n.t("Du legst keine %s mit ab.") % card1 if me else I18n.t("%s legt keine %s mit ab.") % [_name(seat), card1]
 	if n == 1:
-		return "%s %s eine %s mit ab." % [who, verb, card1]
-	return "%s %s %d %s mit ab." % [who, verb, n, ("%s Karten" % adj) if adj != "" else "Karten"]
+		return I18n.t("Du legst eine %s mit ab.") % card1 if me else I18n.t("%s legt eine %s mit ab.") % [_name(seat), card1]
+	return I18n.t("Du legst %d %s mit ab.") % [n, cards] if me else I18n.t("%s legt %d %s mit ab.") % [_name(seat), n, cards]

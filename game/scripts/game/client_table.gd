@@ -169,13 +169,13 @@ func _on_message(msg: Dictionary) -> void:
 			_seat = int(_view.get("seat", _seat))
 			state_changed.emit(msg.get("events", []) if msg.get("events") is Array else [], _view)
 		"err", "notice":
-			notice.emit(str(msg.get("text", "Das geht gerade nicht.")))
+			notice.emit(I18n.msg_text(msg, "Das geht gerade nicht."))   # eigene Sprache (I18n: lt oder msgid)
 
 
 func _on_rejected(code: String, text: String) -> void:
 	_rejected = true
 	if code == "version" and not text.contains("/apk"):
-		text += " App vom Gastgeber holen: http://%s:%d/apk" % [address, port]
+		text += " " + I18n.t("App vom Gastgeber holen: %s") % ("http://%s:%d/apk" % [address, port])
 	connection_changed.emit("rejected")
 	notice.emit(text)
 

@@ -108,7 +108,7 @@ func _add(kind: String) -> void:
 			if not used.has(cand):
 				n = cand
 				break
-		entries.append({"name": n if n != "" else "Computer %d" % (entries.size() + 1), "kind": "bot"})
+		entries.append({"name": n if n != "" else I18n.t("Computer %d") % (entries.size() + 1), "kind": "bot"})
 	else:
 		entries.append({"name": "", "kind": "human"})
 	_rebuild()
@@ -151,7 +151,7 @@ func _rebuild() -> void:
 	for e in entries:
 		if e.kind == "human":
 			humans += 1
-	_count.text = "%d Plätze · %d Menschen" % [entries.size(), humans]
+	_count.text = I18n.t("%d Plätze · %d Menschen") % [entries.size(), humans]
 
 
 func _row(i: int) -> Control:
@@ -179,7 +179,7 @@ func _row(i: int) -> Control:
 		var le := LineEdit.new()
 		le.name = "Name"
 		le.text = str(e.name)
-		le.placeholder_text = "Name Platz %d" % (i + 1)
+		le.placeholder_text = I18n.t("Name Platz %d") % (i + 1)
 		le.max_length = AppSettings.NAME_MAX
 		le.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		le.custom_minimum_size = Vector2(0, ScreenKit.TOUCH)
@@ -221,7 +221,7 @@ func players() -> Array:
 		var e: Dictionary = entries[i]
 		var n := AppSettings.clean_name(str(e.name))
 		if n == "":
-			n = "Spieler %d" % (i + 1)
+			n = I18n.t("Spieler %d") % (i + 1)
 		var base := n
 		var k := 2
 		while seen.has(n.to_lower()):

@@ -255,7 +255,7 @@ class TextFx:
 
 func _text(pos: Vector2, text: String, font: Font, size: int, color: Color, outline: Color, outline_w: int) -> TextFx:
 	var t := TextFx.new()
-	t.text = text
+	t.text = I18n.t(text)
 	t.font = font
 	t.font_size = size
 	t.color = color

@@ -171,7 +171,7 @@ func _on_lobby(l: Dictionary) -> void:
 	_focus_last = false
 	if focus != null:
 		_scroll_to.call_deferred(focus)
-	_count.text = "%d von %d Spielern" % [players.size(), NetProtocol.MAX_PLAYERS]
+	_count.text = I18n.t("%d von %d Spielern") % [players.size(), NetProtocol.MAX_PLAYERS]
 	_start.disabled = players.size() < 2
 	_bot_minus.disabled = bots == 0
 	_bot_plus.disabled = players.size() >= NetProtocol.MAX_PLAYERS
@@ -207,14 +207,14 @@ func _row(p: Dictionary, i: int, n: int, host_id: int) -> Control:
 	var nl := ScreenKit.label(str(p.get("name", "")), "", UiFonts.size("zeile"))
 	nl.add_theme_font_override("font", UiFonts.text(700))
 	texts.add_child(nl)
-	var tag: String = {"app": "App", "web": "Browser", "bot": "Computer"}.get(kind, kind)
+	var tag: String = I18n.t({"app": "App", "web": "Browser", "bot": "Computer"}.get(kind, kind))
 	if id == host_id:
-		tag = "Gastgeber (du)"
+		tag = I18n.t("Gastgeber (du)")
 	var connected := bool(p.get("connected", true))
 	if not connected:
-		tag += " · getrennt"
+		tag += " · " + I18n.t("getrennt")
 	elif kind != "bot" and id != host_id:
-		tag += " · verbunden" + (" · bereit" if bool(p.get("ready", false)) else "")
+		tag += " · " + I18n.t("verbunden") + (" · " + I18n.t("bereit") if bool(p.get("ready", false)) else "")
 	var tl := ScreenKit.label(tag, "HintLabel", UiFonts.size("klein"))
 	if not connected:
 		tl.add_theme_color_override("font_color", UiPalette.ALERT)
@@ -319,8 +319,8 @@ func on_back() -> bool:
 # Text der Rückfrage „Lobby schließen?“ (Einzahl und Mehrzahl; Nachtest 1: „1 Mitspieler sind …“)
 static func close_text(guests: int) -> String:
 	if guests == 1:
-		return "1 Mitspieler ist verbunden und wird getrennt."
-	return "%d Mitspieler sind verbunden und werden getrennt." % guests
+		return I18n.t("1 Mitspieler ist verbunden und wird getrennt.")
+	return I18n.t("%d Mitspieler sind verbunden und werden getrennt.") % guests
 
 
 func on_leave() -> void:

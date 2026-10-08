@@ -184,7 +184,7 @@ func _rebuild_sets() -> void:
 	if host != "":
 		var hb := ScreenKit.button(RuleSets.host_title(host), "GhostButton", "wlan")
 		hb.name = "Gastgeber"
-		hb.tooltip_text = "Regeln, mit denen du zuletzt im WLAN-Spiel von %s gespielt hast" % host
+		hb.tooltip_text = I18n.t("Regeln, mit denen du zuletzt im WLAN-Spiel von %s gespielt hast") % host
 		hb.add_theme_font_size_override("font_size", UiFonts.size("text"))
 		hb.set_meta("host", true)
 		hb.pressed.connect(apply_host_rules)
@@ -204,7 +204,7 @@ func _rebuild_sets() -> void:
 		b.pressed.connect(_on_set_pressed.bind(b))
 		b.gui_input.connect(_on_set_input.bind(b))
 		pair.add_child(b)
-		var x := ScreenKit.icon_button(ScreenKit.glyph("kreuz", 24), "GhostButton", "„%s“ löschen" % n)
+		var x := ScreenKit.icon_button(ScreenKit.glyph("kreuz", 24), "GhostButton", I18n.t("„%s“ löschen") % n)
 		x.name = "Loeschen"
 		x.custom_minimum_size = Vector2(48, ScreenKit.TOUCH)
 		x.set_meta("delete", n)
@@ -311,7 +311,7 @@ func save_as() -> void:
 	_save_box.saved.connect(func(n: String) -> void:
 		_save_box = null
 		_rebuild_sets()
-		toast("Gespeichert: „%s“" % n))
+		toast(I18n.t("Gespeichert: „%s“") % n))
 	_save_box.cancelled.connect(func() -> void: _save_box = null)
 
 
@@ -320,7 +320,7 @@ func ask_delete(set_name: String) -> void:
 	var n := RuleSets.stored_name(set_name)
 	if n == "" or (_confirm != null and is_instance_valid(_confirm)) or (_save_box != null and is_instance_valid(_save_box)):
 		return
-	_confirm = ConfirmBox.ask(self, "„%s“ löschen?" % n, "Der gespeicherte Regelsatz wird entfernt. Die eingestellten Regeln bleiben, wie sie sind.", "Löschen", "Behalten")
+	_confirm = ConfirmBox.ask(self, I18n.t("„%s“ löschen?") % n, "Der gespeicherte Regelsatz wird entfernt. Die eingestellten Regeln bleiben, wie sie sind.", "Löschen", "Behalten")
 	_confirm.answered.connect(func(yes: bool) -> void:
 		_confirm = null
 		if not yes:
@@ -329,7 +329,7 @@ func ask_delete(set_name: String) -> void:
 			toast("Löschen hat nicht geklappt. Ist der Speicher des Geräts voll?")
 			return
 		_rebuild_sets()
-		toast("Gelöscht: „%s“" % n))
+		toast(I18n.t("Gelöscht: „%s“") % n))
 
 
 # Zurück schließt zuerst eine offene Rückfrage bzw. den Speichern-Dialog
@@ -481,7 +481,7 @@ func _refresh_enabled() -> void:
 	_dim("swap_direction", cfg.swap_cards == "on", true)
 	var n := cfg.card_count()
 	for l in _count_labels:
-		l.text = "%d Karten" % n
+		l.text = I18n.t("%d Karten") % n
 		var pill := l.get_parent() as PanelContainer
 		var extra := n > CardDB.CARD_COUNT
 		var sb := UiTheme.box(UiPalette.FILL["gelb"] if extra else Color(UiPalette.INK, 0.06), Color(UiPalette.INK, 0.8 if extra else 0.3), 2, 24, 20.0, 8.0)
@@ -504,22 +504,22 @@ func _dim(key: String, active: bool, lock := false) -> void:
 func _render_overview() -> void:
 	var t := ""
 	var p := cfg.preset_name()
-	var head := ("Voreinstellung: " + str(RuleConfig.PRESET_TITLES[p])) if p != "" else "Eigene Regeln"
+	var head := (I18n.t("Voreinstellung: %s") % I18n.t(str(RuleConfig.PRESET_TITLES[p]))) if p != "" else I18n.t("Eigene Regeln")
 	var saved := active_set_name()
 	if p == "" and saved != "":
-		head = "Gespeichert: " + saved
+		head = I18n.t("Gespeichert: %s") % saved
 	elif p == "" and RuleSets.host_matches(cfg):
 		head = RuleSets.host_title(RuleSets.host_name())
-	head += " · %d Karten" % cfg.card_count()
+	head += " · " + I18n.t("%d Karten") % cfg.card_count()
 	var extras := RulesBar.extra_names(cfg)
 	if not extras.is_empty():
-		head += " · Hausregeln: " + RulesBar.join_and(extras)
+		head += " · " + I18n.t("Hausregeln: %s") % RulesBar.join_and(extras)
 	t += "[font_size=%d][color=#%s]%s[/color][/font_size]\n" % [UiFonts.size("text"), UiPalette.MUTED_DAY.to_html(false), head.replace("[", "[lb]")]
 	for sec in RulesText.overview(cfg):
 		t += "\n[font_size=%d][b]%s[/b][/font_size]\n%s\n" % [UiFonts.size("zwischen"), str(sec.get("title", "")), str(sec.get("text", ""))]
 	_overview_text.text = t
 	_render_special()
-	var s := "[font_size=%d][b]Kurz gesagt[/b][/font_size]\n" % UiFonts.size("zwischen")
+	var s := "[font_size=%d][b]%s[/b][/font_size]\n" % [UiFonts.size("zwischen"), I18n.t("Kurz gesagt")]
 	for line in cfg.describe():
 		s += "• %s\n" % line
 	_overview_short.text = s
@@ -599,15 +599,21 @@ static func special_cards(c: RuleConfig) -> Array[Dictionary]:
 		var f := CardDB.parse_key(key)
 		var colored := str(f.get("color", "")) != ""
 		var lines: Array[String] = []
-		for line in RulesText.card_help(key, c):
-			if colored and line.begins_with("Passt auf "):
-				line = "Passt auf ihre Farbe und auf jede Karte mit demselben Symbol."
-			elif line.begins_with("Wert: ") or (not points and line.begins_with("Zählt ")):
+		RulesText.plain = true          # deutsche Fassung nur zum Einordnen der Zeilen (gleiche Reihenfolge wie die angezeigte)
+		var de_lines := RulesText.card_help(key, c)
+		RulesText.plain = false
+		var loc_lines := RulesText.card_help(key, c)
+		for i in loc_lines.size():
+			var line := loc_lines[i]
+			var de := de_lines[i] if i < de_lines.size() else ""
+			if colored and de.begins_with("Passt auf "):
+				line = I18n.t("Passt auf ihre Farbe und auf jede Karte mit demselben Symbol.")
+			elif de.begins_with("Wert: ") or (not points and de.begins_with("Zählt ")):
 				continue
 			if kind == "flip":
-				line = line.replace("die " + RulesText.side_name(CardDB.other_side(str(f.side))), "die andere Seite")
+				line = line.replace(RulesText.tr_side(CardDB.other_side(str(f.side))), I18n.t("andere Seite"))
 			lines.append(line)
-		out.append({"kind": kind, "title": RulesText.kind_name(kind) if kind != "ablegen" else "Farbe ablegen", "side": e[1], "keys": e[2], "lines": lines})
+		out.append({"kind": kind, "title": RulesText.tr_kind(kind), "side": I18n.t(str(e[1])), "keys": e[2], "lines": lines})
 	return out
 
 
@@ -647,3 +653,10 @@ class CardThumbs:
 func on_font_scale() -> void:
 	if _overview_text != null:
 		call_deferred("_render_overview")
+
+
+# Sprache live gewechselt (Beta 1.2.2): zusammengesetzte Texte neu setzen
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_TRANSLATION_CHANGED and _overview_text != null and cfg != null:
+		_refresh_enabled()
+		_render_overview()

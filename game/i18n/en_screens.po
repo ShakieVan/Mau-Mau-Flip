@@ -1,0 +1,1004 @@
+# Mau-Mau Flip – Englisch, Bereich A: Bildschirme, Menüs, Lobby, Einstellungen, Updater, Netz-Meldungen.
+# msgid = deutscher Text exakt wie im Code, msgstr = Englisch nach game/i18n/GLOSSAR.md.
+msgid ""
+msgstr ""
+"Project-Id-Version: Mau-Mau Flip\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+# --- Einstellungen (settings_screen.gd)
+msgid "Einstellungen"
+msgstr "Settings"
+
+msgid "Du"
+msgstr "You"
+
+msgid "Name"
+msgstr "Name"
+
+msgid "Dein Name"
+msgstr "Your name"
+
+msgid "Sprache"
+msgstr "Language"
+
+msgid "Automatisch"
+msgstr "Automatic"
+
+msgid "Deutsch"
+msgstr "Deutsch"
+
+msgid "Updates"
+msgstr "Updates"
+
+msgid "Testversionen (Beta-Kanal)"
+msgstr "Test versions (beta channel)"
+
+msgid "Jetzt prüfen"
+msgstr "Check now"
+
+msgid "Herunterladen"
+msgstr "Download"
+
+msgid "Installieren"
+msgstr "Install"
+
+msgid "Im Browser herunterladen"
+msgstr "Download in the browser"
+
+msgid "Neue Version %s verfügbar."
+msgstr "New version %s available."
+
+msgid "Updates gibt es nur in der App."
+msgstr "Updates are only available in the app."
+
+msgid "Bitte „Unbekannte Apps installieren“ für Mau-Mau Flip erlauben."
+msgstr "Please allow “Install unknown apps” for Mau-Mau Flip."
+
+msgid "App weitergeben"
+msgstr "Share the app"
+
+msgid "Ohne Internet an Geräte in der Nähe, z. B. per Quick Share. Im WLAN-Spiel bekommen Mitspieler die App auch über die Seite des Gastgebers."
+msgstr "Without internet to devices nearby, e.g. with Quick Share. In a Wi-Fi game, other players can also get the app from the host's page."
+
+msgid "App teilen"
+msgstr "Share app"
+
+msgid "Teilen geht nur in der Android-App."
+msgstr "Sharing only works in the Android app."
+
+msgid "Info"
+msgstr "About"
+
+msgid "Ein Hobbyprojekt von ShakieVan."
+msgstr "A hobby project by ShakieVan."
+
+msgid "Lizenz: CC BY-NC 4.0 (nicht kommerziell). Schriften: Bricolage Grotesque und Fraunces unter der SIL Open Font License 1.1. Quellcode und Versionen auf GitHub: ShakieVan/Mau-Mau-Flip."
+msgstr "License: CC BY-NC 4.0 (non-commercial). Fonts: Bricolage Grotesque and Fraunces under the SIL Open Font License 1.1. Source code and versions on GitHub: ShakieVan/Mau-Mau-Flip."
+
+msgid "Zurück"
+msgstr "Back"
+
+# --- Ton, Bedienung und Optik (SettingsScreen.personal, auch im Spiel)
+msgid "Ton"
+msgstr "Sound"
+
+msgid "Aus"
+msgstr "Off"
+
+msgid "Leise"
+msgstr "Quiet"
+
+msgid "Normal"
+msgstr "Normal"
+
+msgid "Mau-Ton"
+msgstr "Mau sound"
+
+msgid "Probehören: „Mao“"
+msgstr "Preview: “Mao”"
+
+msgid "Probehören: „Mao-Mao“"
+msgstr "Preview: “Mao-Mao”"
+
+msgid "Probehören"
+msgstr "Preview"
+
+msgid "Der Mau-Ton klingt auf allen Geräten am Tisch, wenn jemand „Mau!“ ruft oder fertig wird. Die Sprechblase sieht man auch ohne Ton. Katze im Raum? Leise stellen."
+msgstr "The Mau sound plays on every device at the table when someone calls “Mau!” or goes out. You see the speech bubble even without sound. Cat in the room? Set it to quiet."
+
+msgid "Spieltöne"
+msgstr "Game sounds"
+
+msgid "Karte, Ziehen, Mischen, Flip, Sieg"
+msgstr "Card, draw, shuffle, Flip, win"
+
+msgid "Bedienung und Optik"
+msgstr "Controls and look"
+
+msgid "Tipp: Im großen Modus werden auch Karten, Ablage und Mitspieler riesig."
+msgstr "Tip: Big mode also makes cards, discard pile and other players huge."
+
+msgid "Groß"
+msgstr "Large"
+
+msgid "Sehr groß"
+msgstr "Extra large"
+
+msgid "Schrift"
+msgstr "Text size"
+
+msgid "Großer Modus"
+msgstr "Big mode"
+
+msgid "Riesige Karten, Ablage und Farbe, Mitspieler als Liste rechts. Für schlechte Augen oder schlechtes Licht."
+msgstr "Huge cards, discard pile and color, other players as a list on the right. For tired eyes or bad light."
+
+msgid "Bei deinem Zug: Vibration"
+msgstr "Vibrate on your turn"
+
+msgid "Kurz vibrieren, wenn du dran bist. Den Dran-Ton schaltest du mit den Spieltönen."
+msgstr "A short buzz when it's your turn. The turn sound comes with the game sounds."
+
+msgid "Spielbare Karten hervorheben"
+msgstr "Highlight playable cards"
+
+msgid "Nur auf diesem Gerät: Karten, die du gerade legen kannst, werden in deiner Hand hervorgehoben."
+msgstr "Only on this device: cards you can play right now are highlighted in your hand."
+
+msgid "Vibration"
+msgstr "Vibration"
+
+msgid "Voll"
+msgstr "Full"
+
+msgid "Reduziert"
+msgstr "Reduced"
+
+msgid "Effekte"
+msgstr "Effects"
+
+msgid "Reduziert: kürzer, weniger Teilchen"
+msgstr "Reduced: shorter, fewer particles"
+
+msgid "Tempo der Computergegner"
+msgstr "Computer player speed"
+
+msgid "gemütlich"
+msgstr "relaxed"
+
+msgid "flott"
+msgstr "brisk"
+
+msgid "Nur die Bedenkzeit, nicht die Animationen. Im WLAN gilt der Regler des Gastgebers."
+msgstr "Only the thinking time, not the animations. In a Wi-Fi game, the host's setting applies."
+
+# --- Deine Statistik (AppStats)
+msgid "Deine Statistik"
+msgstr "Your stats"
+
+msgid "Nur auf diesem Gerät, für dich als Spieler (Übung, Gastgeber oder Gast)."
+msgstr "Only on this device, for you as a player (practice, host or guest)."
+
+msgid "Beim Weitergeben spielen mehrere an diesem Gerät, darum zählen dort nur die Partien."
+msgstr "In Pass the phone, several people play on this device, so only games are counted there."
+
+msgid "Noch keine Partie gespielt."
+msgstr "No games played yet."
+
+msgid "Statistik zurücksetzen"
+msgstr "Reset stats"
+
+msgid "Statistik zurücksetzen?"
+msgstr "Reset stats?"
+
+msgid "Alle Zahlen auf diesem Gerät gehen auf null. Das lässt sich nicht rückgängig machen."
+msgstr "All numbers on this device go back to zero. This can't be undone."
+
+msgid "Zurücksetzen"
+msgstr "Reset"
+
+msgid "Behalten"
+msgstr "Keep"
+
+msgid "Statistik zurückgesetzt."
+msgstr "Stats reset."
+
+msgid "Partien gespielt"
+msgstr "Games played"
+
+msgid "Runden gespielt"
+msgstr "Rounds played"
+
+msgid "Runden gewonnen (Platz 1)"
+msgstr "Rounds won (1st place)"
+
+msgid "Partien mit Punkten gewonnen"
+msgstr "Games won on points"
+
+msgid "„Mau-Mau!“ (fertig geworden)"
+msgstr "“Mau-Mau!” (went out)"
+
+msgid "Andere erwischt"
+msgstr "Caught others"
+
+msgid "Selbst erwischt worden"
+msgstr "Got caught"
+
+msgid "Größte Hand (Karten)"
+msgstr "Biggest hand (cards)"
+
+msgid "Höchster Glücksspiel-Treffer"
+msgstr "Highest Gamble hit"
+
+msgid "Kartentausch gelegt"
+msgstr "Card Swaps played"
+
+msgid "Flip gelegt"
+msgstr "Flips played"
+
+msgid "Partien beim Weitergeben"
+msgstr "Games in Pass the phone"
+
+# --- Netz: Meldungen des Gastgebers an Gäste (Bausteine, I18n)
+msgid "Abgelehnt."
+msgstr "Rejected."
+
+msgid "Der Gastgeber hat das Spiel beendet."
+msgstr "The host ended the game."
+
+msgid "Der Gastgeber hat dich aus der Runde genommen."
+msgstr "The host removed you from the game."
+
+msgid "Die Partie läuft schon. Warte, bis der Gastgeber eine neue Runde eröffnet."
+msgstr "The game is already running. Wait until the host opens a new one."
+
+msgid "Die Runde ist voll (höchstens %d Spieler)."
+msgstr "The game is full (at most %d players)."
+
+msgid "Nachricht zu groß (%d Byte) – verworfen."
+msgstr "Message too large (%d bytes) – dropped."
+
+msgid "Netzprotokoll passt nicht (Gastgeber %d, dein Gerät %d). Bitte beide auf dieselbe Version von Mau-Mau Flip bringen."
+msgstr "Network protocol doesn't match (host %d, your device %d). Please update both to the same version of Mau-Mau Flip."
+
+msgid "Andere Version: Gastgeber %s, dein Gerät %s."
+msgstr "Different version: host %s, your device %s."
+
+msgid "Der Gastgeber sollte seine App aktualisieren (Menü → Update)."
+msgstr "The host should update their app (Menu → Update)."
+
+msgid "Bitte die Seite neu laden."
+msgstr "Please reload the page."
+
+msgid "App vom Gastgeber holen: %s"
+msgstr "Get the app from the host: %s"
+
+msgid "Das geht gerade nicht."
+msgstr "That's not possible right now."
+
+# --- Updater (Statuszeilen ohne Platzhalter; mit Platzhaltern: Bereich A)
+msgid "Noch nicht geprüft."
+msgstr "Not checked yet."
+
+# --- Hauptmenü und gemeinsame Knöpfe
+msgid "Regeln"
+msgstr "Rules"
+
+# --- Bildschirme, Lobby, Spiel-WLAN, Updater, Netz (Bereich A, Teil 2)
+msgid "Version %s · Ein Hobbyprojekt von ShakieVan"
+msgstr "Version %s · A hobby project by ShakieVan"
+
+msgid "Übungsspiel"
+msgstr "Practice game"
+
+msgid "gegen Computergegner"
+msgstr "against computer players"
+
+msgid "Auf einem Handy"
+msgstr "On one phone"
+
+msgid "Weitergeben, 2–10 Spieler"
+msgstr "Pass the phone, 2–10 players"
+
+msgid "Im WLAN spielen"
+msgstr "Play on Wi-Fi"
+
+msgid "Spiel eröffnen oder beitreten"
+msgstr "Host or join a game"
+
+msgid "Update ↓"
+msgstr "Update ↓"
+
+msgid "Computergegner"
+msgstr "Computer players"
+
+msgid "Du sitzt unten, die Computergegner im Halbkreis um den Tisch. Sie denken kurz nach, bevor sie legen."
+msgstr "You sit at the bottom, the computer players in a half circle around the table. They think for a moment before they play."
+
+msgid "Los geht's"
+msgstr "Let's go"
+
+msgid "Die Spielsteuerung fehlt."
+msgstr "The game controller is missing."
+
+msgid "Mitspieler"
+msgstr "Players"
+
+msgid "Tragt euch so ein, wie ihr sitzt – links herum: Nach Platz 1 kommt, wer links daneben sitzt."
+msgstr "Enter yourselves in your seating order, going left: after seat 1 comes whoever sits to the left."
+
+msgid "+ Mitspieler"
+msgstr "+ Player"
+
+msgid "+ Computergegner"
+msgstr "+ Computer player"
+
+msgid "Vor jedem Zug erscheint ein Sichtschutz ohne Karten. Erst wer dran ist, deckt durch Halten auf."
+msgstr "Before each turn a privacy screen appears with no cards. Only the player whose turn it is reveals the hand by holding."
+
+msgid "Mindestens zwei Plätze."
+msgstr "At least two seats."
+
+msgid "%d Plätze · %d Menschen"
+msgstr "%d seats · %d people"
+
+msgid "Name Platz %d"
+msgstr "Name for seat %d"
+
+msgid "Spieler %d"
+msgstr "Player %d"
+
+msgid "Computer %d"
+msgstr "Computer %d"
+
+msgid "Computer"
+msgstr "Computer"
+
+msgid "nach vorn"
+msgstr "move up"
+
+msgid "nach hinten"
+msgstr "move down"
+
+msgid "entfernen"
+msgstr "remove"
+
+msgid "Mindestens zwei Menschen – allein lieber das Übungsspiel."
+msgstr "At least two people – to play alone, use the practice game."
+
+msgid "So sehen dich die anderen"
+msgstr "How the others see you"
+
+msgid "Spiel eröffnen"
+msgstr "Host a game"
+
+msgid "Du bist Gastgeber. Mitspieler kommen per App über die Suche oder ohne App per QR-Code im Browser dazu – auch iPhones."
+msgstr "You are the host. Others join with the app through search, or without the app through the QR code in a browser – iPhones too."
+
+msgid "Eröffnen"
+msgstr "Host"
+
+msgid "Beitreten"
+msgstr "Join"
+
+msgid "Ein Spiel in der Nähe suchen oder die Adresse des Gastgebers eingeben. Alle müssen im selben WLAN sein."
+msgstr "Search for a game nearby or enter the host's address. Everyone must be on the same Wi-Fi."
+
+msgid "Suchen"
+msgstr "Search"
+
+msgid "Gastgeber"
+msgstr "Host"
+
+msgid "Kein freier Port – bitte die App neu starten."
+msgstr "No free port – please restart the app."
+
+msgid "So geht's"
+msgstr "How to play"
+
+msgid "Regeln ansehen und anpassen"
+msgstr "View and adjust the rules"
+
+msgid "Start"
+msgstr "Start"
+
+msgid "Computergegner entfernen"
+msgstr "Remove computer player"
+
+msgid "Computergegner hinzufügen"
+msgstr "Add computer player"
+
+msgid "%d von %d Spielern"
+msgstr "%d of %d players"
+
+msgid "App"
+msgstr "App"
+
+msgid "Browser"
+msgstr "Browser"
+
+msgid "Gastgeber (du)"
+msgstr "Host (you)"
+
+msgid "getrennt"
+msgstr "disconnected"
+
+msgid "verbunden"
+msgstr "connected"
+
+msgid "bereit"
+msgstr "ready"
+
+msgid "Es braucht mindestens zwei Spieler – Computergegner gehen auch."
+msgstr "You need at least two players – computer players count too."
+
+msgid "Start nicht möglich."
+msgstr "Can't start."
+
+msgid "Lobby schließen?"
+msgstr "Close the lobby?"
+
+msgid "Schließen"
+msgstr "Close"
+
+msgid "Bleiben"
+msgstr "Stay"
+
+msgid "1 Mitspieler ist verbunden und wird getrennt."
+msgstr "1 player is connected and will be disconnected."
+
+msgid "%d Mitspieler sind verbunden und werden getrennt."
+msgstr "%d players are connected and will be disconnected."
+
+msgid "Mitspieler einladen"
+msgstr "Invite players"
+
+msgid "WLAN"
+msgstr "Wi-Fi"
+
+msgid "Spiel"
+msgstr "Game"
+
+msgid "Bitte die App neu starten."
+msgstr "Please restart the app."
+
+msgid "Sobald bei ① ein WLAN da ist, erscheint hier der Code zum Spiel."
+msgstr "As soon as ① has a Wi-Fi, the game code appears here."
+
+msgid "Kamera auf den Code halten oder die Adresse im Browser eintippen:"
+msgstr "Point the camera at the code or type the address into a browser:"
+
+msgid "Mit der App? Einfach „Beitreten“ antippen."
+msgstr "Using the app? Just tap “Join”."
+
+msgid "Kein freier Port"
+msgstr "No free port"
+
+msgid "Noch kein WLAN aktiv"
+msgstr "No Wi-Fi active yet"
+
+msgid "① WLAN"
+msgstr "① Wi-Fi"
+
+msgid "② Spiel"
+msgstr "② Game"
+
+msgid "Alle Handys müssen im selben WLAN sein. Ist keins da, tippe „Spiel-WLAN öffnen“. Die anderen scannen dann den WLAN-Code mit der Kamera."
+msgstr "All phones must be on the same Wi-Fi. If there is none, tap “Open game Wi-Fi”. The others then scan the Wi-Fi code with their camera."
+
+msgid "Danach den Spiel-Code scannen oder die Adresse im Browser eintippen. Mit der App: „Im WLAN spielen“ → „Beitreten“, das Spiel erscheint von selbst."
+msgstr "Then scan the game code or type the address into a browser. With the app: “Play on Wi-Fi” → “Join”; the game shows up by itself."
+
+msgid "Grüner Haken"
+msgstr "Green check mark"
+
+msgid "Zeigt, was schon geklappt hat. Der nächste Schritt leuchtet."
+msgstr "Shows what has worked so far. The next step glows."
+
+msgid "Nach rechts blättern: Dort siehst du alle, änderst die Sitzordnung mit den Pfeilen und fügst Computergegner hinzu."
+msgstr "Swipe right: there you see everyone, change the seating order with the arrows and add computer players."
+
+msgid "Warnseite „nicht sicher“? Das ist normal im eigenen WLAN: „Weiter“ bzw. „Trotzdem öffnen“."
+msgstr "A “not secure” warning page? That's normal on your own Wi-Fi: tap “Continue” or “Open anyway”."
+
+msgid "iPhone: am besten mit Safari öffnen."
+msgstr "iPhone: it's best to open it with Safari."
+
+msgid "Hotel- oder Gäste-WLAN: Dort finden sich die Handys oft nicht. Öffne dann lieber ein eigenes Spiel-WLAN."
+msgstr "Hotel or guest Wi-Fi: phones often can't find each other there. Open your own game Wi-Fi instead."
+
+msgid "Meldet ein Handy im Spiel-WLAN „Kein Internet“: einfach verbunden bleiben."
+msgstr "If a phone on the game Wi-Fi says “No internet”: just stay connected."
+
+msgid "Alles klar"
+msgstr "Got it"
+
+msgid "Du bist schon in diesem Spiel."
+msgstr "You are already in this game."
+
+msgid "Anderem Spiel beitreten?"
+msgstr "Join another game?"
+
+msgid "Du bist gerade in einem Spiel. Wenn du wechselst, verlässt du es."
+msgstr "You are in a game right now. If you switch, you leave it."
+
+msgid "Wechseln"
+msgstr "Switch"
+
+msgid "Adresse des Gastgebers, z. B. 192.168.178.8"
+msgstr "Host's address, e.g. 192.168.178.8"
+
+msgid "Verbinden"
+msgstr "Connect"
+
+msgid "Regeln speichern"
+msgstr "Save rules"
+
+msgid "Diese Regeln als eigenen Satz speichern"
+msgstr "Save these rules as your own set"
+
+msgid "Bereit ✓"
+msgstr "Ready ✓"
+
+msgid "Fast geschafft – wie heißt du?"
+msgstr "Almost there – what's your name?"
+
+msgid "Bitte gib deinen Namen ein."
+msgstr "Please enter your name."
+
+msgid "Verbunden. Warte auf den Gastgeber …"
+msgstr "Connected. Waiting for the host …"
+
+msgid "Suche nicht möglich – Adresse oben eingeben."
+msgstr "Search isn't possible – enter the address above."
+
+msgid "Noch nichts gefunden. Der Gastgeber tippt auf „Spiel eröffnen“; beide Geräte im selben WLAN. Klappt die Suche nicht, die Adresse unter dem QR-Code des Gastgebers oben eintippen."
+msgstr "Nothing found yet. The host taps “Host a game”; both devices on the same Wi-Fi. If the search doesn't work, type in the address shown under the host's QR code above."
+
+msgid "1 Spiel gefunden – antippen zum Beitreten."
+msgstr "1 game found – tap to join."
+
+msgid "%d Spiele gefunden – antippen zum Beitreten."
+msgstr "%d games found – tap to join."
+
+msgid "Spiel von %s"
+msgstr "%s's game"
+
+msgid "1 Spieler"
+msgstr "1 player"
+
+msgid "%d Spieler"
+msgstr "%d players"
+
+msgid "Partie läuft"
+msgstr "game running"
+
+msgid "andere Version (%s)"
+msgstr "different version (%s)"
+
+msgid "Bitte die Adresse des Gastgebers eingeben."
+msgstr "Please enter the host's address."
+
+msgid "Verbinde mit %s …"
+msgstr "Connecting to %s …"
+
+msgid "Verbindung nicht möglich."
+msgstr "Can't connect."
+
+msgid "Verbinde …"
+msgstr "Connecting …"
+
+msgid "Verbindung beendet."
+msgstr "Connection ended."
+
+msgid "(du)"
+msgstr "(you)"
+
+msgid "Gespeichert"
+msgstr "Saved"
+
+msgid "Gespeichert als „%s“"
+msgstr "Saved as “%s”"
+
+msgid "Gespeichert: „%s“ – zu finden unter „Regeln“ bei „Gespeichert“."
+msgstr "Saved: “%s” – find it under “Rules” in “Saved”."
+
+msgid "Zuletzt gespielt bei …"
+msgstr "Last played at …"
+
+msgid "Der Gastgeber setzt die Plätze und startet. Beim Spielen merkt sich dein Gerät seine Regeln unter „Regeln“ als %s."
+msgstr "The host sets the seats and starts. While you play, your device remembers the host's rules under “Rules” as %s."
+
+msgid "Regeln von %s"
+msgstr "Rules from %s"
+
+msgid "%s · %d Karten"
+msgstr "%s · %d cards"
+
+msgid "mit"
+msgstr "with"
+
+msgid "Höchstens 20 Zeichen. Der Satz steht danach unter „Gespeichert“."
+msgstr "At most 20 characters. The set is then listed under “Saved”."
+
+msgid "Höchstens 20 Zeichen. Später findest du ihn unter „Regeln“ bei „Gespeichert“."
+msgstr "At most 20 characters. You'll find it later under “Rules” in “Saved”."
+
+msgid "Abbrechen"
+msgstr "Cancel"
+
+msgid "Name, z. B. Oma-Regeln"
+msgstr "Name, e.g. Grandma's rules"
+
+msgid "Speichern"
+msgstr "Save"
+
+msgid "Anderer Name"
+msgstr "Other name"
+
+msgid "Überschreiben"
+msgstr "Overwrite"
+
+msgid "%d Karten"
+msgstr "%d cards"
+
+msgid "Regeln von %s: %s"
+msgstr "Rules from %s: %s"
+
+msgid "Der Gastgeber hat die Regeln eben geändert. Gespeichert werden die neuen."
+msgstr "The host just changed the rules. The new ones will be saved."
+
+msgid "Gib dem Regelsatz einen Namen."
+msgstr "Give the rule set a name."
+
+msgid "Schon %d Regelsätze gespeichert. Nimm einen vorhandenen Namen; löschen kannst du später unter „Regeln“ bei „Gespeichert“."
+msgstr "%d rule sets are already saved. Use an existing name; you can delete sets later under “Rules” in “Saved”."
+
+msgid "Schon %d Regelsätze gespeichert. Nimm einen vorhandenen Namen – oder brich ab und lösche unter „Gespeichert“ einen Satz mit seinem ×."
+msgstr "%d rule sets are already saved. Use an existing name – or cancel and delete a set under “Saved” with its ×."
+
+msgid "Speichern hat nicht geklappt. Ist der Speicher des Geräts voll?"
+msgstr "Saving didn't work. Is the device storage full?"
+
+msgid "„%s“ gibt es schon – mit anderen Regeln. Überschreiben?"
+msgstr "“%s” already exists – with different rules. Overwrite?"
+
+msgid "Noch nichts gespeichert. Unter „Regeln anpassen“ → „Speichern unter …“ legst du einen Regelsatz an."
+msgstr "Nothing saved yet. Under “Adjust rules” → “Save as …” you create a rule set."
+
+msgid "Regeln vom Gastgeber"
+msgstr "Rules from the host"
+
+msgid "Von %s"
+msgstr "From %s"
+
+msgid "Zuletzt gespielt bei %s"
+msgstr "Last played at %s"
+
+msgid "Nur auf Android möglich."
+msgstr "Only possible on Android."
+
+msgid "Kein WLAN verbunden."
+msgstr "No Wi-Fi connected."
+
+msgid "Spiel-WLAN öffnen"
+msgstr "Open game Wi-Fi"
+
+msgid "Lieber eigenes Spiel-WLAN"
+msgstr "Use your own game Wi-Fi instead"
+
+msgid "Neu öffnen"
+msgstr "Reopen"
+
+msgid "Spiel-WLAN schließen"
+msgstr "Close game Wi-Fi"
+
+msgid "Kamera auf den Code halten – so kommt das Handy ins Spiel-WLAN."
+msgstr "Point the camera at the code – that's how a phone gets onto the game Wi-Fi."
+
+msgid "Passwort"
+msgstr "Password"
+
+msgid "Die Adresse im Spiel-WLAN ist noch unbekannt. Schließe es und öffne es neu."
+msgstr "The address on the game Wi-Fi is still unknown. Close it and open it again."
+
+msgid "Spiel-WLAN wird geöffnet …"
+msgstr "Opening game Wi-Fi …"
+
+msgid "Mitspieler verbinden sich mit demselben WLAN wie du."
+msgstr "Other players connect to the same Wi-Fi as you."
+
+msgid "Klappt das nicht, z. B. im Hotel? Dann öffne ein eigenes:"
+msgstr "Doesn't work, e.g. in a hotel? Then open your own:"
+
+msgid "Dein Hotspot läuft: Verbinde die anderen Handys damit."
+msgstr "Your hotspot is on: connect the other phones to it."
+
+msgid "Die App ändert deinen Hotspot nie."
+msgstr "The app never changes your hotspot."
+
+msgid "Noch kein WLAN da. Öffne ein eigenes Spiel-WLAN – ganz ohne Internet."
+msgstr "No Wi-Fi yet. Open your own game Wi-Fi – no internet needed."
+
+msgid "Noch kein WLAN da. Verbinde dich mit einem WLAN oder schalte deinen Hotspot ein."
+msgstr "No Wi-Fi yet. Connect to a Wi-Fi or turn on your hotspot."
+
+msgid "Spiel-WLAN ist offen"
+msgstr "Game Wi-Fi is open"
+
+msgid "Kein Internet für die Gäste – das ist normal. Es endet, wenn du die App schließt."
+msgstr "No internet for the guests – that's normal. It ends when you close the app."
+
+msgid "Spiel-WLAN beendet"
+msgstr "Game Wi-Fi ended"
+
+msgid "Android hat das Spiel-WLAN geschlossen. Tippe auf „Neu öffnen“."
+msgstr "Android closed the game Wi-Fi. Tap “Reopen”."
+
+msgid "Erlaubnis fehlt"
+msgstr "Permission missing"
+
+msgid "Ohne die Erlaubnis „Standort“ kann die App bis Android 12 kein Spiel-WLAN öffnen. Den Standort selbst nutzt sie nicht."
+msgstr "Without the “Location” permission the app can't open a game Wi-Fi up to Android 12. It doesn't use your location itself."
+
+msgid "Ohne die Erlaubnis „Geräte in der Nähe“ kann die App kein Spiel-WLAN öffnen."
+msgstr "Without the “Nearby devices” permission the app can't open a game Wi-Fi."
+
+msgid "Erlaube sie beim nächsten Versuch oder in den App-Einstellungen unter „Berechtigungen“."
+msgstr "Allow it on the next attempt or in the app settings under “Permissions”."
+
+msgid "Standort ist aus"
+msgstr "Location is off"
+
+msgid "Bis Android 12 braucht das Spiel-WLAN den eingeschalteten Standort. Schalte ihn in den Schnelleinstellungen ein und tippe erneut."
+msgstr "Up to Android 12 the game Wi-Fi needs location turned on. Turn it on in the quick settings and tap again."
+
+msgid "Dein Hotspot läuft"
+msgstr "Your hotspot is on"
+
+msgid "Beide gleichzeitig gehen nicht. Schalte deinen normalen Hotspot bitte in den Schnelleinstellungen aus – die App ändert ihn nie. Oder lass ihn an und verbinde die anderen damit."
+msgstr "Both at the same time don't work. Please turn off your normal hotspot in the quick settings – the app never changes it. Or leave it on and connect the others to it."
+
+msgid "Kein freier Funkkanal"
+msgstr "No free radio channel"
+
+msgid "Android hat gerade keinen Kanal fürs Spiel-WLAN gefunden. Versuch es gleich noch einmal."
+msgstr "Android couldn't find a channel for the game Wi-Fi just now. Try again in a moment."
+
+msgid "Auf diesem Handy gesperrt"
+msgstr "Blocked on this phone"
+
+msgid "Ein eigenes WLAN ist hier nicht erlaubt (z. B. Firmen-Handy oder Mobilfunkanbieter). Nimm ein anderes Handy als Gastgeber."
+msgstr "Your own Wi-Fi isn't allowed here (e.g. a work phone or carrier restriction). Use another phone as host."
+
+msgid "Nicht verfügbar"
+msgstr "Not available"
+
+msgid "Ein Spiel-WLAN geht nur mit der App auf Android 8 oder neuer."
+msgstr "A game Wi-Fi only works with the app on Android 8 or newer."
+
+msgid "Spiel-WLAN"
+msgstr "Game Wi-Fi"
+
+msgid "Öffnet ein eigenes WLAN ohne Internet, falls sich die Handys im Hotel- oder Gäste-WLAN nicht sehen."
+msgstr "Opens your own Wi-Fi without internet, in case the phones can't see each other on a hotel or guest Wi-Fi."
+
+msgid "Hat nicht geklappt"
+msgstr "Didn't work"
+
+msgid "Das Spiel-WLAN ließ sich nicht öffnen. Versuch es noch einmal oder nutze deinen normalen Hotspot."
+msgstr "The game Wi-Fi couldn't be opened. Try again or use your normal hotspot."
+
+msgid "Dein Hotspot ging erst nach dem Eröffnen an. Hotspot-Mitspieler kommen erst rein, wenn du das Spiel neu eröffnest."
+msgstr "Your hotspot came on only after you opened the game. Players on the hotspot can join only once you host the game again."
+
+msgid "Dein WLAN ging erst nach dem Eröffnen an. Mitspieler im WLAN kommen erst rein, wenn du das Spiel neu eröffnest."
+msgstr "Your Wi-Fi came on only after you opened the game. Players on the Wi-Fi can join only once you host the game again."
+
+msgid "Dein WLAN hat kein Internet: Nur Mitspieler im Hotspot erreichen dich. Fürs WLAN den Hotspot ausschalten und neu eröffnen."
+msgstr "Your Wi-Fi has no internet: only players on the hotspot can reach you. For the Wi-Fi, turn off the hotspot and host again."
+
+msgid "Dein WLAN ist nicht Androids Standardnetz (kein Internet?). Eröffne neu, damit sich das Spiel ans WLAN bindet."
+msgstr "Your Wi-Fi isn't Android's default network (no internet?). Host again so the game binds to the Wi-Fi."
+
+msgid "Hotspot und WLAN sind an – beide Netze können beitreten. Klappt es im Hotspot nicht: hier das WLAN aus und neu eröffnen."
+msgstr "Hotspot and Wi-Fi are both on – both networks can join. If the hotspot doesn't work: turn the Wi-Fi off here and host again."
+
+msgid "Der Link zum Spiel ist unvollständig. Scanne den QR-Code beim Gastgeber noch einmal."
+msgstr "The game link is incomplete. Scan the QR code on the host's screen again."
+
+msgid "Dieser Link führt nicht zu einem Spiel in deiner Nähe. Die App tritt nur Spielen im selben WLAN bei."
+msgstr "This link doesn't lead to a game near you. The app only joins games on the same Wi-Fi."
+
+msgid "Neue Version verfügbar."
+msgstr "New version available."
+
+msgid "Zuletzt geprüft: %s."
+msgstr "Last checked: %s."
+
+msgid "Suche nach Updates …"
+msgstr "Checking for updates …"
+
+msgid "Noch kein passendes Release veröffentlicht."
+msgstr "No matching release published yet."
+
+msgid "Du hast die neueste Version."
+msgstr "You have the latest version."
+
+msgid "GitHub antwortet gerade nicht (Fehler %d). Bitte später erneut versuchen."
+msgstr "GitHub isn't responding right now (error %d). Please try again later."
+
+msgid "GitHub-Limit erreicht – später erneut versuchen"
+msgstr "GitHub limit reached – try again later"
+
+msgid "(in etwa 1 Minute)."
+msgstr "(in about 1 minute)."
+
+msgid "(in etwa %d Minuten)."
+msgstr "(in about %d minutes)."
+
+msgid "Keine Verbindung zu GitHub. Prüfe das Internet – auch VPN- oder Firewall-Apps können es sperren."
+msgstr "Can't reach GitHub. Check your internet – VPN or firewall apps can block it too."
+
+msgid "Lade herunter …"
+msgstr "Downloading …"
+
+msgid "Download fehlgeschlagen."
+msgstr "Download failed."
+
+msgid "Prüfe Download …"
+msgstr "Checking download …"
+
+msgid "Download beschädigt (Prüfsumme falsch) – bitte erneut laden."
+msgstr "Download damaged (checksum wrong) – please download again."
+
+msgid "Bereit zur Installation."
+msgstr "Ready to install."
+
+msgid "Installer gestartet."
+msgstr "Installer started."
+
+msgid "Installation nur auf dem Handy möglich."
+msgstr "Installing only works on the phone."
+
+msgid "Bitte „Apps installieren“ für Mau-Mau Flip erlauben (Android 7: „Unbekannte Herkunft“) und erneut tippen."
+msgstr "Please allow “Install apps” for Mau-Mau Flip (Android 7: “Unknown sources”) and tap again."
+
+msgid "Update abgelehnt: %s"
+msgstr "Update rejected: %s"
+
+msgid "APK nicht lesbar (Datei beschädigt?)"
+msgstr "APK not readable (file damaged?)"
+
+msgid "Falsches Paket – die Datei ist nicht Mau-Mau Flip"
+msgstr "Wrong package – the file is not Mau-Mau Flip"
+
+msgid "Keine neuere Version (eine ältere wird nie installiert)"
+msgstr "Not a newer version (an older one is never installed)"
+
+msgid "Versionsangabe passt nicht zur Datei"
+msgstr "Version info doesn't match the file"
+
+msgid "Signatur passt nicht – die Datei ist nicht signiert"
+msgstr "Signature doesn't match – the file isn't signed"
+
+msgid "Signatur passt nicht – die Datei stammt nicht vom Mau-Mau-Flip-Projekt oder wurde verändert"
+msgstr "Signature doesn't match – the file isn't from the Mau-Mau Flip project or was modified"
+
+msgid "Prüfung fehlgeschlagen"
+msgstr "Check failed"
+
+msgid "Installation nicht möglich"
+msgstr "Installation not possible"
+
+msgid "Teilen nicht möglich"
+msgstr "Sharing not possible"
+
+msgid "Bindung fehlgeschlagen"
+msgstr "Binding failed"
+
+msgid "Android hat die Bindung abgelehnt."
+msgstr "Android rejected the binding."
+
+msgid "Das WLAN ist nicht mehr verbunden."
+msgstr "The Wi-Fi is no longer connected."
+
+msgid "Ordner nicht anlegbar"
+msgstr "Couldn't create folder"
+
+msgid "alte Kopie nicht löschbar"
+msgstr "Couldn't delete old copy"
+
+msgid "Umbenennen fehlgeschlagen"
+msgstr "Rename failed"
+
+msgid "Bereite die Datei vor …"
+msgstr "Preparing the file …"
+
+msgid "Teilen-Menü geöffnet – wähle Quick Share, Bluetooth oder eine andere App."
+msgstr "Share menu opened – choose Quick Share, Bluetooth or another app."
+
+msgid "Datei bereit."
+msgstr "File ready."
+
+msgid "Vorbereitung fehlgeschlagen: %s"
+msgstr "Preparation failed: %s"
+
+msgid "Mau-Mau Flip %s (Android-App)"
+msgstr "Mau-Mau Flip %s (Android app)"
+
+msgid "Mau-Mau Flip teilen"
+msgstr "Share Mau-Mau Flip"
+
+msgid "Dein erster Partiesieg!"
+msgstr "Your first game win!"
+
+msgid "Dein erster Rundensieg!"
+msgstr "Your first round win!"
+
+msgid "Dein %d. Partiesieg!"
+msgstr "Game win number %d!"
+
+msgid "Dein %d. Rundensieg!"
+msgstr "Round win number %d!"
+
+msgid "Gastgeber antwortet nicht (%d s)."
+msgstr "The host isn't answering (%d s)."
+
+msgid "Anmeldung nicht beantwortet."
+msgstr "Sign-in wasn't answered."
+
+msgid "Gastgeber %s:%d nicht erreichbar."
+msgstr "Can't reach host %s:%d."
+
+msgid "Diese Verbindung wurde durch eine neuere ersetzt."
+msgstr "This connection was replaced by a newer one."
+
+msgid "Verbindung getrennt (%d)."
+msgstr "Connection lost (%d)."
+
+msgid "Verbindung getrennt."
+msgstr "Connection lost."
+
+msgid "Verbindung zu %s:%d nicht möglich (%s)."
+msgstr "Can't connect to %s:%d (%s)."
+
+msgid "Suche Spiele im WLAN …"
+msgstr "Searching for games on Wi-Fi …"
+
+msgid "Gefundene Spiele"
+msgstr "Games found"
+
+msgid "Am Tisch"
+msgstr "At the table"
+
+msgid "Regeln dieser Partie"
+msgstr "Rules for this game"
+
+msgid "So sehen dich die anderen am Tisch."
+msgstr "This is how the others see you at the table."
+
+msgid "Ohne App spielen"
+msgstr "Play without the app"
+
+msgid "Antippen wählt die Regeln. Speichern, ändern und löschen kannst du sie unter „Regeln anpassen“."
+msgstr "Tap to choose the rules. You can save, change and delete them under “Adjust rules”."
+
+msgid "Gespeicherte Regeln"
+msgstr "Saved rules"
+
+msgid "Spiel-WLAN ist zu. Kommt jemand aus dem WLAN nicht rein, eröffne das Spiel neu."
+msgstr "The game Wi-Fi is closed. If someone on the Wi-Fi can't get in, host the game again."
+
+msgid "Mitspieler sind schon verbunden. Damit das Spiel-WLAN klappt, eröffne das Spiel neu."
+msgstr "Players are already connected. For the game Wi-Fi to work, host the game again."
+
+msgid "Das Spiel ließ sich nicht neu öffnen. Bitte zurück und neu eröffnen."
+msgstr "The game couldn't be reopened. Please go back and host it again."
+
+
+msgid "Regeln anpassen"
+msgstr "Adjust rules"

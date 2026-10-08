@@ -379,7 +379,7 @@ func _on_connection(state: String) -> void:
 			_conn_save.visible = guest
 			_conn_host.visible = guest
 			_conn_sub.visible = guest
-			_conn_sub.text = "Die Regeln von %s sind gemerkt. Eröffne selbst, dann spielt ihr mit ihnen weiter." % _host_name()
+			_conn_sub.text = I18n.t("Die Regeln von %s sind gemerkt. Eröffne selbst, dann spielt ihr mit ihnen weiter.") % _host_name()
 			_refresh_saved_state()
 			_conn.visible = true
 	_layout()
@@ -524,7 +524,7 @@ func _on_play_denied(_id: int) -> void:
 	else:
 		var hints: Dictionary = view.get("hints", {})
 		var t := table.hint_text(str(hints.get("text", "")))
-		table.show_notice("Diese Karte passt gerade nicht." if t == "" or t == "Du bist dran." else t)
+		table.show_notice("Diese Karte passt gerade nicht." if t == "" or t == "Du bist dran." else table._hint_local(str(hints.get("text", "")), hints.get("lt", []) if hints.get("lt") is Array else []))
 
 
 func _on_help(id: int, face: String) -> void:
@@ -542,7 +542,7 @@ func _cycle_sort() -> void:
 	var i := SORT_MODES.find(cur)
 	var next: String = SORT_MODES[(i + 1) % SORT_MODES.size()]
 	_apply_sort(next)
-	table.show_notice("Sortiert nach %s" % SORT_LABELS[next] if next != "manuell" else "Eigene Reihenfolge – Karte halten und seitlich ziehen")
+	table.show_notice(I18n.t("Sortiert nach %s") % I18n.t(SORT_LABELS[next]) if next != "manuell" else "Eigene Reihenfolge – Karte halten und seitlich ziehen")
 
 
 func _on_sort_mode_changed(mode: String) -> void:
@@ -817,7 +817,7 @@ func _wire_save_box(box: RuleSetSaveBox) -> void:
 		_save_box = null
 		_refresh_saved_state()
 		if _confirm == null or not is_instance_valid(_confirm):
-			table.show_notice("Gespeichert: „%s“" % n))
+			table.show_notice(I18n.t("Gespeichert: „%s“") % n))
 	box.cancelled.connect(func() -> void: _save_box = null)
 
 
@@ -826,9 +826,9 @@ func _refresh_saved_state() -> void:
 	var cfg := _guest_rules()
 	var saved := RuleSets.match_name(cfg) if cfg != null else ""
 	if _conn_save != null:
-		_conn_save.text = ("Gespeichert: „%s“" % saved) if saved != "" else "Regeln speichern"
+		_conn_save.text = (I18n.t("Gespeichert: „%s“") % saved) if saved != "" else "Regeln speichern"
 	if _save_opt != null and is_instance_valid(_save_opt):
-		_save_opt.text = ("Gespeichert als „%s“" % saved) if saved != "" else "Regeln dieser Partie speichern"
+		_save_opt.text = (I18n.t("Gespeichert als „%s“") % saved) if saved != "" else "Regeln dieser Partie speichern"
 	if _conn != null and _conn.visible:
 		_layout()
 
@@ -870,7 +870,7 @@ func _refresh_substitute() -> void:
 			_sub_seat = w if list.has(w) else int(list[0])
 	_sub_btn.visible = _sub_seat >= 0
 	if _sub_seat >= 0:
-		_sub_btn.text = "Computer spielt für %s" % (source as HostTable).seat_name(_sub_seat)
+		_sub_btn.text = I18n.t("Computer spielt für %s") % (source as HostTable).seat_name(_sub_seat)
 		_layout()
 
 
@@ -881,7 +881,7 @@ func ask_substitute() -> void:
 	var who := (source as HostTable).seat_name(seat)
 	if _confirm != null and is_instance_valid(_confirm):
 		_confirm.queue_free()
-	_confirm = ConfirmBox.ask(_top, "Computer übernimmt?", "Ein Computergegner spielt für %s. Kommt %s zurück, spielt er wieder selbst." % [who, who], "Übernehmen", "Abbrechen")
+	_confirm = ConfirmBox.ask(_top, "Computer übernimmt?", I18n.t("Ein Computergegner spielt für %s. Kommt %s zurück, spielt er wieder selbst.") % [who, who], "Übernehmen", "Abbrechen")
 	_confirm.answered.connect(func(yes: bool) -> void:
 		_confirm = null
 		if yes and source is HostTable:

@@ -228,21 +228,26 @@ static func compare_versions(a: String, b: String) -> int:
 	return 0
 
 static func check_hello(hello: Dictionary, local_game: String, apk_url := "") -> Dictionary:
-	# Gastgeber prüft die (bereinigte) Begrüßung: {} = in Ordnung, sonst {code, text}; der Text spricht den Mitspieler an.
+	# Gastgeber prüft die (bereinigte) Begrüßung: {} = in Ordnung, sonst {code, text, lt}; der Text spricht den Mitspieler an,
+	# lt = Bausteine (I18n), damit der Gast ihn in seiner Sprache sieht.
+	var lt: Array = []
 	if int(hello.get("proto", -1)) != PROTO:
-		return {"code": "proto", "text": "Netzprotokoll passt nicht (Gastgeber %d, dein Gerät %d). Bitte beide auf dieselbe Version von Mau-Mau Flip bringen.%s" % [
-			PROTO, int(hello.get("proto", -1)), (" App vom Gastgeber holen: " + apk_url) if apk_url != "" else ""]}
+		lt.append(I18n.part("Netzprotokoll passt nicht (Gastgeber %d, dein Gerät %d). Bitte beide auf dieselbe Version von Mau-Mau Flip bringen.",
+			[PROTO, int(hello.get("proto", -1))]))
+		if apk_url != "":
+			lt.append(I18n.part("App vom Gastgeber holen: %s", [apk_url]))
+		return I18n.with_lt({"code": "proto"}, lt)
 	var game := str(hello.get("game", ""))
 	if game != local_game:
-		var text := "Andere Version: Gastgeber %s, dein Gerät %s." % [local_game, game if game != "" else "?"]
+		lt.append(I18n.part("Andere Version: Gastgeber %s, dein Gerät %s.", [local_game, game if game != "" else "?"]))
 		if game != "" and compare_versions(game, local_game) > 0:
-			text += " Der Gastgeber sollte seine App aktualisieren (Menü → Update)."
+			lt.append("Der Gastgeber sollte seine App aktualisieren (Menü → Update).")
 		else:
 			if str(hello.get("kind", "")) == "web":
-				text += " Bitte die Seite neu laden."
+				lt.append("Bitte die Seite neu laden.")
 			if apk_url != "":
-				text += " App vom Gastgeber holen: " + apk_url
-		return {"code": "version", "text": text}
+				lt.append(I18n.part("App vom Gastgeber holen: %s", [apk_url]))
+		return I18n.with_lt({"code": "version"}, lt)
 	return {}
 
 # --- Gastgeber-Info (/info und Suche) ---

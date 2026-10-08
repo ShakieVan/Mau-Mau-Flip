@@ -40,14 +40,14 @@ static func direction_info(from_seat: int, to_seat: int, n: int) -> Dictionary:
 static func headline(name: String, d: Dictionary) -> String:
 	match str(d.get("side", "")):
 		"selbst":
-			return "%s ist wieder dran" % name
+			return I18n.t("%s ist wieder dran") % name
 		"gegenüber":
-			return "Gib das Handy an %s gegenüber" % name
+			return I18n.t("Gib das Handy an %s gegenüber") % name
 		"links", "rechts":
 			if int(d["steps"]) == 1:
-				return "Gib das Handy nach %s an %s" % [d["side"], name]
-			return "Gib das Handy an %s – %d Plätze nach %s" % [name, int(d["steps"]), d["side"]]
-	return "Gib das Handy an %s" % name
+				return I18n.t("Gib das Handy nach %s an %s") % [I18n.t(str(d["side"])), name]
+			return I18n.t("Gib das Handy an %s – %d Plätze nach %s") % [name, int(d["steps"]), I18n.t(str(d["side"]))]
+	return I18n.t("Gib das Handy an %s") % name
 
 
 func _init() -> void:
@@ -145,7 +145,7 @@ func _draw() -> void:
 	# nur Zahlen, keine Karten
 	var f := UiFonts.text(700, 100.0)
 	if discard_count + draw_count > 0:      # vor dem Austeilen (Partiebeginn) noch keine Zahlen
-		var line := "Ablage: %d Karten  ·  Stapel: %d Karten" % [discard_count, draw_count]
+		var line := I18n.t("Ablage: %d Karten  ·  Stapel: %d Karten") % [discard_count, draw_count]
 		var ls := UiFonts.px(20)
 		var lw := f.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, ls).x
 		draw_string(f, Vector2(c.x - lw * 0.5, size.y * 0.52), line, HORIZONTAL_ALIGNMENT_LEFT, -1, ls, muted)
@@ -159,7 +159,7 @@ func _draw() -> void:
 		draw_arc(bc, r + 6.0, -PI * 0.5, -PI * 0.5 + TAU * hold_progress(), 64, UiPalette.TURN, 8.0, true)
 	var eye := UiIcons.icon("katze_wach", 96, UiPalette.INK if night > 0.5 else UiPalette.CREAM, UiPalette.CREAM if night > 0.5 else UiPalette.INK)
 	draw_texture_rect(eye, Rect2(bc - Vector2(40, 44), Vector2(80, 80)), false, Color(1, 1, 1, 0.5 if locked else 1.0))
-	var hint := "%s: zum Aufdecken halten" % to_name
+	var hint := I18n.t("%s: zum Aufdecken halten") % to_name
 	var hs := UiFonts.px(22)
 	var hw := f.get_string_size(hint, HORIZONTAL_ALIGNMENT_LEFT, -1, hs).x
 	draw_string(f, Vector2(c.x - hw * 0.5, bc.y + r + 24.0 + hs), hint, HORIZONTAL_ALIGNMENT_LEFT, -1, hs, ink)

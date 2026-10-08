@@ -44,7 +44,7 @@ func _init() -> void:
 	col.custom_minimum_size = Vector2(640, 0)
 	col.add_theme_constant_override("separation", 10)
 	row.add_child(col)
-	_kicker = UiTheme.label("KARTENHILFE", UiFonts.text(800, 100.0), 15, UiPalette.MUTED_DAY)
+	_kicker = UiTheme.label(I18n.t("Kartenhilfe").to_upper(), UiFonts.text(800, 100.0), 15, UiPalette.MUTED_DAY)
 	col.add_child(_kicker)
 	_title = UiTheme.label("", UiFonts.title(800, false, 50.0, 72.0), 46, UiPalette.INK)
 	_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -119,7 +119,7 @@ func show_help(face: String, title: String, body: String, kicker := "Kartenhilfe
 	_apply_font_sizes()
 	_card.setup(-1, face, "", true)
 	_title.text = title
-	_kicker.text = kicker.to_upper()
+	_kicker.text = I18n.t(kicker).to_upper()
 	_body.text = body
 	visible = true
 	_panel.reset_size()

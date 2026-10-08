@@ -158,10 +158,9 @@ func record(events: Array, view: Dictionary, mode: String) -> String:
 
 # Satz fürs Rundenende. kind "runde" | "partie", n = neuer Stand.
 static func round_note(kind: String, n: int) -> String:
-	var what := "Partiesieg" if kind == "partie" else "Rundensieg"
 	if n == 1:
-		return "Dein erster %s!" % what
-	return "Dein %d. %s!" % [n, what]
+		return I18n.t("Dein erster Partiesieg!") if kind == "partie" else I18n.t("Dein erster Rundensieg!")
+	return (I18n.t("Dein %d. Partiesieg!") if kind == "partie" else I18n.t("Dein %d. Rundensieg!")) % n
 
 
 # Zeilen für die Einstellungen: [[Beschriftung, Wert als Text], …]; Höchstwerte 0 erscheinen als „–“.

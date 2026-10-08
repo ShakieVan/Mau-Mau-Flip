@@ -43,6 +43,15 @@ func build() -> void:
 	_name.text_changed.connect(func(t: String) -> void: _store("name", AppSettings.clean_name(t)))
 	_name.text_submitted.connect(func(_t: String) -> void: _name.release_focus())
 	player.add_child(ScreenKit.row("Name", _name, 190.0))
+	# Sprache (Beta 1.2.2, I18n): Automatisch = Systemsprache; wirkt sofort (App → I18n.apply, Texte übersetzen sich selbst).
+	var lang_val := str(UiApp.setting(I18n.SETTING, "auto"))
+	var lang := ScreenKit.choice(I18n.CHOICE_NAMES, lang_val if I18n.CHOICES.has(lang_val) else "auto",
+		func(v: String) -> void: _store(I18n.SETTING, v), UiFonts.size("text"))
+	lang.name = "Sprache"
+	for b in lang.get_children():
+		if b is Button and str(b.get_meta("key", "")) == "en":
+			(b as Button).auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED   # „English“ heißt in jeder Sprache so
+	player.add_child(ScreenKit.row("Sprache", lang, 190.0))
 	personal(left, _section, true)
 	# --- Updates, Teilen, Info
 	var upd := _section(right, "Updates")
@@ -89,7 +98,10 @@ func build() -> void:
 	srow.add_child(_share_status)
 	_build_stats(_section(right, AppStats.TITLE))
 	var info := _section(right, "Info")
-	info.add_child(ScreenKit.text_block("Mau-Mau Flip %s\nEin Hobbyprojekt von ShakieVan." % MainMenuScreen._version_text(), UiFonts.size("text")))
+	var ver := ScreenKit.text_block("Mau-Mau Flip %s" % MainMenuScreen._version_text(), UiFonts.size("text"))
+	ver.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	info.add_child(ver)
+	info.add_child(ScreenKit.text_block("Ein Hobbyprojekt von ShakieVan.", UiFonts.size("text")))
 	info.add_child(ScreenKit.hint("Lizenz: CC BY-NC 4.0 (nicht kommerziell). Schriften: Bricolage Grotesque und Fraunces unter der SIL Open Font License 1.1. Quellcode und Versionen auf GitHub: ShakieVan/Mau-Mau-Flip.", UiFonts.size("hinweis")))
 	var app := UiApp.app()
 	for key in ["updater", "apk_share"]:
@@ -148,7 +160,7 @@ static func personal(parent: Control, section: Callable, tempo := true) -> void:
 	look.add_child(ScreenKit.switch_row("Großer Modus", "Riesige Karten, Ablage und Farbe, Mitspieler als Liste rechts. Für schlechte Augen oder schlechtes Licht.",
 		bool(UiApp.setting("grosser_modus", false)), on_big, "GrosserModus"))
 	look.add_child(ScreenKit.switch_row("Bei deinem Zug: Vibration", "Kurz vibrieren, wenn du dran bist. Den Dran-Ton schaltest du mit den Spieltönen.",
-		bool(UiApp.setting("zug_vibration", false)), func(on: bool) -> void: _store("zug_vibration", on), "ZugVibration"))
+		bool(UiApp.setting("zug_vibration", true)), func(on: bool) -> void: _store("zug_vibration", on), "ZugVibration"))
 	# Persönliche Hilfe, nie eine Regel des Gastgebers (AGENTS.md 24); der Tisch (HandView) hört auf App.settings.changed.
 	look.add_child(ScreenKit.switch_row("Spielbare Karten hervorheben", "Nur auf diesem Gerät: Karten, die du gerade legen kannst, werden in deiner Hand hervorgehoben.",
 		bool(UiApp.setting("hervorheben", true)), func(on: bool) -> void: _store("hervorheben", on), "Hervorheben"))
@@ -361,9 +373,13 @@ func _refresh() -> void:
 	var ready := bool(up.get("apk_ready"))
 	var pct := int(up.get("percent"))
 	var rel: Variant = up.get("release")
-	var text := status
+	# Statustexte des Updaters sind deutsche msgids (ohne Platzhalter) und werden hier übersetzt.
+	var text := I18n.t(status)
+	for pre in ["Zuletzt geprüft: ", "Last checked: "]:   # gespeicherter Status mit Zeit: in der aktuellen Sprache neu setzen
+		if status.begins_with(pre):
+			text = I18n.t("Zuletzt geprüft: %s.") % status.substr(pre.length()).trim_suffix(".")
 	if avail and rel is Dictionary and not ready:
-		text = "Neue Version %s verfügbar. %s" % [str((rel as Dictionary).get("version", "")), status if status.begins_with("Lade") else ""]
+		text = tr("Neue Version %s verfügbar.") % str((rel as Dictionary).get("version", "")) + (" " + I18n.t(status) if status.begins_with("Lade") else "")
 	_update_status.text = text.strip_edges()
 	_update_bar.visible = busy and pct >= 0
 	_update_bar.value = pct
@@ -373,4 +389,10 @@ func _refresh() -> void:
 	_browser_btn.visible = true
 	var share: Variant = UiApp.app().get("apk_share") if UiApp.app() != null else null
 	if share is Object:
-		_share_status.text = str((share as Object).get("status"))
+		_share_status.text = I18n.t(str((share as Object).get("status")))
+
+
+# Sprache gewechselt (I18n): Labels und Knöpfe übersetzen sich selbst, nur die zusammengesetzten Statuszeilen neu setzen.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_TRANSLATION_CHANGED and built:
+		_refresh()

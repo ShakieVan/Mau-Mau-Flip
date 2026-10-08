@@ -28,7 +28,7 @@ func build() -> void:
 	left.add_child(_logo)
 	var foot := ScreenKit.hbox(14)
 	left.add_child(foot)
-	_version = ScreenKit.label("Version %s · Ein Hobbyprojekt von ShakieVan" % _version_text(), "HintLabel", UiFonts.size("hinweis"))
+	_version = ScreenKit.label(I18n.t("Version %s · Ein Hobbyprojekt von ShakieVan") % _version_text(), "HintLabel", UiFonts.size("hinweis"))
 	_version.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	foot.add_child(_version)
 	foot.add_child(ScreenKit.spacer())
@@ -92,6 +92,17 @@ func _on_app_link() -> void:
 
 func on_enter() -> void:
 	_refresh_update()
+	_retext_version()
+
+
+func _retext_version() -> void:
+	if _version != null:
+		_version.text = I18n.t("Version %s · Ein Hobbyprojekt von ShakieVan") % _version_text()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_TRANSLATION_CHANGED:
+		_retext_version()
 
 
 # Großer Knopf mit zweiter Zeile (Erklärung)

@@ -68,17 +68,17 @@ static func bind_wifi() -> String:
 	# Gerätetest S24 Ultra 04.10.2026: das Spiel band sich nach „WLAN aus“ an den eigenen Hotspot); Java bindet genau dieses Netz.
 	var j := _java()
 	if j.is_empty():
-		return "Nur auf Android möglich."
+		return I18n.t("Nur auf Android möglich.")
 	var handle := wifi_handle(state())
 	if handle == "":
-		return "Kein WLAN verbunden."
+		return I18n.t("Kein WLAN verbunden.")
 	return str(j[0].bindNetwork(j[1], handle))
 
 static func bind_network(handle: String) -> String:
 	# Prozess an das Netz mit diesem Handle binden (z. B. den eigenen Hotspot, Android 16). "" = gebunden, sonst Grund.
 	var j := _java()
 	if j.is_empty():
-		return "Nur auf Android möglich."
+		return I18n.t("Nur auf Android möglich.")
 	return str(j[0].bindNetwork(j[1], handle))
 
 static func unbind() -> bool:
@@ -318,15 +318,15 @@ static func host_plan(s: Dictionary, sockets = null) -> Dictionary:
 	var hint := ""
 	var warn := true
 	if not spots.is_empty() and tied == "wifi":
-		hint = "Dein Hotspot ging erst nach dem Eröffnen an. Hotspot-Mitspieler kommen erst rein, wenn du das Spiel neu eröffnest."
+		hint = I18n.t("Dein Hotspot ging erst nach dem Eröffnen an. Hotspot-Mitspieler kommen erst rein, wenn du das Spiel neu eröffnest.")
 	elif not wlan.is_empty() and tied == "hotspot":
-		hint = "Dein WLAN ging erst nach dem Eröffnen an. Mitspieler im WLAN kommen erst rein, wenn du das Spiel neu eröffnest."
+		hint = I18n.t("Dein WLAN ging erst nach dem Eröffnen an. Mitspieler im WLAN kommen erst rein, wenn du das Spiel neu eröffnest.")
 	elif not wlan.is_empty() and not reach.has("wlan") and not spots.is_empty():
-		hint = "Dein WLAN hat kein Internet: Nur Mitspieler im Hotspot erreichen dich. Fürs WLAN den Hotspot ausschalten und neu eröffnen."
+		hint = I18n.t("Dein WLAN hat kein Internet: Nur Mitspieler im Hotspot erreichen dich. Fürs WLAN den Hotspot ausschalten und neu eröffnen.")
 	elif not wlan.is_empty() and not reach.has("wlan"):
-		hint = "Dein WLAN ist nicht Androids Standardnetz (kein Internet?). Eröffne neu, damit sich das Spiel ans WLAN bindet."
+		hint = I18n.t("Dein WLAN ist nicht Androids Standardnetz (kein Internet?). Eröffne neu, damit sich das Spiel ans WLAN bindet.")
 	elif not spots.is_empty() and not wlan.is_empty():
-		hint = "Hotspot und WLAN sind an – beide Netze können beitreten. Klappt es im Hotspot nicht: hier das WLAN aus und neu eröffnen."
+		hint = I18n.t("Hotspot und WLAN sind an – beide Netze können beitreten. Klappt es im Hotspot nicht: hier das WLAN aus und neu eröffnen.")
 		warn = false
 	return {"bind": bind, "reach": reach, "wlan": wlan, "hotspot": spots, "hint": hint, "warn": warn and hint != ""}
 
@@ -463,33 +463,33 @@ static func game_wifi_message(st: Dictionary) -> Dictionary:
 	var status := str(st.get("status", "off"))
 	var old := int(st.get("sdk", 33)) < 33
 	if status == "on":
-		return {"title": "Spiel-WLAN ist offen", "text": "Kein Internet für die Gäste – das ist normal. Es endet, wenn du die App schließt.",
+		return {"title": I18n.t("Spiel-WLAN ist offen"), "text": I18n.t("Kein Internet für die Gäste – das ist normal. Es endet, wenn du die App schließt."),
 			"retry": false, "settings": false}
 	if status == "starting":
-		return {"title": "Spiel-WLAN wird geöffnet …", "text": "", "retry": false, "settings": false}
+		return {"title": I18n.t("Spiel-WLAN wird geöffnet …"), "text": "", "retry": false, "settings": false}
 	if status == "stopped":
-		return {"title": "Spiel-WLAN beendet", "text": "Android hat das Spiel-WLAN geschlossen. Tippe auf „Neu öffnen“.", "retry": true, "settings": false}
+		return {"title": I18n.t("Spiel-WLAN beendet"), "text": I18n.t("Android hat das Spiel-WLAN geschlossen. Tippe auf „Neu öffnen“."), "retry": true, "settings": false}
 	match err:
 		"permission":
-			return {"title": "Erlaubnis fehlt", "text": ("Ohne die Erlaubnis „Standort“ kann die App bis Android 12 kein Spiel-WLAN öffnen. Den Standort selbst nutzt sie nicht."
-				if old else "Ohne die Erlaubnis „Geräte in der Nähe“ kann die App kein Spiel-WLAN öffnen.")
-				+ " Erlaube sie beim nächsten Versuch oder in den App-Einstellungen unter „Berechtigungen“.", "retry": true, "settings": true}
+			return {"title": I18n.t("Erlaubnis fehlt"), "text": (I18n.t("Ohne die Erlaubnis „Standort“ kann die App bis Android 12 kein Spiel-WLAN öffnen. Den Standort selbst nutzt sie nicht.")
+				if old else I18n.t("Ohne die Erlaubnis „Geräte in der Nähe“ kann die App kein Spiel-WLAN öffnen."))
+				+ " " + I18n.t("Erlaube sie beim nächsten Versuch oder in den App-Einstellungen unter „Berechtigungen“."), "retry": true, "settings": true}
 		"location_off":
-			return {"title": "Standort ist aus", "text": "Bis Android 12 braucht das Spiel-WLAN den eingeschalteten Standort. Schalte ihn in den Schnelleinstellungen ein und tippe erneut.",
+			return {"title": I18n.t("Standort ist aus"), "text": I18n.t("Bis Android 12 braucht das Spiel-WLAN den eingeschalteten Standort. Schalte ihn in den Schnelleinstellungen ein und tippe erneut."),
 				"retry": true, "settings": false}
 		"incompatible_mode", "ap_running":
-			return {"title": "Dein Hotspot läuft", "text": "Beide gleichzeitig gehen nicht. Schalte deinen normalen Hotspot bitte in den Schnelleinstellungen aus – die App ändert ihn nie. Oder lass ihn an und verbinde die anderen damit.",
+			return {"title": I18n.t("Dein Hotspot läuft"), "text": I18n.t("Beide gleichzeitig gehen nicht. Schalte deinen normalen Hotspot bitte in den Schnelleinstellungen aus – die App ändert ihn nie. Oder lass ihn an und verbinde die anderen damit."),
 				"retry": true, "settings": false}
 		"no_channel":
-			return {"title": "Kein freier Funkkanal", "text": "Android hat gerade keinen Kanal fürs Spiel-WLAN gefunden. Versuch es gleich noch einmal.", "retry": true, "settings": false}
+			return {"title": I18n.t("Kein freier Funkkanal"), "text": I18n.t("Android hat gerade keinen Kanal fürs Spiel-WLAN gefunden. Versuch es gleich noch einmal."), "retry": true, "settings": false}
 		"tethering_disallowed":
-			return {"title": "Auf diesem Handy gesperrt", "text": "Ein eigenes WLAN ist hier nicht erlaubt (z. B. Firmen-Handy oder Mobilfunkanbieter). Nimm ein anderes Handy als Gastgeber.",
+			return {"title": I18n.t("Auf diesem Handy gesperrt"), "text": I18n.t("Ein eigenes WLAN ist hier nicht erlaubt (z. B. Firmen-Handy oder Mobilfunkanbieter). Nimm ein anderes Handy als Gastgeber."),
 				"retry": false, "settings": false}
 		"unsupported":
-			return {"title": "Nicht verfügbar", "text": "Ein Spiel-WLAN geht nur mit der App auf Android 8 oder neuer.", "retry": false, "settings": false}
+			return {"title": I18n.t("Nicht verfügbar"), "text": I18n.t("Ein Spiel-WLAN geht nur mit der App auf Android 8 oder neuer."), "retry": false, "settings": false}
 		"":
-			return {"title": "Spiel-WLAN", "text": "Öffnet ein eigenes WLAN ohne Internet, falls sich die Handys im Hotel- oder Gäste-WLAN nicht sehen.", "retry": true, "settings": false}
-	return {"title": "Hat nicht geklappt", "text": "Das Spiel-WLAN ließ sich nicht öffnen. Versuch es noch einmal oder nutze deinen normalen Hotspot.", "retry": true, "settings": false}
+			return {"title": I18n.t("Spiel-WLAN"), "text": I18n.t("Öffnet ein eigenes WLAN ohne Internet, falls sich die Handys im Hotel- oder Gäste-WLAN nicht sehen."), "retry": true, "settings": false}
+	return {"title": I18n.t("Hat nicht geklappt"), "text": I18n.t("Das Spiel-WLAN ließ sich nicht öffnen. Versuch es noch einmal oder nutze deinen normalen Hotspot."), "retry": true, "settings": false}
 
 # --- App-Link „In der App spielen“ (Beta 1.0.2): maumauflip://join?h=<IP>&p=<Port> ---
 # GodotApp.java merkt das Intent (AppLink.java), App (scripts/app/app.gd) holt es beim Start und beim Fortsetzen ab. Am PC und in
@@ -527,7 +527,7 @@ static func app_link_url(address: String, port: int) -> String:
 static func parse_app_link(link: String) -> Dictionary:
 	# {ok, address, port, error}; error ist ein kurzer deutscher Satz für den Nutzer.
 	var bad := {"ok": false, "address": "", "port": 0,
-		"error": "Der Link zum Spiel ist unvollständig. Scanne den QR-Code beim Gastgeber noch einmal."}
+		"error": I18n.t("Der Link zum Spiel ist unvollständig. Scanne den QR-Code beim Gastgeber noch einmal.")}
 	var t := link.strip_edges()
 	var prefix := APP_LINK_SCHEME + "://join"
 	if not t.to_lower().begins_with(prefix):
@@ -553,5 +553,5 @@ static func parse_app_link(link: String) -> Dictionary:
 		return bad
 	if not private_ipv4(address):
 		return {"ok": false, "address": address, "port": port,
-			"error": "Dieser Link führt nicht zu einem Spiel in deiner Nähe. Die App tritt nur Spielen im selben WLAN bei."}
+			"error": I18n.t("Dieser Link führt nicht zu einem Spiel in deiner Nähe. Die App tritt nur Spielen im selben WLAN bei.")}
 	return {"ok": true, "address": address, "port": port, "error": ""}

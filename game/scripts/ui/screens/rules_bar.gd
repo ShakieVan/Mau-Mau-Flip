@@ -48,7 +48,7 @@ static func extra_names(cfg: RuleConfig) -> Array[String]:
 	var out: Array[String] = []
 	for e in EXTRAS:
 		if str(cfg.get(e[0])) == "on":
-			out.append(str(e[1]))
+			out.append(I18n.t(str(e[1])))
 	return out
 
 
@@ -56,7 +56,7 @@ static func extra_names(cfg: RuleConfig) -> Array[String]:
 static func join_and(items: Array[String]) -> String:
 	if items.size() <= 1:
 		return "" if items.is_empty() else items[0]
-	return ", ".join(PackedStringArray(items.slice(0, items.size() - 1))) + " und " + items[-1]
+	return I18n.t("%s und %s") % [", ".join(PackedStringArray(items.slice(0, items.size() - 1))), items[-1]]
 
 
 # Zusatzkarten als Satzteil: „mit Kartentausch und Glücksspiel (118 Karten)“; "" ohne Hausregel-Karten
@@ -64,7 +64,7 @@ static func extras_text(cfg: RuleConfig) -> String:
 	var names := extra_names(cfg)
 	if names.is_empty():
 		return ""
-	return "mit %s (%d Karten)" % [join_and(names), cfg.card_count()]
+	return I18n.t("mit %s (%d Karten)") % [join_and(names), cfg.card_count()]
 
 
 # Name der Voreinstellung bzw. „Eigene Regeln“
@@ -72,8 +72,8 @@ static func preset_title(cfg: RuleConfig) -> String:
 	var p := cfg.preset_name()
 	for opt in PRESETS:
 		if opt[0] == p:
-			return str(opt[1])
-	return "Eigene Regeln"
+			return I18n.t(str(opt[1]))
+	return I18n.t("Eigene Regeln")
 
 
 # Wie preset_title, kennt aber auch die gespeicherten Sätze dieses Geräts (RuleSets): Voreinstellung → eigener Satz („Oma-Regeln“)
@@ -87,7 +87,7 @@ static func title(cfg: RuleConfig) -> String:
 		return saved
 	if RuleSets.host_matches(cfg):
 		return RuleSets.host_title(RuleSets.host_name())
-	return "Eigene Regeln"
+	return I18n.t("Eigene Regeln")
 
 
 # Kurzbeschreibung der aktiven Regeln (eine Zeile). extras_first (Lobby, Text wird nach 2 Zeilen gekürzt): die Hausregeln mit
@@ -96,21 +96,21 @@ static func summary(cfg: RuleConfig, extras_first := false) -> String:
 	var parts: Array[String] = []
 	var names := extra_names(cfg)
 	if extras_first and not names.is_empty():
-		parts.append("mit " + join_and(names))
-	parts.append("bis zum Letzten" if cfg.round_end == "last" else "erster fertig gewinnt")
+		parts.append(I18n.t("mit %s") % join_and(names))
+	parts.append(I18n.t("bis zum Letzten") if cfg.round_end == "last" else I18n.t("erster fertig gewinnt"))
 	if cfg.effective_scoring() == "points500":
-		parts.append("Punkte bis %d" % cfg.target)
+		parts.append(I18n.t("Punkte bis %d") % cfg.target)
 	if cfg.stacking == "same":
-		parts.append("Ziehkarten weitergeben")
+		parts.append(_lc(I18n.t("Ziehkarten weitergeben")))
 	if cfg.penalty_turn == "play":
-		parts.append("nach Strafziehen weiterspielen")
+		parts.append(I18n.t("nach Strafziehen weiterspielen"))
 	if cfg.draw_play == "any" and cfg.draw_rule == "one":
-		parts.append("nach dem Ziehen beliebige Karte legen")
-	parts.append({"bluff": "Bluffen erlaubt", "enforce": "+2 nur ohne Farbe", "free": "Wünscher +2 immer erlaubt"}[cfg.wild_restriction])
+		parts.append(I18n.t("nach dem Ziehen beliebige Karte legen"))
+	parts.append(I18n.t({"bluff": "Bluffen erlaubt", "enforce": "+2 nur ohne Farbe", "free": "Wünscher +2 immer erlaubt"}[cfg.wild_restriction]))
 	if str(cfg.get("flip_surprise")) == "on":
-		parts.append("Flip-Überraschung")
-	parts.append("%d Handkarten" % cfg.hand_size)
-	parts.append("Rückseiten sichtbar" if cfg.backs_visible else "Rückseiten verdeckt")
+		parts.append(I18n.t("Flip-Überraschung"))
+	parts.append(I18n.t("%d Handkarten") % cfg.hand_size)
+	parts.append(I18n.t("Rückseiten sichtbar") if cfg.backs_visible else I18n.t("Rückseiten verdeckt"))
 	var extras := extras_text(cfg)
 	if extras != "" and not extras_first:
 		parts.append(extras)
@@ -205,13 +205,13 @@ func refresh() -> void:
 		ScreenKit.set_choice(_choice, cfg.preset_name())
 	var p := cfg.preset_name()
 	if compact:
-		_head.text = "%s · %d Karten" % [title(cfg), cfg.card_count()]
+		_head.text = "%s · %s" % [title(cfg), I18n.t("%d Karten") % cfg.card_count()]
 		_summary.text = summary(cfg, true) + "."
 		var host := RuleSets.host_name()
 		_offer.visible = not _offer_hidden and host != "" and not RuleSets.host_matches(cfg)
 		_summary.visible = not _offer.visible
-		_offer_btn.text = "Von %s übernehmen" % host      # kurz (N7: am S10 abgeschnitten); WLAN-Symbol zeigt die Herkunft, lange Namen enden mit …
-		_offer_btn.tooltip_text = "Mit den Regeln weiterspielen, mit denen du zuletzt bei %s gespielt hast" % host
+		_offer_btn.text = I18n.t("Von %s übernehmen") % host      # kurz (N7: am S10 abgeschnitten); WLAN-Symbol zeigt die Herkunft, lange Namen enden mit …
+		_offer_btn.tooltip_text = I18n.t("Mit den Regeln weiterspielen, mit denen du zuletzt bei %s gespielt hast") % host
 		return
 	# Voll: Knopf „Gespeichert“ mit dem Namen des passenden Satzes bzw. des Gastgeber-Platzes
 	var saved := RuleSets.match_name(cfg)
@@ -220,7 +220,7 @@ func refresh() -> void:
 	var any := RuleSets.count() > 0 or RuleSets.host_name() != ""
 	_saved_btn.visible = any
 	_saved_btn.theme_type_variation = "PrimaryButton" if saved != "" else "GhostButton"
-	_saved_btn.text = ("Gespeichert: " + saved) if saved != "" else "Gespeicherte Regeln …"
+	_saved_btn.text = (I18n.t("Gespeichert: %s") % saved) if saved != "" else I18n.t("Gespeicherte Regeln …")
 	var named := p != "" or (any and saved != "")
 	_summary.text = ("" if named else title(cfg) + ": ") + summary(cfg) + "."
 
@@ -277,3 +277,8 @@ func _open_editor() -> void:
 		refresh()
 		changed.emit(current()))
 	nav.push(r)
+
+
+# Englisch: Teil mitten im Satz klein beginnen (die Beschriftung der Regel selbst beginnt groß)
+static func _lc(s: String) -> String:
+	return s.substr(0, 1).to_lower() + s.substr(1) if I18n.english() else s

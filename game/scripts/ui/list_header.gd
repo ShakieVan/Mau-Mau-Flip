@@ -85,7 +85,7 @@ func _font_size() -> int:
 # Breite des Inhalts (Pfeil + Abstand + Wort), zentriert in head_size
 func content_width() -> float:
 	var r := arrow_radius()
-	var tw := UiFonts.text(800, 100.0).get_string_size(TEXT, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size()).x
+	var tw := UiFonts.text(800, 100.0).get_string_size(I18n.t(TEXT), HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size()).x
 	return r * 2.0 + 20.0 + 18.0 + tw
 
 
@@ -125,8 +125,8 @@ func _draw() -> void:
 	var tx := c.x + r + 18.0 + 10.0
 	var ty := head_size.y * 0.5 + fs * 0.36
 	var maxw := maxf(head_size.x - tx, 10.0)
-	draw_string_outline(font, Vector2(tx, ty), TEXT, HORIZONTAL_ALIGNMENT_LEFT, maxw, fs, 6, Color(halo, 0.85))
-	draw_string(font, Vector2(tx, ty), TEXT, HORIZONTAL_ALIGNMENT_LEFT, maxw, fs, UiPalette.ui_muted(night))
+	draw_string_outline(font, Vector2(tx, ty), I18n.t(TEXT), HORIZONTAL_ALIGNMENT_LEFT, maxw, fs, 6, Color(halo, 0.85))
+	draw_string(font, Vector2(tx, ty), I18n.t(TEXT), HORIZONTAL_ALIGNMENT_LEFT, maxw, fs, UiPalette.ui_muted(night))
 
 
 # Dreieck um d nach außen vergrößern (Umrandung der Spitze)

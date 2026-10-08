@@ -80,7 +80,7 @@ func _refresh_seats() -> void:
 
 static func _my_name() -> String:
 	var n := str(UiApp.setting("name", ""))
-	return n if n != "" else "Du"
+	return n if n != "" else I18n.t("Du")
 
 
 func players() -> Array:

@@ -5,7 +5,7 @@
 (function (M) {
   'use strict';
 
-  const VERSION = '1.2.1';
+  const VERSION = '1.2.2';
   const PROTO = 1;
   // wach.mp4 (32×32, 2 s, H.264 Baseline, ohne Ton; erzeugt mit ffmpeg) als data:-URI
   const WACH_VIDEO = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAMzbW9vdgAAAGxtdmhkAAAAAAAAAAAAAAAAAAAD6AAAB9AAAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAl50cmFrAAAAXHRraGQAAAADAAAAAAAAAAAAAAABAAAAAAAAB9AAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAACAAAAAgAAAAAAAkZWR0cwAAABxlbHN0AAAAAAAAAAEAAAfQAAAAAAABAAAAAAHWbWRpYQAAACBtZGhkAAAAAAAAAAAAAAAAAABAAAAAgABVxAAAAAAALWhkbHIAAAAAAAAAAHZpZGUAAAAAAAAAAAAAAABWaWRlb0hhbmRsZXIAAAABgW1pbmYAAAAUdm1oZAAAAAEAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAAUFzdGJsAAAAuXN0c2QAAAAAAAAAAQAAAKlhdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAACAAIABIAAAASAAAAAAAAAABFExhdmM2My4xLjEwMSBsaWJ4MjY0AAAAAAAAAAAAAAAAGP//AAAAL2F2Y0MBQsAe/+EAFmdCwB7ZCWwEQAAAAwBAAAADAQPFi5IBAAZoy4DkTIAAAAAQcGFzcAAAAAEAAAABAAAAFGJ0cnQAAAAAAAAKpAAAAAAAAAAYc3R0cwAAAAAAAAABAAAABAAAIAAAAAAUc3RzcwAAAAAAAAABAAAAAQAAABxzdHNjAAAAAAAAAAEAAAABAAAABAAAAAEAAAAkc3RzegAAAAAAAAAAAAAABAAAAogAAAALAAAACwAAAAsAAAAUc3RjbwAAAAAAAAABAAADYwAAAGF1ZHRhAAAAWW1ldGEAAAAAAAAAIWhkbHIAAAAAAAAAAG1kaXJhcHBsAAAAAAAAAAAAAAAALGlsc3QAAAAkqXRvbwAAABxkYXRhAAAAAQAAAABMYXZmNjMuMS4xMDEAAAAIZnJlZQAAArFtZGF0AAACcgYF//9u3EXpvebZSLeWLNgg2SPu73gyNjQgLSBjb3JlIDE2NSByMzIyMyAwNDgwY2IwIC0gSC4yNjQvTVBFRy00IEFWQyBjb2RlYyAtIENvcHlsZWZ0IDIwMDMtMjAyNSAtIGh0dHA6Ly93d3cudmlkZW9sYW4ub3JnL3gyNjQuaHRtbCAtIG9wdGlvbnM6IGNhYmFjPTAgcmVmPTMgZGVibG9jaz0xOi0zOi0zIGFuYWx5c2U9MHgxOjB4MTExIG1lPWhleCBzdWJtZT03IHBzeT0xIHBzeV9yZD0yLjAwOjAuNzAgbWl4ZWRfcmVmPTEgbWVfcmFuZ2U9MTYgY2hyb21hX21lPTEgdHJlbGxpcz0xIDh4OGRjdD0wIGNxbT0wIGRlYWR6b25lPTIxLDExIGZhc3RfcHNraXA9MSBjaHJvbWFfcXBfb2Zmc2V0PS00IHRocmVhZHM9MSBsb29rYWhlYWRfdGhyZWFkcz0xIHNsaWNlZF90aHJlYWRzPTAgbnI9MCBkZWNpbWF0ZT0xIGludGVybGFjZWQ9MCBibHVyYXlfY29tcGF0PTAgY29uc3RyYWluZWRfaW50cmE9MCBiZnJhbWVzPTAgd2VpZ2h0cD0wIGtleWludD0yNTAga2V5aW50X21pbj0yIHNjZW5lY3V0PTQwIGludHJhX3JlZnJlc2g9MCByY19sb29rYWhlYWQ9NDAgcmM9Y3JmIG1idHJlZT0xIGNyZj00MC4wIHFjb21wPTAuNjAgcXBtaW49MCBxcG1heD02OSBxcHN0ZXA9NCBpcF9yYXRpbz0xLjQwIGFxPTE6MS4yMACAAAAADmWIhAXznJigACX3J114AAAAB0GaOAvnOWAAAAAHQZpUAvnOWAAAAAdBmmAVznLA';
@@ -49,12 +49,16 @@
     // ton = Mau-Ton (Aufnahmen, Standard normal), toene = übrige Spieltöne (Dateien aus sfx/, sonst synthetisch; Standard aus), stumm = Ton-Knopf in der Ecke
     // hervorheben = spielbare Karten hervorheben (persönliche Einstellung je Gerät, AGENTS.md Nr. 24; Standard an)
     // grosser_modus = großer Modus (Standard aus), zug_vibration = „Bei deinem Zug: Vibration“ (Standard an seit 1.2.1); beide je Gerät, wie App.settings
-    einstellungen: { ton: 'normal', toene: 'aus', stumm: false, effekte: 'voll', sort: 'farbe', vibration: true, vollbild: true, hervorheben: true, schrift: 'normal', grosser_modus: false, zug_vibration: true },
+    einstellungen: { ton: 'normal', toene: 'aus', stumm: false, effekte: 'voll', sort: 'farbe', vibration: true, vollbild: true, hervorheben: true, schrift: 'normal', grosser_modus: false, zug_vibration: true, sprache: 'auto' },
     _mauZuletzt: {},       // „art:Platz“ → Zeitpunkt des letzten Mau-Tons (Entprellung)
 
     /* ---------------- Start ---------------- */
     init() {
       const e = this.einstellungen;
+      // Sprache (Beta 1.2.2, i18n.js): auto = navigator.language, sonst de/en; zuerst, damit alles Weitere schon übersetzt erscheint
+      e.sprache = Speicher.get('sprache', 'auto');
+      M.I18n.setze(e.sprache);
+      document.title = M.t('Mau-Mau Flip – Mitspielen');
       e.ton = Speicher.get('ton', 'normal');
       e.toene = Speicher.get('toene', 'aus');
       e.stumm = Speicher.get('stumm', false) === true;
@@ -92,8 +96,8 @@
       this._appLink();
       $('#tipp-safari').hidden = !IST_IOS;
       $('#tipp-ios-browser').hidden = !(IST_IOS && !IST_SAFARI);
-      if (Speicher.get('token', null) && n.value) $('#beitreten').textContent = 'Weiterspielen';
-      if (location.protocol === 'file:' && !params.get('mock')) this._startFehler('Diese Seite kommt vom Gastgeber-Handy. Zum Ausprobieren ohne Gastgeber: index.html?mock=1');
+      this._startTexte();
+      if (location.protocol === 'file:' && !params.get('mock')) this._startFehler(M.t('Diese Seite kommt vom Gastgeber-Handy. Zum Ausprobieren ohne Gastgeber: index.html?mock=1'));
       // Name und Version des Gastgebers
       if (!params.get('mock') && /^https?:/.test(location.protocol) && window.fetch) {
         const ctl = window.AbortController ? new AbortController() : null;
@@ -105,10 +109,23 @@
           if (info.name) {
             const n = Array.isArray(info.players) ? info.players.length : (info.players | 0);
             this.hostName = info.name;
-            $('#start-host').textContent = 'Spiel von ' + info.name + (n ? ' · ' + n + ' Spieler' : '');
+            this._hostZeile = { name: info.name, n };
+            this._startTexte();
           }
         }).catch(() => clearTimeout(t));
-      } else if (params.get('mock')) $('#start-host').textContent = 'Spiel von Lena · Testmodus';
+      } else if (params.get('mock')) { this._hostZeile = { name: 'Lena', mock: true }; this._startTexte(); }
+    },
+    // Startseite: Texte, die der Code setzt (Knopf, Gastgeber-Zeile); bei Sprachwechsel neu
+    _startTexte() {
+      const k = $('#beitreten');
+      if (k && !k.disabled) k.textContent = (Speicher.get('token', null) && $('#name').value) ? M.t('Weiterspielen') : M.t('Beitreten');
+      const h = this._hostZeile;
+      if (h) {
+        let s = M.t('Spiel von %s', h.name);
+        if (h.mock) s += ' · ' + M.t('Testmodus');
+        else if (h.n) s += ' · ' + (h.n === 1 ? M.t('1 Spieler') : M.t('%d Spieler', h.n));
+        $('#start-host').textContent = s;
+      }
     },
     // „In der App spielen“ (nur Android, AGENTS.md 1.0.2): Intent-Link öffnet die App mit maumauflip://join?h=<IP>&p=<Port>;
     // fehlt sie, schickt Chrome auf diese Seite mit ?app=1 zurück → APK-Bereich aufgeklappt mit Hinweis.
@@ -231,7 +248,7 @@
       const feld = $('#name');
       if (vorgabe) feld.value = vorgabe;
       const name = feld.value.replace(/\s+/g, ' ').trim().slice(0, 14);   // Gastgeber kürzt auf 14 (NetProtocol.MAX_NAME)
-      if (!name) { this._startFehler('Bitte gib deinen Namen ein.'); feld.focus(); return; }
+      if (!name) { this._startFehler(M.t('Bitte gib deinen Namen ein.')); feld.focus(); return; }
       this.name = name;
       Speicher.set('name', name);
       this._startFehler('');
@@ -239,7 +256,7 @@
       if (IST_ANDROID && this.einstellungen.vollbild) this.vollbild(true);
       this.wachStart();
       const knopf = $('#beitreten');
-      knopf.disabled = true; knopf.textContent = 'Verbinde …';
+      knopf.disabled = true; knopf.textContent = M.t('Verbinde …');
       if (this.verbindung) this.verbindung.beenden();
       const Klasse = params.get('mock') && M.Mock ? M.Mock.Verbindung : M.Netz.Verbindung;
       const url = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
@@ -267,13 +284,13 @@
         this._ladeTimer = setTimeout(() => { $('#verbinde-laden').hidden = false; }, 15000);
       } else clearTimeout(this._ladeTimer);
       if (s === 'getrennt' && !this.beigetreten && this.screen === 'start') {
-        this._startFehler('Keine Verbindung zum Gastgeber. Seid ihr im selben WLAN? Ich versuche es weiter …');
+        this._startFehler(M.t('Keine Verbindung zum Gastgeber. Seid ihr im selben WLAN? Ich versuche es weiter …'));
       }
       if (s === 'offen') { this._logLeeren(); if (this.screen === 'start') this._startFehler(''); }
       if (s === 'ersetzt') {
         this.beigetreten = false;
         v.hidden = true;
-        $('#ende-text').textContent = 'Du spielst jetzt in einem anderen Fenster oder Tab weiter. Hier ist die Verbindung beendet.';
+        $('#ende-text').textContent = M.t('Du spielst jetzt in einem anderen Fenster oder Tab weiter. Hier ist die Verbindung beendet.');
         this.zeigeScreen('ende');
       }
     },
@@ -324,18 +341,18 @@
           if (m.token) Speicher.set('token', m.token);
           if (m.host_name) this.hostName = m.host_name;
           this.beigetreten = true;
-          $('#beitreten').disabled = false; $('#beitreten').textContent = 'Beitreten';
+          $('#beitreten').disabled = false; this._startTexte();
           if (this.screen === 'start') { this.zeigeScreen('lobby'); this._lobbyLeer(); }
           break;
         case 'reject': {
-          const texte = { version: 'Die Version passt nicht zum Gastgeber. Bitte die Seite neu laden.', full: 'Das Spiel ist voll.', running: 'Die Partie läuft schon. Warte, bis die nächste beginnt.', proto: 'Der Gastgeber spricht ein anderes Protokoll. Bitte die Seite neu laden.' };
+          const texte = { version: M.t('Die Version passt nicht zum Gastgeber. Bitte die Seite neu laden.'), full: M.t('Das Spiel ist voll.'), running: M.t('Die Partie läuft schon. Warte, bis die nächste beginnt.'), proto: M.t('Der Gastgeber spricht ein anderes Protokoll. Bitte die Seite neu laden.') };
           if (this._tokenGesendet && (m.code === 'running' || m.code === 'token')) Speicher.set('token', null);
           this.verbindung.beenden();
           this.beigetreten = false;
           $('#verbinde').hidden = true;
           this.zeigeScreen('start');
-          $('#beitreten').disabled = false; $('#beitreten').textContent = 'Beitreten';
-          this._startFehler(m.text || texte[m.code] || 'Der Gastgeber hat abgelehnt.');
+          $('#beitreten').disabled = false; this._startTexte();
+          this._startFehler(M.I18n.msgText(m, texte[m.code] || M.t('Der Gastgeber hat abgelehnt.')));   // eigene Sprache (Bausteine lt bzw. msgid)
           break;
         }
         case 'lobby': {
@@ -366,7 +383,7 @@
           break;
         case 'err':
           this.offen = null;
-          this.toast(m.text || 'Das geht gerade nicht.', 'fehler');
+          this.toast(M.I18n.msgText(m, M.t('Das geht gerade nicht.')), 'fehler');
           M.Ton.spiele('fehler');
           this.vibrieren([20, 50, 20]);
           if (this.schwebend !== null && this.tisch) { this.tisch.hand.schwebe(this.schwebend, false); this.tisch.hand.wackeln(this.schwebend); this.schwebend = null; }
@@ -374,7 +391,7 @@
           if (M.Autotest && M.Autotest.fehlerNachricht) M.Autotest.fehlerNachricht(m);
           break;
         case 'notice':     // Hinweis des Gastgebers an alle (HostTable), z. B. „Kim ist getrennt – warte …“
-          if (m.text) this.toast(String(m.text), 'leise', 3200);
+          if (m.text || m.lt) this.toast(M.I18n.msgText(m), 'leise', 3200);
           break;
         case 'pong':
           if (m.ts) this.latenz = Date.now() - m.ts;
@@ -384,7 +401,7 @@
           this.beigetreten = false;
           Speicher.set('token', null);
           $('#verbinde').hidden = true;
-          $('#ende-text').textContent = m.text || 'Der Gastgeber hat das Spiel beendet.';
+          $('#ende-text').textContent = M.I18n.msgText(m, M.t('Der Gastgeber hat das Spiel beendet.'));
           this.zeigeScreen('ende');
           break;
         default: break;
@@ -394,11 +411,11 @@
 
     /* ---------------- Lobby ---------------- */
     _lobbyLeer() {
-      $('#lobby-host').textContent = this.hostName ? 'Spiel von ' + this.hostName : 'Verbunden';
-      $('#lobby-liste').innerHTML = '<li class="lz leer">Warte auf die Spielerliste …</li>';
+      $('#lobby-host').textContent = this.hostName ? M.t('Spiel von %s', this.hostName) : M.t('Verbunden');
+      $('#lobby-liste').innerHTML = '<li class="lz leer">' + M.t('Warte auf die Spielerliste …') + '</li>';
     },
     zeigeLobby(l) {
-      $('#lobby-host').textContent = this.hostName ? 'Spiel von ' + this.hostName : 'Lobby';
+      $('#lobby-host').textContent = this.hostName ? M.t('Spiel von %s', this.hostName) : M.t('Lobby');
       const spieler = (l.players || []).slice().sort((a, b) => ((a.seat < 0 || a.seat == null) ? 99 : a.seat) - ((b.seat < 0 || b.seat == null) ? 99 : b.seat) || a.id - b.id);
       let ich = null;
       $('#lobby-liste').innerHTML = spieler.map((p, i) => {
@@ -409,19 +426,19 @@
         return '<li class="lz' + (istIch ? ' ich' : '') + (p.connected === false ? ' weg' : '') + '">' +
           '<span class="platz">' + ((p.seat != null && p.seat >= 0) ? p.seat + 1 : '–') + '</span>' +
           '<span class="ava" style="background:' + ['#FF9ECF', '#43B05C', '#FFDD33', '#4C7DFF', '#FF8A1F', '#19C6D4', '#8B6BFF', '#FF4D57', '#B0E06A', '#F4EADA'][((p.seat != null && p.seat >= 0) ? p.seat : i) % 10] + '">' + esc((p.name || '?').charAt(0).toUpperCase()) + '</span>' +
-          '<span class="nm">' + esc(p.name) + (istIch ? ' <em>(du)</em>' : '') + '</span>' +
-          '<span class="art">' + esc(ART[p.kind] || p.kind || '') + '</span>' +
-          (host ? '<span class="marke gast">Gastgeber</span>' : '') +
-          (p.connected === false ? '<span class="marke weg">getrennt</span>' : '<span class="status ' + (bereit ? 'ja' : '') + '">' + (bereit ? 'bereit' : 'wartet') + '</span>') +
+          '<span class="nm">' + esc(p.name) + (istIch ? ' <em>(' + M.t('du') + ')</em>' : '') + '</span>' +
+          '<span class="art">' + esc(M.t(ART[p.kind] || p.kind || '')) + '</span>' +
+          (host ? '<span class="marke gast">' + M.t('Gastgeber') + '</span>' : '') +
+          (p.connected === false ? '<span class="marke weg">' + M.t('getrennt') + '</span>' : '<span class="status ' + (bereit ? 'ja' : '') + '">' + (bereit ? M.t('bereit') : M.t('wartet')) + '</span>') +
           '</li>';
-      }).join('') || '<li class="lz leer">Noch niemand da.</li>';
+      }).join('') || '<li class="lz leer">' + M.t('Noch niemand da.') + '</li>';
       const k = $('#bereit');
       const bereit = !!(ich && ich.ready);
-      k.textContent = bereit ? 'Bereit ✓' : 'Bereit';
+      k.textContent = bereit ? M.t('Bereit ✓') : M.t('Bereit');
       k.classList.toggle('an', bereit);
-      $('#lobby-status').textContent = bereit ? 'Warte auf den Start durch den Gastgeber …' : 'Tippe auf „Bereit“, wenn du startklar bist.';
+      $('#lobby-status').textContent = bereit ? M.t('Warte auf den Start durch den Gastgeber …') : M.t('Tippe auf „Bereit“, wenn du startklar bist.');
       $('#lobby-regeln').innerHTML = M.Karten.regelnText(l.rules).map(t => '<li>' + esc(t) + '</li>').join('');
-      $('#lobby-zahl').textContent = spieler.length + (spieler.length === 1 ? ' Spieler' : ' Spieler');
+      $('#lobby-zahl').textContent = spieler.length === 1 ? M.t('1 Spieler') : M.t('%d Spieler', spieler.length);
     },
     bereit() {
       const ich = this.lobby && (this.lobby.players || []).find(p => p.id === this.meineId);
@@ -440,7 +457,7 @@
     _sendeAkt(a) {
       this.seq++;
       const ok = this.sende({ t: 'act', seq: this.seq, a });
-      if (!ok) { this.toast('Keine Verbindung – ich verbinde neu …', 'fehler'); this.verbindung.wecken(); return false; }
+      if (!ok) { this.toast(M.t('Keine Verbindung – ich verbinde neu …'), 'fehler'); this.verbindung.wecken(); return false; }
       this.offen = { seq: this.seq, zeit: Date.now(), a };
       clearTimeout(this._antwortTimer);
       const seq = this.seq;
@@ -448,7 +465,7 @@
         if (this.offen && this.offen.seq === seq) {
           this.offen = null;
           if (this.schwebend !== null && this.tisch) { this.tisch.hand.schwebe(this.schwebend, false); this.schwebend = null; }
-          this.toast('Keine Antwort vom Gastgeber – ich verbinde neu …', 'fehler');
+          this.toast(M.t('Keine Antwort vom Gastgeber – ich verbinde neu …'), 'fehler');
           this.verbindung.wecken();
         }
       }, 6000);
@@ -478,7 +495,7 @@
       const legbar = v.turn === v.seat && (v.phase === 'turn' || v.phase === 'drawn' || (v.phase === 'challenge' && (h.playable || []).length > 0));
       if (!legbar) {
         t.hand.wackeln(id);
-        this.toast(v.phase === 'challenge' && h.can_challenge ? 'Erst anzweifeln oder annehmen.' : (h.need_color ? 'Erst die Farbe wählen.' : 'Warte, bis du dran bist.'));
+        this.toast(v.phase === 'challenge' && h.can_challenge ? M.t('Erst anzweifeln oder annehmen.') : (h.need_color ? M.t('Erst die Farbe wählen.') : M.t('Warte, bis du dran bist.')));
         return;
       }
       if ((h.playable || []).indexOf(id) < 0) {
@@ -495,7 +512,7 @@
         t.oeffneFarbwahl(v.side, this.zaehleFarben(v, id), farbe => {
           if (farbe) this._spieleKarte(id, farbe);
           else if (this.tisch) this.tisch.hand.waehle(null);
-        }, M.Karten.zerlege(c.face).art === 'ablegen_joker' ? 'Welche Farbe legst du mit ab?' : null);
+        }, M.Karten.zerlege(c.face).art === 'ablegen_joker' ? M.t('Welche Farbe legst du mit ab?') : null);
         return;
       }
       this._spieleKarte(id);
@@ -511,17 +528,16 @@
     },
     passtNicht(v, c) {
       const K = M.Karten;
-      if (v.phase === 'drawn') return this.beliebigNachZiehen(v) ? 'Passt nicht – leg eine passende Karte oder tippe auf „Behalten“.' : 'Jetzt geht nur die gezogene Karte – oder „Behalten“.';
-      if (v.phase === 'challenge') return 'Jetzt geht nur die gleiche Ziehkarte zum Weitergeben – oder anzweifeln bzw. annehmen.';
-      if (v.pending && v.pending.kind) return 'Erst die Strafe: ' + ((v.hints || {}).text || 'ziehen oder weitergeben.');
+      if (v.phase === 'drawn') return this.beliebigNachZiehen(v) ? M.t('Passt nicht – leg eine passende Karte oder tippe auf „Behalten“.') : M.t('Jetzt geht nur die gezogene Karte – oder „Behalten“.');
+      if (v.phase === 'challenge') return M.t('Jetzt geht nur die gleiche Ziehkarte zum Weitergeben – oder anzweifeln bzw. annehmen.');
+      if (v.pending && v.pending.kind) return M.t('Erst die Strafe: %s', M.I18n.msgText({ lt: (v.hints || {}).lt, text: (v.hints || {}).text }, M.t('ziehen oder weitergeben.')));
       // Ohne Hervorhebung (persönliche Einstellung) nur der schlichte Hinweis, ohne Tipp, was stattdessen passt
-      if (!this.hervorheben()) return 'Die Karte passt nicht.';
-      if (K.istJoker(c.face)) return 'Diesen Joker darfst du gerade nicht legen – du hast noch ' + K.farbName(v.color) + '.';
+      if (!this.hervorheben()) return M.t('Die Karte passt nicht.');
+      if (K.istJoker(c.face)) return M.t('Diesen Joker darfst du gerade nicht legen – du hast noch %s.', K.farbName(v.color));
       const top = v.top ? K.zerlege(v.top.face) : null;
-      let was = K.farbName(v.color);
       const passend = top && !K.istJoker(top.key) ? K.passendText(top.key) : '';
-      if (passend) was += ' oder ' + passend;
-      return 'Passt nicht – gefragt ist ' + was + '.';
+      if (passend) return M.t('Passt nicht – gefragt ist %s oder %s.', K.farbName(v.color), passend);
+      return M.t('Passt nicht – gefragt ist %s.', K.farbName(v.color));
     },
     hervorheben() { return this.einstellungen.hervorheben !== false; },
     // Hausregel draw_play = "any": nach dem Ziehen darf jede passende Karte gelegt werden (hints.playable listet sie)
@@ -538,7 +554,7 @@
       const v = this.view, t = this.tisch;
       if ((v.hints.can_pick || []).indexOf(id) < 0) {
         t.hand.wackeln(id);
-        this.toast('Mit ablegen kannst du nur Karten in ' + M.Karten.farbName(v.discard_pick.color) + ' (keine Joker).');
+        this.toast(M.t('Mit ablegen kannst du nur Karten in %s (keine Joker).', M.Karten.farbName(v.discard_pick.color)));
         return;
       }
       this.pickAuswahl(v);
@@ -557,7 +573,7 @@
       // Ablegen-Joker: zum Schluss die Spielfarbe (Zählung ohne die mitabgelegten Karten)
       const z = {};
       (v.hand || []).forEach(c => { if (karten.indexOf(c.id) >= 0) return; const k = M.Karten.zerlege(c.face); if (k.farbe) z[k.farbe] = (z[k.farbe] || 0) + 1; });
-      t.oeffneFarbwahl(v.side, z, farbe => { if (farbe && this.imAblegen()) this._sendeAkt({ a: 'discard_pick', cards: karten, color: farbe }); }, 'Mit welcher Farbe geht es weiter?');
+      t.oeffneFarbwahl(v.side, z, farbe => { if (farbe && this.imAblegen()) this._sendeAkt({ a: 'discard_pick', cards: karten, color: farbe }); }, M.t('Mit welcher Farbe geht es weiter?'));
     },
     // eigenes Glücksspiel läuft (Phase gamble, ich bin dran)
     imGluecksspiel() { const v = this.view; return !!(v && v.phase === 'gamble' && v.turn === v.seat && v.seat >= 0); },
@@ -568,7 +584,7 @@
       const h = v.hints || {};
       if ((Array.isArray(h.can_stake) ? h.can_stake : []).indexOf(id) < 0) {
         t.hand.wackeln(id);
-        this.toast(h.can_press ? 'Erst den Glücksspielknopf drücken.' : 'Warte, bis du dran bist.');
+        this.toast(h.can_press ? M.t('Erst den Glücksspielknopf drücken.') : M.t('Warte, bis du dran bist.'));
         return;
       }
       if (this.offen) return;
@@ -590,14 +606,14 @@
         this._sendeAkt({ a: 'press' });
         return;
       }
-      if (this.imGluecksspiel()) this.toast(h.can_stop ? 'Leg erst eine Karte verdeckt auf deinen Einsatz – oder hör auf.' : 'Leg erst eine Karte verdeckt auf deinen Einsatz – tipp sie an.');
-      else this.toast('Den Knopf drückt, wer gerade Glücksspiel spielt.');
+      if (this.imGluecksspiel()) this.toast(h.can_stop ? M.t('Leg erst eine Karte verdeckt auf deinen Einsatz – oder hör auf.') : M.t('Leg erst eine Karte verdeckt auf deinen Einsatz – tipp sie an.'));
+      else this.toast(M.t('Den Knopf drückt, wer gerade Glücksspiel spielt.'));
     },
     // Glücksspiel aufhören ({a:"stop"}), nur mit hints.can_stop (nach mindestens einem Druck ohne Treffer)
     aufhoeren() {
       const v = this.view;
       if (!v || !this.tisch) return;
-      if (!(v.hints || {}).can_stop) { this.toast('Aufhören geht erst nach einem Druck ohne Treffer.'); return; }
+      if (!(v.hints || {}).can_stop) { this.toast(M.t('Aufhören geht erst nach einem Druck ohne Treffer.')); return; }
       if (this.offen) return;
       if (!this._sendeAkt({ a: 'stop' })) return;
       this.tisch.stopGesendet();
@@ -618,11 +634,11 @@
       if (!v) return;
       const h = v.hints || {};
       if (h.can_draw) { if (!this.offen) this._sendeAkt({ a: 'draw' }); return; }
-      if (this.imAblegen()) this.toast('Wähl erst die Karten zum Mitablegen und tippe auf „Ablegen“.');
-      else if (this.imGluecksspiel()) this.toast(h.can_press ? 'Im Glücksspiel wird nicht gezogen – drück den Knopf.' : 'Im Glücksspiel wird nicht gezogen – setz eine Karte.');
-      else if (v.turn === v.seat && v.phase === 'drawn') this.toast(this.beliebigNachZiehen(v) ? 'Leg eine passende Karte oder tippe auf „Behalten“.' : 'Leg die gezogene Karte oder tippe auf „Behalten“.');
-      else if (v.turn === v.seat && h.can_challenge) this.toast('Erst anzweifeln oder annehmen.');
-      else if (v.turn !== v.seat) this.toast('Warte, bis du dran bist.');
+      if (this.imAblegen()) this.toast(M.t('Wähl erst die Karten zum Mitablegen und tippe auf „Ablegen“.'));
+      else if (this.imGluecksspiel()) this.toast(h.can_press ? M.t('Im Glücksspiel wird nicht gezogen – drück den Knopf.') : M.t('Im Glücksspiel wird nicht gezogen – setz eine Karte.'));
+      else if (v.turn === v.seat && v.phase === 'drawn') this.toast(this.beliebigNachZiehen(v) ? M.t('Leg eine passende Karte oder tippe auf „Behalten“.') : M.t('Leg die gezogene Karte oder tippe auf „Behalten“.'));
+      else if (v.turn === v.seat && h.can_challenge) this.toast(M.t('Erst anzweifeln oder annehmen.'));
+      else if (v.turn !== v.seat) this.toast(M.t('Warte, bis du dran bist.'));
     },
     mau() {
       const v = this.view;
@@ -633,7 +649,7 @@
         // Kein Ton hier: Er kommt mit dem Ereignis „mau“ vom Gastgeber – auf allen Geräten gleichzeitig und nie doppelt.
         this.vibrieren(40);
         this._sendeAkt({ a: 'mau' });
-      } else this.toast('„Mau!“ rufst du, wenn du dran bist und dir nach dem Legen nur noch eine Karte bleibt.');
+      } else this.toast(M.t('„Mau!“ rufst du, wenn du dran bist und dir nach dem Legen nur noch eine Karte bleibt.'));
     },
     // Mau-Ton zum Ereignis (AGENTS.md Nr. 21: auf allen Geräten, außer der Ton ist hier aus). art = 'mau' | 'mau_mau'.
     // Entprellung je Platz und Art: höchstens ein Ton pro Sekunde (z. B. wenn ein Stand doppelt ankommt).
@@ -654,7 +670,7 @@
       Speicher.set('stumm', e.stumm);
       M.Ton.setzeStumm(e.stumm);
       if (this.tisch) this.tisch.zeigeTon();
-      this.toast(e.stumm ? 'Ton aus – „Mau!“ siehst du weiter als Sprechblase.' : 'Ton an', 'leise', 1600);
+      this.toast(e.stumm ? M.t('Ton aus – „Mau!“ siehst du weiter als Sprechblase.') : M.t('Ton an'), 'leise', 1600);
     },
     sortieren() {
       const reihe = ['farbe', 'wert', 'punkte'];
@@ -662,7 +678,7 @@
       e.sort = reihe[(reihe.indexOf(e.sort) + 1) % reihe.length];
       Speicher.set('sort', e.sort);
       if (this.tisch && this.view) this.tisch.zeige(this.view, true);
-      this.toast('Sortiert nach ' + { farbe: 'Farbe', wert: 'Wert', punkte: 'Punkten' }[e.sort], 'leise', 1200);
+      this.toast({ farbe: M.t('Sortiert nach Farbe'), wert: M.t('Sortiert nach Wert'), punkte: M.t('Sortiert nach Punkten') }[e.sort], 'leise', 1200);
     },
     sortModus() { return this.einstellungen.sort; },
     rueckseiten() {
@@ -674,7 +690,7 @@
       clearTimeout(this._rueckTimer);
       if (an) {
         t.hand.waehle(null);
-        this.toast('So sehen die anderen deine Karten', 'leise', 1800);
+        this.toast(M.t('So sehen die anderen deine Karten'), 'leise', 1800);
         this._rueckTimer = setTimeout(() => { if (t.hand.rueck) { t.hand.zeigeRueck(false); t.knRueck.classList.remove('aktiv'); } }, 6000);
       }
     },
@@ -737,12 +753,14 @@
       this.oeffne('hilfe');
       this.vibrieren(15);
     },
+    // „1 Karte“ / „5 Karten“ (Mehrzahl je Sprache)
+    kartenText(n) { return n === 1 ? M.t('1 Karte') : M.t('%d Karten', n); },
     gegnerAnsicht(seat) {
       const v = this.view;
       const p = v && (v.players || []).find(x => x.seat === seat);
       if (!p) return;
-      if (!p.backs || !p.backs.length) { this.toast(p.name + ': ' + p.count + (p.count === 1 ? ' Karte' : ' Karten') + (v.rules && v.rules.backs_visible === false ? ' (Rückseiten verdeckt)' : '')); return; }
-      $('#ansicht-titel').textContent = p.name + ' · ' + p.count + (p.count === 1 ? ' Karte' : ' Karten');
+      if (!p.backs || !p.backs.length) { this.toast(p.name + ': ' + this.kartenText(p.count) + (v.rules && v.rules.backs_visible === false ? ' ' + M.t('(Rückseiten verdeckt)') : '')); return; }
+      $('#ansicht-titel').textContent = p.name + ' · ' + this.kartenText(p.count);
       $('#ansicht-karten').innerHTML = p.backs.map(f => '<div class="karte">' + M.Karten.gesichtHTML(f) + '</div>').join('');
       this.oeffne('ansicht');
     },
@@ -751,16 +769,16 @@
     zeigeRunde(v) {
       const spieler = v.players || [];
       const res = (v.result && typeof v.result === 'object') ? v.result : {};
-      const name = s => { const p = spieler.find(x => x.seat === s); return p ? p.name : 'Platz ' + (s + 1); };
+      const name = s => { const p = spieler.find(x => x.seat === s); return p ? p.name : M.t('Platz %d', s + 1); };
       let r = Array.isArray(res.ranking) && res.ranking.length ? res.ranking : (Array.isArray(v.ranking) && v.ranking.length ? v.ranking : spieler.slice().sort((a, b) => a.count - b.count).map(p => p.seat));
       r = r.map((x, i) => (typeof x === 'object' && x) ? x : { seat: x, place: i + 1 });
       const feld = (a, s) => (Array.isArray(a) && typeof a[s] === 'number') ? a[s] : undefined;
       const wertung = !!(v.rules && v.rules.scoring === 'points500' && v.rules.round_end !== 'last');
       const ich = v.seat;
-      $('#runde-titel').textContent = v.phase === 'game_over' ? 'Partie vorbei' : 'Runde ' + (res.round || v.round || 1) + ' vorbei';
+      $('#runde-titel').textContent = v.phase === 'game_over' ? M.t('Partie vorbei') : M.t('Runde %d vorbei', res.round || v.round || 1);
       const erster = r[0] ? r[0].seat : -1;
-      const vorn = res.reason === 'blockiert' ? 'Nichts geht mehr – ' : '';
-      $('#runde-sieger').textContent = vorn + (erster === ich ? (v.phase === 'game_over' ? 'Du gewinnst die Partie!' : 'Mau-Mau! Du hast gewonnen.') : (erster >= 0 ? name(erster) + (v.phase === 'game_over' ? ' gewinnt die Partie.' : ' gewinnt.') : ''));
+      const vorn = res.reason === 'blockiert' ? M.t('Nichts geht mehr – ') : '';
+      $('#runde-sieger').textContent = vorn + (erster === ich ? (v.phase === 'game_over' ? M.t('Du gewinnst die Partie!') : M.t('Mau-Mau! Du hast gewonnen.')) : (erster >= 0 ? (v.phase === 'game_over' ? M.t('%s gewinnt die Partie.', name(erster)) : M.t('%s gewinnt.', name(erster))) : ''));
       $('#runde-liste').innerHTML = r.map((x, i) => {
         const p = spieler.find(q => q.seat === x.seat) || {};
         const rest = feld(res.points, x.seat) !== undefined ? feld(res.points, x.seat) : (x.points !== undefined ? x.points : x.punkte);
@@ -768,10 +786,10 @@
         const stand = feld(res.scores, x.seat) !== undefined ? feld(res.scores, x.seat) : (p.score || 0);
         const karten = Array.isArray(res.hands) && Array.isArray(res.hands[x.seat]) ? res.hands[x.seat].length : (p.count | 0);
         let pk = '';
-        if (i === 0 && wertung && gewinn) pk = '+' + gewinn + ' Pkt.';
-        else if (karten) pk = karten + (karten === 1 ? ' Karte' : ' Karten') + (rest !== undefined ? ' · ' + rest + ' Pkt.' : '');
-        else if (i > 0) pk = 'fertig';     // „bis zum Letzten“: schon ausgeschieden
-        const ges = wertung ? stand : (stand ? stand + (stand === 1 ? ' Sieg' : ' Siege') : '');
+        if (i === 0 && wertung && gewinn) pk = M.t('+%d Pkt.', gewinn);
+        else if (karten) pk = this.kartenText(karten) + (rest !== undefined ? ' · ' + M.t('%d Pkt.', rest) : '');
+        else if (i > 0) pk = M.t('fertig');     // „bis zum Letzten“: schon ausgeschieden
+        const ges = wertung ? stand : (stand ? (stand === 1 ? M.t('1 Sieg') : M.t('%d Siege', stand)) : '');
         return '<li class="' + (x.seat === ich ? 'ich' : '') + '"><span class="pl">' + (x.place || i + 1) + '.</span><span class="nm">' + esc(name(x.seat)) + '</span>' +
           (pk ? '<span class="pk">' + esc(pk) + '</span>' : '') + (ges !== '' ? '<span class="ges">' + esc(ges) + '</span>' : '') + '</li>';
       }).join('');
@@ -781,7 +799,7 @@
         kw.hidden = !weiter;
         kw.onclick = ev => { ev.preventDefault(); kw.disabled = true; this._sendeAkt({ a: 'next_round' }); setTimeout(() => { kw.disabled = false; }, 1500); };
       }
-      $('#runde-fuss').textContent = v.phase === 'game_over' ? 'Der Gastgeber kann eine neue Partie starten.' : (weiter ? 'Du startest die nächste Runde.' : (this.hostName || 'Der Gastgeber') + ' startet die nächste Runde.');
+      $('#runde-fuss').textContent = v.phase === 'game_over' ? M.t('Der Gastgeber kann eine neue Partie starten.') : (weiter ? M.t('Du startest die nächste Runde.') : (this.hostName ? M.t('%s startet die nächste Runde.', this.hostName) : M.t('Der Gastgeber startet die nächste Runde.')));
       if ($('#runde').hidden) this.oeffne('runde');
     },
     menue() {
@@ -793,9 +811,10 @@
       $('#zeile-zugvib').hidden = !navigator.vibrate;
       $('#menue-gross-tipp').hidden = !(e.schrift === 'sehr_gross' && !e.grosser_modus);
       $('#menue-stumm').hidden = !e.stumm;
-      $('#menue-info').textContent = 'Mau-Mau Flip ' + this.version + ' · Browser · ' + this.name + (this.view ? ' · Platz ' + (this.view.seat + 1) : '');
+      $('#menue-info').textContent = this._menueInfo();
       this.oeffne('menue');
     },
+    _menueInfo() { return 'Mau-Mau Flip ' + this.version + ' · ' + M.t('Browser') + ' · ' + this.name + (this.view ? ' · ' + M.t('Platz %d', this.view.seat + 1) : ''); },
     // „Regeln“ im Spielmenü: aktive Regeln und besondere Karten (nur lesen, Partie läuft weiter)
     regeln() {
       const r = this.view && this.view.rules;
@@ -825,6 +844,7 @@
       if (k === 'schrift') { this._schrift(wert); if (this.tisch && this.view) this.tisch.zeige(this.view, true); }
       if (k === 'grosser_modus') this._gross(wert);
       if (k === 'zug_vibration' && wert) this.zugVibration();   // zum Ausprobieren
+      if (k === 'sprache') M.I18n.setze(wert);   // Hörer unten bauen Dynamisches neu
       this.menue();
     },
     // Schriftgröße je Gerät: html[data-schrift] setzt --fs (style.css); Kartenbilder bleiben gleich
@@ -871,6 +891,18 @@
     },
     _logLeeren() { while (this.logPuffer.length && this.sende(this.logPuffer[0])) this.logPuffer.shift(); },
   };
+
+  // Sprachwechsel: alles Dynamische neu beschriften (Titel, Startseite, Lobby, Tisch, offene Fenster)
+  M.I18n.beiWechsel(() => {
+    document.title = M.t('Mau-Mau Flip – Mitspielen');
+    App._startTexte();
+    if (App.lobby && App.screen === 'lobby') App.zeigeLobby(App.lobby);
+    else if (App.screen === 'lobby') App._lobbyLeer();
+    if (App.tisch && App.view) { App.tisch.zeige(App.view, true); if (!$('#runde').hidden) App.zeigeRunde(App.view); }
+    if (!$('#regeln').hidden) App.regeln();
+    if (!$('#hilfe').hidden || !$('#ansicht').hidden) { App.schliesse('hilfe'); App.schliesse('ansicht'); }
+    if (!$('#menue').hidden) $('#menue-info').textContent = App._menueInfo();
+  });
 
   M.App = App;
   M.Speicher = Speicher;

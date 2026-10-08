@@ -151,7 +151,7 @@ func setup(app_settings: AppSettings) -> void:
 		apk_ready = FileAccess.file_exists(apk_path())
 	elif int(settings.get_value("update_last_check", 0)) > 0:
 		# Die automatische Prüfung läuft nur einmal am Tag: Bis zur nächsten zeigt der Status, wann zuletzt erfolgreich geprüft wurde.
-		status = "Zuletzt geprüft: %s." % local_time_text(int(settings.get_value("update_last_check", 0)) / 1000)
+		status = I18n.t("Zuletzt geprüft: %s.") % local_time_text(int(settings.get_value("update_last_check", 0)) / 1000)
 	# Aufräumen beim Start: Reste abgebrochener Downloads und schon installierte APKs – nur die APK des noch offenen Updates bleibt.
 	# Nach einem erfolgreichen Update ist das gemerkte Release nicht mehr neuer: Dann verschwindet die geladene APK.
 	prune()
@@ -238,7 +238,7 @@ func finish_check() -> void:
 		apk_ready = FileAccess.file_exists(apk_path())
 		publish("Neue Version verfügbar.")
 	elif failed:
-		publish(failure if failure != "" else NO_CONNECTION)
+		publish(failure if failure != "" else I18n.t(NO_CONNECTION))
 	elif best.is_empty():
 		release = {}
 		publish("Noch kein passendes Release veröffentlicht.")
@@ -257,7 +257,7 @@ static func failure_text(result: int, code: int, headers: PackedStringArray, now
 	if result != HTTPRequest.RESULT_SUCCESS:
 		return NO_CONNECTION
 	if not rate_limited(code):
-		return "GitHub antwortet gerade nicht (Fehler %d). Bitte später erneut versuchen." % code
+		return I18n.t("GitHub antwortet gerade nicht (Fehler %d). Bitte später erneut versuchen.") % code
 	var retry := -1
 	var remaining := ""
 	var reset := -1
@@ -277,9 +277,9 @@ static func failure_text(result: int, code: int, headers: PackedStringArray, now
 	if wait < 0 and remaining == "0" and reset > 0:
 		wait = maxi(0, reset - now_unix)
 	if wait < 0:
-		return LIMIT_TEXT + "."
+		return I18n.t(LIMIT_TEXT) + "."
 	var minutes := maxi(1, ceili(wait / 60.0))
-	return LIMIT_TEXT + " (in etwa %d %s)." % [minutes, "Minute" if minutes == 1 else "Minuten"]
+	return I18n.t(LIMIT_TEXT) + " " + (I18n.t("(in etwa 1 Minute).") if minutes == 1 else I18n.t("(in etwa %d Minuten).") % minutes)
 
 static func release_page(rel: Dictionary, beta_channel: bool) -> String:
 	# Ausweg ohne den Updater (Knopf „Im Browser herunterladen“): die GitHub-Seite des angebotenen Releases, sonst die Release-Liste
@@ -405,22 +405,22 @@ func open_permission() -> void:
 func install() -> void:
 	var problem := install_file(apk_path(), str(release.version))
 	apk_ready = FileAccess.file_exists(apk_path())
-	publish("Installer gestartet." if problem == "" else problem)
+	publish("Installer gestartet." if problem == "" else java_text(problem))
 
 func install_file(file: String, version: String) -> String:
 	# Installationsberechtigung, dann Paket, höhere Versionsnummer, angekündigte Version und identische Signatur (Updater.java), dann
 	# der System-Installer. "" = Installer gestartet, sonst deutscher Grund; eine abgelehnte Datei wird gelöscht.
 	var a := android()
 	if a.is_empty():
-		return "Installation nur auf dem Handy möglich."
+		return I18n.t("Installation nur auf dem Handy möglich.")
 	if not can_install():
 		open_permission()
-		return "Bitte „Apps installieren“ für Mau-Mau Flip erlauben (Android 7: „Unbekannte Herkunft“) und erneut tippen."
+		return I18n.t("Bitte „Apps installieren“ für Mau-Mau Flip erlauben (Android 7: „Unbekannte Herkunft“) und erneut tippen.")
 	var path := ProjectSettings.globalize_path(file)
 	var problem := str(a[0].verify(a[1], path, version))
 	if problem != "":
 		DirAccess.remove_absolute(file)
-		return "Update abgelehnt: " + problem
+		return I18n.t("Update abgelehnt: %s") % java_text(problem)
 	return str(a[0].install(a[1], path))
 
 func prune() -> void:
@@ -431,3 +431,13 @@ func prune() -> void:
 	for name in dir.get_files():
 		if download_dir + "/" + name != apk_path():
 			dir.remove(name)
+
+static func java_text(s: String) -> String:
+	# Meldungen der Java-Helfer kommen deutsch; „Vorspann: Einzelheit“ wird nur im Vorspann übersetzt.
+	var full := I18n.t(s)
+	if full != s:
+		return full
+	var i := s.find(": ")
+	if i > 0:
+		return I18n.t(s.left(i)) + ": " + s.substr(i + 2)
+	return s

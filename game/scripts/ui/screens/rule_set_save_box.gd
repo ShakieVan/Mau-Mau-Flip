@@ -156,9 +156,9 @@ func _build(suggestion: String) -> void:
 func _show_rules() -> void:
 	var extra := cfg.card_count() > CardDB.CARD_COUNT
 	_pill.add_theme_stylebox_override("panel", UiTheme.box(UiPalette.FILL["gelb"] if extra else Color(UiPalette.INK, 0.06), Color(UiPalette.INK, 0.8 if extra else 0.3), 2, 24, 18.0, 6.0))
-	_pill_label.text = "%d Karten" % cfg.card_count()
+	_pill_label.text = I18n.t("%d Karten") % cfg.card_count()
 	var s := RulesBar.summary(cfg) + "."
-	_what.text = ("Regeln von %s: %s" % [host_name, s]) if host_name != "" else s
+	_what.text = (I18n.t("Regeln von %s: %s") % [host_name, s]) if host_name != "" else s
 
 
 # Der Gastgeber hat die Regeln geändert, während die Karte offen ist: gespeichert werden die neuen (eine offene Rückfrage verfällt).
@@ -248,9 +248,9 @@ func _save(n: String) -> void:
 		return
 	_clear_question()
 	if result == RuleSets.ERR_FULL and host_name != "":
-		_show_msg("Schon %d Regelsätze gespeichert. Nimm einen vorhandenen Namen; löschen kannst du später unter „Regeln“ bei „Gespeichert“." % RuleSets.MAX, true)
+		_show_msg(I18n.t("Schon %d Regelsätze gespeichert. Nimm einen vorhandenen Namen; löschen kannst du später unter „Regeln“ bei „Gespeichert“.") % RuleSets.MAX, true)
 	elif result == RuleSets.ERR_FULL:
-		_show_msg("Schon %d Regelsätze gespeichert. Nimm einen vorhandenen Namen – oder brich ab und lösche unter „Gespeichert“ einen Satz mit seinem ×." % RuleSets.MAX, true)
+		_show_msg(I18n.t("Schon %d Regelsätze gespeichert. Nimm einen vorhandenen Namen – oder brich ab und lösche unter „Gespeichert“ einen Satz mit seinem ×.") % RuleSets.MAX, true)
 	elif result == RuleSets.ERR_WRITE:
 		_show_msg("Speichern hat nicht geklappt. Ist der Speicher des Geräts voll?", true)
 	else:
@@ -274,7 +274,7 @@ func _close() -> void:
 func _ask_overwrite(existing: String) -> void:
 	_pending = existing
 	_asked_ms = Time.get_ticks_msec()
-	_question_label.text = "„%s“ gibt es schon – mit anderen Regeln. Überschreiben?" % existing
+	_question_label.text = I18n.t("„%s“ gibt es schon – mit anderen Regeln. Überschreiben?") % existing
 	_question.visible = true
 	_msg.visible = false
 	_yes.disabled = true

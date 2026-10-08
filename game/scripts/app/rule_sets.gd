@@ -61,17 +61,17 @@ static func clean_name(text: String) -> String:
 static func suggestion_for_host(host_name: String) -> String:
 	var who := clean_name(host_name)
 	if who == "":
-		return "Regeln vom Gastgeber"
-	for pattern in ["Regeln von %s", "Von %s"]:
+		return I18n.t("Regeln vom Gastgeber")
+	for pattern in [I18n.t("Regeln von %s"), I18n.t("Von %s")]:
 		var s := (pattern as String) % who
 		if s.length() <= NAME_MAX:
 			return s
-	return clean_name("Von " + who)
+	return clean_name(I18n.t("Von %s") % who)
 
 
 # Bezeichnung des Gastgeber-Platzes: „Zuletzt gespielt bei Lena“
 static func host_title(host_name: String) -> String:
-	return "Zuletzt gespielt bei %s" % host_name
+	return I18n.t("Zuletzt gespielt bei %s") % host_name
 
 
 # --- Prüfen (AppSettings.sanitize) ---

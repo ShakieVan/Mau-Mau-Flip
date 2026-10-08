@@ -34,7 +34,8 @@ func show_hint(text: String, my_turn := false) -> void:
 
 
 # kind: info | warn | error
-func toast(text: String, kind := "info", life := 2.8) -> void:
+func toast(raw_text: String, kind := "info", life := 2.8) -> void:
+	var text := I18n.t(raw_text)   # deutsche msgid ohne Platzhalter → aktuelle Sprache (Formatstrings übersetzt der Aufrufer)
 	for t in _toasts:
 		if t["text"] == text:
 			t["t"] = 0.0          # gleiche Meldung nicht doppelt, nur verlängern

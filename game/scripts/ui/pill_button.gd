@@ -63,7 +63,7 @@ func set_disabled(d: bool) -> void:
 
 func preferred_width() -> float:
 	var f := UiFonts.text(700, 100.0)
-	var w := f.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x + 44.0 * big
+	var w := f.get_string_size(I18n.t(text), HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x + 44.0 * big
 	if icon_name != "":
 		w += 34.0 * big
 	return maxf(w, touch_h())
@@ -125,7 +125,8 @@ func _draw() -> void:
 		sb.bg_color = Color(sb.bg_color, sb.bg_color.a * 0.5)
 	draw_style_box(sb, r)
 	var f := UiFonts.text(700, 100.0)
-	var tw := f.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+	var shown := I18n.t(text)
+	var tw := f.get_string_size(shown, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
 	var content_w := tw + (34.0 * big if icon_name != "" else 0.0)
 	var x := r.position.x + (r.size.x - content_w) * 0.5
 	var cy := r.position.y + r.size.y * 0.5
@@ -133,4 +134,9 @@ func _draw() -> void:
 		var cut := sb.bg_color if sb.bg_color.a > 0.5 else (UiPalette.NIGHT if night > 0.5 else UiPalette.PAPER)
 		draw_texture_rect(UiIcons.icon(icon_name, 64 if big > 1.0 else 48, fg, cut), Rect2(x, cy - 13.0 * big, 26.0 * big, 26.0 * big), false)
 		x += 34.0 * big
-	draw_string(f, Vector2(x, cy + font_size * 0.36), text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, fg)
+	draw_string(f, Vector2(x, cy + font_size * 0.36), shown, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, fg)
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_TRANSLATION_CHANGED:
+		_fit()
