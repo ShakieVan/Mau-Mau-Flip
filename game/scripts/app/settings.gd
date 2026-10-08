@@ -199,7 +199,11 @@ func remember_names(names: Array) -> void:
 	merged.append_array(get_value("letzte_namen", []))
 	set_value("letzte_namen", merged)
 
-# Faktor für die Bedenkzeit der Computergegner aus dem Tempo-Regler (0 gemütlich … 1 flott): 2,5 … 1 (bei 0,5) … 0,4.
+# Faktor für die Bedenkzeit der Computergegner aus dem Tempo-Regler (0 gemütlich … 1 flott): 5 … 1 (bei 0,5) … 0,4, je Hälfte
+# linear (Nutzerwunsch 08.10.2026: „gemütlich“ halb so schnell wie bisher, vorher 2,5; Mitte und „flott“ unverändert).
 # Betrifft nur die Bedenkzeit (GameTable.think_factor), nicht die Animationen; im WLAN gilt der Regler des Gastgebers.
 static func think_factor(tempo: float) -> float:
-	return pow(2.5, 1.0 - 2.0 * clampf(tempo, 0.0, 1.0))
+	var t := clampf(tempo, 0.0, 1.0)
+	if t <= 0.5:
+		return lerpf(5.0, 1.0, t * 2.0)
+	return lerpf(1.0, 0.4, (t - 0.5) * 2.0)

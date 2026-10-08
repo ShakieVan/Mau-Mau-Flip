@@ -285,6 +285,9 @@ func migration_013(path: String) -> void:
 	# Tempo der Computergegner
 	check(is_equal_approx(float(st.get_value("bot_tempo")), 0.5) and is_equal_approx(AppSettings.think_factor(0.5), 1.0), "Tempo: Standard 0,5 = Faktor 1")
 	check(AppSettings.think_factor(0.0) > 2.0 and AppSettings.think_factor(1.0) < 0.5, "Tempo: gemütlich langsamer, flott schneller")
+	check(is_equal_approx(AppSettings.think_factor(0.0), 5.0) and is_equal_approx(AppSettings.think_factor(0.25), 3.0)
+			and is_equal_approx(AppSettings.think_factor(1.0), 0.4) and is_equal_approx(AppSettings.think_factor(0.75), 0.7),
+			"Tempo: gemütlich 5-fache Bedenkzeit, je Hälfte linear, flott 0,4")
 	check(st.set_value("bot_tempo", 3) and is_equal_approx(float(st.get_value("bot_tempo")), 1.0) and not st.set_value("bot_tempo", "schnell"), "Tempo: begrenzt, Text ungültig")
 	for suffix in ["", ".bak", ".tmp"]:
 		DirAccess.remove_absolute(p + suffix)
