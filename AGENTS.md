@@ -104,6 +104,12 @@ Englische Fassung: gettext (`game/i18n/en_screens.po`, `en_table.po`, `en_rules.
 
 Tempo der Computergegner: „gemütlich“ = 5-fache Bedenkzeit (vorher 2,5), Mitte 1 und „flott“ 0,4 unverändert, je Reglerhälfte linear (`AppSettings.think_factor`). Gebaut aus einem sauberen Arbeitsbaum (Stand 1.2.2 + Tempo), weil die Online-Arbeit noch lief. Danach Release 1.3.0 (08.10.2026, Stand 1.2.3, ebenfalls aus sauberem Arbeitsbaum). **Das Online-Spiel wird deshalb Beta 1.3.1** (Version vor dem Bau auf 1.3.1 setzen).
 
+## Erledigt in Beta 1.3.2 (veröffentlicht 08.10.2026)
+
+Online-Spiel Schritt 1: Vermittler (`relay/`, Cloudflare Worker + Durable Object, Entwurf `docs/online/ENTWURF.md`), Standard-Vermittler eingebaut, Hauptmenü „Mit anderen spielen“ (WLAN oder online), Lobby-Weg „Online (Internet)“ mit QR/„Link teilen“/Raumcode, Beitreten per Raumcode, Vermittler-Adresse unter „Für Fortgeschrittene“, WLAN- und Online-Gäste gleichzeitig, Rückkehr per Token. Am Gerät über das echte Internet geprüft (S21 Android 15 + S10 App und Lite; Bericht `docs/geraetetest/1.3.1/BERICHT.md`). „Erwischt!“ fair: Bots warten (3–4,5 s × Tempo, 2–8 s, + 1 s Animation), wenn ein Mensch erwischen kann; Knopf in oberster Ebene, auch im großen Modus und im Browser. 1.3.1 übersprungen.
+- **Tags sind unveränderlich:** Der Vermittler holt `/c/<version>/` vom Tag `v<version>` und speichert es bis zu 1 Jahr (Cloudflare und Browser). Tags nur beim Veröffentlichen setzen (`tools/release.ps1`: erst committen und pushen, dann Release; das Skript legt den Tag an). Vorabtests über den echten Vermittler mit einer Versionsnummer, die danach übersprungen wird.
+- Offen: Android 16+ mit Spiel-WLAN (Prozessbindung an den Hotspot) und gleichzeitig Online – Vermittler-Socket könnte ins Netz ohne Internet laufen; Bindung beim Verbinden zählend aussetzen, am S24 prüfen (nur nach Absprache). Letzter Raumcode nach Neustart nicht vorbelegt. Lite-Startseite tagsüber dunkel. iPhone als Online-Gast ungetestet.
+
 ## Geplant: Online-Spiel, Schritt 1 (Nutzerentscheidung 08.10.2026)
 
 - Vermittler (Relay) als Cloudflare Worker mit Durable Objects (ein Raum = ein Objekt), im Repo samt „Deploy to Cloudflare“-Knopf im README: Jede Gruppe (oder der Nutzer als Standard) richtet sich mit einem Klick einen eigenen Gratis-Vermittler ein; der Gratistarif pausiert bei Überschreiten der Tageslimits, kostet aber nichts. Vor dem Umsetzen die aktuellen Bedingungen (Durable Objects im Gratistarif, WebSocket-Limits) prüfen.
