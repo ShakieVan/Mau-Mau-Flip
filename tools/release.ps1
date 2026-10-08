@@ -10,6 +10,11 @@ param(
 # Vorher: Bau mit Tests (tools/build.ps1 -Target Android), Versionsschema (Beta: Z ≠ 0, Release: Z = 0), Signatur (Projektschlüssel),
 # Paket/Version der APK, Notizen vorhanden, Tag noch frei. Im leeren Beta-Repo werden zuerst README.md und LICENSE angelegt.
 # Danach: GitHub-Angaben des Assets (Name, Größe, SHA-256-Digest, URL) so, wie der Updater sie verlangt.
+# Quell-Tag: Vor dem Release liegt im Quell-Repo (origin = ShakieVan/Mau-Mau-Flip) der Tag vX.Y.Z auf dem aktuellen, gepushten HEAD –
+# der Vermittler holt den Browser-Client jeder Version von dort (relay/src/client.js). Fehlt der Tag, legt das Skript ihn an und pusht
+# ihn (git tag vX.Y.Z HEAD; git push origin vX.Y.Z); zeigt er woandershin, Abbruch. Gilt für beta und release (Release-Kanal: gh release
+# create --verify-tag nimmt diesen Tag). Ungespeicherte Änderungen in webclient/ oder game/project.godot → Abbruch „erst committen“.
+# Reihenfolge: 1. tools/build.ps1 (erzeugt u. a. webclient/i18n_po.js) → 2. committen → 3. git push → 4. tools/release.ps1 -Channel …
 # Trockenlauf:  tools/release.ps1 -Channel beta -WhatIf   (prüft alles, ändert nichts, baut nicht)
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path $PSScriptRoot -Parent
@@ -83,6 +88,41 @@ $repoEmpty = $script:NativeExit -ne 0 -and ($contents -join ' ') -match 'empty'
 if ($Channel -eq 'release' -and $repoEmpty) { $problems.Add("$repo ist leer – zuerst den Quellcode hochladen (git push), dann das Release anlegen.") }
 Step ("Ziel-Repo: {0}" -f $(if ($repoEmpty -and $Channel -eq 'beta') { 'leer (README.md und LICENSE werden angelegt)' } elseif ($repoEmpty) { 'leer' } else { 'Inhalt: ' + ($contents -join ', ') }))
 
+# 3b. Quell-Repo (origin = ShakieVan/Mau-Mau-Flip): Der Vermittler holt den Browser-Client jeder App-Version vom Tag v<version>
+#     (raw.githubusercontent.com/<repo>/v<version>/webclient/…, relay/src/client.js). Deshalb muss der Tag vor dem Release auf dem
+#     aktuellen, gepushten HEAD liegen, und webclient/ samt game/project.godot (Version) muss eingecheckt sein. Gilt für beide Kanäle.
+$sourceRepo = 'ShakieVan/Mau-Mau-Flip'
+$git = (Get-Command git -ErrorAction SilentlyContinue)
+$tagLocal = ''; $tagRemote = ''; $head = ''
+function Get-DirtySource {
+    $out = Invoke-Native $git.Source @('-C', $projectRoot, '-c', 'core.quotepath=off', 'status', '--porcelain', '--untracked-files=all', '--', 'webclient', 'game/project.godot')
+    if ($script:NativeExit -ne 0) { return @('git status fehlgeschlagen: ' + ($out -join ' ')) }
+    return @($out | Where-Object { "$_".Trim() -ne '' })
+}
+if (-not $git) { $problems.Add('git fehlt – der Tag im Quell-Repo lässt sich nicht prüfen.') }
+else {
+    $originUrl = (Invoke-Native $git.Source @('-C', $projectRoot, 'remote', 'get-url', 'origin')) -join ''
+    if ($script:NativeExit -ne 0 -or $originUrl -notmatch '[:/]ShakieVan/Mau-Mau-Flip(\.git)?/?$') { $problems.Add("origin ist nicht $sourceRepo ($originUrl).") }
+    $dirty = Get-DirtySource
+    if ($dirty.Count -gt 0) { $problems.Add("webclient/ oder game/project.godot hat ungespeicherte Änderungen – erst committen und pushen: $(($dirty | Select-Object -First 5) -join '; ')") }
+    $head = (Invoke-Native $git.Source @('-C', $projectRoot, 'rev-parse', 'HEAD')) -join ''
+    $null = Invoke-Native $git.Source @('-C', $projectRoot, 'fetch', '--quiet', 'origin')
+    if ($script:NativeExit -ne 0) { $problems.Add('git fetch origin fehlgeschlagen (Netz/Anmeldung?).') }
+    $remoteBranches = @(Invoke-Native $git.Source @('-C', $projectRoot, 'branch', '-r', '--contains', $head) | Where-Object { "$_" -match '^\s*origin/' })
+    if ($remoteBranches.Count -eq 0) { $problems.Add("HEAD ($($head.Substring(0, [Math]::Min(10, $head.Length)))) ist nicht auf origin – erst git push.") }
+    $tagLocal = (Invoke-Native $git.Source @('-C', $projectRoot, 'rev-parse', '-q', '--verify', "refs/tags/$tag^{commit}")) -join ''
+    if ($script:NativeExit -ne 0) { $tagLocal = '' }
+    $ls = @(Invoke-Native $git.Source @('-C', $projectRoot, 'ls-remote', '--tags', 'origin', "refs/tags/$tag", "refs/tags/$tag^{}"))
+    if ($script:NativeExit -ne 0) { $problems.Add('git ls-remote origin fehlgeschlagen.') }
+    $peeled = @($ls | Where-Object { "$_" -match "\srefs/tags/$([regex]::Escape($tag))\^\{\}$" })
+    $plain = @($ls | Where-Object { "$_" -match "\srefs/tags/$([regex]::Escape($tag))$" })
+    $tagRemote = if ($peeled.Count) { ("$($peeled[0])" -split '\s+')[0] } elseif ($plain.Count) { ("$($plain[0])" -split '\s+')[0] } else { '' }
+    if ($tagLocal -and $tagLocal -ne $head) { $problems.Add("Tag $tag zeigt lokal auf $tagLocal, nicht auf HEAD $head – Tag prüfen (nie verschieben, wenn er schon veröffentlicht ist).") }
+    if ($tagRemote -and $tagRemote -ne $head) { $problems.Add("Tag $tag zeigt auf origin auf $tagRemote, nicht auf HEAD $head – Abbruch.") }
+    Step ("Quell-Repo: HEAD {0}, Tag {1} lokal {2}, auf origin {3}" -f $head.Substring(0, [Math]::Min(10, $head.Length)), $tag,
+        $(if ($tagLocal) { 'vorhanden' } else { 'fehlt' }), $(if ($tagRemote) { 'vorhanden' } else { 'fehlt' }))
+}
+
 # 4. Bau mit Tests
 if ($problems.Count -eq 0 -and -not $SkipBuild) {
     if ($PSCmdlet.ShouldProcess('tools/build.ps1 -Target Android', 'Bau samt Tests')) {
@@ -123,12 +163,35 @@ else {
     }
 }
 
+# Der Bau erzeugt webclient/i18n_po.js neu: Hat er etwas geändert, gehört das erst in einen Commit.
+if ($git -and -not $dryRun -and $problems.Count -eq 0) {
+    $dirty = Get-DirtySource
+    if ($dirty.Count -gt 0) { $problems.Add("Nach dem Bau ungespeicherte Änderungen in webclient/ bzw. game/project.godot – erst committen und pushen: $(($dirty | Select-Object -First 5) -join '; ')") }
+}
+
 if ($problems.Count -gt 0) {
     Write-Output ''
     Write-Output 'Nicht veröffentlicht – Probleme:'
     $problems | ForEach-Object { Write-Output "  - $_" }
     throw "$($problems.Count) Problem(e), siehe oben."
 }
+
+# 5b. Tag v<version> im Quell-Repo auf HEAD anlegen und pushen (fehlt er nur auf einer Seite, wird nur diese ergänzt).
+if (-not $tagLocal) {
+    if ($PSCmdlet.ShouldProcess("$sourceRepo (lokal)", "git tag $tag HEAD")) {
+        $out = Invoke-Native $git.Source @('-C', $projectRoot, 'tag', $tag, 'HEAD')
+        if ($script:NativeExit -ne 0) { throw "git tag $tag fehlgeschlagen: $($out -join ' ')" }
+        Step "Tag $tag lokal angelegt"
+    }
+}
+if (-not $tagRemote) {
+    if ($PSCmdlet.ShouldProcess("$sourceRepo (origin)", "git push origin $tag")) {
+        $out = Invoke-Native $git.Source @('-C', $projectRoot, 'push', 'origin', "refs/tags/$tag")
+        if ($script:NativeExit -ne 0) { throw "git push origin $tag fehlgeschlagen: $($out -join ' ')" }
+        Step "Tag $tag nach origin gepusht – der Vermittler findet den Browser-Client $version jetzt unter /c/$version/"
+    }
+}
+else { Step "Tag $tag liegt schon auf origin (HEAD)" }
 
 # 6. Leeres Beta-Repo: README.md und LICENSE wie bei Draw2Race-Beta (erste Commits, nötig für den Tag).
 if ($repoEmpty -and $Channel -eq 'beta') {
@@ -158,7 +221,7 @@ Lizenz wie Mau-Mau Flip: CC BY-NC 4.0 (siehe ``LICENSE``).
 
 # 7. Release anlegen
 $create = @('release', 'create', $tag, $apk, '-R', $repo, '--title', $title, '--notes-file', $notes)
-if ($Channel -eq 'beta') { $create += '--prerelease' } else { $create += '--latest' }
+if ($Channel -eq 'beta') { $create += '--prerelease' } else { $create += @('--latest', '--verify-tag') }   # Release-Kanal: Tag aus 5b, nie neu anlegen
 if ($PSCmdlet.ShouldProcess("$repo $tag", "gh $($create -join ' ')")) {
     $out = Invoke-Native 'gh' $create
     if ($script:NativeExit -ne 0) { throw "gh release create fehlgeschlagen: $($out -join "`n")" }

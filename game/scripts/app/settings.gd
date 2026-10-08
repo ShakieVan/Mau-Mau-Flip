@@ -49,11 +49,12 @@ static func defaults() -> Dictionary:
 	# Standardwerte. Beta-Kanal: an, wenn die installierte Version keine reguläre ist (X.Y.Z mit Z ≠ 0).
 	# Mau-Ton (Aufnahmen „Mao“/„Mao-Mao“) ab Werk normal, die übrigen Spieltöne ab Werk aus (Nutzerwunsch 05.10.2026).
 	# hervorheben: spielbare Karten der eigenen Hand hervorheben – persönliche Einstellung je Gerät, nie eine Regel (AGENTS.md 24).
+	# vermittler: Adresse des Online-Vermittlers (NetProtocol.RELAY_DEFAULT, bis der Nutzer einen bereitgestellt hat leer).
 	# grosser_modus: großer Tisch für Sehschwäche (Beta 1.1.1, BigLayout); zug_vibration: kurz vibrieren, wenn du dran bist (ab Werk an seit 1.2.2, Nutzerwunsch 08.10.2026).
 	return {"name": "", "mau_ton": "normal", "toene": "aus", "vibration": true, "effekte": "voll", "beta": not app_version().ends_with(".0"),
 		"sortierung": "farbe", "hervorheben": true, "regeln": {}, "letzte_namen": [], "regelsaetze": [], "regeln_gastgeber": {},
 		"regelsatz_gewaehlt": "", "bot_tempo": 0.5, "schrift": "normal", "grosser_modus": false, "zug_vibration": true,
-		"sprache": "auto"}
+		"sprache": "auto", "vermittler": NetProtocol.RELAY_DEFAULT}
 
 static func app_version() -> String:
 	return str(ProjectSettings.get_setting("application/config/version", "0.0.0"))
@@ -74,6 +75,11 @@ static func sanitize(key: String, value: Variant) -> Variant:
 			return value if value is String and SCHRIFT.has(value) else null
 		"sprache":                        # Beta 1.2.2: auto (Systemsprache) | de | en, siehe I18n
 			return value if value is String and SPRACHE.has(value) else null
+		"vermittler":                     # Online-Spiel: Adresse des Vermittlers („https://host“, "" = keiner), docs/online/ENTWURF.md
+			if not value is String:
+				return null
+			var url := NetProtocol.normalize_relay_url(value)
+			return url if url != "" or str(value).strip_edges() == "" else null
 		"sortierung":
 			return value if value is String and SORTIERUNG.has(value) else null
 		"vibration", "beta", "hervorheben", "grosser_modus", "zug_vibration":

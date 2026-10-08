@@ -8,6 +8,9 @@ extends Node
 #  - Verbindungsverlust: connected=false, der Platz bleibt reserviert. Der Gastgeber und Computergegner sind lokale Spieler.
 #  - Plätze ordnet der Gastgeber (set_seat_order). Lobby-Nachricht: lobby_message(); nach jeder Änderung verteilt (auto_lobby).
 # Die Spielsteuerung (Modul G) verbindet sich mit player_joined/left/rejoined und message(id, msg) und sendet mit send_to/broadcast.
+# Online-Spiel (docs/online/ENTWURF.md): open_online(vermittler) öffnet zusätzlich einen Raum beim Vermittler (NetRelayHost, gleiche
+# Schnittstelle wie NetServer). Verbindungsnummern ab NetProtocol.RELAY_CONN_BASE gehören zum Vermittler (_link wählt den Transport),
+# so spielen WLAN- und Online-Gäste in derselben Lobby und Partie. finish/stop beenden auch den Raum ({k:"end"}).
 #
 # Nutzung: var s := NetHostSession.new(); add_child(s); s.start("Lena"); var me := s.host_id; s.message.connect(…)
 
@@ -19,6 +22,7 @@ signal lobby_changed
 signal finished                          # finish() ist fertig: alles geschlossen
 signal log_line(text: String)
 signal page_visited(address: String)     # ein fremdes Gerät (nicht dieses) hat die Spielseite „/“ abgerufen (Lobby, Beta 1.0.2)
+signal online_changed(state: String, info: Dictionary)   # Online-Spiel: off | connecting | open | away | failed; info {room, link, error, relay}
 
 const HELLO_TIMEOUT_MS := 10000
 const CLOSE_GRACE_MS := 3000             # nach „reject“/„bye“: so lange darf der Client selbst schließen (NetServer.close_ws)
@@ -34,6 +38,7 @@ var web_zip_path := "res://assets/web.zip"     # Browser-Client (an den Server w
 var apk_provider := Callable()           # () -> {path, size, name} für /apk (App.apk_share.server_info), an den Server weitergereicht
 var max_players := NetProtocol.MAX_PLAYERS
 var server: NetServer
+var relay: NetRelayHost                  # Online-Spiel über den Vermittler (open_online); Verbindungen ab NetProtocol.RELAY_CONN_BASE
 var discovery: NetDiscovery
 var host_name := "Gastgeber"
 var host_id := 0
@@ -97,7 +102,7 @@ func start(name_of_host: String, port_first := NetProtocol.PORT, port_last := Ne
 func finish(text := "Der Gastgeber hat das Spiel beendet.") -> void:
 	# Nicht blockierend beenden: allen „bye“ schicken, poll() schließt alles, sobald die Clients getrennt haben (höchstens FINISH_MS),
 	# dann Signal finished. Bevorzugt vor stop(text), weil die Clients dabei weiter abgefragt werden.
-	if server == null or _finish_at > 0:
+	if (server == null and relay == null) or _finish_at > 0:
 		return
 	_bye_all(text, FINISH_MS - 500)
 	_finish_at = Time.get_ticks_msec() + FINISH_MS
@@ -106,13 +111,17 @@ func stop(text := "") -> void:
 	# Sofort beenden; mit text vorher „bye“ an alle und bis zu 1 s warten. Signale gehen dabei keine mehr hinaus.
 	_stopping = true
 	_finish_at = 0
-	if server != null:
-		if text != "":
-			_bye_all(text, 800)
-			var end := Time.get_ticks_msec() + 1000
-			while Time.get_ticks_msec() < end and int(server.stats().get("ws_active", 0)) > 0:
+	if text != "" and (server != null or relay != null):
+		_bye_all(text, 800)
+		var end := Time.get_ticks_msec() + 1000
+		while Time.get_ticks_msec() < end and _active() > 0:
+			if server != null:
 				server.poll()
-				OS.delay_msec(5)
+			if relay != null:
+				relay.poll()
+			OS.delay_msec(5)
+	_close_relay()
+	if server != null:
 		server.stop()
 		_drop_node(server)
 		server = null
@@ -143,7 +152,7 @@ func rebind(after_close := false) -> String:
 	var now := NetAddresses.bind_for("host")
 	if now == before:
 		return ""
-	var guests := players.values().filter(func(p): return not bool(p.get("local", false)) and int(p.get("conn", -1)) >= 0)
+	var guests := players.values().filter(func(p): return not bool(p.get("local", false)) and int(p.get("conn", -1)) >= 0 and int(p.get("conn", -1)) < NetProtocol.RELAY_CONN_BASE)
 	if not guests.is_empty() and not (after_close and before == "hotspot"):
 		if after_close:
 			return I18n.t("Spiel-WLAN ist zu. Kommt jemand aus dem WLAN nicht rein, eröffne das Spiel neu.")
@@ -184,17 +193,20 @@ func _notification(what: int) -> void:
 		stop()
 
 func poll() -> void:
-	if server == null:
+	if server == null and relay == null:
 		return
-	server.poll()
+	if server != null:
+		server.poll()
+	if relay != null:
+		relay.poll()
 	if discovery != null:
 		discovery.poll()
 	var now := Time.get_ticks_msec()
 	for conn in _pending.keys():
 		if now - int(_pending[conn].since_ms) > hello_timeout_ms:
 			_pending.erase(conn)
-			server.close_ws(conn, NetWs.CLOSE_TIMEOUT, "Anmeldung fehlt")
-	if _finish_at > 0 and (int(server.stats().get("ws_active", 0)) == 0 or now > _finish_at):
+			_close(conn, NetWs.CLOSE_TIMEOUT, "Anmeldung fehlt")
+	if _finish_at > 0 and (_active() == 0 or now > _finish_at):
 		stop()
 		finished.emit()
 		return
@@ -204,11 +216,11 @@ func poll() -> void:
 
 func _bye_all(text: String, grace_ms: int) -> void:
 	var conns := _connected_conns()
-	server.send_text_many(conns, NetProtocol.encode({"t": "bye", "text": text}))
+	_send_many(conns, NetProtocol.encode({"t": "bye", "text": text}))
 	for conn in conns:
-		server.close_ws(conn, NetWs.CLOSE_GOING_AWAY, "Gastgeber beendet", grace_ms)
+		_close(conn, NetWs.CLOSE_GOING_AWAY, "Gastgeber beendet", grace_ms)
 	for conn in _pending.keys():
-		server.close_ws(conn, NetWs.CLOSE_GOING_AWAY, "Gastgeber beendet")
+		_close(conn, NetWs.CLOSE_GOING_AWAY, "Gastgeber beendet")
 	_pending.clear()
 
 # ---------- Spieler ----------
@@ -230,8 +242,8 @@ func remove_player(id: int, text := "Der Gastgeber hat dich aus der Runde genomm
 		return
 	var p: Dictionary = players[id]
 	if int(p.conn) >= 0:
-		server.send_text(p.conn, NetProtocol.encode({"t": "bye", "text": text}))
-		server.close_ws(p.conn, NetWs.CLOSE_NORMAL, "entfernt", CLOSE_GRACE_MS)
+		_send(p.conn, NetProtocol.encode({"t": "bye", "text": text}))
+		_close(p.conn, NetWs.CLOSE_NORMAL, "entfernt", CLOSE_GRACE_MS)
 		_conn_player.erase(p.conn)
 	players.erase(id)
 	_compact_seats()
@@ -303,9 +315,9 @@ func send_start() -> void:
 
 func send_to(id: int, msg: Dictionary) -> bool:
 	# An einen verbundenen Mitspieler; false = nicht verbunden oder lokal.
-	if server == null or not players.has(id) or int(players[id].conn) < 0:
+	if not players.has(id) or int(players[id].conn) < 0 or _link(int(players[id].conn)) == null:
 		return false
-	server.send_text(players[id].conn, NetProtocol.encode(msg))
+	_send(players[id].conn, NetProtocol.encode(msg))
 	return true
 
 func broadcast(msg: Dictionary, except_id := -1) -> void:
@@ -313,15 +325,16 @@ func broadcast(msg: Dictionary, except_id := -1) -> void:
 	for id in players:
 		if id != except_id and int(players[id].conn) >= 0:
 			conns.append(players[id].conn)
-	if server != null:
-		server.send_text_many(conns, NetProtocol.encode(msg))
+	_send_many(conns, NetProtocol.encode(msg))
 
 func lobby_message() -> Dictionary:
 	var list := []
 	for id in ordered_ids():
 		var p: Dictionary = players[id]
-		list.append({"id": id, "name": p.name, "kind": p.kind, "connected": p.connected,
-			"ready": p.ready, "seat": int(p.seat)})
+		var entry := {"id": id, "name": p.name, "kind": p.kind, "connected": p.connected, "ready": p.ready, "seat": int(p.seat)}
+		if bool(p.get("online", false)):
+			entry["online"] = true          # über den Vermittler verbunden (Weltkugel in der Lobby)
+		list.append(entry)
 	return {"t": "lobby", "rev": rev, "players": list, "rules": rules, "host_id": host_id}
 
 func info() -> Dictionary:
@@ -374,7 +387,7 @@ func _on_closed(conn: int, code: int, reason: String) -> void:
 
 func _on_dropped(conn: int, why: String, size: int) -> void:
 	if why == "size":
-		server.send_text(conn, NetProtocol.encode(I18n.with_lt({"t": "err"}, [I18n.part("Nachricht zu groß (%d Byte) – verworfen.", [size])])))
+		_send(conn, NetProtocol.encode(I18n.with_lt({"t": "err"}, [I18n.part("Nachricht zu groß (%d Byte) – verworfen.", [size])])))
 
 func _on_message(conn: int, text: String) -> void:
 	if _finish_at > 0:
@@ -408,7 +421,7 @@ func _on_message(conn: int, text: String) -> void:
 
 func _hello(conn: int, msg: Dictionary, conn_info: Dictionary) -> void:
 	_pending.erase(conn)
-	var url := apk_url(str(conn_info.get("host", "")))
+	var url := NetProtocol.apk_page_url(game_version) if bool(conn_info.get("online", false)) else apk_url(str(conn_info.get("host", "")))
 	var problem := NetProtocol.check_hello(msg, game_version, url)
 	var token := str(msg.get("token", ""))
 	var known := -1
@@ -427,21 +440,22 @@ func _hello(conn: int, msg: Dictionary, conn_info: Dictionary) -> void:
 		var rej := {"t": "reject", "code": problem.code, "text": problem.text}
 		if problem.get("lt") is Array:
 			rej["lt"] = problem.lt   # Bausteine (I18n): Anzeige in der Sprache des Gastes
-		server.send_text(conn, NetProtocol.encode(rej))
-		server.close_ws(conn, NetWs.CLOSE_NORMAL, problem.code, CLOSE_GRACE_MS)
+		_send(conn, NetProtocol.encode(rej))
+		_close(conn, NetWs.CLOSE_NORMAL, problem.code, CLOSE_GRACE_MS)
 		return
 	if known >= 0:
 		var p: Dictionary = players[known]
 		var old := int(p.conn)
 		if old >= 0 and old != conn:
 			_conn_player.erase(old)
-			server.close_ws(old, NetWs.CLOSE_REPLACED, "neue Verbindung")
+			_close(old, NetWs.CLOSE_REPLACED, "neue Verbindung")
 		p.conn = conn
 		p.connected = true
 		p.kind = msg.kind
 		p.address = str(conn_info.get("address", ""))
+		p.online = bool(conn_info.get("online", false))
 		_conn_player[conn] = known
-		server.send_text(conn, NetProtocol.encode({"t": "welcome", "id": known, "token": p.token, "host_name": host_name,
+		_send(conn, NetProtocol.encode({"t": "welcome", "id": known, "token": p.token, "host_name": host_name,
 			"proto": NetProtocol.PROTO, "game": game_version}))
 		_log("Spieler %d „%s“ wieder da (%s)" % [known, p.name, conn_info.get("address", "?")])
 		player_rejoined.emit(known)
@@ -452,13 +466,104 @@ func _hello(conn: int, msg: Dictionary, conn_info: Dictionary) -> void:
 	var new_token := Crypto.new().generate_random_bytes(NetProtocol.TOKEN_LENGTH / 2).hex_encode()
 	players[id] = {"id": id, "name": NetProtocol.unique_name(str(msg.name), _names()), "kind": msg.kind, "token": new_token,
 		"connected": true, "ready": false, "seat": _next_seat(), "conn": conn, "local": false,
-		"address": str(conn_info.get("address", ""))}
+		"address": str(conn_info.get("address", "")), "online": bool(conn_info.get("online", false))}
 	_conn_player[conn] = id
-	server.send_text(conn, NetProtocol.encode({"t": "welcome", "id": id, "token": new_token, "host_name": host_name,
+	_send(conn, NetProtocol.encode({"t": "welcome", "id": id, "token": new_token, "host_name": host_name,
 		"proto": NetProtocol.PROTO, "game": game_version}))
 	_log("Spieler %d „%s“ beigetreten (%s, %s)" % [id, players[id].name, msg.kind, conn_info.get("address", "?")])
 	player_joined.emit(id)
 	_changed(true)
+
+# ---------- Online-Spiel ----------
+
+func open_online(relay_url: String) -> Error:
+	# Raum beim Vermittler öffnen (zusätzlich zum WLAN). Fortschritt über online_changed.
+	_close_relay()
+	var r := NetRelayHost.new()
+	r.name = "NetRelayHost"
+	r.auto_poll = false
+	r.game_version = game_version
+	relay = r
+	add_child(r)
+	r.ws_opened.connect(_on_open)
+	r.ws_message.connect(_on_message)
+	r.ws_closed.connect(_on_closed)
+	r.ws_dropped.connect(_on_dropped)
+	r.log_line.connect(_log)
+	r.state_changed.connect(func(st: String) -> void:
+		if relay == r:
+			online_changed.emit(st, r.info()))
+	return r.open(relay_url)
+
+func close_online() -> void:
+	# Online-Raum schließen: Online-Gäste bekommen „bye“, der Raum wird beendet. WLAN-Gäste bleiben.
+	if relay == null:
+		return
+	var conns := _connected_conns().filter(func(c): return int(c) >= NetProtocol.RELAY_CONN_BASE)
+	relay.send_text_many(conns, NetProtocol.encode({"t": "bye", "text": "Der Gastgeber hat das Online-Spiel geschlossen."}))
+	_close_relay()
+	online_changed.emit("off", {})
+	_changed()
+
+func online_state() -> String:
+	return relay.state if relay != null else "off"
+
+func online_info() -> Dictionary:
+	return relay.info() if relay != null else {}
+
+func _close_relay() -> void:
+	# Vermittler trennen; Online-Spieler gelten als getrennt (Platz bleibt wie bei WLAN-Gästen).
+	if relay == null:
+		return
+	var r := relay
+	relay = null
+	for c in [[r.ws_opened, _on_open], [r.ws_message, _on_message], [r.ws_closed, _on_closed], [r.ws_dropped, _on_dropped]]:
+		if (c[0] as Signal).is_connected(c[1]):
+			(c[0] as Signal).disconnect(c[1])
+	r.close()
+	for conn in _pending.keys():
+		if int(conn) >= NetProtocol.RELAY_CONN_BASE:
+			_pending.erase(conn)
+	if not _stopping:
+		for conn in _conn_player.keys():
+			if int(conn) >= NetProtocol.RELAY_CONN_BASE:
+				_on_closed(conn, NetProtocol.CLOSE_ROOM_ENDED, "Online geschlossen")
+	_drop_node(r)
+
+# Transport einer Verbindung: Vermittler (ab RELAY_CONN_BASE) oder WLAN-Server
+func _link(conn: int) -> Object:
+	return relay if conn >= NetProtocol.RELAY_CONN_BASE else server
+
+func _send(conn: int, text: String) -> void:
+	var t: Object = _link(conn)
+	if t != null:
+		t.send_text(conn, text)
+
+func _send_many(conns: Array, text: String) -> void:
+	var lan := []
+	var online := []
+	for c in conns:
+		if int(c) >= NetProtocol.RELAY_CONN_BASE:
+			online.append(c)
+		else:
+			lan.append(c)
+	if server != null and not lan.is_empty():
+		server.send_text_many(lan, text)
+	if relay != null and not online.is_empty():
+		relay.send_text_many(online, text)
+
+func _close(conn: int, code: int, reason: String, grace_ms := 0) -> void:
+	var t: Object = _link(conn)
+	if t != null:
+		t.close_ws(conn, code, reason, grace_ms)
+
+func _active() -> int:
+	var n := 0
+	if server != null:
+		n += int(server.stats().get("ws_active", 0))
+	if relay != null:
+		n += int(relay.stats().get("ws_active", 0))
+	return n
 
 # ---------- intern ----------
 
@@ -471,10 +576,11 @@ func _changed(now := false) -> void:
 
 func _publish() -> void:
 	# Lobby verteilen (nur ohne laufende Partie; dann sendet die Spielsteuerung „state“) und /info sowie die Suche auffrischen.
-	if server == null:
+	if server == null and relay == null:
 		return
 	var i := info()
-	server.set_info(i)
+	if server != null:
+		server.set_info(i)
 	if discovery != null:
 		discovery.set_info(i)
 	if auto_lobby and not running:

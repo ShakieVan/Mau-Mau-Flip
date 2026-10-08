@@ -524,8 +524,23 @@ static func private_ipv4(ip: String) -> bool:
 static func app_link_url(address: String, port: int) -> String:
 	return "%s://join?h=%s&p=%d" % [APP_LINK_SCHEME, address, port]
 
+static func app_link_room(room: String, relay_url: String) -> String:
+	# Online: maumauflip://join?r=KATZE-42&v=<vermittler-host> (http-Vermittler mit Schema, nur lokaler Nachbau)
+	return "%s://join?r=%s&v=%s" % [APP_LINK_SCHEME, room, NetProtocol.relay_host(relay_url).uri_encode()]
+
+static func share_text(text: String, title: String) -> String:
+	# Android-Teilen-Menü mit einem Text (Raum-Link). "" = geöffnet, sonst Fehlertext (außerhalb von Android: "android").
+	if OS.get_name() != "Android" or not Engine.has_singleton("AndroidRuntime"):
+		return "android"
+	var activity = Engine.get_singleton("AndroidRuntime").getActivity()
+	var java = JavaClassWrapper.wrap("com.godot.game.AppLink")
+	if java == null or activity == null:
+		return "android"
+	return str(java.shareText(activity, text, title))
+
 static func parse_app_link(link: String) -> Dictionary:
-	# {ok, address, port, error}; error ist ein kurzer deutscher Satz für den Nutzer.
+	# {ok, address, port, error}; error ist ein kurzer deutscher Satz für den Nutzer. Online-Link (r=, v=): zusätzlich room, relay
+	# (relay "" = Vermittler aus den Einstellungen).
 	var bad := {"ok": false, "address": "", "port": 0,
 		"error": I18n.t("Der Link zum Spiel ist unvollständig. Scanne den QR-Code beim Gastgeber noch einmal.")}
 	var t := link.strip_edges()
@@ -544,6 +559,14 @@ static func parse_app_link(link: String) -> Dictionary:
 		var eq := pair.find("=")
 		if eq > 0:
 			query[pair.substr(0, eq).to_lower()] = pair.substr(eq + 1).uri_decode().strip_edges()
+	if query.has("r"):
+		# Online (docs/online/ENTWURF.md): maumauflip://join?r=KATZE-42&v=<vermittler-host> → {ok, room, relay}
+		var room := NetProtocol.normalize_room_code(str(query.r))
+		var v := str(query.get("v", ""))
+		var relay := NetProtocol.normalize_relay_url(v) if v != "" else ""
+		if room == "" or (v != "" and relay == ""):
+			return bad
+		return {"ok": true, "address": "", "port": 0, "room": room, "relay": relay, "error": ""}
 	var address := str(query.get("h", ""))
 	var port_text := str(query.get("p", ""))
 	if address == "" or port_text == "" or not port_text.is_valid_int():

@@ -32,6 +32,132 @@ const REJECT_CODES := ["version", "full", "running", "proto"]
 const ACTION_FIELDS := {"a": TYPE_STRING, "card": TYPE_INT, "color": TYPE_STRING, "target": TYPE_INT}
 const MAX_DEPTH := 12
 
+# --- Online-Spiel über einen Vermittler (docs/online/ENTWURF.md) ---
+const RELAY_DEFAULT := ""                 # Standard-Vermittler; setzt der Nutzer nach seiner Bereitstellung
+const RELAY_CONN_BASE := 1000000          # Verbindungsnummern der Online-Gäste beim Gastgeber: RELAY_CONN_BASE + c
+const RELAY_PROTO := 1
+const RELAY_PING_MS := 25000              # Online-Herzschlag: Text „ping“, der Vermittler antwortet „pong“
+const RELAY_TIMEOUT_MS := 70000           # so lange Stille → getrennt
+const RELAY_HOST_AWAY_MS := 10000         # Code 4503 (Gastgeber kurz weg): so lange warten, dann neu verbinden
+const RELAY_MAX_HOST_MESSAGE := 256 * 1024
+const CLOSE_ROOM_UNKNOWN := 4404
+const CLOSE_HOST_AWAY := 4503
+const CLOSE_ROOM_FULL := 4409
+const CLOSE_RATE := 4429
+const CLOSE_BAD_TOKEN := 4403
+const CLOSE_ROOM_ENDED := 1001
+const APK_RELEASE_URL := "https://github.com/ShakieVan/Mau-Mau-Flip/releases/latest"
+const APK_BETA_URL := "https://github.com/ShakieVan/Mau-Mau-Flip-Beta/releases/latest"
+
+static func normalize_room_code(text: String) -> String:
+	# Raumcode wie normalizeCode in relay/src/core.js: Großbuchstaben, Ä/Ö/Ü/ß → AE/OE/UE/SS, Leer-/Unterstrich, Punkt oder fehlender
+	# Strich → „WORT-ZZ“. Gültig: 3–6 Buchstaben A–Z, zwei Ziffern 10–99. "" = ungültig. Ob das Wort in der Liste des Vermittlers
+	# (relay/src/words.js) steht, prüft erst der Vermittler (/info?room= → open:false).
+	if text.length() > 40:
+		return ""
+	var t := text.strip_edges().to_upper()
+	t = t.replace("Ä", "AE").replace("Ö", "OE").replace("Ü", "UE").replace("ẞ", "SS").replace("ß", "SS").replace("ä", "AE").replace("ö", "OE").replace("ü", "UE")
+	var letters := ""
+	var digits := ""
+	for ch in t:
+		if ch >= "A" and ch <= "Z":
+			if digits != "":
+				return ""
+			letters += ch
+		elif ch >= "0" and ch <= "9":
+			if letters == "":
+				return ""
+			digits += ch
+		elif ch in [" ", "\t", "-", "_", "–", "."]:
+			continue
+		else:
+			return ""
+	if letters.length() < 3 or letters.length() > 6 or digits.length() != 2 or digits.begins_with("0"):
+		return ""
+	return letters + "-" + digits
+
+static func normalize_relay_url(text: String) -> String:
+	# Vermittler-Adresse → „https://host[:port]“ (ohne Pfad und Schrägstrich am Ende). Ohne Schema gilt https; „http://“ nur
+	# ausdrücklich (lokaler Nachbau). "" = leer oder ungültig.
+	var t := text.strip_edges()
+	if t == "":
+		return ""
+	var scheme := "https"
+	var low := t.to_lower()
+	for pre in [["https://", "https"], ["http://", "http"], ["wss://", "https"], ["ws://", "http"]]:
+		if low.begins_with(pre[0]):
+			scheme = pre[1]
+			t = t.substr(pre[0].length())
+			break
+	if t.contains("://"):
+		return ""
+	for cut in ["/", "?", "#"]:
+		var i := t.find(cut)
+		if i >= 0:
+			t = t.left(i)
+	t = t.to_lower()
+	if t == "" or t.length() > 200 or t.contains("@"):
+		return ""
+	var host := t
+	var colon := t.rfind(":")
+	if colon >= 0:
+		var p := t.substr(colon + 1)
+		if not p.is_valid_int() or int(p) <= 0 or int(p) > 65535:
+			return ""
+		host = t.left(colon)
+	if host == "" or host.begins_with(".") or host.ends_with(".") or host.begins_with("-"):
+		return ""
+	for ch in host:
+		if not ((ch >= "a" and ch <= "z") or (ch >= "0" and ch <= "9") or ch == "." or ch == "-"):
+			return ""
+	return "%s://%s" % [scheme, t]
+
+static func relay_host(relay_url: String) -> String:
+	# „https://x.workers.dev“ → „x.workers.dev“ (für Anzeige und App-Link v=; http bleibt mit Schema erhalten)
+	var u := normalize_relay_url(relay_url)
+	return u.trim_prefix("https://") if u.begins_with("https://") else u
+
+static func relay_ws_url(relay_url: String, query: String) -> String:
+	# WebSocket-Adresse des Vermittlers: https → wss, http → ws
+	var u := normalize_relay_url(relay_url)
+	if u == "":
+		return ""
+	var ws := ("wss://" + u.substr(8)) if u.begins_with("https://") else ("ws://" + u.substr(7))
+	return ws + WS_PATH + "?" + query
+
+static func room_link(relay_url: String, code: String) -> String:
+	# Link für Gäste (QR, Teilen): https://<vermittler>/?r=KATZE-42
+	var u := normalize_relay_url(relay_url)
+	var c := normalize_room_code(code)
+	return "" if u == "" or c == "" else "%s/?r=%s" % [u, c]
+
+static func parse_room_link(text: String) -> Dictionary:
+	# Raum-Link „https://<vermittler>/?r=CODE“ → {relay, room}; {} = kein Raum-Link
+	var t := text.strip_edges()
+	var low := t.to_lower()
+	if not (low.begins_with("https://") or low.begins_with("http://")):
+		return {}
+	var q := t.find("?")
+	if q < 0:
+		return {}
+	var room := ""
+	for pair in t.substr(q + 1).split("&", false):
+		if pair.to_lower().begins_with("r="):
+			room = normalize_room_code(pair.substr(2).uri_decode())
+	var relay := normalize_relay_url(t.left(q))
+	if room == "" or relay == "":
+		return {}
+	return {"relay": relay, "room": room}
+
+static func apk_page_url(version := "") -> String:
+	# APK für Online-Gäste: GitHub-Release-Seite (Beta-Versionen enden nicht auf .0)
+	var v := version if version != "" else game_version()
+	return APK_RELEASE_URL if v.ends_with(".0") else APK_BETA_URL
+
+static func relay_auto_reply(text: String) -> String:
+	# Herzschlag des Vermittlers (setWebSocketAutoResponse „ping“ → „pong“)
+	return "pong" if text == "ping" else ""
+
 static func game_version() -> String:
 	return str(ProjectSettings.get_setting("application/config/version", "0.0.0"))
 

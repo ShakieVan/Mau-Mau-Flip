@@ -5,7 +5,7 @@
 (function (M) {
   'use strict';
 
-  const VERSION = '1.3.0';
+  const VERSION = '1.3.1';
   const PROTO = 1;
   // wach.mp4 (32×32, 2 s, H.264 Baseline, ohne Ton; erzeugt mit ffmpeg) als data:-URI
   const WACH_VIDEO = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAMzbW9vdgAAAGxtdmhkAAAAAAAAAAAAAAAAAAAD6AAAB9AAAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAl50cmFrAAAAXHRraGQAAAADAAAAAAAAAAAAAAABAAAAAAAAB9AAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAACAAAAAgAAAAAAAkZWR0cwAAABxlbHN0AAAAAAAAAAEAAAfQAAAAAAABAAAAAAHWbWRpYQAAACBtZGhkAAAAAAAAAAAAAAAAAABAAAAAgABVxAAAAAAALWhkbHIAAAAAAAAAAHZpZGUAAAAAAAAAAAAAAABWaWRlb0hhbmRsZXIAAAABgW1pbmYAAAAUdm1oZAAAAAEAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAAUFzdGJsAAAAuXN0c2QAAAAAAAAAAQAAAKlhdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAACAAIABIAAAASAAAAAAAAAABFExhdmM2My4xLjEwMSBsaWJ4MjY0AAAAAAAAAAAAAAAAGP//AAAAL2F2Y0MBQsAe/+EAFmdCwB7ZCWwEQAAAAwBAAAADAQPFi5IBAAZoy4DkTIAAAAAQcGFzcAAAAAEAAAABAAAAFGJ0cnQAAAAAAAAKpAAAAAAAAAAYc3R0cwAAAAAAAAABAAAABAAAIAAAAAAUc3RzcwAAAAAAAAABAAAAAQAAABxzdHNjAAAAAAAAAAEAAAABAAAABAAAAAEAAAAkc3RzegAAAAAAAAAAAAAABAAAAogAAAALAAAACwAAAAsAAAAUc3RjbwAAAAAAAAABAAADYwAAAGF1ZHRhAAAAWW1ldGEAAAAAAAAAIWhkbHIAAAAAAAAAAG1kaXJhcHBsAAAAAAAAAAAAAAAALGlsc3QAAAAkqXRvbwAAABxkYXRhAAAAAQAAAABMYXZmNjMuMS4xMDEAAAAIZnJlZQAAArFtZGF0AAACcgYF//9u3EXpvebZSLeWLNgg2SPu73gyNjQgLSBjb3JlIDE2NSByMzIyMyAwNDgwY2IwIC0gSC4yNjQvTVBFRy00IEFWQyBjb2RlYyAtIENvcHlsZWZ0IDIwMDMtMjAyNSAtIGh0dHA6Ly93d3cudmlkZW9sYW4ub3JnL3gyNjQuaHRtbCAtIG9wdGlvbnM6IGNhYmFjPTAgcmVmPTMgZGVibG9jaz0xOi0zOi0zIGFuYWx5c2U9MHgxOjB4MTExIG1lPWhleCBzdWJtZT03IHBzeT0xIHBzeV9yZD0yLjAwOjAuNzAgbWl4ZWRfcmVmPTEgbWVfcmFuZ2U9MTYgY2hyb21hX21lPTEgdHJlbGxpcz0xIDh4OGRjdD0wIGNxbT0wIGRlYWR6b25lPTIxLDExIGZhc3RfcHNraXA9MSBjaHJvbWFfcXBfb2Zmc2V0PS00IHRocmVhZHM9MSBsb29rYWhlYWRfdGhyZWFkcz0xIHNsaWNlZF90aHJlYWRzPTAgbnI9MCBkZWNpbWF0ZT0xIGludGVybGFjZWQ9MCBibHVyYXlfY29tcGF0PTAgY29uc3RyYWluZWRfaW50cmE9MCBiZnJhbWVzPTAgd2VpZ2h0cD0wIGtleWludD0yNTAga2V5aW50X21pbj0yIHNjZW5lY3V0PTQwIGludHJhX3JlZnJlc2g9MCByY19sb29rYWhlYWQ9NDAgcmM9Y3JmIG1idHJlZT0xIGNyZj00MC4wIHFjb21wPTAuNjAgcXBtaW49MCBxcG1heD02OSBxcHN0ZXA9NCBpcF9yYXRpbz0xLjQwIGFxPTE6MS4yMACAAAAADmWIhAXznJigACX3J114AAAAB0GaOAvnOWAAAAAHQZpUAvnOWAAAAAdBmmAVznLA';
@@ -51,6 +51,10 @@
     // grosser_modus = großer Modus (Standard aus), zug_vibration = „Bei deinem Zug: Vibration“ (Standard an seit 1.2.1); beide je Gerät, wie App.settings
     einstellungen: { ton: 'normal', toene: 'aus', stumm: false, effekte: 'voll', sort: 'farbe', vibration: true, vollbild: true, hervorheben: true, schrift: 'normal', grosser_modus: false, zug_vibration: true, sprache: 'auto' },
     _mauZuletzt: {},       // „art:Platz“ → Zeitpunkt des letzten Mau-Tons (Entprellung)
+    // Online-Spiel (docs/online/ENTWURF.md): ?r=CODE auf einer vom Vermittler ausgelieferten Seite. Vermittler = eigener Ursprung.
+    online: false,         // ?r= vorhanden
+    raum: '',              // normalisierter Raumcode „WORT-ZZ“ ('' = ungültig)
+    _tokKey: 'token',      // Speicherschlüssel des Spieler-Tokens; online je Raumcode
 
     /* ---------------- Start ---------------- */
     init() {
@@ -59,6 +63,10 @@
       e.sprache = Speicher.get('sprache', 'auto');
       M.I18n.setze(e.sprache);
       document.title = M.t('Mau-Mau Flip – Mitspielen');
+      const roh = params.get('r');
+      this.online = !!roh && !params.get('mock');
+      this.raum = this.online ? M.Netz.Online.code(roh) : '';
+      this._tokKey = this.online ? 'token:' + (this.raum || '-') : 'token';
       e.ton = Speicher.get('ton', 'normal');
       e.toene = Speicher.get('toene', 'aus');
       e.stumm = Speicher.get('stumm', false) === true;
@@ -98,6 +106,7 @@
       $('#tipp-ios-browser').hidden = !(IST_IOS && !IST_SAFARI);
       this._startTexte();
       if (location.protocol === 'file:' && !params.get('mock')) this._startFehler(M.t('Diese Seite kommt vom Gastgeber-Handy. Zum Ausprobieren ohne Gastgeber: index.html?mock=1'));
+      if (this.online) { this._onlineStart(); return; }
       // Name und Version des Gastgebers
       if (!params.get('mock') && /^https?:/.test(location.protocol) && window.fetch) {
         const ctl = window.AbortController ? new AbortController() : null;
@@ -115,12 +124,38 @@
         }).catch(() => clearTimeout(t));
       } else if (params.get('mock')) { this._hostZeile = { name: 'Lena', mock: true }; this._startTexte(); }
     },
+    // Online-Start: Raumcode prüfen, beim Vermittler nach Gastgeber und Spielversion fragen (/info?room=CODE).
+    // Hier ist /info die Antwort des Vermittlers und nie die eines Gastgeber-Handys (kein name/players am Wurzelobjekt).
+    _onlineStart() {
+      if (!this.raum) {
+        this._startFehler(M.t('Der Raumcode stimmt nicht. Er sieht so aus: KATZE-42.'));
+        $('#beitreten').disabled = true;
+        return;
+      }
+      this._hostZeile = { name: '', raum: this.raum };
+      this._startTexte();
+      if (!window.fetch || !/^https?:/.test(location.protocol)) return;
+      const ctl = window.AbortController ? new AbortController() : null;
+      const t = setTimeout(() => ctl && ctl.abort(), 5000);
+      fetch(M.Netz.Online.infoUrl(this.raum), ctl ? { signal: ctl.signal, cache: 'no-store' } : { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(info => {
+        clearTimeout(t);
+        const r = info && info.room;
+        if (!r) return;
+        if (r.open === false) { this._startFehler(M.t('Raum nicht gefunden. Prüfe den Raumcode oder frage den Gastgeber.')); return; }
+        if (r.version) this.version = String(r.version);   // der Gastgeber verlangt genau seine Version (check_hello)
+        // room.host ist beim Vermittler nur „Gastgeber verbunden ja/nein“ (er kennt keine Namen); einen Namen gibt es erst mit „welcome“
+        if (typeof r.host === 'string' && r.host) { this.hostName = r.host; this._hostZeile.name = this.hostName; }
+        this._startTexte();
+      }).catch(() => clearTimeout(t));
+    },
     // Startseite: Texte, die der Code setzt (Knopf, Gastgeber-Zeile); bei Sprachwechsel neu
     _startTexte() {
       const k = $('#beitreten');
-      if (k && !k.disabled) k.textContent = (Speicher.get('token', null) && $('#name').value) ? M.t('Weiterspielen') : M.t('Beitreten');
+      if (k && !k.disabled) k.textContent = (Speicher.get(this._tokKey, null) && $('#name').value) ? M.t('Weiterspielen') : M.t('Beitreten');
       const h = this._hostZeile;
-      if (h) {
+      if (h && h.raum) {
+        $('#start-host').textContent = M.t('Raum %s', h.raum) + (h.name ? ' · ' + M.t('Spiel von %s', h.name) : '');
+      } else if (h) {
         let s = M.t('Spiel von %s', h.name);
         if (h.mock) s += ' · ' + M.t('Testmodus');
         else if (h.n) s += ' · ' + (h.n === 1 ? M.t('1 Spieler') : M.t('%d Spieler', h.n));
@@ -133,7 +168,16 @@
       const h = location.hostname, p = location.port || (location.protocol === 'https:' ? '443' : '80');
       const geht = IST_ANDROID && /^https?:/.test(location.protocol) && !!h;
       $('#app-spielen').hidden = !geht;
-      if (geht) {
+      if (geht && this.online) {
+        // Online: App-Link mit Raumcode und Vermittler (maumauflip://join?r=&v=); die APK gibt es dann bei GitHub (der Vermittler hat keine)
+        $('#app-spielen').hidden = !this.raum;
+        if (this.raum) $('#app-link').href = M.Netz.Online.appIntent(location, this.raum);
+        const apk = $('#apk-knopf');
+        apk.href = M.Netz.Online.GITHUB_RELEASES;
+        apk.removeAttribute('download');
+        apk.target = '_blank';
+        apk.rel = 'noopener';
+      } else if (geht) {
         const zurueck = 'http://' + h + ':' + p + '/?app=1';
         $('#app-link').href = 'intent://join?h=' + encodeURIComponent(h) + '&p=' + p + '#Intent;scheme=maumauflip;package=de.maumauflip.game;S.browser_fallback_url='
           + encodeURIComponent(zurueck) + ';end';
@@ -259,12 +303,15 @@
       knopf.disabled = true; knopf.textContent = M.t('Verbinde …');
       if (this.verbindung) this.verbindung.beenden();
       const Klasse = params.get('mock') && M.Mock ? M.Mock.Verbindung : M.Netz.Verbindung;
-      const url = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
+      if (this.online && !this.raum) { knopf.disabled = true; return; }
+      const online = this.online && !params.get('mock');
+      const url = online ? M.Netz.Online.wsUrl(location, this.raum) : (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
       this.verbindung = new Klasse({
         url,
+        online,
         hallo: () => {
           const h = { t: 'hello', proto: PROTO, game: this.version, name: this.name, kind: 'web' };
-          const tok = Speicher.get('token', null);
+          const tok = Speicher.get(this._tokKey, null);
           if (tok) h.token = tok;
           this._tokenGesendet = !!tok;
           return h;
@@ -276,16 +323,24 @@
     },
     status(s) {
       const v = $('#verbinde');
-      const zeigen = (s === 'getrennt') && this.beigetreten;
+      const weg = s === 'host_weg';   // online: Gastgeber kurz weg (Vermittler-Code 4503)
+      const zeigen = (s === 'getrennt' || weg) && this.beigetreten;
       v.hidden = !zeigen;
+      ['verbinde-titel', 'verbinde-unter'].forEach(id => { $('#' + id).hidden = weg; });
+      ['verbinde-weg-titel', 'verbinde-weg'].forEach(id => { $('#' + id).hidden = !weg; });
       if (zeigen) {
         clearTimeout(this._ladeTimer);
         $('#verbinde-laden').hidden = true;
         this._ladeTimer = setTimeout(() => { $('#verbinde-laden').hidden = false; }, 15000);
       } else clearTimeout(this._ladeTimer);
       if (s === 'getrennt' && !this.beigetreten && this.screen === 'start') {
-        this._startFehler(M.t('Keine Verbindung zum Gastgeber. Seid ihr im selben WLAN? Ich versuche es weiter …'));
+        this._startFehler(this.online ? M.t('Keine Verbindung zum Vermittler. Hast du Internet? Ich versuche es weiter …')
+          : M.t('Keine Verbindung zum Gastgeber. Seid ihr im selben WLAN? Ich versuche es weiter …'));
       }
+      if (weg && !this.beigetreten && this.screen === 'start') this._startFehler(M.t('Der Gastgeber ist kurz weg. Ich versuche es in 10 Sekunden erneut …'));
+      // endgültige Schließcodes des Vermittlers: Raum unbekannt (4404), voll (4409), beendet (1001)
+      const ende = { kein_raum: M.t('Raum nicht gefunden. Prüfe den Raumcode oder frage den Gastgeber.'), voll: M.t('Der Raum ist voll.'), raum_ende: M.t('Der Gastgeber hat den Raum geschlossen.') }[s];
+      if (ende) this._raumEnde(ende, s !== 'voll');
       if (s === 'offen') { this._logLeeren(); if (this.screen === 'start') this._startFehler(''); }
       if (s === 'ersetzt') {
         this.beigetreten = false;
@@ -293,6 +348,16 @@
         $('#ende-text').textContent = M.t('Du spielst jetzt in einem anderen Fenster oder Tab weiter. Hier ist die Verbindung beendet.');
         this.zeigeScreen('ende');
       }
+    },
+    // Raum weg/voll/geschlossen: Verbindung beenden, zurück auf die Startseite mit Erklärung; Token nur löschen, wenn der Raum nicht mehr da ist
+    _raumEnde(text, tokenLoeschen) {
+      if (this.verbindung) this.verbindung.beenden();
+      if (tokenLoeschen) Speicher.set(this._tokKey, null);
+      this.beigetreten = false;
+      $('#verbinde').hidden = true;
+      if (this.screen !== 'start') this.zeigeScreen('start');
+      $('#beitreten').disabled = false; this._startTexte();
+      this._startFehler(text);
     },
     wecken() {
       if (this.verbindung) this.verbindung.wecken();
@@ -338,7 +403,7 @@
       switch (m.t) {
         case 'welcome':
           this.meineId = m.id;
-          if (m.token) Speicher.set('token', m.token);
+          if (m.token) Speicher.set(this._tokKey, m.token);
           if (m.host_name) this.hostName = m.host_name;
           this.beigetreten = true;
           $('#beitreten').disabled = false; this._startTexte();
@@ -346,7 +411,7 @@
           break;
         case 'reject': {
           const texte = { version: M.t('Die Version passt nicht zum Gastgeber. Bitte die Seite neu laden.'), full: M.t('Das Spiel ist voll.'), running: M.t('Die Partie läuft schon. Warte, bis die nächste beginnt.'), proto: M.t('Der Gastgeber spricht ein anderes Protokoll. Bitte die Seite neu laden.') };
-          if (this._tokenGesendet && (m.code === 'running' || m.code === 'token')) Speicher.set('token', null);
+          if (this._tokenGesendet && (m.code === 'running' || m.code === 'token')) Speicher.set(this._tokKey, null);
           this.verbindung.beenden();
           this.beigetreten = false;
           $('#verbinde').hidden = true;
@@ -399,7 +464,7 @@
         case 'bye':
           this.verbindung.beenden();
           this.beigetreten = false;
-          Speicher.set('token', null);
+          Speicher.set(this._tokKey, null);
           $('#verbinde').hidden = true;
           $('#ende-text').textContent = M.I18n.msgText(m, M.t('Der Gastgeber hat das Spiel beendet.'));
           this.zeigeScreen('ende');

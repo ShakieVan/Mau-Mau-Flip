@@ -303,11 +303,11 @@ msgstr "On one phone"
 msgid "Weitergeben, 2–10 Spieler"
 msgstr "Pass the phone, 2–10 players"
 
-msgid "Im WLAN spielen"
-msgstr "Play on Wi-Fi"
+msgid "Mit anderen spielen"
+msgstr "Play with others"
 
-msgid "Spiel eröffnen oder beitreten"
-msgstr "Host or join a game"
+msgid "WLAN oder online"
+msgstr "Wi-Fi or online"
 
 msgid "Update ↓"
 msgstr "Update ↓"
@@ -375,8 +375,8 @@ msgstr "How the others see you"
 msgid "Spiel eröffnen"
 msgstr "Host a game"
 
-msgid "Du bist Gastgeber. Mitspieler kommen per App über die Suche oder ohne App per QR-Code im Browser dazu – auch iPhones."
-msgstr "You are the host. Others join with the app through search, or without the app through the QR code in a browser – iPhones too."
+msgid "Du bist Gastgeber, im WLAN und/oder online. Mitspieler kommen per App oder ohne App per QR-Code bzw. Link im Browser dazu – auch iPhones."
+msgstr "You are the host, on Wi-Fi and/or online. Others join with the app, or without it through the QR code or link in a browser – iPhones too."
 
 msgid "Eröffnen"
 msgstr "Host"
@@ -384,8 +384,8 @@ msgstr "Host"
 msgid "Beitreten"
 msgstr "Join"
 
-msgid "Ein Spiel in der Nähe suchen oder die Adresse des Gastgebers eingeben. Alle müssen im selben WLAN sein."
-msgstr "Search for a game nearby or enter the host's address. Everyone must be on the same Wi-Fi."
+msgid "Ein WLAN-Spiel in der Nähe suchen, die Adresse des Gastgebers eingeben oder (online) den Raumcode eintippen."
+msgstr "Search for a Wi-Fi game nearby, enter the host's address, or (online) type the room code."
 
 msgid "Suchen"
 msgstr "Search"
@@ -489,8 +489,8 @@ msgstr "② Game"
 msgid "Alle Handys müssen im selben WLAN sein. Ist keins da, tippe „Spiel-WLAN öffnen“. Die anderen scannen dann den WLAN-Code mit der Kamera."
 msgstr "All phones must be on the same Wi-Fi. If there is none, tap “Open game Wi-Fi”. The others then scan the Wi-Fi code with their camera."
 
-msgid "Danach den Spiel-Code scannen oder die Adresse im Browser eintippen. Mit der App: „Im WLAN spielen“ → „Beitreten“, das Spiel erscheint von selbst."
-msgstr "Then scan the game code or type the address into a browser. With the app: “Play on Wi-Fi” → “Join”; the game shows up by itself."
+msgid "Danach den Spiel-Code scannen oder die Adresse im Browser eintippen. Mit der App: „Mit anderen spielen“ → „Beitreten“, das Spiel erscheint von selbst."
+msgstr "Then scan the game code or type the address into a browser. With the app: “Play with others” → “Join”; the game shows up by itself."
 
 msgid "Grüner Haken"
 msgstr "Green check mark"
@@ -1002,3 +1002,175 @@ msgstr "The game couldn't be reopened. Please go back and host it again."
 
 msgid "Regeln anpassen"
 msgstr "Adjust rules"
+
+# --- Online-Spiel über den Vermittler (docs/online/ENTWURF.md): Lobby, Beitreten, Einstellungen, Netz-Meldungen
+msgid "Im WLAN"
+msgstr "On Wi-Fi"
+
+msgid "Online (Internet)"
+msgstr "Online (internet)"
+
+msgid "Online"
+msgstr "Online"
+
+msgid "online"
+msgstr "online"
+
+msgid "Online:"
+msgstr "Online:"
+
+msgid "Vermittler"
+msgstr "Relay"
+
+msgid "Vermittler: %s"
+msgstr "Relay: %s"
+
+msgid "Raumcode"
+msgstr "Room code"
+
+msgid "Raumcode, z. B. KATZE-42"
+msgstr "Room code, e.g. KATZE-42"
+
+msgid "Online öffnen"
+msgstr "Open online"
+
+msgid "Online schließen"
+msgstr "Close online"
+
+msgid "Teilen"
+msgstr "Share"
+
+msgid "Nochmal versuchen"
+msgstr "Try again"
+
+msgid "Zu den Einstellungen"
+msgstr "Go to settings"
+
+msgid "QR-Code"
+msgstr "QR code"
+
+msgid "Verbindung testen"
+msgstr "Test connection"
+
+msgid "Einladung teilen"
+msgstr "Share invitation"
+
+msgid "Spiel mit bei Mau-Mau Flip! Raumcode %s – oder einfach den Link öffnen: %s"
+msgstr "Join my game of Mau-Mau Flip! Room code %s – or just open the link: %s"
+
+msgid "Link kopiert – zum Beispiel in einen Messenger einfügen."
+msgstr "Link copied – paste it into a messenger, for example."
+
+msgid "Verbinde mit dem Vermittler …"
+msgstr "Connecting to the relay …"
+
+msgid "Verbindung zum Vermittler kurz weg – verbinde neu …"
+msgstr "Lost the relay for a moment – reconnecting …"
+
+msgid "1 Mitspieler online"
+msgstr "1 player online"
+
+msgid "%d Mitspieler online"
+msgstr "%d players online"
+
+msgid "Warte auf Mitspieler …"
+msgstr "Waiting for players …"
+
+msgid "Für das Spiel über das Internet braucht die App die Adresse eines Vermittlers. Trag sie in den Einstellungen unter „Online“ ein."
+msgstr "To play over the internet, the app needs the address of a relay. Enter it in the settings under “Online”."
+
+msgid "Mitspieler, die nicht im selben WLAN sind, treten über das Internet bei – mit Raumcode, Link oder QR-Code. Die Spiellogik bleibt auf diesem Handy."
+msgstr "Players who aren't on the same Wi-Fi join over the internet – with the room code, link or QR code. The game itself keeps running on this phone."
+
+msgid "In der App: „Beitreten“ und den Code eingeben. Ohne App: Link oder QR-Code im Browser öffnen."
+msgstr "In the app: tap “Join” and enter the code. Without the app: open the link or QR code in the browser."
+
+msgid "Keine gültige Vermittler-Adresse."
+msgstr "Not a valid relay address."
+
+msgid "Vermittler antwortet nicht."
+msgstr "The relay isn't responding."
+
+msgid "Vermittler nicht erreichbar."
+msgstr "Can't reach the relay."
+
+msgid "Verbindung zum Vermittler getrennt."
+msgstr "Disconnected from the relay."
+
+msgid "Der Online-Raum ist abgelaufen. Bitte neu öffnen."
+msgstr "The online room has expired. Please open it again."
+
+msgid "Der Online-Raum wird jetzt von einem anderen Gerät geführt."
+msgstr "Another device is now hosting the online room."
+
+msgid "Der Online-Raum ist voll."
+msgstr "The online room is full."
+
+msgid "Der Gastgeber hat das Online-Spiel geschlossen."
+msgstr "The host closed the online game."
+
+msgid "Raumcode oder Vermittler-Adresse ungültig."
+msgstr "Room code or relay address is not valid."
+
+msgid "Raum %s nicht gefunden. Stimmt der Code?"
+msgstr "Room %s not found. Is the code right?"
+
+msgid "Gastgeber kurz weg – warte …"
+msgstr "Host is away for a moment – waiting …"
+
+msgid "Für Online-Spiele fehlt die Vermittler-Adresse – bitte in den Einstellungen unter „Online“ eintragen."
+msgstr "The relay address for online games is missing – please enter it in the settings under “Online”."
+
+msgid "Bitte den Raumcode eingeben, z. B. KATZE-42."
+msgstr "Please enter the room code, e.g. KATZE-42."
+
+msgid "Suche Raum %s …"
+msgstr "Looking for room %s …"
+
+msgid "Verbinde mit Raum %s …"
+msgstr "Connecting to room %s …"
+
+msgid "Der Gastgeber spielt mit Version %s, du mit %s. Bitte beide auf dieselbe Version bringen."
+msgstr "The host is playing version %s, you have %s. Please bring both to the same version."
+
+msgid "Für Spiele über das Internet: Ein Vermittler reicht die Nachrichten weiter, die Spiellogik bleibt beim Gastgeber. Einrichten kostenlos bei Cloudflare, Anleitung auf GitHub (ShakieVan/Mau-Mau-Flip). Gäste brauchen nur Raumcode oder Link."
+msgstr "For games over the internet: a relay passes the messages on, the game itself stays with the host. Set it up for free at Cloudflare, instructions on GitHub (ShakieVan/Mau-Mau-Flip). Guests only need the room code or link."
+
+msgid "z. B. mau.dein-name.workers.dev"
+msgstr "e.g. mau.your-name.workers.dev"
+
+msgid "Adresse des Vermittlers als QR-Code weitergeben"
+msgstr "Share the relay address as a QR code"
+
+msgid "Diese Adresse passt nicht. Beispiel: mau.dein-name.workers.dev"
+msgstr "This address doesn't fit. Example: mau.your-name.workers.dev"
+
+msgid "Bitte zuerst die Adresse des Vermittlers eintragen."
+msgstr "Please enter the relay address first."
+
+msgid "Teste die Verbindung …"
+msgstr "Testing the connection …"
+
+msgid "Vermittler nicht erreichbar. Stimmt die Adresse, und hast du Internet?"
+msgstr "Relay not reachable. Is the address right, and are you online?"
+
+msgid "Unter dieser Adresse antwortet kein Vermittler für Mau-Mau Flip."
+msgstr "There's no Mau-Mau Flip relay at this address."
+
+msgid "Vermittler antwortet (%d ms)."
+msgstr "Relay responds (%d ms)."
+
+msgid "Die Version %s ist noch nicht auf GitHub veröffentlicht. Mit der App klappt es trotzdem."
+msgstr "Version %s is not published on GitHub yet. Playing with the app works anyway."
+
+msgid "Vermittler zu alt: Er kann den Browser-Client nicht selbst holen. Bitte neu bereitstellen (Anleitung auf GitHub). Mit der App klappt es trotzdem."
+msgstr "Relay too old: it cannot fetch the browser client itself. Please redeploy it (guide on GitHub). Playing with the app works anyway."
+
+msgid "Prüfe den Browser-Client für Version %s …"
+msgstr "Checking the browser client for version %s …"
+
+msgid "Alles bereit für Online-Spiele."
+msgstr "All set for online games."
+
+msgid "Scannen öffnet die Seite des Vermittlers: %s"
+msgstr "Scanning opens the relay's page: %s"

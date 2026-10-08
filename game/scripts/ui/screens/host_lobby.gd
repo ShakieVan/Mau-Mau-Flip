@@ -5,7 +5,8 @@ extends AppScreen
 # Bereich mit Einrasten (LobbyPager): links „Mitspieler einladen“ mit ① WLAN und ② Spiel (InvitePanel), rechts die Spielerliste
 # in Sitzordnung (Pfeile ändern sie) mit App/Browser/Computer-Kennung und verbunden-Status, darunter Regelzeile, Spielerzahl und
 # Computergegner − / +. Die jeweils andere Seite ragt ins Bild. 1600 × 720: fünf Spieler ganz sichtbar, darüber per Wischen.
-# Nach „+“ oder einem Pfeil rollt die Liste zum betroffenen Spieler.
+# Nach „+“ oder einem Pfeil rollt die Liste zum betroffenen Spieler. Online-Gäste (über den Vermittler) tragen eine Weltkugel und
+# „online“; der Weg „Online (Internet)“ steht in InvitePanel.
 
 const ROW_H := 72.0
 
@@ -120,6 +121,8 @@ func on_enter() -> void:
 	if _rules != null:
 		_rules.nav = nav
 		_rules.refresh()
+	if invite != null:
+		invite.refresh_online()      # zurück aus den Einstellungen: Vermittler-Adresse neu lesen
 
 
 func show_page(i: int, animate := true) -> void:
@@ -145,6 +148,26 @@ static func guest_count(l: Dictionary) -> int:
 		if str(p.get("kind", "")) != "bot" and int(p.get("id", -1)) != int(l.get("host_id", -1)):
 			n += 1
 	return n
+
+
+# Verbundene Online-Gäste (über den Vermittler, Feld online)
+static func online_count(l: Dictionary) -> int:
+	var n := 0
+	for p in l.get("players", []):
+		if bool(p.get("online", false)) and bool(p.get("connected", false)):
+			n += 1
+	return n
+
+
+# Weltkugel (Online-Gäste, Weg „Online (Internet)“)
+static func globe_texture(px: int, col: Color) -> Texture2D:
+	var c := "#" + col.to_html(false)
+	var svg := ("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"%d\" height=\"%d\" viewBox=\"0 0 100 100\"><g fill=\"none\" stroke=\"%s\" stroke-opacity=\"%.3f\" stroke-width=\"7\">" % [px, px, c, col.a]) \
+		+ "<circle cx=\"50\" cy=\"50\" r=\"40\"/><ellipse cx=\"50\" cy=\"50\" rx=\"17\" ry=\"40\"/><path d=\"M12 37H88M12 63H88\"/></g></svg>"
+	var img := Image.new()
+	if img.load_svg_from_string(svg, 1.0) != OK:
+		return null
+	return ImageTexture.create_from_image(img)
 
 
 func _on_lobby(l: Dictionary) -> void:
@@ -177,6 +200,7 @@ func _on_lobby(l: Dictionary) -> void:
 	_bot_plus.disabled = players.size() >= NetProtocol.MAX_PLAYERS
 	if invite != null:
 		invite.set_guests(guest_count(l))
+		invite.set_online_guests(online_count(l))
 
 
 # Zeile ganz in den sichtbaren Bereich holen (nach dem Layout)
@@ -210,6 +234,9 @@ func _row(p: Dictionary, i: int, n: int, host_id: int) -> Control:
 	var tag: String = I18n.t({"app": "App", "web": "Browser", "bot": "Computer"}.get(kind, kind))
 	if id == host_id:
 		tag = I18n.t("Gastgeber (du)")
+	var online := bool(p.get("online", false))
+	if online:
+		tag += " · " + I18n.t("online")
 	var connected := bool(p.get("connected", true))
 	if not connected:
 		tag += " · " + I18n.t("getrennt")
@@ -220,7 +247,8 @@ func _row(p: Dictionary, i: int, n: int, host_id: int) -> Control:
 		tl.add_theme_color_override("font_color", UiPalette.ALERT)
 	texts.add_child(tl)
 	var ic := TextureRect.new()
-	ic.texture = ScreenKit.icon({"app": "spieler", "web": "wlan", "bot": "roboter"}.get(kind, "spieler"))
+	ic.texture = globe_texture(34, UiPalette.CREAM) if online else ScreenKit.icon({"app": "spieler", "web": "wlan", "bot": "roboter"}.get(kind, "spieler"))
+	ic.name = "Online" if online else "Art"
 	ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	ic.custom_minimum_size = Vector2(34, 34)

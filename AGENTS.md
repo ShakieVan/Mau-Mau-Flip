@@ -100,6 +100,10 @@ Statistik je Gerät (`game/scripts/app/stats.gd`, `user://statistik.json`, Absch
 
 Englische Fassung: gettext (`game/i18n/en_screens.po`, `en_table.po`, `en_rules.po`, msgid = deutscher Text), Klasse `I18n` (`game/scripts/app/i18n.gd`, `I18n.t`, Live-Wechsel über NOTIFICATION_TRANSLATION_CHANGED), Einstellung `sprache` (auto/de/en), Glossar `game/i18n/GLOSSAR.md`. Protokoll: Hinweise/Meldungen tragen zusätzlich `lt` (Bausteine), `text` bleibt deutsch für alte Geräte – jedes Gerät zeigt seine Sprache. Browser: `webclient/i18n.js`, `i18n_en.js`, `i18n_po.js` (beim Bauen aus den .po erzeugt), Umschalter im Lite-Menü, `?lang=en`. Lückentest `test_i18n` (streng, 0 Lücken). App-Vibration beim eigenen Zug ab Werk an. Bericht: `docs/geraetetest/1.2.2/BERICHT.md`. Neue Texte immer mit `I18n.t`/`M.t` und Eintrag in der passenden .po. Offen (niedrig): HTTP-Fehler-/APK-Hinweisseiten des Hosts nur deutsch; Sprachwahl im Browser nicht auf der Startseite; teils doppelte Texte in `i18n_en.js` und .po; manche zusammengesetzte Texte wechseln erst beim Neuaufbau.
 
+## Erledigt in Beta 1.2.3 (veröffentlicht 08.10.2026)
+
+Tempo der Computergegner: „gemütlich“ = 5-fache Bedenkzeit (vorher 2,5), Mitte 1 und „flott“ 0,4 unverändert, je Reglerhälfte linear (`AppSettings.think_factor`). Gebaut aus einem sauberen Arbeitsbaum (Stand 1.2.2 + Tempo), weil die Online-Arbeit noch lief. Danach Release 1.3.0 (08.10.2026, Stand 1.2.3, ebenfalls aus sauberem Arbeitsbaum). **Das Online-Spiel wird deshalb Beta 1.3.1** (Version vor dem Bau auf 1.3.1 setzen).
+
 ## Geplant: Online-Spiel, Schritt 1 (Nutzerentscheidung 08.10.2026)
 
 - Vermittler (Relay) als Cloudflare Worker mit Durable Objects (ein Raum = ein Objekt), im Repo samt „Deploy to Cloudflare“-Knopf im README: Jede Gruppe (oder der Nutzer als Standard) richtet sich mit einem Klick einen eigenen Gratis-Vermittler ein; der Gratistarif pausiert bei Überschreiten der Tageslimits, kostet aber nichts. Vor dem Umsetzen die aktuellen Bedingungen (Durable Objects im Gratistarif, WebSocket-Limits) prüfen.
@@ -112,7 +116,7 @@ Englische Fassung: gettext (`game/i18n/en_screens.po`, `en_table.po`, `en_rules.
 
 - **Beta 1.2.1:** kleine Restpunkte (kräftigere Ränder der Handkarten im großen Modus; Browser großer Modus: Stapel im großen Desktop-Fenster, Hinweis „Du bist dran“ nicht über dem Stapelrand; Browser hochkant: Lobby-Zeilen; Browser-Vibration beim eigenen Zug **ab Werk an**; wackelige Tests test_screens_flow/test_net_rebind robuster) und **Statistik** ohne neuen Hauptmenü-Knopf: Abschnitt „Deine Statistik“ in den Einstellungen (pro Gerät: Partien, Siege, Mau-Mau, Erwischt, größte Hand, höchster Glücksspiel-Treffer …, Zurücksetzen), dazu höchstens ein kleiner Satz am Rundenende.
 - **Beta 1.2.2:** englische Fassung (App, Browser, Regeltexte; Sprache automatisch nach System, umschaltbar); der Nutzer testet wenig, Prüfung über Kontrollbilder.
-- **Beta 1.3.x:** Online-Spiel (Cloudflare-Vermittler mit Raumcode), dann Godot-Web-Client (volle Optik) für Online-Gäste, dann Gastgeber-Übergabe (zuerst online, WLAN danach prüfen). **Release 1.3**, wenn Online-Spiel und Übergabe zuverlässig laufen.
+- **Beta 1.3.x** (nach Release 1.3.0 mit Englisch und Statistik): Online-Spiel (Cloudflare-Vermittler mit Raumcode), dann Godot-Web-Client (volle Optik) für Online-Gäste, dann Gastgeber-Übergabe (zuerst online, WLAN danach prüfen). **Release 1.4**, wenn Online-Spiel und Übergabe zuverlässig laufen.
 - Bestätigt durch den Nutzer: Spieltöne (MOSS) „erste Sahne“, Spiel-WLAN funktioniert. Offen: iPhone als Gast nie getestet; Play-Protect-Warnung.
 
 ## Empfehlung aus der Recherche

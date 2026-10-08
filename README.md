@@ -31,6 +31,20 @@ Mau-Mau mit Wendekarten für Android. Jede Karte hat eine **helle Seite** (Rot, 
 - **Hotel-WLAN:** Dort sehen sich die Geräte oft nicht. Dann den Hotspot des Gastgeber-Handys einschalten und alle damit verbinden.
 - **App teilen:** Die App gibt sich selbst weiter – über das Teilen-Menü (z. B. Quick Share) oder als Download auf der Seite des Gastgebers (`http://<Adresse>:24690/apk`).
 
+## Online-Spiel: eigener Vermittler
+
+Über das Internet spielt ihr mit einem **Vermittler**: Er reicht nur Nachrichten zwischen den Handys durch, das Spiel selbst läuft weiter auf dem Handy des Gastgebers. Der Gastgeber öffnet einen Raum und bekommt einen Raumcode (z. B. `KATZE-42`); Mitspieler geben ihn in der App ein oder öffnen den Link im Browser.
+
+Jede Gruppe kann sich mit einem Klick einen eigenen, kostenlosen Vermittler bei Cloudflare einrichten (Gratistarif; bei Überschreiten der Tageslimits pausiert er bis zum nächsten Tag, kostet aber nichts):
+
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/ShakieVan/Mau-Mau-Flip/tree/main/relay)
+
+1. Auf den Knopf tippen, mit GitHub und Cloudflare anmelden (Konten legt ihr selbst an) und „Deploy“ bestätigen. Cloudflare legt dabei eine Kopie des Ordners `relay/` in eurem GitHub-Konto an und stellt sie bereit.
+2. Die angezeigte Adresse (z. B. `https://mau-mau-flip-relay.<name>.workers.dev`) in der App unter **Einstellungen → Online** eintragen und „Verbindung testen“.
+3. Fertig – auch nach App-Updates ist nichts zu tun. Browser-Mitspieler brauchen genau die Spielversion des Gastgebers; den passenden Browser-Client holt sich der Vermittler selbst aus diesem Repository (Tag `v<Version>`) und merkt ihn sich. Neu bereitstellen müsst ihr ihn nur, wenn sich der Vermittler selbst ändert (selten, steht dann in den Release-Notizen).
+
+Einzelheiten, Grenzen und Datenschutz: [relay/README.md](relay/README.md).
+
 ## Bedienung
 
 - **Ausspielen:** Karte nach oben wischen oder zweimal antippen. Wünscher zur Ablage ziehen und auf eine der vier Farben fallen lassen.
@@ -57,6 +71,7 @@ Voreinstellungen „Offiziell“, „Familie“, „Mau-Mau-Tradition“ und „
 ./tools/setup.ps1              # Godot 4.6.1 und Exportvorlagen nach .tools/
 ./tools/build.ps1 -Target Test # alle Headless-Prüfungen
 ./tools/build.ps1 -Target All  # Browser-Client, Windows- und Android-Build nach builds/
+./tools/build.ps1 -Target Relay # Vermittler prüfen (relay/public, Kerntest in Chrome headless)
 ```
 
 Die Tests laufen teils parallel. War genau dieser Stand schon vollständig grün, überspringt der Bau sie („Tests für diesen Stand schon grün, übersprungen“); `-NoTestCache` erzwingt sie, `-SkipTests` lässt sie für schnelle Probebauten weg. Einzelheiten: [docs/IMPLEMENTIERUNG.md](docs/IMPLEMENTIERUNG.md#prüfen).

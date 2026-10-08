@@ -1,5 +1,5 @@
 ﻿param(
-    [ValidateSet('Test', 'Windows', 'Android', 'Web', 'All')][string]$Target = 'All',
+    [ValidateSet('Test', 'Windows', 'Android', 'Web', 'Relay', 'All')][string]$Target = 'All',
     [switch]$SkipTests,                 # nur für schnelle Probebauten; tools/release.ps1 nutzt es nie
     [switch]$NoTestCache,               # Tests auch dann laufen lassen, wenn genau dieser Stand schon grün war
     [int]$Parallel = 0,                 # parallele Godot-Prozesse für reine Tests (0 = automatisch: Kerne − 4, höchstens 10)
@@ -8,7 +8,11 @@
 )
 # Bau von Mau-Mau Flip (Muster Draw2Race tools/build.ps1, docs/BETA1_PLAN.md 9):
 #   Web      webclient/ → game/assets/web.zip (läuft auch vor Test, Windows und Android, damit die APK den aktuellen Browser-Client trägt)
-#   Test     Import, dann alle game/tests/test_*.gd (außer *_lang*/*_shot*), reine Tests parallel, Netz-/Bildschirmtests in einer
+#   Relay    prüft relay/public (Lader, 404) und wrangler.jsonc, dann der Vermittler-Kerntest. Keine Versionskopien mehr: Den Browser-
+#            Client holt der Vermittler selbst vom Tag v<version> des Quell-Repos (relay/src/client.js; Tag setzt tools/release.ps1).
+#            Braucht kein Godot.
+#   Test     zuerst der Vermittler-Kerntest (relay/test/core_test.html in Chrome headless, Invoke-RelayTest), dann
+#            Import, dann alle game/tests/test_*.gd (außer *_lang*/*_shot*), reine Tests parallel, Netz-/Bildschirmtests in einer
 #            eigenen Spur nacheinander; Zusammenfassung, Abbruch bei Fehler. Testergebnis-Cache: War genau dieser Stand (Prüfsumme
 #            über game/, webclient/ und dieses Skript, siehe Get-TestStateHash) schon vollständig grün, entfallen die Tests
 #            (.tools/test_cache.json; -NoTestCache erzwingt sie).
@@ -178,13 +182,87 @@ function Build-WebZip {
     Write-Output ("web.zip: {0} Dateien, {1:N0} KB" -f $files.Count, ((Get-Item -LiteralPath $zipPath).Length / 1KB))
 }
 
+function Build-Relay {
+    # Prüft nur noch relay/public: Den Browser-Client holt der Vermittler selbst aus dem Quell-Repo (Tag v<version>,
+    # relay/src/client.js). Gebündelte Versionskopien (relay/public/c/) gibt es nicht mehr; liegen noch welche herum, werden sie entfernt.
+    $pub = Join-Path $projectRoot 'relay/public'
+    foreach ($name in @('index.html', 'loader.js', '404.html')) {
+        if (-not (Test-Path -LiteralPath (Join-Path $pub $name))) { throw "relay/public/$name fehlt." }
+    }
+    $old = Join-Path $pub 'c'
+    if (Test-Path -LiteralPath $old) { Remove-Item -LiteralPath $old -Recurse -Force; Write-Output 'Vermittler: veraltete Versionskopien relay/public/c/ entfernt' }
+    $wrangler = [IO.File]::ReadAllText((Join-Path $projectRoot 'relay/wrangler.jsonc'))
+    if ($wrangler -notmatch '"/c/\*"' -or $wrangler -notmatch '"CLIENT_REPO"') { throw 'relay/wrangler.jsonc: run_worker_first ohne "/c/*" oder CLIENT_REPO fehlt.' }
+    Write-Output "Vermittler: relay/public ok; Browser-Client $version kommt vom Tag v$version des Quell-Repos (tools/release.ps1 legt ihn an)."
+}
+
+function Invoke-RelayTest {
+    # Vermittler-Kern (relay/src/core.js), Client-Abruf (client.js), Wortliste, Lader und worker.js-Klebstoff gegen relay/test/vectors.json in Chrome headless
+    # (kein Node): tools/webtest/serve.ps1 -Wurzel relay liefert die Module per http, tools/webtest/cdp.ps1 liest window.__result.
+    $page = Join-Path $projectRoot 'relay/test/core_test.html'
+    if (-not (Test-Path -LiteralPath $page)) { Write-Output 'Vermittler-Kerntest: relay/test/core_test.html fehlt – übersprungen.'; return }
+    if (-not (Test-Path -LiteralPath 'C:\Program Files\Google\Chrome\Application\chrome.exe')) { throw 'Vermittler-Kerntest braucht Google Chrome.' }
+    $watch = [Diagnostics.Stopwatch]::StartNew()
+    $port = Get-Random -Minimum 8400 -Maximum 8900
+    $serve = Start-Process powershell -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$(Join-Path $PSScriptRoot 'webtest/serve.ps1')`"",
+        '-Port', $port, '-Sekunden', 150, '-Wurzel', 'relay') -PassThru -WindowStyle Hidden
+    try {
+        $up = $false
+        for ($i = 0; $i -lt 50 -and -not $up; $i++) {
+            try { $null = Invoke-WebRequest -Uri "http://localhost:$port/test/core_test.html" -UseBasicParsing -TimeoutSec 1; $up = $true }
+            catch { Start-Sleep -Milliseconds 200 }
+        }
+        if (-not $up) { throw 'Vermittler-Kerntest: Testserver startet nicht.' }
+        $out = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'webtest/cdp.ps1') -Url "http://localhost:$port/test/core_test.html" `
+            -WaitExpr 'window.__done===true' -WaitMs 0 -TimeoutMs 60000 -Eval 'JSON.stringify(window.__result)'
+        $line = @($out | Where-Object { "$_".StartsWith('EVAL: ') }) | Select-Object -Last 1
+        $res = $null
+        if ($line) { try { $res = "$line".Substring(6) | ConvertFrom-Json } catch { } }
+        if (-not $res) { throw ("Vermittler-Kerntest ohne Ergebnis: " + (($out | Select-Object -Last 5) -join ' | ')) }
+        if ($res.fail -gt 0 -or $res.ok -lt 100) {
+            foreach ($l in @($res.lines | Select-Object -First 10)) { Write-Output "  $l" }
+            throw ("Vermittler-Kerntest: {0} Fehler ({1} ok)" -f $res.fail, $res.ok)
+        }
+        Write-Output ("Vermittler-Kerntest: {0} Prüfungen ok ({1:N1} s)" -f $res.ok, $watch.Elapsed.TotalSeconds)
+    }
+    finally { if (-not $serve.HasExited) { Stop-Process -Id $serve.Id -Force -ErrorAction SilentlyContinue } }
+}
+
+function Invoke-WebOnlineTest {
+    # Online-Modus des Browser-Clients (webclient/netz.js mit Schein-WebSocket, webclient/test/netz_online.html) in Chrome headless
+    # mit virtueller Zeit (Herzschlag 25 s, Stille 70 s, 4503 → 10 s laufen ohne echtes Warten). Ergebnis: data-ok="1".
+    $page = Join-Path $projectRoot 'webclient/test/netz_online.html'
+    if (-not (Test-Path -LiteralPath $page)) { Write-Output 'Browser-Onlinetest: webclient/test/netz_online.html fehlt – übersprungen.'; return }
+    $chrome = 'C:\Program Files\Google\Chrome\Application\chrome.exe'
+    if (-not (Test-Path -LiteralPath $chrome)) { throw 'Browser-Onlinetest braucht Google Chrome.' }
+    $watch = [Diagnostics.Stopwatch]::StartNew()
+    $chromeDir = Join-Path ([IO.Path]::GetTempPath()) ("mmf_netz_online_" + $PID)
+    $url = ([Uri](Resolve-Path -LiteralPath $page).Path).AbsoluteUri
+    try {
+        $domFile = $chromeDir + '.html'
+        $proc = Start-Process -FilePath $chrome -ArgumentList @('--headless=new', '--disable-gpu', '--no-first-run', "--user-data-dir=`"$chromeDir`"",
+            '--virtual-time-budget=120000', '--dump-dom', $url) -RedirectStandardOutput $domFile -RedirectStandardError ($chromeDir + '.err') -PassThru -WindowStyle Hidden
+        if (-not $proc.WaitForExit(120000)) { Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue }
+        $dom = ''
+        for ($i = 0; $i -lt 100; $i++) {      # Chrome-Kindprozesse halten die Ausgabedatei noch kurz offen
+            try { $dom = [IO.File]::ReadAllText($domFile); break } catch { Start-Sleep -Milliseconds 200 }
+        }
+    }
+    finally { Remove-Item -LiteralPath $chromeDir, ($chromeDir + '.html'), ($chromeDir + '.err') -Recurse -Force -ErrorAction SilentlyContinue }
+    if ($dom -notmatch 'data-ok="1"') {
+        $m = [regex]::Match($dom, '<pre id="autotest-result"[^>]*>([\s\S]{0,800})')
+        throw ("Browser-Onlinetest fehlgeschlagen: " + $(if ($m.Success) { $m.Groups[1].Value } else { 'kein Ergebnis' }))
+    }
+    Write-Output ("Browser-Onlinetest: ok ({0:N1} s)" -f $watch.Elapsed.TotalSeconds)
+}
+
 function Get-TestStateHash {
-    # Prüfsumme über alles, was ein Testergebnis beeinflusst: game/ und webclient/ (Dateien, die git verfolgt oder verfolgen würde –
+    # Prüfsumme über alles, was ein Testergebnis beeinflusst: game/, webclient/ und relay/ (ohne frühere Versionskopien relay/public/c/; Dateien, die git verfolgt oder verfolgen würde –
     # .gitignore schließt Erzeugtes wie game/.godot/, game/android/build/build/, libs/ und web.zip aus), dazu dieses Bauskript und
     # die Godot-Fassung. export_presets.cfg geht ein, nachdem der Bau die Versionszeilen gesetzt hat. Ohne git: $null (kein Cache).
     $git = Get-Command git -ErrorAction SilentlyContinue
     if (-not $git) { return $null }
-    $list = Invoke-Native $git.Source @('-C', $projectRoot, '-c', 'core.quotepath=off', 'ls-files', '--cached', '--others', '--exclude-standard', '--', 'game', 'webclient', 'tools/build.ps1')
+    $list = Invoke-Native $git.Source @('-C', $projectRoot, '-c', 'core.quotepath=off', 'ls-files', '--cached', '--others', '--exclude-standard', '--', 'game', 'webclient', 'tools/build.ps1', 'relay', ':(exclude)relay/public/c')
     if ($script:NativeExit -ne 0) { return $null }
     $sha = [Security.Cryptography.SHA256]::Create()
     $sb = New-Object Text.StringBuilder
@@ -343,7 +421,7 @@ function Invoke-Tests {
     Write-Output ("Alle {0} Testläufe bestanden." -f $suites.Count)
 }
 
-if ($Target -ne 'Web' -and -not (Test-Path -LiteralPath $engine)) { throw 'Godot 4.6.1 fehlt. Zuerst tools/setup.ps1 ausführen.' }
+if ($Target -notin @('Web', 'Relay') -and -not (Test-Path -LiteralPath $engine)) { throw 'Godot 4.6.1 fehlt. Zuerst tools/setup.ps1 ausführen.' }
 
 # Version: project.godot ist maßgeblich; version/name und version/code im Android-Exportprofil werden daraus gesetzt.
 $version = (Select-String -LiteralPath (Join-Path $gamePath 'project.godot') -Pattern '^config/version="(.+)"').Matches[0].Groups[1].Value
@@ -367,6 +445,8 @@ if ($presetCode -ne $versionCode -or $nameLines[0].Groups[1].Value -ne $version)
     [IO.File]::WriteAllText($presetsPath, $presetText)
     Write-Output "Exportprofil: version/name $version, version/code $versionCode (vorher $presetCode)"
 }
+
+if ($Target -eq 'Relay') { Build-Relay; Invoke-RelayTest; return }
 
 # Vorabprüfung für Android, bevor Import und Tests Minuten kosten.
 if ($Target -in @('All', 'Android')) {
@@ -433,6 +513,8 @@ try {
     else {
         # Getesteter Stand: nach dem Import (der legt z. B. .uid-Dateien neuer Skripte an).
         if ($stateHash) { $stateHash = Get-TestStateHash }
+        Invoke-RelayTest
+        Invoke-WebOnlineTest
         Invoke-Tests
         # Nur merken, wenn sich während der Tests nichts geändert hat (sonst wäre ein Mischstand getestet).
         if ($stateHash) {

@@ -56,7 +56,7 @@ func build() -> void:
 	pass_btn.name = "Weitergeben"
 	pass_btn.pressed.connect(func() -> void: nav.push(PassSetupScreen.new()))
 	right.add_child(pass_btn)
-	var wlan := _big("Im WLAN spielen", "Spiel eröffnen oder beitreten", "wlan")
+	var wlan := _big("Mit anderen spielen", "WLAN oder online", "wlan")
 	wlan.name = "Wlan"
 	wlan.pressed.connect(func() -> void: nav.push(WlanScreen.new()))
 	right.add_child(wlan)

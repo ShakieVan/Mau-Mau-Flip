@@ -2,7 +2,8 @@ class_name SettingsScreen
 extends AppScreen
 # Einstellungen: Name, Ton (Mau-Ton aus/leise/normal mit Probehören der Aufnahmen „Mau!“ und „Mau-Mau!“, Spieltöne
 # aus/leise/normal, Standard aus), Schriftgröße (Normal/Groß/Sehr groß, live), Spielbare Karten hervorheben (nur dieses Gerät), Vibration, Effekte, Updates (Beta-Kanal,
-# Jetzt prüfen, Fortschritt, Installieren, Im Browser herunterladen), App teilen, Deine Statistik (AppStats, mit Zurücksetzen),
+# Jetzt prüfen, Fortschritt, Installieren, Im Browser herunterladen), App teilen, Online (Vermittler-Adresse, Verbindung testen, QR),
+# Deine Statistik (AppStats, mit Zurücksetzen),
 # Info (Version, Lizenz, Schriften).
 # Alles wird sofort in App.settings gespeichert.
 
@@ -16,6 +17,15 @@ var _browser_btn: Button
 var _share_status: Label
 var _stats_list: VBoxContainer
 var _stats_confirm: ConfirmBox
+var _relay: LineEdit
+var _relay_status: Label
+var _relay_qr: TextureRect
+var _relay_qr_label: Label
+var _relay_test: HTTPRequest
+var _relay_test_ms := 0
+var _relay_ms := 0
+var _relay_step := 0                 # 0 = /info, 1 = /c/<Version>/index.html
+var _relay_info_body := ""
 
 
 func build() -> void:
@@ -96,6 +106,7 @@ func build() -> void:
 	_share_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_share_status.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	srow.add_child(_share_status)
+	_build_online(_section(right, "Online"))
 	_build_stats(_section(right, AppStats.TITLE))
 	var info := _section(right, "Info")
 	var ver := ScreenKit.text_block("Mau-Mau Flip %s" % MainMenuScreen._version_text(), UiFonts.size("text"))
@@ -170,6 +181,146 @@ static func personal(parent: Control, section: Callable, tempo := true) -> void:
 	look.add_child(ScreenKit.row("Effekte", fx, 190.0, "Reduziert: kürzer, weniger Teilchen"))
 	if tempo:
 		look.add_child(tempo_row())
+
+
+# „Online“ (docs/online/ENTWURF.md 3): Adresse des Vermittlers, „Verbindung testen“ (GET /info: Antwortzeit und ob er diese
+# Version ausliefert) und ein QR-Code mit der Startseite des Vermittlers zum Weitergeben der Adresse.
+func _build_online(box: VBoxContainer) -> void:
+	var intro := ScreenKit.hint("Für Spiele über das Internet: Ein Vermittler reicht die Nachrichten weiter, die Spiellogik bleibt beim Gastgeber. Einrichten kostenlos bei Cloudflare, Anleitung auf GitHub (ShakieVan/Mau-Mau-Flip). Gäste brauchen nur Raumcode oder Link.", UiFonts.size("hinweis"))
+	intro.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	box.add_child(intro)
+	_relay = LineEdit.new()
+	_relay.name = "Vermittler"
+	_relay.placeholder_text = "z. B. mau.dein-name.workers.dev"
+	_relay.text = NetProtocol.relay_host(str(UiApp.setting("vermittler", NetProtocol.RELAY_DEFAULT)))
+	_relay.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_relay.custom_minimum_size = Vector2(0, ScreenKit.TOUCH)
+	_relay.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_URL
+	_relay.text_submitted.connect(func(_t: String) -> void:
+		_relay.release_focus()
+		store_relay())
+	_relay.focus_exited.connect(store_relay)
+	box.add_child(ScreenKit.row("Vermittler", _relay, 190.0))
+	var row := HFlowContainer.new()
+	row.add_theme_constant_override("h_separation", 12)
+	row.add_theme_constant_override("v_separation", 12)
+	box.add_child(row)
+	var test := ScreenKit.button("Verbindung testen", "", "update")
+	test.name = "VerbindungTesten"
+	test.pressed.connect(test_relay)
+	row.add_child(test)
+	var qr_btn := ScreenKit.button("QR-Code", "GhostButton")
+	qr_btn.name = "VermittlerQR"
+	qr_btn.tooltip_text = "Adresse des Vermittlers als QR-Code weitergeben"
+	qr_btn.pressed.connect(func() -> void: show_relay_qr(not _relay_qr.visible))
+	row.add_child(qr_btn)
+	_relay_status = ScreenKit.text_block("", UiFonts.size("text"))
+	_relay_status.name = "VermittlerStatus"
+	box.add_child(_relay_status)
+	_relay_qr = TextureRect.new()
+	_relay_qr.name = "VermittlerQRBild"
+	_relay_qr.custom_minimum_size = Vector2(220, 220)
+	_relay_qr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_relay_qr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_relay_qr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_relay_qr.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_relay_qr.visible = false
+	box.add_child(_relay_qr)
+	_relay_qr_label = ScreenKit.hint("", UiFonts.size("hinweis"))
+	_relay_qr_label.visible = false
+	box.add_child(_relay_qr_label)
+
+
+# Eingabe übernehmen ("" = keiner). Ungültig → Hinweis, gespeichert bleibt der alte Wert.
+func store_relay() -> void:
+	if _relay == null:
+		return
+	var raw := _relay.text.strip_edges()
+	var url := NetProtocol.normalize_relay_url(raw)
+	if raw != "" and url == "":
+		_relay_status.text = I18n.t("Diese Adresse passt nicht. Beispiel: mau.dein-name.workers.dev")
+		return
+	_store("vermittler", url)
+	_relay.text = NetProtocol.relay_host(url)
+	if _relay_qr.visible:
+		show_relay_qr(true)
+
+
+# GET <vermittler>/info: Antwortzeit und unterstützte Versionen
+func test_relay() -> void:
+	store_relay()
+	var url := NetProtocol.normalize_relay_url(str(UiApp.setting("vermittler", "")))
+	if url == "":
+		_relay_status.text = I18n.t("Bitte zuerst die Adresse des Vermittlers eintragen.")
+		return
+	if _relay_test == null:
+		_relay_test = HTTPRequest.new()
+		_relay_test.name = "VermittlerTest"
+		_relay_test.timeout = 10.0
+		add_child(_relay_test)
+		_relay_test.request_completed.connect(_on_relay_tested)
+	_relay_test.cancel_request()
+	_relay_test_ms = Time.get_ticks_msec()
+	_relay_info_body = ""
+	_relay_step = 0
+	_relay_status.text = I18n.t("Teste die Verbindung …")
+	if _relay_test.request(url + "/info") != OK:
+		_on_relay_tested(HTTPRequest.RESULT_CANT_CONNECT, 0, PackedStringArray(), PackedByteArray())
+
+
+func _on_relay_tested(result: int, status: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+	var good := result == HTTPRequest.RESULT_SUCCESS
+	var version := NetProtocol.game_version()
+	if _relay_step == 0:
+		_relay_ms = Time.get_ticks_msec() - _relay_test_ms
+		_relay_info_body = body.get_string_from_utf8()
+		if good and status == 200 and relay_info_ok(_relay_info_body):
+			var url := NetProtocol.normalize_relay_url(str(UiApp.setting("vermittler", "")))
+			_relay_step = 1
+			if _relay_test.request(url + "/c/" + version + "/index.html") == OK:
+				_relay_status.text = I18n.t("Prüfe den Browser-Client für Version %s …") % version
+				return
+			status = 0
+			good = false
+		else:
+			_relay_status.text = relay_test_text(good and status == 200, _relay_info_body, _relay_ms, version, -1)
+			return
+	_relay_step = 0
+	_relay_status.text = relay_test_text(true, _relay_info_body, _relay_ms, version, status if good else 0)
+
+
+static func relay_info_ok(body: String) -> bool:
+	var info: Variant = JSON.parse_string(body) if body.begins_with("{") else null
+	return info is Dictionary and str(info.get("game", "")) == NetProtocol.GAME_ID
+
+
+# Ergebnistext von „Verbindung testen“ (ohne Netz prüfbar). ok: /info kam mit 200; c_status: HTTP-Status von
+# /c/<Version>/index.html (0 = keine Antwort, -1 = nicht abgefragt). Ein Vermittler ab Fassung 2 holt den Client selbst von GitHub.
+static func relay_test_text(ok: bool, body: String, ms: int, version: String, c_status: int = 200) -> String:
+	if not ok:
+		return I18n.t("Vermittler nicht erreichbar. Stimmt die Adresse, und hast du Internet?")
+	if not relay_info_ok(body):
+		return I18n.t("Unter dieser Adresse antwortet kein Vermittler für Mau-Mau Flip.")
+	var t := I18n.t("Vermittler antwortet (%d ms).") % ms
+	if c_status == 200:
+		return t + " " + I18n.t("Alles bereit für Online-Spiele.")
+	var info: Dictionary = JSON.parse_string(body)
+	if int(info.get("relay", 1)) >= 2 and (c_status == 404 or c_status >= 500):
+		return t + " " + I18n.t("Die Version %s ist noch nicht auf GitHub veröffentlicht. Mit der App klappt es trotzdem.") % version
+	return t + " " + I18n.t("Vermittler zu alt: Er kann den Browser-Client nicht selbst holen. Bitte neu bereitstellen (Anleitung auf GitHub). Mit der App klappt es trotzdem.")
+
+
+# QR-Code mit der Startseite des Vermittlers (https://<v>/), darunter die Adresse
+func show_relay_qr(on: bool) -> void:
+	var url := NetProtocol.normalize_relay_url(str(UiApp.setting("vermittler", "")))
+	_relay_qr.visible = on and url != ""
+	_relay_qr_label.visible = _relay_qr.visible
+	if on and url == "":
+		_relay_status.text = I18n.t("Bitte zuerst die Adresse des Vermittlers eintragen.")
+	if _relay_qr.visible:
+		var code := QrCode.encode(url + "/")
+		_relay_qr.texture = code.to_texture(8, 3, UiPalette.INK, Color.WHITE) if code != null else null
+		_relay_qr_label.text = I18n.t("Scannen öffnet die Seite des Vermittlers: %s") % NetProtocol.relay_host(url)
 
 
 # „Deine Statistik“ (Beta 1.2.1, AppStats): Zahlen dieses Geräts, Zurücksetzen mit Rückfrage. Kein eigener Knopf im Hauptmenü.

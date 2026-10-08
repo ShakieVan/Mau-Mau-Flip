@@ -354,5 +354,14 @@ window.MMF_I18N_EN = {
   "Farbe ablegen: Wer eine Ablegen-Karte legt, wählt eigene Karten dieser Farbe zum Mitablegen; Joker bleiben auf der Hand. Beim Ablegen-Joker wählst du Ablegefarbe und Spielfarbe getrennt.": "Discard Color: Whoever plays a Discard Color card chooses their own cards of that color to discard with it; wild cards stay in hand. With the Discard Wild, you choose the discard color and the play color separately.",
   "Flip dreht nur die gelegte Karte: Oben liegt ihre andere Seite, die übrige Ablage bleibt zur Seite gelegt.": "Flip turns only the played card: its other side lies on top, the rest of the discard pile stays put on the side.",
   "Flip-Überraschung: Die Aktionskarte, die nach dem Flip oben liegt, wirkt auf den Nächsten.": "Flip Surprise: The action card lying on top after the Flip affects the next player.",
-  "Gespielt wird mit %d Karten.": "Playing with %d cards."
+  "Gespielt wird mit %d Karten.": "Playing with %d cards.",
+  "Raum %s": "Room %s",
+  "Raum nicht gefunden. Prüfe den Raumcode oder frage den Gastgeber.": "Room not found. Check the room code or ask the host.",
+  "Der Raumcode stimmt nicht. Er sieht so aus: KATZE-42.": "The room code is not valid. It looks like this: KATZE-42.",
+  "Keine Verbindung zum Vermittler. Hast du Internet? Ich versuche es weiter …": "No connection to the relay. Do you have internet? I'll keep trying …",
+  "Der Gastgeber ist kurz weg. Ich versuche es in 10 Sekunden erneut …": "The host is away for a moment. Trying again in 10 seconds …",
+  "Der Raum ist voll.": "The room is full.",
+  "Der Gastgeber hat den Raum geschlossen.": "The host has closed the room.",
+  "Gastgeber kurz weg …": "Host away for a moment …",
+  "Ich warte und verbinde dann neu.": "I'll wait and then reconnect."
 };

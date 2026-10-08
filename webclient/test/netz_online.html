@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><title>Test Online-Verbindung</title></head>
+<body>
+<pre id="autotest-result">läuft …</pre>
+<script src="../netz.js"></script>
+<script>
+/* Test des Online-Modus von netz.js gegen einen Schein-WebSocket (Vermittler-Verhalten: Ping/Pong-Text, Schließcodes 4503/4404/4409/1001).
+ * Aufruf: chrome --headless=new --virtual-time-budget=120000 --dump-dom file:///…/webclient/test/netz_online.html
+ * Ergebnis: <pre id="autotest-result" data-ok="1|0">. Läuft nicht im Spiel, wird nur mit web.zip ausgeliefert. */
+(function () {
+  const M = window.MMF, O = M.Netz.Online;
+  const fehler = [];
+  const ok = (b, t) => { if (!b) fehler.push(t); };
+  const warte = ms => new Promise(r => setTimeout(r, ms));
+
+  // ---- reine Funktionen ----
+  const codes = [['katze-42', 'KATZE-42'], ['KATZE42', 'KATZE-42'], [' Katze 42 ', 'KATZE-42'], ['katze_42', 'KATZE-42'], ['mäuse-10', 'MAEUSE-10'],
+    ['Füchse99', 'FUECHSE-99'], ['STRASSE-11', 'STRASSE-11'], ['', ''], ['KATZE', ''], ['KATZE-4', ''], ['42', ''], ['KATZE-421', ''], ['KA TZE-42', ''], ['KATZE-4a', '']];
+  codes.forEach(([i, o]) => ok(O.code(i) === o, 'code(' + JSON.stringify(i) + ') = ' + O.code(i) + ', erwartet ' + o));
+  ok(O.code(null) === '' && O.code(undefined) === '', 'code(null)');
+  ok(O.wsUrl({ protocol: 'https:', host: 'mmf.example.workers.dev' }, 'KATZE-42') === 'wss://mmf.example.workers.dev/ws?role=guest&room=KATZE-42', 'wsUrl https');
+  ok(O.wsUrl({ protocol: 'http:', host: 'localhost:24700' }, 'KATZE-42') === 'ws://localhost:24700/ws?role=guest&room=KATZE-42', 'wsUrl http');
+  ok(O.infoUrl('KATZE-42') === '/info?room=KATZE-42', 'infoUrl');
+  const loc = { protocol: 'https:', host: 'mmf.example.workers.dev', pathname: '/c/1.2.2/' };
+  const intent = O.appIntent(loc, 'KATZE-42');
+  ok(intent.indexOf('intent://join?r=KATZE-42&v=mmf.example.workers.dev#Intent;scheme=maumauflip;package=de.maumauflip.game;S.browser_fallback_url=') === 0, 'appIntent Kopf: ' + intent);
+  ok(decodeURIComponent(intent.split('S.browser_fallback_url=')[1].replace(';end', '')) === 'https://mmf.example.workers.dev/c/1.2.2/?r=KATZE-42&app=1', 'appIntent Rückfall');
+  ok(/^https:\/\/github\.com\/ShakieVan\/Mau-Mau-Flip\/releases/.test(O.GITHUB_RELEASES), 'GitHub-Releases');
+
+  // ---- Schein-WebSocket ----
+  const sockets = [];
+  class FakeWS {
+    constructor(url) { this.url = url; this.readyState = 0; this.gesendet = []; sockets.push(this); setTimeout(() => this._auf(), 5); }
+    _auf() { if (this.readyState !== 0) return; this.readyState = 1; if (this.onopen) this.onopen(); }
+    send(s) { this.gesendet.push(s); }
+    close() { this.readyState = 3; }
+    // Gegenstelle: Nachricht bzw. Schließen mit Code
+    rx(s) { if (this.onmessage) this.onmessage({ data: s }); }
+    schliesse(code) { this.readyState = 3; if (this.onclose) this.onclose({ code }); }
+  }
+  window.WebSocket = FakeWS;
+
+  function neu(online, extra) {
+    sockets.length = 0;
+    const stat = [], nachr = [];
+    const v = new M.Netz.Verbindung(Object.assign({ url: 'wss://x/ws?role=guest&room=KATZE-42', online, zeiten: { ping: 1500, still: 3500, hostWeg: 2500 },
+      hallo: () => ({ t: 'hello', proto: 1, name: 'Kim' }), beiNachricht: m => nachr.push(m), beiStatus: s => stat.push(s) }, extra || {}));
+    return { v, stat, nachr };
+  }
+
+  async function lauf() {
+    // 1. online: hello als JSON, Herzschlag als Text „ping“, „pong“ hält am Leben
+    let t = neu(true);
+    t.v.start();
+    await warte(50);
+    ok(sockets.length === 1 && sockets[0].gesendet.length === 1 && JSON.parse(sockets[0].gesendet[0]).t === 'hello', 'online: hello zuerst');
+    ok(t.stat.join() === 'verbinde,offen', 'online: Status ' + t.stat.join());
+    for (let i = 0; i < 6; i++) { await warte(1000); sockets[0].rx('pong'); }   // 6 s, jede Sekunde ein „pong“
+    ok(sockets.length === 1, 'online: mit pong keine Neuverbindung');
+    const pings = sockets[0].gesendet.slice(1);
+    ok(pings.length >= 2 && pings.every(p => p === 'ping'), 'online: Herzschlag ist der Text ping (' + JSON.stringify(pings) + ')');
+    sockets[0].rx('{"t":"welcome","id":3}');
+    ok(t.nachr.length === 1 && t.nachr[0].t === 'welcome', 'online: Spielnachricht kommt an, pong nicht');
+    // Stille → neu verbinden
+    await warte(5000);
+    ok(sockets.length === 2 && t.stat.indexOf('getrennt') >= 0, 'online: Stille führt zu Neuverbindung (' + sockets.length + ')');
+    t.v.beenden();
+
+    // 2. 4503: warten, nicht sofort neu
+    t = neu(true);
+    t.v.start(); await warte(50);
+    sockets[0].schliesse(4503);
+    ok(t.stat[t.stat.length - 1] === 'host_weg', 'online: 4503 → host_weg');
+    await warte(1500);
+    ok(sockets.length === 1, 'online: 4503 wartet (nach 1,5 s noch kein neuer Versuch)');
+    await warte(1500);
+    ok(sockets.length === 2, 'online: 4503 → nach hostWeg neuer Versuch');
+    t.v.beenden();
+
+    // 3. endgültige Codes
+    for (const [code, status] of [[4404, 'kein_raum'], [4409, 'voll'], [1001, 'raum_ende'], [4000, 'ersetzt']]) {
+      t = neu(true);
+      t.v.start(); await warte(50);
+      sockets[0].schliesse(code);
+      await warte(6000);
+      ok(sockets.length === 1 && t.stat[t.stat.length - 1] === status, 'online: ' + code + ' → ' + status + ' endgültig (' + t.stat.join() + ', ' + sockets.length + ' Sockets)');
+      t.v.beenden();
+    }
+    // sonstige Codes: normal neu verbinden
+    t = neu(true);
+    t.v.start(); await warte(50);
+    sockets[0].schliesse(1006);
+    await warte(1500);
+    ok(sockets.length === 2 && t.stat[t.stat.length - 2] === 'getrennt', 'online: 1006 → nach 1 s neu');
+    t.v.beenden();
+
+    // 4. Weckruf online: Text ping
+    t = neu(true);
+    t.v.start(); await warte(50);
+    const vorher = sockets[0].gesendet.length;
+    t.v.wecken();
+    ok(sockets[0].gesendet.length === vorher + 1 && sockets[0].gesendet[vorher] === 'ping', 'online: wecken sendet Text ping');
+    t.v.beenden();
+
+    // 5. LAN unverändert: Spiel-ping als JSON, Code 4404 nicht besonders
+    t = neu(false, { zeiten: { ping: 1500 } });
+    t.v.start(); await warte(50);
+    await warte(2200);
+    const lan = sockets[0].gesendet.slice(1);
+    ok(lan.length >= 1 && JSON.parse(lan[0]).t === 'ping', 'LAN: Herzschlag bleibt {t:ping}');
+    sockets[0].schliesse(4404);
+    await warte(1500);
+    ok(sockets.length === 2 && t.stat.indexOf('kein_raum') < 0, 'LAN: 4404 ist nicht endgültig');
+    t.v.beenden();
+  }
+  lauf().then(() => {}, e => fehler.push('Ausnahme: ' + (e && e.stack || e))).then(() => {
+    const el = document.getElementById('autotest-result');
+    el.setAttribute('data-ok', fehler.length ? '0' : '1');
+    el.textContent = fehler.length ? 'FEHLER: ' + fehler.join(' | ') : 'ok';
+  });
+})();
+</script></body></html>

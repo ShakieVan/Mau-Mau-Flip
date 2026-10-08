@@ -148,6 +148,12 @@ Farbnamen als Kartenfarbe groß („Play Blue or a 9“), im Fließtext als Adje
 | QR-Code | QR code |
 | getrennt / wieder da | disconnected / back |
 | Online spielen | Play online |
+| Vermittler (Online-Spiel) | relay |
+| Raumcode | room code |
+| Online-Raum / Raum | online room / room |
+| Online (Internet) (Weg in der Lobby) | Online (internet) |
+| Online öffnen / Online schließen | Open online / Close online |
+| Verbindung testen | Test connection |
 | Raumcode | room code |
 | Vermittler | relay |
 

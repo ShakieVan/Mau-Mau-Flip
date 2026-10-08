@@ -48,3 +48,14 @@ func glow() -> int:
 	if not step2_done():
 		return 2
 	return 0
+
+
+# --- Weg „Online (Internet)“ (docs/online/ENTWURF.md 3): leuchtet, solange der Raum offen ist und noch kein Online-Gast da ist;
+# Haken, sobald einer beigetreten ist (auch während der Gastgeber kurz weg ist).
+
+static func online_glow(state: String, online_guests: int) -> bool:
+	return state == "open" and online_guests <= 0
+
+
+static func online_done(state: String, online_guests: int) -> bool:
+	return online_guests > 0 and state in ["open", "away"]

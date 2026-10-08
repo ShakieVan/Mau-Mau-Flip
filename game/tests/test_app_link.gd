@@ -92,7 +92,7 @@ func run() -> void:
 	var js := nav.top() as JoinScreen
 	check(js != null and js.direct.address == "192.168.200.7" and js.discovery == null and js.client != null
 		and js._address.text == "192.168.200.7:24699" and nav.stack.size() == 3 and nav.stack[1] is WlanScreen,
-		"gültig: Beitreten verbindet direkt, ohne Suche, darunter „Im WLAN spielen“")
+		"gültig: Beitreten verbindet direkt, ohne Suche, darunter „Mit anderen spielen“")
 	nav.home(false)
 	await wait(0.2)
 	# --- Echter Gastgeber

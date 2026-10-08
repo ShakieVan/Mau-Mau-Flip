@@ -429,6 +429,7 @@ func run() -> void:
 	pruefe_tag_nacht(css, tisch)
 	pruefe_014(css, tisch, karten, mock, autotest, app, seite)
 	pruefe_102(css, karten, app, seite)
+	pruefe_online(app, seite)
 	pruefe_111(css, tisch, autotest, app, seite)
 	pruefe_113(css, tisch, mock, autotest, app)
 	pruefe_i18n(seite)
@@ -872,3 +873,27 @@ func _po_unq(q: String) -> String:
 	if t.length() >= 2 and t.begins_with("\"") and t.ends_with("\""):
 		t = t.substr(1, t.length() - 2)
 	return t.replace(r"\n", "\n").replace(r'\"', '"').replace(r"\\", "\\")
+
+
+# Online-Spiel (docs/online/ENTWURF.md, Abschnitt 4): Lite über den Vermittler (?r=CODE). Die Verhaltensprüfung läuft in Chrome headless
+# (webclient/test/netz_online.html); hier nur der Vertrag der Quelltexte.
+func pruefe_online(app: String, seite: String) -> void:
+	var netz := read_web("netz.js")
+	check(netz.contains("online: bool") and netz.contains("ONLINE_PING = 25000") and netz.contains("ONLINE_STILL = 70000") and netz.contains("ONLINE_HOST_WEG = 10000")
+			and netz.contains("this._text('ping')"),
+		"netz.js: Online-Herzschlag Text ping alle 25 s, 70 s Stille, 10 s Wartezeit bei Gastgeber weg")
+	check(netz.contains("4404: 'kein_raum'") and netz.contains("4409: 'voll'") and netz.contains("1001: 'raum_ende'") and netz.contains("ev.code === 4503")
+			and netz.contains("'host_weg'"),
+		"netz.js: Schließcodes 4404/4409/1001 endgültig, 4503 = Gastgeber kurz weg")
+	check(netz.contains("'/ws?role=guest&room='") and netz.contains("'/info?room='") and netz.contains("intent://join?r=") and netz.contains("'&v='")
+			and netz.contains("releases/latest"),
+		"netz.js: Online-Adressen (wss://<Ursprung>/ws?role=guest&room=, /info?room=, App-Link r/v, GitHub-Releases)")
+	check(app.contains("params.get('r')") and app.contains("M.Netz.Online.code(roh)") and app.contains("'token:' + (this.raum || '-')")
+			and app.contains("if (this.online) { this._onlineStart(); return; }") and app.contains("const online = this.online && !params.get('mock')"),
+		"app.js: ?r=CODE erkannt, Token je Raumcode, /info online nicht als Gastgeber-Info gedeutet")
+	check(app.contains("M.Netz.Online.appIntent(location, this.raum)") and app.contains("apk.href = M.Netz.Online.GITHUB_RELEASES") and seite.contains("id=\"apk-knopf\""),
+		"app.js: online „In der App spielen“ mit Raum, APK-Knopf zeigt auf GitHub-Releases")
+	check(app.contains("s === 'host_weg'") and app.contains("_raumEnde(") and seite.contains("id=\"verbinde-weg-titel\"") and seite.contains("id=\"verbinde-weg\""),
+		"app.js/index.html: Hinweise „Gastgeber kurz weg“ und „Raum nicht gefunden/voll/geschlossen“")
+	var t := read_web("test/netz_online.html")
+	check(t.contains("4503") and t.contains("4404") and t.contains("data-ok") and t.contains("O.code("), "webclient/test/netz_online.html: Chrome-Test des Online-Modus vorhanden")

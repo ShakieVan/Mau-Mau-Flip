@@ -1,12 +1,12 @@
 class_name WlanScreen
 extends AppScreen
-# „Im WLAN spielen“: eigener Name (oben, wegen der Bildschirmtastatur), dann „Spiel eröffnen“ (Gastgeber) oder „Beitreten“.
+# „Mit anderen spielen“ (WLAN oder online): eigener Name (oben, wegen der Bildschirmtastatur), dann „Spiel eröffnen“ (Gastgeber) oder „Beitreten“.
 
 var _name: LineEdit
 
 
 func build() -> void:
-	var content := page("Im WLAN spielen")
+	var content := page("Mit anderen spielen")
 	var name_row := ScreenKit.hbox(16)
 	content.add_child(name_row)
 	var l := ScreenKit.label("Dein Name", "", UiFonts.size("zeile"))
@@ -25,8 +25,8 @@ func build() -> void:
 	var cols := ScreenKit.hbox(28)
 	cols.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.add_child(cols)
-	cols.add_child(_choice_card("Spiel eröffnen", "Du bist Gastgeber. Mitspieler kommen per App über die Suche oder ohne App per QR-Code im Browser dazu – auch iPhones.", "qr", "PrimaryButton", "Eröffnen", _host))
-	cols.add_child(_choice_card("Beitreten", "Ein Spiel in der Nähe suchen oder die Adresse des Gastgebers eingeben. Alle müssen im selben WLAN sein.", "wlan", "", "Suchen", _join))
+	cols.add_child(_choice_card("Spiel eröffnen", "Du bist Gastgeber, im WLAN und/oder online. Mitspieler kommen per App oder ohne App per QR-Code bzw. Link im Browser dazu – auch iPhones.", "qr", "PrimaryButton", "Eröffnen", _host))
+	cols.add_child(_choice_card("Beitreten", "Ein WLAN-Spiel in der Nähe suchen, die Adresse des Gastgebers eingeben oder (online) den Raumcode eintippen.", "wlan", "", "Suchen", _join))
 
 
 func _choice_card(title_text: String, text: String, icon_name: String, variation: String, button_text: String, action: Callable) -> Control:

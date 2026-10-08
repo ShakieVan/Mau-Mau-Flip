@@ -7,6 +7,10 @@ extends Node
 # Verbindung als verloren. Endgültig ist nur: close(), Ablehnung („reject“), „bye“ des Gastgebers oder Ersetzung durch eine neuere
 # Verbindung desselben Spielers (Code 4000).
 # Zustände: idle → connecting → open (angenommen) → connecting (neu verbinden) … → closed.
+# Online (docs/online/ENTWURF.md): connect_relay(vermittler, raumcode) bzw. connect_to mit einem Raum-Link als Adresse
+# („https://<vermittler>/?r=KATZE-42“): wss://<vermittler>/ws?role=guest&room=CODE, Token je Raum (relay:<vermittler>/<CODE>),
+# Herzschlag „ping“ alle 25 s (Antwort „pong“ vom Vermittler), 70 s Stille = getrennt. Code 4503 (Gastgeber kurz weg) → 10 s
+# warten; 4404 (Raum unbekannt), 4409 (voll) und 1001 (Raum beendet) sind endgültig.
 
 signal state_changed(state: String)
 signal welcomed(id: int, host_name: String)
@@ -30,6 +34,7 @@ var connect_timeout_ms := CONNECT_TIMEOUT_MS
 var ping_ms := PING_MS
 var timeout_ms := TIMEOUT_MS
 var retry_ms: Array = RETRY_MS.duplicate()
+var host_away_ms := NetProtocol.RELAY_HOST_AWAY_MS   # Online, Code 4503: so lange warten
 var hello_override := {}                 # nur Tests: Felder der Begrüßung ersetzen (z. B. falsche Version)
 var state := "idle"                      # idle | connecting | open | closed
 var address := ""
@@ -43,6 +48,8 @@ var close_text := ""
 var reject_code := ""
 var attempts := 0                        # Verbindungsversuche seit der letzten Annahme
 var rtt_ms := -1.0
+var relay_url := ""                      # Online: Vermittler (normalisiert), sonst ""
+var room := ""                           # Online: Raumcode
 var _ws: WebSocketPeer
 var _was_open := false
 var _welcomed := false
@@ -55,7 +62,12 @@ var _closing_until := 0
 static var _tokens := {}
 
 func connect_to(host_address: String, host_port := NetProtocol.PORT, name_of_player := "Gast", client_kind := "app") -> Error:
+	var link := NetProtocol.parse_room_link(host_address)
+	if not link.is_empty():
+		return connect_relay(str(link.relay), str(link.room), name_of_player, client_kind)
 	close()
+	relay_url = ""
+	room = ""
 	address = host_address
 	port = host_port
 	player_name = NetProtocol.clean_name(name_of_player)
@@ -68,6 +80,30 @@ func connect_to(host_address: String, host_port := NetProtocol.PORT, name_of_pla
 	_set_state("connecting")
 	NetAddresses.bind_for("join", address)   # Android: Sockets ins richtige Netz (WLAN bzw. eigener Hotspot)
 	return _open()
+
+func connect_relay(relay: String, code: String, name_of_player := "Gast", client_kind := "app") -> Error:
+	# Online-Gast über den Vermittler. address = Raum-Link, port = 0 (ClientTable.same_game vergleicht beides).
+	close()
+	relay_url = NetProtocol.normalize_relay_url(relay)
+	room = NetProtocol.normalize_room_code(code)
+	address = NetProtocol.room_link(relay_url, room)
+	port = 0
+	player_name = NetProtocol.clean_name(name_of_player)
+	kind = client_kind
+	my_id = 0
+	attempts = 0
+	close_text = ""
+	reject_code = ""
+	if relay_url == "" or room == "":
+		_set_state("connecting")
+		_final(I18n.t("Raumcode oder Vermittler-Adresse ungültig."))
+		return ERR_INVALID_PARAMETER
+	token = _load_token(_key()) if reuse_token else ""
+	_set_state("connecting")
+	return _open()
+
+func is_online() -> bool:
+	return relay_url != ""
 
 func send(msg: Dictionary) -> Error:
 	# Nur angenommen (state == "open"); sonst ERR_UNAVAILABLE (die Spielsteuerung zeigt „Verbindung …“).
@@ -141,27 +177,64 @@ func poll() -> void:
 		_last_rx_ms = now
 		if bytes.size() > NetProtocol.MAX_HOST_MESSAGE:
 			continue
+		if is_online() and bytes.size() == 4 and bytes.get_string_from_utf8() == "pong":
+			continue    # Herzschlag des Vermittlers
 		_handle(NetProtocol.decode(bytes.get_string_from_utf8(), NetProtocol.MAX_HOST_MESSAGE))
 	if _ws == null:
 		return
+	var limit := NetProtocol.RELAY_TIMEOUT_MS if is_online() and timeout_ms == TIMEOUT_MS else timeout_ms
 	if st == WebSocketPeer.STATE_OPEN:
 		if _welcomed and now >= _next_ping_ms:
-			_next_ping_ms = now + ping_ms
-			_ws.send_text(NetProtocol.encode({"t": "ping", "ts": now}))
-		if now - _last_rx_ms > timeout_ms:
-			_lost(I18n.t("Gastgeber antwortet nicht (%d s).") % (timeout_ms / 1000))
+			_next_ping_ms = now + _ping_every()
+			# Online: Text „ping“ (der Vermittler antwortet selbst, ohne aufzuwachen); im WLAN das Spiel-Ping mit Laufzeit
+			_ws.send_text("ping" if is_online() else NetProtocol.encode({"t": "ping", "ts": now}))
+		if now - _last_rx_ms > limit:
+			_lost(I18n.t("Gastgeber antwortet nicht (%d s).") % (limit / 1000))
 		elif not _welcomed and now - _opened_ms > connect_timeout_ms:
 			_lost(I18n.t("Anmeldung nicht beantwortet."))
 	elif st == WebSocketPeer.STATE_CONNECTING:
 		if now - _opened_ms > connect_timeout_ms:
-			_lost(I18n.t("Gastgeber %s:%d nicht erreichbar.") % [address, port])
+			if is_online():
+				_lost(I18n.t("Vermittler nicht erreichbar."))
+			else:
+				_lost(I18n.t("Gastgeber %s:%d nicht erreichbar.") % [address, port])
 	elif st == WebSocketPeer.STATE_CLOSED:
 		var code := _ws.get_close_code()
 		if code == NetWs.CLOSE_REPLACED:
 			_ws = null
 			_final(I18n.t("Diese Verbindung wurde durch eine neuere ersetzt."))
 			return
+		if is_online() and _relay_close(code):
+			return
 		_lost(I18n.t("Verbindung getrennt (%d).") % code if code > 0 else I18n.t("Verbindung getrennt."))
+
+func _ping_every() -> int:
+	return NetProtocol.RELAY_PING_MS if is_online() and ping_ms == PING_MS else ping_ms
+
+func _relay_close(code: int) -> bool:
+	# Schließcodes des Vermittlers. true = erledigt (endgültig oder Warten geplant).
+	match code:
+		NetProtocol.CLOSE_ROOM_UNKNOWN:
+			_ws = null
+			_final(I18n.t("Raum %s nicht gefunden. Stimmt der Code?") % room)
+			return true
+		NetProtocol.CLOSE_ROOM_FULL:
+			_ws = null
+			_final(I18n.t("Der Online-Raum ist voll."))
+			return true
+		NetProtocol.CLOSE_ROOM_ENDED:
+			_ws = null
+			_final(I18n.t("Der Gastgeber hat das Spiel beendet."))
+			return true
+		NetProtocol.CLOSE_HOST_AWAY:
+			_ws = null
+			var wait := host_away_ms
+			_retry_at = Time.get_ticks_msec() + wait
+			close_text = I18n.t("Gastgeber kurz weg – warte …")
+			_log("Gastgeber kurz weg (4503), neuer Versuch in %.0f s." % (wait / 1000.0))
+			_set_state("connecting")
+			return true
+	return false
 
 func _open() -> Error:
 	_ws = WebSocketPeer.new()
@@ -172,7 +245,14 @@ func _open() -> Error:
 	_welcomed = false
 	_opened_ms = Time.get_ticks_msec()
 	attempts += 1
-	var err := _ws.connect_to_url("ws://%s:%d%s" % [address, port, NetProtocol.WS_PATH])
+	var err := OK
+	if is_online():
+		var url := NetProtocol.relay_ws_url(relay_url, "role=guest&room=" + room)
+		err = _ws.connect_to_url(url, TLSOptions.client() if url.begins_with("wss://") else null)
+		if err != OK:
+			_lost(I18n.t("Vermittler nicht erreichbar."))
+		return err
+	err = _ws.connect_to_url("ws://%s:%d%s" % [address, port, NetProtocol.WS_PATH])
 	if err != OK:
 		_lost(I18n.t("Verbindung zu %s:%d nicht möglich (%s).") % [address, port, error_string(err)])
 	return err
@@ -188,7 +268,7 @@ func _handle(msg: Dictionary) -> void:
 			_store_token(_key(), token)
 			_welcomed = true
 			attempts = 0
-			_next_ping_ms = Time.get_ticks_msec() + ping_ms
+			_next_ping_ms = Time.get_ticks_msec() + _ping_every()
 			_log("Angenommen von „%s“ als Spieler %d" % [host_name, my_id])
 			_set_state("open")
 			welcomed.emit(my_id, host_name)
@@ -247,6 +327,8 @@ func _set_state(s: String) -> void:
 	state_changed.emit(s)
 
 func _key() -> String:
+	if is_online():
+		return "relay:%s/%s" % [NetProtocol.relay_host(relay_url), room]
 	return "%s:%d" % [address, port]
 
 func _load_token(key: String) -> String:

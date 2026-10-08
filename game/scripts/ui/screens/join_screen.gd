@@ -17,6 +17,9 @@ extends AppScreen
 # gestartet), bekommt kein „start“, nur den Stand (Nachtest 1, Nachbesserung; der Browser-Client macht es genauso).
 # with_client(): Der Tisch eines App-Gasts gibt seine Verbindung hierher zurück, wenn dort eine Lobby ankommt (der Gastgeber hat eine
 # neue Runde eröffnet, während der Gast neu verbunden hat) – sonst bliebe der alte Tisch stehen.
+# Online (docs/online/ENTWURF.md 3): Zeile „Online:“ mit Raumcode und „Beitreten“; der Vermittler kommt aus den Einstellungen bzw.
+# aus dem App-Link (direct_room). Vor dem Verbinden fragt die Seite /info?room=CODE (Raum unbekannt, andere Version); Ziel des
+# ClientTable ist dann der Raum-Link („https://<vermittler>/?r=CODE“, Port 0), den NetClient erkennt.
 
 var client: ClientTable
 var discovery: NetDiscovery
@@ -40,6 +43,11 @@ var _adopted: ClientTable           # with_client(): bestehende Verbindung, wird
 var direct := {}                    # App-Link (direct_to): {address, port} – ohne Suche verbinden
 var _name_box: Control              # App-Link ohne gespeicherten Namen: erst nach dem Namen fragen
 var _name_edit: LineEdit
+var _room: LineEdit                 # Online: Raumcode
+var _online_row: Control            # Zeile „Online:“ (nur ohne Lobby sichtbar)
+var _room_btn: Button
+var _room_check: HTTPRequest        # /info?room= vor dem Beitreten
+var _pending_room := {}             # {room, relay} während der Prüfung
 
 
 # Lobby mit einer bestehenden Verbindung (vom Tisch zurück); zeigt sofort deren letzte Lobby.
@@ -57,6 +65,13 @@ static func direct_to(address: String, port: int) -> JoinScreen:
 	return s
 
 
+# Online-Link (maumauflip://join?r=…&v=…): direkt in diesen Raum; relay "" = Vermittler aus den Einstellungen.
+static func direct_room(room: String, relay: String) -> JoinScreen:
+	var s := JoinScreen.new()
+	s.direct = {"room": room, "relay": relay}
+	return s
+
+
 # Link aus App.take_pending_link() ({ok, address, port, error}, NetAndroid.parse_app_link) auf dem Bildschirmstapel ausführen.
 # Ungültig → freundlicher Hinweis. Läuft eine Partie oder Lobby, fragt die App erst. Ist man schon mit genau diesem Spiel verbunden,
 # bleibt alles, wie es ist.
@@ -68,6 +83,16 @@ static func handle_link(nav: ScreenNav, link: Dictionary) -> void:
 		return
 	var address := str(link.address)
 	var port := int(link.port)
+	if str(link.get("room", "")) != "":
+		# Online-Link: Vermittler aus dem Link, sonst aus den Einstellungen; als Ziel gilt der Raum-Link
+		var relay := str(link.get("relay", ""))
+		if relay == "":
+			relay = NetProtocol.normalize_relay_url(str(UiApp.setting("vermittler", NetProtocol.RELAY_DEFAULT)))
+		if relay == "":
+			nav.toast("Für Online-Spiele fehlt die Vermittler-Adresse – bitte in den Einstellungen unter „Online“ eintragen.")
+			return
+		address = NetProtocol.room_link(relay, str(link.room))
+		port = 0
 	var busy := false
 	for s in nav.stack:
 		var ct: Object = null
@@ -103,7 +128,8 @@ static func handle_link(nav: ScreenNav, link: Dictionary) -> void:
 static func _open_direct(nav: ScreenNav, address: String, port: int) -> void:
 	nav.home(false)
 	nav.push(WlanScreen.new(), false)
-	nav.push(JoinScreen.direct_to(address, port))
+	var target := NetProtocol.parse_room_link(address)
+	nav.push(JoinScreen.direct_room(str(target.room), str(target.relay)) if not target.is_empty() else JoinScreen.direct_to(address, port))
 
 
 # Verbindung ct gehört zu genau diesem Gastgeber und ist nicht beendet
@@ -128,6 +154,27 @@ func build() -> void:
 	_connect_btn.name = "Verbinden"
 	_connect_btn.pressed.connect(_connect_typed)
 	top.add_child(_connect_btn)
+	# Online (docs/online/ENTWURF.md 3): Raumcode des Gastgebers, Vermittler aus den Einstellungen bzw. aus dem Link
+	var online := ScreenKit.hbox(14)
+	online.name = "OnlineZeile"
+	_online_row = online
+	content.add_child(online)
+	var ol := ScreenKit.label("Online:", "", UiFonts.size("text"))
+	ol.add_theme_font_override("font", UiFonts.text(700))
+	ol.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	online.add_child(ol)
+	_room = LineEdit.new()
+	_room.name = "Raumcode"
+	_room.placeholder_text = "Raumcode, z. B. KATZE-42"
+	_room.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_room.custom_minimum_size = Vector2(0, ScreenKit.TOUCH)
+	_room.max_length = 24
+	_room.text_submitted.connect(func(_t: String) -> void: join_typed_room())
+	online.add_child(_room)
+	_room_btn = ScreenKit.button("Beitreten", "PrimaryButton", "start")
+	_room_btn.name = "RaumBeitreten"
+	_room_btn.pressed.connect(join_typed_room)
+	online.add_child(_room_btn)
 	_status = ScreenKit.label("Suche Spiele im WLAN …", "HintLabel", UiFonts.size("text"))
 	_status.name = "Status"
 	content.add_child(_status)
@@ -210,15 +257,80 @@ func build() -> void:
 
 # App-Link: Adresse eintragen und ohne Suche verbinden; ohne gespeicherten Namen erst danach fragen
 func _start_direct() -> void:
-	var address := str(direct.address)
-	var port := int(direct.port)
-	_address.text = "%s:%d" % [address, port]
 	_search_box.visible = false
+	if direct.has("room"):
+		_room.text = str(direct.room)
+	else:
+		_address.text = "%s:%d" % [str(direct.address), int(direct.port)]
 	if AppSettings.clean_name(str(UiApp.setting("name", ""))) == "":
 		_status.text = "Fast geschafft – wie heißt du?"
 		_show_name_box()
 		return
-	join(address, port)
+	_join_direct()
+
+
+func _join_direct() -> void:
+	if direct.has("room"):
+		join_room(str(direct.room), str(direct.relay))
+	else:
+		join(str(direct.address), int(direct.port))
+
+
+# Eingetippter Raumcode (Vermittler aus den Einstellungen)
+func join_typed_room() -> void:
+	_room.release_focus()
+	join_room(_room.text, "")
+
+
+# Online beitreten: Code prüfen, beim Vermittler nachfragen (/info?room=), dann verbinden. relay "" = aus den Einstellungen;
+# kommt der Vermittler aus einem Link und ist die eigene Einstellung leer, wird er gespeichert.
+func join_room(code_text: String, relay: String) -> void:
+	var code := NetProtocol.normalize_room_code(code_text)
+	if code == "":
+		toast("Bitte den Raumcode eingeben, z. B. KATZE-42.")
+		return
+	_room.text = code
+	var own := NetProtocol.normalize_relay_url(str(UiApp.setting("vermittler", NetProtocol.RELAY_DEFAULT)))
+	var url := NetProtocol.normalize_relay_url(relay) if relay != "" else own
+	if url == "":
+		_status.text = I18n.t("Für Online-Spiele fehlt die Vermittler-Adresse – bitte in den Einstellungen unter „Online“ eintragen.")
+		return
+	if own == "" and relay != "":
+		var app := UiApp.app()
+		if app != null:
+			app.settings.set_value("vermittler", url)
+	_status.text = I18n.t("Suche Raum %s …") % code
+	_pending_room = {"room": code, "relay": url}
+	if _room_check == null:
+		_room_check = HTTPRequest.new()
+		_room_check.name = "RaumPruefung"
+		_room_check.timeout = 8.0
+		add_child(_room_check)
+		_room_check.request_completed.connect(_on_room_checked)
+	_room_check.cancel_request()
+	if _room_check.request(url + "/info?room=" + code) != OK:
+		_on_room_checked(HTTPRequest.RESULT_CANT_CONNECT, 0, PackedStringArray(), PackedByteArray())
+
+
+func _on_room_checked(result: int, status: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+	if _pending_room.is_empty():
+		return
+	var target := _pending_room
+	_pending_room = {}
+	var room_text := str(target.room)
+	if result != HTTPRequest.RESULT_SUCCESS or status != 200:
+		# Vermittler nicht erreichbar oder ohne /info: trotzdem versuchen (der Client meldet sich mit Klartext)
+		join(NetProtocol.room_link(str(target.relay), room_text), 0)
+		return
+	var info: Variant = JSON.parse_string(body.get_string_from_utf8())
+	var room: Variant = info.get("room") if info is Dictionary else null
+	if room is Dictionary and not bool(room.get("open", false)):
+		_status.text = I18n.t("Raum %s nicht gefunden. Stimmt der Code?") % room_text
+		return
+	if room is Dictionary and str(room.get("version", "")) != "" and str(room.version) != NetProtocol.game_version():
+		_status.text = I18n.t("Der Gastgeber spielt mit Version %s, du mit %s. Bitte beide auf dieselbe Version bringen.") % [str(room.version), NetProtocol.game_version()]
+		return
+	join(NetProtocol.room_link(str(target.relay), room_text), 0)
 
 
 func _show_name_box() -> void:
@@ -264,7 +376,7 @@ func confirm_name() -> void:
 	_name_box.queue_free()
 	_name_box = null
 	_name_edit = null
-	join(str(direct.address), int(direct.port))
+	_join_direct()
 
 
 # Bestehende Verbindung übernehmen (with_client): Lobby zeigen, ohne neu zu verbinden
@@ -278,6 +390,7 @@ func _adopt(ct: ClientTable) -> void:
 	_status.text = "Verbunden. Warte auf den Gastgeber …"
 	_search_box.visible = false
 	_lobby_box.visible = true
+	_online_row.visible = false          # Platz für die Lobby (5 Spieler und „Bereit“ bei 1600 × 720)
 	if not ct.lobby.is_empty():
 		_on_lobby(ct.lobby)
 	if ct.connection_state() in ["closed", "rejected"]:
@@ -384,7 +497,8 @@ func join(address: String, port: int) -> void:
 	client = GameStarter.client()
 	add_child(client)
 	_wire(client)
-	_status.text = I18n.t("Verbinde mit %s …") % address
+	var target := NetProtocol.parse_room_link(address)
+	_status.text = I18n.t("Verbinde mit Raum %s …") % str(target.room) if not target.is_empty() else I18n.t("Verbinde mit %s …") % address
 	var who := str(UiApp.setting("name", ""))
 	if client.join(address, port, who) != OK:
 		_status.text = "Verbindung nicht möglich."
@@ -415,6 +529,7 @@ func _on_connection(state: String) -> void:
 			_status.text = "Verbunden. Warte auf den Gastgeber …"
 			_search_box.visible = false
 			_lobby_box.visible = true
+			_online_row.visible = false          # Platz für die Lobby (5 Spieler und „Bereit“ bei 1600 × 720)
 			_stop_search()
 		"connecting":
 			_status.text = "Verbinde …"
@@ -435,6 +550,7 @@ func _back_to_search() -> void:
 		c.leave()
 		c.queue_free()
 	_lobby_box.visible = false
+	_online_row.visible = true
 	_search_box.visible = true
 	_show_ready(false)
 	host_rules = null

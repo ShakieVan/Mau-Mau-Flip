@@ -7,7 +7,7 @@ signal closed
 
 const TEXTS := [
 	["① WLAN", "Alle Handys müssen im selben WLAN sein. Ist keins da, tippe „Spiel-WLAN öffnen“. Die anderen scannen dann den WLAN-Code mit der Kamera."],
-	["② Spiel", "Danach den Spiel-Code scannen oder die Adresse im Browser eintippen. Mit der App: „Im WLAN spielen“ → „Beitreten“, das Spiel erscheint von selbst."],
+	["② Spiel", "Danach den Spiel-Code scannen oder die Adresse im Browser eintippen. Mit der App: „Mit anderen spielen“ → „Beitreten“, das Spiel erscheint von selbst."],
 	["Grüner Haken", "Zeigt, was schon geklappt hat. Der nächste Schritt leuchtet."],
 	["Mitspieler", "Nach rechts blättern: Dort siehst du alle, änderst die Sitzordnung mit den Pfeilen und fügst Computergegner hinzu."],
 ]
