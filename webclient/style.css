@@ -936,13 +936,26 @@ body.ruhig *, body.ruhig *::before, body.ruhig *::after { animation: none !impor
 #tisch.gross .gg.ich:not(.dran) { border-style: dashed; }
 #tisch.gross .gg .marken { position: absolute; right: 10px; top: -15px; }
 #tisch.gross .gg .erwischen { position: absolute; right: 100%; top: 10px; margin: 0 10px 0 0; font-size: 24px; }
-#tisch.gross .liste-kopf { display: flex; align-items: center; gap: 10px; transform: translate(-50%, -50%); font: 800 calc(28px * var(--fs)) var(--f-ui); color: var(--t-muted); white-space: nowrap; z-index: 36; pointer-events: none; }
-#tisch.gross .liste-kopf .dreh { font-style: normal; font-size: 40px; display: inline-block; transition: transform .5s; }
+/* Kopf „Reihenfolge“: großer Kreispfeil (SVG, im Uhrzeigersinn gezeichnet; .gegen spiegelt ihn) in der Farbe des Richtungsrings
+   der App (Tag Bronze, Nacht Lavendel) mit Papier- bzw. Tinten-Rand. Richtungswechsel (.wendet): Der Pfeil klappt in die neue
+   Richtung und dreht sich dabei einmal ganz in ihr herum, mit kurzem Aufploppen (wie ListHeader). Reduziert: ohne Drehung. */
+#tisch.gross .liste-kopf { display: flex; align-items: center; gap: 14px; transform: translate(-50%, -50%); font: 800 calc(32px * var(--fs)) var(--f-ui); color: var(--t-muted); white-space: nowrap; z-index: 36; pointer-events: none; --pf: #B07A3C; --pf-halo: rgba(244,234,218,.8); }
+#tisch.gross[data-seite="dunkel"] .liste-kopf { --pf: #9A86FF; --pf-halo: rgba(33,27,44,.75); }
+#tisch.gross .liste-kopf .dreh { width: 74px; height: 74px; flex: none; overflow: visible; transform: scaleX(1); }
 #tisch.gross .liste-kopf.gegen .dreh { transform: scaleX(-1); }
-#tisch.gross .liste-kopf.wendet { animation: listeWende .7s ease-out; }
-@keyframes listeWende { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 40% { transform: translate(-50%, -50%) scale(1.3); } }
-body.reduziert #tisch.gross .gg, body.reduziert #tisch.gross .liste-kopf .dreh { transition: opacity .2s; }
-@media (prefers-reduced-motion: reduce) { #tisch.gross .gg, #tisch.gross .liste-kopf .dreh { transition: opacity .2s; } #tisch.gross .liste-kopf.wendet { animation: none; } }
+#tisch.gross .liste-kopf .dreh path { fill: none; stroke-linecap: round; }
+#tisch.gross .liste-kopf .dreh .pf path { stroke: var(--pf); stroke-width: 10.2; }
+#tisch.gross .liste-kopf .dreh .pf polygon { fill: var(--pf); stroke: var(--pf); stroke-width: 2; stroke-linejoin: round; }
+#tisch.gross .liste-kopf .dreh .halo path { stroke: var(--pf-halo); stroke-width: 16.2; }
+#tisch.gross .liste-kopf .dreh .halo polygon { fill: var(--pf-halo); stroke: var(--pf-halo); stroke-width: 8; stroke-linejoin: round; }
+#tisch.gross .liste-kopf span { text-shadow: 0 0 4px var(--pf-halo), 0 0 2px var(--pf-halo); }
+#tisch.gross .liste-kopf.wendet .dreh { animation: pfeilUhr .75s cubic-bezier(.33,1,.68,1); }
+#tisch.gross .liste-kopf.gegen.wendet .dreh { animation-name: pfeilGegen; }
+@keyframes pfeilUhr { 0% { transform: rotate(0deg) scaleX(-1) scale(1); } 45% { transform: rotate(250deg) scaleX(1) scale(1.22); } 100% { transform: rotate(360deg) scaleX(1) scale(1); } }
+@keyframes pfeilGegen { 0% { transform: rotate(0deg) scaleX(1) scale(1); } 45% { transform: rotate(-250deg) scaleX(-1) scale(1.22); } 100% { transform: rotate(-360deg) scaleX(-1) scale(1); } }
+body.reduziert #tisch.gross .gg { transition: opacity .2s; }
+body.reduziert #tisch.gross .liste-kopf.wendet .dreh { animation: none; }
+@media (prefers-reduced-motion: reduce) { #tisch.gross .gg { transition: opacity .2s; } #tisch.gross .liste-kopf.wendet .dreh { animation: none; } }
 #tisch.gross .farbring { display: none; }
 #tisch.gross .pill { z-index: 40; }
 #tisch.gross .pill:not(.aktiv) { background: #FBF5EA; }

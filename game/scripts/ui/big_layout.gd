@@ -20,15 +20,27 @@ const PILL_H := 104.0            # Trefferhöhe der Pillenknöpfe (sonst 84)
 const PILL_FONT := 30            # Grundgröße der Pillenschrift (sonst 20), mal UiFonts-Faktor
 const HINT_SCALE := 1.4          # Hinweisleiste und Meldungen größer
 const COLOR_SCALE := 2.1         # aktuelle Farbe (Symbol und Wort)
+const HEAD_H := 64.0             # Kopf über der Liste: Kreispfeil der Spielrichtung + „Reihenfolge“ (ListHeader, 08.10.2026)
+const HEAD_GAP := 4.0            # Abstand Kopf – erste Zeile (bei 720 px Höhe bleiben 4 Zeilen ≥ ROW_MIN)
 
 
-# Spalte der Spielerliste: rechts, von oben bis über den Mau-Knopf
+# Spalte der Spielerliste: rechts, unter dem Kopf („Reihenfolge“) bis über den Mau-Knopf
 static func list_rect(sz: Vector2) -> Rect2:
-	# Namensbereich doppelt so breit wie in 1.1.1 (Nutzerwunsch 08.10.2026: Namen bei großer Schrift abgeschnitten); Stapel und
-	# Ablage werden dafür entsprechend schmaler (pile_w rechnet mit dem Rest).
-	var w := clampf(sz.x * 0.365, 440.0, 620.0)
+	var w := list_w(sz)
+	var top := MARGIN + HEAD_H + HEAD_GAP
 	var bottom := mau_pos(sz).y - 14.0
-	return Rect2(sz.x - MARGIN - w, MARGIN, w, maxf(bottom - MARGIN, ROW_MIN))
+	return Rect2(sz.x - MARGIN - w, top, w, maxf(bottom - top, ROW_MIN))
+
+
+# Namensbereich doppelt so breit wie in 1.1.1 (Nutzerwunsch 08.10.2026: Namen bei großer Schrift abgeschnitten); Stapel und
+# Ablage werden dafür entsprechend schmaler (pile_w rechnet mit dem Rest).
+static func list_w(sz: Vector2) -> float:
+	return clampf(sz.x * 0.365, 440.0, 620.0)
+
+
+# Kopf der Liste (ListHeader): ganz oben über der Spalte
+static func list_head_rect(sz: Vector2) -> Rect2:
+	return Rect2(sz.x - MARGIN - list_w(sz), MARGIN, list_w(sz), HEAD_H)
 
 
 static func mau_pos(sz: Vector2) -> Vector2:

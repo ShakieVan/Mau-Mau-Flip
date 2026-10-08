@@ -108,6 +108,7 @@ var _mau_rng := RandomNumberGenerator.new()
 var _mau_last := ""
 var _house: HouseRulesScript
 var me_badge: OpponentSeat            # eigener Platz (0.1.4): Name, Kartenzahl, Strahlenkranz und Denkblase links über den Knöpfen
+var list_header: ListHeader           # großer Modus: Kreispfeil der Spielrichtung + „Reihenfolge“ über der Liste (08.10.2026)
 var _hand_halo: OpponentSeat.TurnHaloScript              # Strahlenkranz um die eigene Hand am Zug
 var _hand_halo_want := false                                # eigener Zug: Schein soll an, sobald keine Animation mehr läuft
 var _hand_halo_cards := 0                                   # so viele Karten muss die Hand haben, bevor der Schein angeht
@@ -153,6 +154,10 @@ func _init() -> void:
 	me_badge.header_only = true
 	me_badge.visible = false
 	_world.add_child(me_badge)
+	list_header = ListHeader.new()
+	list_header.name = "Reihenfolge"
+	list_header.visible = false
+	_world.add_child(list_header)
 	_pile = PileView.new()
 	_world.add_child(_pile)
 	_color_ring = ColorRingView.new()
@@ -292,6 +297,8 @@ func set_reduced(on: bool) -> void:
 		fx_top.reduced = on
 	if _bg:
 		_bg.motion = not on
+	if list_header:
+		list_header.reduced = on
 	if me_badge:
 		me_badge.reduced = on
 		_hand_halo.motion = not on
@@ -366,6 +373,10 @@ func _layout() -> void:
 	mau_button.position = BigLayout.mau_pos(sz) if big else Vector2(sz.x - 46.0 - MauButton.SIZE, sz.y - 40.0 - MauButton.SIZE)
 	if not big:
 		me_badge.position = Vector2(44.0, sz.y - 238.0)
+	var head := BigLayout.list_head_rect(sz)
+	list_header.position = head.position
+	list_header.head_size = head.size
+	list_header.visible = big
 	_update_avoid()
 	hint_bar.hint_y = BigLayout.hint_y(sz) if big else sz.y - 207.0
 	hint_bar.pivot_offset = Vector2(sz.x * 0.5, hint_bar.hint_y)
@@ -897,6 +908,7 @@ func _update_list(animate: bool) -> void:
 		turn = _list_turn if entries.has(_list_turn) else turn
 	var order := BigLayout.list_order(seats, turn, dir)
 	var reverse := animate and _list_dir != 0 and dir != _list_dir and n > 2 and not reduced
+	list_header.set_dir(dir, animate and _list_dir != 0)
 	_list_turn = turn
 	_list_dir = dir
 	for s in _list_slot.keys():
@@ -1076,6 +1088,7 @@ func set_night(v: float) -> void:
 	for s in _seats:
 		(_seats[s] as OpponentSeat).night = night
 	me_badge.night = night
+	list_header.night = night
 	_hand_halo.night = night
 	_sort_btn.night = night
 	_backs_btn.night = night

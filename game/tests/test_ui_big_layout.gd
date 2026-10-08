@@ -48,6 +48,7 @@ func _geometry() -> void:
 		var hand_vis := Rect2(hand.position.x, sz.y - card_h * 0.5, hand.size.x, card_h * 0.5)
 		var sort := Rect2(BigLayout.sort_pos(sz), Vector2(250, BigLayout.PILL_H))
 		var backs := Rect2(BigLayout.backs_pos(sz), Vector2(250, BigLayout.PILL_H))
+		var head := BigLayout.list_head_rect(sz)
 		var tag := "%dx%d" % [sz.x, sz.y]
 		check(h >= sz.y * 0.5, "%s: Ablage mindestens halb so hoch wie das Bild (%.0f)" % [tag, h])   # seit 1.1.2 breitere Namensliste
 		check(w >= 250.0, "%s: Stapel riesig (%.0f px breit, normal ~150)" % [tag, w])
@@ -58,7 +59,9 @@ func _geometry() -> void:
 			["Liste", list, "Mau", mau], ["Hand", hand_vis, "Mau", mau], ["Hand", hand_vis, "Liste", list],
 			["Hand", hand_vis, "obere Hälfte Ablage", disc_top], ["Hand", hand_vis, "obere Hälfte Stapel", pile_top],
 			["Sortieren", sort, "Rückseiten", backs], ["Sortieren", sort, "Hand", hand_vis], ["Rückseiten", backs, "Hand", hand_vis],
-			["Farbe", col, "Ablage", disc], ["Farbe", col, "Liste", list]]
+			["Farbe", col, "Ablage", disc], ["Farbe", col, "Liste", list],
+			["Kopf", head, "Liste", list], ["Kopf", head, "Mau", mau], ["Kopf", head, "Farbe", col], ["Kopf", head, "Ablage", disc]]
+		check(screen.encloses(head) and head.size.y >= 60.0, "%s: Kopf „Reihenfolge“ im Bild und groß" % tag)
 		for p in pairs:
 			check(not (p[1] as Rect2).intersects(p[3] as Rect2), "%s: %s überlappt nicht %s" % [tag, p[0], p[2]])
 		check(col.size.x >= BigLayout.COLOR_MIN - 1.0, "%s: Farbspalte breit genug" % tag)
@@ -105,6 +108,13 @@ func _table() -> void:
 		t.apply_view(s.view_for(0))
 		await _settle(t, 4)
 		check(t.big and t.seat_node(1).list_mode and t.me_badge.list_mode, "%d Spieler: Plätze sind Listenzeilen" % n)
+		var head := BigLayout.list_head_rect(t.size)
+		check(t.list_header.visible and t.list_header.position == head.position and t.list_header.arrow_sign() == 1, "%d Spieler: Kopf mit Pfeil im Uhrzeigersinn" % n)
+		check(t.list_header.arrow_radius() >= 24.0, "%d Spieler: Kreispfeil groß" % n)
+		for lvl in ["normal", "sehr_gross"]:
+			UiFonts.set_level(lvl)
+			check(t.list_header.content_width() <= head.size.x, "%d Spieler: Kopf passt (%s)" % [n, lvl])
+		UiFonts.set_level("normal")
 		check(not t._ring.visible and t._bg.calm, "%d Spieler: ruhiger Hintergrund ohne Richtungsring" % n)
 		check(t.list_index(1) == 0 and t.list_index(2) == 1 and t.list_index(0) == n - 1, "%d Spieler: Reihenfolge dran → nächster" % n)
 		var list := BigLayout.list_rect(t.size)
@@ -121,6 +131,7 @@ func _table() -> void:
 		t.apply_view(s.view_for(0))
 		check(t.list_index(2) == 0 and t.list_index(1) == 1, "%d Spieler: Richtungswechsel zeigt andersherum" % n)
 		check(t._list_flip >= 0.0, "%d Spieler: Zeilen klappen beim Richtungswechsel" % n)
+		check(t.list_header.arrow_sign() == -1 and t.list_header.turning(), "%d Spieler: Kreispfeil wendet gegen den Uhrzeigersinn" % n)
 		await create_timer(0.9).timeout
 		check(t._list_flip < 0.0 and is_equal_approx(t.seat_node(2).flip_y, 1.0), "%d Spieler: Klappen beendet (%.2f, %.2f)" % [n, t._list_flip, t.seat_node(2).flip_y])
 		# Tipp auf eine Zeile: Rückseiten (sichtbar laut Regel)
@@ -144,10 +155,19 @@ func _table() -> void:
 		await _settle(t, 2)
 		check(not t.seat_node(1).list_mode and t.seat_node(1).compact == (n >= 7) and t._ring.visible and not t._bg.calm, "%d Spieler: normal wieder hergestellt" % n)
 		check(t.pile_w == TableView.CARD_W and t.mau_button.size.x == MauButton.SIZE and t._sort_btn.size.y < BigLayout.PILL_H, "%d Spieler: Größen normal" % n)
+		check(not t.list_header.visible, "%d Spieler: Kopf „Reihenfolge“ nur im großen Modus" % n)
 		check(is_equal_approx(t.seat_node(2).modulate.a, 1.0) and t.seat_node(2).scale == Vector2.ONE, "%d Spieler: Zeilen wieder Plätze" % n)
 		t.set_big(true)
 		await _settle(t, 2)
 		check(t.list_index(2) == 0, "%d Spieler: wieder groß, Liste sofort richtig" % n)
+		# zurück auf Richtung 1 mit reduzierten Effekten: Pfeil sofort im Uhrzeigersinn, ohne Drehung
+		t.reduced = true
+		s.dir = 1
+		t.apply_view(s.view_for(0))
+		check(t.list_header.arrow_sign() == 1 and not t.list_header.turning(), "%d Spieler: reduziert ohne Drehung" % n)
+		s.dir = -1
+		t.apply_view(s.view_for(0))
+		t.reduced = false
 		# „bis zum Letzten“: fertige Spieler verschwinden aus der Liste (08.10.2026), am Rundenende sind alle wieder da
 		var v := s.view_for(0)
 		for p in v.players:

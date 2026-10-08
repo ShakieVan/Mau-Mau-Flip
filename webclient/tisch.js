@@ -95,6 +95,8 @@
   // Standzeit der Mau-Blase: folgt dem Regie-Tempo, bleibt aber lesbar (mind. 0,9 s); ?blase=ms setzt sie fest (Kontrollbilder)
   function blasenDauer(ms, d) { return BLASE_PARAM > 0 ? BLASE_PARAM : Math.max(900, d(ms)); }
 
+  // Kreispfeil über der großen Liste (wie ListHeader in der App): im Uhrzeigersinn gezeichnet, .gegen spiegelt ihn (style.css)
+  const PFEIL_REIHE = '<svg class="dreh" viewBox="-50 -50 100 100" aria-hidden="true"><g class="halo"><path d="M17 -29.44A34 34 0 1 1 -32.3 -10.6"/><polygon points="-8.71,-39.37 -43.86,-29.56 -18.52,-4.22"/></g><g class="pf"><path d="M17 -29.44A34 34 0 1 1 -32.3 -10.6"/><polygon points="-8.71,-39.37 -43.86,-29.56 -18.52,-4.22"/></g></svg>';
   const ICON_SORT = '<svg viewBox="0 0 26 26" aria-hidden="true"><path d="M7 4v17M7 21l-4-4M7 21l4-4M19 22V5M19 5l-4 4M19 5l4 4" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const ICON_RUECK = '<svg viewBox="0 0 26 26" aria-hidden="true"><rect x="4" y="3" width="13" height="19" rx="3" fill="none" stroke="currentColor" stroke-width="2.4"/><rect x="10" y="6" width="13" height="18" rx="3" fill="#0A0D20" stroke="#FF7FCF" stroke-width="2.4"/></svg>';
   const ICON_MENUE = '<svg viewBox="0 0 26 26" aria-hidden="true"><path d="M5 8h16M5 13h16M5 18h16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>';
@@ -130,7 +132,7 @@
       this.ring = el('div', 'richtung');   // Richtungs-Plattform, Inhalt aus plattform() in _geometrie (hängt von der Bühnenbreite ab)
       b.appendChild(this.ring);
       this.gegnerBox = el('div', 'gegner-box'); b.appendChild(this.gegnerBox);
-      this.listeKopf = el('div', 'liste-kopf', '<i class="dreh">↻</i><span>Reihenfolge</span>'); this.listeKopf.id = 'liste-kopf'; b.appendChild(this.listeKopf);
+      this.listeKopf = el('div', 'liste-kopf', PFEIL_REIHE + '<span>Reihenfolge</span>'); this.listeKopf.id = 'liste-kopf'; b.appendChild(this.listeKopf);
       this.stapel = el('div', 'stapel'); b.appendChild(this.stapel);
       this.stapel.innerHTML = '<div class="leer"></div>';
       this.stapelUnter = [K().element('rueckseite', 118, 'unter u2'), K().element('rueckseite', 118, 'unter u1')];
