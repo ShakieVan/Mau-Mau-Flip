@@ -76,13 +76,21 @@ Release 1.1.0 am 07.10.2026 veröffentlicht. Beta 1.1.1: großer Modus in App un
 - Schnellerer Bau: Tests 22,4 → 3,5 min (zwei Spuren, Regeltests parallel mit eigenem user://, Dauerläufe per `TEIL=k/n` geteilt, `game/tests/teil.gd`); Testergebnis-Cache über eine Prüfsumme (`.tools/test_cache.json`), Bau eines getesteten Stands ~0,6 min (`tests_cached: true`). Schalter `-NoTestCache`, `-Parallel n`. Die Sperre `Global\MauMauFlipGodot` hält der Bau einmal (`MMF_GODOT_LOCK_OWNER`).
 - Geräte per `adb devices -l` nach Modell ansprechen (drahtloses Debugging, wechselnde Ports): SM-G991B = S21, SM-G973F = S10, SM-S928B = S24 (Gerät des Nutzers, nur nach Absprache).
 
+## Erledigt in Beta 1.1.3 (veröffentlicht 08.10.2026)
+
+- Hausregel „Nach dem Ziehen: beliebige Karte legen“ (`draw_play = any`, in „Familie“ an): nach freiwilligem Ziehen jede passende Karte legen oder „Behalten“; offiziell (`drawn`) nur die gezogene Karte.
+- Einstellungen, Menü, Regeln und So geht's im Spiel im Tag/Nacht-Stil.
+- Großer Modus: Zeichenreihenfolge der schwebenden Elemente (Strafplakette „+5“ war hinter Ablage und Farbschild versteckt; Bild `docs/geraetetest/1.1.2/nutzer_gross_plakette_verdeckt.jpg`, nur lokal).
+- „Regeln ansehen“/„So geht's“ bleiben vorerst doppelt (☰-Menü und Zurück-Menü).
+- Browser großer Modus: Namensliste ~36 % breit mit größerer Schrift, Ablage verdeckt den Ziehstapel nicht mehr (auch 760×300). Offen: Desktop 1280×800 kleine Stapel; Hinweis „Du bist dran“ überdeckt den unteren Stapelrand; am S10 noch selbst ansehen.
+
 ## Geplant: Online-Spiel, Schritt 1 (Nutzerentscheidung 08.10.2026)
 
 - Vermittler (Relay) als Cloudflare Worker mit Durable Objects (ein Raum = ein Objekt), im Repo samt „Deploy to Cloudflare“-Knopf im README: Jede Gruppe (oder der Nutzer als Standard) richtet sich mit einem Klick einen eigenen Gratis-Vermittler ein; der Gratistarif pausiert bei Überschreiten der Tageslimits, kostet aber nichts. Vor dem Umsetzen die aktuellen Bedingungen (Durable Objects im Gratistarif, WebSocket-Limits) prüfen.
 - Spiellogik bleibt beim Gastgeber-Handy; der Vermittler reicht nur Nachrichten durch. Gastgeber: „Online spielen“ → Raumcode (z. B. KATZE-42) und Link; Gäste geben den Code in der App ein oder öffnen den Link im Browser. Vermittler-Adresse in den Einstellungen, mit Verbindungstest, per QR teilbar.
 - Browser-Gäste: Der Worker kann den Lite-Client gleich mit ausliefern (https), daher zunächst ohne GitHub Pages.
 - Später: eigenes Vermittler-Programm (Docker, Cloudflare Tunnel), GitHub Pages, Ende-zu-Ende-Verschlüsselung mit Schlüssel im Link.
-- Das Cloudflare-Konto legt der Nutzer selbst an (Konten anlegen und Zugangsdaten eingeben darf der Assistent nicht).
+- Das Cloudflare-Konto legt der Nutzer selbst an (Konten anlegen und Zugangsdaten eingeben darf der Assistent nicht). **Stand 08.10.2026:** Konto angelegt, Workers-Unterdomain `shakie.workers.dev`, Gratistarif (100.000 Anfragen/Tag); „Durable Objects“ erscheint im Menü unter Compute. Noch nichts bereitgestellt.
 
 ## Offen (nach 1.1.1)
 

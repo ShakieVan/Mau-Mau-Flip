@@ -104,6 +104,8 @@ static func summary(cfg: RuleConfig, extras_first := false) -> String:
 		parts.append("Ziehkarten weitergeben")
 	if cfg.penalty_turn == "play":
 		parts.append("nach Strafziehen weiterspielen")
+	if cfg.draw_play == "any" and cfg.draw_rule == "one":
+		parts.append("nach dem Ziehen beliebige Karte legen")
 	parts.append({"bluff": "Bluffen erlaubt", "enforce": "+2 nur ohne Farbe", "free": "Wünscher +2 immer erlaubt"}[cfg.wild_restriction])
 	if str(cfg.get("flip_surprise")) == "on":
 		parts.append("Flip-Überraschung")

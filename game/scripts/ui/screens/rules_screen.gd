@@ -24,6 +24,7 @@ const OPTIONS := [
 	["hand_size", "Karten zu Beginn", "", "zahl", 1],
 	["draw_rule", "Ziehen", "Wenn nichts passt", [["one", "Eine Karte"], ["until_playable", "Bis eine passt"]]],
 	["drawn_card", "Gezogene Karte", "Passt sie, …", [["may", "darf gelegt werden"], ["must", "muss gelegt werden"], ["may_not", "erst nächster Zug"]]],
+	["draw_play", "Nach dem Ziehen", "Freiwillig gezogen: welche Karte du noch legen darfst", [["drawn", "Nur die gezogene Karte (offiziell)"], ["any", "Beliebige Karte"]]],
 	["stacking", "Ziehkarten weitergeben", "+1 auf +1, +5 auf +5 …: die Summe wächst", [["off", "Aus"], ["same", "Gleiche Karte"]]],
 	["penalty_turn", "Nach dem Strafziehen", "Wer +1, +5 … abbekommt: aussetzen oder gleich weiterspielen", [["skip", "Aussetzen"], ["play", "Weiterspielen"]]],
 	["wild_restriction", "Wünscher +2 und Farbjagd", "„App prüft“: nur, wenn keine Karte der aktuellen Farbe passt", [["free", "Immer erlaubt"], ["enforce", "App prüft"]]],

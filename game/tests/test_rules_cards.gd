@@ -88,7 +88,7 @@ func _config() -> void:
 	var c := RuleConfig.new()
 	var d := c.to_dict()
 	var want := {"round_end": "first", "scoring": "none", "target": 500, "hand_size": 7, "draw_rule": "one", "drawn_card": "may",
-		"stacking": "off", "penalty_turn": "skip", "wild_restriction": "free", "wild_counts_for_bluff": true, "jagd_wild_stops": false,
+		"draw_play": "drawn", "stacking": "off", "penalty_turn": "skip", "wild_restriction": "free", "wild_counts_for_bluff": true, "jagd_wild_stops": false,
 		"mau_call": "catch", "mau_penalty": 2, "backs_visible": true, "peek_own_backs": true, "two_player_reverse_skips": true,
 		"flip_last_card": "execute", "swap_cards": "off", "swap_direction": "clockwise", "gamble_cards": "off",
 		"discard_color": "off", "flip_surprise": "off", "flip_mode": "pile"}
@@ -98,7 +98,7 @@ func _config() -> void:
 	check(c.preset_name() == "offiziell", "Standard = offiziell")
 	var fam := RuleConfig.preset("familie")
 	check(fam.round_end == "last" and fam.stacking == "same" and fam.wild_restriction == "free" and fam.mau_penalty == 1
-		and fam.swap_cards == "on" and fam.gamble_cards == "on" and fam.discard_color == "on" and fam.flip_surprise == "on" and fam.flip_mode == "card", "Voreinstellung familie (1.0.2)")
+		and fam.swap_cards == "on" and fam.gamble_cards == "on" and fam.discard_color == "on" and fam.flip_surprise == "on" and fam.flip_mode == "card" and fam.draw_play == "any", "Voreinstellung familie (1.1.3)")
 	var mm := RuleConfig.preset("mau_mau")
 	check(mm.stacking == "same" and mm.wild_restriction == "enforce" and mm.mau_penalty == 1 and mm.round_end == "first", "Voreinstellung mau_mau")
 	var k5 := RuleConfig.preset("klassisch500")

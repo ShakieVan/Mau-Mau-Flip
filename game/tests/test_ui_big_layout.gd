@@ -26,6 +26,7 @@ func run() -> void:
 	_geometry()
 	_order()
 	await _table()
+	await _badge_and_drawn()
 	print("RESULT: %d ok" % ok)
 	await CleanExit.finish(self, 0 if fails == 0 else 1)
 
@@ -162,3 +163,52 @@ func _table() -> void:
 		check(t.list_index(1) >= 0, "%d Spieler: am Rundenende wieder in der Liste" % n)
 		t.queue_free()
 		await process_frame
+
+
+# 1.1.3: Strafplakette „+N“ über Ablage und Farbschild (Gerätetest 1.1.2: lag verdeckt dahinter), gut sichtbar im Bild und frei
+# vom Farbschild; Zeichenreihenfolge der schwebenden Elemente. Phase drawn mit draw_play = any: „Behalten“ sichtbar, alle
+# passenden Karten aus hints.playable markiert (nicht nur die gezogene).
+func _badge_and_drawn() -> void:
+	root.size = Vector2i(1600, 720)
+	var s := TableSamples.create(4, 7, [])
+	s.turn = 0
+	s.pending = 5
+	var t := TableView.new()
+	root.add_child(t)
+	var hv := HandView.new()
+	t.set_hand(hv)
+	t.set_big(true)
+	await process_frame
+	t.apply_view(s.view_for(0))
+	await _settle(t, 4)
+	var w: Node2D = t.get("_world")
+	var badge: Node2D = t.get("_pending_badge")
+	var ring = t.get("_color_ring")
+	var idx := func(name: String) -> int: return (t.get(name) as Node).get_index()
+	check(badge != null and badge.get_parent() == w and ring.pending == 5, "Plakette als eigener Knoten mit +5")
+	check(badge.get_index() > idx.call("_discard_layer") and badge.get_index() > idx.call("_color_mark"), "Plakette über Ablage und Farbschild")
+	for above in ["discard_browser", "stake_pile", "gamble_machine", "hand_layer", "fx"]:
+		check(idx.call(above) > badge.get_index(), "%s über der Plakette" % above)
+	var r := 30.0 * 1.8
+	var c: Vector2 = badge.position + ring.badge_center()
+	var screen := Rect2(Vector2.ZERO, t.size)
+	check(screen.encloses(Rect2(c - Vector2(r, r), Vector2(r, r) * 2.0)), "Plakette ganz im Bild (%s)" % c)
+	var mark := BigLayout.color_mark_pos(t.size)
+	check(c.y - r > mark.y + 100.0, "Plakette unter dem Farbschild (%.0f / %.0f)" % [c.y - r, mark.y])
+	check(c.y + r < BigLayout.hint_y(t.size) - 30.0, "Plakette über der Hinweisleiste")
+	# Phase drawn (draw_play any): mehrere spielbare Karten, Behalten sichtbar
+	var v := s.view_for(0)
+	var ids: Array = []
+	for card in v.hand:
+		ids.append(int(card.id))
+	v["phase"] = "drawn"
+	v["hints"]["playable"] = ids.slice(0, 3)
+	v["hints"]["can_keep"] = true
+	v["hints"]["can_draw"] = false
+	t.apply_view(v)
+	await _settle(t, 2)
+	check((t.get("_act_btns")["keep"] as Control).visible, "drawn: Behalten sichtbar")
+	var marked: Dictionary = hv.get("_playable")
+	check(marked.size() == 3 and marked.has(ids[0]) and marked.has(ids[2]), "drawn: alle passenden Karten markiert (%d)" % marked.size())
+	t.queue_free()
+	await process_frame

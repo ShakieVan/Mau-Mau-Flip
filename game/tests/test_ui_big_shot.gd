@@ -68,6 +68,7 @@ func _table(n: int, night: bool) -> TableView:
 	s.color = "blau" if not night else "tuerkis"
 	s.turn = 0
 	s.mau[3] = true
+	s.pending = 5                 # Strafplakette „+5“ an der Ablage (1.1.3: über Ablage und Farbschild)
 	var t := TableView.new()
 	root.add_child(t)
 	var hv := HandView.new()

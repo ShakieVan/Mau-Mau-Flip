@@ -27,6 +27,9 @@ signal sort_pressed
 signal backs_pressed
 signal seat_tapped(seat: int)
 signal big_changed(on: bool)          # großer Modus umgeschaltet (TableScreen legt die Hand neu)
+signal night_switched(on: bool)       # Tag/Nacht über die Schwelle 0,5 gewechselt (Überlagerungen im Spiel folgen, 1.1.3)
+
+const GROUP := "tisch_ansicht"         # Gruppe des Tisches: Überlagerungen finden ihn darüber (follow_night)
 
 const CARD_W := 116.0                 # Stapel und Ablage
 const HAND_CARD_W := 150.0            # Ersatzbreite, wenn keine Hand angeschlossen ist
@@ -70,6 +73,7 @@ var _ring: DirectionRing
 var _seat_layer: Node2D
 var _pile: PileView
 var _color_ring: ColorRingView
+var _pending_badge: PendingBadge      # „+N“-Plakette über Ablage und Farbschild (1.1.3)
 var _discard_layer: Node2D
 var _discard: Array[CardView] = []
 var _color_mark: ColorMark
@@ -157,9 +161,16 @@ func _init() -> void:
 	_world.add_child(_discard_layer)
 	_color_mark = ColorMark.new()
 	_world.add_child(_color_mark)
+	_pending_badge = PendingBadge.new()
+	_pending_badge.name = "Strafplakette"
+	_pending_badge.ring = _color_ring
+	_color_ring.badge = _pending_badge
+	_world.add_child(_pending_badge)
 	discard_browser = DiscardBrowserScript.new()
 	discard_browser.name = "AblageDurchsehen"
-	discard_browser.opened_changed.connect(func(open: bool) -> void: _discard_layer.visible = not open)
+	discard_browser.opened_changed.connect(func(open: bool) -> void:
+		_discard_layer.visible = not open
+		_pending_badge.visible = not open)
 	_world.add_child(discard_browser)
 	stake_pile = StakePileScript.new()
 	stake_pile.name = "Einsatz"
@@ -239,6 +250,7 @@ func _init() -> void:
 
 
 func _ready() -> void:
+	add_to_group(GROUP)
 	reduced = UiApp.reduced_effects()
 	highlight = HandView.truthy(UiApp.setting("hervorheben", true))
 	var app := UiApp.app()
@@ -327,6 +339,7 @@ func _layout() -> void:
 	_pile.position = _draw_pos
 	_pile.set_width(pile_w)
 	_color_ring.position = _discard_pos
+	_pending_badge.position = _discard_pos
 	_color_ring.card_size = Vector2(pile_w, pile_w * CardView.ASPECT) if big else Vector2.ZERO
 	_color_ring.queue_redraw()
 	_discard_layer.position = _discard_pos
@@ -1035,8 +1048,25 @@ func _set_color(c: String, animate: bool) -> void:
 	_color_mark.set_color_key(c, animate)
 
 
+# Überlagerung im Spiel (Einstellungen, Menü, Regeln, So geht's) folgt Tag/Nacht des Tisches: apply(nacht) sofort und bei jedem
+# Wechsel über die Schwelle (Flip), solange node lebt. Ohne Tisch im Baum (Tests, Menüs) bleibt es beim Tag. → Tisch oder null
+static func follow_night(node: Node, apply: Callable) -> TableView:
+	if node == null or not node.is_inside_tree():
+		return null
+	var tv := node.get_tree().get_first_node_in_group(GROUP) as TableView
+	if tv == null:
+		return null
+	apply.call(tv.night > 0.5)
+	if not tv.night_switched.is_connected(apply):
+		tv.night_switched.connect(apply)      # apply ist eine Methode der Überlagerung: Godot trennt beim Freigeben selbst
+	return tv
+
+
 func set_night(v: float) -> void:
+	var was := night > 0.5
 	night = clampf(v, 0.0, 1.0)
+	if (night > 0.5) != was:
+		night_switched.emit(night > 0.5)
 	if _bg == null:
 		return
 	_bg.tageszeit = night
@@ -1059,6 +1089,11 @@ func set_night(v: float) -> void:
 	discard_browser.night = night
 	_color_ring.night = night
 	wish_picker.night = night
+	# Kartenhilfe und Rundenende: nachts dunkle Karte (1.1.3)
+	if help_popup != null and help_popup.night != (night > 0.5):
+		help_popup.set_night(night > 0.5)
+	if round_end != null:
+		round_end.set_night(night)
 
 
 # Sortierknopf zeigt den Modus („Farbe“, „Wert“, „Punkte“, „Manuell“)
@@ -2156,6 +2191,7 @@ class ColorRingView:
 			queue_redraw()
 	var pending := 0
 	var _pop := 0.0
+	var badge: Node2D                    # PendingBadge über Ablage und Farbschild (zeichnet die „+N“-Plakette)
 	var _tween: Tween
 
 	func set_color_key(c: String, animate: bool) -> void:
@@ -2212,17 +2248,37 @@ class ColorRingView:
 			draw_arc(Vector2.ZERO, R + 6.0, 0.0, TAU, 96, Color(color, 0.22), 18.0, true)
 			draw_arc(Vector2.ZERO, R, 0.0, TAU, 96, color, 5.0, true)
 			draw_arc(Vector2.ZERO, R - 7.0, 0.0, TAU, 96, Color(color, 0.18), 10.0, true)
-		if pending > 0:
-			var k := 1.8 if big else 1.0
-			var c := Vector2(card_size.x * 0.5 - 10.0, -card_size.y * 0.5 + 10.0) if big else Vector2(R * 0.78, -R * 0.78)
-			var s := (1.0 + 0.35 * sin(_pop * PI)) * k
-			draw_circle(c, 30.0 * s, UiPalette.INK if night < 0.5 else Color("#FF7FCF"))
-			draw_circle(c, 26.0 * s, UiPalette.CREAM)
-			var f := UiFonts.text(800, 85.0)
-			var t := "+%d" % pending
-			var fs := int(UiFonts.size("text") * s)
-			var tw := f.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-			draw_string(f, c + Vector2(-tw * 0.5, fs * 0.36), t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, UiPalette.INK)
+		if badge != null:
+			badge.queue_redraw()
+
+	# Mitte der „+N“-Plakette relativ zur Ablage. Großer Modus (1.1.3): an der rechten Kante unterhalb der Mitte, also in der
+	# freien Farbspalte unter dem Farbschild, nicht oben am Bildrand und nicht unter dem Schild. Sonst oben rechts am Ring.
+	func badge_center() -> Vector2:
+		if card_size.x > 0.0:
+			return Vector2(card_size.x * 0.5, card_size.y * 0.12)
+		return Vector2(R * 0.78, -R * 0.78)
+
+
+class PendingBadge:
+	extends Node2D
+	# „+N“-Plakette der angesammelten Ziehkarten (Daten aus ColorRingView). Eigener Knoten über Ablage und Farbschild, aber unter
+	# Ablage-Durchsehen, Einsatz, Automat, Hand und fliegenden Karten (Gerätetest 1.1.2: im großen Modus lag sie verdeckt hinter
+	# Ablage und Farbschild).
+	var ring: ColorRingView
+
+	func _draw() -> void:
+		if ring == null or ring.pending <= 0:
+			return
+		var c := ring.badge_center()
+		var s := (1.0 + 0.35 * sin(ring._pop * PI)) * (1.8 if ring.card_size.x > 0.0 else 1.0)
+		draw_circle(c + Vector2(0, 4.0 * s), 31.0 * s, Color(0, 0, 0, 0.25))      # leichter Schatten: hebt sie von der Karte ab
+		draw_circle(c, 30.0 * s, UiPalette.INK if ring.night < 0.5 else Color("#FF7FCF"))
+		draw_circle(c, 26.0 * s, UiPalette.CREAM)
+		var f := UiFonts.text(800, 85.0)
+		var t := "+%d" % ring.pending
+		var fs := int(UiFonts.size("text") * s)
+		var tw := f.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		draw_string(f, c + Vector2(-tw * 0.5, fs * 0.36), t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, UiPalette.INK)
 
 
 class ColorMark:

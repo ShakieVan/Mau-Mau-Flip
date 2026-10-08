@@ -110,7 +110,52 @@ static func card(margin := 28.0, night := false) -> PanelContainer:
 	sb.shadow_size = 16
 	sb.shadow_offset = Vector2(0, 6)
 	p.add_theme_stylebox_override("panel", sb)
+	p.set_meta("margin", margin)
 	return p
+
+
+# Karte live auf Tag (Papier) oder Nacht (dunkle Karte) stellen (Beta 1.1.3, Überlagerungen im Spiel): Hintergrund und ein
+# kleines Nachtthema auf der Karte, das nur Farben ersetzt (Schriften und Größen kommen weiter aus dem Hauptthema, auch live).
+static func set_card_night(p: PanelContainer, night: bool) -> void:
+	var margin := float(p.get_meta("margin", 28.0))
+	p.theme_type_variation = "NightPanel" if night else "CardPanel"
+	var sb: StyleBoxFlat = UiTheme.box(UiPalette.NIGHT_PANEL if night else UiPalette.PAPER, Color(UiPalette.PAPER, 0.25) if night else Color(UiPalette.INK, 0.12), 2, 28, margin, margin * 0.85)
+	sb.shadow_color = Color(0, 0, 0, 0.45 if night else 0.28)
+	sb.shadow_size = 16
+	sb.shadow_offset = Vector2(0, 6)
+	p.add_theme_stylebox_override("panel", sb)
+	p.theme = night_theme() if night else null
+	p.set_meta("night", night)
+
+
+static var _night_theme: Theme
+
+# Farben für Bedienelemente auf einer dunklen Karte: helle Schrift, Geisterknöpfe mit hellem Rand, innere Papierkarten dunkel,
+# helle Bildlaufgriffe und Schieberleiste. Sonnengelbe und cremefarbene Knöpfe und die Schalter bleiben hell (gut sichtbar).
+# Fehlende Einträge (Schriften, Größen, PrimaryButton, Button) sucht Godot weiter oben im Hauptthema.
+static func night_theme() -> Theme:
+	if _night_theme != null:
+		return _night_theme
+	var t := Theme.new()
+	var paper := UiPalette.PAPER
+	for type in ["Label", "TitleLabel", "HeadingLabel", "NightLabel"]:
+		t.set_color("font_color", type, paper)
+	t.set_color("font_color", "HintLabel", UiPalette.MUTED_NIGHT)
+	UiTheme._buttons(t, "GhostButton", Color(paper, 0.07), paper, Color(paper, 0.45), 2)
+	for type in ["CheckBox", "CheckButton"]:
+		for c in ["font_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color"]:
+			t.set_color(c, type, paper)
+	var inner := UiTheme.box(Color("#262D5C"), Color(paper, 0.2), 2, 28, 32.0, 28.0)
+	for type in ["PanelContainer", "CardPanel"]:
+		t.set_stylebox("panel", type, inner)
+	for type in ["VScrollBar", "HScrollBar"]:
+		t.set_stylebox("scroll", type, UiTheme.box(Color(paper, 0.08), Color(0, 0, 0, 0), 0, 8, 6.0, 6.0))
+		t.set_stylebox("grabber", type, UiTheme.box(Color(paper, 0.4), Color(0, 0, 0, 0), 0, 8, 6.0, 6.0))
+		t.set_stylebox("grabber_highlight", type, UiTheme.box(Color(paper, 0.55), Color(0, 0, 0, 0), 0, 8, 6.0, 6.0))
+		t.set_stylebox("grabber_pressed", type, UiTheme.box(Color(paper, 0.65), Color(0, 0, 0, 0), 0, 8, 6.0, 6.0))
+	t.set_stylebox("slider", "HSlider", UiTheme.box(Color(paper, 0.28), Color(0, 0, 0, 0), 0, 6, 0.0, 6.0))
+	_night_theme = t
+	return t
 
 
 static func vbox(sep := 14) -> VBoxContainer:

@@ -68,7 +68,8 @@ Grundlage: `docs/recherche/07_regeln_hausregeln.md`, Abschnitte 1.1–1.13 und H
 - **Ziehen:**
   - `draw_rule=until_playable`: ziehen, bis eine Karte passt.
   - `drawn_card` mit den Werten `may`, `must` oder `may_not`.
-  - Freiwilliges Ziehen ist erlaubt; danach darf man nur die gezogene Karte legen.
+  - Freiwilliges Ziehen ist erlaubt; danach darf man nur die gezogene Karte legen (`draw_play=drawn`, offiziell).
+  - Hausregel `draw_play=any` (1.1.3, in „Familie“ an): Nach dem freiwilligen Ziehen bleibt die Phase `drawn`, solange irgendeine Karte passt; legbar ist jede passende Karte (bei `may_not` außer der gezogenen, bei `must` und passender gezogener nur diese), `keep` beendet den Zug. Passt nichts, endet der Zug wie bisher. Gilt nicht beim Strafziehen und nicht bei `until_playable`. Bots wählen dann nach der Zug-Taktik (`_turn` ohne Ziehen) und prüfen danach wie bisher, ob Behalten besser ist. Hebung der Familie 1.1.2 in `migrate_dict`. Tests: `test_rules_draw_play.gd`.
 
 ### Computergegner (`MauBot.choose(view, rng_seed, level := 1)`)
 

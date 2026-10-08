@@ -111,6 +111,7 @@ tools/                        Bau-, Test-, Asset- und Veröffentlichungsskripte
 | `hand_size` | **7** (5–10) |
 | `draw_rule` | **`one`** (eine Karte, darf sie sofort legen) / `until_playable` |
 | `drawn_card` | **`may`** / `must` / `may_not` |
+| `draw_play` | **`drawn`** (offiziell: nach freiwilligem Ziehen nur die gezogene Karte; passt sie nicht, endet der Zug) / `any` (Hausregel „Nach dem Ziehen: beliebige Karte legen“, ab 1.1.3: Phase `drawn` bleibt, solange irgendeine Karte passt; jede passende Karte legen oder `keep`; passt nichts, endet der Zug; `hints.playable` listet alle passenden). Nicht beim Strafziehen, nicht bei `draw_rule=until_playable`. Mit `drawn_card=must` muss eine passende gezogene Karte gelegt werden, mit `may_not` ist nur die gezogene gesperrt. In „Familie“ `any`; `RuleConfig.migrate_dict` hebt die Familie 1.1.2 (ohne Schlüssel) |
 | `stacking` | **`off`** / `same` (gleiche Ziehkarte weitergeben, Summe wächst) |
 | `wild_restriction` | **`free`** (+2/Farbjagd immer erlaubt, ab 0.1.3 Standard in allen Voreinstellungen) / `enforce` (nur ohne aktuelle Farbe, App verhindert) / `bluff` (nur noch aus Verträglichkeit, Anzweifeln; Oberflächen bieten es nicht an, `RuleConfig.migrate_dict()` macht gespeichertes `bluff` beim Laden zu `free`) |
 | `wild_counts_for_bluff` | **true** (Fassung 2024: Joker auf der Hand zählen als passend) / false; ab 0.1.3 nicht mehr in der Oberfläche, zählt bei `free` nicht für die Voreinstellung |

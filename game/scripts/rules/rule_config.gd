@@ -12,6 +12,7 @@ const CHOICES := {
 	"scoring": ["none", "points500"],
 	"draw_rule": ["one", "until_playable"],
 	"drawn_card": ["may", "must", "may_not"],
+	"draw_play": ["drawn", "any"],             # nach freiwilligem Ziehen nur die gezogene Karte (offiziell) oder jede passende (Hausregel)
 	"stacking": ["off", "same"],
 	"penalty_turn": ["skip", "play"],          # nach dem Strafziehen aussetzen (offiziell) oder gleich weiterspielen (Hausregel)
 	"wild_restriction": ["free", "enforce", "bluff"],  # "bluff" (Anzweifeln) nur aus Verträglichkeit, Oberflächen bieten es nicht an
@@ -42,7 +43,7 @@ const PRESETS := {
 	"klassisch500": {"scoring": "points500"},
 	"familie": {"round_end": "last", "stacking": "same", "penalty_turn": "play", "wild_restriction": "free", "mau_penalty": 1,
 		"swap_cards": "on", "swap_direction": "play", "gamble_cards": "on", "discard_color": "on", "flip_surprise": "on",
-		"flip_mode": "card"},
+		"flip_mode": "card", "draw_play": "any"},
 	"mau_mau": {"stacking": "same", "wild_restriction": "enforce", "mau_penalty": 1},
 }
 const PRESET_TITLES := {"offiziell": "Offiziell", "klassisch500": "Klassisch 500", "familie": "Familie", "mau_mau": "Mau-Mau-Tradition"}
@@ -53,6 +54,7 @@ var target := 500
 var hand_size := 7
 var draw_rule := "one"
 var drawn_card := "may"
+var draw_play := "drawn"
 var stacking := "off"
 var penalty_turn := "skip"
 var wild_restriction := "free"
@@ -98,15 +100,19 @@ const OLD_FAMILIE := {"round_end": "last", "stacking": "same", "penalty_turn": "
 # Gespeicherte Regeln (App-Einstellungen, Regelsätze, Regeln vom Gastgeber) auf den Stand 0.1.4 bringen: Anzweifeln ("bluff")
 # gibt es in der Oberfläche nicht mehr und wird zu "free" (0.1.3). Regeln, die genau der früheren „Familie“ entsprechen (mit
 # enforce oder, nach bluff → free, mit free), werden zur heutigen „Familie“ (0.1.4). Liefert eine Kopie, d bleibt unverändert.
-# Ohne Schlüssel flip_mode (bis 1.0.1) wird die damalige „Familie“ (heutige ohne flip_mode = card) zur heutigen (1.0.2).
+# Ohne Schlüssel flip_mode (bis 1.0.1) wird die damalige „Familie“ (heutige ohne flip_mode = card) zur heutigen (1.0.2), ebenso
+# ohne Schlüssel draw_play (bis 1.1.2) die damalige „Familie“ (heutige ohne draw_play = any) zur heutigen (1.1.3).
 static func migrate_dict(d: Dictionary) -> Dictionary:
 	var out := d.duplicate()
 	if str(out.get("wild_restriction", "")) == "bluff":
 		out["wild_restriction"] = "free"
 	var mine := RuleConfig.from_dict(out).to_dict()
-	if not d.has("flip_mode"):
+	if not d.has("flip_mode") or not d.has("draw_play"):
 		var fam := RuleConfig.from_dict(out)
-		fam.flip_mode = "card"
+		if not d.has("flip_mode"):
+			fam.flip_mode = "card"
+		if not d.has("draw_play"):
+			fam.draw_play = "any"
 		if fam.preset_name() == "familie":
 			out.merge(RuleConfig.preset("familie").to_dict(), true)
 			return out
@@ -241,6 +247,8 @@ func describe() -> Array[String]:
 			out.append("Eine passende gezogene Karte musst du sofort legen.")
 		"may_not":
 			out.append("Eine gezogene Karte darfst du erst im nächsten Zug legen.")
+	if draw_play == "any" and draw_rule == "one":
+		out.append("Nach dem Ziehen darfst du %s passende Karte legen oder alles behalten." % ("eine andere" if drawn_card == "may_not" else "jede"))
 	if stacking == "same":
 		out.append("Stapeln: Wer eine Ziehkarte abbekommt, darf die gleiche drauflegen. Die Summe wandert weiter; bei der Farbjagd zieht das letzte Opfer bis zur Farbe.")
 	else:

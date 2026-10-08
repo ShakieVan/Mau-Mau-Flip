@@ -369,8 +369,9 @@ body.reduziert .himmel .mond { transform: rotate(-24deg); }
 .ablage .karten .karte.alt { filter: brightness(.82); }
 .farbring { position: absolute; left: -118px; top: -118px; width: 236px; height: 236px; border-radius: 50%; border: 5px solid var(--ring);
   box-shadow: 0 0 22px var(--ring), inset 0 0 18px var(--ring); opacity: .9; transition: border-color .5s, box-shadow .5s; pointer-events: none; }
-.ablage .offen { position: absolute; left: 50px; top: -128px; font: 900 30px var(--f-ui); color: var(--cream); background: var(--rot); border: 3px solid var(--cream); border-radius: 22px; padding: 2px 12px; box-shadow: 0 6px 16px rgba(0,0,0,.4); z-index: 3; font-variation-settings: 'opsz' 12; }
-.ablage .offen.puls { animation: puls .5s ease-out; }
+/* Strafplakette: eigene Ebene auf der Bühne (über Ablage, Seitenstapel, Farbe und Mitspielern; unter Hand-Leiste und Knöpfen) */
+.buehne > .offen { font: 900 30px var(--f-ui); color: var(--cream); background: var(--rot); border: 3px solid var(--cream); border-radius: 22px; padding: 2px 12px; box-shadow: 0 6px 16px rgba(0,0,0,.4); z-index: 45; pointer-events: none; white-space: nowrap; font-variation-settings: 'opsz' 12; }
+.buehne > .offen.puls { animation: puls .5s ease-out; }
 @keyframes puls { 0% { transform: scale(.4); } 60% { transform: scale(1.25); } 100% { transform: scale(1); } }
 
 /* Hinweis und Aktionen */
@@ -902,6 +903,7 @@ body.ruhig *, body.ruhig *::before, body.ruhig *::after { animation: none !impor
 #tisch.gross #hand { transform: scale(1.3); transform-origin: 0 0; }
 #tisch.gross #hand-zone { height: 330px; }
 #tisch.gross .stapelzahl { z-index: 6; font-size: calc(30px * var(--fs)); color: var(--t-text); background: var(--t-hinweis); border: 2px solid var(--t-hinweis-rand); border-radius: 20px; padding: 2px 14px; pointer-events: none; }
+#tisch.gross .buehne > .offen { font-size: calc(52px * var(--fs)); padding: 4px 20px; border-width: 4px; border-radius: 34px; }
 #tisch.gross .farbanzeige { font-size: calc(44px * var(--fs)); gap: 10px; }
 #tisch.gross .farbanzeige .sym { width: 120px; height: 120px; }
 #tisch.gross .hinweis { font-size: calc(36px * var(--fs)); padding: 12px 28px; max-width: 700px; border-width: 3px; }
@@ -912,17 +914,21 @@ body.ruhig *, body.ruhig *::before, body.ruhig *::after { animation: none !impor
 #tisch.gross .pill svg { width: 34px; height: 34px; }
 #tisch.gross .menue-knopf, #tisch.gross .ton-knopf { width: 84px; height: 84px; }
 #tisch.gross .menue-knopf svg, #tisch.gross .ton-knopf svg { width: 38px; height: 38px; }
-/* Spielerliste: Zeile = .gg (Mitspieler und „Du“), translateY aus tisch.js; .sprung = oben raus, unten wieder rein */
-#tisch.gross .gg { width: 330px; height: 74px; margin: -37px 0 0 -165px; flex-direction: row; align-items: center; gap: 0; padding: 0 14px 0 10px; box-sizing: border-box;
-  border-radius: 20px; background: var(--t-hinweis); border: 2.5px solid var(--t-hinweis-rand); transition: transform .45s cubic-bezier(.3,.8,.3,1), opacity .3s; }
+/* Spielerliste: Zeile = .gg (Mitspieler und „Du“), translateY aus tisch.js; .sprung = oben raus, unten wieder rein.
+   Breite --lw (etwa 36 % der Bühne wie in der App, big_layout.gd) und Zeilenhöhe --zh aus tisch.js (_geometrieGross, _listeZeilen);
+   Schrift wächst mit der Zeile, bleibt aber unter der gewählten Schriftgröße × 48 px. */
+#tisch.gross .gg { --zh0: var(--zh, 90px); width: var(--lw, 440px); height: var(--zh0); margin: calc(var(--zh0) / -2) 0 0 calc(var(--lw, 440px) / -2);
+  flex-direction: row; align-items: center; gap: 0; padding: 0 18px 0 12px; box-sizing: border-box;
+  border-radius: 24px; background: var(--t-hinweis); border: 3px solid var(--t-hinweis-rand); transition: transform .45s cubic-bezier(.3,.8,.3,1), opacity .3s; }
 #tisch.gross .gg.sprung { transition: none; opacity: 0; }
 #tisch.gross .gg.aus { opacity: 0; pointer-events: none; }
-#tisch.gross .gg .kopf { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; grid-template-rows: auto auto; column-gap: 12px; width: 100%; align-items: center; }
-#tisch.gross .gg .ava { grid-column: 1; grid-row: 1 / 3; width: 54px; height: 54px; font-size: 27px; }
-#tisch.gross .gg .name { grid-column: 2; grid-row: 1; font-size: calc(30px * var(--fs)); line-height: 1.1; max-width: none; }
-#tisch.gross .gg .zug { display: block; grid-column: 2; grid-row: 2; font: 800 calc(19px * var(--fs)) var(--f-ui); line-height: 1.1; color: var(--t-muted); }
+#tisch.gross .gg .kopf { display: grid; grid-template-columns: min(76px, calc(var(--zh0) * .78)) minmax(0, 1fr) auto; grid-template-rows: auto auto; column-gap: 16px; width: 100%; align-items: center; }
+#tisch.gross .gg .ava { grid-column: 1; grid-row: 1 / 3; width: min(74px, calc(var(--zh0) * .76)); height: min(74px, calc(var(--zh0) * .76)); font-size: min(38px, calc(var(--zh0) * .38)); }
+#tisch.gross .gg .name { grid-column: 2; grid-row: 1; font-size: min(calc(48px * var(--fs)), calc(var(--zh0) * .5)); line-height: 1.08; max-width: none; }
+#tisch.gross .gg .zug { display: block; grid-column: 2; grid-row: 2; font: 800 min(calc(30px * var(--fs)), calc(var(--zh0) * .29)) var(--f-ui); line-height: 1.1; color: var(--t-muted); }
 #tisch.gross .gg .zug:empty { display: none; }
-#tisch.gross .gg .zahl { grid-column: 3; grid-row: 1 / 3; font-size: calc(32px * var(--fs)); padding: 3px 14px; min-width: 52px; text-align: center; }
+#tisch.gross .gg .kopf:has(.zug:empty) .name { grid-row: 1 / 3; }
+#tisch.gross .gg .zahl { grid-column: 3; grid-row: 1 / 3; font-size: min(calc(48px * var(--fs)), calc(var(--zh0) * .52)); padding: 3px 18px; min-width: 64px; text-align: center; border-radius: 40px; }
 #tisch.gross .gg.dran { background: var(--t-dran); border-color: var(--gold); box-shadow: 0 0 0 4px rgba(255,214,90,.55), 0 6px 16px rgba(0,0,0,.3); }
 #tisch.gross .gg.dran .name, #tisch.gross .gg.dran .zug { color: var(--t-dran-fg); text-shadow: none; }
 #tisch.gross .gg.dran .zahl { background: var(--t-dran-fg); color: var(--t-dran); }
@@ -930,8 +936,8 @@ body.ruhig *, body.ruhig *::before, body.ruhig *::after { animation: none !impor
 #tisch.gross .gg.ich:not(.dran) { border-style: dashed; }
 #tisch.gross .gg .marken { position: absolute; right: 10px; top: -15px; }
 #tisch.gross .gg .erwischen { position: absolute; right: 100%; top: 10px; margin: 0 10px 0 0; font-size: 24px; }
-#tisch.gross .liste-kopf { display: flex; align-items: center; gap: 8px; transform: translate(-50%, -50%); font: 800 calc(20px * var(--fs)) var(--f-ui); color: var(--t-muted); white-space: nowrap; z-index: 36; pointer-events: none; }
-#tisch.gross .liste-kopf .dreh { font-style: normal; font-size: 30px; display: inline-block; transition: transform .5s; }
+#tisch.gross .liste-kopf { display: flex; align-items: center; gap: 10px; transform: translate(-50%, -50%); font: 800 calc(28px * var(--fs)) var(--f-ui); color: var(--t-muted); white-space: nowrap; z-index: 36; pointer-events: none; }
+#tisch.gross .liste-kopf .dreh { font-style: normal; font-size: 40px; display: inline-block; transition: transform .5s; }
 #tisch.gross .liste-kopf.gegen .dreh { transform: scaleX(-1); }
 #tisch.gross .liste-kopf.wendet { animation: listeWende .7s ease-out; }
 @keyframes listeWende { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 40% { transform: translate(-50%, -50%) scale(1.3); } }
@@ -941,3 +947,21 @@ body.reduziert #tisch.gross .gg, body.reduziert #tisch.gross .liste-kopf .dreh {
 #tisch.gross .pill { z-index: 40; }
 #tisch.gross .pill:not(.aktiv) { background: #FBF5EA; }
 #tisch.gross[data-seite="dunkel"] .pill:not(.aktiv) { background: #1A1838; }
+
+/* ---------------- Fenster nachts (dunkle Seite am Tisch): Neon statt Papier ---------------- */
+body[data-screen="tisch"][data-seite="dunkel"] .modal { background: rgba(3,4,14,.66); }
+body[data-screen="tisch"][data-seite="dunkel"] .modal-karte { background: linear-gradient(180deg, #1D2148 0%, #12153A 100%); color: var(--cream);
+  border: 2px solid rgba(154,134,255,.55); box-shadow: 0 0 0 1px rgba(255,127,207,.18), 0 0 34px rgba(154,134,255,.32), 0 20px 60px rgba(0,0,0,.7); }
+body[data-screen="tisch"][data-seite="dunkel"] .modal h3 { color: var(--moon); text-shadow: 0 0 14px rgba(154,134,255,.55); }
+body[data-screen="tisch"][data-seite="dunkel"] .modal .schliessen.rund { background: rgba(244,240,255,.08); color: var(--cream); border-color: rgba(154,134,255,.5); }
+body[data-screen="tisch"][data-seite="dunkel"] .seg { background: rgba(244,240,255,.1); }
+body[data-screen="tisch"][data-seite="dunkel"] .seg button { color: var(--cream); }
+body[data-screen="tisch"][data-seite="dunkel"] .seg button.an { background: var(--lila); color: #0C0F22; box-shadow: 0 0 12px rgba(154,134,255,.6); }
+body[data-screen="tisch"][data-seite="dunkel"] .menue-karte .knopf.neben { color: var(--cream); }
+body[data-screen="tisch"][data-seite="dunkel"] .modal .knopf.haupt { background: var(--cream); color: var(--ink); box-shadow: 0 4px 0 #6E5FC7, 0 8px 22px rgba(154,134,255,.35); }
+body[data-screen="tisch"][data-seite="dunkel"] .runde-liste li { background: rgba(244,240,255,.08); }
+body[data-screen="tisch"][data-seite="dunkel"] .runde-liste li.ich { background: rgba(255,214,90,.22); box-shadow: inset 0 0 0 2px rgba(255,214,90,.6); }
+body[data-screen="tisch"][data-seite="dunkel"] .runde-liste .ges { background: var(--cream); color: var(--ink); }
+body[data-screen="tisch"][data-seite="dunkel"] .sogehts-liste dt, body[data-screen="tisch"][data-seite="dunkel"] .regeln-karte h4 { color: var(--gold); }
+body[data-screen="tisch"][data-seite="dunkel"] .modal a { color: var(--pink); }
+body[data-screen="tisch"][data-seite="dunkel"] .rk { background: rgba(244,240,255,.07); }

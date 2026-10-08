@@ -5,7 +5,7 @@
 (function (M) {
   'use strict';
 
-  const VERSION = '1.1.2';
+  const VERSION = '1.1.3';
   const PROTO = 1;
   // wach.mp4 (32×32, 2 s, H.264 Baseline, ohne Ton; erzeugt mit ffmpeg) als data:-URI
   const WACH_VIDEO = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAMzbW9vdgAAAGxtdmhkAAAAAAAAAAAAAAAAAAAD6AAAB9AAAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAl50cmFrAAAAXHRraGQAAAADAAAAAAAAAAAAAAABAAAAAAAAB9AAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAACAAAAAgAAAAAAAkZWR0cwAAABxlbHN0AAAAAAAAAAEAAAfQAAAAAAABAAAAAAHWbWRpYQAAACBtZGhkAAAAAAAAAAAAAAAAAABAAAAAgABVxAAAAAAALWhkbHIAAAAAAAAAAHZpZGUAAAAAAAAAAAAAAABWaWRlb0hhbmRsZXIAAAABgW1pbmYAAAAUdm1oZAAAAAEAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAAUFzdGJsAAAAuXN0c2QAAAAAAAAAAQAAAKlhdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAACAAIABIAAAASAAAAAAAAAABFExhdmM2My4xLjEwMSBsaWJ4MjY0AAAAAAAAAAAAAAAAGP//AAAAL2F2Y0MBQsAe/+EAFmdCwB7ZCWwEQAAAAwBAAAADAQPFi5IBAAZoy4DkTIAAAAAQcGFzcAAAAAEAAAABAAAAFGJ0cnQAAAAAAAAKpAAAAAAAAAAYc3R0cwAAAAAAAAABAAAABAAAIAAAAAAUc3RzcwAAAAAAAAABAAAAAQAAABxzdHNjAAAAAAAAAAEAAAABAAAABAAAAAEAAAAkc3RzegAAAAAAAAAAAAAABAAAAogAAAALAAAACwAAAAsAAAAUc3RjbwAAAAAAAAABAAADYwAAAGF1ZHRhAAAAWW1ldGEAAAAAAAAAIWhkbHIAAAAAAAAAAG1kaXJhcHBsAAAAAAAAAAAAAAAALGlsc3QAAAAkqXRvbwAAABxkYXRhAAAAAQAAAABMYXZmNjMuMS4xMDEAAAAIZnJlZQAAArFtZGF0AAACcgYF//9u3EXpvebZSLeWLNgg2SPu73gyNjQgLSBjb3JlIDE2NSByMzIyMyAwNDgwY2IwIC0gSC4yNjQvTVBFRy00IEFWQyBjb2RlYyAtIENvcHlsZWZ0IDIwMDMtMjAyNSAtIGh0dHA6Ly93d3cudmlkZW9sYW4ub3JnL3gyNjQuaHRtbCAtIG9wdGlvbnM6IGNhYmFjPTAgcmVmPTMgZGVibG9jaz0xOi0zOi0zIGFuYWx5c2U9MHgxOjB4MTExIG1lPWhleCBzdWJtZT03IHBzeT0xIHBzeV9yZD0yLjAwOjAuNzAgbWl4ZWRfcmVmPTEgbWVfcmFuZ2U9MTYgY2hyb21hX21lPTEgdHJlbGxpcz0xIDh4OGRjdD0wIGNxbT0wIGRlYWR6b25lPTIxLDExIGZhc3RfcHNraXA9MSBjaHJvbWFfcXBfb2Zmc2V0PS00IHRocmVhZHM9MSBsb29rYWhlYWRfdGhyZWFkcz0xIHNsaWNlZF90aHJlYWRzPTAgbnI9MCBkZWNpbWF0ZT0xIGludGVybGFjZWQ9MCBibHVyYXlfY29tcGF0PTAgY29uc3RyYWluZWRfaW50cmE9MCBiZnJhbWVzPTAgd2VpZ2h0cD0wIGtleWludD0yNTAga2V5aW50X21pbj0yIHNjZW5lY3V0PTQwIGludHJhX3JlZnJlc2g9MCByY19sb29rYWhlYWQ9NDAgcmM9Y3JmIG1idHJlZT0xIGNyZj00MC4wIHFjb21wPTAuNjAgcXBtaW49MCBxcG1heD02OSBxcHN0ZXA9NCBpcF9yYXRpbz0xLjQwIGFxPTE6MS4yMACAAAAADmWIhAXznJigACX3J114AAAAB0GaOAvnOWAAAAAHQZpUAvnOWAAAAAdBmmAVznLA';
@@ -511,7 +511,7 @@
     },
     passtNicht(v, c) {
       const K = M.Karten;
-      if (v.phase === 'drawn') return 'Jetzt geht nur die gezogene Karte – oder „Behalten“.';
+      if (v.phase === 'drawn') return this.beliebigNachZiehen(v) ? 'Passt nicht – leg eine passende Karte oder tippe auf „Behalten“.' : 'Jetzt geht nur die gezogene Karte – oder „Behalten“.';
       if (v.phase === 'challenge') return 'Jetzt geht nur die gleiche Ziehkarte zum Weitergeben – oder anzweifeln bzw. annehmen.';
       if (v.pending && v.pending.kind) return 'Erst die Strafe: ' + ((v.hints || {}).text || 'ziehen oder weitergeben.');
       // Ohne Hervorhebung (persönliche Einstellung) nur der schlichte Hinweis, ohne Tipp, was stattdessen passt
@@ -524,6 +524,8 @@
       return 'Passt nicht – gefragt ist ' + was + '.';
     },
     hervorheben() { return this.einstellungen.hervorheben !== false; },
+    // Hausregel draw_play = "any": nach dem Ziehen darf jede passende Karte gelegt werden (hints.playable listet sie)
+    beliebigNachZiehen(v) { return !!(v && v.rules && v.rules.draw_play === 'any'); },
     // Farbe mit ablegen (Phase discard_pick, ich wähle): Auswahl je Ablegen-Karte, alle Kandidaten (hints.can_pick) vorausgewählt
     imAblegen() { const v = this.view; return !!(v && v.phase === 'discard_pick' && v.discard_pick && v.discard_pick.seat === v.seat && v.seat >= 0); },
     pickAuswahl(v) {
@@ -618,7 +620,7 @@
       if (h.can_draw) { if (!this.offen) this._sendeAkt({ a: 'draw' }); return; }
       if (this.imAblegen()) this.toast('Wähl erst die Karten zum Mitablegen und tippe auf „Ablegen“.');
       else if (this.imGluecksspiel()) this.toast(h.can_press ? 'Im Glücksspiel wird nicht gezogen – drück den Knopf.' : 'Im Glücksspiel wird nicht gezogen – setz eine Karte.');
-      else if (v.turn === v.seat && v.phase === 'drawn') this.toast('Leg die gezogene Karte oder tippe auf „Behalten“.');
+      else if (v.turn === v.seat && v.phase === 'drawn') this.toast(this.beliebigNachZiehen(v) ? 'Leg eine passende Karte oder tippe auf „Behalten“.' : 'Leg die gezogene Karte oder tippe auf „Behalten“.');
       else if (v.turn === v.seat && h.can_challenge) this.toast('Erst anzweifeln oder annehmen.');
       else if (v.turn !== v.seat) this.toast('Warte, bis du dran bist.');
     },

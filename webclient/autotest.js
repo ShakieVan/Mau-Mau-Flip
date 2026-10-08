@@ -2,7 +2,8 @@
  * Spielt über die echte Oberfläche (synthetische Zeigerereignisse auf der Hand, Klicks auf Knöpfe), prüft nach jedem
  * Abgleich DOM gegen Sicht und schreibt das Ergebnis nach #autotest-result (data-ok="1"/"0"), auswertbar mit --dump-dom.
  * Parameter: zuege=N (eigene Züge, Standard 14), runden=N (Abbruch nach N Rundenenden, Standard 2),
- * pflicht=tausch,ablegen,gluecksspiel (diese Hausregel-Karten muss der Test selbst gespielt haben; Glücksspiel samt Setzen und Drücken).
+ * pflicht=tausch,ablegen,gluecksspiel,beliebig (diese Hausregel-Karten muss der Test selbst gespielt haben; Glücksspiel samt Setzen und Drücken;
+ *   beliebig = nach dem Ziehen eine andere als die gezogene Karte gelegt, Hausregel draw_play "any").
  * Hausregeln: bevorzugt Kartentausch, Ablegen-Karten und Glücksspiel, setzt im Glücksspiel per Antippen und drückt den Knopf; prüft
  * Automat, Einsatzstapel und Zahlenwerk gegen view.gamble sowie die Einstellung „Spielbare Karten hervorheben“ (aus: Hinweis
  * „Die Karte passt nicht.“) und im Mock den gesperrten Speicher.
@@ -51,7 +52,7 @@
       this.t0 = Date.now();
       this.zuege = 0; this.runden = 0; this.states = 0; this.errs = 0; this.ereignisse = {};
       this.fehler = []; this.notizen = [];
-      this.haus = { tausch: 0, ablegen: 0, ablegen_joker: 0, gluecksspiel: 0, gesetzt: 0, gedrueckt: 0, aufgehoert: 0, ausgewaehlt: 0, abgewaehlt: 0 };
+      this.haus = { tausch: 0, ablegen: 0, ablegen_joker: 0, gluecksspiel: 0, gesetzt: 0, gedrueckt: 0, aufgehoert: 0, ausgewaehlt: 0, abgewaehlt: 0, beliebig: 0, behalten: 0 };
       this.mock = !!M.param('mock');
       // gegen den echten Gastgeber: bis zum ersten Rundenende spielen
       this.ziel = +(M.param('zuege') || (this.mock ? 14 : 400));
@@ -642,12 +643,32 @@
         const unpassend = (v.hand || []).find(c => (h.playable || []).indexOf(c.id) < 0);
         if (unpassend) { await this.passtNichtTest(unpassend.id); return; }
       }
-      const spielbar = h.playable || [];
+      let spielbar = h.playable || [];
+      // Phase drawn: „Behalten“ muss sichtbar sein; draw_play "drawn" erlaubt nur die gezogene Karte, "any" jede passende
+      let beliebig = false;
+      // draw_play "any": manchmal freiwillig ziehen, obwohl etwas passt (danach darf jede passende Karte gelegt werden)
+      if (v.phase === 'turn' && h.can_draw && !(v.pending && v.pending.kind) && spielbar.length && v.rules && v.rules.draw_play === 'any' && this.zuege % 3 === 0) {
+        await this.ziehenMerken(antwort); return;
+      }
+      if (v.phase === 'drawn' && v.turn === v.seat) {
+        const any = !!(v.rules && v.rules.draw_play === 'any');
+        if (!h.can_keep || !app.tisch.aktionen.querySelector('button[data-a="keep"]')) this.fail('Nach dem Ziehen fehlt „Behalten“');
+        if (!spielbar.length) this.fail('Phase drawn, aber keine Karte passt');
+        if (this.gezogenId !== undefined && !any && spielbar.some(x => x !== this.gezogenId)) this.fail('Nach dem Ziehen andere Karte als die gezogene legbar (draw_play "drawn")');
+        if (this.zuege % 5 === 4) {
+          this.klick(app.tisch.aktionen.querySelector('button[data-a="keep"]')); await antwort();
+          if (this.errs > e0) this.fail('Behalten abgelehnt'); else this.haus.behalten++;
+          this.zuege++; return;
+        }
+        const andere = any && this.gezogenId !== undefined ? spielbar.filter(x => x !== this.gezogenId) : [];
+        if (andere.length) { spielbar = andere; beliebig = true; }
+      }
       if (spielbar.length) {
         // Hausregel-Karten zuerst (Kartentausch, Farbe ablegen, Ablegen-Joker, Glücksspiel), sonst reihum
         const artVon = x => M.Karten.zerlege((v.hand.find(c => c.id === x) || {}).face).art;
         const haus = spielbar.filter(x => VORRANG[artVon(x)]).sort((a, b) => VORRANG[artVon(a)] - VORRANG[artVon(b)]);
         const id = haus.length ? haus[0] : spielbar[this.zuege % spielbar.length];
+        if (beliebig) this.prot('BELIEBIG ' + id + ' statt ' + this.gezogenId);
         const c = v.hand.find(x => x.id === id);
         if (this.zuege % 3 === 1) await this.wischHoch(id);
         else { await this.tippe(id); if (app.tisch.hand.gewaehlt !== id) this.fail('Antippen hebt die Karte nicht an'); await this.tippe(id); }
@@ -663,16 +684,25 @@
         else {
           this.ereignisse.eigeneKarte = (this.ereignisse.eigeneKarte || 0) + 1;
           if (this.haus[artVon(id)] !== undefined) this.haus[artVon(id)]++;
+          if (beliebig) this.haus.beliebig++;
         }
         this.zuege++;
         return;
       }
       if (h.can_keep) { this.klick(app.tisch.aktionen.querySelector('button[data-a="keep"]')); await antwort(); this.zuege++; return; }
-      if (h.can_draw) { this.klick('#stapel'); await antwort(); this.zuege++; return; }
+      if (h.can_draw) { await this.ziehenMerken(antwort); return; }
       this.fail('Am Zug, aber keine Möglichkeit: ' + JSON.stringify(h));
       throw new Error('festgefahren');
     },
     // ohne Hervorhebung: unpassende Karte zweimal antippen → Hinweis „Die Karte passt nicht.“, keine Aktion; danach wieder an
+    // Ziehen über den Stapel und die gezogene Karte merken (für die Prüfung der Phase drawn)
+    async ziehenMerken(antwort) {
+      const vorher = new Set((this.v.hand || []).map(c => c.id));
+      this.klick('#stapel'); await antwort();
+      const neu = ((this.v && this.v.hand) || []).filter(c => !vorher.has(c.id));
+      this.gezogenId = neu.length === 1 ? neu[0].id : undefined;
+      this.zuege++;
+    },
     async passtNichtTest(id) {
       const app = this.app, t = app.tisch, seq0 = app.seq;
       this.ohneHervorheben = false;

@@ -1,6 +1,6 @@
 class_name RoundEndView
 extends Control
-# Rundenende und Sieg: Papierkarte mit „Mau-Mau!“, Gewinner, Platzierungen und Punkten (Runde und gesamt). Der Knopf
+# Rundenende und Sieg: Papierkarte (nachts dunkel, night > 0.5) mit „Mau-Mau!“, Gewinner, Platzierungen und Punkten (Runde und gesamt). Der Knopf
 # „Nächste Runde“ erscheint nur, wo er erlaubt ist (Platz 0 bzw. Gastgeber; der Tisch entscheidet über can_next).
 # ranking: Plätze in Reihenfolge (int oder {seat, points}); scores: Gesamtpunkte je Platz (Array oder Dictionary).
 
@@ -94,6 +94,13 @@ func show_result(players: Array, ranking: Array, scores: Variant, my_seat: int, 
 	queue_redraw()
 
 
+# Tag/Nacht des Tisches (TableView.set_night, 1.1.3): Karte nachts dunkel, Knopf dann cremefarben
+func set_night(v: float) -> void:
+	night = v
+	_button.night = 1.0 if v > 0.5 else 0.0
+	queue_redraw()
+
+
 func hide_view() -> void:
 	visible = false
 
@@ -137,7 +144,11 @@ func _draw() -> void:
 	var s := clampf(_appear, 0.0, 1.2)
 	var r := _panel_rect
 	draw_set_transform(r.get_center() * (1.0 - s), 0.0, Vector2(s, s))
-	var sb := UiTheme.box(UiPalette.PAPER, Color(UiPalette.INK, 0.12), 2, 34)
+	# Nachts (Tisch auf der dunklen Seite, 1.1.3) dunkle Karte mit heller Schrift, sonst Papier
+	var dark := night > 0.5
+	var ink := UiPalette.PAPER if dark else UiPalette.INK
+	var muted := UiPalette.MUTED_NIGHT if dark else UiPalette.MUTED_DAY
+	var sb := UiTheme.box(UiPalette.NIGHT_PANEL, Color(UiPalette.PAPER, 0.25), 2, 34) if dark else UiTheme.box(UiPalette.PAPER, Color(UiPalette.INK, 0.12), 2, 34)
 	sb.shadow_color = Color(0, 0, 0, 0.45)
 	sb.shadow_size = 26
 	sb.shadow_offset = Vector2(0, 12)
@@ -153,47 +164,47 @@ func _draw() -> void:
 	var y_title := r.position.y + 84.0 + (fs_title - 64) * 0.75
 	var tf := UiFonts.mau()
 	var tw := tf.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_title).x
-	draw_string(tf, Vector2(r.get_center().x - tw * 0.5, y_title), title, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_title, UiPalette.INK)
+	draw_string(tf, Vector2(r.get_center().x - tw * 0.5, y_title), title, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_title, ink)
 	var f := UiFonts.text(700, 100.0)
 	var sw := f.get_string_size(subtitle, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_sub).x
-	draw_string(f, Vector2(r.get_center().x - sw * 0.5, y_title + 38.0 + (fs_sub - 22)), subtitle, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_sub, UiPalette.MUTED_DAY)
+	draw_string(f, Vector2(r.get_center().x - sw * 0.5, y_title + 38.0 + (fs_sub - 22)), subtitle, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_sub, muted)
 	var y := r.position.y + 150.0 + _head_extra()
 	var nf := UiFonts.text(800, 90.0)
 	if scoring:
 		var hf := UiFonts.text(700, 85.0)
-		draw_string(hf, Vector2(r.end.x - 214.0, y + 4.0), "RUNDE", HORIZONTAL_ALIGNMENT_LEFT, -1, fs_head, UiPalette.MUTED_DAY)
-		draw_string(hf, Vector2(r.end.x - 108.0, y + 4.0), "GESAMT", HORIZONTAL_ALIGNMENT_LEFT, -1, fs_head, UiPalette.MUTED_DAY)
+		draw_string(hf, Vector2(r.end.x - 214.0, y + 4.0), "RUNDE", HORIZONTAL_ALIGNMENT_LEFT, -1, fs_head, muted)
+		draw_string(hf, Vector2(r.end.x - 108.0, y + 4.0), "GESAMT", HORIZONTAL_ALIGNMENT_LEFT, -1, fs_head, muted)
 		y += 10.0
 	for row in rows:
 		var ry := y + ROW_H * 0.5
 		if bool(row["me"]):
-			var hl := UiTheme.box(Color(UiPalette.FILL["gelb"], 0.35), Color(0, 0, 0, 0), 0, 18)
+			var hl := UiTheme.box(Color(UiPalette.FILL["gelb"], 0.22 if dark else 0.35), Color(0, 0, 0, 0), 0, 18)
 			draw_style_box(hl, Rect2(r.position.x + 26.0, y + 3.0, r.size.x - 52.0, ROW_H - 6.0))
 		var place := int(row["place"])
-		var medal := UiPalette.TURN if place == 1 else (Color("#C9CED8") if place == 2 else (Color("#D99A6C") if place == 3 else Color(UiPalette.INK, 0.12)))
+		var medal := UiPalette.TURN if place == 1 else (Color("#C9CED8") if place == 2 else (Color("#D99A6C") if place == 3 else Color(ink, 0.15)))
 		var mc := Vector2(r.position.x + 58.0, ry)
 		draw_circle(mc, 17.0, medal)
 		var pt := str(place)
 		var pw := nf.get_string_size(pt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_badge).x
-		draw_string(nf, mc + Vector2(-pw * 0.5, fs_badge * 0.35), pt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_badge, UiPalette.INK)
+		draw_string(nf, mc + Vector2(-pw * 0.5, fs_badge * 0.35), pt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_badge, UiPalette.INK if place <= 3 else ink)
 		var av := Vector2(r.position.x + 104.0, ry)
 		draw_circle(av, 18.0, UiPalette.avatar(int(row["seat"])))
 		var ini := str(row["name"]).substr(0, 1).to_upper()
 		var iw := nf.get_string_size(ini, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_badge).x
 		draw_string(nf, av + Vector2(-iw * 0.5, fs_badge * 0.35), ini, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_badge, UiPalette.INK)
 		var label := str(row["name"]) + ("  (du)" if bool(row["me"]) and str(row["name"]).to_lower() != "du" else "")
-		draw_string(f, Vector2(r.position.x + 136.0, ry + fs_name * 0.36), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_name, UiPalette.INK)
+		draw_string(f, Vector2(r.position.x + 136.0, ry + fs_name * 0.36), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_name, ink)
 		var detail := "fertig" if int(row["count"]) == 0 else "%d %s" % [int(row["count"]), "Karte" if int(row["count"]) == 1 else "Karten"]
 		if scoring:
 			var pts := "+%d" % int(row["points"]) if int(row["points"]) > 0 else "–"
-			draw_string(nf, Vector2(r.end.x - 214.0, ry + fs_num * 0.38), pts, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_num, UiPalette.INK)
-			draw_string(nf, Vector2(r.end.x - 108.0, ry + fs_num * 0.38), str(int(row["total"])), HORIZONTAL_ALIGNMENT_LEFT, -1, fs_num, UiPalette.INK)
+			draw_string(nf, Vector2(r.end.x - 214.0, ry + fs_num * 0.38), pts, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_num, ink)
+			draw_string(nf, Vector2(r.end.x - 108.0, ry + fs_num * 0.38), str(int(row["total"])), HORIZONTAL_ALIGNMENT_LEFT, -1, fs_num, ink)
 		else:
 			var dw := f.get_string_size(detail, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_detail).x
-			draw_string(f, Vector2(r.end.x - 44.0 - dw, ry + fs_detail * 0.38), detail, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_detail, UiPalette.MUTED_DAY)
+			draw_string(f, Vector2(r.end.x - 44.0 - dw, ry + fs_detail * 0.38), detail, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_detail, muted)
 		y += ROW_H
 	if _wait_label != "":
 		var fs_wait := UiFonts.px(20)
 		var ww := f.get_string_size(_wait_label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_wait).x
-		draw_string(f, Vector2(r.get_center().x - ww * 0.5, r.end.y - 46.0), _wait_label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_wait, UiPalette.MUTED_DAY)
+		draw_string(f, Vector2(r.get_center().x - ww * 0.5, r.end.y - 46.0), _wait_label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_wait, muted)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

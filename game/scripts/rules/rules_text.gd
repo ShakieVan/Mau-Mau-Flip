@@ -282,6 +282,9 @@ static func overview(config: RuleConfig = null) -> Array[Dictionary]:
 			draw += " Gelegt wird sie frühestens im nächsten Zug."
 	var voluntary := "Du darfst auch freiwillig ziehen; danach ist dein Zug vorbei." if cfg.drawn_card == "may_not" \
 		else "Du darfst auch freiwillig ziehen; dann darfst du nur die gezogene Karte legen."
+	if cfg.draw_play == "any" and cfg.draw_rule == "one":
+		voluntary = "Du darfst auch freiwillig ziehen. Hausregel: Danach darfst du %s passende Karte legen oder alles behalten; passt nichts, ist dein Zug vorbei." \
+			% ("eine andere" if cfg.drawn_card == "may_not" else "jede")
 	out.append({"title": "Spielzug", "text": "Lege eine Karte, die in Farbe, Zahl oder Symbol zur obersten Ablagekarte passt. Joker passen immer. %s %s" % [draw, voluntary]})
 	out.append({"title": "Helle Seite", "text": ("+1: Der Nächste zieht 1 und %s. Aussetzen: Der Nächste wird übersprungen. Richtungswechsel: Die Richtung dreht sich. Wünscher: Farbe wünschen. Wünscher +2: Farbe wünschen, der Nächste zieht 2 und %s.") % [cfg.penalty_tail(), cfg.penalty_tail()]})
 	out.append({"title": "Dunkle Seite", "text": ("+5: Der Nächste zieht 5 und %s. Alle aussetzen: Du bist sofort noch einmal dran. Richtungswechsel und Wünscher wie hell. Farbjagd: Farbe wünschen, der Nächste zieht, bis er diese Farbe hat, und %s.") % [cfg.penalty_tail(), cfg.penalty_tail()]})

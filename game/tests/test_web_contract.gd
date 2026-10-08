@@ -294,9 +294,27 @@ func pruefe_111(css: String, tisch: String, autotest: String, app: String, seite
 	check(tisch.contains("const blaseLinks = this.gross ||") and tisch.contains("if (this.gross) return { x: g.px - this.g.liste.w / 2 - 60")
 			and tisch.contains("w: t.g.sw }") and tisch.contains("w: t.g.aw,") and not tisch.contains("w: 118 }"),
 		"Großer Modus: Blasen, Einsatz und Flüge docken an Liste, Stapel und Ablage an")
+	# Beta 1.1.3 (Nutzerbefund S10): Liste breit wie in der App (big_layout.gd 0,365), Stapel und Ablage nebeneinander mit Abstand
+	check(tisch.contains("Math.min(620, W * 0.365)") and tisch.contains("spalt = 30 + 54 * gk") and tisch.contains("_listeZeilen(nl)")
+			and css.contains("width: var(--lw, 440px); height: var(--zh0)") and css.contains("calc(48px * var(--fs)), calc(var(--zh0) * .5)"),
+		"Großer Modus im Browser: breite Liste mit großen Namen, Ablage überdeckt den Stapel nicht")
 	check(tisch.contains("this.app.zugVibration()") and app.contains("zugVibration() {") and app.contains("!this.einstellungen.zug_vibration || !navigator.vibrate")
 			and autotest.contains("Großer Modus: Spieler am Zug steht nicht oben"),
 		"Bei deinem Zug: eigene Vibrations-Einstellung; Selbsttest prüft die Liste im großen Modus")
+
+
+# Beta 1.1.3: Hausregel draw_play "any" (nach dem Ziehen jede passende Karte), Strafplakette als eigene Ebene, Fenster nachts
+func pruefe_113(css: String, tisch: String, mock: String, autotest: String, app: String) -> void:
+	check(mock.contains("draw_play:") and mock.contains("REGELN.draw_play !== 'any' && id !== this.gezogen") and app.contains("beliebigNachZiehen(v)")
+			and app.contains("v.rules.draw_play === 'any'"),
+		"draw_play „any“: Mock lässt nach dem Ziehen jede passende Karte zu, Hinweise im Client passen dazu")
+	check(autotest.contains("Nach dem Ziehen fehlt „Behalten“") and autotest.contains("this.haus.beliebig++") and autotest.contains("draw_play \"drawn\")"),
+		"autotest.js prüft die Phase drawn (Behalten, nur gezogene bzw. jede passende Karte)")
+	check(tisch.contains("this.offenEl = el('div', 'offen')") and tisch.contains("b.appendChild(this.offenEl)") and not tisch.contains("<div class=\"offen\">")
+			and css.contains(".buehne > .offen {") and css.contains("z-index: 45; pointer-events: none") and css.contains("#tisch.gross .buehne > .offen"),
+		"Strafplakette liegt als eigene Ebene über Ablage, Seitenstapel und Farbe (auch im großen Modus)")
+	check(tisch.contains("document.body.dataset.seite = seite") and css.contains("body[data-screen=\"tisch\"][data-seite=\"dunkel\"] .modal-karte"),
+		"Fenster (Menü, Regeln, So geht's, Hilfe) folgen am Tisch Tag/Nacht")
 
 
 func run() -> void:
@@ -404,6 +422,7 @@ func run() -> void:
 	pruefe_014(css, tisch, karten, mock, autotest, app, seite)
 	pruefe_102(css, karten, app, seite)
 	pruefe_111(css, tisch, autotest, app, seite)
+	pruefe_113(css, tisch, mock, autotest, app)
 	# Pegel der Spieltöne relativ zum Mau-Ton (normal) wie in der App (AppSound.TON_DB gegen MAU_DB), auf 0,5 dB genau
 	var stufen := RegEx.create_from_string("STUFEN_SPIEL = \\{ aus: 0, leise: ([0-9.]+), normal: ([0-9.]+) \\}").search(ton)
 	var pegel := []

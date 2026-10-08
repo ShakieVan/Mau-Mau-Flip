@@ -3,12 +3,13 @@ extends Control
 # Persönliche Einstellungen im Spiel (Beta 1.1.2, ☰ → „Einstellungen“): Überlagerung über dem Tisch, die Partie läuft weiter.
 # Dieselben Zeilen wie im Einstellungsbildschirm (SettingsScreen.personal: Ton, Schrift, großer Modus, Hervorheben, Vibration,
 # Effekte, Tempo der Computergegner nur mit Computergegnern). Jede Änderung landet sofort in App.settings und wirkt live am Tisch.
-# Papierkarte auch nachts (die Bedienelemente sind für Papier gestaltet). Schließen per Knopf, Tipp daneben oder Zurück-Taste
+# Tags Papierkarte, nachts dunkle Karte mit heller Schrift (folgt dem Tisch live, auch beim Flip; 1.1.3). Schließen per Knopf, Tipp daneben oder Zurück-Taste
 # (TableScreen.on_back). Keine Karten (Regel 15).
 
 signal closed
 
 var _card: PanelContainer
+var night := false
 
 
 static func open(parent: Node, tempo := false) -> IngameSettings:
@@ -16,6 +17,7 @@ static func open(parent: Node, tempo := false) -> IngameSettings:
 	o.theme = UiTheme.get_theme()
 	parent.add_child(o)
 	o._build(tempo)
+	TableView.follow_night(o, o.set_night)
 	return o
 
 
@@ -86,3 +88,10 @@ func close() -> void:
 		return
 	closed.emit()
 	queue_free()
+
+
+# Tag/Nacht des Tisches (TableView.follow_night): nachts dunkle Karte mit heller Schrift und hellen Bedienelementen
+func set_night(on: bool) -> void:
+	night = on
+	if _card != null:
+		ScreenKit.set_card_night(_card, on)

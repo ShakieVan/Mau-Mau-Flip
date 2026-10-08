@@ -14,6 +14,7 @@ extends RefCounted
 # wird sofort. „Mau!“ ruft er vor dem Setzen der vorletzten Karte.
 # Farbe mit ablegen (Hausregel): bevorzugt, wenn die Karte mindestens 2 weitere mitnimmt oder die Hand leert; der Ablegen-Joker
 # wählt die Farbe mit den meisten Karten. „Mau!“ ruft er vor jedem Legen, nach dem genau 1 Karte bleibt.
+# Nach dem Ziehen mit draw_play = any (Hausregel): beste passende Karte nach der Zug-Taktik, sonst behalten.
 # Liefert {} wenn der Platz nichts zu tun hat; die Spielsteuerung fragt Bots daher auch außerhalb ihres Zugs (Erwischen).
 
 const COLOR_SHARE := 26.0 / 112.0    # Anteil der Karten einer Farbe (je Seite)
@@ -521,6 +522,15 @@ static func _drawn(view: Dictionary, hints: Dictionary, rng: RandomNumberGenerat
 	if playable.is_empty():
 		return {"a": "keep"} if can_keep else {}
 	var id := int(playable[0])
+	# Hausregel draw_play = any: beste passende Karte wie im normalen Zug wählen (Ziehen geht nicht mehr), dann wie unten prüfen,
+	# ob Behalten besser ist.
+	if str((view.get("rules", {}) as Dictionary).get("draw_play", "drawn")) == "any" and playable.size() > 1:
+		var th := hints.duplicate()
+		th["can_draw"] = false
+		var pick := _turn(view, th, rng, level)
+		if str(pick.get("a", "")) != "play":
+			return {"a": "keep"} if can_keep else _play(view, id, rng)
+		id = int(pick.card)
 	if can_keep and level > 0:
 		var bluff_mode := str((view.get("rules", {}) as Dictionary).get("wild_restriction", "free")) == "bluff"
 		if bluff_mode and _is_bluff(view, id):

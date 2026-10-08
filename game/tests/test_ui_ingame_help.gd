@@ -129,14 +129,23 @@ func run() -> void:
 	check(help.night, "Nachtseite")
 	var night_lbl := 0
 	for n in help.find_children("*", "Label", true, false):
-		if (n as Label).theme_type_variation == "NightLabel":
+		if (n as Label).get_theme_color("font_color").get_luminance() > 0.6:
 			night_lbl += 1
 	check(night_lbl > 10, "helle Schrift nachts")
 	var other_tab := help.find_child("Reiter_bedienung", true, false) as Button
 	check(other_tab != null and other_tab.get_theme_color("font_color") == UiPalette.PAPER, "nicht gewählter Reiter nachts hell")
 	help.show_tab("bedienung")
 	var rules_tab := help.find_child("Reiter_regeln", true, false) as Button
-	check(rules_tab.get_theme_color("font_color") == UiPalette.PAPER and not other_tab.has_theme_color_override("font_color"), "Reiterwechsel nachts: Farben getauscht")
+	check(rules_tab.get_theme_color("font_color") == UiPalette.PAPER and other_tab.get_theme_color("font_color") == UiPalette.INK, "Reiterwechsel nachts: Farben getauscht")
+	# Flip während die Hilfe offen ist: Karte wechselt live auf Papier und zurück (1.1.3)
+	var card := help.get("_card") as PanelContainer
+	ts.table.night = 0.0
+	await frames(1)
+	check(not help.night and (card.get_theme_stylebox("panel") as StyleBoxFlat).bg_color == UiPalette.PAPER
+		and rules_tab.get_theme_color("font_color") == UiPalette.INK, "Flip auf Tag: Papierkarte, dunkle Schrift")
+	ts.table.night = 1.0
+	await frames(1)
+	check(help.night and (card.get_theme_stylebox("panel") as StyleBoxFlat).bg_color == UiPalette.NIGHT_PANEL, "Flip auf Nacht: dunkle Karte")
 	help.close()
 	await frames(1)
 	check(not ts.is_help_open(), "Schließen-Knopf")

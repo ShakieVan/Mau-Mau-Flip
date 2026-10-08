@@ -139,15 +139,17 @@
       this.stapel.appendChild(this.stapelOben);
       this.stapelZahl = el('div', 'stapelzahl'); b.appendChild(this.stapelZahl);
       this.farbe = el('div', 'farbanzeige'); b.appendChild(this.farbe);
-      this.ablage = el('div', 'ablage', '<div class="farbring"></div><div class="karten"></div><div class="offen"></div>');
+      this.ablage = el('div', 'ablage', '<div class="farbring"></div><div class="karten"></div>');
       b.appendChild(this.ablage);
       this.farbring = this.ablage.querySelector('.farbring');
       this.ablageKarten = this.ablage.querySelector('.karten');
-      this.offenEl = this.ablage.querySelector('.offen');
+      // Strafplakette (offene Ziehstrafe) als eigene Ebene auf der Bühne: liegt über Ablage, Seitenstapel und Farbe
+      this.offenEl = el('div', 'offen'); this.offenEl.hidden = true;
       // Ablage durchsehen (view.discard_log): Tipp auf die Ablage schiebt die oberste Karte auf den Seitenstapel daneben
       this.seiten = el('div', 'seitenstapel', '<div class="zaehler"></div><div class="karten"></div><div class="info"><b class="von"></b><span class="wunsch"></span></div>');
       this.seiten.id = 'seitenstapel'; this.seiten.hidden = true;
       b.appendChild(this.seiten);
+      b.appendChild(this.offenEl);
       this.seitenKarten = this.seiten.querySelector('.karten');
       this.durch = 0; this._durchSig = '';
       this.leiste = el('div', 'leiste', '<div class="hinweis"></div><div class="aktionen"></div>');
@@ -268,6 +270,7 @@
       setz(this.farbe, cx, cy);
       setz(this.ablage, cx + 177, cy);
       setz(this.seiten, cx + 177 + SEITE_DX, cy);
+      setz(this.offenEl, cx + 177 + 50, cy - 128);
       setz(this.leiste, cx, H - 212);
       setz(this.farbwahl, cx + 177, cy);
       setz(this.automat, cx - 2, cy + 10);
@@ -277,24 +280,32 @@
       this.ichZahl.style.top = (H - 222) + 'px';
       setz(this.ichKranz, cx, H);
     }
-    // Großer Modus: links riesig Stapel und Ablage (Hand darf die untere Hälfte überdecken), daneben die Farbe groß, rechts die
-    // Spielerliste (wer dran ist, oben). Stapel und Ablage werden per --gk vergrößert (style.css #tisch.gross).
+    // Großer Modus: links riesig Stapel und Ablage nebeneinander (Hand darf die untere Hälfte überdecken), daneben die Farbe groß,
+    // rechts die Spielerliste (wer dran ist, oben). Stapel und Ablage werden per --gk vergrößert (style.css #tisch.gross).
+    // Liste wie in der App (big_layout.gd list_rect, 1.1.2) etwa 36 % der Breite; die Stapel bekommen, was zwischen Menü-Knopf,
+    // Farbspalte und Liste bleibt. Der Abstand rechnet die Überstände mit ein: unterste Stapelkarten (8 px versetzt, −3°) und die
+    // älteren Ablagekarten (bis 24 px nach links versetzt, bis ±11° gedreht), sonst läge die Ablage auf dem Stapel.
     _geometrieGross() {
-      const W = this.W, H = this.H, LW = 330, rand = 18, links = 116;
-      const frei = W - LW - rand - 30 - links;
+      const W = this.W, H = this.H, rand = 18, links = 130, FARBE_MIN = 200;
+      const LW = Math.round(Math.max(440, Math.min(620, W * 0.365)));
+      const lx0 = W - rand - LW;
       const VH = K().VERHAELTNIS;
-      const kw = Math.max(150, Math.min(360, (frei - 40 - 200) / 2.05, (H * 0.8) / VH));
-      const gk = kw / 118, aw = 124 * gk, kh = kw * VH;
-      const cy = Math.round(18 + kh / 2), sx = links + kw / 2, ax = sx + kw / 2 + 40 + aw / 2;
-      const mx = Math.round((W - LW - rand) / 2), cx = W / 2;
+      const frei = lx0 - 16 - links - FARBE_MIN;
+      // 2·kw + Spalt(30 + 54·gk) + Ablage-Mehrbreite (6·gk) ≤ frei, gk = kw / 118
+      const kw = Math.max(130, Math.min(360, (H * 0.8) / VH, (frei - 30) / (2 + 60 / 118)));
+      const gk = kw / 118, aw = 124 * gk, kh = kw * VH, spalt = 30 + 54 * gk;
+      const cy = Math.round(18 + kh / 2), sx = links + kw / 2, ax = sx + kw / 2 + spalt + aw / 2;
+      const mx = Math.round((links + lx0) / 2), cx = W / 2;
       this.g = { cx, cy, mx, stapel: { x: sx, y: cy }, ablage: { x: ax, y: cy }, sw: kw, aw };
       const setz = (e, x, y) => { e.style.left = x + 'px'; e.style.top = y + 'px'; };
       this.root.style.setProperty('--gk', gk.toFixed(3));
+      this.root.style.setProperty('--lw', LW + 'px');
       setz(this.stapel, sx, cy);
       setz(this.stapelZahl, sx, Math.round(cy + kh * 0.08));   // als Schild auf dem Stapel (unten liegt die Hand)
-      setz(this.farbe, Math.min(ax + aw / 2 + 105, W - LW - rand - 90), Math.round(cy - kh * 0.2));
+      setz(this.farbe, Math.round((ax + aw / 2 + lx0) / 2), Math.round(cy - kh * 0.2));   // Mitte der Farbspalte
       setz(this.ablage, ax, cy);
       setz(this.seiten, ax + aw / 2 + 40, cy);
+      setz(this.offenEl, Math.round(ax + aw * 0.04), Math.round(cy - kh / 2 + 14));   // oben rechts auf der Ablage (oben ist kein Platz, unten liegt die Hand)
       setz(this.leiste, mx, H - 258);
       setz(this.farbwahl, ax, cy);
       setz(this.automat, mx, cy + 10);
@@ -302,10 +313,20 @@
       this.knSort.style.top = (H - 178) + 'px';
       this.knRueck.style.top = (H - 96) + 'px';
       setz(this.ichKranz, cx, H);
-      // Spielerliste: Zeilen ab oben (unter dem Ton-Knopf) bis über den Mau-Knopf
-      const top = 150, zeile = 80, unten = H - 250;
-      this.g.liste = { x: W - rand - LW / 2, top, zeile, cap: Math.max(2, Math.floor((unten - top) / zeile)), w: LW };
-      setz(this.listeKopf, W - rand - LW / 2, top - 22);
+      // Spielerliste: Kopf „Reihenfolge“ links neben dem Ton-Knopf, Zeilen darunter bis über den Mau-Knopf. Zeilenhöhe und Zahl
+      // der sichtbaren Zeilen richten sich nach der Zahl der Einträge (_listeZeilen, wie BigLayout.list_rows).
+      const top = 124, unten = H - 244;
+      this.g.liste = { x: lx0 + LW / 2, top, hoehe: Math.max(90, unten - top), zeile: 100, cap: 3, w: LW, n: 0 };
+      setz(this.listeKopf, Math.round((lx0 + W - 34 - 84 - 10) / 2), 68);
+      this._listeZeilen(this.v ? (this.v.players || []).length : 4);
+    }
+    // Zeilen der großen Liste für n Einträge: Abstand 86–124 Bühnenpixel, so viele, wie hineinpassen; --zh = Zeilenhöhe (style.css)
+    _listeZeilen(n) {
+      const L = this.g.liste;
+      if (!L || L.n === n) return;
+      const zeile = Math.max(86, Math.min(124, L.hoehe / Math.max(1, n)));
+      L.n = n; L.zeile = zeile; L.cap = Math.max(2, Math.floor(L.hoehe / zeile + 0.01));
+      this.root.style.setProperty('--zh', Math.round(zeile - 10) + 'px');
     }
     // Position eines Platzes (Bühnenkoordinaten) für Flüge und Abzeichen
     platzPos(seat) {
@@ -337,7 +358,7 @@
         this._wechselBis = 0;
         r.classList.add('sofort');
         r.classList.remove('wechselt', 'halb'); h.classList.remove('wechsel');
-        r.dataset.seite = seite;
+        r.dataset.seite = seite; document.body.dataset.seite = seite;   // Fenster (Menü, Regeln, Hilfe …) folgen Tag/Nacht (style.css)
         void r.offsetWidth;
         requestAnimationFrame(() => requestAnimationFrame(() => r.classList.remove('sofort')));
         if (this.app.themaFarbe) this.app.themaFarbe();
@@ -347,7 +368,7 @@
       const laeuft = this.wechselRest() > 0;
       r.classList.add('wechselt');   // Übergänge nur jetzt (style.css)
       r.classList.remove('halb');
-      r.dataset.seite = seite;
+      r.dataset.seite = seite; document.body.dataset.seite = seite;   // Fenster (Menü, Regeln, Hilfe …) folgen Tag/Nacht (style.css)
       if (!laeuft) {
         h.classList.remove('wechsel');
         if (!this.app.effekteReduziert()) { void h.offsetWidth; h.classList.add('wechsel'); }
@@ -464,6 +485,7 @@
       const richtungNeu = this._listeDir !== undefined && this._listeDir !== dir;
       this._listeDir = dir;
       if (gross) {
+        this._listeZeilen(nl);
         this.listeKopf.classList.toggle('gegen', dir === -1);
         if (richtungNeu && !this.app.effekteReduziert()) { this.listeKopf.classList.remove('wendet'); void this.listeKopf.offsetWidth; this.listeKopf.classList.add('wendet'); }
       }

@@ -23,6 +23,7 @@
   const HAUS = !!P('haus') || ['gluecksspiel', 'einsatz', 'tausch', 'ablegen', 'ablegejoker'].indexOf(P('szene') || '') >= 0;
   const REGELN = {
     round_end: 'first', scoring: 'none', target: 500, hand_size: 7, draw_rule: 'one', drawn_card: 'may', stacking: 'off',
+    draw_play: P('beliebig') || HAUS ? 'any' : 'drawn',
     wild_restriction: P('bluff') ? 'bluff' : 'free', wild_counts_for_bluff: true, jagd_wild_stops: false, mau_call: 'catch', mau_penalty: 2,
     backs_visible: true, peek_own_backs: true, two_player_reverse_skips: true, flip_last_card: 'execute', penalty_turn: 'skip',
     swap_cards: HAUS ? 'on' : 'off', swap_direction: { spiel: 'play', gegen: 'counter', gegenspiel: 'against' }[P('richtung')] || 'clockwise',
@@ -94,7 +95,8 @@
     }
     passt(id) {
       const k = z(this.f(id)), t = z(this.f(this.top()));
-      if (this.phase === 'drawn' && id !== this.gezogen) return false;
+      // draw_play "drawn": nach dem Ziehen nur die gezogene Karte; "any": jede passende Karte der Hand
+      if (this.phase === 'drawn' && REGELN.draw_play !== 'any' && id !== this.gezogen) return false;
       if (JOKER[k.art]) return true;
       if (k.farbe === this.farbe) return true;
       return k.art === 'zahl' ? (t.art === 'zahl' && t.wert === k.wert) : (k.art === t.art);
@@ -305,7 +307,9 @@
           const id = this.zieheEine(s, ev);
           if (id === null) { this.dran = this.naechster(s); return { ok: true, events: ev }; }
           ev.push(s === ICH ? { e: 'draw', seat: s, count: 1, faces: [this.f(id)] } : { e: 'draw', seat: s, count: 1 });
-          if (this.passt(id)) { this.phase = 'drawn'; this.gezogen = id; } else this.dran = this.naechster(s);
+          // Phase drawn bleibt, solange irgendeine erlaubte Karte passt (bei "any" auch eine andere als die gezogene)
+          this.phase = 'drawn'; this.gezogen = id;
+          if (!this.spielbar(s).length) { this.phase = 'turn'; this.gezogen = null; this.dran = this.naechster(s); }
           return { ok: true, events: ev };
         }
         case 'keep':
@@ -438,7 +442,7 @@
       else if (this.phase === 'discard_pick' && this.pick) h.text = this.pick.seat === ich ? (this.pick.joker ? 'Wähl die Karten, die du mit ablegst – dann die Spielfarbe.' : 'Wähl die Karten, die du mit ablegst.') : name(this.pick.seat) + ' wählt Karten zum Mitablegen.';
       else if (h.need_color) h.text = 'Oben liegt ein Joker – wähle die Farbe.';
       else if (h.can_challenge) h.text = name(this.fordern.von) + ' legt ' + M.Karten.kartenName(this.f(this.top())) + '. Anzweifeln oder annehmen?';
-      else if (meinZug && this.phase === 'drawn') h.text = 'Gezogene Karte legen oder behalten.';
+      else if (meinZug && this.phase === 'drawn') h.text = REGELN.draw_play === 'any' ? 'Passende Karte legen oder behalten.' : 'Gezogene Karte legen oder behalten.';
       else if (meinZug) h.text = spielbar.length ? 'Du bist dran.' : 'Du bist dran – nichts passt, zieh eine Karte.';
       else h.text = name(this.dran) + ' ist dran.';
       const sicht = {
@@ -452,7 +456,8 @@
         hand: hand.map(id => ({ id, face: this.f(id), back: REGELN.peek_own_backs ? this.b(id) : undefined })),
         top: { id: this.top(), face: this.f(this.top()) },
         // Ablage von unten nach oben (öffentlich, für „Ablage durchsehen“): {f, s, c, h}
-        discard_log: this.ablage.map(id => ({ f: this.verdeckt.has(id) ? '' : this.f(id), s: id in this.leger ? this.leger[id] : -1, c: this.wunsch[id] || '', h: this.verdeckt.has(id) })),
+        // verdeckter Einsatz ohne Gesicht – außer ganz oben (nach einem Flip liegt er offen), wie MauGame._discard_log
+        discard_log: this.ablage.map((id, i, a) => { const h = this.verdeckt.has(id) && i < a.length - 1; return { f: h ? '' : this.f(id), s: id in this.leger ? this.leger[id] : -1, c: this.wunsch[id] || '', h }; }),
         draw_back: this.stapel.length ? this.b(this.stapel[this.stapel.length - 1]) : '',
         draw_count: this.stapel.length,
         pending: null,
@@ -526,8 +531,14 @@
           this.phase = 'challenge'; this.dran = ICH;
         }
       } else if (name === 'gezogen') {
-        const id = nimm(k => k.farbe === this.farbe && k.art === 'zahl');
+        // Bei draw_play "any": die gezogene Karte passt nicht, eine andere auf der Hand aber schon
+        const tw = z(this.f(this.top())).wert;
+        const id = REGELN.draw_play === 'any' ? nimm(k => k.art === 'zahl' && k.farbe !== this.farbe && k.wert !== tw) : nimm(k => k.farbe === this.farbe && k.art === 'zahl');
         if (id !== null) { hand.push(id); this.gezogen = id; this.phase = 'drawn'; }
+        if (REGELN.draw_play === 'any' && !this.spielbar(ICH).length) {
+          const p = nimm(k => k.farbe === this.farbe && k.art === 'zahl');
+          if (p !== null) { this.stapel.unshift(hand.shift()); hand.unshift(p); }
+        }
       } else if (name === 'mau') {
         while (hand.length > 2) this.stapel.unshift(hand.pop());
         const t = z(this.f(this.top()));

@@ -46,6 +46,8 @@ if [ "$MODUS" != "--nur-bilder" ]; then
 	autotest einsatz "&szene=einsatz&seed=4"
 	# großer Modus: Liste; fertiger Spieler (mock.js fertig=2, nur Anzeige) verschwindet
 	autotest gross_fertig "&gross=1&fertig=2&seed=8"
+	# Hausregel „Nach dem Ziehen: beliebige Karte legen“ (draw_play any, 1.1.3): freiwillig ziehen, dann andere Karte legen
+	autotest beliebig "&beliebig=1&pflicht=beliebig&seed=21"
 fi
 
 # ---------- 2. Kontrollbilder ----------

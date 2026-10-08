@@ -4,7 +4,7 @@ extends Control
 #   Reiter „Regeln“: die aktiven Regeln dieser Partie (view.rules → RulesText.overview) samt „Besondere Karten“
 #                    (RulesScreen.special_cards mit kleinen Kartenbildern) und „Kurz gesagt“; nur lesen, blätterbar.
 #   Reiter „So geht's“: Bedienung und Gesten (RulesText.controls).
-# Die Partie läuft weiter; Schließen per Knopf, Tipp daneben oder Zurück-Taste (TableScreen.on_back). Tag/Nacht nach dem Tisch,
+# Die Partie läuft weiter; Schließen per Knopf, Tipp daneben oder Zurück-Taste (TableScreen.on_back). Tag/Nacht nach dem Tisch (live, 1.1.3),
 # Schriftgrößen aus UiFonts (live über UiFonts.rescale_tree). show_cards = false lässt die Kartenbilder weg (Regel 15:
 # Sichtschutz beim Weitergeben zeigt keine Karten; der Tisch schließt die Überlagerung ohnehin, sobald er erscheint).
 
@@ -30,6 +30,7 @@ static func open(parent: Node, rules: Variant, is_night: bool, cards := true, fi
 	o.tab = first_tab
 	parent.add_child(o)
 	o._build()
+	TableView.follow_night(o, o.set_night)
 	return o
 
 
@@ -48,7 +49,8 @@ func _build() -> void:
 		m.add_theme_constant_override("margin_" + side, 24)
 	m.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(m)
-	_card = ScreenKit.card(26.0, night)
+	_card = ScreenKit.card(26.0)
+	ScreenKit.set_card_night(_card, night)
 	m.add_child(_card)
 	var v := ScreenKit.vbox(12)
 	_card.add_child(v)
@@ -83,12 +85,7 @@ func show_tab(which: String) -> void:
 		var b: Button = _tabs[k]
 		b.set_pressed_no_signal(k == tab)
 		b.theme_type_variation = "PrimaryButton" if k == tab else "GhostButton"
-		# nachts ist der nicht gewählte Reiter sonst dunkle Schrift auf dunkler Karte (Gerätetest 1.1.2)
-		for fc in ["font_color", "font_hover_color", "font_focus_color", "font_pressed_color", "font_hover_pressed_color"]:
-			if night and k != tab:
-				b.add_theme_color_override(fc, UiPalette.PAPER)
-			else:
-				b.remove_theme_color_override(fc)
+		# nachts hell auf dunkler Karte: das Nachtthema der Karte (ScreenKit.night_theme) färbt GhostButton (Gerätetest 1.1.2)
 	for c in _content.get_children():
 		_content.remove_child(c)
 		c.queue_free()
@@ -145,18 +142,23 @@ func _section(title: String, text: String) -> void:
 
 
 func _heading(text: String, fs: int) -> Label:
-	var l := ScreenKit.label(text, "NightLabel" if night else "", fs)
+	var l := ScreenKit.label(text, "", fs)
 	l.add_theme_font_override("font", UiFonts.text(800))
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	return l
 
 
 func _text(text: String, fs: int, muted := false) -> Label:
-	var l := ScreenKit.label(text, "NightLabel" if night else ("HintLabel" if muted else ""), fs)
+	var l := ScreenKit.label(text, "HintLabel" if muted else "", fs)
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	if night and muted:
-		l.modulate.a = 0.75
 	return l
+
+
+# Tag/Nacht des Tisches (TableView.follow_night, auch beim Flip während die Hilfe offen ist): Farben über das Nachtthema der Karte
+func set_night(on: bool) -> void:
+	night = on
+	if _card != null:
+		ScreenKit.set_card_night(_card, on)
 
 
 func _draw() -> void:

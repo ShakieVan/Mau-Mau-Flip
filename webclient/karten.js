@@ -195,6 +195,7 @@
     z.push((r.hand_size || 7) + ' Karten zu Beginn.');
     z.push(r.draw_rule === 'until_playable' ? 'Ziehen: so lange, bis eine Karte passt.' : 'Ziehen: eine Karte.');
     z.push({ must: 'Eine passende gezogene Karte muss gelegt werden.', may_not: 'Eine gezogene Karte darf nicht sofort gelegt werden.' }[r.drawn_card] || 'Eine passende gezogene Karte darf sofort gelegt werden.');
+    if (r.draw_play === 'any' && r.draw_rule !== 'until_playable') z.push('Nach dem Ziehen darfst du ' + (r.drawn_card === 'may_not' ? 'eine andere' : 'jede') + ' passende Karte legen oder alles behalten.');
     if (r.stacking === 'same') z.push('Gleiche Ziehkarten dürfen gestapelt werden.');
     if (r.penalty_turn === 'play') z.push('Nach dem Strafziehen bist du trotzdem dran und darfst legen.');
     z.push(r.wild_restriction === 'enforce' ? 'Wünscher +2 und Farbjagd nur ohne Karte der aktuellen Farbe (App prüft).' : 'Wünscher +2 und Farbjagd sind immer erlaubt.');

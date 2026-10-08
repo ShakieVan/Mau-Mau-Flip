@@ -144,8 +144,20 @@ func run() -> void:
 	await frames(2)
 	var sb := burger.get_theme_stylebox("normal") as StyleBoxFlat
 	check(sb != null and sb.border_color.get_luminance() > 0.6, "nachts heller Rand")
+	ts.open_menu()
+	await frames(1)
+	var mn := ts.get("_ingame_menu") as IngameMenu
+	check(mn.night and (mn.find_child("Wahl_regeln", true, false) as Button).get_theme_color("font_color") == UiPalette.PAPER, "Menü nachts: helle Wahl auf dunkler Karte")
+	mn.close()
+	await frames(1)
 	ts.open_settings()
 	await frames(2)
+	var ov_n: IngameSettings = ts.get("_settings_ov")
+	var ov_card := ov_n.get("_card") as PanelContainer
+	var lbl_n := ov_n.find_child("Abschnitt", true, false).get_child(0) as Label
+	check(ov_n.night and (ov_card.get_theme_stylebox("panel") as StyleBoxFlat).bg_color == UiPalette.NIGHT_PANEL and lbl_n.get_theme_color("font_color") == UiPalette.PAPER, "Einstellungen nachts: dunkle Karte, helle Schrift")
+	var ghost := ov_n.find_child("Probehoeren", true, false) as Button
+	check(ghost.get_theme_color("font_color") == UiPalette.PAPER, "nachts helle Geisterknöpfe")
 	if OS.get_environment("SHOT") == "1":
 		await create_timer(0.5).timeout
 		var img_night := root.get_texture().get_image()

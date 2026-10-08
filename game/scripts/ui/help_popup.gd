@@ -15,6 +15,7 @@ var _kicker: Label
 var _body: RichTextLabel
 var _col: VBoxContainer
 var _close_btn: PillButton
+var night := false
 
 
 func _init() -> void:
@@ -27,11 +28,6 @@ func _init() -> void:
 	_dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_dim)
 	_panel = PanelContainer.new()
-	var sb := UiTheme.box(UiPalette.PAPER, Color(UiPalette.INK, 0.12), 2, 34, 34.0, 30.0)
-	sb.shadow_color = Color(0, 0, 0, 0.45)
-	sb.shadow_size = 24
-	sb.shadow_offset = Vector2(0, 10)
-	_panel.add_theme_stylebox_override("panel", sb)
 	add_child(_panel)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 34)
@@ -83,7 +79,27 @@ func _init() -> void:
 	col.add_child(close_btn)
 	_col = col
 	_close_btn = close_btn
+	set_night(false)
 	_apply_font_sizes()
+
+
+# Tag/Nacht des Tisches (TableView.set_night, 1.1.3): nachts dunkle Karte mit heller Schrift, tags Papier. Der Knopf wird
+# nachts cremefarben, die Karte bleibt gleich.
+func set_night(on: bool) -> void:
+	night = on
+	var sb: StyleBoxFlat
+	if on:
+		sb = UiTheme.box(UiPalette.NIGHT_PANEL, Color(UiPalette.PAPER, 0.25), 2, 34, 34.0, 30.0)
+	else:
+		sb = UiTheme.box(UiPalette.PAPER, Color(UiPalette.INK, 0.12), 2, 34, 34.0, 30.0)
+	sb.shadow_color = Color(0, 0, 0, 0.45)
+	sb.shadow_size = 24
+	sb.shadow_offset = Vector2(0, 10)
+	_panel.add_theme_stylebox_override("panel", sb)
+	_kicker.add_theme_color_override("font_color", UiPalette.MUTED_NIGHT if on else UiPalette.MUTED_DAY)
+	_title.add_theme_color_override("font_color", UiPalette.PAPER if on else UiPalette.INK)
+	_body.add_theme_color_override("default_color", UiPalette.PAPER if on else UiPalette.INK)
+	_close_btn.night = 1.0 if on else 0.0   # nachts cremefarben gefüllt (dunkler Knopf wäre auf der dunklen Karte kaum zu sehen)
 
 
 # Schriftgrößen aus UiFonts (Einstellung „Schriftgröße“); die Textspalte wächst mit, damit der Text nicht zu hoch wird

@@ -1,6 +1,6 @@
 class_name ConfirmBox
 extends Control
-# Rückfrage als Papierkarte über abgedunkeltem Hintergrund („Partie verlassen?“). Tipp daneben = Abbrechen.
+# Rückfrage als Papierkarte (am Tisch nachts dunkel) über abgedunkeltem Hintergrund („Partie verlassen?“). Tipp daneben = Abbrechen.
 
 signal answered(yes: bool)
 
@@ -14,7 +14,14 @@ static func ask(parent: Node, title_text: String, text: String, yes_text: String
 	box.theme = UiTheme.get_theme()
 	parent.add_child(box)
 	box._build(title_text, text, yes_text, no_text)
+	TableView.follow_night(box, box.set_night)   # am Tisch nachts dunkle Karte (1.1.3), sonst Papier
 	return box
+
+
+# Tag/Nacht des Tisches (TableView.follow_night): nachts dunkle Karte mit heller Schrift
+func set_night(on: bool) -> void:
+	if _card != null:
+		ScreenKit.set_card_night(_card, on)
 
 
 func _init() -> void:

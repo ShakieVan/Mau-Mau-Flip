@@ -363,9 +363,40 @@ func _act_draw(seat: int, ev: Array) -> String:
 	if config.drawn_card != "may_not" and _matches(f) and _restriction_ok(seat, id, f):
 		drawn_id = id
 		state = "drawn"
+	elif _draw_any():
+		# Hausregel „Nach dem Ziehen: beliebige Karte legen“: Phase drawn, solange irgendeine Karte passt.
+		drawn_id = id
+		state = "drawn"
+		if not _has_playable(seat):
+			drawn_id = -1
+			state = "turn"
+			_advance(seat, false, ev)
 	else:
 		_advance(seat, false, ev)
 	return ""
+
+
+# Gilt nach dem freiwilligen Ziehen die Hausregel draw_play = any? (Nicht bei until_playable, nicht beim Strafziehen.)
+func _draw_any() -> bool:
+	return config.draw_play == "any" and config.draw_rule == "one"
+
+
+# Passt die gezogene Karte und darf sofort gelegt werden?
+func _drawn_fits(seat: int) -> bool:
+	if drawn_id < 0 or config.drawn_card == "may_not" or not (hands[seat] as Array).has(drawn_id):
+		return false
+	var f := faces[side * n_cards + drawn_id]
+	return _matches(f) and _restriction_ok(seat, drawn_id, f)
+
+
+# drawn_card = must: Die gezogene Karte muss gelegt werden (ohne Hausregel any immer, mit ihr nur, wenn sie passt).
+func _must_play_drawn(seat: int) -> bool:
+	return config.drawn_card == "must" and (not _draw_any() or _drawn_fits(seat))
+
+
+# Phase drawn mit beliebiger Karte: draw_any, außer die gezogene Karte passt und muss gelegt werden (drawn_card = must).
+func _drawn_any_phase(seat: int) -> bool:
+	return _draw_any() and not (config.drawn_card == "must" and _drawn_fits(seat))
 
 
 func _act_keep(seat: int, ev: Array) -> String:
@@ -373,7 +404,7 @@ func _act_keep(seat: int, ev: Array) -> String:
 		return "Es gibt keine gezogene Karte zu behalten." if state == "turn" else _phase_reason()
 	if seat != current:
 		return "Du bist nicht dran."
-	if config.drawn_card == "must":
+	if _must_play_drawn(seat):
 		return "Die gezogene Karte passt – du musst sie legen."
 	drawn_id = -1
 	ev.append({"e": "keep", "seat": seat})
@@ -1343,6 +1374,10 @@ func _playable(seat: int, id: int) -> bool:
 	var f := faces[side * n_cards + id]
 	match state:
 		"drawn":
+			if _drawn_any_phase(seat):
+				if id == drawn_id and config.drawn_card == "may_not":
+					return false
+				return _matches(f) and _restriction_ok(seat, id, f)
 			return id == drawn_id and config.drawn_card != "may_not" and _matches(f) and _restriction_ok(seat, id, f)
 		"turn", "challenge":
 			if not pending.is_empty():
@@ -1415,6 +1450,13 @@ func _color_count(seat: int, col: String, skip: int) -> int:
 
 func _why_not(seat: int, id: int) -> String:
 	var f := faces[side * n_cards + id]
+	if state == "drawn" and _drawn_any_phase(seat):
+		if id == drawn_id and config.drawn_card == "may_not":
+			return "Die gezogene Karte darfst du erst im nächsten Zug legen."
+		if (_kind[f] == PLUS2 or _kind[f] == JAGD) and _matches(f):
+			return "%s nur, wenn du keine Karte in %s hast%s." % [RulesText.kind_name(_kind[f]), RulesText.color_name(color),
+				" und keinen anderen Joker" if config.wild_counts_for_bluff else ""]
+		return "Passt nicht – " + _lay_phrase() + "."
 	if state == "drawn":
 		if config.drawn_card == "may_not":
 			return "Die gezogene Karte darfst du erst im nächsten Zug legen."
@@ -1521,7 +1563,7 @@ func _hints(me: int) -> Dictionary:
 				"turn":
 					h.can_draw = not pending.is_empty() or not draw_pile.is_empty() or discard.size() > 1 or playable.is_empty()
 				"drawn":
-					h.can_keep = config.drawn_card != "must"
+					h.can_keep = not _must_play_drawn(me)
 				"challenge":
 					h.can_draw = true
 					h.can_challenge = true
@@ -1614,8 +1656,12 @@ func _hint_text(me: int, h: Dictionary) -> String:
 			if not (h.playable as Array).is_empty():
 				text += " Du kannst auch %s drauflegen." % RulesText.kind_name(str(pending.kind))
 		"drawn":
-			text = "Die gezogene Karte passt – du musst sie legen." if config.drawn_card == "must" \
-				else "Die gezogene Karte passt – legen oder behalten?"
+			if _must_play_drawn(me):
+				text = "Die gezogene Karte passt – du musst sie legen."
+			elif not _drawn_any_phase(me):
+				text = "Die gezogene Karte passt – legen oder behalten?"
+			else:
+				text = "Passende Karte legen oder behalten?"
 		"turn":
 			if not pending.is_empty():
 				var kname := RulesText.kind_name(str(pending.kind))

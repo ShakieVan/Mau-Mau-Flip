@@ -1,6 +1,6 @@
 class_name IngameMenu
 extends Control
-# Menü im Spiel (Beta 1.1.2): kleine Papierkarte unter dem ☰-Knopf oben links (TableScreen) mit „Einstellungen“, „Regeln ansehen“
+# Menü im Spiel (Beta 1.1.2): kleine Karte (tags Papier, nachts dunkel, 1.1.3) unter dem ☰-Knopf oben links (TableScreen) mit „Einstellungen“, „Regeln ansehen“
 # und „So geht's“. Wahl → chosen(key) und schließt; Tipp daneben oder Zurück-Taste (TableScreen.on_back) schließt ohne Wahl.
 # Zeigt keine Karten (Regel 15); beim Sichtschutz schließt TableScreen das Menü.
 
@@ -10,6 +10,7 @@ signal closed
 const ITEMS := [["einstellungen", "Einstellungen"], ["regeln", "Regeln ansehen"], ["bedienung", "So geht's"]]
 
 var _card: PanelContainer
+var night := false
 
 
 static func open(parent: Node, at: Vector2) -> IngameMenu:
@@ -17,6 +18,7 @@ static func open(parent: Node, at: Vector2) -> IngameMenu:
 	m.theme = UiTheme.get_theme()
 	parent.add_child(m)
 	m._build(at)
+	TableView.follow_night(m, m.set_night)
 	return m
 
 
@@ -68,3 +70,10 @@ func close() -> void:
 		return
 	closed.emit()
 	queue_free()
+
+
+# Tag/Nacht des Tisches (TableView.follow_night): nachts dunkle Karte mit heller Schrift und hellen Bedienelementen
+func set_night(on: bool) -> void:
+	night = on
+	if _card != null:
+		ScreenKit.set_card_night(_card, on)
