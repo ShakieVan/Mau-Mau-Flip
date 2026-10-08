@@ -110,9 +110,13 @@ Online-Spiel Schritt 1: Vermittler (`relay/`, Cloudflare Worker + Durable Object
 - **Tags sind unveränderlich:** Der Vermittler holt `/c/<version>/` vom Tag `v<version>` und speichert es bis zu 1 Jahr (Cloudflare und Browser). Tags nur beim Veröffentlichen setzen (`tools/release.ps1`: erst committen und pushen, dann Release; das Skript legt den Tag an). Vorabtests über den echten Vermittler mit einer Versionsnummer, die danach übersprungen wird.
 - Offen: Android 16+ mit Spiel-WLAN (Prozessbindung an den Hotspot) und gleichzeitig Online – Vermittler-Socket könnte ins Netz ohne Internet laufen; Bindung beim Verbinden zählend aussetzen, am S24 prüfen (nur nach Absprache). Letzter Raumcode nach Neustart nicht vorbelegt. Lite-Startseite tagsüber dunkel. iPhone als Online-Gast ungetestet.
 
+## Erledigt in Beta 1.3.3 (veröffentlicht 08.10.2026)
+
+Anlass: erstes echtes Online-Spiel des Nutzers (S24 Gastgeber, Freundin als Gast in anderer Stadt); Anzeigen liefen nach App-Wechseln (Threema) auseinander, „Computer spielt für …“ wirkte wie ein Zustand, schwarzes Quadrat statt Zurück-Pfeil auf dem Gerät der Freundin. Umgesetzt: Herzschlag 10 s/25 s + Prüfung 6 s nach eigener Aktion, Hinweise „Online-Verbindung unterbrochen …“/„Verbindung zum Gastgeber unterbrochen …“, Code 4012 (Gäste melden sich nach Gastgeber-Rückkehr neu an), App-Wechsel mit `away`/`back` („… ist kurz in einer anderen App“, Gastgeber-Abwesenheit bei Gästen, Prüfung beim Zurückkehren ~3 s), Knopf „Computer für %s spielen lassen“ erst nach 30 s, Netzbindung beim Vermittler-Verbinden zählend ausgesetzt, letzter Raumcode vorbelegt, Lite-Startseite tagsüber hell, Zurück-Pfeil/Roboter ohne `get_image()`. Gerätetest S24 (Android 16, Daten behalten), S21, S10: `docs/geraetetest/1.3.3/BERICHT.md`. Offen (niedrig): Online-Raum blieb nach Verlassen zweimal ~10 min offen (nach Gast-Abwesenheit; `{k:"end"}`?), Lite-Lobby tagsüber dunkel, Spiel-WLAN bleibt nach Verlassen offen, Android 16 nur Spiel-WLAN + Mobilfunk ungetestet.
+
 ## Geplant für Beta 1.3.4 (Nutzerwünsche 08.10.2026)
 
-- **Aussetzen-Karten:** beim Legen ein Katzenschnurren (Spieltöne; Kandidaten aus MOSS-SoundEffect wie die übrigen Spieltöne, Nutzer wählt per Hörseite; nichts aus `audio/referenz`).
+- **Aussetzen-Karten:** beim Legen ein Katzenschnurren (Spieltöne; Kandidaten aus MOSS-SoundEffect wie die übrigen Spieltöne, Nutzer wählt per Hörseite; nichts aus `audio/referenz`). Runde 1 (`audio/entwurf/schnurren/`) war dem Nutzer „zu dumpf für den Handylautsprecher“; Runde 2 heller (`audio/entwurf/schnurren2/`, Handy-Simulation).
 - **Partie-Ende nachts:** statt Konfettiregen ein bunter Sternenschauer (App und Browser; tagsüber bleibt Konfetti).
 
 ## Geplant: Online-Spiel, Schritt 1 (Nutzerentscheidung 08.10.2026)
