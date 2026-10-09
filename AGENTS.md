@@ -75,6 +75,7 @@ Release 1.1.0 am 07.10.2026 veröffentlicht. Beta 1.1.1: großer Modus in App un
 - Beta 1.1.2: Menü (☰) im Spiel mit Einstellungen, Regeln, So geht's; großer Modus: Namensbereich doppelt so breit (Stapel 299 statt 399 px), fertige Spieler verschwinden. Bericht: `docs/geraetetest/1.1.2/BERICHT.md`.
 - Schnellerer Bau: Tests 22,4 → 3,5 min (zwei Spuren, Regeltests parallel mit eigenem user://, Dauerläufe per `TEIL=k/n` geteilt, `game/tests/teil.gd`); Testergebnis-Cache über eine Prüfsumme (`.tools/test_cache.json`), Bau eines getesteten Stands ~0,6 min (`tests_cached: true`). Schalter `-NoTestCache`, `-Parallel n`. Die Sperre `Global\MauMauFlipGodot` hält der Bau einmal (`MMF_GODOT_LOCK_OWNER`).
 - Geräte per `adb devices -l` nach Modell ansprechen (drahtloses Debugging, wechselnde Ports): SM-G991B = S21, SM-G973F = S10, SM-S928B = S24 (Gerät des Nutzers, nur nach Absprache).
+- **Neustart per ADB** (`adb reboot`) ist für die Testhandys S21 und S10 erlaubt (Nutzer 09.10.2026). Danach ist das WLAN-Debugging meist aus – das Gerät ist erst wieder erreichbar, wenn der Nutzer es einschaltet. Anlass: Auf dem S10 (Android 12) hing die Paketverwaltung nach einem In-App-Update auf 1.4.0 (zwei Installationsversuche, der erste vermutlich durch das Erlauben von „Unbekannte Quellen“ mitten im Vorgang abgebrochen; auch `adb install` hing).
 
 ## Erledigt in Beta 1.1.3 (veröffentlicht 08.10.2026)
 
