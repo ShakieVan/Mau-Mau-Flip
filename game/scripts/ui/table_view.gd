@@ -274,6 +274,7 @@ func _ready() -> void:
 	reduced = UiApp.reduced_effects()
 	highlight = HandView.truthy(UiApp.setting("hervorheben", true))
 	sprueche.set_level(UiApp.setting(FunTexts.SETTING, FunTexts.DEFAULT))
+	sprueche.set_freq(UiApp.setting(FunTexts.FREQ_SETTING, FunTexts.FREQ_DEFAULT))
 	var app := UiApp.app()
 	var st: Variant = app.get("settings") if app != null else null
 	if st is Object and (st as Object).has_signal("changed"):
@@ -288,8 +289,11 @@ func _on_setting_changed(key: String, value: Variant) -> void:
 		set_big(HandView.truthy(value))
 	elif key == "effekte":
 		reduced = str(value) == "reduziert"
-	elif key == FunTexts.SETTING:
-		sprueche.set_level(value)
+	elif key == FunTexts.SETTING or key == FunTexts.FREQ_SETTING:
+		if key == FunTexts.SETTING:
+			sprueche.set_level(value)
+		else:
+			sprueche.set_freq(value)
 		if not view.is_empty():
 			_apply_hints(view.get("hints", {}), int(view.get("turn", -1)))
 	elif key == "hervorheben":

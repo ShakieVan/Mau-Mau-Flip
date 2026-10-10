@@ -991,14 +991,28 @@ func pruefe_spass(tisch: String, app: String, seite: String) -> void:
 	check(spass.contains("case 'stake_discard'") and spass.contains("case 'discard_color'") and spass.contains("case 'finish'") and spass.contains("this._reihe('glueck', '')")
 			and spass.contains("seat === ich ? 'autsch_du' : 'autsch'") and spass.contains("this.anlass === 'tipp'") and spass.contains("occ = 'tipp'"),
 		"Glück-Auslöser, Pech auf dich und falscher Tipp im Browser wie in der App")
-	for c in [["SHOW_TIME = ", FunTexts.SHOW_TIME], ["COOLDOWN = ", FunTexts.COOLDOWN], ["GAP = ", FunTexts.GAP], ["TURN_CHANCE = ", FunTexts.TURN_CHANCE],
+	# Häufigkeit (Beta 1.4.5): gleiche Tabellen und Grenzen wie FunTexts.FREQ_*
+	for tab in [["FREQ_TURN", FunTexts.FREQ_TURN], ["FREQ_COOLDOWN", FunTexts.FREQ_COOLDOWN], ["FREQ_RARE", FunTexts.FREQ_RARE]]:
+		var parts: Array = []
+		for k in FunTexts.FREQS:
+			var fv := float(tab[1][k])
+			parts.append("%s: %s" % [k, str(int(fv)) if is_equal_approx(fv, roundf(fv)) else str(fv)])
+		var js_tab := "const %s = { %s };" % [tab[0], ", ".join(parts)]
+		# 1.0 steht im Browser als 1 (und 1.0 in GDScript als „1.0“)
+		check(spass.contains(js_tab), "Häufigkeitstabelle gleich: " + js_tab)
+	var js_freqs := "const FREQS = [" + ", ".join(FunTexts.FREQS.map(func(s: String) -> String: return "'%s'" % s)) + "], FREQ_DEFAULT = '" + FunTexts.FREQ_DEFAULT + "';"
+	check(spass.contains(js_freqs), "Häufigkeitsstufen und Standard gleich: " + js_freqs)
+	check(spass.contains("RARE_CAP = %s, IMMER_MIN_SHOW = %s;" % [str(FunTexts.RARE_CAP), str(FunTexts.IMMER_MIN_SHOW)]), "RARE_CAP und IMMER_MIN_SHOW gleich")
+	check(spass.contains("setzeHaeufigkeit(h)") and spass.contains("this.haeufigkeit === 'immer' ? Infinity : now + SHOW_TIME")
+			and spass.contains("this._wartetPassend(mein, now)") and spass.contains("this._tuete"), "Browser: Häufigkeit, stehender Spruch bei immer, Tüte ohne Wiederholung")
+	for c in [["SHOW_TIME = ", FunTexts.SHOW_TIME], ["GAP = ", FunTexts.GAP],
 			["SLOW_OTHER = ", FunTexts.SLOW_OTHER], ["MANY = ", FunTexts.MANY], ["JAGD_MANY = ", FunTexts.JAGD_MANY]]:
 		var v := float(c[1])
 		var txt := str(int(v)) if is_equal_approx(v, roundf(v)) else str(v)
 		check(spass.contains(str(c[0]) + txt + ",") or spass.contains(str(c[0]) + txt + ";"), "gleiche Größe wie FunTexts: %s%s" % [c[0], txt])
 	var po := _dict_js(read_web("i18n_po.js"), "window.MMF_I18N_PO = ")
 	var ohne: Array = []
-	for de in FunTexts.all_lines() + ["Sprüche", "Nett", "Frech"]:
+	for de in FunTexts.all_lines() + ["Sprüche", "Nett", "Frech", "Häufigkeit", "Selten", "Normal", "Oft", "Immer", "Immer: jeder Zug bekommt einen Spruch, der bleibt stehen."]:
 		if not po.has(de):
 			ohne.append(de)
 	check(ohne.is_empty(), "Sprüche im englischen Wörterbuch des Browsers (i18n_po.js, aus en_fun.po; %d fehlen)" % ohne.size())
@@ -1009,5 +1023,11 @@ func pruefe_spass(tisch: String, app: String, seite: String) -> void:
 			and seite.contains("data-set=\"sprueche\" data-wert=\"aus\"") and seite.contains("data-set=\"sprueche\" data-wert=\"nett\"")
 			and seite.contains("data-set=\"sprueche\" data-wert=\"frech\""),
 		"Einstellung Sprüche im Lite-Menü: Aus/Nett/Frech, ab Werk frech, je Gerät gespeichert")
+	var freq_ok := app.contains("sprueche_oft: 'oft'") and app.contains("Speicher.get('sprueche_oft', 'oft')") and app.contains("k === 'sprueche_oft'") \
+		and app.contains("M.Spass.setzeHaeufigkeit(e.sprueche_oft)") and app.contains("$('#zeile-sprueche-oft').hidden = e.sprueche === 'aus'") \
+		and seite.contains("id=\"zeile-sprueche-oft\"")
+	for fq in FunTexts.FREQS:
+		freq_ok = freq_ok and seite.contains("data-set=\"sprueche_oft\" data-wert=\"%s\"" % fq)
+	check(freq_ok, "Einstellung Häufigkeit im Lite-Menü: Selten/Normal/Oft/Immer, ab Werk oft, nur bei eingeschalteten Sprüchen sichtbar")
 	check(spass.contains("ersetzbar(v, h || {}, ich)") and spass.contains("t.indexOf('Mau') >= 0") and spass.contains("h.need_color")
 			and spass.contains("v.pending && Object.keys(v.pending).length"), "Browser: nie bei Mau-Pflicht, Farbwahl, Strafe")

@@ -20,6 +20,7 @@ const SORTIERUNG := ["farbe", "wert", "punkte", "manuell"]
 const SCHRIFT := ["normal", "gross", "sehr_gross"]   # Schriftgröße je Gerät (UiFonts.LEVELS), Beta 1.0.1
 const SPRACHE := ["auto", "de", "en"]   # Sprache je Gerät (I18n.CHOICES), Beta 1.2.2
 const SPRUECHE := ["aus", "nett", "frech"]   # Freche Sprüche je Gerät (FunTexts.LEVELS), Beta 1.4.4, ab Werk frech
+const SPRUECHE_OFT := ["selten", "normal", "oft", "immer"]   # Häufigkeit der Sprüche (FunTexts.FREQS), Beta 1.4.5, ab Werk oft
 const RECENT_NAMES := 12          # so viele zuletzt benutzte Namen (Weitergeben) bleiben gemerkt
 
 # Spielername wie Draw2Race: höchstens 12 Zeichen; Buchstaben samt Umlauten und ß, Ziffern, Leerzeichen und - _ . ' ! ?
@@ -55,7 +56,7 @@ static func defaults() -> Dictionary:
 	return {"name": "", "mau_ton": "normal", "toene": "aus", "vibration": true, "effekte": "voll", "beta": not app_version().ends_with(".0"),
 		"sortierung": "farbe", "hervorheben": true, "regeln": {}, "letzte_namen": [], "regelsaetze": [], "regeln_gastgeber": {},
 		"regelsatz_gewaehlt": "", "bot_tempo": 0.5, "schrift": "normal", "grosser_modus": false, "zug_vibration": true,
-		"sprache": "auto", "vermittler": NetProtocol.RELAY_DEFAULT, "sprueche": "frech"}
+		"sprache": "auto", "vermittler": NetProtocol.RELAY_DEFAULT, "sprueche": "frech", "sprueche_oft": "oft"}
 
 static func app_version() -> String:
 	return str(ProjectSettings.get_setting("application/config/version", "0.0.0"))
@@ -76,6 +77,8 @@ static func sanitize(key: String, value: Variant) -> Variant:
 			return value if value is String and SCHRIFT.has(value) else null
 		"sprueche":                       # Beta 1.4.4: freche Sprüche in der Hinweisleiste aus | nett | frech (FunTexts), je Gerät
 			return value if value is String and SPRUECHE.has(value) else null
+		"sprueche_oft":                   # Beta 1.4.5: Häufigkeit der Sprüche selten | normal | oft | immer (FunTexts.FREQS), je Gerät
+			return value if value is String and SPRUECHE_OFT.has(value) else null
 		"sprache":                        # Beta 1.2.2: auto (Systemsprache) | de | en, siehe I18n
 			return value if value is String and SPRACHE.has(value) else null
 		"vermittler":                     # Online-Spiel: Adresse des Vermittlers („https://host“, "" = keiner), docs/online/ENTWURF.md

@@ -1,7 +1,8 @@
 /* Mau-Mau Flip – Browser-Client „Lite“: freche Sprüche in der Hinweisleiste (Beta 1.4.4, Ostereier Teil 1).
  * Gleiche Sprüche und Regeln wie die App (game/scripts/ui/fun_texts.gd, test_web_contract prüft den Gleichlauf); nur auf diesem
  * Gerät, nichts wird an andere geschickt. Übersetzung über M.t (Texte stehen in game/i18n/en_fun.po → i18n_po.js).
- * Einstellung „sprueche“ (aus | nett | frech, ab Werk frech) im Lite-Menü.
+ * Einstellung „sprueche“ (aus | nett | frech, ab Werk frech) im Lite-Menü; „sprueche_oft“ (selten | normal | oft | immer, ab Werk oft, Beta 1.4.5):
+ * bei „immer“ bekommt jeder eigene Zug einen Spruch, der stehen bleibt (keine Abklingzeit, kein Zurück zum Standardtext).
  * Einhängepunkte: app.js beobachte(events, alteSicht, platz) vor der Regie, tisch.js hinweis(v, h, platz, standard) beim Anzeigen,
  * pointe() nach dem Anzeigen (Meldung „Hehe, verarscht!“), beiNeu = Rückruf, wenn die Hinweisleiste neu muss (Ablauf, Trödeln).
  * Regeln: ersetzt nur harmlose Zugtexte, nie Farbwahl, Strafe, Mau-Pflicht, Erwischen, Auswahl, Glücksspiel; Abklingzeit, nie zwei
@@ -10,8 +11,14 @@
 (function (M) {
   'use strict';
 
-  const SHOW_TIME = 7, COOLDOWN = 25, GAP = 4, QUEUE_LIFE = 6;
-  const TURN_CHANCE = 0.25, MANY_CHANCE = 0.5, FEW_CHANCE = 0.4, REVERSE_CHANCE = 0.6, NAME_CHANCE = 0.35;
+  const SHOW_TIME = 7, GAP = 4, QUEUE_LIFE = 6;
+  const MANY_CHANCE = 0.5, FEW_CHANCE = 0.4, REVERSE_CHANCE = 0.6, NAME_CHANCE = 0.35;
+  // Häufigkeit (Beta 1.4.5) – wie FunTexts.FREQ_*: Chance auf einen Spruch zum eigenen Zugbeginn, Abklingzeit, Faktor für seltene Anlässe
+  const FREQS = ['selten', 'normal', 'oft', 'immer'], FREQ_DEFAULT = 'oft';
+  const FREQ_TURN = { selten: 0.15, normal: 0.35, oft: 0.65, immer: 1 };
+  const FREQ_COOLDOWN = { selten: 40, normal: 15, oft: 5, immer: 0 };
+  const FREQ_RARE = { selten: 0.6, normal: 1, oft: 1.8, immer: 1 };
+  const RARE_CAP = 0.95, IMMER_MIN_SHOW = 1.5;
   const SLOW_SELF = [15, 30], SLOW_OTHER = 25, MANY = 12, FEW_MIN = 2, FEW_MAX = 3, STREAK = 3, JAGD_MANY = 8, AUTSCH_AMOUNT = 5;
   const TIP_CHANCE = 0.1, GLUECK_STAKE = 3, GLUECK_DISCARD = 4, GLUECK_FINISH_CHANCE = 0.5;
 
@@ -309,6 +316,8 @@
 
   const S = {
     stufe: 'frech',
+    haeufigkeit: FREQ_DEFAULT,
+    _tuete: {}, _gezeigtUm: 0,
     LINES, ALIAS, linesFor, ersetzbar,
     beiNeu: null,
     text: '', zeile: '', anlass: '',
@@ -317,8 +326,23 @@
     _tipp: false, _serie: {}, _jagdOpfer: -1, _zuletzt: {}, _gefragt: -1000, _uhr: null,
 
     jetzt() { return performance.now() / 1000; },
+    setzeHaeufigkeit(h) {
+      const neu = FREQS.indexOf(h) >= 0 ? h : FREQ_DEFAULT;
+      if (neu === this.haeufigkeit) return;
+      this.haeufigkeit = neu;
+      this._beende();                    // ein stehender Spruch endet, die Hinweisleiste wird neu aufgebaut
+    },
+    _selten(basis) {                     // Chance eines seltenen Anlasses (basis = Wert für „normal“)
+      if (this.haeufigkeit === 'immer') return 1;
+      const f = FREQ_RARE[this.haeufigkeit];
+      return f > 1 ? Math.min(RARE_CAP, basis * f) : basis * f;
+    },
+    _abkling() { return FREQ_COOLDOWN[this.haeufigkeit]; },
+    _luecke() { return this.haeufigkeit === 'immer' ? 0 : GAP; },
     setzeStufe(s) {
+      const alt = this.stufe;
       this.stufe = ['aus', 'nett', 'frech'].indexOf(s) >= 0 ? s : 'frech';
+      if (this.stufe !== alt) this._tuete = {};
       if (this.stufe === 'aus') { this._beende(); this._warte = null; this._tipp = false; this._notiz = ''; }
       this._uhrAn();
     },
@@ -334,7 +358,7 @@
         if (!d) continue;
         const seat = typeof d.seat === 'number' ? d.seat : -1;
         switch (d.e) {
-          case 'reverse': if (Math.random() < REVERSE_CHANCE) this._reihe('richtung', ''); break;
+          case 'reverse': if (Math.random() < this._selten(REVERSE_CHANCE)) this._reihe('richtung', ''); break;
           case 'pending':
             if (d.kind === 'farbjagd') this._jagdOpfer = seat;
             else if ((d.amount | 0) >= AUTSCH_AMOUNT && spieler(alt, seat).count === 1) this._reihe(seat === ich ? 'autsch_du' : 'autsch', '');
@@ -356,7 +380,7 @@
             break;
           case 'stake_discard': if (seat === ich && (d.count | 0) >= GLUECK_STAKE) this._reihe('glueck', ''); break;
           case 'discard_color': if (seat === ich && (d.count | 0) >= GLUECK_DISCARD) this._reihe('glueck', ''); break;
-          case 'finish': if (seat === ich && Math.random() < GLUECK_FINISH_CHANCE) this._reihe('glueck', ''); break;
+          case 'finish': if (seat === ich && Math.random() < this._selten(GLUECK_FINISH_CHANCE)) this._reihe('glueck', ''); break;
           case 'round_start': case 'start': case 'seats': this._serie = {}; this._jagdOpfer = -1; break;
         }
       }
@@ -388,8 +412,15 @@
         if (!gesperrt && mein && this._startFaellig) this._startFaellig = false;
         return standard;
       }
+      if (this.text && this.haeufigkeit === 'immer' && this._wartetPassend(mein, now) && now - this._gezeigtUm >= IMMER_MIN_SHOW) this._beende();   // neuer Anlass löst den stehenden Spruch ab
       if (!this.text) this._versuche(v, ich, mein, now);
       return this.text || standard;
+    },
+    // Wartet ein Anlass, der zu diesem Zug passt? (Trödel-Sprüche gehören zum eigenen Zug, Kommentare über andere nicht dorthin)
+    _wartetPassend(mein, now) {
+      const q = this._warte;
+      if (!q || now - q.t > QUEUE_LIFE) return false;
+      return !((q.occ === 'langsam' && !mein) || (q.occ === 'langsam_andere' && mein));
     },
 
     tick() {
@@ -404,9 +435,12 @@
       }
       if (!this._meinZug && this._anderer >= 0 && this._andererName && !this._andererFertig && now - this._andererStart >= SLOW_OTHER) {
         this._andererFertig = true;
-        if (now - this._ende >= COOLDOWN) { this._reihe('langsam_andere', this._andererName); neu = true; }
+        if (now - this._ende >= this._abkling()) { this._reihe('langsam_andere', this._andererName); neu = true; }
       }
-      if (this._warte && !this.text && this._ersetzbar && now - this._ende >= GAP && now - this._gefragt >= 0.5) { this._gefragt = now; neu = true; }
+      if (this._warte && this._ersetzbar && now - this._gefragt >= 0.5) {
+        if (!this.text && now - this._ende >= this._luecke()) { this._gefragt = now; neu = true; }
+        else if (this.text && this.haeufigkeit === 'immer' && now - this._gezeigtUm >= IMMER_MIN_SHOW) { this._gefragt = now; neu = true; }   // „immer“: neuer Anlass löst den stehenden Spruch ab
+      }
       return neu;
     },
 
@@ -414,7 +448,7 @@
       if (this._warte) {
         const q = this._warte;
         if (now - q.t > QUEUE_LIFE) this._warte = null;
-        else if (now - this._ende >= GAP) {
+        else if (now - this._ende >= this._luecke()) {
           this._warte = null;
           if (!((q.occ === 'langsam' && !mein) || (q.occ === 'langsam_andere' && mein))) {
             this._zeige(this._waehle(q.occ, q.name), q.occ, v.turn, now);
@@ -424,12 +458,12 @@
       }
       if (!(mein && this._startFaellig)) return;
       this._startFaellig = false;
-      if (now - this._ende < COOLDOWN) return;
+      if (now - this._ende < this._abkling()) return;
       const n = (v.hand || []).length;
       let occ = '';
-      if (n >= MANY && Math.random() < MANY_CHANCE) occ = 'viele';
-      else if (n >= FEW_MIN && n <= FEW_MAX && Math.random() < FEW_CHANCE) occ = 'wenige';
-      else if (Math.random() < TURN_CHANCE) occ = 'zug';
+      if (n >= MANY && Math.random() < this._selten(MANY_CHANCE)) occ = 'viele';
+      else if (n >= FEW_MIN && n <= FEW_MAX && Math.random() < this._selten(FEW_CHANCE)) occ = 'wenige';
+      else if (Math.random() < FREQ_TURN[this.haeufigkeit]) occ = 'zug';
       if (!occ) return;
       let name = '';
       if (occ === 'zug' && this.stufe === 'frech') {
@@ -445,7 +479,7 @@
     },
     _zeige(w, occ, turn, now) {
       if (!w.text) return;
-      this.text = w.text; this.zeile = w.de; this.anlass = occ; this._bis = now + SHOW_TIME; this._zugGezeigt = turn;
+      this.text = w.text; this.zeile = w.de; this.anlass = occ; this._bis = this.haeufigkeit === 'immer' ? Infinity : now + SHOW_TIME; this._gezeigtUm = now; this._zugGezeigt = turn;
     },
     _beende() {
       if (this.text) this._ende = this.jetzt();
@@ -458,13 +492,26 @@
       if (this._warte && now - this._warte.t <= QUEUE_LIFE) return;
       this._warte = { occ, name, t: now };
     },
-    // zufällige Zeile, nie dieselbe wie zuletzt in diesem Anlass; übersetzt, Name eingesetzt
+    // Nächste Zeile eines Anlasses (wie FunTexts._pick): gemischt der Reihe nach, erst dann neu mischen; die erste einer neuen Runde ist
+    // nie die zuletzt gezeigte; Aliase teilen sich die Tüte. Übersetzt, Name eingesetzt.
     _waehle(occ, name) {
       const pool = linesFor(occ, this.stufe);
       if (!pool.length) return { text: '', de: '' };
-      const wahl = pool.length > 1 ? pool.filter(s => s !== this._zuletzt[occ]) : pool;
-      const de = wahl[Math.floor(Math.random() * wahl.length)];
-      this._zuletzt[occ] = de;
+      const key = ALIAS[occ] || occ;
+      let tuete = (this._tuete[key] || []).filter(s => pool.indexOf(s) >= 0);
+      if (!tuete.length) {
+        tuete = pool.slice();
+        for (let i = tuete.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          const t = tuete[i]; tuete[i] = tuete[j]; tuete[j] = t;
+        }
+        if (tuete.length > 1 && tuete[tuete.length - 1] === this._zuletzt[key]) {
+          const t = tuete[tuete.length - 1]; tuete[tuete.length - 1] = tuete[0]; tuete[0] = t;
+        }
+      }
+      const de = tuete.pop();
+      this._tuete[key] = tuete;
+      this._zuletzt[key] = de;
       return { de, text: de.indexOf('%s') >= 0 ? M.t(de).split('%s').join(name || '?') : M.t(de) };
     }
   };

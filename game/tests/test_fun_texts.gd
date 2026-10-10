@@ -50,6 +50,8 @@ func _init() -> void:
 	check_translations()
 	check_replaceable()
 	check_frequency()
+	check_freq_levels()
+	check_immer()
 	check_important()
 	check_blocked_and_time()
 	check_slow()
@@ -93,6 +95,13 @@ func check_levels() -> void:
 	check(FunTexts.clean_level("quatsch") == "frech" and FunTexts.clean_level("nett") == "nett", "Stufe bereinigt, ab Werk frech")
 	check(AppSettings.defaults().get(FunTexts.SETTING) == "frech" and AppSettings.sanitize(FunTexts.SETTING, "laut") == null
 		and AppSettings.sanitize(FunTexts.SETTING, "aus") == "aus", "Einstellung sprueche: Standard frech, nur aus/nett/frech")
+	check(FunTexts.clean_freq("quatsch") == "oft" and FunTexts.clean_freq("immer") == "immer" and FunTexts.FREQ_DEFAULT == "oft", "Häufigkeit bereinigt, ab Werk oft")
+	check(AppSettings.defaults().get(FunTexts.FREQ_SETTING) == "oft" and AppSettings.sanitize(FunTexts.FREQ_SETTING, "dauernd") == null
+		and AppSettings.sanitize(FunTexts.FREQ_SETTING, 3) == null, "Einstellung sprueche_oft: Standard oft, ungültige Werte abgelehnt")
+	for fq in FunTexts.FREQS:
+		check(AppSettings.sanitize(FunTexts.FREQ_SETTING, fq) == fq, "Einstellung sprueche_oft: gültig " + fq)
+		check(FunTexts.FREQ_TURN.has(fq) and FunTexts.FREQ_COOLDOWN.has(fq) and FunTexts.FREQ_RARE.has(fq), "Häufigkeit mit allen Größen: " + fq)
+	check(AppSettings.SPRUECHE_OFT == FunTexts.FREQS and FunTexts.FREQ_NAMES.size() == FunTexts.FREQS.size(), "Häufigkeitsstufen in Einstellungen und FunTexts gleich")
 	# Platzhalter: nur %s, und genau dort, wo ein Name gemeint ist
 	for occ in FunTexts.LINES:
 		var named: bool = occ in ["zug_name", "langsam_andere", "pech", "farbjagd"]
@@ -117,7 +126,7 @@ func check_translations() -> void:
 			check(I18n.placeholders(l) == I18n.placeholders(str(ids[l])), "Platzhalter gleich: " + l)
 			# passt in die Hinweisleiste, auch im großen Modus (wie die längsten Regelhinweise)
 			check(l.length() <= 80 and str(ids[l]).length() <= 80, "höchstens 80 Zeichen: " + l)
-	for k in ["Sprüche", "Nett", "Frech"]:
+	for k in ["Sprüche", "Nett", "Frech", "Häufigkeit", "Selten", "Oft", "Immer", "Immer: jeder Zug bekommt einen Spruch, der bleibt stehen."]:
 		check(ids.has(k), "Einstellungstext übersetzt: " + k)
 	check(ProjectSettings.get_setting("internationalization/locale/translations", PackedStringArray()).has("res://i18n/en_fun.po")
 		and I18n.FILES.has("res://i18n/en_fun.po"), "en_fun.po in project.godot und I18n.FILES")
@@ -157,11 +166,12 @@ func check_frequency() -> void:
 		if own_turn(off, [1, 2, 7, 14][i % 4]) != STD:
 			all_std = false
 	check(all_std, "aus: nur Standardtexte")
-	# frech/nett: ~25 % der Züge mit 7 Karten; nett nie eine freche Zeile
+	# frech/nett: bei „normal“ ~35 % der Züge mit 7 Karten; nett nie eine freche Zeile
 	for lvl in ["frech", "nett"]:
 		var f := FunTexts.new()
 		f.rng.seed = 4711
 		f.set_level(lvl)
+		f.set_freq("normal")
 		var hits := 0
 		var bad := 0
 		var seen := {}
@@ -174,7 +184,7 @@ func check_frequency() -> void:
 					bad += 1
 				check(not t.contains("%s"), "kein offener Platzhalter: " + t)
 			show(f, view(2))
-		check(hits > 60 and hits < 150, "%s: etwa jeder vierte Zug ein Spruch (%d/400)" % [lvl, hits])
+		check(hits > 110 and hits < 175, "%s: bei normal etwa jeder dritte Zug ein Spruch (%d/400)" % [lvl, hits])
 		check(bad == 0, "%s: keine frechen Zeilen" % lvl if lvl == "nett" else "frech: geprüft")
 		check(seen.size() >= 6, "%s: abwechslungsreich (%d verschiedene)" % [lvl, seen.size()])
 	# viele / wenige Karten
@@ -195,6 +205,7 @@ func check_frequency() -> void:
 	# Abklingzeit: direkt nach einem Spruch kommt im nächsten Zug (innerhalb COOLDOWN) keiner
 	var f3 := FunTexts.new()
 	f3.rng.seed = 99
+	f3.set_freq("selten")
 	var n := 0
 	while own_turn(f3) == STD and n < 500:
 		n += 1
@@ -205,6 +216,190 @@ func check_frequency() -> void:
 		if own_turn(f3, 7, 0.5) != STD:
 			quiet = false
 	check(quiet, "Abklingzeit: kein neuer Zufallsspruch kurz danach")
+
+
+# Beta 1.4.5: Häufigkeit je Stufe (statistisch) – selten < normal < oft < immer, jede Stufe im erwarteten Bereich
+func check_freq_levels() -> void:
+	var bounds := {"selten": [35, 90], "normal": [110, 175], "oft": [225, 295], "immer": [400, 400]}
+	var prev := -1
+	for fq in FunTexts.FREQS:
+		var f := FunTexts.new()
+		f.rng.seed = 808
+		f.set_level("nett")
+		f.set_freq(fq)
+		var hits := 0
+		for i in 400:
+			f.tick(45.0)
+			show(f, view(2))
+			if show(f, view(ME)) != STD:
+				hits += 1
+			show(f, view(2))
+		check(hits >= int(bounds[fq][0]) and hits <= int(bounds[fq][1]), "Häufigkeit %s: Sprüche in %d von 400 eigenen Zügen" % [fq, hits])
+		check(hits > prev, "Häufigkeit %s häufiger als die Stufe davor" % fq)
+		prev = hits
+	# seltene Anlässe: Richtungswechsel (Grundwert 0,6) je Stufe
+	var rev := {}
+	for fq in FunTexts.FREQS:
+		var hits := 0
+		for i in 300:
+			var r := FunTexts.new()
+			r.rng.seed = 5000 + i
+			r.set_level("nett")
+			r.set_freq(fq)
+			r.tick(100.0)
+			r.observe([{"e": "reverse", "dir": -1, "seat": 1}], view(1), ME)
+			if show(r, view(2)) != view(2).hints.text:
+				hits += 1
+		rev[fq] = hits
+	check(rev.selten > 75 and rev.selten < 145 and rev.normal > 150 and rev.normal < 210 and rev.oft > 260 and rev.oft < 300 and rev.immer == 300,
+		"Richtungswechsel je Stufe: ×0,6 / 0,6 / ≈0,95 / immer (%s)" % str(rev))
+	check(is_equal_approx(FunTexts.new().rare(0.6), 0.95) and is_equal_approx(FunTexts.new().rare(0.4), 0.72), "oft: seltene Anlässe ×1,8, höchstens 0,95")
+	# viele/wenige Karten kommen bei „immer“ jedes Mal
+	var g := FunTexts.new()
+	g.set_freq("immer")
+	for i in 20:
+		g.tick(1.0)
+		show(g, view(2))
+		show(g, view(ME, 14))
+		check(g.occasion == "viele", "immer: ab 12 Karten jedes Mal ein Spruch über viele Karten")
+		show(g, view(2))
+		show(g, view(ME, 3))
+		check(g.occasion == "wenige", "immer: bei 2–3 Karten jedes Mal ein Spruch über wenige Karten")
+		show(g, view(2))
+	# Abklingzeit je Stufe: direkt nach einem Spruch erst nach der Pause wieder einer
+	for fq in ["selten", "normal", "oft"]:
+		var h := FunTexts.new()
+		h.set_freq(fq)
+		h.set_level("nett")
+		h.rng.seed = 12
+		var n := 0
+		while own_turn(h) == STD and n < 500:
+			n += 1
+			show(h, view(2))
+		show(h, view(2))                                  # Spruch endet mit dem Zugwechsel
+		var cd: float = FunTexts.FREQ_COOLDOWN[fq]
+		h.tick(cd - 1.0)
+		var early := show(h, view(ME)) != STD
+		check(not early, "Häufigkeit %s: innerhalb der Abklingzeit (%.0f s) kein Spruch" % [fq, cd])
+
+
+# Beta 1.4.5: „immer“ ersetzt den Standardtext und lässt den Spruch stehen
+func check_immer() -> void:
+	var f := FunTexts.new()
+	f.set_freq("immer")
+	f.set_level("nett")
+	f.rng.seed = 77
+	# jeder eigene Zug bekommt einen Spruch, nie der Standardtext
+	for i in 40:
+		f.tick(0.2)
+		show(f, view(1))
+		var t := show(f, view(ME))
+		check(t != STD and f.showing() and f.occasion == "zug", "immer: eigener Zug bekommt einen Spruch (%s)" % t)
+	# bleibt stehen: weit über SHOW_TIME hinaus bis zum Trödel-Anlass, danach wieder ein Spruch statt Standardtext
+	f.tick(5.0)
+	show(f, view(1))
+	var first := show(f, view(ME))
+	var stays := true
+	for i in 12:
+		f.tick(1.0)
+		if show(f, view(ME)) != first:
+			stays = false
+	check(stays and f.showing() and f.occasion == "zug", "immer: der Spruch bleibt über SHOW_TIME (%.0f s) hinaus stehen" % FunTexts.SHOW_TIME)
+	var kept := true
+	for i in 200:
+		f.tick(1.0)
+		if show(f, view(ME)) == STD:
+			kept = false
+	check(kept, "immer: auch nach Minuten kein Zurückfallen auf „Du bist dran“")
+	check(f.occasion == "langsam", "immer: Trödel-Spruch löste den Zugspruch ab")
+	# Kommentare für den Mitmenschen: nach 25 s
+	var o := FunTexts.new()
+	o.set_freq("immer")
+	o.tick(100.0)
+	show(o, view(ME))
+	show(o, view(1))
+	o.tick(FunTexts.SLOW_OTHER + 0.5)
+	var ot := show(o, view(1))
+	check(o.occasion == "langsam_andere" and ot.contains("Kim"), "immer: Kommentar über trödelnden Mitspieler nach 25 s: " + ot)
+	# Ereignis löst den stehenden Spruch ab (frühestens nach IMMER_MIN_SHOW), vorher nicht
+	var e := FunTexts.new()
+	e.set_freq("immer")
+	e.set_level("nett")
+	e.rng.seed = 3
+	e.tick(10.0)
+	show(e, view(1))
+	var zug := show(e, view(ME))
+	check(e.occasion == "zug", "immer: Zugspruch steht")
+	var mine := view(ME)
+	mine.players[0]["count"] = 1
+	e.observe([{"e": "pending", "kind": "plus5", "amount": 5, "seat": 0, "by": 1}], mine, ME)
+	check(show(e, view(ME)) == zug, "immer: neuer Anlass löst den Spruch nicht sofort ab")
+	check(e.tick(FunTexts.IMMER_MIN_SHOW + 0.1), "immer: Hinweisleiste wird für den neuen Anlass neu aufgebaut")
+	var ev := show(e, view(ME))
+	check(e.occasion == "autsch_du" and ev != zug and ev != STD, "immer: Ereignis (Autsch) löst den Zugspruch ab: " + ev)
+	# wichtige Hinweise werden nie ersetzt
+	var imp := view(ME, 2, "Du bist dran – lege Rot oder 7. Denk an „Mau!“")
+	check(show(e, imp) == imp.hints.text and not e.showing(), "immer: Mau-Pflicht verdrängt den Spruch")
+	for t in ["Du bist dran – nichts passt, zieh eine Karte.", "Wünscher +2 auf dich – Zieh 2.", "Drück den Glücksspielknopf!"]:
+		var w := view(ME, 7, t)
+		check(show(e, w) == t and not e.showing(), "immer: wichtiger Hinweis bleibt: " + t)
+	var col := view(ME, 7, "Nach dem Flip liegt ein Joker oben – wähle die neue Farbe.", "color")
+	col.hints["need_color"] = true
+	check(show(e, col) == col.hints.text, "immer: Farbwahl bleibt")
+	var pen := view(ME)
+	pen.pending = {"kind": "plus5", "amount": 5}
+	check(show(e, pen) == pen.hints.text, "immer: offene Strafe bleibt")
+	check(e.hint_for(view(ME), view(ME).hints, ME, STD, true) == STD, "immer: Weitergeben-Sichtschutz zeigt nie einen Spruch")
+	# Aus bleibt aus, auch bei „immer“
+	var off := FunTexts.new()
+	off.set_freq("immer")
+	off.set_level("aus")
+	var all_std := true
+	for i in 30:
+		off.tick(50.0)
+		show(off, view(1))
+		if show(off, view(ME)) != STD:
+			all_std = false
+	check(all_std, "Sprüche aus: auch bei Häufigkeit immer nur Standardtexte")
+	# Wiederholungssperre: 20 Sprüche je Anlass, 20 Züge hintereinander lauter verschiedene, nie zwei gleiche direkt nacheinander
+	var r := FunTexts.new()
+	r.set_freq("immer")
+	r.set_level("nett")
+	r.rng.seed = 99
+	var seen := {}
+	var last := ""
+	var same_in_row := 0
+	for i in 200:
+		r.tick(1.0)
+		show(r, view(1))
+		show(r, view(ME))
+		if i < 20:
+			seen[r.line] = true
+		if r.line == last:
+			same_in_row += 1
+		last = r.line
+	check(seen.size() == 20, "immer: 20 Züge, 20 verschiedene Zugsprüche (%d)" % seen.size())
+	check(same_in_row == 0, "immer: nie zweimal derselbe Spruch direkt hintereinander (%d)" % same_in_row)
+	# Alias teilt die Tüte: Pech auf dich und Farbjagd auf dich wiederholen sich nicht
+	var p := FunTexts.new()
+	p.set_freq("immer")
+	p.rng.seed = 4
+	var pick_seen := {}
+	for i in 20:
+		p.tick(3.0)
+		p.observe([{"e": "pending", "kind": "plus5", "amount": 5, "seat": 0, "by": 1}], mine, ME)
+		show(p, view(1))
+		pick_seen[p.line] = true
+	check(pick_seen.size() == 20, "immer: Pech-Sprüche (Alias) 20 verschiedene (%d)" % pick_seen.size())
+	# Wechsel der Häufigkeit beendet einen stehenden Spruch
+	var wf := FunTexts.new()
+	wf.set_freq("immer")
+	wf.tick(10.0)
+	show(wf, view(1))
+	show(wf, view(ME))
+	check(wf.showing(), "Spruch steht vor dem Wechsel")
+	wf.set_freq("selten")
+	check(not wf.showing() and show(wf, view(ME)) == STD, "Häufigkeit gewechselt: Spruch endet, Standardtext")
 
 
 func check_important() -> void:
@@ -318,6 +513,7 @@ func check_events() -> void:
 	for i in 50:
 		var r := FunTexts.new()
 		r.set_level("nett")
+		r.set_freq("normal")
 		r.tick(100.0)
 		r.observe([{"e": "reverse", "dir": -1, "seat": 1}], before, ME)
 		if show(r, view(2)) != view(2).hints.text:
@@ -407,6 +603,7 @@ func check_luck() -> void:
 		var k := FunTexts.new()
 		k.rng.seed = 100 + i
 		k.set_level("nett")
+		k.set_freq("normal")
 		k.tick(100.0)
 		k.observe([{"e": "finish", "seat": 1, "place": 1}], before, ME)
 		check(show(k, view(1)) == view(1).hints.text, "fremdes Fertigwerden: kein Glück-Spruch")

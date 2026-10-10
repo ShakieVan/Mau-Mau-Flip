@@ -21,6 +21,22 @@ msgstr "Cheeky"
 msgid "Ab und zu ein Spruch statt „Du bist dran“. Nett: ohne die frechen. Nur auf diesem Gerät."
 msgstr "Now and then a wisecrack instead of “Your turn”. Nice: without the cheeky ones. Only on this device."
 
+# --- Häufigkeit (Beta 1.4.5; "Normal" steht schon in en_screens.po)
+msgid "Häufigkeit"
+msgstr "Frequency"
+
+msgid "Selten"
+msgstr "Rare"
+
+msgid "Oft"
+msgstr "Often"
+
+msgid "Immer"
+msgstr "Always"
+
+msgid "Immer: jeder Zug bekommt einen Spruch, der bleibt stehen."
+msgstr "Always: every turn gets a wisecrack, and it stays up."
+
 # --- zug
 msgid "Die anderen warten schon auf dich."
 msgstr "Everyone's waiting on you."

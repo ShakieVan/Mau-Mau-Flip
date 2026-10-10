@@ -10,9 +10,10 @@ extends RefCounted
 #   - Ersetzt wird nur ein harmloser Standardtext: „Du bist dran – …“ (wenn etwas passt) bzw. „%s ist dran.“ (Phase turn, keine
 #     Strafe offen). Nie bei Farbwahl, Strafe, Mau-Pflicht („Denk an „Mau!““), Erwischen, Ablege-Auswahl, Glücksspiel,
 #     Fehlermeldungen (Meldungen laufen ohnehin getrennt) und nie, solange der Weitergeben-Sichtschutz liegt (blocked).
-#   - Ein Spruch steht SHOW_TIME s, danach kommt der Standardtext zurück. Zufällige Sprüche frühestens COOLDOWN s nach dem Ende
-#     des letzten; seltene Anlässe (Richtungswechsel, Pechsträhne, Farbjagd, „Autsch“, Glück, Trödeln) mindestens GAP s danach. Nie zwei
-#     Sprüche direkt hintereinander.
+#   - Ein Spruch steht SHOW_TIME s, danach kommt der Standardtext zurück (Häufigkeit „immer“: er bleibt stehen). Zufällige Sprüche
+#     frühestens (Abklingzeit der Häufigkeit) s nach dem Ende des letzten; seltene Anlässe (Richtungswechsel, Pechsträhne, Farbjagd,
+#     „Autsch“, Glück, Trödeln) mindestens GAP s danach (bei „immer“ sofort). Nie dieselbe Zeile kurz hintereinander: jeder Anlass
+#     mischt seine Zeilen und geht sie der Reihe nach durch.
 #   - Sprüche verraten keine Karten (nur öffentliche Kartenzahlen); Namen sind echte Mitspieler (keine Computergegner).
 
 const SETTING := "sprueche"
@@ -20,12 +21,26 @@ const LEVELS := ["aus", "nett", "frech"]
 const LEVEL_NAMES := [["aus", "Aus"], ["nett", "Nett"], ["frech", "Frech"]]
 const DEFAULT := "frech"
 
+# Einstellung "sprueche_oft" je Gerät (Beta 1.4.5, Nutzerwunsch 10.10.2026: „die Sprüche kommen sehr selten“): wie oft ein Spruch kommt.
+# selten | normal | oft (ab Werk) | immer. Nur wirksam, wenn "sprueche" nicht "aus" ist.
+#   Zug: Chance auf einen Spruch zum eigenen Zugbeginn; Abklingzeit: Pause nach dem Ende des letzten Spruchs; seltene Anlässe
+#   (viele/wenige Karten, Richtungswechsel, eigenes Fertigwerden): selten ×0,6, normal wie bisher, oft ×1,8 (höchstens 0,95), immer 1.
+#   immer: jeder eigene Zug und jeder Anlass bekommt einen Spruch, keine Abklingzeit; der Spruch bleibt stehen, bis ein neuer Anlass
+#   (frühestens nach IMMER_MIN_SHOW s), der Zugwechsel oder ein wichtiger Hinweis kommt – die Standardtexte sind damit ersetzt.
+const FREQ_SETTING := "sprueche_oft"
+const FREQS := ["selten", "normal", "oft", "immer"]
+const FREQ_NAMES := [["selten", "Selten"], ["normal", "Normal"], ["oft", "Oft"], ["immer", "Immer"]]
+const FREQ_DEFAULT := "oft"
+const FREQ_TURN := {"selten": 0.15, "normal": 0.35, "oft": 0.65, "immer": 1.0}
+const FREQ_COOLDOWN := {"selten": 40.0, "normal": 15.0, "oft": 5.0, "immer": 0.0}
+const FREQ_RARE := {"selten": 0.6, "normal": 1.0, "oft": 1.8, "immer": 1.0}   # Faktor für die seltenen Anlässe
+const RARE_CAP := 0.95          # oft: höchstens so wahrscheinlich
+const IMMER_MIN_SHOW := 1.5     # immer: so lange steht ein Spruch mindestens, bevor ein neuer Anlass ihn ablöst
+
 const SHOW_TIME := 7.0          # so lange steht ein Spruch
-const COOLDOWN := 25.0          # zufällige Sprüche (Zugbeginn): Abstand nach dem Ende des letzten
 const GAP := 4.0                # seltene Anlässe: Mindestabstand (nie direkt hintereinander)
 const QUEUE_LIFE := 6.0         # ein Anlass, der so lange nicht gezeigt werden konnte, verfällt
-const TURN_CHANCE := 0.25       # eigener Zug: so oft ein Spruch statt „Du bist dran“
-const MANY_CHANCE := 0.5
+const MANY_CHANCE := 0.5        # Grundwerte der seltenen Anlässe (Häufigkeit „normal“), siehe FREQ_RARE
 const FEW_CHANCE := 0.4
 const REVERSE_CHANCE := 0.6
 const NAME_CHANCE := 0.35       # Stufe frech: Anteil der Sprüche mit einem Mitspielernamen
@@ -317,6 +332,7 @@ const LINES := {
 }
 
 var level := DEFAULT
+var freq := FREQ_DEFAULT
 var rng := RandomNumberGenerator.new()
 var now := 0.0                   # Sekunden seit Beginn (tick)
 var text := ""                   # gerade angezeigter Spruch (fertig übersetzt); "" = keiner
@@ -342,6 +358,8 @@ var _fake_armed := false
 var _streak := {}                # Platz → Glücksspiel-Treffer in Folge
 var _jagd_victim := -1
 var _last_pick := {}             # Anlass → zuletzt gewählte Zeile
+var _bag := {}                   # Anlass → noch nicht gezeigte Zeilen (gemischt), siehe _pick
+var _shown_at := 0.0             # Zeitpunkt, an dem der stehende Spruch erschien
 var _picked := ""                # deutscher Text der zuletzt gewählten Zeile
 var _asked := -1000.0
 
@@ -355,8 +373,44 @@ static func clean_level(v: Variant) -> String:
 	return s if LEVELS.has(s) else DEFAULT
 
 
+static func clean_freq(v: Variant) -> String:
+	var s := str(v)
+	return s if FREQS.has(s) else FREQ_DEFAULT
+
+
+func set_freq(v: Variant) -> void:
+	var f := clean_freq(v)
+	if f == freq:
+		return
+	freq = f
+	_end()                           # ein stehender Spruch endet; die Hinweisleiste wird neu aufgebaut
+
+
+# Chance eines seltenen Anlasses bei der eingestellten Häufigkeit (base = Wert für „normal“)
+func rare(base: float) -> float:
+	if freq == "immer":
+		return 1.0
+	var f := float(FREQ_RARE[freq])
+	return minf(RARE_CAP, base * f) if f > 1.0 else base * f
+
+
+func turn_chance() -> float:
+	return float(FREQ_TURN[freq])
+
+
+func cooldown() -> float:
+	return float(FREQ_COOLDOWN[freq])
+
+
+func _gap() -> float:
+	return 0.0 if freq == "immer" else GAP
+
+
 func set_level(v: Variant) -> void:
+	var old := level
 	level = clean_level(v)
+	if level != old:
+		_bag = {}
 	if level == "aus":
 		_end()
 		_queued = {}
@@ -420,7 +474,7 @@ func observe(events: Array, before: Dictionary, my_seat: int) -> void:
 		var seat := int(d.get("seat", -1))
 		match str(d.get("e", "")):
 			"reverse":
-				if rng.randf() < REVERSE_CHANCE:
+				if rng.randf() < rare(REVERSE_CHANCE):
 					_queue("richtung", "")
 			"pending":
 				if str(d.get("kind", "")) == "farbjagd":
@@ -457,7 +511,7 @@ func observe(events: Array, before: Dictionary, my_seat: int) -> void:
 				if seat == my_seat and int(d.get("count", 0)) >= GLUECK_DISCARD:
 					_queue("glueck", "")
 			"finish":
-				if seat == my_seat and rng.randf() < GLUECK_FINISH_CHANCE:
+				if seat == my_seat and rng.randf() < rare(GLUECK_FINISH_CHANCE):
 					_queue("glueck", "")
 			"round_start", "start", "seats":
 				_streak = {}
@@ -510,6 +564,8 @@ func hint_for(v: Dictionary, h: Dictionary, my_seat: int, standard: String, bloc
 		if not blocked and mine and _start_due and not _replaceable:
 			_start_due = false       # wichtiger Hinweis zu Zugbeginn: diesmal kein Spruch
 		return standard
+	if text != "" and freq == "immer" and _queue_ready(mine) and now - _shown_at >= IMMER_MIN_SHOW:
+		_end()                       # ein neuer Anlass löst den stehenden Spruch ab
 	if text == "":
 		_try_show(v, my_seat, turn, mine)
 	return text if text != "" else standard
@@ -530,13 +586,17 @@ func tick(delta: float) -> bool:
 		refresh = true
 	if not _my_turn and _other_seat >= 0 and _other_name != "" and not _other_done and now - _other_start >= SLOW_OTHER:
 		_other_done = true
-		if now - _last_end >= COOLDOWN:
+		if now - _last_end >= cooldown():
 			_queue("langsam_andere", _other_name)
 			refresh = true
 	# wartender Anlass: höchstens zweimal je Sekunde nachfragen, ob er jetzt passt
-	if not _queued.is_empty() and text == "" and _replaceable and now - _last_end >= GAP and now - _asked >= 0.5:
-		_asked = now
-		refresh = true
+	if not _queued.is_empty() and _replaceable and now - _asked >= 0.5:
+		if text == "" and now - _last_end >= _gap():
+			_asked = now
+			refresh = true
+		elif text != "" and freq == "immer" and now - _shown_at >= IMMER_MIN_SHOW:
+			_asked = now             # bei „immer“ löst ein neuer Anlass den stehenden Spruch ab
+			refresh = true
 	return refresh
 
 
@@ -546,11 +606,18 @@ func showing() -> bool:
 
 # --- intern ---
 
+# Wartet ein Anlass, der zu diesem Zug passt? (Trödel-Sprüche gehören zum eigenen Zug, Kommentare über andere nicht dorthin)
+func _queue_ready(mine: bool) -> bool:
+	if _queued.is_empty() or now - float(_queued.t) > QUEUE_LIFE:
+		return false
+	return not ((_queued.occ == "langsam" and not mine) or (_queued.occ == "langsam_andere" and mine))
+
+
 func _try_show(v: Dictionary, my_seat: int, turn: int, mine: bool) -> void:
 	if not _queued.is_empty():
 		if now - float(_queued.t) > QUEUE_LIFE:
 			_queued = {}
-		elif now - _last_end >= GAP:
+		elif now - _last_end >= _gap():
 			var q: Dictionary = _queued
 			_queued = {}
 			# Trödel-Sprüche gehören zum eigenen Zug, Kommentare zu anderen nicht dorthin
@@ -562,15 +629,15 @@ func _try_show(v: Dictionary, my_seat: int, turn: int, mine: bool) -> void:
 	if not (mine and _start_due):
 		return
 	_start_due = false
-	if now - _last_end < COOLDOWN:
+	if now - _last_end < cooldown():
 		return
 	var n := (v.get("hand", []) as Array).size() if v.get("hand", []) is Array else 0
 	var occ := ""
-	if n >= MANY and rng.randf() < MANY_CHANCE:
+	if n >= MANY and rng.randf() < rare(MANY_CHANCE):
 		occ = "viele"
-	elif n >= FEW_MIN and n <= FEW_MAX and rng.randf() < FEW_CHANCE:
+	elif n >= FEW_MIN and n <= FEW_MAX and rng.randf() < rare(FEW_CHANCE):
 		occ = "wenige"
-	elif rng.randf() < TURN_CHANCE:
+	elif rng.randf() < turn_chance():
 		occ = "zug"
 	if occ == "":
 		return
@@ -594,7 +661,8 @@ func _show(t: String, occ: String, turn: int) -> void:
 	text = t
 	line = _picked
 	occasion = occ
-	_until = now + SHOW_TIME
+	_until = 1.0e18 if freq == "immer" else now + SHOW_TIME
+	_shown_at = now
 	_shown_turn = turn
 
 
@@ -618,15 +686,29 @@ func _queue(occ: String, name: String) -> void:
 	_queued = {"occ": occ, "name": name, "t": now}
 
 
-# Zufällige Zeile (nie dieselbe wie zuletzt in diesem Anlass), übersetzt und mit Namen
+# Nächste Zeile eines Anlasses (übersetzt, mit Namen): Die Zeilen werden gemischt und der Reihe nach gezeigt, erst dann wieder gemischt –
+# nichts wiederholt sich, bevor alle dran waren (bei „immer“ wichtig). Die erste Zeile einer neuen Runde ist nie die zuletzt gezeigte.
+# Aliase (Pech auf dich) teilen sich die Tüte.
 func _pick(occ: String, name: String) -> String:
 	var pool := lines_for(occ, level)
 	if pool.is_empty():
 		return ""
-	var last := str(_last_pick.get(occ, ""))
-	var choices := pool.filter(func(s: String) -> bool: return s != last) if pool.size() > 1 else pool
-	var de := str(choices[rng.randi_range(0, choices.size() - 1)])
-	_last_pick[occ] = de
+	var key := str(ALIAS.get(occ, occ))
+	var bag: Array = (_bag.get(key, []) as Array).filter(func(s: String) -> bool: return pool.has(s))
+	if bag.is_empty():
+		bag = pool.duplicate()
+		for i in range(bag.size() - 1, 0, -1):
+			var j := rng.randi_range(0, i)
+			var tmp: Variant = bag[i]
+			bag[i] = bag[j]
+			bag[j] = tmp
+		if bag.size() > 1 and str(bag[bag.size() - 1]) == str(_last_pick.get(key, "")):
+			var t: Variant = bag[bag.size() - 1]
+			bag[bag.size() - 1] = bag[0]
+			bag[0] = t
+	var de := str(bag.pop_back())
+	_bag[key] = bag
+	_last_pick[key] = de
 	_picked = de
 	return format_line(de, name)
 

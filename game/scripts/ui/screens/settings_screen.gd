@@ -177,13 +177,28 @@ static func personal(parent: Control, section: Callable, tempo := true) -> void:
 	look.add_child(ScreenKit.switch_row("Spielbare Karten hervorheben", "Nur auf diesem Gerät: Karten, die du gerade legen kannst, werden in deiner Hand hervorgehoben.",
 		bool(UiApp.setting("hervorheben", true)), func(on: bool) -> void: _store("hervorheben", on), "Hervorheben"))
 	# Freche Sprüche (Beta 1.4.4, FunTexts): persönlich je Gerät, ab Werk frech; der Tisch hört auf App.settings.changed
-	var spr := ScreenKit.choice(FunTexts.LEVEL_NAMES, FunTexts.clean_level(UiApp.setting(FunTexts.SETTING, FunTexts.DEFAULT)),
-		func(v: String) -> void: _store(FunTexts.SETTING, v), UiFonts.size("text"))
+	# Häufigkeit (Beta 1.4.5): nur sichtbar, solange Sprüche nicht „Aus“ sind. Auswahlreihen mittig, nicht auf Zeilenhöhe gestreckt.
+	var spr_level := FunTexts.clean_level(UiApp.setting(FunTexts.SETTING, FunTexts.DEFAULT))
+	var oft := ScreenKit.choice(FunTexts.FREQ_NAMES, FunTexts.clean_freq(UiApp.setting(FunTexts.FREQ_SETTING, FunTexts.FREQ_DEFAULT)),
+		func(v: String) -> void: _store(FunTexts.FREQ_SETTING, v), UiFonts.size("text"))
+	oft.name = "SpruecheOft"
+	oft.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var oft_row := ScreenKit.row("Häufigkeit", oft, 190.0, "Immer: jeder Zug bekommt einen Spruch, der bleibt stehen.")
+	oft_row.name = "SpruecheOftZeile"
+	oft_row.visible = spr_level != "aus"
+	var on_spr := func(v: String) -> void:
+		_store(FunTexts.SETTING, v)
+		if is_instance_valid(oft_row):
+			oft_row.visible = v != "aus"
+	var spr := ScreenKit.choice(FunTexts.LEVEL_NAMES, spr_level, on_spr, UiFonts.size("text"))
 	spr.name = "Sprueche"
+	spr.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	look.add_child(ScreenKit.row("Sprüche", spr, 190.0, "Ab und zu ein Spruch statt „Du bist dran“. Nett: ohne die frechen. Nur auf diesem Gerät."))
+	look.add_child(oft_row)
 	look.add_child(ScreenKit.switch_row("Vibration", "", bool(UiApp.setting("vibration", true)), func(on: bool) -> void: _store("vibration", on), "Vibration"))
 	var fx := ScreenKit.choice([["voll", "Voll"], ["reduziert", "Reduziert"]], str(UiApp.setting("effekte", "voll")), func(v: String) -> void: _store("effekte", v), UiFonts.size("text"))
 	fx.name = "Effekte"
+	fx.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	look.add_child(ScreenKit.row("Effekte", fx, 190.0, "Reduziert: kürzer, weniger Teilchen"))
 	if tempo:
 		look.add_child(tempo_row())

@@ -25,6 +25,7 @@ func _initialize() -> void:
 func _new_table(sample: TableSamples, seat := 0, with_hand := true) -> TableView:
 	var t := TableView.new()
 	root.add_child(t)
+	t.sprueche.set_level("aus")   # Sprüche (1.4.4/1.4.5) ersetzen zufällig den Standardtext; dieser Test prüft die Standardtexte
 	if with_hand:
 		t.set_hand(DemoHand.new())
 	t.apply_view(sample.view_for(seat))
