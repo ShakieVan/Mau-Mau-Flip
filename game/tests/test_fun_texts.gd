@@ -8,6 +8,7 @@ var failed := 0
 
 const ME := 0
 const STD := "Du bist dran – lege Rot oder 7."
+const NF := "Du bist dran – nichts passt, zieh eine Karte."
 
 
 func check(cond: bool, text: String) -> void:
@@ -58,6 +59,7 @@ func _init() -> void:
 	check_events()
 	check_fake_tip()
 	check_luck()
+	check_nothing_fits()
 	check_english()
 	I18n.set_language("de")
 	print("RESULT: %d ok, %d failed" % [ok, failed])
@@ -340,7 +342,7 @@ func check_immer() -> void:
 	# wichtige Hinweise werden nie ersetzt
 	var imp := view(ME, 2, "Du bist dran – lege Rot oder 7. Denk an „Mau!“")
 	check(show(e, imp) == imp.hints.text and not e.showing(), "immer: Mau-Pflicht verdrängt den Spruch")
-	for t in ["Du bist dran – nichts passt, zieh eine Karte.", "Wünscher +2 auf dich – Zieh 2.", "Drück den Glücksspielknopf!"]:
+	for t in ["Wünscher +2 auf dich – Zieh 2.", "Drück den Glücksspielknopf!"]:
 		var w := view(ME, 7, t)
 		check(show(e, w) == t and not e.showing(), "immer: wichtiger Hinweis bleibt: " + t)
 	var col := view(ME, 7, "Nach dem Flip liegt ein Joker oben – wähle die neue Farbe.", "color")
@@ -640,4 +642,116 @@ func check_english() -> void:
 	var s := show(f, view(2))
 	check(["Ouch!", "That hurt.", "So close to the finish. Ouch!", "So close to the end – that stings.", "Almost done and then this. Mean!",
 		"Hehe. I mean: oh no!"].has(s), "Spruch auf Englisch: " + s)
+	I18n.set_language("de")
+
+
+# Beta 1.4.6: Anlass „nichts passt“ – ersetzt nur den reinen Hinweis „nichts passt, zieh eine Karte“ (Häufigkeit wie der Zug-Anlass)
+func check_nothing_fits() -> void:
+	var lines := FunTexts.lines_for("nichts_passt", "frech")
+	check(lines.size() == 40 and FunTexts.lines_for("nichts_passt", "nett").size() == 35 and FunTexts.lines_for("nichts_passt", "aus").is_empty(),
+		"nichts_passt: 40 Sprüche (35 davon nett, 5 frech)")
+	for l in lines:
+		check(l.contains("ieh") or l.contains("Stapel") or l.contains("Nachschub"), "Spruch nennt das Ziehen: " + l)
+	var vw := view(ME, 7, NF)
+	check(FunTexts.nothing_fits(vw, vw.hints, ME) and not FunTexts.nothing_fits(vw, vw.hints, -1) and not FunTexts.nothing_fits(view(1), view(1).hints, ME),
+		"nothing_fits: nur im eigenen Zug mit dem reinen Hinweis")
+	# Immer: jeder Nichts-passt-Zug bekommt einen Spruch aus dem Anlass, alle 40 der Reihe nach verschieden, nie der Zug-/Tipp-Anlass
+	var f := FunTexts.new()
+	f.set_freq("immer")
+	f.rng.seed = 5
+	var seen := {}
+	var bad := 0
+	for i in 40:
+		f.tick(0.2)
+		show(f, view(1))
+		var t := show(f, view(ME, 7, NF))
+		if t == NF or not f.showing() or f.occasion != "nichts_passt" or not lines.has(f.line) or t != I18n.t(f.line):
+			bad += 1
+		seen[f.line] = true
+	check(bad == 0, "immer: jeder Nichts-passt-Zug bekommt einen nichts_passt-Spruch (%d Ausnahmen)" % bad)
+	check(seen.size() == 40, "immer: 40 Züge, 40 verschiedene Sprüche (%d)" % seen.size())
+	# kein falscher Tipp, keine Pointe nach dem Ziehen
+	f.observe([{"e": "draw", "seat": 0, "reason": "zug", "count": 1}], view(ME), ME)
+	check(f.take_notice() == "", "nichts_passt löst keine „verarscht“-Pointe aus")
+	# der Spruch endet, sobald der Hinweis nicht mehr der reine Nichts-passt-Fall ist; bleibt sonst stehen
+	f.tick(30.0)
+	show(f, view(1))
+	var s1 := show(f, view(ME, 7, NF))
+	check(f.occasion == "nichts_passt" and show(f, view(ME, 7, NF)) == s1, "Spruch steht über wiederholte Ansichten")
+	check(show(f, view(ME)) == STD and not f.showing(), "anderer Hinweis im selben Zug: Spruch endet")
+	# Strafen, Ziehpflicht, Mau-Zusatz, leere Stapel, Farbwahl, Auswahl, Erwischen: Hinweis bleibt unersetzt
+	var imp := FunTexts.new()
+	imp.set_freq("immer")
+	for t in ["Wünscher +2 auf dich – Zieh 2.", "+5 auf dich – Zieh 5.", "Farbjagd auf dich – Zieh, bis Rot kommt.",
+			"Du bist dran – nichts passt und beide Stapel sind leer: aussetzen.", "Du bist dran – nichts passt, zieh eine Karte. Denk an „Mau!“"]:
+		imp.tick(40.0)
+		show(imp, view(1))
+		var w := view(ME, 7, t)
+		check(show(imp, w) == t and not imp.showing(), "immer: bleibt unersetzt: " + t)
+	var pen := view(ME, 7, NF)
+	pen.pending = {"kind": "plus5", "amount": 5}
+	imp.tick(40.0)
+	show(imp, view(1))
+	check(show(imp, pen) == NF and not imp.showing(), "offene Strafe: Hinweis bleibt")
+	var col := view(ME, 7, NF)
+	col.hints["need_color"] = true
+	check(show(imp, col) == NF and not imp.showing(), "Farbwahl: Hinweis bleibt")
+	var cat := view(ME, 7, NF)
+	cat.hints["catch"] = [1]
+	check(show(imp, cat) == NF and not imp.showing(), "Erwischen offen: Hinweis bleibt")
+	var dpv := view(ME, 7, NF)
+	dpv["discard_pick"] = {"seat": 0, "color": "rot"}
+	check(show(imp, dpv) == NF and not imp.showing(), "Ablege-Auswahl: Hinweis bleibt")
+	check(imp.hint_for(view(ME, 7, NF), view(ME, 7, NF).hints, ME, NF, true) == NF, "Weitergeben-Sichtschutz: nie ein Spruch")
+	# Aus und ohne „Spielbare Karten hervorheben“: nie (der Spruch würde „nichts passt“ verraten)
+	var off := FunTexts.new()
+	off.set_freq("immer")
+	off.set_level("aus")
+	off.tick(40.0)
+	show(off, view(1))
+	check(show(off, view(ME, 7, NF)) == NF and not off.showing(), "Sprüche aus: Hinweis bleibt")
+	var nohl := FunTexts.new()
+	nohl.set_freq("immer")
+	nohl.nothing_ok = false
+	nohl.tick(40.0)
+	show(nohl, view(1))
+	check(show(nohl, view(ME, 7, NF)) == NF and not nohl.showing(), "Hervorheben aus: Hinweis bleibt")
+	# Stufe nett: keine frechen Zeilen (alle 35 kommen, kein (F))
+	var nt := FunTexts.new()
+	nt.set_freq("immer")
+	nt.set_level("nett")
+	nt.rng.seed = 8
+	var nett_seen := {}
+	for i in 35:
+		nt.tick(0.2)
+		show(nt, view(1))
+		show(nt, view(ME, 7, NF))
+		nett_seen[nt.line] = true
+	var nett_lines := FunTexts.lines_for("nichts_passt", "nett")
+	check(nett_seen.size() == 35 and nett_seen.keys().all(func(l: Variant) -> bool: return nett_lines.has(l)), "nett: 35 Sprüche ohne die frechen")
+	# Häufigkeit wie der Zug-Anlass (oft: 65 %), selten < normal < oft
+	var rate := {}
+	for fq in ["selten", "normal", "oft"]:
+		var g := FunTexts.new()
+		g.set_freq(fq)
+		g.rng.seed = 21
+		var hits := 0
+		for i in 600:
+			g.tick(10.0)
+			g.tick(50.0)             # erst endet der letzte Spruch, dann vergeht die Abklingzeit
+			show(g, view(1))
+			show(g, view(ME, 7, NF))
+			if g.showing():
+				hits += 1
+		rate[fq] = float(hits) / 600.0
+	check(rate.selten < rate.normal and rate.normal < rate.oft, "Häufigkeit steigt: %s" % str(rate))
+	check(absf(rate.oft - FunTexts.FREQ_TURN["oft"]) < 0.08 and absf(rate.normal - FunTexts.FREQ_TURN["normal"]) < 0.08, "Wahrscheinlichkeit wie beim Zug-Anlass (%s)" % str(rate))
+	# Englisch
+	I18n.set_language("en")
+	var en := FunTexts.new()
+	en.set_freq("immer")
+	en.tick(40.0)
+	show(en, view(1))
+	var et := show(en, view(ME, 7, NF))
+	check(en.occasion == "nichts_passt" and et != en.line and et.length() > 5, "Englisch: übersetzter Spruch (%s)" % et)
 	I18n.set_language("de")

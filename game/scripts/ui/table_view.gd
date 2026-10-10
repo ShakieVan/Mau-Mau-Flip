@@ -764,6 +764,7 @@ func _apply_hints(h: Dictionary, turn: int) -> void:
 		shown = I18n.t("%s wählt aus …") % str(_player(int(dp.get("seat", -1))).get("name", "?"))
 	else:
 		shown = _hint_local(text, h.get("lt", []) if h.get("lt") is Array else [])
+	sprueche.nothing_ok = highlight                              # ohne „Spielbare Karten hervorheben“ verrät „nichts passt“ nichts (1.4.6)
 	hint_bar.show_hint(sprueche.hint_for(view, h, my_seat, shown, handover.visible), me_turn)   # gelegentlich ein Spruch (1.4.4)
 	var pointe := sprueche.take_notice()
 	if pointe != "":

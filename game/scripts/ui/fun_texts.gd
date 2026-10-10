@@ -37,7 +37,9 @@ const FREQ_RARE := {"selten": 0.6, "normal": 1.0, "oft": 1.8, "immer": 1.0}   # 
 const RARE_CAP := 0.95          # oft: höchstens so wahrscheinlich
 const IMMER_MIN_SHOW := 1.5     # immer: so lange steht ein Spruch mindestens, bevor ein neuer Anlass ihn ablöst
 
-const SHOW_TIME := 7.0          # so lange steht ein Spruch
+const NOTHING_FITS_TEXT := "Du bist dran – nichts passt, zieh eine Karte."   # Standardhinweis (mau_game.gd), Anlass "nichts_passt"
+
+const SHOW_TIME := 7.0         # so lange steht ein Spruch
 const GAP := 4.0                # seltene Anlässe: Mindestabstand (nie direkt hintereinander)
 const QUEUE_LIFE := 6.0         # ein Anlass, der so lange nicht gezeigt werden konnte, verfällt
 const MANY_CHANCE := 0.5        # Grundwerte der seltenen Anlässe (Häufigkeit „normal“), siehe FREQ_RARE
@@ -107,6 +109,48 @@ const LINES := {
 		["%s hat dich „Anfänger“ genannt. Tu was!", "frech"],
 		["Wenn du %s jetzt aussetzen lässt, sag ich nichts.", "frech"],
 		["%s wettet gegen dich. Mit Keksen.", "frech"],
+	],
+	"nichts_passt": [
+		["Nichts passt. Ab zum Stapel!", "nett"],
+		["Leider nix dabei. Zieh eine!", "nett"],
+		["Deine Karten streiken. Zieh eine neue.", "nett"],
+		["Keine passt? Dann ab zum Ziehstapel.", "nett"],
+		["Tja, nichts dabei. Der Stapel wartet schon.", "nett"],
+		["Nix zu machen – zieh eine Karte.", "nett"],
+		["Die Ablage mag gerade keine deiner Karten. Zieh!", "nett"],
+		["Kein Treffer auf der Hand. Zieh eine.", "nett"],
+		["Passt nicht, gibt's nicht? Doch. Zieh eine.", "nett"],
+		["Deine Hand hat heute frei. Zieh eine Karte.", "nett"],
+		["Leere Versprechen auf der Hand. Zieh!", "nett"],
+		["Nichts passt – Zeit für Nachschub vom Stapel.", "nett"],
+		["Ab zum Buffet: eine Karte vom Stapel, bitte.", "nett"],
+		["Keine Chance. Der Stapel ruft.", "nett"],
+		["Fehlanzeige! Zieh eine Karte.", "nett"],
+		["Da passt nix. Ziehen, bitte.", "nett"],
+		["Pech gehabt – nimm eine vom Stapel.", "nett"],
+		["Zieh eine. Vielleicht ist ja die richtige dabei.", "nett"],
+		["Deine Karten sind sich einig: Ziehen!", "nett"],
+		["Nichts passt zusammen. Wie bei Socken. Zieh eine.", "nett"],
+		["Der Stapel hat Sehnsucht nach dir. Zieh!", "nett"],
+		["Keine passende Karte? Dann gibt's Nachschub.", "nett"],
+		["Kartenflaute. Zieh eine.", "nett"],
+		["Mit dieser Hand wird das nix. Zieh eine.", "nett"],
+		["Die Farbe stimmt nicht, die Zahl auch nicht. Zieh!", "nett"],
+		["Gut gemischt, schlecht getroffen. Zieh eine.", "nett"],
+		["Shopping-Zeit: eine Karte vom Stapel.", "nett"],
+		["Nix passt? Willkommen im Club. Zieh eine.", "nett"],
+		["Deine Karten sind heute einfach nutzlos. Zieh eine.", "frech"],
+		["Nichts passt. Ab zum Stapel, aber flott!", "frech"],
+		["Nichts passt. War ja klar. Zieh eine.", "frech"],
+		["Die Katze empfiehlt: eine vom Stapel ziehen.", "nett"],
+		["Ziehen ist auch eine Strategie.", "nett"],
+		["Kein Match. Nach links wischen – und eine ziehen.", "nett"],
+		["Leider kein Volltreffer. Zieh eine Karte.", "nett"],
+		["Der Stapel hat bestimmt was Passendes. Zieh!", "nett"],
+		["Nichts zu legen, aber was zu ziehen!", "nett"],
+		["Zieh eine – das Glück wartet vielleicht oben.", "nett"],
+		["Nichts passt. Die anderen freuen sich schon. Zieh!", "frech"],
+		["Deine Hand: viel Auswahl, null Treffer. Zieh eine.", "frech"]
 	],
 	"tipp": [
 		["Im Ziehstapel liegt vielleicht genau die Karte, die du brauchst. Schau mal nach.", "frech"],
@@ -333,6 +377,8 @@ const LINES := {
 
 var level := DEFAULT
 var freq := FREQ_DEFAULT
+var nothing_ok := true           # false = „Spielbare Karten hervorheben“ aus: ein Spruch „nichts passt“ würde es verraten → nie
+var _nofit := false              # der Hinweis ist gerade der reine „nichts passt, zieh eine Karte“-Fall (ersetzbar durch Anlass nichts_passt)
 var rng := RandomNumberGenerator.new()
 var now := 0.0                   # Sekunden seit Beginn (tick)
 var text := ""                   # gerade angezeigter Spruch (fertig übersetzt); "" = keiner
@@ -463,6 +509,25 @@ static func replaceable(v: Dictionary, h: Dictionary, my_seat: int) -> bool:
 	return t == "" or t.ends_with("ist dran.") or t.begins_with("Du bist fertig")
 
 
+# Der reine „nichts passt, zieh eine Karte“-Fall (Beta 1.4.6): eigener Zug, keine Strafe/Ziehpflicht, keine Auswahl, kein Mau-Zusatz,
+# Ziehen möglich. Jeder Spruch des Anlasses "nichts_passt" sagt dasselbe und darf den Hinweis ersetzen.
+static func nothing_fits(v: Dictionary, h: Dictionary, my_seat: int) -> bool:
+	if my_seat < 0 or str(v.get("phase", "")) != "turn" or int(v.get("turn", -1)) != my_seat:
+		return false
+	var pend: Variant = v.get("pending", {})
+	if pend is Dictionary and not (pend as Dictionary).is_empty():
+		return false
+	var dp: Variant = v.get("discard_pick", {})
+	if dp is Dictionary and not (dp as Dictionary).is_empty():
+		return false
+	if bool(h.get("need_color", false)) or bool(h.get("can_challenge", false)):
+		return false
+	var c: Variant = h.get("catch", [])
+	if c is Array and not (c as Array).is_empty():
+		return false
+	return str(h.get("text", "")) == NOTHING_FITS_TEXT
+
+
 # Ereignisse des Gastgebers (vor der neuen Sicht); before = bisherige Sicht (Kartenzahlen, Namen)
 func observe(events: Array, before: Dictionary, my_seat: int) -> void:
 	if level == "aus":
@@ -534,7 +599,8 @@ func hint_for(v: Dictionary, h: Dictionary, my_seat: int, standard: String, bloc
 	var playing := phase != "round_over" and phase != "game_over" and phase != "idle" and phase != ""
 	var mine := my_seat >= 0 and turn == my_seat and playing
 	_blocked = blocked
-	_replaceable = level != "aus" and not blocked and replaceable(v, h, my_seat)
+	_nofit = nothing_ok and level != "aus" and not blocked and nothing_fits(v, h, my_seat)
+	_replaceable = level != "aus" and not blocked and (_nofit or replaceable(v, h, my_seat))
 	# eigener Zug beginnt / endet
 	if mine and not _my_turn:
 		_turn_start = now
@@ -558,7 +624,7 @@ func hint_for(v: Dictionary, h: Dictionary, my_seat: int, standard: String, bloc
 		_other_seat = -1
 		_other_name = ""
 	# ein laufender Spruch endet, wenn der Zug wechselt oder der Hinweis wichtig wird
-	if text != "" and (not _replaceable or turn != _shown_turn):
+	if text != "" and (not _replaceable or turn != _shown_turn or (occasion == "nichts_passt") != _nofit):
 		_end()
 	if level == "aus" or not _replaceable:
 		if not blocked and mine and _start_due and not _replaceable:
@@ -610,6 +676,8 @@ func showing() -> bool:
 func _queue_ready(mine: bool) -> bool:
 	if _queued.is_empty() or now - float(_queued.t) > QUEUE_LIFE:
 		return false
+	if _nofit and _queued.occ != "nichts_passt":
+		return false                     # bei „nichts passt“ nur Sprüche, die das Ziehen nennen
 	return not ((_queued.occ == "langsam" and not mine) or (_queued.occ == "langsam_andere" and mine))
 
 
@@ -621,7 +689,7 @@ func _try_show(v: Dictionary, my_seat: int, turn: int, mine: bool) -> void:
 			var q: Dictionary = _queued
 			_queued = {}
 			# Trödel-Sprüche gehören zum eigenen Zug, Kommentare zu anderen nicht dorthin
-			if not ((q.occ == "langsam" and not mine) or (q.occ == "langsam_andere" and mine)):
+			if not _nofit and not ((q.occ == "langsam" and not mine) or (q.occ == "langsam_andere" and mine)):
 				_show(_pick(str(q.occ), str(q.name)), str(q.occ), turn)
 				if text != "":
 					_start_due = false
@@ -630,6 +698,10 @@ func _try_show(v: Dictionary, my_seat: int, turn: int, mine: bool) -> void:
 		return
 	_start_due = false
 	if now - _last_end < cooldown():
+		return
+	if _nofit:                           # „nichts passt“: wie der Zug-Anlass, aber nur Sprüche, die das Ziehen nennen
+		if rng.randf() < turn_chance():
+			_show(_pick("nichts_passt", ""), "nichts_passt", turn)
 		return
 	var n := (v.get("hand", []) as Array).size() if v.get("hand", []) is Array else 0
 	var occ := ""

@@ -256,3 +256,48 @@ Die englische Fassung entsteht sinngemäß, nicht wörtlich.
 18. Jetzt nur nicht abheben.
 19. So sehen Gewinner aus.
 20. Bravo, weiter so!
+
+## 12. Du bist dran – nichts passt, zieh eine Karte
+
+Diese Sprüche dürfen den Hinweis „Nichts passt – zieh eine Karte“ ersetzen, weil jeder von ihnen dasselbe sagt: nichts passt, also ziehen.
+
+1. Nichts passt. Ab zum Stapel!
+2. Leider nix dabei. Zieh eine!
+3. Deine Karten streiken. Zieh eine neue.
+4. Keine passt? Dann ab zum Ziehstapel.
+5. Tja, nichts dabei. Der Stapel wartet schon.
+6. Nix zu machen – zieh eine Karte.
+7. Die Ablage mag gerade keine deiner Karten. Zieh!
+8. Kein Treffer auf der Hand. Zieh eine.
+9. Passt nicht, gibt's nicht? Doch. Zieh eine.
+10. Deine Hand hat heute frei. Zieh eine Karte.
+11. Leere Versprechen auf der Hand. Zieh!
+12. Nichts passt – Zeit für Nachschub vom Stapel.
+13. Ab zum Buffet: eine Karte vom Stapel, bitte.
+14. Keine Chance. Der Stapel ruft.
+15. Fehlanzeige! Zieh eine Karte.
+16. Da passt nix. Ziehen, bitte.
+17. Pech gehabt – nimm eine vom Stapel.
+18. Zieh eine. Vielleicht ist ja die richtige dabei.
+19. Deine Karten sind sich einig: Ziehen!
+20. Nichts passt zusammen. Wie bei Socken. Zieh eine.
+21. Der Stapel hat Sehnsucht nach dir. Zieh!
+22. Keine passende Karte? Dann gibt's Nachschub.
+23. Kartenflaute. Zieh eine.
+24. Mit dieser Hand wird das nix. Zieh eine.
+25. Die Farbe stimmt nicht, die Zahl auch nicht. Zieh!
+26. Gut gemischt, schlecht getroffen. Zieh eine.
+27. Shopping-Zeit: eine Karte vom Stapel.
+28. Nix passt? Willkommen im Club. Zieh eine.
+29. Deine Karten sind heute einfach nutzlos. Zieh eine. (F)
+30. Nichts passt. Ab zum Stapel, aber flott! (F)
+31. Nichts passt. War ja klar. Zieh eine. (F)
+32. Die Katze empfiehlt: eine vom Stapel ziehen.
+33. Ziehen ist auch eine Strategie.
+34. Kein Match. Nach links wischen – und eine ziehen.
+35. Leider kein Volltreffer. Zieh eine Karte.
+36. Der Stapel hat bestimmt was Passendes. Zieh!
+37. Nichts zu legen, aber was zu ziehen!
+38. Zieh eine – das Glück wartet vielleicht oben.
+39. Nichts passt. Die anderen freuen sich schon. Zieh! (F)
+40. Deine Hand: viel Auswahl, null Treffer. Zieh eine. (F)

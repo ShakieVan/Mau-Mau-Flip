@@ -807,3 +807,125 @@ msgstr "Turned the world upside down often"
 
 msgid "Hände reihum weitergegeben"
 msgstr "Passed hands around"
+
+# --- nichts_passt (Beta 1.4.6)
+msgid "Nichts passt. Ab zum Stapel!"
+msgstr "Nothing fits. Off to the pile!"
+
+msgid "Leider nix dabei. Zieh eine!"
+msgstr "Sorry, nothing there. Draw one!"
+
+msgid "Deine Karten streiken. Zieh eine neue."
+msgstr "Your cards are on strike. Draw a new one."
+
+msgid "Keine passt? Dann ab zum Ziehstapel."
+msgstr "Nothing fits? Then off to the draw pile."
+
+msgid "Tja, nichts dabei. Der Stapel wartet schon."
+msgstr "Well, nothing there. The pile is already waiting."
+
+msgid "Nix zu machen – zieh eine Karte."
+msgstr "Nothing doing – draw a card."
+
+msgid "Die Ablage mag gerade keine deiner Karten. Zieh!"
+msgstr "The discard pile doesn't like any of your cards right now. Draw!"
+
+msgid "Kein Treffer auf der Hand. Zieh eine."
+msgstr "No hit in your hand. Draw one."
+
+msgid "Passt nicht, gibt's nicht? Doch. Zieh eine."
+msgstr "Doesn't fit, can't be? Oh yes. Draw one."
+
+msgid "Deine Hand hat heute frei. Zieh eine Karte."
+msgstr "Your hand has the day off. Draw a card."
+
+msgid "Leere Versprechen auf der Hand. Zieh!"
+msgstr "Empty promises in your hand. Draw!"
+
+msgid "Nichts passt – Zeit für Nachschub vom Stapel."
+msgstr "Nothing fits – time for a refill from the pile."
+
+msgid "Ab zum Buffet: eine Karte vom Stapel, bitte."
+msgstr "Off to the buffet: one card from the pile, please."
+
+msgid "Keine Chance. Der Stapel ruft."
+msgstr "No chance. The pile is calling."
+
+msgid "Fehlanzeige! Zieh eine Karte."
+msgstr "Nope! Draw a card."
+
+msgid "Da passt nix. Ziehen, bitte."
+msgstr "Nothing fits there. Draw, please."
+
+msgid "Pech gehabt – nimm eine vom Stapel."
+msgstr "Bad luck – take one from the pile."
+
+msgid "Zieh eine. Vielleicht ist ja die richtige dabei."
+msgstr "Draw one. Maybe the right one is in there."
+
+msgid "Deine Karten sind sich einig: Ziehen!"
+msgstr "Your cards all agree: draw!"
+
+msgid "Nichts passt zusammen. Wie bei Socken. Zieh eine."
+msgstr "Nothing goes together. Like socks. Draw one."
+
+msgid "Der Stapel hat Sehnsucht nach dir. Zieh!"
+msgstr "The pile is longing for you. Draw!"
+
+msgid "Keine passende Karte? Dann gibt's Nachschub."
+msgstr "No matching card? Then here's a refill."
+
+msgid "Kartenflaute. Zieh eine."
+msgstr "Card drought. Draw one."
+
+msgid "Mit dieser Hand wird das nix. Zieh eine."
+msgstr "This hand won't get you anywhere. Draw one."
+
+msgid "Die Farbe stimmt nicht, die Zahl auch nicht. Zieh!"
+msgstr "The colour is wrong and so is the number. Draw!"
+
+msgid "Gut gemischt, schlecht getroffen. Zieh eine."
+msgstr "Well shuffled, badly hit. Draw one."
+
+msgid "Shopping-Zeit: eine Karte vom Stapel."
+msgstr "Shopping time: one card from the pile."
+
+msgid "Nix passt? Willkommen im Club. Zieh eine."
+msgstr "Nothing fits? Welcome to the club. Draw one."
+
+msgid "Deine Karten sind heute einfach nutzlos. Zieh eine."
+msgstr "Your cards are just useless today. Draw one."
+
+msgid "Nichts passt. Ab zum Stapel, aber flott!"
+msgstr "Nothing fits. Off to the pile, and make it quick!"
+
+msgid "Nichts passt. War ja klar. Zieh eine."
+msgstr "Nothing fits. Figures. Draw one."
+
+msgid "Die Katze empfiehlt: eine vom Stapel ziehen."
+msgstr "The cat recommends: draw one from the pile."
+
+msgid "Ziehen ist auch eine Strategie."
+msgstr "Drawing is a strategy too."
+
+msgid "Kein Match. Nach links wischen – und eine ziehen."
+msgstr "No match. Swipe left – and draw one."
+
+msgid "Leider kein Volltreffer. Zieh eine Karte."
+msgstr "Sadly no jackpot. Draw a card."
+
+msgid "Der Stapel hat bestimmt was Passendes. Zieh!"
+msgstr "The pile surely has something fitting. Draw!"
+
+msgid "Nichts zu legen, aber was zu ziehen!"
+msgstr "Nothing to play, but something to draw!"
+
+msgid "Zieh eine – das Glück wartet vielleicht oben."
+msgstr "Draw one – luck may be waiting on top."
+
+msgid "Nichts passt. Die anderen freuen sich schon. Zieh!"
+msgstr "Nothing fits. The others are already delighted. Draw!"
+
+msgid "Deine Hand: viel Auswahl, null Treffer. Zieh eine."
+msgstr "Your hand: lots of choice, zero hits. Draw one."
+

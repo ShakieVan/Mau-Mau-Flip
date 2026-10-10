@@ -71,6 +71,48 @@
       ["Wenn du %s jetzt aussetzen lässt, sag ich nichts.", "frech"],
       ["%s wettet gegen dich. Mit Keksen.", "frech"]
     ],
+    nichts_passt: [
+      ["Nichts passt. Ab zum Stapel!", "nett"],
+      ["Leider nix dabei. Zieh eine!", "nett"],
+      ["Deine Karten streiken. Zieh eine neue.", "nett"],
+      ["Keine passt? Dann ab zum Ziehstapel.", "nett"],
+      ["Tja, nichts dabei. Der Stapel wartet schon.", "nett"],
+      ["Nix zu machen – zieh eine Karte.", "nett"],
+      ["Die Ablage mag gerade keine deiner Karten. Zieh!", "nett"],
+      ["Kein Treffer auf der Hand. Zieh eine.", "nett"],
+      ["Passt nicht, gibt's nicht? Doch. Zieh eine.", "nett"],
+      ["Deine Hand hat heute frei. Zieh eine Karte.", "nett"],
+      ["Leere Versprechen auf der Hand. Zieh!", "nett"],
+      ["Nichts passt – Zeit für Nachschub vom Stapel.", "nett"],
+      ["Ab zum Buffet: eine Karte vom Stapel, bitte.", "nett"],
+      ["Keine Chance. Der Stapel ruft.", "nett"],
+      ["Fehlanzeige! Zieh eine Karte.", "nett"],
+      ["Da passt nix. Ziehen, bitte.", "nett"],
+      ["Pech gehabt – nimm eine vom Stapel.", "nett"],
+      ["Zieh eine. Vielleicht ist ja die richtige dabei.", "nett"],
+      ["Deine Karten sind sich einig: Ziehen!", "nett"],
+      ["Nichts passt zusammen. Wie bei Socken. Zieh eine.", "nett"],
+      ["Der Stapel hat Sehnsucht nach dir. Zieh!", "nett"],
+      ["Keine passende Karte? Dann gibt's Nachschub.", "nett"],
+      ["Kartenflaute. Zieh eine.", "nett"],
+      ["Mit dieser Hand wird das nix. Zieh eine.", "nett"],
+      ["Die Farbe stimmt nicht, die Zahl auch nicht. Zieh!", "nett"],
+      ["Gut gemischt, schlecht getroffen. Zieh eine.", "nett"],
+      ["Shopping-Zeit: eine Karte vom Stapel.", "nett"],
+      ["Nix passt? Willkommen im Club. Zieh eine.", "nett"],
+      ["Deine Karten sind heute einfach nutzlos. Zieh eine.", "frech"],
+      ["Nichts passt. Ab zum Stapel, aber flott!", "frech"],
+      ["Nichts passt. War ja klar. Zieh eine.", "frech"],
+      ["Die Katze empfiehlt: eine vom Stapel ziehen.", "nett"],
+      ["Ziehen ist auch eine Strategie.", "nett"],
+      ["Kein Match. Nach links wischen – und eine ziehen.", "nett"],
+      ["Leider kein Volltreffer. Zieh eine Karte.", "nett"],
+      ["Der Stapel hat bestimmt was Passendes. Zieh!", "nett"],
+      ["Nichts zu legen, aber was zu ziehen!", "nett"],
+      ["Zieh eine – das Glück wartet vielleicht oben.", "nett"],
+      ["Nichts passt. Die anderen freuen sich schon. Zieh!", "frech"],
+      ["Deine Hand: viel Auswahl, null Treffer. Zieh eine.", "frech"]
+    ],
     tipp: [
       ["Im Ziehstapel liegt vielleicht genau die Karte, die du brauchst. Schau mal nach.", "frech"],
       ["Oben auf dem Stapel liegt ein Joker. Ganz sicher.", "frech"],
@@ -314,11 +356,23 @@
     return t === '' || /ist dran\.$/.test(t) || t.indexOf('Du bist fertig') === 0;
   }
 
+  // Der reine „nichts passt, zieh eine Karte“-Fall (Beta 1.4.6) – wie FunTexts.nothing_fits: Anlass nichts_passt darf ihn ersetzen
+  const NICHTS_PASST = "Du bist dran – nichts passt, zieh eine Karte.";
+  function nichtsPasst(v, h, ich) {
+    if (!v || ich < 0 || v.phase !== 'turn' || v.turn !== ich) return false;
+    if (v.pending && Object.keys(v.pending).length) return false;
+    if (v.discard_pick && Object.keys(v.discard_pick).length) return false;
+    if (h.need_color || h.can_challenge) return false;
+    if (Array.isArray(h.catch) && h.catch.length) return false;
+    return (h.text || '') === NICHTS_PASST;
+  }
+
   const S = {
     stufe: 'frech',
+    nichtsOk: true, _nichts: false,      // nichtsOk = false: „Spielbare Karten hervorheben“ aus, ein „nichts passt“-Spruch würde es verraten
     haeufigkeit: FREQ_DEFAULT,
     _tuete: {}, _gezeigtUm: 0,
-    LINES, ALIAS, linesFor, ersetzbar,
+    LINES, ALIAS, linesFor, ersetzbar, nichtsPasst,
     beiNeu: null,
     text: '', zeile: '', anlass: '',
     _bis: -1, _ende: -1000, _zugGezeigt: -2, _warte: null, _notiz: '', _platz: -99, _meinZug: false, _zugStart: 0,
@@ -397,7 +451,8 @@
       const laeuft = phase !== 'round_over' && phase !== 'game_over' && phase !== 'idle' && phase !== '';
       const mein = ich >= 0 && v.turn === ich && laeuft;
       this._gesperrt = !!gesperrt;
-      this._ersetzbar = this.stufe !== 'aus' && !gesperrt && ersetzbar(v, h || {}, ich);
+      this._nichts = this.nichtsOk && this.stufe !== 'aus' && !gesperrt && nichtsPasst(v, h || {}, ich);
+      this._ersetzbar = this.stufe !== 'aus' && !gesperrt && (this._nichts || ersetzbar(v, h || {}, ich));
       if (mein && !this._meinZug) { this._zugStart = now; this._langsamN = 0; this._startFaellig = true; }
       else if (!mein && this._meinZug) { this._tipp = false; this._startFaellig = false; }
       this._meinZug = mein;
@@ -407,7 +462,7 @@
         const p = spieler(v, v.turn);
         this._andererName = p.kind !== 'bot' && v.turn !== ich ? (p.name || '') : '';
       } else { this._anderer = -1; this._andererName = ''; }
-      if (this.text && (!this._ersetzbar || v.turn !== this._zugGezeigt)) this._beende();
+      if (this.text && (!this._ersetzbar || v.turn !== this._zugGezeigt || (this.anlass === 'nichts_passt') !== this._nichts)) this._beende();
       if (this.stufe === 'aus' || !this._ersetzbar) {
         if (!gesperrt && mein && this._startFaellig) this._startFaellig = false;
         return standard;
@@ -420,6 +475,7 @@
     _wartetPassend(mein, now) {
       const q = this._warte;
       if (!q || now - q.t > QUEUE_LIFE) return false;
+      if (this._nichts && q.occ !== 'nichts_passt') return false;   // bei „nichts passt“ nur Sprüche, die das Ziehen nennen
       return !((q.occ === 'langsam' && !mein) || (q.occ === 'langsam_andere' && mein));
     },
 
@@ -450,7 +506,7 @@
         if (now - q.t > QUEUE_LIFE) this._warte = null;
         else if (now - this._ende >= this._luecke()) {
           this._warte = null;
-          if (!((q.occ === 'langsam' && !mein) || (q.occ === 'langsam_andere' && mein))) {
+          if (!this._nichts && !((q.occ === 'langsam' && !mein) || (q.occ === 'langsam_andere' && mein))) {
             this._zeige(this._waehle(q.occ, q.name), q.occ, v.turn, now);
             if (this.text) { this._startFaellig = false; return; }
           }
@@ -459,6 +515,10 @@
       if (!(mein && this._startFaellig)) return;
       this._startFaellig = false;
       if (now - this._ende < this._abkling()) return;
+      if (this._nichts) {                // „nichts passt“: wie der Zug-Anlass, aber nur Sprüche, die das Ziehen nennen
+        if (Math.random() < FREQ_TURN[this.haeufigkeit]) this._zeige(this._waehle('nichts_passt', ''), 'nichts_passt', v.turn, now);
+        return;
+      }
       const n = (v.hand || []).length;
       let occ = '';
       if (n >= MANY && Math.random() < this._selten(MANY_CHANCE)) occ = 'viele';

@@ -1031,3 +1031,13 @@ func pruefe_spass(tisch: String, app: String, seite: String) -> void:
 	check(freq_ok, "Einstellung Häufigkeit im Lite-Menü: Selten/Normal/Oft/Immer, ab Werk oft, nur bei eingeschalteten Sprüchen sichtbar")
 	check(spass.contains("ersetzbar(v, h || {}, ich)") and spass.contains("t.indexOf('Mau') >= 0") and spass.contains("h.need_color")
 			and spass.contains("v.pending && Object.keys(v.pending).length"), "Browser: nie bei Mau-Pflicht, Farbwahl, Strafe")
+	# Beta 1.4.6: Anlass „nichts passt“ – gleicher Hinweistext, gleiche Bedingungen, ohne Hervorheben nie
+	check(spass.contains("const NICHTS_PASST = \"%s\";" % FunTexts.NOTHING_FITS_TEXT) and FunTexts.NOTHING_FITS_TEXT == "Du bist dran – nichts passt, zieh eine Karte.",
+		"Browser: gleicher Standardhinweis „nichts passt“ wie die App")
+	check(spass.contains("function nichtsPasst(v, h, ich)") and spass.contains("return (h.text || '') === NICHTS_PASST;") and spass.contains("v.discard_pick && Object.keys(v.discard_pick).length")
+			and spass.contains("this._ersetzbar = this.stufe !== 'aus' && !gesperrt && (this._nichts || ersetzbar(v, h || {}, ich));")
+			and spass.contains("this._zeige(this._waehle('nichts_passt', ''), 'nichts_passt', v.turn, now)") and spass.contains("(this.anlass === 'nichts_passt') !== this._nichts")
+			and spass.contains("if (this._nichts && q.occ !== 'nichts_passt') return false;"),
+		"Browser: Anlass nichts_passt ersetzt nur den reinen Hinweis (nie Strafe, Auswahl, Erwischen; Häufigkeit wie der Zug)")
+	check(tisch.contains("M.Spass.nichtsOk = !this.app.hervorheben || this.app.hervorheben();") and spass.contains("this.nichtsOk && this.stufe !== 'aus'"),
+		"Browser: ohne „Spielbare Karten hervorheben“ kein Nichts-passt-Spruch")

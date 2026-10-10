@@ -493,6 +493,7 @@
       const std = this.hinweisLokal(h) || this._hinweisErsatz(v);
       if (!M.Spass) return std;
       if (!M.Spass.beiNeu) M.Spass.beiNeu = () => { if (this.v) this.hinweis.textContent = this._hinweisMitSpass(this.v, this.v.hints || {}); };
+      M.Spass.nichtsOk = !this.app.hervorheben || this.app.hervorheben();   // ohne Hervorheben verrät „nichts passt“ nichts (1.4.6)
       const t = M.Spass.hinweis(v, h, v.seat, std, false);
       const p = M.Spass.pointe();
       if (p && this.app.toast) this.app.toast(p, 'leise', 3000);
