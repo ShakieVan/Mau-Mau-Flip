@@ -128,6 +128,25 @@ static func _body(name: String, m: String, ma: float, c: String, ca: float) -> S
 			return _line("M24 24L76 76M76 24L24 76", m, ma, 12)
 		"menue":
 			return _line("M18 26H82M18 50H82M18 74H82", m, ma, 10)
+		"qr":
+			# QR-Code (Beitreten, Beta 1.4.3): drei Suchmuster und einige Module
+			var finder := func(x: float, y: float) -> String:
+				return "<rect x=\"%.0f\" y=\"%.0f\" width=\"30\" height=\"30\" rx=\"4\" fill=\"none\" stroke=\"%s\" stroke-opacity=\"%.3f\" stroke-width=\"7\"/>" % [x + 3.5, y + 3.5, m, ma] \
+					+ "<rect x=\"%.0f\" y=\"%.0f\" width=\"13\" height=\"13\" fill=\"%s\" fill-opacity=\"%.3f\"/>" % [x + 12, y + 12, m, ma]
+			var dots := ""
+			for p in [Vector2(52, 8), Vector2(52, 24), Vector2(52, 52), Vector2(68, 52), Vector2(84, 52), Vector2(84, 68), Vector2(52, 84),
+					Vector2(68, 84), Vector2(84, 84), Vector2(8, 52), Vector2(24, 52), Vector2(68, 68)]:
+				dots += "<rect x=\"%.0f\" y=\"%.0f\" width=\"11\" height=\"11\" fill=\"%s\" fill-opacity=\"%.3f\"/>" % [p.x - 1, p.y - 1, m, ma]
+			return finder.call(4.0, 4.0) + finder.call(62.0, 4.0) + finder.call(4.0, 62.0) + dots
+		"qrscan":
+			# QR-Code im Kamera-Sucher: vier Eckwinkel um ein kleines QR-Muster
+			var s := _line("M8 30V12Q8 8 12 8H30M70 8H88Q92 8 92 12V30M92 70V88Q92 92 88 92H70M30 92H12Q8 92 8 88V70", m, ma, 8)
+			for p in [Vector2(28, 28), Vector2(56, 28), Vector2(28, 56)]:
+				s += "<rect x=\"%.0f\" y=\"%.0f\" width=\"16\" height=\"16\" rx=\"2\" fill=\"none\" stroke=\"%s\" stroke-opacity=\"%.3f\" stroke-width=\"5\"/>" % [p.x, p.y, m, ma]
+				s += "<rect x=\"%.0f\" y=\"%.0f\" width=\"6\" height=\"6\" fill=\"%s\" fill-opacity=\"%.3f\"/>" % [p.x + 5, p.y + 5, m, ma]
+			for p in [Vector2(58, 58), Vector2(72, 58), Vector2(58, 72), Vector2(72, 72)]:
+				s += "<rect x=\"%.0f\" y=\"%.0f\" width=\"8\" height=\"8\" fill=\"%s\" fill-opacity=\"%.3f\"/>" % [p.x, p.y, m, ma]
+			return s
 		"stapel":
 			return "<rect x=\"30\" y=\"10\" width=\"46\" height=\"66\" rx=\"7\" fill=\"%s\" fill-opacity=\"%.3f\"/>" % [c, ca] \
 				+ "<rect x=\"30\" y=\"10\" width=\"46\" height=\"66\" rx=\"7\" fill=\"none\" stroke=\"%s\" stroke-opacity=\"%.3f\" stroke-width=\"6\"/>" % [m, ma] \

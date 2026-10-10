@@ -162,10 +162,12 @@ static func gateway() -> String:
 # Zweck mehr bindet (release), damit Update-Suche und Internet wieder gehen. Am PC und ohne NetAndroid: nichts zu tun.
 
 static var use_binding := true
-static var bound_to := ""                # "wifi" | "hotspot" | "" – Bindung der zuletzt angelegten Sockets
+static var bound_to := ""                # "wifi" | "hotspot" | "qr_wifi" | "" – Bindung der zuletzt angelegten Sockets
 static var bind_problem := ""
 static var _owners := {}
 static var _last_address := {}          # letzte Adresse je Zweck (für das Wiederherstellen nach einer Internet-Anfrage)
+static var pinned := Callable()       # Beta 1.4.3 (QrJoin): Spiel-WLAN aus einem WLAN-QR – „join“ und „search“ binden an dieses Netz;
+                                      # liefert "" = gebunden, sonst Grund (dann gelten die üblichen Regeln)
 
 static func _android_state() -> Dictionary:
 	if not use_binding or override_interfaces != null or not _has("state"):
@@ -181,6 +183,12 @@ static func bind_for(purpose: String, address := "") -> String:
 	if holding() > 0:
 		_rebind = true       # ausgesetzt (Internet-Verbindung entsteht gerade): erst beim Freigeben binden
 		return ""
+	if pinned.is_valid() and purpose in ["join", "search"]:
+		var pin_problem := str(pinned.call())
+		if pin_problem == "":
+			bound_to = "qr_wifi"
+			return bound_to
+		bind_problem = pin_problem
 	var s := _android_state()
 	if s.is_empty() or not ["wifi_handle", "hotspot_addresses", "host_plan", "join_binding", "in_hotspot", "bind_wifi", "bind_network",
 			"hotspot_handle", "unbind", "bound_to_wifi"].all(func(m): return _has(m)):

@@ -102,6 +102,7 @@ public class GodotApp extends GodotActivity {
 		if (savedInstanceState == null && start != null
 				&& (start.getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) == 0) {
 			AppLink.remember(start);
+			QrScan.remember(start);   // Beta 1.4.3: Testeinstieg „gescannter Text“ (Extra mmf_scan)
 		}
 	}
 
@@ -109,6 +110,7 @@ public class GodotApp extends GodotActivity {
 	public void onNewIntent(Intent intent) {
 		super.onNewIntent(intent);
 		AppLink.remember(intent);
+		QrScan.remember(intent);
 	}
 
 	@Override

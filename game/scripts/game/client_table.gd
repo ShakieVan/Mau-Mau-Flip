@@ -111,6 +111,7 @@ func set_ready(ready: bool) -> void:
 
 func leave() -> void:
 	_leaving = true
+	QrJoin.client_left(self)   # Beta 1.4.3: Spiel-WLAN aus dem QR-Code freigeben (Handy kommt wieder normal ins Internet)
 	_drop_client()
 
 
@@ -123,6 +124,7 @@ func pump() -> void:
 	if client != null:
 		client.poll()
 		_check_give_up()
+	QrJoin.check_lost(self)   # Beta 1.4.3: Spiel-WLAN aus dem QR-Code weg → freigeben (Handy kommt wieder ins normale WLAN)
 
 
 # Spielende und Gastgeber weg: nicht endlos „Verbinde neu …“, sondern „Spiel beendet“ (connection_changed "ended")

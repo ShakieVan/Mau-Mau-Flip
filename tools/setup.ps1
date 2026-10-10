@@ -93,6 +93,17 @@ try {
     }
 }
 finally { $zip.Dispose() }
+# QR-Scanner (Beta 1.4.3, QrScan.java): Abhängigkeit „Google Code Scanner“ in build.gradle (fehlt nach -ReinstallAndroidTemplate).
+$gradleFile = Join-Path $buildDir 'build.gradle'
+$gradleText = [IO.File]::ReadAllText($gradleFile)
+if ($gradleText -notmatch 'play-services-code-scanner') {
+    $anchor = [regex]::Match($gradleText, '(?m)^(\s*)implementation "androidx\.core:core-splashscreen:[^"]*"\r?\n')
+    if (-not $anchor.Success) { throw 'build.gradle: Stelle für die Code-Scanner-Abhängigkeit nicht gefunden.' }
+    $line = $anchor.Groups[1].Value + 'implementation "com.google.android.gms:play-services-code-scanner:16.1.0"' + "`n"
+    $gradleText = $gradleText.Insert($anchor.Index + $anchor.Length, $line)
+    [IO.File]::WriteAllText($gradleFile, $gradleText)
+    Write-Output 'build.gradle: Code-Scanner-Abhängigkeit eingetragen.'
+}
 # Wie Godot: Versionsmarke (der Export bricht ab, wenn sie nicht zur Engine passt) und .gdignore (Godot durchsucht den Ordner nicht).
 [IO.File]::WriteAllText((Join-Path $androidDir '.build_version'), "$version.stable`n")
 if (-not (Test-Path -LiteralPath (Join-Path $buildDir '.gdignore'))) { [IO.File]::WriteAllText((Join-Path $buildDir '.gdignore'), "`n") }

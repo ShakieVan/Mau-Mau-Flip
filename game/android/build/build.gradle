@@ -43,6 +43,9 @@ dependencies {
 
     implementation "androidx.fragment:fragment:$versions.fragmentVersion"
     implementation "androidx.core:core-splashscreen:$versions.splashscreenVersion"
+    // Mau-Mau Flip (Beta 1.4.3, QrScan.java): Google Code Scanner – QR-Codes über die Google-Play-Dienste, ohne Kamera-Erlaubnis.
+    // tools/setup.ps1 trägt die Zeile nach einem Neuentpacken der Vorlage wieder ein.
+    implementation "com.google.android.gms:play-services-code-scanner:16.1.0"
 
     if (rootProject.findProject(":lib")) {
         implementation project(":lib")

@@ -20,6 +20,10 @@ extends AppScreen
 # Online (docs/online/ENTWURF.md 3): Zeile „Online:“ mit Raumcode und „Beitreten“; der Vermittler kommt aus den Einstellungen bzw.
 # aus dem App-Link (direct_room). Vor dem Verbinden fragt die Seite /info?room=CODE (Raum unbekannt, andere Version); Ziel des
 # ClientTable ist dann der Raum-Link („https://<vermittler>/?r=CODE“, Port 0), den NetClient erkennt.
+# QR-Code scannen (Beta 1.4.3, QrJoin): kleiner Knopf oben rechts in der Kopfzeile (ohne Lobby). Spiel-Link im WLAN → direkt beitreten (Verbindung ans
+# WLAN gebunden, unabhängig von mobilen Daten); Online-Link/App-Link → wie der Link; WLAN-QR des Spiel-WLANs → die App verbindet sich
+# selbst (Android 10+, Systemdialog), bindet sich an dieses Netz und tritt dem Gateway (= Gastgeber) bei, sonst findet die Suche das
+# Spiel dort. Das Spiel-WLAN wird freigegeben, wenn man die Seite ohne Partie verlässt oder das Spiel verlässt (ClientTable.leave).
 
 var client: ClientTable
 var discovery: NetDiscovery
@@ -49,6 +53,10 @@ var _online_row: Control            # Zeile „Online:“ (nur ohne Lobby sichtb
 var _room_btn: Button
 var _room_check: HTTPRequest        # /info?room= vor dem Beitreten
 var _pending_room := {}             # {room, relay} während der Prüfung
+var _scan_btn: Button               # „QR-Code scannen“ (nur ohne Lobby sichtbar)
+var _scan_poll := 0.0
+var _wifi_wait := {}                # {ssid}: Spiel-WLAN aus dem QR-Code wird gerade verbunden
+const SCAN_POLL_S := 0.25
 
 
 # Lobby mit einer bestehenden Verbindung (vom Tisch zurück); zeigt sofort deren letzte Lobby.
@@ -139,7 +147,9 @@ static func same_game(ct: ClientTable, address: String, port: int) -> bool:
 
 
 func build() -> void:
-	var content := page("Beitreten")
+	_scan_btn = scan_button()
+	_scan_btn.pressed.connect(scan_qr)
+	var content := page("Beitreten", true, _scan_btn)
 	var top := ScreenKit.hbox(14)
 	content.add_child(top)
 	_address = LineEdit.new()
@@ -181,6 +191,7 @@ func build() -> void:
 	online.add_child(_room_btn)
 	_status = ScreenKit.label("Suche Spiele im WLAN …", "HintLabel", UiFonts.size("text"))
 	_status.name = "Status"
+	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART   # lange Meldungen (z. B. Spiel-WLAN aus dem QR-Code) nicht breiter als die Seite (Gerätetest 1.4.3)
 	content.add_child(_status)
 	# Suche
 	var search := ScreenKit.card(24.0)
@@ -429,6 +440,7 @@ func _adopt(ct: ClientTable) -> void:
 	_search_box.visible = false
 	_lobby_box.visible = true
 	_online_row.visible = false          # Platz für die Lobby (5 Spieler und „Bereit“ bei 1600 × 720)
+	_scan_btn.visible = false
 	if not ct.lobby.is_empty():
 		_on_lobby(ct.lobby)
 	if ct.connection_state() in ["closed", "rejected"]:
@@ -574,6 +586,8 @@ func _on_connection(state: String) -> void:
 			_search_box.visible = false
 			_lobby_box.visible = true
 			_online_row.visible = false          # Platz für die Lobby (5 Spieler und „Bereit“ bei 1600 × 720)
+			_scan_btn.visible = false
+			QrJoin.attach(client)                # Spiel-WLAN aus dem QR-Code gehört jetzt zu dieser Verbindung
 			_stop_search()
 		"connecting":
 			# schon in der Lobby (Beta 1.3.3): klarer Hinweis statt nur „Verbinde …“
@@ -597,6 +611,7 @@ func _back_to_search() -> void:
 		c.queue_free()
 	_lobby_box.visible = false
 	_online_row.visible = true
+	_scan_btn.visible = true
 	_search_box.visible = true
 	_show_ready(false)
 	host_rules = null
@@ -768,3 +783,118 @@ func on_leave() -> void:
 		_stop_search()
 		if client != null and not _started:
 			client.leave()
+		if not _started:
+			QrJoin.wifi_release()             # Seite ohne Partie verlassen: Spiel-WLAN aus dem QR-Code freigeben
+
+
+# --- QR-Code scannen (Beta 1.4.3) -------------------------------------------------------------------------------------------
+
+# Knopf oben rechts in der Kopfzeile: rund, sonnengelb (PrimaryButton, Nutzerwunsch 10.10.2026: soll ins Auge fallen), QR-Kamera-Symbol
+static func scan_button() -> Button:
+	var b := ScreenKit.icon_button(ScreenKit.glyph("qrscan", 40), "PrimaryButton", I18n.t("QR-Code scannen"))
+	b.name = "QrScannen"
+	b.set("accessibility_name", I18n.t("QR-Code scannen"))
+	return b
+
+
+func scan_qr() -> void:
+	_status_hold = false
+	# Eingabefeld mit Fokus loslassen und Tastatur schließen: sonst bleibt die Seite nach der Rückkehr aus dem Scanner um die (alte)
+	# Tastaturhöhe verschoben (Gerätetest 1.4.3, S10 mit Fokus im Raumcode-Feld).
+	get_viewport().gui_release_focus()
+	if DisplayServer.has_feature(DisplayServer.FEATURE_VIRTUAL_KEYBOARD):
+		DisplayServer.virtual_keyboard_hide()
+	if not QrJoin.scan_available():
+		_status.text = QrJoin.scan_error_text("no_gms")
+		_status_hold = true
+		return
+	var err := QrJoin.scan_start()
+	var msg := QrJoin.scan_error_text(err) if err != "" else ""
+	if msg != "":
+		_status.text = msg
+		_status_hold = true
+
+
+func _process(delta: float) -> void:
+	_scan_poll += delta
+	if _scan_poll < SCAN_POLL_S:
+		return
+	_scan_poll = 0.0
+	if nav == null or nav.top() != self:
+		return
+	if not _wifi_wait.is_empty():
+		_poll_wifi()
+	var r := QrJoin.scan_take()
+	match str(r.get("status", "idle")):
+		"done":
+			if client == null:          # in der Lobby zählt kein neuer Code (der Knopf ist dort ausgeblendet)
+				handle_scan(str(r.get("text", "")))
+		"failed":
+			var msg := QrJoin.scan_error_text(str(r.get("error", "")))
+			if msg != "":
+				_status.text = msg
+				_status_hold = true
+
+
+# Gescannten Text auswerten (QrJoin.parse) und beitreten
+func handle_scan(text: String) -> void:
+	var r := QrJoin.parse(text)
+	_status_hold = false
+	if _name_box != null and is_instance_valid(_name_box):
+		_name_box.queue_free()
+		_name_box = null
+		_name_edit = null
+	match str(r.kind):
+		"wlan":
+			direct = {"address": str(r.address), "port": int(r.port)}
+			_start_direct()
+		"online":
+			direct = {"room": str(r.room), "relay": str(r.relay)}
+			_start_direct()
+		"wifi":
+			join_wifi(str(r.ssid), str(r.password), str(r.security))
+		_:
+			_status.text = str(r.get("error", ""))
+			_status_hold = true
+
+
+# Spiel-WLAN aus dem WLAN-QR: verbinden (Systemdialog), dann binden und beitreten (_poll_wifi)
+func join_wifi(ssid: String, password: String, security: String) -> void:
+	QrJoin.wifi_release()
+	_wifi_wait = {}
+	if not QrJoin.wifi_supported():
+		_status.text = QrJoin.old_android_text(ssid, password)
+		_status_hold = true
+		return
+	var err := QrJoin.wifi_connect(ssid, password, security)
+	if err != "":
+		_status.text = QrJoin.old_android_text(ssid, password) if err == "old_android" \
+			else QrJoin.wifi_status_text({"status": "unavailable"}, ssid)
+		_status_hold = true
+		return
+	_wifi_wait = {"ssid": ssid}
+	_status.text = QrJoin.wifi_status_text({"status": "connecting"}, ssid)
+	_status_hold = true
+
+
+func _poll_wifi() -> void:
+	var ssid := str(_wifi_wait.get("ssid", ""))
+	var st := QrJoin.wifi_state()
+	match str(st.get("status", "")):
+		"available":
+			_wifi_wait = {}
+			QrJoin.wifi_pin()
+			# Suche neu starten, damit ihr Socket im Spiel-WLAN liegt (falls der Gastgeber nicht am Gateway-Port antwortet)
+			_stop_search()
+			_start_search()
+			_status.text = QrJoin.wifi_status_text(st, ssid)
+			var gateway := str(st.get("gateway", ""))
+			if NetAndroid.ipv4_to_int(gateway) > 0:
+				direct = {"address": gateway, "port": NetProtocol.PORT}
+				_start_direct()
+		"unavailable", "lost", "idle":
+			_wifi_wait = {}
+			_status.text = QrJoin.wifi_status_text(st, ssid) if str(st.get("status", "")) != "idle" \
+				else QrJoin.wifi_status_text({"status": "unavailable"}, ssid)
+			_status_hold = true
+			QrJoin.wifi_release()

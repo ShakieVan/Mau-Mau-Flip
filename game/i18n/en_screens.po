@@ -1314,3 +1314,52 @@ msgstr "The game is already running. Ask the host to add you (☰ → Add player
 
 msgid "Das Spiel läuft schon. Der Gastgeber kann dich dazuholen – bleib hier, du erscheinst bei ihm auf der Warteliste."
 msgstr "The game is already running. The host can add you – stay here, you appear on their waiting list."
+
+# --- QR-Code scannen unter „Beitreten“ (join_screen.gd, qr_join.gd; Beta 1.4.3)
+msgid "QR-Code scannen"
+msgstr "Scan QR code"
+
+msgid "Den Code auf dem Handy des Gastgebers – Spiel, Spiel-WLAN oder online"
+msgstr "The code on the host's phone – game, Game Wi-Fi or online"
+
+msgid "Das ist kein QR-Code von Mau-Mau Flip. Scanne den Code auf dem Handy des Gastgebers."
+msgstr "That is not a Mau-Mau Flip QR code. Scan the code on the host's phone."
+
+msgid "Dieser Link führt nicht zu einem Spiel in deiner Nähe. Scanne den QR-Code auf dem Handy des Gastgebers."
+msgstr "This link does not lead to a game near you. Scan the QR code on the host's phone."
+
+msgid "Dieser WLAN-Code ist unvollständig. Lass den Gastgeber das Spiel-WLAN neu öffnen und scanne noch einmal."
+msgstr "This Wi-Fi code is incomplete. Ask the host to reopen the Game Wi-Fi and scan again."
+
+msgid "Dieses WLAN nutzt eine veraltete Verschlüsselung (WEP). Verbinde dich bitte in den WLAN-Einstellungen."
+msgstr "This Wi-Fi uses outdated encryption (WEP). Please connect in your Wi-Fi settings."
+
+msgid "Der QR-Scanner braucht die Google-Play-Dienste, die es hier nicht gibt. Tritt über den Raumcode oder die Liste unten bei."
+msgstr "The QR scanner needs Google Play services, which this phone does not have. Join with the room code or the list below."
+
+msgid "Der Scanner wird gerade von Google geladen. Versuch es in einem Moment noch einmal."
+msgstr "Google is still loading the scanner. Try again in a moment."
+
+msgid "Der Scanner ließ sich nicht öffnen. Tritt über den Raumcode oder die Liste unten bei."
+msgstr "The scanner could not be opened. Join with the room code or the list below."
+
+msgid "Verbinde mit dem Spiel-WLAN „%s“ … Bestätige die Anfrage von Android."
+msgstr "Connecting to the Game Wi-Fi “%s” … Confirm Android's request."
+
+msgid "Im Spiel-WLAN „%s“ – suche das Spiel …"
+msgstr "On the Game Wi-Fi “%s” – looking for the game …"
+
+msgid "Keine Verbindung zum Spiel-WLAN „%s“. Ist das Spiel-WLAN des Gastgebers noch offen und bist du in der Nähe? Scanne noch einmal."
+msgstr "Could not connect to the Game Wi-Fi “%s”. Is the host's Game Wi-Fi still open and are you nearby? Scan again."
+
+msgid "Das Spiel-WLAN „%s“ ist weg. Scanne den WLAN-Code noch einmal."
+msgstr "The Game Wi-Fi “%s” is gone. Scan the Wi-Fi code again."
+
+msgid "Verbinde dich in den WLAN-Einstellungen mit „%s“ und komm dann hierher zurück – das Spiel erscheint unten in der Liste."
+msgstr "Connect to “%s” in your Wi-Fi settings, then come back here – the game appears in the list below."
+
+msgid "Verbinde dich in den WLAN-Einstellungen mit „%s“ (Passwort: %s) und komm dann hierher zurück – das Spiel erscheint unten in der Liste."
+msgstr "Connect to “%s” in your Wi-Fi settings (password: %s), then come back here – the game appears in the list below."
+
+msgid "Das Spiel-WLAN ist nicht verbunden."
+msgstr "The Game Wi-Fi is not connected."
