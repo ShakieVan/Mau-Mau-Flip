@@ -71,17 +71,50 @@ func _celebration() -> void:
 	if sh != null:
 		var mat := sh.material as CanvasItemMaterial
 		check(mat != null and mat.blend_mode == CanvasItemMaterial.BLEND_MODE_ADD, "Funkelsterne additiv")
-		check(sh.stars.size() >= 120 and sh.glints.size() >= 10, "Mehr Sterne als bisher (99) plus Glitzerpunkte")
-		check(absf(TableEffects.SparkleShowerFx.LIFE - 3.6) < 0.01, "Sterneschauer: 3,6 s je Stern, gesamt ~5 s wie das Konfetti")
+		# 1.4.2 Regen: Sterne starten 5 s lang gleichmäßig verteilt oberhalb des Rands, über die ganze Breite
+		check(sh.stars.size() >= 250 and sh.glints.size() >= 10, "Regen: deutlich mehr Sterne (>= 250) plus Glitzerpunkte")
+		check(absf(TableEffects.SparkleShowerFx.DUR - 5.0) < 0.01, "Sterne starten über 5 s")
 		var sizes_ok := true
 		var phases := {}
 		var flashes_ok := true
+		var born_min := 99.0
+		var born_max := 0.0
+		var above := true
+		var life_ok := true
+		var xs := [0, 0, 0, 0, 0]
+		var secs := [0, 0, 0, 0, 0]
 		for st in sh.stars:
 			sizes_ok = sizes_ok and float(st["size"]) >= 14.0 and float(st["size"]) <= 42.0
 			phases[snappedf(float(st["ph"]), 0.001)] = true
 			flashes_ok = flashes_ok and (st["flash"] as Array).size() >= 1
+			born_min = minf(born_min, float(st["born"]))
+			born_max = maxf(born_max, float(st["born"]))
+			above = above and (st["pos"] as Vector2).y < 0.0
+			life_ok = life_ok and float(st["life"]) >= 2.0 and float(st["life"]) <= 3.0
+			xs[clampi(int((st["pos"] as Vector2).x / 1280.0 * 5.0), 0, 4)] += 1
+			secs[clampi(int(float(st["born"])), 0, 4)] += 1
 		check(sizes_ok, "Sterne 14–42 px")
-		check(absf(sh._end - 5.3) < 0.01, "Schauer ~5 s")
+		check(born_min < 0.3 and born_max > 4.7, "Startzeiten reichen über fast 5 s")
+		check(above, "Start oberhalb des oberen Rands")
+		check(life_ok, "Fallzeit 2–3 s")
+		var spread_ok := true
+		for i in 5:
+			spread_ok = spread_ok and xs[i] > sh.stars.size() / 5 * 0.6 and secs[i] > sh.stars.size() / 5 * 0.6
+		check(spread_ok, "Gleichmäßig über Breite und Zeit verteilt")
+		check(sh._end >= TableEffects.RAIN_DUR + TableEffects.RAIN_TAPER + 2.0 and sh._end < TableEffects.RAIN_DUR + TableEffects.RAIN_TAPER + 5.0,
+				"Schauer endet erst nach den letzten Sternen (5 s voll + 5 s Ausrieseln)")
+		# Ausrieseln (Nutzerwunsch): nach 5 s werden es gleichmäßig weniger neue Sterne, bis ~10 s
+		var early := 0
+		var late := 0
+		for st in sh.stars:
+			var b := float(st["born"])
+			if b >= 5.0 and b < 7.5:
+				early += 1
+			elif b >= 7.5:
+				late += 1
+		check(born_max > 8.5 and born_max <= 10.0 and early > late * 2 and late > 0, "Ausrieseln 5–10 s (%d früh, %d spät)" % [early, late])
+		check(is_equal_approx(TableEffects.rain_time(0.0), 0.0) and is_equal_approx(TableEffects.rain_time(2.0 / 3.0), 5.0)
+				and is_equal_approx(TableEffects.rain_time(1.0), 10.0), "rain_time: 0 → 0 s, 2/3 → 5 s, 1 → 10 s")
 		check(phases.size() > sh.stars.size() / 2, "Funkeln zeitversetzt je Stern")
 		check(flashes_ok, "Jeder Stern blitzt mindestens einmal auf")
 		var y0: float = (sh.stars[0]["pos"] as Vector2).y
@@ -91,7 +124,18 @@ func _celebration() -> void:
 	fx.night = 0.0
 	var before := fx.get_child_count()
 	fx.celebrate(area, 220)
-	check(fx.last_celebration == "konfetti" and fx.get_child_count() == before + 1, "Tag: Konfetti")
+	check(fx.last_celebration == "konfetti" and fx.get_child_count() == before + 5, "Tag: Konfetti (voller Regen + 4 Stufen Ausrieseln)")
+	var cf := fx.get_child(before) as CPUParticles2D
+	var taper_ok := true
+	for i in range(before + 1, before + 5):
+		var tp := fx.get_child(i) as CPUParticles2D
+		taper_ok = taper_ok and tp != null and not tp.emitting and tp.amount < (fx.get_child(i - 1) as CPUParticles2D).amount
+	check(taper_ok, "Konfetti rieselt in 4 Stufen mit sinkender Menge aus")
+	check(cf != null and not cf.one_shot and cf.emitting and cf.explosiveness == 0.0 and cf.amount >= 200
+			and cf.position.y < 0.0 and cf.emission_rect_extents.x >= 600.0, "Konfetti: fortlaufender Regen über die Breite oberhalb des Rands")
+	# Fortlaufend 5 s, danach nur noch Ausfallen
+	var tw_ok := cf != null and absf(TableEffects.RAIN_DUR - 5.0) < 0.01 and TableEffects.RAIN_LIFE <= 3.0
+	check(tw_ok, "Konfetti: 5 s Erzeugung, Fallzeit höchstens 3 s")
 	# reduziert: nachts wenige ruhige Lichtpunkte ohne Blitzen und Glitzer, tags wie bisher reduziertes Konfetti
 	var calm := TableEffects.new()
 	calm.reduced = true
@@ -99,11 +143,16 @@ func _celebration() -> void:
 	calm.night = 1.0
 	calm.celebrate(area, 220)
 	var cs := calm.get_child(0) as TableEffects.SparkleShowerFx
-	var quiet := cs != null and cs.calm and cs.stars.size() <= 20 and cs.glints.is_empty()
+	var quiet := cs != null and cs.calm and cs.stars.size() <= 40 and cs.glints.is_empty()
 	if cs != null:
 		for st in cs.stars:
 			quiet = quiet and (st["flash"] as Array).is_empty() and float(st["spin"]) == 0.0
 	check(calm.get_child_count() == 1 and quiet, "Reduziert: wenige ruhige Lichtpunkte")
+	calm.night = 0.0
+	var before_calm := calm.get_child_count()
+	calm.celebrate(area, 220)
+	var cc := calm.get_child(before_calm) as CPUParticles2D
+	check(cc != null and cc.amount <= 100 and cc.amount >= 12 and absf(cc.lifetime - TableEffects.RAIN_LIFE) < 0.01, "Reduziert tags: wenig Konfetti, ebenfalls 5 s Regen")
 	# Strahlentextur: Mitte hell, lange Strahlen auf den Achsen bis fast zum Rand, diagonal daneben dunkel
 	var ray := TableEffects.sparkle_ray_texture().get_image()
 	check(TableEffects.sparkle_ray_texture().get_width() == 64 and ray.get_pixel(32, 32).a > 0.9 and ray.get_pixel(32, 12).a > 0.15
@@ -123,6 +172,7 @@ func _celebration() -> void:
 	check(t.fx_top.last_celebration == "konfetti", "Tisch tags: Konfetti zum Partieende")
 	t.queue_free()
 	await process_frame
+
 
 
 func _sound_file() -> void:

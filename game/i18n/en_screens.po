@@ -1204,3 +1204,113 @@ msgstr "Or the room code to type in:"
 
 msgid "Mitspieler: Mobile Daten kurz ausschalten, bis das Spiel geladen ist."
 msgstr "Players: briefly turn off mobile data until the game has loaded."
+
+# --- Mitspieler dazuholen und entfernen (seat_manager.gd, join_screen.gd, ingame_menu.gd; Beta 1.4.2)
+msgid "Mitspieler dazuholen"
+msgstr "Add players"
+
+msgid "Mitspieler entfernen"
+msgstr "Remove players"
+
+msgid "Dazuholen"
+msgstr "Add"
+
+msgid "Wer den Code scannt, erscheint unter „Am Tisch“. Dort wählst du seinen Platz."
+msgstr "Whoever scans the code appears under “At the table”. Choose their seat there."
+
+msgid "Computergegner dazuholen"
+msgstr "Add computer player"
+
+msgid "Ein Computergegner spielt mit."
+msgstr "A computer player joins in."
+
+msgid "Mit ▲ ▼ rückst du Neue an ihren Platz, dann „An den Tisch“."
+msgstr "Use ▲ ▼ to move newcomers to their seat, then “To the table”."
+
+msgid "Neue Mitspieler erscheinen hier, sobald sie den Code scannen."
+msgstr "New players appear here as soon as they scan the code."
+
+msgid "Kommt nach diesem Zug dazu"
+msgstr "Joins after this turn"
+
+msgid "Geht nach diesem Zug"
+msgstr "Leaves after this turn"
+
+msgid "wartet auf einen Platz"
+msgstr "waiting for a seat"
+
+msgid "Computer spielt für ihn"
+msgstr "computer is playing for them"
+
+msgid "Neuer Computergegner"
+msgstr "New computer player"
+
+msgid "An den Tisch"
+msgstr "To the table"
+
+msgid "Entfernen"
+msgstr "Remove"
+
+msgid "Ablehnen"
+msgstr "Decline"
+
+msgid "Aus dem Spiel nehmen"
+msgstr "Remove from game"
+
+msgid "%s (Computer) · Kommt nach diesem Zug dazu"
+msgstr "%s (computer) · joins after this turn"
+
+msgid "Das passiert nach diesem Zug."
+msgstr "This happens after this turn."
+
+msgid "Ein Computergegner"
+msgstr "A computer player"
+
+msgid "%s setzt sich zwischen %s und %s und bekommt die Karten mit der nächsten Runde."
+msgstr "%s sits down between %s and %s and gets cards with the next round."
+
+msgid "%s setzt sich zwischen %s und %s und bekommt 1 Karte."
+msgstr "%s sits down between %s and %s and gets 1 card."
+
+msgid "%s setzt sich zwischen %s und %s und bekommt %d Karten."
+msgstr "%s sits down between %s and %s and gets %d cards."
+
+msgid "Computergegner dazuholen?"
+msgstr "Add a computer player?"
+
+msgid "%s an den Tisch holen?"
+msgstr "Bring %s to the table?"
+
+msgid "%s nicht dazuholen?"
+msgstr "Not add %s?"
+
+msgid "%s bekommt Bescheid und kann es später noch einmal versuchen."
+msgstr "%s will be told and can try again later."
+
+msgid "%s scheidet aus. Seine Karten kommen unter den Ziehstapel."
+msgstr "%s leaves the game. Their cards go under the draw pile."
+
+msgid "Über „Mitspieler dazuholen“ kann er später neu einsteigen."
+msgstr "They can rejoin later via “Add players”."
+
+msgid "Dann bleibt nur ein Spieler übrig – die Partie endet."
+msgstr "Then only one player is left – the game ends."
+
+msgid "%s aus dem Spiel nehmen?"
+msgstr "Remove %s from the game?"
+
+msgid "Herausnehmen"
+msgstr "Remove"
+
+msgid "Du bist auf der Warteliste. Der Gastgeber holt dich gleich an den Tisch."
+msgstr "You are on the waiting list. The host will bring you to the table shortly."
+
+msgid "Die Partie läuft schon."
+msgstr "The game is already running."
+
+# --- Meldungen beim Dazuholen/Entfernen (join_screen.gd, net_client.gd; Gerätetest 1.4.2)
+msgid "Das Spiel läuft schon. Bitte den Gastgeber, dich dazuzuholen (☰ → Mitspieler dazuholen)."
+msgstr "The game is already running. Ask the host to add you (☰ → Add players)."
+
+msgid "Das Spiel läuft schon. Der Gastgeber kann dich dazuholen – bleib hier, du erscheinst bei ihm auf der Warteliste."
+msgstr "The game is already running. The host can add you – stay here, you appear on their waiting list."

@@ -7,7 +7,7 @@ extends SceneTree
 #     jede Phase und jedes Ereignis ist dem Client bekannt; jede Aktion des Clients kennt das Regelwerk; NetProtocol lässt sie durch.
 #  3. NetServer liefert eine aus webclient/ gepackte Zip aus: Seite, alle eingebundenen Skripte, Mau-Töne (mau, mau_mau als m4a/ogg),
 #     Schrift, Kartenbild, Katzenbild – mit passenden MIME-Typen; sfx/index.json ist gültig, nennt „mau“, „mau_mau“ und die Spieltöne
-#     der App (karte, ziehen, mischen, flip, dran, fehler, sieg), jede genannte Datei liegt vor (m4a fürs iPhone, ogg als Rückfall).
+#     der App (karte, ziehen, mischen, flip, dran, fehler, Jubel jubel_1/jubel_2 für „sieg“), jede genannte Datei liegt vor (m4a fürs iPhone, ogg als Rückfall).
 #  4. Hausregeln (Kartentausch, Glücksspiel, Farbe mit ablegen): Bot-Partien mit allen drei Hausregeln; view.gamble und
 #     hints.can_stake/can_press genau dann, wenn gamble_cards an ist; alle neuen Ereignisse kommen vor und sind dem Client bekannt;
 #     Kartenbilder für alle 128 Gesichter; Kartenhilfe, Mock und die Einstellung „Spielbare Karten hervorheben“ im Client.
@@ -626,6 +626,35 @@ func run() -> void:
 		var r := g2.apply(1, NetProtocol.clean_action(act))
 		check(str(r.reason) != "Unbekannte Aktion.", "Regelwerk kennt Aktion „%s“" % a)
 
+	# Dazuholen und Entfernen mitten in der Partie (Beta 1.4.2): Ereignisse seats / leave_cards / draw reason "join", Warteliste, Grund "left"
+	for e in ["seats", "leave_cards"]:
+		check(effekte.has(e) and ereignisse.has(e), "Ereignis „%s“ (Plätze ändern): tisch.js spielt es ab, autotest.js kennt es" % e)
+	check(tisch.contains("e.reason !== 'join'") and tisch.contains("dataset.seat = n") and css.contains(".gg.abgang") and css.contains(".gg.neu"),
+		"Ereignis „draw“ mit reason „join“ ohne Zieh-Abzeichen, Plätze rücken (seats) mit Ein- und Ausblenden")
+	check(app.contains("l.waiting") and app.contains("p.waiting") and seite.contains("id=\"ende-hinweis\"") and app.contains("res.reason === 'left'")
+			and mock.contains("fuegeEin") and mock.contains("entferne") and mock.contains("sitz=dazu|weg|raus|warte"),
+		"Browser: Warteliste (lobby.waiting), Hinweis nach dem Herausnehmen, Rundenende-Grund „left“, Schein-Gastgeber kann Plätze ändern")
+	var g3 := MauGame.create(RuleConfig.new(), RulesFixture.players(4), 11)
+	g3.start_round()
+	var j := g3.insert_player(1, {"name": "Zoe", "kind": "human"})
+	var jev: Array = j.events if j.ok else []
+	check(bool(j.ok) and jev.size() >= 1 and str(jev[0].e) == "seats" and jev[0].map is Array and (jev[0].map as Array).size() == 4
+			and int(jev[0].join) == 1 and int(jev[0].leave) == -1 and str(jev[0].name) == "Zoe",
+		"MauGame.insert_player: Ereignis seats {map, join, leave, name} wie im Client erwartet")
+	var jd := jev.filter(func(x): return str(x.e) == "draw")
+	check(jd.size() == 1 and str(jd[0].get("reason", "")) == "join" and int(jd[0].count) >= 1 and int(jd[0].seat) == 1, "insert_player: draw mit reason „join“ für den neuen Platz")
+	var jv := g3.view_for(2)
+	check(int(jv.seat) == 2 and (jv.players as Array).size() == 5 and (jv.players as Array).all(func(p): return js_type(p.get("seat")) == "number"),
+		"Sicht nach dem Dazuholen: view.seat und Spielerliste in der neuen Nummerierung")
+	var lv := g3.remove_player(1)
+	var lev: Array = lv.events if lv.ok else []
+	var kinds := lev.map(func(x): return str(x.e))
+	check(bool(lv.ok) and kinds.has("leave_cards") and kinds.has("seats") and kinds.find("leave_cards") < kinds.find("seats"),
+		"MauGame.remove_player: leave_cards (alte Nummern) vor seats (%s)" % ",".join(PackedStringArray(kinds)))
+	for e in lev:
+		if str(e.e) == "leave_cards":
+			check(js_type(e.get("seat")) == "number" and js_type(e.get("count")) == "number" and not e.has("cards"), "leave_cards trägt nur Platz und Anzahl")
+
 	# ---------- 3. Auslieferung der Dateien ----------
 	await serve_check()
 	print("Dauer: %.1f s" % ((Time.get_ticks_msec() - t0) / 1000.0))
@@ -719,11 +748,13 @@ func sfx_index_check(server: NetServer) -> void:
 	var tisch_js := read_web("tisch.js")
 	var css_text := read_web("style.css")
 	check(ton_js.contains("'sieg', 'schnurren']"), "ton.js: „schnurren“ gehört zu den Spieltönen (Ton-Einstellung)")
+	check(ton_js.contains("const JUBEL = ['jubel_1', 'jubel_2']") and ton_js.contains("if (name === 'sieg')") and ton_js.contains("Math.random()"), "ton.js: „sieg“ wählt zufällig jubel_1 oder jubel_2")
+	check(not liste.has("sieg") and liste.has("jubel_1") and liste.has("jubel_2"), "sfx/index.json: Jubel statt Sieg-Ton")
 	check(tisch_js.contains("case 'skip':\n          M.Ton.spiele('schnurren')") and tisch_js.contains("case 'skip_all':\n          M.Ton.spiele('schnurren')"),
 		"tisch.js: Schnurren bei skip und skip_all")
-	check(tisch_js.contains("sternenschauer()") and tisch_js.contains("dataset.seite === 'dunkel') this.sternenschauer(); else this.konfetti()"),
+	check(tisch_js.contains("_regenTeilchen(") and tisch_js.contains("dataset.seite === 'dunkel'") and tisch_js.contains("'stern' : 'konfetti'") and tisch_js.contains("DUR = 5, TAPER = 5"),
 		"tisch.js: Partie-Ende nachts Sternenschauer, tagsüber Konfetti")
-	check(css_text.contains("body.reduziert .stern") and css_text.contains("@keyframes sternRegen") and css_text.contains("body:not([data-seite=\"dunkel\"]) #lobby"),
+	check(css_text.contains("body.reduziert .stern") and css_text.contains("@keyframes regenFall") and css_text.contains("body:not([data-seite=\"dunkel\"]) #lobby"),
 		"style.css: Sternenschauer (bei reduzierten Effekten aus) und helle Lobby am Tag")
 	for name in liste:
 		var datei: Variant = liste[name]

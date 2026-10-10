@@ -1039,43 +1039,46 @@
       this.flug.appendChild(w);
       setTimeout(() => w.remove(), 1000);
     }
-    // Partie-Ende: nachts Sternenschauer (Farben der dunklen Seite, Weiß und Gold), tagsüber Konfetti
+    // Partie-Ende (1.4.2, wie in der App): RAIN_DUR s lang fallen fortlaufend Sterne (Nacht) bzw. Konfetti (Tag) vom oberen Rand
+    // über die ganze Breite herein, danach rieselt es RAIN_TAPER s lang aus (Zahl neuer Teilchen sinkt linear auf null).
+    // Wenige DOM-Elemente gleichzeitig (Flugzeit ~3 s, nur transform), jedes räumt sich nach der Animation selbst weg.
     feier() {
       this._feierZeit = Date.now();
-      if (this.root.dataset.seite === 'dunkel') this.sternenschauer(); else this.konfetti();
+      if (document.body.classList.contains('reduziert')) return;
+      const nacht = this.root.dataset.seite === 'dunkel';
+      clearInterval(this._regenTimer);
+      const DUR = 5, TAPER = 5, TICK = 100;
+      const rate = nacht ? 4.0 : 4.8;                 // neue Teilchen je Tick bei voller Dichte (~3 s Flug → ~120/145 gleichzeitig)
+      const t0 = Date.now();
+      let rest = 0;
+      const tick = () => {
+        const t = (Date.now() - t0) / 1000;
+        if (t >= DUR + TAPER || !this.root.isConnected) { clearInterval(this._regenTimer); return; }
+        const dichte = t <= DUR ? 1 : 1 - (t - DUR) / TAPER;
+        rest += rate * dichte;
+        while (rest >= 1) { rest -= 1; this._regenTeilchen(nacht); }
+      };
+      this._regenTimer = setInterval(tick, TICK);
+      tick();
     }
-    sternenschauer() {
-      const farben = ['#FF2FA8', '#00E5FF', '#FF8A00', '#A855FF', '#FFFFFF', '#FFD65A', '#FFC400', '#FFD65A', '#FFC400', '#FFE9A0', '#FFC400'];
-      for (let i = 0; i < 64; i++) {
-        const s = el('div', 'stern');
-        const dauer = 3200 + Math.random() * 500;
-        s.style.left = (this.g.cx + (Math.random() - 0.5) * 240) + 'px';
-        s.style.top = (this.g.cy - 40) + 'px';
-        s.style.setProperty('--c', farben[i % farben.length]);
-        s.style.setProperty('--s', (26 + Math.random() * 34).toFixed(0) + 'px');
-        s.style.setProperty('--dx', ((Math.random() - 0.5) * 1300).toFixed(0) + 'px');
-        s.style.setProperty('--dy', (-220 - Math.random() * 280).toFixed(0) + 'px');
-        s.style.setProperty('--r', ((Math.random() < 0.5 ? -1 : 1) * (90 + Math.random() * 200)).toFixed(0) + 'deg');   // sanft drehen
-        s.style.setProperty('--t', dauer.toFixed(0) + 'ms');
-        s.style.animationDelay = (Math.random() * 1400).toFixed(0) + 'ms';
-        this.flug.appendChild(s);
-        setTimeout(() => s.remove(), dauer + 1850);
-      }
-    }
-    konfetti() {
-      const farben = ['#FF4D57', '#FFDD33', '#4FD36E', '#4C7DFF', '#FF9ECF', '#19C6D4', '#FF8A1F', '#8B6BFF'];
-      for (let i = 0; i < 70; i++) {
-        const c = el('div', 'konfetti');
-        c.style.left = (this.g.cx + (Math.random() - 0.5) * 200) + 'px';
-        c.style.top = (this.g.cy - 40) + 'px';
-        c.style.background = farben[i % farben.length];
-        c.style.setProperty('--dx', ((Math.random() - 0.5) * 1400).toFixed(0) + 'px');
-        c.style.setProperty('--dy', (-200 - Math.random() * 300).toFixed(0) + 'px');
-        c.style.setProperty('--r', ((Math.random() - 0.5) * 1080).toFixed(0) + 'deg');
-        c.style.animationDelay = (Math.random() * 1500).toFixed(0) + 'ms';
-        this.flug.appendChild(c);
-        setTimeout(() => c.remove(), 5000);
-      }
+    _regenTeilchen(nacht) {
+      const W = this.W || 800, H = this.H || 400;
+      const farben = nacht
+        ? ['#FF2FA8', '#00E5FF', '#FF8A00', '#A855FF', '#FFFFFF', '#FFD65A', '#FFC400', '#FFD65A', '#FFC400', '#FFE9A0', '#FFC400']
+        : ['#FF4D57', '#FFDD33', '#4FD36E', '#4C7DFF', '#FF9ECF', '#19C6D4', '#FF8A1F', '#8B6BFF'];
+      const e = el('div', nacht ? 'stern' : 'konfetti');
+      const dauer = 2600 + Math.random() * 800;
+      e.style.left = (Math.random() * W).toFixed(0) + 'px';
+      e.style.top = '-40px';
+      const c = farben[Math.floor(Math.random() * farben.length)];
+      if (nacht) { e.style.setProperty('--c', c); e.style.setProperty('--s', (24 + Math.random() * 32).toFixed(0) + 'px'); }
+      else e.style.background = c;
+      e.style.setProperty('--dx', ((Math.random() - 0.5) * 120).toFixed(0) + 'px');
+      e.style.setProperty('--h', (H + 90) + 'px');
+      e.style.setProperty('--r', ((Math.random() < 0.5 ? -1 : 1) * (180 + Math.random() * 540)).toFixed(0) + 'deg');
+      e.style.setProperty('--t', dauer.toFixed(0) + 'ms');
+      e.addEventListener('animationend', () => e.remove(), { once: true });
+      this.flug.appendChild(e);
     }
     // Flip-Welle: alle Karten drehen sich (links → rechts versetzt)
     wende(richtung) {
@@ -1159,7 +1162,7 @@
             const face = (e.seat === ich && e.faces && e.faces[i]) ? e.faces[i] : back;
             fluege.push(schlaf(d(i * 90)).then(() => t.fliege(face, { x: t.g.stapel.x, y: t.g.stapel.y, w: t.g.sw }, Object.assign({ rot: kartenRot(i * 13) * 0.5 }, ziel), d(360), { ausblenden: e.seat !== ich })));
           }
-          if ((e.count | 0) > 1) t.abzeichen(e.seat, '+' + e.count, 'zieh', d(1100));
+          if ((e.count | 0) > 1 && e.reason !== 'join') t.abzeichen(e.seat, '+' + e.count, 'zieh', d(1100));
           await Promise.all(fluege);
           break;
         }
@@ -1243,6 +1246,42 @@
           t.banner(M.t('Neu gemischt'), '', 'klein', d(900));
           await schlaf(d(700));
           break;
+        // Dazuholen und Entfernen mitten in der Partie (Beta 1.4.2, docs/module/dazuholen.md): leave_cards (alte Nummern), dann
+        // seats {map[alt]=neu|-1, join, leave, name, kind}; alles danach in der neuen Nummerierung. Ältere Gastgeber senden beides nie.
+        case 'leave_cards': {   // {seat, count}: die Karten des Ausgeschiedenen wandern verdeckt unter den Ziehstapel
+          if (e.seat === ich) break;
+          const von = t.platzPos(e.seat), back = t.v.draw_back || 'rueckseite';
+          const n = Math.min(Math.max(1, e.count | 0), 6);
+          M.Ton.spiele('ziehen');
+          for (let i = 0; i < n; i++) schlaf(d(i * 70)).then(() => t.fliege(back, von, { x: t.g.stapel.x, y: t.g.stapel.y, w: t.g.sw, rot: kartenRot(i * 11) * 0.5 }, d(380), { ausblenden: true }));
+          await schlaf(d(380 + n * 70));
+          break;
+        }
+        case 'seats': {
+          const map = Array.isArray(e.map) ? e.map : [];
+          const altDran = t.v.turn === t.v.seat;
+          const neu = new Map();
+          for (const [s, g] of t.gegnerEls) {
+            const n = s < map.length ? map[s] : s;
+            g.k = undefined;
+            if (n >= 0) { g.e.dataset.seat = n; neu.set(n, g); if (!reduziert) g.e.classList.add('rueckt'); }
+            else { g.e.classList.add('abgang'); setTimeout(() => g.e.remove(), 520); }
+          }
+          t.gegnerEls = neu;
+          t.zeige(view, true);   // Plätze der neuen Nummerierung; alles Folgende nutzt sie
+          const g = typeof e.join === 'number' && e.join >= 0 ? t.gegnerEls.get(e.join) : null;
+          if (g && e.join !== t.v.seat) {
+            g.e.classList.add('neu');
+            t.abzeichen(e.join, esc(M.t('Hallo!')), 'platz', d(1500));
+          }
+          setTimeout(() => t.gegnerEls.forEach(x => x.e.classList.remove('rueckt', 'neu')), 700);
+          if (!altDran && view.turn === view.seat && view.phase === 'turn') {   // durch das Herausnehmen bin ich plötzlich dran
+            M.Ton.spiele('dran');
+            if (t.app.zugVibration) t.app.zugVibration();
+          }
+          await schlaf(d(reduziert ? 100 : 500));
+          break;
+        }
         case 'round_over': {
           const r = Array.isArray(e.ranking) ? e.ranking : [];
           const erster = r.length ? (typeof r[0] === 'object' ? r[0].seat : r[0]) : -1;

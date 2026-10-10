@@ -41,7 +41,7 @@
   const art = x => Array.isArray(x) ? 'array' : (x === null ? 'null' : typeof x);
   // Ereignisse, die der Client kennt (Effekt in tisch.js oder bewusst ohne Effekt)
   const EREIGNISSE = ['deal', 'play', 'draw', 'skip', 'skip_all', 'reverse', 'color', 'flip', 'pending', 'challenge', 'mau', 'catch', 'penalty', 'shuffle',
-    'round_over', 'game_over', 'finish', 'pass', 'choose_color', 'round_start', 'start', 'turn', 'keep', 'accept',
+    'round_over', 'game_over', 'finish', 'pass', 'choose_color', 'seats', 'leave_cards', 'round_start', 'start', 'turn', 'keep', 'accept',
     'swap_hands', 'gamble_start', 'stake', 'gamble_roll', 'stake_back', 'stake_discard', 'discard_color', 'discard_pick', 'flip_surprise'];
   // Hausregel-Karten, die der Selbsttest bevorzugt legt (damit Kartentausch, Farbe ablegen und Glücksspiel sicher vorkommen)
   const VORRANG = { tausch: 1, ablegen: 2, ablegen_joker: 3, gluecksspiel: 4 };

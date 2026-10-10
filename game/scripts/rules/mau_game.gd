@@ -51,6 +51,8 @@ extends RefCounted
 # - Flip-Überraschung (flip_surprise = on): Liegt nach einem ausgeführten Flip (nicht am Rundenende) eine klassische Aktionskarte
 #   oben (SURPRISE_KINDS), wirkt sie, als hätte der Flip-Spieler sie gelegt (öffentliches Ereignis flip_surprise {seat, face}
 #   direkt vor den Wirkungs-Ereignissen). Bei Wünscher +2/Farbjagd wählt er zuerst die Farbe (Phase "color"). Kein Anzweifeln.
+# - Plätze mitten im Spiel (Beta 1.4.2): insert_player/remove_player nummerieren alle Plätze neu (_remap, Ereignis seats); Einzelheiten
+#   im Abschnitt „Plätze ändern“ und in docs/module/dazuholen.md.
 
 const FORMAT := 1
 const SWAP := "tausch"
@@ -200,6 +202,240 @@ func start_round() -> Array:
 	if _valid and (state == "idle" or state == "round_over"):
 		_start(ev)
 	return ev
+
+
+# --- Plätze ändern: dazuholen und entfernen (Beta 1.4.2, docs/module/dazuholen.md) ---
+# Plätze bleiben eine lückenlose Liste im Uhrzeigersinn: Beide Aufträge nummerieren alle Plätze neu (_remap, Ereignis seats mit
+# map[alter Platz] = neuer Platz bzw. −1). Ereignisse vor seats tragen die alten, danach die neuen Platznummern.
+
+# Dazuholen geht zwischen zwei Zügen (turn, auch mit offener stapelbarer Strafe) und am Rundenende.
+func can_change_seats() -> bool:
+	return _valid and state in ["turn", "round_over"]
+
+
+# Entfernen geht jetzt? Wie can_change_seats(), dazu jederzeit für den Platz am Zug (sonst blockierte ein Abwesender das Spiel)
+# und nach dem Partieende.
+func can_remove_now(seat: int) -> bool:
+	if seat < 0 or seat >= players.size() or seat == host:
+		return false
+	return can_change_seats() or state == "game_over" or (state in PLAY_PHASES and seat == current)
+
+
+# Karten, die ein Dazugeholter jetzt bekäme: höchste Handzahl der aktiven Plätze, höchstens die Startzahl, mindestens 1;
+# am Rundenende 0 (Karten beim nächsten Austeilen). Ohne freie Karten weniger (Anzeige der Rückfrage).
+func join_card_count() -> int:
+	if state == "round_over":
+		return 0
+	var most := 0
+	for s in players.size():
+		if place[s] == 0:
+			most = maxi(most, (hands[s] as Array).size())
+	var k := clampi(most, 1, maxi(config.hand_size, 1))
+	return mini(k, draw_pile.size() + maxi(discard.size() - 1, 0))
+
+
+# Neuen Platz an Stelle at (0 … n, Index in der neuen Reihenfolge) einfügen. info {name, kind}. Ergebnis {ok, reason, events, seat}.
+# Am Zug bleibt, wer dran war; sitzt der Neue direkt dahinter, ist er als Nächster dran (wie an einem echten Tisch). Er startet mit
+# dem niedrigsten Punktestand der anderen.
+func insert_player(at: int, info: Dictionary) -> Dictionary:
+	var n := players.size()
+	if not can_change_seats():
+		return {"ok": false, "reason": "Dazuholen geht erst nach diesem Zug.", "events": [], "seat": -1}
+	if n >= MAX_PLAYERS:
+		return {"ok": false, "reason": "Am Tisch ist kein Platz mehr.", "events": [], "seat": -1}
+	at = clampi(at, 0, n)
+	var k := join_card_count()
+	var low := 0
+	for i in n:
+		low = int(scores[i]) if i == 0 else mini(low, int(scores[i]))
+	var map: Array = []
+	for s in n:
+		map.append(s if s < at else s + 1)
+	var p_name := str(info.get("name", "Spieler %d" % (n + 1)))
+	var p_kind := "bot" if str(info.get("kind", "human")) == "bot" else "human"
+	_remap(map, n + 1)
+	players[at] = {"name": p_name, "kind": p_kind}
+	scores[at] = low
+	if not result.is_empty():
+		result.scores = scores.duplicate()
+	var ev: Array = [{"e": "seats", "map": map.duplicate(), "join": at, "leave": -1, "name": p_name, "kind": p_kind}]
+	if state == "turn" and k > 0:
+		_draw(at, k, "join", ev)
+	return {"ok": true, "reason": "", "events": ev, "seat": at}
+
+
+# Platz entfernen (nie den Gastgeber). Hand und Glücksspiel-Einsatz kommen gemischt unter den Ziehstapel; Strafen gegen ihn und eine
+# anzweifelbare Strafe von ihm verfallen, eine offene Farbwahl wird zur Zufallsfarbe, eine Ablege-Auswahl entfällt; war er dran, ist
+# der Nächste dran. Bleibt nur ein Platz, endet die Partie (Rundenende-Grund "left"). Ergebnis {ok, reason, events}.
+func remove_player(r: int) -> Dictionary:
+	var n := players.size()
+	if r < 0 or r >= n:
+		return {"ok": false, "reason": "Unbekannter Platz.", "events": []}
+	if r == host:
+		return {"ok": false, "reason": "Den Gastgeber kann man nicht herausnehmen.", "events": []}
+	if not (state in PLAY_PHASES or state in ["round_over", "game_over", "idle"]):
+		return {"ok": false, "reason": "Das geht gerade nicht.", "events": []}
+	var ev: Array = []
+	var playing := state in PLAY_PHASES
+	var p_name := _name(r)
+	var p_kind := str(players[r].kind)
+	var was_current := playing and current == r
+	var nxt := -1
+	var restart := false             # Anzweifeln gegen einen Entfernten: das Opfer ist normal dran (neuer Zug)
+	var finisher := -1               # anzweifelbare letzte Karte, das Opfer ist weg: der Leger ist trotzdem fertig
+	if dealer == r:
+		dealer = posmod(r - 1, n)    # das Austeilen geht der Reihe nach weiter
+	# 1. Karten unter den Ziehstapel (Hand und ein laufender Einsatz), gemischt; öffentlich ist nur die Zahl. Auch am Rundenende
+	# (die Hände liegen dort noch offen), damit alle Karten im Spiel bleiben.
+	var back: Array = (hands[r] as Array).duplicate()
+	if not gamble.is_empty() and int(gamble.seat) == r:
+		back.append_array(gamble.stake)
+		gamble = {}
+	hands[r] = []
+	if not back.is_empty():
+		_shuffle(back)
+		ev.append({"e": "leave_cards", "seat": r, "count": back.size()})
+		back.append_array(draw_pile)
+		draw_pile = back
+	if playing:
+		# 2. Offene Zustände, an denen r beteiligt ist
+		if not pending.is_empty():
+			if int(pending.victim) == r:
+				if bool(pending.get("finisher", false)) and int(pending.by) != r:
+					finisher = int(pending.by)
+				pending = {}
+			elif state == "challenge" and int(pending.by) == r:
+				pending = {}                 # ohne die Hand des Legers lässt sich nichts prüfen
+				restart = true
+		if was_current and state == "color":
+			color = CardDB.COLORS[SIDES[side]][_rng.randi_range(0, 3)]
+			wished = true
+			_note_wish(color)
+			ev.append({"e": "color", "color": color, "seat": -1})
+		if not dpick.is_empty() and int(dpick.seat) == r:
+			if bool(dpick.get("wild", false)):
+				wished = true                # Ablegen-Joker oben ohne Spielfarbe: die bisherige Farbe gilt als Wunsch
+				_note_wish(color)
+			dpick = {}
+		if finisher >= 0:
+			_finish(finisher, ev)
+		if was_current:
+			nxt = _next_in(r, dir)
+			if nxt == r:
+				nxt = -1
+			state = "turn"
+			drawn_id = -1
+		mau_said[r] = false
+	# 3. Umnummerieren
+	var map: Array = []
+	for s in n:
+		map.append(-1 if s == r else (s if s < r else s - 1))
+	_remap(map, n - 1)
+	ev.append({"e": "seats", "map": map.duplicate(), "join": -1, "leave": r, "name": p_name, "kind": p_kind})
+	# 4. Wie es weitergeht
+	if players.size() < MIN_PLAYERS:
+		if playing:
+			_end_round("left", ev)
+		if state != "game_over":
+			state = "game_over"
+			var rk: Array = result.get("ranking", [])
+			ev.append({"e": "game_over", "winner": int(rk[0]) if not rk.is_empty() else 0, "scores": scores.duplicate()})
+		return {"ok": true, "reason": "", "events": ev}
+	if not playing:
+		return {"ok": true, "reason": "", "events": ev}
+	if finisher >= 0 and _round_should_end():
+		_end_round("fertig", ev)
+	elif _round_should_end() or _active_count() < 2:
+		_end_round("left", ev)
+	elif was_current:
+		_new_turn(int(map[nxt]) if nxt >= 0 else _next_in(0, dir), ev)
+	elif restart:
+		_new_turn(current, ev)
+	return {"ok": true, "reason": "", "events": ev}
+
+
+# Neu durchnummerieren: map[alter Platz] = neuer Platz bzw. −1 (entfernt); new_n Plätze, freie Plätze bekommen Grundwerte.
+func _remap(map: Array, new_n: int) -> void:
+	var old_n := players.size()
+	var m := func(s: int) -> int: return int(map[s]) if s >= 0 and s < old_n else -1
+	var np: Array = []
+	var nc: Array = []
+	var nh: Array = []
+	var nm: Array = []
+	var npl: Array = []
+	var ns: Array = []
+	for i in new_n:
+		np.append({"name": "", "kind": "human"})
+		nc.append(true)
+		nh.append([])
+		nm.append(false)
+		npl.append(0)
+		ns.append(0)
+	for s in old_n:
+		var t: int = m.call(s)
+		if t < 0:
+			continue
+		np[t] = players[s]
+		nc[t] = connected[s]
+		nh[t] = hands[s]
+		nm[t] = mau_said[s]
+		npl[t] = place[s]
+		ns[t] = scores[s]
+	players = np
+	connected = nc
+	hands = nh
+	mau_said = nm
+	place = npl
+	scores = ns
+	host = maxi(int(m.call(host)), 0)
+	dealer = maxi(int(m.call(dealer)), 0)
+	current = int(m.call(current))
+	mau_open = int(m.call(mau_open))
+	if not pending.is_empty():
+		pending.by = int(m.call(int(pending.by)))
+		pending.victim = int(m.call(int(pending.victim)))
+	var fin: Array = []
+	for s in finished:
+		var t: int = m.call(int(s))
+		if t >= 0:
+			fin.append(t)
+	finished = fin
+	if state in PLAY_PHASES:
+		for i in finished.size():
+			place[finished[i]] = i + 1
+	if not gamble.is_empty():
+		gamble.seat = int(m.call(int(gamble.seat)))
+	if not dpick.is_empty():
+		dpick.seat = int(m.call(int(dpick.seat)))
+	for id in dlog:
+		var e: Dictionary = dlog[id]
+		if int(e.s) >= 0:
+			e.s = int(m.call(int(e.s)))
+	if not result.is_empty():
+		var rk: Array = []
+		for s in result.get("ranking", []):
+			var t: int = m.call(int(s))
+			if t >= 0:
+				rk.append(t)
+		result.ranking = rk
+		for key in ["points", "gains", "hands"]:
+			var src: Array = result.get(key, [])
+			var dst: Array = []
+			for i in new_n:
+				dst.append([] if key == "hands" else 0)
+			for s in mini(src.size(), old_n):
+				var t: int = m.call(s)
+				if t >= 0:
+					dst[t] = src[s]
+			result[key] = dst
+		result.scores = scores.duplicate()
+		if state in ["round_over", "game_over"]:
+			for i in new_n:
+				place[i] = 0
+			for i in rk.size():
+				place[rk[i]] = i + 1
+	seen = {}
+	pass_streak = 0
 
 
 # --- Aktionen ---
@@ -863,15 +1099,26 @@ func _next_in(from: int, step: int) -> int:
 	var s := from
 	for i in n:
 		s = posmod(s + step, n)
-		if place[s] == 0:
+		if place[s] == 0 and not _out_of_cards(s):
 			return s
 	return from
 
 
+# Dazugeholt, als keine Karte frei war (Beta 1.4.2): spielt noch (place 0), hat aber keine Karten und sitzt aus, solange beide
+# Stapel leer sind (wird wieder eine Karte frei, ist er normal dran und zieht). Nicht gemeint sind der Platz am Zug (Glücksspiel oder
+# Ablege-Auswahl mit leerer Hand) und der Leger einer anzweifelbaren letzten Karte.
+func _out_of_cards(s: int) -> bool:
+	if place[s] != 0 or not (hands[s] as Array).is_empty() or not state in PLAY_PHASES or s == current:
+		return false
+	if not draw_pile.is_empty() or discard.size() > 1:
+		return false
+	return not (bool(pending.get("finisher", false)) and int(pending.get("by", -1)) == s)
+
+
 func _active_count() -> int:
 	var c := 0
-	for p in place:
-		if p == 0:
+	for s in place.size():
+		if place[s] == 0 and not _out_of_cards(s):
 			c += 1
 	return c
 
@@ -1145,9 +1392,12 @@ func _swap_hands(p: int, ev: Array) -> void:
 	if _active_count() < 2:
 		return
 	var old: Array = hands.duplicate()
+	var targets := {}                # vor dem Umschichten bestimmen (_next_in liest die Hände wegen _out_of_cards)
 	for s in n:
-		if place[s] == 0:
-			hands[_next_in(s, step)] = old[s]
+		if place[s] == 0 and not _out_of_cards(s):
+			targets[s] = _next_in(s, step)
+	for s in targets:
+		hands[int(targets[s])] = old[s]
 	mau_open = -1
 	for s in n:
 		mau_said[s] = false
@@ -1212,9 +1462,13 @@ func _end_round(reason: String, ev: Array) -> void:
 		pts.append(_hand_points(s))
 		counts.append((hands[s] as Array).size())
 	var rest: Array = []
+	var waiting: Array = []          # Dazugeholte ohne Karten (_out_of_cards): hinten, sie haben in dieser Runde nicht gespielt
 	for s in n:
 		if place[s] == 0:
-			rest.append(s)
+			if _out_of_cards(s):
+				waiting.append(s)
+			else:
+				rest.append(s)
 	var by_cards := reason == "blockiert"
 	rest.sort_custom(func(a: int, b: int) -> bool:
 		var ka: Array = [counts[a], pts[a], a] if by_cards else [pts[a], counts[a], a]
@@ -1225,6 +1479,7 @@ func _end_round(reason: String, ev: Array) -> void:
 		return false)
 	var ranking: Array = finished.duplicate()
 	ranking.append_array(rest)
+	ranking.append_array(waiting)
 	for i in ranking.size():
 		place[ranking[i]] = i + 1
 	var winner: int = ranking[0]
@@ -1675,11 +1930,13 @@ func _hint_parts(me: int, h: Dictionary) -> Array:
 			var w: int = rk[0] if not rk.is_empty() else -1
 			if result.get("reason", "") == "blockiert":
 				out.append("Nichts geht mehr –")
+			elif result.get("reason", "") == "left":
+				out.append("Zu wenige Spieler –")
 			if state == "game_over":
 				out.append("Du gewinnst die Partie!" if w == me else I18n.part("%s gewinnt die Partie.", [_name(w)]))
 				return out
 			out.append("Du gewinnst die Runde!" if w == me else I18n.part("%s gewinnt die Runde.", [_name(w)]))
-			if me >= 0 and w != me and config.round_end == "last":
+			if me >= 0 and w != me and config.round_end == "last" and int(place[me]) > 0:
 				out.append(I18n.part("Du bist auf Platz %d.", [int(place[me])]))
 			if bool(h.can_next_round):
 				out.append("Weiter mit der nächsten Runde.")

@@ -135,6 +135,11 @@ func _after_change() -> void:
 	pass
 
 
+# Nach dem Verteilen eines Stands (HostTable: aufgeschobene Platzaufträge, jeweils als eigener Stand).
+func _after_distribute() -> void:
+	pass
+
+
 func _save_extra() -> Dictionary:
 	return {}
 
@@ -192,6 +197,7 @@ func _changed(events: Array) -> void:
 	if autosave:
 		_save()
 	_distribute(events)
+	_after_distribute()
 
 
 # --- Computergegner ---

@@ -66,7 +66,7 @@ func test_client_messages() -> void:
 	check(NetProtocol.clean_client_message({"t": "away", "x": 1, "text": "y".repeat(9000)}) == {"t": "away"}, "away auf {t} gekürzt")
 	check(NetProtocol.clean_client_message({"t": "back", "token": "z"}) == {"t": "back"}, "back auf {t} gekürzt")
 	check(NetProtocol.auto_reply("{\"t\":\"away\"}") == "" and NetProtocol.auto_reply("{\"t\":\"back\"}") == "", "away/back gehen an die Sitzung")
-	check(NetProtocol.RESUME_PROBE_MS == 3000 and NetProtocol.SUB_OFFER_MS == 30000, "Rückkehr-Prüfung 3 s, Vertretung erst nach 30 s")
+	check(NetProtocol.RESUME_PROBE_MS == 3000 and NetProtocol.SUB_OFFER_MS == 0, "Rückkehr-Prüfung 3 s, Vertretung sofort (Beta 1.4.2)")
 	check(NetProtocol.clean_client_message({"t": "neu", "x": 1}).get("x") == 1, "unbekannter Typ geht durch")
 
 func test_names() -> void:

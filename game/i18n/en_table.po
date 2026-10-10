@@ -909,3 +909,35 @@ msgstr "Taken back"
 
 msgid "%s nimmt die Karte zurück"
 msgstr "%s takes the card back"
+
+# --- Abwesende Gäste beim Gastgeber, Dazuholen am Tisch (table_screen.gd, table_view.gd; Beta 1.4.2)
+msgid "Computer übernimmt"
+msgstr "Computer takes over"
+
+msgid "Ein Computergegner spielt für den getrennten Gast, bis er zurückkommt."
+msgstr "A computer player plays for the disconnected guest until they return."
+
+msgid "%s ist getrennt"
+msgstr "%s is disconnected"
+
+msgid "Hallo!"
+msgstr "Hello!"
+
+msgid "%s möchte mitspielen – ☰ → „Mitspieler dazuholen“."
+msgstr "%s wants to join – ☰ → “Add players”."
+
+# --- Herausgenommen, Wieder beitreten, Laden (table_screen.gd; Gerätetest 1.4.2)
+msgid "Wieder beitreten"
+msgstr "Rejoin"
+
+msgid "Noch einmal zu diesem Gastgeber verbinden"
+msgstr "Connect to this host again"
+
+msgid "Der Gastgeber kann dich wieder dazuholen."
+msgstr "The host can add you again."
+
+msgid "Der Gastgeber hat dich aus dem Spiel genommen. Du stehst jetzt auf seiner Warteliste."
+msgstr "The host took you out of the game. You are now on their waiting list."
+
+msgid "Der Tisch wird geladen …"
+msgstr "Loading the table …"

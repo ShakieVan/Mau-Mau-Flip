@@ -3,7 +3,8 @@ extends TableSource
 # Netzwerkspiel, App-Mitspieler (Modul G): NetClient (Modul D) zur Adresse des Gastgebers. Meldet sich mit Name, kind "app" und –
 # falls bekannt – Token an; verbindet bei Verlust selbst neu (als derselbe Spieler). Der Gastgeber entscheidet alles, hier kommen
 # nur die eigene Sicht und die für diesen Platz gefilterten Ereignisse an.
-#   lobby → lobby_changed · start → game_started · state → state_changed · err/notice → notice
+#   lobby → lobby_changed (waiting:true = Warteliste mitten in der Partie, Feld waiting) · start → game_started
+#   state → state_changed · err/notice → notice
 #   reject → connection_changed("rejected") + notice (bei falscher Version mit Hinweis auf /apk) · bye → notice + "closed"
 # act() schickt {t:"act", seq, a}.
 
@@ -20,6 +21,7 @@ var view_rev := 0                # Anzahl empfangener Stände
 var last_rev := -1               # rev des Gastgebers im letzten Stand
 var address := ""
 var port := 0
+var waiting := false              # Beta 1.4.2: mitten in der Partie auf der Warteliste ({t:"lobby", waiting:true}), bis „start“ kommt
 
 var _seat := -1
 var _view := {}
@@ -80,6 +82,15 @@ func connection_state() -> String:
 
 # Hinweis beim Neuverbinden (Beta 1.3.3): „Gastgeber kurz weg – warte …“ (4503) bzw. „Verbindung zum Gastgeber unterbrochen – warte …“
 func connection_hint() -> String:
+	return _hint_text()
+
+
+# Vom Gastgeber herausgenommen (bye oder Ablehnung beim Wiederverbinden mit altem Token, Gerätetest 1.4.2)
+func was_removed() -> bool:
+	return client != null and client.removed
+
+
+func _hint_text() -> String:
 	return client.hint() if client != null else "Verbindung zum Gastgeber unterbrochen – warte …"
 
 
@@ -159,11 +170,13 @@ func _on_message(msg: Dictionary) -> void:
 			# Lobby-Stände verteilt der Gastgeber nur ohne laufende Partie: Ein alter Stand gilt nicht mehr (sonst zeigte ein neuer
 			# Tisch kurz die vorige Partie).
 			lobby = msg
+			waiting = bool(msg.get("waiting", false))
 			_view = {}
 			_seat = -1
 			lobby_changed.emit(msg)
 		"start":
 			_seat = int(msg.get("seat", -1))
+			waiting = false
 			game_started.emit(_seat)
 		"state":
 			if not msg.get("view") is Dictionary:
@@ -179,6 +192,8 @@ func _on_message(msg: Dictionary) -> void:
 
 func _on_rejected(code: String, text: String) -> void:
 	_rejected = true
+	if client != null and client.removed and waiting:
+		text = I18n.t("Der Gastgeber hat dich nicht dazugeholt.")   # stand nur auf der Warteliste
 	if code == "version" and not text.contains("/apk"):
 		text += " " + I18n.t("App vom Gastgeber holen: %s") % ("http://%s:%d/apk" % [address, port])
 	connection_changed.emit("rejected")

@@ -1,23 +1,26 @@
 class_name IngameMenu
 extends Control
 # Menü im Spiel (Beta 1.1.2): kleine Karte (tags Papier, nachts dunkel, 1.1.3) unter dem ☰-Knopf oben links (TableScreen) mit „Einstellungen“, „Regeln ansehen“
-# und „So geht's“. Wahl → chosen(key) und schließt; Tipp daneben oder Zurück-Taste (TableScreen.on_back) schließt ohne Wahl.
+# und „So geht's“; beim Gastgeber eines Netzwerkspiels davor „Mitspieler dazuholen“ / „Mitspieler entfernen“ (HOST_ITEMS, Beta 1.4.2).
+# Wahl → chosen(key) und schließt; Tipp daneben oder Zurück-Taste (TableScreen.on_back) schließt ohne Wahl.
 # Zeigt keine Karten (Regel 15); beim Sichtschutz schließt TableScreen das Menü.
 
 signal chosen(key: String)
 signal closed
 
 const ITEMS := [["einstellungen", "Einstellungen"], ["regeln", "Regeln ansehen"], ["bedienung", "So geht's"]]
+# Nur beim Gastgeber eines Netzwerkspiels davor (Beta 1.4.2, docs/module/dazuholen.md): Feld „Mitspieler“ (SeatManager)
+const HOST_ITEMS := [["dazuholen", "Mitspieler dazuholen"], ["entfernen", "Mitspieler entfernen"]]
 
 var _card: PanelContainer
 var night := false
 
 
-static func open(parent: Node, at: Vector2) -> IngameMenu:
+static func open(parent: Node, at: Vector2, items: Array = ITEMS) -> IngameMenu:
 	var m := IngameMenu.new()
 	m.theme = UiTheme.get_theme()
 	parent.add_child(m)
-	m._build(at)
+	m._build(at, items)
 	TableView.follow_night(m, m.set_night)
 	return m
 
@@ -28,13 +31,13 @@ func _init() -> void:
 	name = "MenueImSpiel"
 
 
-func _build(at: Vector2) -> void:
+func _build(at: Vector2, items: Array) -> void:
 	_card = ScreenKit.card(22.0)
 	_card.position = at
 	add_child(_card)
 	var v := ScreenKit.vbox(12)
 	_card.add_child(v)
-	for it in ITEMS:
+	for it in items:
 		var b := ScreenKit.button(str(it[1]), "GhostButton", "", 360.0)
 		b.name = "Wahl_" + str(it[0])
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT

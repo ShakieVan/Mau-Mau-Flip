@@ -13,7 +13,11 @@ extends Node
 # so spielen WLAN- und Online-Gäste in derselben Lobby und Partie. finish/stop beenden auch den Raum ({k:"end"}).
 # App-Wechsel (Beta 1.3.3): Gäste melden „away“/„back“ (kurz in einer anderen App), der Gastgeber selbst über PAUSED/FOCUS_OUT bzw.
 # RESUMED/FOCUS_IN (app_paused/app_resumed). Feld away je Spieler, in der Lobby verteilt (die Spielsteuerung übernimmt es in die
-# Sicht); gone_ms(id) = seit wann weg oder getrennt (Knopf „Computer für … spielen lassen“ erst nach NetProtocol.SUB_OFFER_MS).
+# Sicht); gone_ms(id) = seit wann weg oder getrennt (Vertretung und Herausnehmen bietet der Gastgeber seit Beta 1.4.2 sofort an).
+# Warteliste (Beta 1.4.2, docs/module/dazuholen.md): Bei join_open (oder wenn schon jemand wartet) landen Neue ohne Token mitten in
+# der Partie mit seat = −1, waiting = true auf der Warteliste statt „reject running“. Sie bekommen welcome und {t:"lobby", late:true,
+# waiting:true, host_name, …}; die Spielsteuerung holt sie an den Tisch (set_waiting false, set_seat_order, start). ordered_ids()
+# kennt nur Sitzende, waiting_ids() die Wartenden. Ein getrennter Wartender verfällt nach WAIT_DROP_MS.
 #
 # Nutzung: var s := NetHostSession.new(); add_child(s); s.start("Lena"); var me := s.host_id; s.message.connect(…)
 
@@ -31,6 +35,7 @@ signal online_changed(state: String, info: Dictionary)   # Online-Spiel: off | c
 const HELLO_TIMEOUT_MS := 10000
 const CLOSE_GRACE_MS := 3000             # nach „reject“/„bye“: so lange darf der Client selbst schließen (NetServer.close_ws)
 const FINISH_MS := 2000                  # finish(): höchstens so lange auf die Clients warten
+const WAIT_DROP_MS := 60000            # Warteliste (Beta 1.4.2): ein getrennter Wartender wird nach so vielen ms gestrichen
 
 var auto_poll := true
 var hello_timeout_ms := HELLO_TIMEOUT_MS   # so lange darf eine neue Verbindung ohne „hello“ bleiben
@@ -48,6 +53,7 @@ var host_name := "Gastgeber"
 var host_id := 0
 var rules := {}
 var running := false                     # Partie läuft: Neue ohne Token werden abgelehnt („running“)
+var join_open := false                   # Beta 1.4.2: Neue dürfen mitten in die Partie (Warteliste, der Gastgeber holt sie an den Tisch)
 var rev := 0
 var sid := ""
 var players := {}                        # id -> {id, name, kind, token, connected, ready, seat, conn, local, address}
@@ -275,6 +281,11 @@ func poll() -> void:
 		stop()
 		finished.emit()
 		return
+	for id in waiting_ids():
+		if not bool(players[id].connected) and gone_ms(id) > WAIT_DROP_MS:
+			_log("Wartender %d „%s“ gestrichen (getrennt)" % [id, players[id].name])
+			players.erase(id)
+			_changed()
 	if _dirty:
 		_dirty = false
 		_publish()
@@ -321,6 +332,8 @@ func set_seat_order(ids: Array) -> bool:
 		if not (id is int) or not players.has(id) or seen.has(id):
 			return false
 		seen[id] = true
+	for id in ids:
+		players[id].erase("waiting")         # genannte Wartende sitzen jetzt mit
 	var order: Array = ids.duplicate()
 	for id in ordered_ids():
 		if not seen.has(id):
@@ -331,10 +344,36 @@ func set_seat_order(ids: Array) -> bool:
 	return true
 
 func ordered_ids() -> Array:
-	# Spieler-ids nach Platz.
-	var ids := players.keys()
+	# Spieler-ids nach Platz (ohne Wartende).
+	var ids := players.keys().filter(func(i): return not bool(players[i].get("waiting", false)))
 	ids.sort_custom(func(a, b): return int(players[a].seat) < int(players[b].seat))
 	return ids
+
+func waiting_ids() -> Array:
+	# Wartende (Beta 1.4.2) in der Reihenfolge ihrer Anmeldung.
+	var ids := players.keys().filter(func(i): return bool(players[i].get("waiting", false)))
+	ids.sort()
+	return ids
+
+func is_waiting(id: int) -> bool:
+	return players.has(id) and bool(players[id].get("waiting", false))
+
+func set_waiting(id: int, on: bool) -> void:
+	# Wartenden an den Tisch holen (off; den Platz setzt danach set_seat_order) bzw. zurück auf die Warteliste.
+	if not players.has(id) or id == host_id:
+		return
+	if on:
+		players[id].waiting = true
+		players[id].seat = -1
+	else:
+		players[id].erase("waiting")
+		if int(players[id].seat) < 0:
+			players[id].seat = _next_seat()
+	_changed()
+
+func accepts_late() -> bool:
+	# Nimmt die laufende Partie Neue auf die Warteliste?
+	return running and (join_open or not waiting_ids().is_empty())
 
 func player(id: int) -> Dictionary:
 	return players.get(id, {})
@@ -369,6 +408,10 @@ func set_rules(new_rules: Dictionary) -> void:
 
 func set_running(on: bool) -> void:
 	running = on
+	if not on:
+		for id in waiting_ids():         # zurück in der Lobby: Wartende sitzen ganz normal mit
+			players[id].erase("waiting")
+			players[id].seat = _next_seat()
 	_changed()
 
 func send_start() -> void:
@@ -394,15 +437,25 @@ func broadcast(msg: Dictionary, except_id := -1) -> void:
 
 func lobby_message() -> Dictionary:
 	var list := []
-	for id in ordered_ids():
+	for id in ordered_ids() + waiting_ids():
 		var p: Dictionary = players[id]
 		var entry := {"id": id, "name": p.name, "kind": p.kind, "connected": p.connected, "ready": p.ready, "seat": int(p.seat)}
+		if bool(p.get("waiting", false)):
+			entry["waiting"] = true         # auf der Warteliste (Beta 1.4.2)
 		if bool(p.get("online", false)):
 			entry["online"] = true          # über den Vermittler verbunden (Weltkugel in der Lobby)
 		if bool(p.get("away", false)):
 			entry["away"] = true            # kurz in einer anderen App (Beta 1.3.3; ältere Geräte ignorieren das Feld)
 		list.append(entry)
 	return {"t": "lobby", "rev": rev, "players": list, "rules": rules, "host_id": host_id}
+
+func waiting_message() -> Dictionary:
+	# Lobby-Stand für Wartende mitten in der Partie (Beta 1.4.2): ältere Geräte zeigen eine normale Lobby, danach kommt „start“.
+	var m := lobby_message()
+	m["late"] = true
+	m["waiting"] = true
+	m["host_name"] = host_name
+	return m
 
 func info() -> Dictionary:
 	# Inhalt von /info und der Suchantwort.
@@ -504,7 +557,7 @@ func _hello(conn: int, msg: Dictionary, conn_info: Dictionary) -> void:
 				known = id
 				break
 	if problem.is_empty() and known < 0:
-		if running:
+		if running and not accepts_late():
 			problem = {"code": "running", "text": "Die Partie läuft schon. Warte, bis der Gastgeber eine neue Runde eröffnet."}
 		elif players.size() >= max_players:
 			problem = I18n.with_lt({"code": "full"}, [I18n.part("Die Runde ist voll (höchstens %d Spieler).", [max_players])])
@@ -539,13 +592,18 @@ func _hello(conn: int, msg: Dictionary, conn_info: Dictionary) -> void:
 	var id := _next_id
 	_next_id += 1
 	var new_token := Crypto.new().generate_random_bytes(NetProtocol.TOKEN_LENGTH / 2).hex_encode()
+	var late := running
 	players[id] = {"id": id, "name": NetProtocol.unique_name(str(msg.name), _names()), "kind": msg.kind, "token": new_token,
-		"connected": true, "ready": false, "seat": _next_seat(), "conn": conn, "local": false,
+		"connected": true, "ready": false, "seat": -1 if late else _next_seat(), "conn": conn, "local": false,
 		"address": str(conn_info.get("address", "")), "online": bool(conn_info.get("online", false))}
+	if late:
+		players[id].waiting = true          # mitten in der Partie: Warteliste, der Gastgeber holt ihn an den Tisch
 	_conn_player[conn] = id
 	_send(conn, NetProtocol.encode({"t": "welcome", "id": id, "token": new_token, "host_name": host_name,
 		"proto": NetProtocol.PROTO, "game": game_version}))
 	_log("Spieler %d „%s“ beigetreten (%s, %s)" % [id, players[id].name, msg.kind, conn_info.get("address", "?")])
+	if late:
+		_log("Spieler %d „%s“ wartet auf einen Platz" % [id, players[id].name])
 	player_joined.emit(id)
 	_changed(true)
 
@@ -660,6 +718,13 @@ func _publish() -> void:
 		discovery.set_info(i)
 	if auto_lobby and not running:
 		broadcast(lobby_message())
+	elif running:
+		var wait := waiting_ids()
+		if not wait.is_empty():
+			var text := NetProtocol.encode(waiting_message())
+			for id in wait:
+				if int(players[id].conn) >= 0:
+					_send(players[id].conn, text)
 	lobby_changed.emit()
 
 static func _drop_node(n: Node) -> void:

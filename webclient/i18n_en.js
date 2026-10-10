@@ -361,5 +361,10 @@ window.MMF_I18N_EN = {
   "Der Gastgeber ist kurz weg. Ich versuche es in 10 Sekunden erneut …": "The host is away for a moment. Trying again in 10 seconds …",
   "Der Raum ist voll.": "The room is full.",
   "Der Gastgeber hat den Raum geschlossen.": "The host has closed the room.",
-  "Ich warte und verbinde dann neu.": "I'll wait and then reconnect."
+  "Ich warte und verbinde dann neu.": "I'll wait and then reconnect.",
+  "Zu wenige Spieler – ": "Too few players – ",
+  "Hallo!": "Hello!",
+  "wartet auf einen Platz": "waiting for a seat",
+  "Du bist auf der Warteliste. Der Gastgeber holt dich gleich dazu.": "You are on the waiting list. The host will bring you to the table in a moment.",
+  "Du kannst jederzeit wieder beitreten: Öffne den Link oder scanne den QR-Code noch einmal. Der Gastgeber holt dich dann wieder an den Tisch.": "You can rejoin at any time: open the link or scan the QR code again. The host will then bring you back to the table."
 };

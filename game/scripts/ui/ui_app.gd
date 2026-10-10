@@ -38,3 +38,13 @@ static func vibrate(ms: int, strength := 0.5) -> void:
 	var a := app()
 	if a != null and a.has_method("vibrate"):
 		a.call("vibrate", ms, strength)
+
+
+static func fade_cheer() -> void:
+	# Jubel sanft ausblenden (Tisch verlassen).
+	var a := app()
+	if a == null:
+		return
+	var s: Variant = a.get("sound")
+	if s is Object and (s as Object).has_method("fade_out_jubel"):
+		(s as Object).call("fade_out_jubel")

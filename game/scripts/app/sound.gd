@@ -19,7 +19,9 @@ extends Node
 # Derselbe Ton wird innerhalb von 40 ms nur einmal gestartet (z. B. mehrere Karten im selben Bild).
 
 const DIR := "res://assets/sfx/"
-const NAMES := ["mau", "mau_mau", "karte", "ziehen", "mischen", "flip", "sieg", "fehler", "dran", "schnurren"]
+const NAMES := ["mau", "mau_mau", "karte", "ziehen", "mischen", "flip", "jubel_1", "jubel_2", "fehler", "dran", "schnurren"]
+const JUBEL := ["jubel_1", "jubel_2"]       # Ereignis "sieg" spielt zufällig eine der beiden Jubel-Dateien (Nutzerentscheidung 10.10.2026)
+const JUBEL_FADE_S := 0.6
 const MAU_NAMES := ["mau", "mau_mau"]
 const MAU_DB := {"aus": -80.0, "leise": -12.0, "normal": -2.0}
 const TON_DB := {"aus": -80.0, "leise": -12.5, "normal": -4.5}
@@ -39,6 +41,7 @@ var _next := 0
 var _last_start := {}             # Name → Startzeit (ms) für RETRIGGER_MS
 var last_played := ""             # für Tests: zuletzt gestarteter Ton ("" = keiner)
 var last_db := 0.0
+var jubel_pick := -1             # für Tests: 0/1 erzwingt eine Jubel-Datei (-1 = Zufall)
 var last_file := ""               # für Tests: Dateiname (ohne Endung) des zuletzt gestarteten Tons
 
 func _ready() -> void:
@@ -115,6 +118,8 @@ func play(sound_name: String) -> bool:
 	# true = Ton gestartet. Stumm geschaltet, unbekannt oder ohne Datei: false, ohne Fehlermeldung.
 	if not enabled:
 		return false
+	if sound_name == "sieg":
+		return _play_jubel()
 	var db := volume_db(sound_name)
 	if db <= -80.0:
 		return false
@@ -127,6 +132,34 @@ func play(sound_name: String) -> bool:
 		return false
 	_last_start[sound_name] = now
 	return true
+
+func _play_jubel() -> bool:
+	# Ereignis "sieg": zufällig eine der beiden Jubel-Dateien; läuft schon einer, startet kein zweiter (Jubel ist ~7 s lang).
+	var db := volume_db("sieg")
+	if db <= -80.0:
+		return false
+	for p in _players:
+		if p.playing and JUBEL.has(_file_of(p)):
+			return false
+	var pick: String = JUBEL[randi() % JUBEL.size()] if jubel_pick < 0 else JUBEL[jubel_pick % JUBEL.size()]
+	if not _start(pick, db):
+		return false
+	last_played = "sieg"
+	return true
+
+func _file_of(p: AudioStreamPlayer) -> String:
+	for n in JUBEL:
+		if _streams.get(n) != null and p.stream == _streams[n]:
+			return n
+	return ""
+
+func fade_out_jubel() -> void:
+	# Beim Verlassen des Tisches: Jubel sanft ausblenden statt abzuschneiden.
+	for p in _players:
+		if p.playing and JUBEL.has(_file_of(p)) and is_inside_tree():
+			var tw := create_tween()
+			tw.tween_property(p, "volume_db", -60.0, JUBEL_FADE_S)
+			tw.tween_callback(p.stop)
 
 func play_preview(sound_name := "mau") -> bool:
 	# Probehören in den Einstellungen: "mau" oder "mau_mau" in der eingestellten Lautstärke; bei mau_ton „aus“ mit „leise“, denn

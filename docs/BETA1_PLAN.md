@@ -326,10 +326,27 @@ Host → Client:
     Der Gastgeber prüft ebenso seine Vermittler-Verbindung (`NetRelayHost.check_now`).
   - Der Gastgeber verteilt `away` in Lobby und Sicht. Anzeige am Platz/in der Liste „kurz in einer anderen App“; ist der Gastgeber
     weg: „<Name> (Gastgeber) ist kurz in einer anderen App – warte …“. Ohne `away` (Abriss) gelten die Hinweise oben.
-  - Vertretung: Knopf „Computer für %s spielen lassen“ erst, wenn der Gast 30 s (`NetProtocol.SUB_OFFER_MS`) weg oder getrennt
-    ist, vorher nur „%s ist kurz weg“ bzw. „%s ist kurz in einer anderen App“. Ein Gast in einer anderen App wird nie automatisch vertreten.
+  - Vertretung: bis Beta 1.4.1 Knopf „Computer für %s spielen lassen“ erst nach 30 s; seit Beta 1.4.2 `NetProtocol.SUB_OFFER_MS = 0`:
+    Jeder abwesende Gast bekommt beim Gastgeber sofort „Computer übernimmt“ und „Aus dem Spiel nehmen“ (je mit Rückfrage). Ein Gast in
+    einer anderen App wird nie automatisch vertreten.
   - Abwärtsverträglich: ältere Gastgeber reichen `away`/`back` an die Spielsteuerung, die nur `act` kennt; ältere Gäste ignorieren
     die Felder `away`/`host`.
+- **Plätze mitten im Spiel** (Beta 1.4.2, `docs/module/dazuholen.md`; nur Netzspiel, `PROTO` bleibt 1):
+  - Regelwerk: `MauGame.insert_player(at, {name, kind})`, `remove_player(seat)`, `can_change_seats()` (`turn`, `round_over`),
+    `can_remove_now(seat)` (zusätzlich der Platz am Zug in jeder Phase), `join_card_count()`. Alle Plätze werden lückenlos neu
+    durchnummeriert (`_remap`). Dazuholen: höchste Handzahl der Aktiven, höchstens `hand_size`, mindestens 1 (ohne freie Karten weniger,
+    ohne jede freie Karte sitzt er bis zum nächsten Austeilen aus); Punkte = niedrigster Stand; am Zug bleibt, wer dran war.
+    Entfernen: Hand und Einsatz gemischt unter den Ziehstapel, Strafen gegen ihn und seine anzweifelbare Strafe verfallen, offene
+    Farbwahl → Zufallsfarbe, Ablege-Auswahl entfällt, war er dran, ist der Nächste dran; bleibt einer übrig: `round_over` mit Grund
+    `left`, dann `game_over`. Der Gastgeber-Platz ist nie entfernbar.
+  - Ereignisse (zusätzlich): `{e:"seats", map, join, leave, name, kind}` (`map[alter Platz]` = neuer Platz bzw. −1), `{e:"leave_cards",
+    seat, count}`, `draw` mit `reason:"join"`, Rundenende-Grund `left`. Ereignisse vor `seats` tragen die alten Platznummern, danach
+    die neuen; ein Platzauftrag geht immer als eigene `state`-Nachricht hinaus (nie zusammen mit Ereignissen eines Zugs).
+  - Sitzung: `join_open` (Feld „Mitspieler“ offen) bzw. schon jemand wartend → Neue ohne Token kommen mitten in der Partie auf die
+    Warteliste (`seat = −1`, `waiting`, Nachricht `{t:"lobby", late, waiting, host_name, …}`), sonst `reject running`. Getrennte
+    Wartende verfallen nach 60 s. Ein Entfernter kommt nur über die Warteliste zurück (neue id, neue Karten).
+  - Gastgeber: `HostTable.seat_in(id, at)`, `add_bot_at(at)`, `remove_seat(seat)`, `reject_waiting(id)`, `pending_seat_ops()`;
+    Aufträge warten, bis das Regelwerk es erlaubt, der Neue bekommt `{t:"start", seat}`, der Entfernte `bye`.
 - `net_discovery.gd`, `class_name NetDiscovery`: UDP-Port `24692`.
   - Rundruf „MMF?“, Antwort JSON aus `/info`.
   - Gerichtete Rundrufe je Schnittstelle (Lehre aus Draw2Race), Multicast-Sperre über NetAndroid.

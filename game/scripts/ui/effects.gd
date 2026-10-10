@@ -15,6 +15,22 @@ static var _rect_tex: Texture2D
 static var _ray_tex: Texture2D
 static var _core_tex: Texture2D
 
+const RAIN_DUR := 5.0       # 1.4.2: so lange fallen neue Sterne bzw. Konfetti von oben herein (volle Dichte)
+const RAIN_TAPER := 5.0     # danach rieselt es so lange aus: die Zahl neuer Teilchen sinkt gleichmäßig auf null (Nutzerwunsch)
+const RAIN_LIFE := 3.0      # Flugzeit eines Teilchens über den Bildschirm
+# Anteil der Gesamtmenge im Verhältnis zu RAIN_DUR mit voller Dichte (5 s voll + 5 s linear ausrieselnd = 7,5 s „voll“)
+const RAIN_WEIGHT := (RAIN_DUR + RAIN_TAPER * 0.5) / RAIN_DUR
+
+
+# Startzeit eines Teilchens aus u in [0, 1): volle Dichte bis RAIN_DUR, danach linear ausrieselnd bis RAIN_DUR + RAIN_TAPER
+# (Umkehrung der Verteilungsfunktion, damit gleichmäßig verteilte u die gewünschte Dichte ergeben).
+static func rain_time(u: float) -> float:
+	var s := clampf(u, 0.0, 1.0) * (RAIN_DUR + RAIN_TAPER * 0.5)
+	if s <= RAIN_DUR:
+		return s
+	var r := s - RAIN_DUR                      # Fläche im Ausrieseln, 0 … RAIN_TAPER/2
+	return RAIN_DUR + RAIN_TAPER - sqrt(maxf(RAIN_TAPER * RAIN_TAPER - 2.0 * RAIN_TAPER * r, 0.0))
+
 var last_celebration := ""      # für Tests: "konfetti" oder "sterne" (zuletzt gestartet)
 
 
@@ -212,25 +228,40 @@ func land_burst(pos: Vector2, color: Color, neon: bool, radius := 60.0) -> void:
 	_one_shot(p, p.lifetime)
 
 
-# Konfetti in den Tagfarben (oder Nachtfarben) über die Breite von area
+# Konfetti in den Tagfarben (oder Nachtfarben): 1.4.2 echter Regen - RAIN_DUR (5 s) lang fallen fortlaufend neue Teilchen von
+# knapp oberhalb des oberen Rands über die ganze Breite herein (Fallzeit über die Bildschirmhöhe ~2-3 s), danach die letzten
+# noch aus dem Bild. Ein Knoten; die Teilchenzahl je Moment bleibt begrenzt (amount = Teilchen, die gleichzeitig leben).
 func confetti(area: Rect2, colors: Array, amount := 220) -> void:
+	# Ausrieseln: CPUParticles2D kennt keine veränderliche Rate – nach RAIN_DUR übernehmen vier Stufen mit sinkender Menge
+	var full := maxi(12, int(amount * factor()))
+	_confetti_emitter(area, colors, full, 0.0, RAIN_DUR)
+	var step := RAIN_TAPER / 4.0
+	var shares := [0.78, 0.52, 0.3, 0.12]
+	for i in shares.size():
+		_confetti_emitter(area, colors, maxi(2, int(full * float(shares[i]))), RAIN_DUR + step * i, step)
+
+
+func _confetti_emitter(area: Rect2, colors: Array, count: int, start: float, emit_for: float) -> void:
+	var h := 720.0
+	if is_inside_tree():
+		h = get_viewport_rect().size.y
 	var p := CPUParticles2D.new()
-	p.position = Vector2(area.get_center().x, area.position.y - 10.0)
-	p.one_shot = true
-	p.explosiveness = 0.3      # 1.4.1: über ~1,5 s verteilt, damit der Regen etwa 5 s dauert
-	p.amount = maxi(12, int(amount * factor()))
-	p.lifetime = 5.0
+	p.position = Vector2(area.get_center().x, area.position.y - 14.0)
+	p.one_shot = false
+	p.explosiveness = 0.0
+	p.amount = count
+	p.lifetime = RAIN_LIFE
 	p.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
 	p.emission_rect_extents = Vector2(area.size.x * 0.5, 8.0)
 	p.direction = Vector2(0, 1)
-	p.spread = 30.0
-	p.initial_velocity_min = 80.0
-	p.initial_velocity_max = 240.0
-	p.gravity = Vector2(0, 150)
-	p.damping_min = 25.0
-	p.damping_max = 70.0
-	p.angular_velocity_min = -540.0
-	p.angular_velocity_max = 540.0
+	p.spread = 10.0
+	var dist := h + 60.0
+	var calm_f := 0.75 if reduced else 1.0
+	p.initial_velocity_min = dist / (RAIN_LIFE - 0.1) * calm_f
+	p.initial_velocity_max = dist / 2.0 * calm_f
+	p.gravity = Vector2.ZERO
+	p.angular_velocity_min = -(240.0 if reduced else 540.0)
+	p.angular_velocity_max = 240.0 if reduced else 540.0
 	p.angle_min = 0.0
 	p.angle_max = 360.0
 	p.scale_amount_min = 1.2
@@ -250,7 +281,16 @@ func confetti(area: Rect2, colors: Array, amount := 220) -> void:
 	fade.offsets = PackedFloat32Array([0.0, 0.8, 1.0])
 	fade.colors = PackedColorArray([Color.WHITE, Color.WHITE, Color(1, 1, 1, 0)])
 	p.color_ramp = fade
-	_one_shot(p, p.lifetime)
+	add_child(p)
+	p.emitting = start <= 0.0
+	var tw := p.create_tween()
+	if start > 0.0:
+		tw.tween_interval(start)
+		tw.tween_callback(func(): p.emitting = true)
+	tw.tween_interval(emit_for)
+	tw.tween_callback(func(): p.emitting = false)
+	tw.tween_interval(RAIN_LIFE + 0.3)
+	tw.tween_callback(p.queue_free)
 
 
 # Partie- bzw. Rundenende: tagsüber Konfetti, auf der Nachtseite ein bunter Sternenschauer (gleiche Dauer und Breite)
@@ -281,18 +321,19 @@ func star_shower(area: Rect2, colors: Array, amount := 220) -> SparkleShowerFx:
 	var h := 720.0
 	if is_inside_tree():
 		h = get_viewport_rect().size.y
+	# 1.4.2 Regen: die Menge verteilt sich über RAIN_DUR (je Moment leben davon etwa die Hälfte)
 	if reduced:
-		fx.setup(area, h, colors, maxi(8, int(amount * 0.05)), 0)
+		fx.setup(area, h, colors, maxi(15, int(amount * 0.1 * RAIN_WEIGHT)), 0)
 	else:
-		fx.setup(area, h, colors, int(amount * 0.8), int(amount * 0.14))
+		fx.setup(area, h, colors, int(amount * 1.4 * RAIN_WEIGHT), int(amount * 0.2 * RAIN_WEIGHT))
 	add_child(fx)
 	return fx
 
 
 class SparkleShowerFx:
 	extends Node2D
-	const LIFE := 3.6      # 1.4.1: Schauer insgesamt ~5 s (Sterne starten über 1,4 s verteilt)
-	const GRAVITY := 130.0
+	const LIFE := 3.0      # 1.4.2: längste Fallzeit eines Sterns (Bildschirmhöhe in 2-3 s)
+	const DUR := 5.0       # neue Sterne fallen 5 s lang von oben herein
 	var calm := false
 	var stars: Array = []       # je Stern: Start, Ort, Tempo, Größe, Farbe, Funkelphasen, Blitzzeiten
 	var glints: Array = []      # stehende Glitzerpunkte
@@ -300,51 +341,51 @@ class SparkleShowerFx:
 	var _end := 0.0
 
 	func setup(area: Rect2, height: float, colors: Array, count: int, glint_count: int) -> void:
-		var top := area.position.y - 10.0
+		var top := area.position.y - 30.0
+		var dist := height + 80.0
+		var xoff := randf()
 		for i in count:
-			var ang := deg_to_rad(90.0 + randf_range(-25.0, 25.0))
+			# gleichmäßige Dichte, leicht zufällig: Startzeit geschichtet, Ort nach goldenem Schnitt verteilt
+			var born := TableEffects.rain_time((float(i) + randf()) / float(count))   # 5 s voll, dann 5 s ausrieselnd
+			var fxx := fposmod(xoff + float(i) * 0.6180339887 + randf_range(-0.03, 0.03), 1.0)
+			var life := randf_range(2.0, LIFE) * (1.15 if calm else 1.0)
+			var ang := deg_to_rad(90.0 + randf_range(-8.0, 8.0))
 			var st := {
-				"born": randf_range(0.0, 1.4),
-				"pos": Vector2(randf_range(area.position.x, area.end.x), top + randf_range(-8.0, 8.0)),
-				"vel": Vector2.from_angle(ang) * (randf_range(40.0, 90.0) if calm else randf_range(60.0, 200.0)),
-				"damp": randf_range(20.0, 50.0),
+				"born": born,
+				"life": life,
+				"pos": Vector2(lerpf(area.position.x, area.end.x, fxx), top + randf_range(-8.0, 8.0)),
+				"vel": Vector2.from_angle(ang) * (dist / life),
 				"size": randf_range(12.0, 20.0) if calm else lerpf(14.0, 42.0, pow(randf(), 0.7)),
 				"color": colors[randi() % colors.size()] if not colors.is_empty() else Color.WHITE,
 				"ph": randf() * TAU, "ph2": randf() * TAU,
 				"sp": randf_range(5.0, 9.0), "sp2": randf_range(6.0, 11.0),
 				"rot": randf_range(-0.3, 0.3), "spin": 0.0 if calm else randf_range(-0.8, 0.8),
-				"sway": randf_range(6.0, 16.0), "flash": [],
+				"sway": randf_range(5.0, 10.0) if calm else randf_range(10.0, 26.0), "flash": [],
 			}
 			if not calm:                 # ein bis zwei kurze Blitze je Stern
 				for k in randi_range(1, 2):
-					(st["flash"] as Array).append(randf_range(0.25, LIFE * 0.8))
+					(st["flash"] as Array).append(randf_range(0.25, life * 0.8))
 			stars.append(st)
 		for i in glint_count:
 			var gc: Color = Color.WHITE
 			if randf() < 0.5 and not colors.is_empty():
 				gc = colors[randi() % colors.size()]
 			glints.append({
-				"born": randf_range(0.15, LIFE + 1.0),
+				"born": maxf(0.15, TableEffects.rain_time(randf())),
 				"pos": Vector2(randf_range(area.position.x + 20.0, area.end.x - 20.0), randf_range(height * 0.06, height * 0.8)),
 				"size": randf_range(26.0, 52.0),
 				"color": gc,
 				"rot": randf_range(-0.2, 0.2),
 			})
-		_end = 5.3
+		_end = DUR + TableEffects.RAIN_TAPER + LIFE * 1.15 + 0.3
 
 	func _process(delta: float) -> void:
 		t += delta
-		var g := Vector2(0, GRAVITY * (0.45 if calm else 1.0))
 		for st in stars:
 			var age: float = t - float(st["born"])
-			if age <= 0.0 or age > LIFE:
+			if age <= 0.0 or age > float(st["life"]):
 				continue
-			var v: Vector2 = st["vel"] + g * delta
-			var sp := v.length()
-			if sp > 0.0:
-				v = v / sp * maxf(0.0, sp - float(st["damp"]) * delta)
-			st["vel"] = v
-			st["pos"] = (st["pos"] as Vector2) + (v + Vector2(cos(age * 1.7 + float(st["ph"])) * float(st["sway"]), 0.0)) * delta
+			st["pos"] = (st["pos"] as Vector2) + ((st["vel"] as Vector2) + Vector2(cos(age * 1.7 + float(st["ph"])) * float(st["sway"]), 0.0)) * delta
 		queue_redraw()
 		if t > _end:
 			queue_free()
@@ -356,9 +397,9 @@ class SparkleShowerFx:
 		var items: Array = []        # [Ort, Drehung, lang, kurz, Kern, Farbe, Helligkeit]
 		for st in stars:
 			var age: float = t - float(st["born"])
-			if age <= 0.0 or age >= LIFE:
+			if age <= 0.0 or age >= float(st["life"]):
 				continue
-			var a := clampf(age / 0.12, 0.0, 1.0) * clampf((LIFE - age) / (LIFE * 0.2), 0.0, 1.0)
+			var a := clampf(age / 0.12, 0.0, 1.0)
 			var s: float = st["size"]
 			var col: Color = st["color"]
 			if calm:

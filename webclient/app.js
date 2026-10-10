@@ -5,7 +5,7 @@
 (function (M) {
   'use strict';
 
-  const VERSION = '1.4.1';
+  const VERSION = '1.4.2';
   const PROTO = 1;
   // wach.mp4 (32×32, 2 s, H.264 Baseline, ohne Ton; erzeugt mit ffmpeg) als data:-URI
   const WACH_VIDEO = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAMzbW9vdgAAAGxtdmhkAAAAAAAAAAAAAAAAAAAD6AAAB9AAAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAl50cmFrAAAAXHRraGQAAAADAAAAAAAAAAAAAAABAAAAAAAAB9AAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAACAAAAAgAAAAAAAkZWR0cwAAABxlbHN0AAAAAAAAAAEAAAfQAAAAAAABAAAAAAHWbWRpYQAAACBtZGhkAAAAAAAAAAAAAAAAAABAAAAAgABVxAAAAAAALWhkbHIAAAAAAAAAAHZpZGUAAAAAAAAAAAAAAABWaWRlb0hhbmRsZXIAAAABgW1pbmYAAAAUdm1oZAAAAAEAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAAUFzdGJsAAAAuXN0c2QAAAAAAAAAAQAAAKlhdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAACAAIABIAAAASAAAAAAAAAABFExhdmM2My4xLjEwMSBsaWJ4MjY0AAAAAAAAAAAAAAAAGP//AAAAL2F2Y0MBQsAe/+EAFmdCwB7ZCWwEQAAAAwBAAAADAQPFi5IBAAZoy4DkTIAAAAAQcGFzcAAAAAEAAAABAAAAFGJ0cnQAAAAAAAAKpAAAAAAAAAAYc3R0cwAAAAAAAAABAAAABAAAIAAAAAAUc3RzcwAAAAAAAAABAAAAAQAAABxzdHNjAAAAAAAAAAEAAAABAAAABAAAAAEAAAAkc3RzegAAAAAAAAAAAAAABAAAAogAAAALAAAACwAAAAsAAAAUc3RjbwAAAAAAAAABAAADYwAAAGF1ZHRhAAAAWW1ldGEAAAAAAAAAIWhkbHIAAAAAAAAAAG1kaXJhcHBsAAAAAAAAAAAAAAAALGlsc3QAAAAkqXRvbwAAABxkYXRhAAAAAQAAAABMYXZmNjMuMS4xMDEAAAAIZnJlZQAAArFtZGF0AAACcgYF//9u3EXpvebZSLeWLNgg2SPu73gyNjQgLSBjb3JlIDE2NSByMzIyMyAwNDgwY2IwIC0gSC4yNjQvTVBFRy00IEFWQyBjb2RlYyAtIENvcHlsZWZ0IDIwMDMtMjAyNSAtIGh0dHA6Ly93d3cudmlkZW9sYW4ub3JnL3gyNjQuaHRtbCAtIG9wdGlvbnM6IGNhYmFjPTAgcmVmPTMgZGVibG9jaz0xOi0zOi0zIGFuYWx5c2U9MHgxOjB4MTExIG1lPWhleCBzdWJtZT03IHBzeT0xIHBzeV9yZD0yLjAwOjAuNzAgbWl4ZWRfcmVmPTEgbWVfcmFuZ2U9MTYgY2hyb21hX21lPTEgdHJlbGxpcz0xIDh4OGRjdD0wIGNxbT0wIGRlYWR6b25lPTIxLDExIGZhc3RfcHNraXA9MSBjaHJvbWFfcXBfb2Zmc2V0PS00IHRocmVhZHM9MSBsb29rYWhlYWRfdGhyZWFkcz0xIHNsaWNlZF90aHJlYWRzPTAgbnI9MCBkZWNpbWF0ZT0xIGludGVybGFjZWQ9MCBibHVyYXlfY29tcGF0PTAgY29uc3RyYWluZWRfaW50cmE9MCBiZnJhbWVzPTAgd2VpZ2h0cD0wIGtleWludD0yNTAga2V5aW50X21pbj0yIHNjZW5lY3V0PTQwIGludHJhX3JlZnJlc2g9MCByY19sb29rYWhlYWQ9NDAgcmM9Y3JmIG1idHJlZT0xIGNyZj00MC4wIHFjb21wPTAuNjAgcXBtaW49MCBxcG1heD02OSBxcHN0ZXA9NCBpcF9yYXRpbz0xLjQwIGFxPTE6MS4yMACAAAAADmWIhAXznJigACX3J114AAAAB0GaOAvnOWAAAAAHQZpUAvnOWAAAAAdBmmAVznLA';
@@ -486,6 +486,8 @@
           Speicher.set(this._tokKey, null);
           $('#verbinde').hidden = true;
           $('#ende-text').textContent = M.I18n.msgText(m, M.t('Der Gastgeber hat das Spiel beendet.'));
+          // Herausgenommen: Wiedereinstieg ist möglich (der Gastgeber holt ihn von der Warteliste an den Tisch)
+          $('#ende-hinweis').hidden = !(m.text === 'Der Gastgeber hat dich aus dem Spiel genommen.' || m.text === 'Der Gastgeber hat dich nicht dazugeholt.');
           this.zeigeScreen('ende');
           break;
         default: break;
@@ -507,20 +509,23 @@
         if (istIch) ich = p;
         const host = p.id === l.host_id;
         const bereit = p.ready || host || p.kind === 'bot';
+        const wartet = !!p.waiting;
         return '<li class="lz' + (istIch ? ' ich' : '') + (p.connected === false ? ' weg' : '') + '">' +
           '<span class="platz">' + ((p.seat != null && p.seat >= 0) ? p.seat + 1 : '–') + '</span>' +
           '<span class="ava" style="background:' + ['#FF9ECF', '#43B05C', '#FFDD33', '#4C7DFF', '#FF8A1F', '#19C6D4', '#8B6BFF', '#FF4D57', '#B0E06A', '#F4EADA'][((p.seat != null && p.seat >= 0) ? p.seat : i) % 10] + '">' + esc((p.name || '?').charAt(0).toUpperCase()) + '</span>' +
           '<span class="nm">' + esc(p.name) + (istIch ? ' <em>(' + M.t('du') + ')</em>' : '') + '</span>' +
           '<span class="art">' + esc(M.t(ART[p.kind] || p.kind || '')) + '</span>' +
           (host ? '<span class="marke gast">' + M.t('Gastgeber') + '</span>' : '') +
-          (p.away ? '<span class="marke weg app">' + M.t('kurz in einer anderen App') + '</span>' : p.connected === false ? '<span class="marke weg">' + M.t('getrennt') + '</span>' : '<span class="status ' + (bereit ? 'ja' : '') + '">' + (bereit ? M.t('bereit') : M.t('wartet')) + '</span>') +
+          (wartet ? '<span class="marke wartet">' + M.t('wartet auf einen Platz') + '</span>' : p.away ? '<span class="marke weg app">' + M.t('kurz in einer anderen App') + '</span>' : p.connected === false ? '<span class="marke weg">' + M.t('getrennt') + '</span>' : '<span class="status ' + (bereit ? 'ja' : '') + '">' + (bereit ? M.t('bereit') : M.t('wartet')) + '</span>') +
           '</li>';
       }).join('') || '<li class="lz leer">' + M.t('Noch niemand da.') + '</li>';
+      const wartend = !!(l.waiting || (ich && ich.waiting));   // mitten in der Partie angemeldet: Warteliste, der Gastgeber holt einen an den Tisch
+      $('#lobby').classList.toggle('wartet', wartend);
       const k = $('#bereit');
       const bereit = !!(ich && ich.ready);
       k.textContent = bereit ? M.t('Bereit ✓') : M.t('Bereit');
       k.classList.toggle('an', bereit);
-      $('#lobby-status').textContent = bereit ? M.t('Warte auf den Start durch den Gastgeber …') : M.t('Tippe auf „Bereit“, wenn du startklar bist.');
+      $('#lobby-status').textContent = wartend ? M.t('Du bist auf der Warteliste. Der Gastgeber holt dich gleich dazu.') : bereit ? M.t('Warte auf den Start durch den Gastgeber …') : M.t('Tippe auf „Bereit“, wenn du startklar bist.');
       $('#lobby-regeln').innerHTML = M.Karten.regelnText(l.rules).map(t => '<li>' + esc(t) + '</li>').join('');
       $('#lobby-zahl').textContent = spieler.length === 1 ? M.t('1 Spieler') : M.t('%d Spieler', spieler.length);
     },
@@ -871,7 +876,7 @@
       const ich = v.seat;
       $('#runde-titel').textContent = v.phase === 'game_over' ? M.t('Partie vorbei') : M.t('Runde %d vorbei', res.round || v.round || 1);
       const erster = r[0] ? r[0].seat : -1;
-      const vorn = res.reason === 'blockiert' ? M.t('Nichts geht mehr – ') : '';
+      const vorn = res.reason === 'blockiert' ? M.t('Nichts geht mehr – ') : (res.reason === 'left' ? M.t('Zu wenige Spieler – ') : '');
       $('#runde-sieger').textContent = vorn + (erster === ich ? (v.phase === 'game_over' ? M.t('Du gewinnst die Partie!') : M.t('Mau-Mau! Du hast gewonnen.')) : (erster >= 0 ? (v.phase === 'game_over' ? M.t('%s gewinnt die Partie.', name(erster)) : M.t('%s gewinnt.', name(erster))) : ''));
       $('#runde-liste').innerHTML = r.map((x, i) => {
         const p = spieler.find(q => q.seat === x.seat) || {};

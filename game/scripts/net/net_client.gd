@@ -56,6 +56,9 @@ var token := ""
 var host_name := ""
 var close_text := ""
 var reject_code := ""
+var removed := false                     # der Gastgeber hat diesen Spieler aus dem Spiel genommen (bye bzw. Ablehnung beim Wiederverbinden)
+var readmitted := false                  # beim Wiederverbinden als neuer Spieler angenommen (altes Token unbekannt: herausgenommen)
+var bye_id := ""                         # deutscher Text (msgid) des letzten „bye“
 var attempts := 0                        # Verbindungsversuche seit der letzten Annahme
 var rtt_ms := -1.0
 var relay_url := ""                      # Online: Vermittler (normalisiert), sonst ""
@@ -63,6 +66,8 @@ var room := ""                           # Online: Raumcode
 var _ws: WebSocketPeer
 var _was_open := false
 var _welcomed := false
+var _admitted := false                   # in dieser Verbindung (connect_to/connect_relay) schon einmal angenommen
+var _sent_token := ""                    # Token der letzten Begrüßung
 var _opened_ms := 0
 var _last_rx_ms := 0
 var _next_ping_ms := 0
@@ -91,6 +96,7 @@ func connect_to(host_address: String, host_port := NetProtocol.PORT, name_of_pla
 	attempts = 0
 	close_text = ""
 	reject_code = ""
+	_reset_removed()
 	_set_state("connecting")
 	NetAddresses.bind_for("join", address)   # Android: Sockets ins richtige Netz (WLAN bzw. eigener Hotspot)
 	return _open()
@@ -108,6 +114,7 @@ func connect_relay(relay: String, code: String, name_of_player := "Gast", client
 	attempts = 0
 	close_text = ""
 	reject_code = ""
+	_reset_removed()
 	if relay_url == "" or room == "":
 		_set_state("connecting")
 		_final(I18n.t("Raumcode oder Vermittler-Adresse ungültig."))
@@ -115,6 +122,13 @@ func connect_relay(relay: String, code: String, name_of_player := "Gast", client
 	token = _load_token(_key()) if reuse_token else ""
 	_set_state("connecting")
 	return _open()
+
+func _reset_removed() -> void:
+	removed = false
+	readmitted = false
+	bye_id = ""
+	_admitted = false
+	_sent_token = ""
 
 func is_online() -> bool:
 	return relay_url != ""
@@ -238,6 +252,7 @@ func poll() -> void:
 	if st == WebSocketPeer.STATE_OPEN and not _was_open:
 		_was_open = true
 		_last_rx_ms = now
+		_sent_token = token
 		var hello := NetProtocol.make_hello(player_name, kind, token)
 		hello.merge(hello_override, true)
 		_ws.send_text(NetProtocol.encode(hello))
@@ -359,6 +374,12 @@ func _handle(msg: Dictionary) -> void:
 		"welcome":
 			my_id = int(msg.get("id", 0)) if msg.get("id") is int else 0
 			token = str(msg.get("token", "")).left(64)
+			# Altes Token nicht mehr bekannt (Gerätetest 1.4.2: herausgenommen, während die App im Hintergrund war; der Gastgeber
+			# nimmt ihn als Neuen auf die Warteliste): merken, damit der Tisch es sagen kann
+			if _admitted and _sent_token != "" and token != _sent_token:
+				readmitted = true
+				removed = true
+			_admitted = true
 			host_name = NetProtocol.clean_name(str(msg.get("host_name", "")), "Gastgeber")
 			_store_token(_key(), token)
 			_welcomed = true
@@ -373,6 +394,15 @@ func _handle(msg: Dictionary) -> void:
 		"reject":
 			reject_code = str(msg.get("code", "")).left(16)
 			var text := I18n.msg_text(msg, "Abgelehnt.").left(400)   # Bausteine (lt) bzw. deutsche msgid → eigene Sprache
+			if reject_code == "running":
+				if _admitted and _sent_token != "":
+					# Wiederverbinden mit altem Token, die Partie läuft, der Platz ist weg: herausgenommen (das „bye“ kam bei
+					# pausierter App nicht an; Gerätetest 1.4.2)
+					removed = true
+					text = I18n.t("Der Gastgeber hat dich aus dem Spiel genommen.")
+				else:
+					# Seit Beta 1.4.2 kann der Gastgeber dazuholen; abgelehnt wird nur, solange er niemanden aufnimmt
+					text = I18n.t("Das Spiel läuft schon. Bitte den Gastgeber, dich dazuzuholen (☰ → Mitspieler dazuholen).")
 			_log("Abgelehnt (%s): %s" % [reject_code, text])
 			if _ws != null:
 				_ws.close()
@@ -383,6 +413,9 @@ func _handle(msg: Dictionary) -> void:
 			_final(text)
 		"bye":
 			var text := I18n.msg_text(msg, "Der Gastgeber hat das Spiel beendet.").left(400)
+			bye_id = str(msg.get("text", "")).left(400)
+			if bye_id in ["Der Gastgeber hat dich aus dem Spiel genommen.", "Der Gastgeber hat dich aus der Runde genommen."]:
+				removed = true
 			if _ws != null:
 				_ws.close()
 				_closing = _ws

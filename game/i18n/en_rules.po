@@ -872,3 +872,29 @@ msgstr "500 points"
 
 msgid "Bis zum Letzten"
 msgstr "Play to the last"
+
+# --- Beta 1.4.2: Mitspieler dazuholen und entfernen (MauGame, HostTable, docs/module/dazuholen.md)
+
+msgid "Dazuholen geht erst nach diesem Zug."
+msgstr "New players can join after this turn."
+
+msgid "Am Tisch ist kein Platz mehr."
+msgstr "There's no room left at the table."
+
+msgid "Den Gastgeber kann man nicht herausnehmen."
+msgstr "The host can't be removed."
+
+msgid "Zu wenige Spieler –"
+msgstr "Too few players –"
+
+msgid "%s spielt jetzt mit."
+msgstr "%s joins the game."
+
+msgid "%s ist nicht mehr dabei."
+msgstr "%s has left the game."
+
+msgid "Der Gastgeber hat dich aus dem Spiel genommen."
+msgstr "The host took you out of the game."
+
+msgid "Der Gastgeber hat dich nicht dazugeholt."
+msgstr "The host didn't add you to the game."

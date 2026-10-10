@@ -15,7 +15,7 @@
 (function (M) {
   'use strict';
 
-  const ICH = 0;
+  let ICH = 0;   // eigener Platz; ändert sich, wenn vor mir jemand dazukommt oder geht (sitz=…)
   const P = n => M.param(n);
   const NAMEN = ['Lena', 'Tom', 'Mia', 'Ben', 'Ida', 'Noah', 'Lea', 'Finn', 'Ella'];
   const FARBEN = { hell: ['rot', 'gelb', 'gruen', 'blau'], dunkel: ['pink', 'tuerkis', 'orange', 'lila'] };
@@ -70,6 +70,50 @@
     einsatzWeg(s, stake, grund) {
       return s === ICH ? { e: 'stake_discard', seat: s, count: stake.length, cards: stake.slice(), faces: stake.map(id => this.f(id)), reason: grund }
         : { e: 'stake_discard', seat: s, count: stake.length, reason: grund };
+    }
+    // Plätze neu durchnummerieren (wie MauGame._remap): map[alt] = neu bzw. -1
+    umnummerieren(map) {
+      const neu = a => { const r = []; a.forEach((x, i) => { if (map[i] >= 0) r[map[i]] = x; }); return r; };
+      const m = s => (typeof s === 'number' && s >= 0) ? (map[s] === undefined ? -1 : map[s]) : s;
+      this.sp = neu(this.sp); this.haende = neu(this.haende); this.punkte = neu(this.punkte);
+      this.n = this.sp.length;
+      this.mau = new Set([...this.mau].map(m).filter(x => x >= 0));
+      this.dran = m(this.dran);
+      if (this.mauOffen) { this.mauOffen.seat = m(this.mauOffen.seat); if (this.mauOffen.seat < 0) this.mauOffen = null; }
+      if (this.fordern) { this.fordern.von = m(this.fordern.von); this.fordern.opfer = m(this.fordern.opfer); }
+      if (this.gamble) this.gamble.seat = m(this.gamble.seat);
+      if (this.pick) this.pick.seat = m(this.pick.seat);
+      Object.keys(this.leger).forEach(k => { this.leger[k] = m(this.leger[k]); });
+      if (this.ranking) this.ranking = this.ranking.filter(r => m(r.seat) >= 0).map(r => Object.assign({}, r, { seat: m(r.seat) }));
+    }
+    // Mitspieler dazuholen: Karten = höchste Handzahl, höchstens die Startzahl; Punkte = niedrigster Stand
+    fuegeEin(at, name, kind) {
+      const map = []; for (let i = 0; i < this.n; i++) map.push(i >= at ? i + 1 : i);
+      const k = Math.max(1, Math.min(REGELN.hand_size, Math.max(0, ...this.haende.map(h => h.length))));
+      const tief = Math.min(...this.punkte);
+      this.umnummerieren(map);
+      this.sp[at] = { name, kind, connected: true }; this.haende[at] = []; this.punkte[at] = tief; this.n = this.sp.length;
+      if (at <= ICH) ICH++;
+      const ev = [{ e: 'seats', map, join: at, leave: -1, name, kind }];
+      const faces = [];
+      for (let i = 0; i < k && this.stapel.length; i++) { const id = this.stapel.pop(); this.haende[at].push(id); faces.push(this.f(id)); }
+      ev.push({ e: 'draw', seat: at, count: this.haende[at].length, reason: 'join', faces: at === ICH ? faces : undefined });
+      return ev;
+    }
+    entferne(r) {
+      const name = this.sp[r].name, kind = this.sp[r].kind, anzahl = this.haende[r].length;
+      const ev = [{ e: 'leave_cards', seat: r, count: anzahl }];
+      this.haende[r].forEach(id => this.stapel.unshift(id));
+      const nx = this.dran === r ? this.naechster(r) : -1;
+      const map = []; for (let i = 0; i < this.n; i++) map.push(i === r ? -1 : (i > r ? i - 1 : i));
+      if (r < ICH) ICH--;
+      if (this.fordern && (this.fordern.opfer === r || this.fordern.von === r)) { this.fordern = null; this.phase = 'turn'; }
+      if (this.phase === 'drawn' && this.dran === r) { this.phase = 'turn'; this.gezogen = null; }
+      if (this.gamble && this.gamble.seat === r) { this.gamble = null; this.phase = 'turn'; }
+      this.umnummerieren(map);
+      if (nx >= 0) this.dran = map[nx];
+      ev.push({ e: 'seats', map, join: -1, leave: r, name, kind });
+      return ev;
     }
     naechster(s, k) { return (((s + this.dir * (k || 1)) % this.n) + this.n) % this.n; }
     neueRunde() {
@@ -640,14 +684,37 @@
       clearTimeout(this._startTimer);
       this._startTimer = setTimeout(() => this.starte(), (this.szene ? 300 : 900) / this.tempo);
     }
+    // Sitzwechsel mitten in der Partie (Kontrollbilder): sitz=dazu|weg|raus|warte, platz=<Index>, neu=<Name>, wann=<Sekunden>
+    _sitz() {
+      const was = P('sitz');
+      if (!was || was === 'warte') return;
+      setTimeout(() => {
+        const sp = this.spiel;
+        if (!sp) return;
+        clearTimeout(this.timer);
+        if (was === 'raus') { this.an({ t: 'bye', text: 'Der Gastgeber hat dich aus dem Spiel genommen.' }); return; }
+        const platz = P('platz') !== null && P('platz') !== '' ? +P('platz') : (was === 'dazu' ? 1 : 2);
+        const neu = P('neu') || 'Zoe';
+        const ev = was === 'dazu' ? sp.fuegeEin(Math.max(0, Math.min(sp.n, platz)), neu, 'web') : sp.entferne(platz === ICH ? ICH + 1 : Math.max(0, Math.min(sp.n - 1, platz)));
+        this.sendeState(ev);
+        this.plane();
+      }, Math.max(0.2, +(P('wann') || 3)) * 1000 / this.tempo);
+    }
     starte() {
       if (this.spiel) return;
       const opt = { seed: this.seed, karten: +(P('karten') || (this.szene === 'viele' ? 24 : 0)), seite: P('seite') || '' };
       this.spiel = new Spiel(this.spieler().map(p => ({ name: p.name, kind: p.kind, connected: p.connected })), opt);
       const ev = this.spiel.neueRunde();
       if (this.szene) this.spiel.szene(this.szene);
+      if (P('sitz') === 'warte') {   // erst auf der Warteliste, dann vom Gastgeber an den Tisch geholt
+        this.an({ t: 'lobby', late: true, waiting: true, rev: ++this.rev, host_id: this.hostId, host_name: 'Lena', rules: REGELN,
+          players: this.spieler().map(p => ({ id: p.id, name: p.name, kind: p.kind, connected: p.connected, ready: true, seat: p.id === this.ich.id ? -1 : p.seat - 1, waiting: p.id === this.ich.id ? true : undefined })) });
+        setTimeout(() => { this.an({ t: 'start', seat: ICH }); this.sendeState(ev); this.plane(); }, Math.max(0.2, +(P('wann') || 3)) * 1000 / this.tempo);
+        return;
+      }
       this.an({ t: 'start', seat: ICH });
       this.sendeState(this.szene === 'rundenende' ? [] : ev);
+      this._sitz();
       if (this.kaputt) setTimeout(() => this.client && this.client.trennen(), 2500);
       this.plane();
     }

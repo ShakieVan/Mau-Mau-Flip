@@ -261,6 +261,10 @@ func _init() -> void:
 	resized.connect(_layout)
 
 
+func _exit_tree() -> void:
+	UiApp.fade_cheer()
+
+
 func _ready() -> void:
 	add_to_group(GROUP)
 	reduced = UiApp.reduced_effects()
@@ -587,12 +591,8 @@ func apply_view(v: Dictionary) -> void:
 	for s in wanted:
 		var node: OpponentSeat = _seats.get(s)
 		if node == null:
-			node = OpponentSeat.new()
-			node.seat = s
-			node.reduced = reduced
-			_seat_layer.add_child(node)
-			node.attach_catch_layer(_catch_layer)
-			_seats[s] = node
+			node = _new_seat_node(s)
+		node.seat = s
 		node.show_score = show_score
 		node.compact = TableLayout.compact(_n) and not big
 		node.list_mode = big
@@ -641,6 +641,16 @@ func apply_view(v: Dictionary) -> void:
 			c.queue_free()
 	if not director.is_busy():
 		input_locked = false
+
+
+func _new_seat_node(s: int) -> OpponentSeat:
+	var node := OpponentSeat.new()
+	node.seat = s
+	node.reduced = reduced
+	_seat_layer.add_child(node)
+	node.attach_catch_layer(_catch_layer)
+	_seats[s] = node
+	return node
 
 
 # Eigener Platz (0.1.4): Name mit Kartenzahl, am Zug Strahlenkranz um Namen und Hand (nur am eigenen Gerät mit Platz)
@@ -1335,6 +1345,8 @@ func _d(t: float) -> float:
 
 func skip_event(ev: Dictionary) -> void:
 	fx.clear()
+	if str(ev.get("e", "")) == "seats":
+		_remap_seats(ev, false)        # Platznummern auch ohne Animation umstellen (folgende Ereignisse und Sicht sind neu nummeriert)
 	if str(ev.get("e", "")) == "flip":
 		_flip_running = false
 	_house.skip(ev)
@@ -1398,7 +1410,140 @@ func play_event(ev: Dictionary, speed: float) -> float:
 			return _house.ev_discard_color(ev)
 		"unplay":
 			return _ev_unplay(ev)
+		"seats":
+			return _remap_seats(ev, true)
+		"leave_cards":
+			return _ev_leave_cards(ev)
 	return 0.0
+
+
+# Plätze neu nummeriert (Beta 1.4.2, docs/module/dazuholen.md): {e:"seats", map:[neuer Index je altem Platz, −1 = entfernt], join,
+# leave, name, kind}. Danach sind Ereignisse und Sicht neu nummeriert; deshalb werden hier die Platzknoten (Schlüssel = Index), der
+# eigene Platz, die Liste des großen Modus und die angezeigte Sicht sofort umgestellt. animate: Der Entfernte klappt weg, der Neue
+# klappt auf und sagt „Hallo!“, die übrigen gleiten an ihre neuen Plätze (0,4 s). Ohne Animation (Rückstand) nur umstellen.
+func _remap_seats(ev: Dictionary, animate: bool) -> float:
+	var raw: Variant = ev.get("map", [])
+	if not raw is Array:
+		return 0.0
+	var map: Array = raw
+	var join := int(ev.get("join", -1))
+	var mapped := func(s: int) -> int: return int(map[s]) if s >= 0 and s < map.size() else -1
+	var new_seats := {}
+	for s in _seats:
+		var node: OpponentSeat = _seats[s]
+		var ns: int = mapped.call(int(s))
+		if ns < 0:
+			_seat_gone(node, animate)
+		else:
+			node.seat = ns
+			new_seats[ns] = node
+	_seats = new_seats
+	for d: Dictionary in [_list_slot, _list_target]:
+		var moved := {}
+		for s in d:
+			var ns: int = mapped.call(int(s))
+			if ns >= 0:
+				moved[ns] = d[s]
+		d.clear()
+		d.merge(moved)
+	if _list_turn >= 0:
+		_list_turn = mapped.call(_list_turn)
+	if _last_player >= 0:
+		_last_player = mapped.call(_last_player)
+	var had_seat := int(view.get("seat", -1)) >= 0
+	if my_seat >= 0 and mapped.call(my_seat) >= 0:
+		my_seat = mapped.call(my_seat)
+	# angezeigte Sicht umnummerieren (Liste, Namen und Ziele der folgenden Ereignisse), der Neue zunächst ohne Karten
+	var players: Array = []
+	for p in view.get("players", []):
+		if p is Dictionary:
+			var ns: int = mapped.call(int((p as Dictionary).get("seat", -1)))
+			if ns >= 0:
+				var q: Dictionary = (p as Dictionary).duplicate()
+				q["seat"] = ns
+				players.append(q)
+	var info := {}
+	if join >= 0:
+		info = _target_player(join).duplicate()
+		if info.is_empty():
+			info = {"name": str(ev.get("name", "")), "kind": str(ev.get("kind", "human"))}
+		info["seat"] = join
+		info["count"] = 0
+		info["backs"] = []
+		info.erase("place")
+		players.append(info)
+	players.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a.get("seat", 0)) < int(b.get("seat", 0)))
+	var v := view.duplicate()
+	v["players"] = players
+	if had_seat:
+		v["seat"] = my_seat
+	var turn := int(v.get("turn", -1))
+	if turn >= 0:
+		v["turn"] = mapped.call(turn) if mapped.call(turn) >= 0 else int(_target().get("turn", -1))
+	view = v
+	_n = players.size()
+	# der Neue
+	if join >= 0 and not (had_seat and join == my_seat) and not _seats.has(join):
+		var node := _new_seat_node(join)
+		node.night = night
+		node.compact = TableLayout.compact(_n) and not big
+		node.list_mode = big
+		var fm := TableLayout.fan_metrics(_n)
+		node.card_w = fm.x
+		node.fan_max_w = fm.y
+		node.set_player(info, bool((view.get("rules", {}) as Dictionary).get("backs_visible", true)))
+		if not big:
+			var pos := TableLayout.seat_positions(_n, my_seat, size if size.x > 10.0 else TableLayout.BASE)
+			if join < pos.size():
+				node.position = pos[join]
+		if animate and not reduced:
+			node.scale = Vector2(0.2, 0.2)
+			create_tween().tween_property(node, "scale", Vector2.ONE, _d(0.4)).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		if animate:
+			var col := UiPalette.CREAM if night > 0.5 else UiPalette.INK
+			var hello := func() -> void:
+				if is_instance_valid(node):
+					fx.float_text(node.position + Vector2(0, -70), I18n.t("Hallo!"), 40, col, 1.4, 46.0)
+			var tw := create_tween()
+			tw.tween_interval(_d(0.25))
+			tw.tween_callback(hello)
+	if big:
+		_update_list(animate)
+	else:
+		_place_seats(animate)
+	return _d(0.45) if animate else 0.0
+
+
+# Platz verschwindet (entfernt): klappt zusammen und blendet aus; ohne Animation sofort weg.
+func _seat_gone(node: OpponentSeat, animate: bool) -> void:
+	if node == null or not is_instance_valid(node):
+		return
+	node.set_turn(false)
+	if not animate or reduced:
+		node.queue_free()
+		return
+	var tw := node.create_tween().set_parallel(true)
+	tw.tween_property(node, "scale", Vector2(0.15, 0.15), _d(0.4)).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	tw.tween_property(node, "modulate:a", 0.0, _d(0.4))
+	tw.chain().tween_callback(node.queue_free)
+
+
+# Karten eines Entfernten (alte Platznummer) fliegen verdeckt unter den Ziehstapel {e:"leave_cards", seat, count}.
+func _ev_leave_cards(ev: Dictionary) -> float:
+	var node := seat_node(int(ev.get("seat", -1)))
+	var count := int(ev.get("count", 0))
+	if node == null or count <= 0:
+		return 0.0
+	var t := 0.0
+	var fly := _d(0.38)
+	for i in mini(count, 8):
+		var tk := node.take_card()
+		var from := _world.to_local(Vector2(tk.get("pos", node.global_position)))
+		fx.fly_card(str(tk.get("key", CardTextures.BACK)), from, float(tk.get("rot", 0.0)), float(tk.get("width", node.card_w)),
+			_draw_pos, 0.0, pile_w * 0.9, fly, {"flip_to": CardTextures.BACK, "delay": t})
+		t += _d(0.06)
+	node.give_away()
+	return t + fly
 
 
 # Zurückgenommen (Farbe mit ablegen): Die Ablegen-Karte fliegt von der Ablage zurück zum Leger, darunter liegt wieder die alte Karte.
@@ -1539,7 +1684,8 @@ func _ev_draw(ev: Dictionary, penalty: bool) -> float:
 	var faces: Array = ev.get("faces", [])
 	var target := _target()
 	var me := seat == my_seat
-	var slot := _jagd_armed and seat != _last_player and not penalty
+	var join := str(ev.get("reason", "")) == "join"     # Dazugeholter bekommt seine Karten (Beta 1.4.2): kein Stempel „+5“
+	var slot := _jagd_armed and seat != _last_player and not penalty and not join
 	var hidden := not bool((view.get("rules", {}) as Dictionary).get("backs_visible", true))
 	var node := seat_node(seat)
 	var dest := _seat_point(seat)
@@ -1627,7 +1773,7 @@ func _ev_draw(ev: Dictionary, penalty: bool) -> float:
 		htw.tween_interval(total)
 		htw.tween_callback(hit)
 		total += _d(0.5)
-	elif count >= 2 or _plus_armed > 0:
+	elif not join and (count >= 2 or _plus_armed > 0):
 		var big := count >= 5
 		var stamp_col := Color("#FF7FCF") if night > 0.5 else UiPalette.INK
 		fx.stamp(victim_pos + Vector2(0, 48), "+%d" % count, stamp_col, 64 if big else 50, 0.6)

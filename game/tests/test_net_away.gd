@@ -5,7 +5,7 @@ extends SceneTree
 # „Computer spielt für Püppi“ – ein Knopf, der wie ein Zustand wirkte).
 # Vermittler-Nachbau NetRelayDouble (TCP 24981), Gastgeber HostTable „Shakie“ (WLAN 24982), App-Gast „Püppi“ online über den Vermittler,
 # App-Gast „Kim“ im WLAN. app_paused()/app_resumed() stehen für NOTIFICATION_APPLICATION_PAUSED/RESUMED (bzw. FOCUS_OUT/FOCUS_IN).
-#  A  Püppi geht in eine andere App: „away“ kommt an, alle sehen away:true am Platz; nur Hinweis, Knopf erst nach sub_offer_ms;
+#  A  Püppi geht in eine andere App: „away“ kommt an, alle sehen away:true am Platz; Vertretung sofort angeboten (Beta 1.4.2);
 #     nie automatische Vertretung; zurück → away weg, Püppi bekommt den vollen Stand.
 #  B  Online still abgerissen, während Püppi weg war: zurück → binnen 5 s neu verbunden (Token) und voller Stand.
 #  C  WLAN still abgerissen, während Kim weg war: dasselbe im WLAN.
@@ -99,11 +99,11 @@ func run() -> void:
 	check(wait_until(func(): return seat_flag(kim.current_view(), g, "away")), "Kim sieht Püppi „kurz in einer anderen App“")
 	check(seat_flag(host.current_view(), g, "away"), "Gastgeber-Tisch: Püppi away")
 	check(seat_flag(kim.current_view(), h, "host") and not seat_flag(kim.current_view(), h, "away"), "Gastgeber-Eintrag host:true, nicht away")
-	check(host.absent_seats() == [g] and host.substitutable_seats().is_empty(), "nur Hinweis „kurz in einer anderen App“, noch kein Knopf")
-	host.sub_offer_ms = 300
-	check(wait_until(func(): return host.substitutable_seats() == [g], 2000), "Knopf erst nach sub_offer_ms")
+	check(host.absent_seats() == [g] and host.substitutable_seats() == [g], "Beta 1.4.2: Vertretung und Herausnehmen sofort angeboten")
+	host.sub_offer_ms = 60000
+	check(host.substitutable_seats().is_empty(), "mit Wartezeit (sub_offer_ms, nur noch für Tests) noch keine Vertretung")
 	host.sub_offer_ms = NetProtocol.SUB_OFFER_MS
-	check(host.substitutable_seats().is_empty(), "mit 30 s wieder kein Knopf")
+	check(host.substitutable_seats() == [g], "ohne Wartezeit wieder sofort")
 	# Nie automatisch vertreten, auch wenn auto_substitute_s an wäre und das Spiel auf Püppi wartete
 	host.auto_substitute_s = 0.05
 	host._waiting_seat = g

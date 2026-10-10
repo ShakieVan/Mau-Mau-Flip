@@ -2,7 +2,8 @@ extends SceneTree
 # Oberfläche 0.1.3, headless mit echten Bildschirmen und echtem Netz über 127.0.0.1:
 #  T   Regler „Tempo der Computergegner“ (Einstellungen, persönlich je Gerät): speichert bot_tempo, GameStarter gibt den Faktor
 #      an LocalTable/HostTable weiter (nur Bedenkzeit).
-#  M4  Getrennter Gast: Der Gastgeber sieht am Tisch „Computer spielt für …“, Rückfrage, substitute_bot(); kommt der Gast zurück,
+#  M4  Getrennter Gast: Der Gastgeber sieht am Tisch sofort „… ist getrennt“ mit „Computer übernimmt“ / „Aus dem Spiel nehmen“
+#      (Beta 1.4.2), Rückfrage, substitute_bot(); kommt der Gast zurück,
 #      spielt er selbst weiter (Vertretung endet).
 #  N6  Gast verliert nach dem Spielende die Verbindung und der Gastgeber ist weg: nach einem gescheiterten Versuch
 #      „Spiel beendet.“ mit „Zum Menü“ statt endlos „Verbinde neu …“.
@@ -151,26 +152,22 @@ func net_flow() -> void:
 		return
 	var seat := int(gts.view.get("seat", -1))
 	var gname := host.seat_name(seat)
-	check(not hts._sub_btn.visible, "M4: ohne getrennten Gast kein Knopf")
+	check(not hts._sub_hint.visible, "M4: ohne getrennten Gast keine Leiste")
 	# Gast weg (App abgewürgt)
 	nav2.queue_free()
 	nav2 = null
 	check(await _wait_for(func() -> bool: return host.game != null and not bool(host.game.connected[seat]), 4.0), "M4: Gastgeber sieht den Gast getrennt")
-	# Beta 1.3.3: vor 30 s nur der Hinweis „… ist kurz weg“, kein Knopf
-	check(await _wait_for(func() -> bool: return hts._sub_hint.visible, 2.0) and hts._sub_hint_label.text == "%s ist kurz weg" % gname
-			and not hts._sub_btn.visible and host.substitutable_seats().is_empty(),
-		"M4: zuerst nur „%s ist kurz weg“ (%s), kein Knopf" % [gname, hts._sub_hint_label.text])
-	host.sub_offer_ms = 400                  # statt 30 s
-	check(await _wait_for(func() -> bool: return hts._sub_btn.visible, 3.0) and hts._sub_btn.text == "Computer für %s spielen lassen" % gname
-			and not hts._sub_hint.visible,
-		"M4: danach Knopf „Computer für %s spielen lassen“ (%s)" % [gname, hts._sub_btn.text])
-	var r := hts._sub_btn.get_global_rect()
-	check(Rect2(0, 0, 1600, 720).encloses(r), "M4: Knopf im Bild")
+	# Beta 1.4.2: sofort die Leiste „… ist getrennt“ mit „Computer übernimmt“ und „Aus dem Spiel nehmen“ (keine 30-s-Frist mehr)
+	check(await _wait_for(func() -> bool: return hts._sub_hint.visible, 2.0) and hts._sub_hint_label.text == "%s ist getrennt" % gname
+			and hts._sub_btn.is_visible_in_tree() and hts._kick_btn.is_visible_in_tree(),
+		"M4: sofort „%s ist getrennt“ mit beiden Knöpfen (%s)" % [gname, hts._sub_hint_label.text])
+	var r := hts._sub_hint.get_global_rect()
+	check(Rect2(0, 0, 1600, 720).encloses(r), "M4: Leiste im Bild (%s)" % r)
 	hts.ask_substitute()
 	check(hts._confirm != null and is_instance_valid(hts._confirm), "M4: Rückfrage")
 	hts._confirm._answer(true)
 	await frames(2)
-	check(host.is_substituted(seat) and not hts._sub_btn.visible, "M4: Computer spielt für den Gast, Knopf weg")
+	check(host.is_substituted(seat) and not hts._sub_hint.visible, "M4: Computer spielt für den Gast, Leiste weg")
 	await wait(0.5)
 	# Gast kommt zurück: spielt selbst weiter
 	nav3 = _guest_nav()

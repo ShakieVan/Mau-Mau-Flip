@@ -20,7 +20,7 @@ Bis 05.10.2026 stand hier: „synthetisch, eigenes Skript `tools/make_sfx.py`, k
 | Flip | `flip` | `flip_02` | Wusch, danach ein heller Glanz | 1,40 s |
 | Du bist dran | `dran` | `dran_04` | Marimba, drei Anschläge aufwärts (etwa A4 – D5 – A5) | 0,60 s |
 | Fehler | `fehler` | `fehler_09` | hohles, holziges „Tock“ | 0,25 s |
-| Sieg | `sieg` | `sieg_03` | Glockenspiel und Marimba, Tonfolge aufwärts (etwa C4 – E4 – G4 – C5) | 1,76 s |
+| Sieg (Jubel) | `sieg` (Ereignis) → `jubel_1` oder `jubel_2` | `jubel3_01` bzw. `jubel3_06` (Runde 3, `tools/make_jubel.py --runde3`), unverändert kopiert | jubelnde Menge, bei jeder Feier wählt der Zufall eine der beiden (auf jedem Gerät für sich); ersetzt den Glockenspiel-Ton `sieg_03`. Lautheit −18,1 bzw. −18,6 LUFS (Entwurfsmessung), Spitze −5,6 bzw. −11,6 dBTP | 7,27 s bzw. 7,37 s |
 | Aussetzen | `schnurren` | `schnurren3_03` (Runde 3, `tools/make_schnurren.py --runde3`) | sanftes Katzenschnurren, spielt beim Legen von „Aussetzen“ und „Alle aussetzen“ auf allen Geräten | 1,64 s |
 
 Ausgabe (alle mono, 48 kHz, 20 ms Stille am Ende):
@@ -110,3 +110,7 @@ Bemerkungen:
    - `fehler` mit abgesenkten Tiefen: auf dem Handy hörbar genug, über Kopfhörer nicht zu dünn?
 2. **Pegel auf dem Gerät** gegen den Mau-Ton prüfen. Lauter oder leiser insgesamt: `TON_DB` in `sound.gd` und `STUFEN_SPIEL` in `ton.js` gemeinsam ändern. Einzelne Töne: `SPIEL` in `make_sfx_moss.py`, dann neu erzeugen.
 3. **Stapel aufstoßen** (`stapel_02`) wird im Spiel noch nicht verwendet; dafür bräuchten `sound.gd` und `SPIEL` einen Eintrag.
+
+## Jubel statt Sieg-Ton (Nutzerentscheidung 10.10.2026)
+
+Der Glockenspiel-Ton `sieg_03` entfällt. Am Rundenende und Partieende spielt das Ereignis „sieg“ stattdessen zufällig `jubel_1` (= `audio/entwurf/jubel3/jubel3_01.ogg`) oder `jubel_2` (= `jubel3_06.ogg`). Herkunft: MOSS-SoundEffect v2.0 (Apache 2.0), erzeugt mit `tools/make_jubel.py --runde3`, unverändert kopiert; die Dateien stehen unter der Projektlizenz CC BY-NC 4.0. Der Jubel fällt wie das Schnurren unter keine der Prüfungen oben (dichtes Menschenrauschen, bewusst), liegt aber unter „Spieltöne“ (ab Werk aus, normal −4,5 dB, im Spiel etwa −23 LUFS). Beim Verlassen des Tisches blendet die App ihn in 0,6 s aus; ein zweiter Jubel startet nicht, solange einer läuft. Browser: `webclient/sfx/jubel_1|2.ogg/.m4a` (m4a mit ffmpeg, AAC 96 kbit/s), `ton.js` wählt zufällig; fehlt die Datei, klingt weiter der synthetische Dreiklang.

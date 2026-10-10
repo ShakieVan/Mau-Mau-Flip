@@ -12,8 +12,13 @@ extends GameTable
 # seinem Token zurückkommt, bekommt sofort den aktuellen Stand und spielt selbst weiter.
 # App-Wechsel (Beta 1.3.3): „away“/„back“ der Gäste und des Gastgebers (NetHostSession.player_away) landen als away:true in
 # view.players (Gastgeber-Eintrag zusätzlich host:true); „back“ schickt dem Gast den vollen Stand. Der Knopf „Computer für … spielen
-# lassen“ (substitutable_seats) kommt erst, wenn der Gast sub_offer_ms (30 s) weg oder getrennt ist; vorher absent_seats() für den
-# Hinweis „… ist kurz weg“. Ein Gast in einer anderen App wird nie automatisch vertreten.
+# lassen“ (substitutable_seats) kam bis Beta 1.4.1 erst nach sub_offer_ms (30 s); seit Beta 1.4.2 ist sub_offer_ms 0: Jeder abwesende Gast
+# (absent_seats) bekommt sofort „Computer übernimmt“ und „Aus dem Spiel nehmen“. Ein Gast in einer anderen App wird nie automatisch vertreten.
+# Plätze mitten im Spiel (Beta 1.4.2, docs/module/dazuholen.md): seat_in(id, at) holt einen Wartenden (NetHostSession-Warteliste) an den
+# Tisch, add_bot_at(at) einen Computergegner, remove_seat(seat) nimmt einen Platz heraus (nie den Gastgeber). Die Aufträge warten in
+# _seat_ops, bis MauGame es erlaubt (zwischen zwei Zügen bzw. am Rundenende; den Platz am Zug nimmt man sofort heraus), und gehen
+# jeweils als eigener Stand hinaus (nie zusammen mit Ereignissen in alter Platznummerierung). Der Neue bekommt {t:"start", seat},
+# der Entfernte „bye“.
 # Speicherstand nach jeder Änderung (user://laufende_partie.json), resume() setzt eine Partie samt Token der Gäste fort.
 
 const BOT_NAMES := ["Minka", "Mogli", "Luna", "Tiger", "Socke", "Krümel", "Flocke", "Pünktchen", "Schnurri", "Mieze"]
@@ -31,6 +36,9 @@ var _seat_ids: Array = []        # Platz -> Spieler-id der Sitzung
 var _seq := {}                   # Spieler-id -> letzte seq seiner Aktionen (seq_ack)
 var _waiting_seat := -1          # getrennter Mensch am Zug
 var _wait_since := 0
+var _seat_ops: Array = []         # aufgeschobene Platzaufträge [{op: "in"|"bot"|"out", id, at, name}] (Beta 1.4.2)
+var _ops_busy := false
+var _gone_names := {}             # in dieser Partie herausgenommene Namen (neue Computergegner heißen anders)
 
 
 # Lobby eröffnen. host_name "" = Name aus den Einstellungen.
@@ -93,11 +101,7 @@ func add_bot(bot_name := "") -> int:
 	if session == null or game != null:
 		return -1
 	if bot_name == "":
-		var taken: Array = session.players.values().map(func(p): return str(p.name))
-		for n in BOT_NAMES:
-			if not taken.has(n):
-				bot_name = n
-				break
+		bot_name = free_bot_name()
 	return session.add_local_player(bot_name if bot_name != "" else "Computer", "bot")
 
 
@@ -229,6 +233,195 @@ func is_substituted(seat: int) -> bool:
 	return _substitute.has(seat)
 
 
+# --- Plätze mitten im Spiel (Beta 1.4.2) ---
+
+# Neue dürfen auf die Warteliste (solange beim Gastgeber das Feld „Mitspieler“ offen ist).
+func set_join_open(on: bool) -> void:
+	if session != null:
+		session.join_open = on
+
+
+# Wartende Gäste (Spieler-ids der Sitzung) in der Reihenfolge ihrer Anmeldung.
+func waiting_ids() -> Array:
+	return session.waiting_ids() if session != null else []
+
+
+# Wartenden an Stelle at (0 … Spielerzahl, Index in der neuen Sitzordnung) an den Tisch holen. false = nicht möglich.
+func seat_in(id: int, at: int) -> bool:
+	if game == null or session == null or not session.is_waiting(id) or _queued(id) or not _room_for_one():
+		return false
+	_seat_ops.append({"op": "in", "id": id, "at": at, "name": str(session.player(id).name)})
+	_run_seat_ops()
+	return true
+
+
+# Computergegner an Stelle at dazuholen. false = kein Platz frei.
+func add_bot_at(at: int, bot_name := "") -> bool:
+	if game == null or session == null or not _room_for_one():
+		return false
+	if bot_name == "":
+		bot_name = free_bot_name()
+	_seat_ops.append({"op": "bot", "id": -1, "at": at, "name": bot_name if bot_name != "" else "Computer"})
+	_run_seat_ops()
+	return true
+
+
+# Name für einen neuen Computergegner (Gerätetest 1.4.2: nach dem Herausnehmen von „Mogli“ kam wieder ein „Mogli“): weder am Tisch,
+# auf der Warteliste, in offenen Aufträgen noch in dieser Partie schon herausgenommen. Sind alle verbraucht, wieder ein
+# herausgenommener; zuletzt „Computer“ (NetSession macht ihn eindeutig).
+func free_bot_name() -> String:
+	var taken: Array = session.players.values().map(func(p): return str(p.name)) if session != null else []
+	for o in _seat_ops:
+		taken.append(str(o.get("name", "")))
+	for s in seats.size():
+		taken.append(seat_name(s))
+	for pass_ in 2:
+		for n in BOT_NAMES:
+			if not taken.has(n) and (pass_ == 1 or not _gone_names.has(n)):
+				return n
+	return "Computer"
+
+
+# Platz herausnehmen (Mensch oder Computer, nie der Gastgeber). Ist der Platz am Zug, sofort; sonst nach diesem Zug.
+func remove_seat(seat: int) -> bool:
+	if game == null or seat < 0 or seat >= seats.size() or seat == host_seat:
+		return false
+	var id := int(_seat_ids[seat])
+	if _queued(id):
+		return false
+	_gone_names[seat_name(seat)] = true
+	_seat_ops.append({"op": "out", "id": id, "at": seat, "name": seat_name(seat)})
+	_run_seat_ops()
+	return true
+
+
+# Wartenden ablehnen: er bekommt „bye“ und verschwindet von der Warteliste.
+func reject_waiting(id: int) -> void:
+	cancel_seat_op(id)
+	if session != null and session.is_waiting(id):
+		session.remove_player(id, "Der Gastgeber hat dich nicht dazugeholt.")
+
+
+# Aufgeschobenen Auftrag zurücknehmen (Spieler-id; Computergegner: −1 nimmt alle noch nicht angelegten zurück).
+func cancel_seat_op(id: int) -> void:
+	_seat_ops = _seat_ops.filter(func(o): return int(o.id) != id)
+
+
+# Aufträge, die noch warten (Anzeige „Kommt nach diesem Zug dazu“ / „Geht nach diesem Zug“): [{op, id, at, name}].
+func pending_seat_ops() -> Array:
+	return _seat_ops.duplicate(true)
+
+
+# Wartet ein Auftrag für diesen Spieler (id der Sitzung)?
+func seat_op_of(id: int) -> String:
+	for o in _seat_ops:
+		if int(o.id) == id:
+			return str(o.op)
+	return ""
+
+
+# Karten, die ein Dazugeholter jetzt bekäme (Rückfrage „… bekommt 5 Karten“); am Rundenende 0.
+func join_card_count() -> int:
+	return game.join_card_count() if game != null else 0
+
+
+func _queued(id: int) -> bool:
+	return seat_op_of(id) != ""
+
+
+func _room_for_one() -> bool:
+	var adds := _seat_ops.filter(func(o): return str(o.op) != "out").size()
+	return seats.size() + adds < MauGame.MAX_PLAYERS
+
+
+# Aufgeschobene Aufträge der Reihe nach ausführen, solange das Regelwerk es erlaubt. Jeder ausgeführte Auftrag geht als eigener Stand
+# hinaus (_changed in _seat_insert/_seat_remove), danach kommt der nächste.
+func _run_seat_ops() -> void:
+	if _ops_busy or game == null or session == null:
+		return
+	_ops_busy = true
+	while not _seat_ops.is_empty() and game != null:
+		var o: Dictionary = _seat_ops[0]
+		if str(o.op) == "out":
+			var s := _seat_ids.find(int(o.id))
+			if s < 0 or s == host_seat:
+				_seat_ops.pop_front()
+				continue
+			if not game.can_remove_now(s):
+				break
+			_seat_ops.pop_front()
+			_seat_remove(s)
+		else:
+			if str(o.op) == "in" and not session.is_waiting(int(o.id)):
+				_seat_ops.pop_front()            # inzwischen abgelehnt oder gestrichen
+				continue
+			if not game.can_change_seats():
+				break
+			_seat_ops.pop_front()
+			_seat_insert(o)
+	_ops_busy = false
+
+
+func _seat_insert(o: Dictionary) -> void:
+	var bot := str(o.op) == "bot"
+	var id := int(o.id)
+	if bot:
+		id = session.add_local_player(str(o.name), "bot")
+		if id < 0:
+			return
+	var p: Dictionary = session.player(id)
+	var at := clampi(int(o.at), 0, seats.size())
+	var r := game.insert_player(at, {"name": str(p.name), "kind": "bot" if bot else "human"})
+	if not bool(r.ok):
+		if bot:
+			session.remove_player(id)
+		return
+	seats.insert(at, {"name": str(p.name), "kind": "bot" if bot else "human", "host": false, "id": id, "net": str(p.kind),
+		"token": str(p.get("token", ""))})
+	_seat_ids.insert(at, id)
+	var sub := {}
+	for s in _substitute:
+		sub[int(s) + 1 if int(s) >= at else int(s)] = true
+	_substitute = sub
+	host_seat = game.host
+	_waiting_seat = -1
+	_plan_dirty = true
+	game.set_connected(at, bool(p.get("connected", true)))
+	session.set_seat_order(_seat_ids)            # holt ihn auch von der Warteliste (waiting weg)
+	if not bot:
+		session.send_to(id, {"t": "start", "seat": at})
+	_tell_all([I18n.part("%s spielt jetzt mit.", [str(p.name)])])
+	_changed(r.events)
+
+
+func _seat_remove(s: int) -> void:
+	var id := int(_seat_ids[s])
+	var gone := seat_name(s)
+	var r := game.remove_player(s)
+	if not bool(r.ok):
+		return
+	seats.remove_at(s)
+	_seat_ids.remove_at(s)
+	var sub := {}
+	for k in _substitute:
+		if int(k) != s:
+			sub[int(k) - 1 if int(k) > s else int(k)] = true
+	_substitute = sub
+	host_seat = game.host
+	_waiting_seat = -1
+	_plan_dirty = true
+	_seq.erase(id)
+	session.remove_player(id, "Der Gastgeber hat dich aus dem Spiel genommen.")
+	session.set_seat_order(_seat_ids)
+	_tell_all([I18n.part("%s ist nicht mehr dabei.", [gone])])
+	_changed(r.events)
+
+
+func _after_distribute() -> void:
+	if not _seat_ops.is_empty():
+		_run_seat_ops()
+
+
 func act(action: Dictionary) -> void:
 	if game == null:
 		notice.emit("Die Partie hat noch nicht begonnen.")
@@ -242,6 +435,7 @@ func act(action: Dictionary) -> void:
 func back_to_lobby() -> void:
 	game = null
 	_plan = {}
+	_seat_ops.clear()
 	_substitute.clear()
 	if session != null:
 		session.set_running(false)
@@ -258,6 +452,7 @@ func leave() -> void:
 func _close_session() -> void:
 	game = null
 	_plan = {}
+	_seat_ops.clear()
 	_substitute.clear()
 	if session != null:
 		session.stop("Der Gastgeber hat das Spiel beendet.")

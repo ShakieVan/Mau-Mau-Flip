@@ -37,6 +37,7 @@ var _ready_btn: Button
 var _save_btn: Button
 var _save_box: RuleSetSaveBox
 var _started := false
+var _status_hold := false             # Ablehnung/Ende steht im Status, bis der Nutzer etwas tut (die Suche überschreibt sie nicht)
 var host_rules: RuleConfig          # Regeln der letzten Lobby-Nachricht (null = noch keine)
 var host_name := ""                 # Name des Gastgebers aus der Lobby
 var _adopted: ClientTable           # with_client(): bestehende Verbindung, wird in build() übernommen
@@ -314,6 +315,7 @@ func join_typed_room() -> void:
 # Online beitreten: Code prüfen, beim Vermittler nachfragen (/info?room=), dann verbinden. relay "" = aus den Einstellungen;
 # kommt der Vermittler aus einem Link und ist die eigene Einstellung leer, wird er gespeichert.
 func join_room(code_text: String, relay: String) -> void:
+	_status_hold = false
 	var code := NetProtocol.normalize_room_code(code_text)
 	if code == "":
 		toast("Bitte den Raumcode eingeben, z. B. KATZE-42.")
@@ -461,7 +463,12 @@ func _refresh_games() -> void:
 	if list.is_empty():
 		_games.add_child(ScreenKit.hint("Noch nichts gefunden. Der Gastgeber tippt auf „Spiel eröffnen“; beide Geräte im selben WLAN. Klappt die Suche nicht, die Adresse unter dem QR-Code des Gastgebers oben eintippen.", UiFonts.size("text")))
 		return
-	_status.text = I18n.t("1 Spiel gefunden – antippen zum Beitreten.") if list.size() == 1 else I18n.t("%d Spiele gefunden – antippen zum Beitreten.") % list.size()
+	if _status_hold:
+		pass   # Grund der Ablehnung bzw. des Endes bleibt stehen (Gerätetest 1.4.2: nach < 1 s „1 Spiel gefunden“)
+	elif list.size() == 1:
+		_status.text = I18n.t("1 Spiel gefunden – antippen zum Beitreten.")
+	else:
+		_status.text = I18n.t("%d Spiele gefunden – antippen zum Beitreten.") % list.size()
 	for g in list:
 		_games.add_child(_game_button(g))
 
@@ -527,6 +534,7 @@ func _connect_typed() -> void:
 
 
 func join(address: String, port: int) -> void:
+	_status_hold = false
 	if client != null:
 		client.leave()
 		client.queue_free()
@@ -575,6 +583,7 @@ func _on_connection(state: String) -> void:
 				# Grund behalten (z. B. „Der Gastgeber hat das Spiel beendet.“); sonst bliebe „Verbunden. Warte …“ stehen.
 				# Eine Ablehnung schreibt ihren Text danach selbst (notice).
 				var why := client.client.close_text if client != null and client.client != null else ""
+				_status_hold = true      # bleibt stehen, bis der Nutzer handelt (Suche, games_changed überschreiben nicht)
 				_back_to_search()
 				if state == "closed":
 					_status.text = why if why != "" else "Verbindung beendet."
@@ -601,7 +610,10 @@ func _on_lobby(l: Dictionary) -> void:
 		_lobby_list.remove_child(c)
 		c.queue_free()
 	var players: Array = (l.get("players", []) as Array).duplicate()
-	players.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a.get("seat", 0)) < int(b.get("seat", 0)))
+	# Wartende (Beta 1.4.2, seat −1) hinter den Sitzenden
+	var order := func(p: Dictionary) -> int: return 1000 if bool(p.get("waiting", false)) or int(p.get("seat", 0)) < 0 else int(p.get("seat", 0))
+	players.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(order.call(a)) < int(order.call(b)))
+	var waiting := bool(l.get("waiting", false))
 	var me := client.my_id if client != null else -1
 	for p in players:
 		if int((p as Dictionary).get("id", -2)) == me:
@@ -622,6 +634,8 @@ func _on_lobby(l: Dictionary) -> void:
 		var tag: String = I18n.t({"app": "App", "web": "Browser", "bot": "Computer"}.get(kind, kind))
 		if int(p.get("id", -1)) == int(l.get("host_id", -2)):
 			tag = I18n.t("Gastgeber")
+		if bool(p.get("waiting", false)):
+			tag += " · " + I18n.t("wartet auf einen Platz")
 		if bool(p.get("away", false)):
 			tag += " · " + I18n.t("kurz in einer anderen App")
 		elif not bool(p.get("connected", true)):
@@ -638,6 +652,12 @@ func _on_lobby(l: Dictionary) -> void:
 	host_name = RuleSets.host_name_in_lobby(l, welcomed if welcomed != "" else I18n.t("Gastgeber"))
 	_lobby_rules.text = "\n".join(PackedStringArray(cfg.describe()))
 	_lobby_hint.text = lobby_hint(host_name)
+	if waiting:
+		# mitten in der Partie auf der Warteliste: der Gastgeber holt einen gleich an den Tisch
+		_lobby_hint.text = I18n.t("Du bist auf der Warteliste. Der Gastgeber holt dich gleich an den Tisch.")
+		_status.text = I18n.t("Das Spiel läuft schon. Der Gastgeber kann dich dazuholen – bleib hier, du erscheinst bei ihm auf der Warteliste.")
+	if _ready_btn != null:
+		_ready_btn.visible = not waiting
 	# Regeln des Gastgebers zum Speichern bereithalten (gemerkt werden sie erst am Tisch)
 	if rules is Dictionary and not (rules as Dictionary).is_empty():
 		host_rules = cfg
@@ -737,6 +757,7 @@ func on_back() -> bool:
 		_save_box = null
 		return true
 	if client != null:
+		_status_hold = false
 		_back_to_search()
 		return true
 	return false

@@ -30,6 +30,7 @@ const TOP_LAYER := 6
 const SORT_MODES := ["farbe", "wert", "punkte", "manuell"]
 const SORT_LABELS := {"farbe": "Farbe", "wert": "Wert", "punkte": "Punkte", "manuell": "Eigene"}
 const PEEK_TAP_MS := 300
+const BAR_BTN_H := 58.0              # Knöpfe der Sofort-Leiste (flacher, damit der obere Gegner sichtbar bleibt)
 
 var source: TableSource
 var starter := Callable()
@@ -51,6 +52,8 @@ var _conn_sub: Label                 # App-Gast: „Die Regeln von Lena sind gem
 var _conn_menu: Button
 var _conn_save: Button               # App-Gast: „Regeln speichern“, wenn die Verbindung zum Gastgeber beendet ist
 var _conn_host: Button               # App-Gast: „Selbst eröffnen“ mit den Regeln dieser Partie
+var _conn_rejoin: Button             # App-Gast, vom Gastgeber herausgenommen: „Wieder beitreten“ (Gerätetest 1.4.2)
+var _loading: Control                # App-Gast: „Der Tisch wird geladen …“, bis der erste Stand da ist (kein leerer Tisch)
 var _save_opt: Button                # Spielmenü des App-Gasts: „Regeln dieser Partie speichern“
 var _confirm: ConfirmBox
 var _save_box: RuleSetSaveBox
@@ -66,12 +69,17 @@ var _peek_down_ms := -1
 var _peek_on := false
 var _peek_was_on := false
 var _handover_pending := false
-var _sub_btn: Button                 # Gastgeber: „Computer für Kim spielen lassen“ (Gast ≥ 30 s weg, M4, Beta 1.3.3)
-var _sub_seat := -1
-var _sub_hint: PanelContainer        # Gastgeber: vorher nur „Kim ist kurz weg“ bzw. „… ist kurz in einer anderen App“
+var _sub_btn: Button                 # Gastgeber, Sofort-Leiste: „Computer übernimmt“ (M4; seit Beta 1.4.2 sofort, ohne 30-s-Frist)
+var _kick_btn: Button                # … und „Aus dem Spiel nehmen“ (Beta 1.4.2)
+var _sub_seat := -1                  # Platz, für den die Leiste gerade steht
+var _sub_hint: PanelContainer        # die Leiste: „Kim ist getrennt“ bzw. „Kim ist kurz in einer anderen App“ + beide Knöpfe
 var _sub_hint_label: Label
-var _sub_hint_seat := -1
-var _sub_next_ms := 0                # nächste Prüfung der 30-s-Frist
+var _sub_more: Label                 # „+1“: weitere Abwesende (über „Mitspieler“ erreichbar)
+var _bar_btns: BoxContainer            # beide Knöpfe: untereinander, bei wenig Höhe nebeneinander (_place_bar)
+var _sub_hint_seat := -1             # (alt, Kontrollbilder) = _sub_seat
+var _sub_next_ms := 0                # nächste Prüfung der Abwesenheit
+var _seat_mgr: SeatManager           # Feld „Mitspieler“ (Gastgeber im Netzwerkspiel, Beta 1.4.2)
+var _waiting_seen: Array = []        # Wartende, zu denen schon ein Hinweis kam
 var _host_app_away := false          # Gast: Gastgeber kurz in einer anderen App (Hinweis oben)
 
 
@@ -162,6 +170,22 @@ func build() -> void:
 
 
 func _build_top() -> void:
+	# App-Gast beim Hinsetzen (Gerätetest 1.4.2): „start“ kommt vor dem ersten Stand – bis dahin ein ruhiger Ladehinweis statt
+	# eines leeren Tisches („Stapel · 0“). Liegt unter allen Knöpfen und Hinweisen.
+	_loading = ColorRect.new()
+	_loading.name = "Laden"
+	(_loading as ColorRect).color = UiPalette.PAPER
+	_loading.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_loading.mouse_filter = Control.MOUSE_FILTER_STOP
+	_loading.visible = source != null and source.mode() == "client" and source.current_view().is_empty()
+	_top.add_child(_loading)
+	var lt := ScreenKit.label("Der Tisch wird geladen …", "", UiFonts.size("zwischen"))
+	lt.name = "LadenText"
+	lt.add_theme_color_override("font_color", UiPalette.INK)
+	lt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lt.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lt.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_loading.add_child(lt)
 	# Pfeil gezeichnet wie das ☰ (UiIcons), nicht als eingefärbtes Bild: Auf einem Gast-Gerät (1.3.2, Tag) erschien statt des Pfeils ein
 	# schwarzes Quadrat – Texture2D.get_image() liest im Compatibility-Renderer je nach GPU nichts Brauchbares zurück.
 	_menu_btn = ScreenKit.button("", "GhostButton", "", ScreenKit.TOUCH)
@@ -215,23 +239,53 @@ func _build_top() -> void:
 	_conn_save.visible = false
 	_conn_save.pressed.connect(save_host_rules)
 	row.add_child(_conn_save)
+	_conn_rejoin = ScreenKit.button("Wieder beitreten", "PrimaryButton", "start")
+	_conn_rejoin.name = "WiederBeitreten"
+	_conn_rejoin.tooltip_text = "Noch einmal zu diesem Gastgeber verbinden"
+	_conn_rejoin.visible = false
+	_conn_rejoin.pressed.connect(rejoin)
+	row.add_child(_conn_rejoin)
 	_conn_menu = ScreenKit.button("Zum Menü", "DarkButton")
 	_conn_menu.visible = false
 	_conn_menu.pressed.connect(_leave_now)
 	row.add_child(_conn_menu)
-	_sub_btn = ScreenKit.button("", "PrimaryButton", "bot")
+	# Sofort-Leiste (Beta 1.4.2): „Kim ist getrennt“ + „Computer übernimmt“ + „Aus dem Spiel nehmen“ (beide mit Rückfrage)
+	_sub_hint = ScreenKit.card(12.0, false)
+	_sub_hint.name = "Abwesend"
+	_sub_hint.visible = false
+	_top.add_child(_sub_hint)
+	# untereinander: Satz, dann die beiden Knöpfe (schmal; normal rechts über dem Mau-Knopf, im großen Modus oben links)
+	var bar := ScreenKit.vbox(8)
+	_sub_hint.add_child(bar)
+	var head := ScreenKit.hbox(10)
+	bar.add_child(head)
+	_sub_hint_label = ScreenKit.label("", "", UiFonts.size("text"))
+	_sub_hint_label.add_theme_font_override("font", UiFonts.text(700))
+	_sub_hint_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	head.add_child(_sub_hint_label)
+	_sub_more = ScreenKit.label("", "HintLabel", UiFonts.size("text"))
+	_sub_more.name = "Weitere"
+	_sub_more.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	head.add_child(_sub_more)
+	_sub_btn = ScreenKit.button("Computer übernimmt", "GhostButton", "roboter")
 	_sub_btn.name = "ComputerUebernimmt"
 	_sub_btn.tooltip_text = "Ein Computergegner spielt für den getrennten Gast, bis er zurückkommt."
-	_sub_btn.visible = false
+	_sub_btn.add_theme_font_size_override("font_size", UiFonts.size("hinweis"))
+	_sub_btn.custom_minimum_size.y = BAR_BTN_H
 	_sub_btn.pressed.connect(ask_substitute)
-	_top.add_child(_sub_btn)
-	_sub_hint = ScreenKit.card(12.0, false)
-	_sub_hint.name = "KurzWeg"
-	_sub_hint.visible = false
-	_sub_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_sub_hint_label = ScreenKit.label("", "", 22)
-	_sub_hint.add_child(_sub_hint_label)
-	_top.add_child(_sub_hint)
+	_bar_btns = BoxContainer.new()
+	_bar_btns.vertical = true
+	_bar_btns.add_theme_constant_override("separation", 8)
+	_bar_btns.name = "Knoepfe"
+	bar.add_child(_bar_btns)
+	_bar_btns.add_child(_sub_btn)
+	_kick_btn = ScreenKit.button("Aus dem Spiel nehmen", "GhostButton")
+	_kick_btn.name = "AusDemSpiel"
+	_kick_btn.add_theme_font_size_override("font_size", UiFonts.size("hinweis"))
+	_kick_btn.custom_minimum_size.y = BAR_BTN_H
+	_kick_btn.pressed.connect(ask_kick)
+	_bar_btns.add_child(_kick_btn)
+	_style_bar(false)
 
 
 func on_enter() -> void:
@@ -268,10 +322,95 @@ func _layout() -> void:
 	_round_menu.position = Vector2(sz.x - _round_menu.size.x - 22.0, 14.0)
 	_conn.reset_size()
 	_conn.position = Vector2((sz.x - _conn.size.x) * 0.5, 16.0)
-	_sub_btn.size = Vector2(_sub_btn.get_combined_minimum_size().x + 20.0, ScreenKit.TOUCH)
-	_sub_btn.position = Vector2((_burger.position.x + _burger.size.x if not table.big else 14.0 + _menu_btn.size.x) + 14.0, 10.0)
+	_bar_shape(true, 0)
+	if table.big:
+		_sub_hint.position = Vector2(14.0 + _menu_btn.size.x + 14.0, 10.0)
+	else:
+		_place_bar(sz, true)
+
+
+# Sofort-Leiste im normalen Modus: rechts, möglichst direkt über dem Mau-Knopf, aber ohne Gegnerplätze (Fächer) und Hinweisleiste
+# zu verdecken (Gerätetest 1.4.2, n_06: bei großer Schrift lag sie über dem rechten Fächer und dem Hinweis). Passt sie nirgends,
+# wird ihre Schrift schrittweise kleiner; sonst die Lage mit der kleinsten Überdeckung. force = false: eine freie Lage bleibt.
+func _place_bar(sz: Vector2, force := false) -> void:
+	var mau := table.mau_button.get_global_rect()
+	var bottom := mau.position.y - 10.0 if mau.size.y > 1.0 else sz.y - 200.0
+	var blocks := bar_obstacles()
+	if not force and _sub_hint.size.x > 1.0 and _bar_overlap(Rect2(_sub_hint.position, _sub_hint.size), blocks) <= 0.0 \
+			and _sub_hint.position.y + _sub_hint.size.y <= bottom + 0.5:
+		return
+	var best := Vector2(-1, -1)
+	var best_cost := INF
+	var best_shape := [true, 0]
+	# Knöpfe untereinander (wie bisher), sonst nebeneinander (flacher); je Anordnung die Schrift schrittweise kleiner
+	for shape in [[true, 0], [false, 0], [true, 2], [false, 2], [true, 4], [false, 4], [false, 6]]:
+		_bar_shape(bool(shape[0]), int(shape[1]))
+		var bs := _sub_hint.size
+		var x := sz.x - bs.x - 16.0
+		var y := bottom - bs.y
+		while y >= 10.0:
+			var cost := _bar_overlap(Rect2(Vector2(x, y), bs), blocks)
+			if cost < best_cost - 0.5:
+				best_cost = cost
+				best = Vector2(x, y)
+				best_shape = shape
+			if cost <= 0.0:
+				break
+			y -= 8.0
+		if best_cost <= 0.0:
+			break
+	_bar_shape(bool(best_shape[0]), int(best_shape[1]))
+	if best.x < 0.0:
+		best = Vector2(sz.x - _sub_hint.size.x - 16.0, maxf(bottom - _sub_hint.size.y, 10.0))
+	_sub_hint.position = best
+
+
+func _bar_shape(stacked: bool, shrink: int) -> void:
+	_bar_btns.vertical = stacked
+	_bar_font(shrink)
 	_sub_hint.reset_size()
-	_sub_hint.position = _sub_btn.position + Vector2(0.0, (ScreenKit.TOUCH - _sub_hint.size.y) * 0.5)
+
+
+func _bar_font(shrink: int) -> void:
+	_sub_hint_label.add_theme_font_size_override("font_size", UiFonts.size("text") - shrink)
+	_sub_more.add_theme_font_size_override("font_size", UiFonts.size("text") - shrink)
+	for b: Button in [_sub_btn, _kick_btn]:
+		b.add_theme_font_size_override("font_size", UiFonts.size("hinweis") - shrink)
+
+
+static func _bar_overlap(r: Rect2, blocks: Array[Rect2]) -> float:
+	var a := 0.0
+	for b in blocks:
+		a += r.intersection(b).get_area()
+	return a
+
+
+# Was die Sofort-Leiste nicht verdecken soll (Bildschirmkoordinaten): Gegnerplätze samt Fächer und die Hinweisleiste
+func bar_obstacles() -> Array[Rect2]:
+	var out: Array[Rect2] = []
+	for s in (view.get("players", []) as Array).size():
+		var node := table.seat_node(s)
+		if node == null or not node.visible or s == int(view.get("seat", -1)):
+			continue
+		var av := node.avatar_global()
+		var r := Rect2(av - Vector2(34, 34), Vector2(68, 68))
+		r = r.expand(av + Vector2(node.fan_max_w * 0.5 + 40.0, 0.0))   # Name und Kartenzahl rechts vom Avatar
+		for c: Dictionary in node.fan_cards():
+			var w := float(c.width)
+			var p: Vector2 = c.pos
+			r = r.merge(Rect2(p - Vector2(w * 0.6, w * 0.85), Vector2(w * 1.2, w * 1.7)))
+		out.append(r.grow(4.0))
+	# Ziehstapel und Ablage (die flache Leiste lag sonst über der Ablage)
+	for c: CardView in [table.pile_top(), table.discard_top()]:
+		if c != null and is_instance_valid(c) and c.is_visible_in_tree():
+			var w := c.width * c.global_scale.x
+			out.append(Rect2(c.global_position - Vector2(w * 0.6, w * 0.85), Vector2(w * 1.2, w * 1.7)))
+	var hb := table.hint_bar
+	if hb != null and hb.hint != "":
+		var tw := UiFonts.text(700, 100.0).get_string_size(hb.hint, HORIZONTAL_ALIGNMENT_LEFT, -1, UiFonts.size("hinweisleiste")).x + 40.0
+		var cx := hb.get_global_rect().get_center().x
+		out.append(Rect2(cx - tw * 0.5 - 6.0, hb.global_position.y + hb.hint_y - hb.hint_h() * 0.5 - 6.0, tw + 12.0, hb.hint_h() + 12.0))
+	return out
 
 
 func _process(_delta: float) -> void:
@@ -287,17 +426,22 @@ func _process(_delta: float) -> void:
 			_ingame_menu.close()
 		if is_settings_open():
 			_settings_ov.close()
+		if is_seat_manager_open():
+			_seat_mgr.close()
 	_sync_conn_hint()
 	_sync_menu_night()
 	# „Computer für … spielen lassen“ verdeckt sonst die Frage über dem Farbrad (Ablegen-Joker)
 	if _sub_btn != null:
 		if Time.get_ticks_msec() >= _sub_next_ms:
-			_sub_next_ms = Time.get_ticks_msec() + 500     # 30-s-Frist und Abwesenheit ohne neuen Stand nachführen
+			_sub_next_ms = Time.get_ticks_msec() + 500     # Abwesenheit ohne neuen Stand nachführen
 			_refresh_substitute()
-		_sub_btn.visible = _sub_seat >= 0 and not table.wish_picker.is_open()
-		_sub_hint.visible = _sub_seat < 0 and _sub_hint_seat >= 0 and not table.wish_picker.is_open()
+			_check_waiting()
+			if _sub_hint.visible and not table.big:
+				_place_bar(size if size.x > 10.0 else Vector2(1600, 720))   # Hinweis oder Plätze haben sich geändert
+		_sub_hint.visible = _sub_seat >= 0 and not table.wish_picker.is_open() and not is_seat_manager_open()
 		if _sub_hint.visible and bool(_sub_hint.get_meta("night", false)) != (table.night > 0.5):
 			ScreenKit.set_card_night(_sub_hint, table.night > 0.5)
+			_style_bar(table.night > 0.5)
 	# Ziel der Ausspiel-Flüge folgt dem Tisch (Größenwechsel)
 	if not hand.play_target.is_finite():
 		_layout()
@@ -309,6 +453,8 @@ func _on_state(events: Array, v: Dictionary) -> void:
 	if leaving:
 		return
 	view = v
+	if _loading != null and _loading.visible and not v.is_empty():
+		_loading.visible = false
 	_last_play = -1
 	var hints: Dictionary = v.get("hints", {})
 	if hints.has("can_next_round"):
@@ -394,17 +540,26 @@ func _on_connection(state: String) -> void:
 			_conn_save.visible = false
 			_conn_host.visible = false
 			_conn_sub.visible = false
+			_conn_rejoin.visible = false
 			_conn.visible = true
 		"closed", "rejected", "ended":
 			# Spielende und Gastgeber weg (N6) bzw. Wiederverbinden abgelehnt: klar „Spiel beendet“, Weg ins Menü
 			var over := state == "ended" or (state == "rejected" and not view.is_empty())
 			_conn_label.text = "Spiel beendet." if over else "Verbindung zum Gastgeber beendet."
+			# Vom Gastgeber herausgenommen (Beta 1.4.2): klar sagen und „Wieder beitreten“ anbieten – auch wenn das „bye“ bei
+			# pausierter App nicht ankam und erst das Wiederverbinden abgelehnt wurde (Gerätetest 1.4.2, n_10)
+			var ct := source as ClientTable
+			var removed := ct != null and ct.was_removed() and state != "ended"
+			if removed:
+				_conn_label.text = I18n.t("Der Gastgeber hat dich aus dem Spiel genommen.")
 			_conn_menu.visible = true
-			var guest := _guest_rules() != null
+			_conn_rejoin.visible = removed
+			var guest := _guest_rules() != null and not removed
 			_conn_save.visible = guest
 			_conn_host.visible = guest
-			_conn_sub.visible = guest
-			_conn_sub.text = I18n.t("Die Regeln von %s sind gemerkt. Eröffne selbst, dann spielt ihr mit ihnen weiter.") % _host_name()
+			_conn_sub.visible = guest or removed
+			_conn_sub.text = I18n.t("Der Gastgeber kann dich wieder dazuholen.") if removed \
+				else I18n.t("Die Regeln von %s sind gemerkt. Eröffne selbst, dann spielt ihr mit ihnen weiter.") % _host_name()
 			_refresh_saved_state()
 			_conn.visible = true
 	_layout()
@@ -426,7 +581,11 @@ func _on_client_lobby(l: Dictionary) -> void:
 		_confirm = null
 	var js := JoinScreen.with_client(ct)
 	nav.replace(js)
-	nav.toast("Diese Partie ist vorbei. Der Gastgeber hat eine neue Runde eröffnet.")
+	if ct.waiting and ct.was_removed():
+		# altes Token unbekannt, als Neuer auf der Warteliste: herausgenommen, während die App im Hintergrund war (Gerätetest 1.4.2)
+		nav.toast("Der Gastgeber hat dich aus dem Spiel genommen. Du stehst jetzt auf seiner Warteliste.")
+	else:
+		nav.toast("Diese Partie ist vorbei. Der Gastgeber hat eine neue Runde eröffnet.")
 
 
 # ================================================================= Oberfläche → Quelle
@@ -630,7 +789,7 @@ func _sync_conn_hint() -> void:
 			return
 		_online_away = away
 		_conn_label.text = "Online-Verbindung unterbrochen – verbinde neu …"
-		for b: Control in [_conn_menu, _conn_save, _conn_host, _conn_sub]:
+		for b: Control in [_conn_menu, _conn_save, _conn_host, _conn_sub, _conn_rejoin]:
 			b.visible = false
 		_conn.visible = away
 		_layout()
@@ -646,7 +805,7 @@ func _sync_conn_hint() -> void:
 			_host_app_away = true
 			if not _conn.visible or _conn_label.text != text:
 				_conn_label.text = text
-				for b: Control in [_conn_menu, _conn_save, _conn_host, _conn_sub]:
+				for b: Control in [_conn_menu, _conn_save, _conn_host, _conn_sub, _conn_rejoin]:
 					b.visible = false
 				_conn.visible = true
 				_layout()
@@ -697,6 +856,9 @@ func _sync_menu_night() -> void:
 
 func on_back() -> bool:
 	if leaving:
+		return true
+	if is_seat_manager_open():
+		_seat_mgr.on_back()
 		return true
 	if is_settings_open():
 		_settings_ov.close()
@@ -756,6 +918,21 @@ func on_back() -> bool:
 	for b: Button in [rules_opt, how_opt]:
 		b.reparent(help_row, false)
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	if is_net_host():
+		# Gastgeber (Beta 1.4.2): statt die Partie für alle zu beenden, Mitspieler dazuholen oder herausnehmen
+		var add_opt := _confirm.add_option("Mitspieler dazuholen")
+		add_opt.name = "MitspielerDazu"
+		add_opt.pressed.connect(open_seat_manager.bind("dazuholen"))
+		var rm_opt := _confirm.add_option("Mitspieler entfernen")
+		rm_opt.name = "MitspielerWeg"
+		rm_opt.pressed.connect(open_seat_manager.bind("tisch"))
+		var seat_row := ScreenKit.hbox(16)
+		seat_row.name = "Mitspieler"
+		add_opt.get_parent().add_child(seat_row)
+		seat_row.get_parent().move_child(seat_row, add_opt.get_index())
+		for b: Button in [add_opt, rm_opt]:
+			b.reparent(seat_row, false)
+			b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	if _guest_rules() != null:
 		# Die Rückfrage bleibt offen: Wer gehen wollte, geht nach dem Speichern mit „Verlassen“.
 		_save_opt = _confirm.add_option("Regeln dieser Partie speichern", "regeln")
@@ -792,10 +969,13 @@ func open_menu() -> void:
 		_confirm.queue_free()
 		_confirm = null
 	var at := _burger.position + Vector2(_burger.size.x + 12.0, 0.0) if table.big else _burger.position + Vector2(0.0, _burger.size.y + 10.0)
-	_ingame_menu = IngameMenu.open(_top, at)
+	var items: Array = (IngameMenu.HOST_ITEMS + IngameMenu.ITEMS) if is_net_host() else IngameMenu.ITEMS
+	_ingame_menu = IngameMenu.open(_top, at, items)
 	_ingame_menu.chosen.connect(func(key: String) -> void:
 		if key == "einstellungen":
 			open_settings()
+		elif key == "dazuholen" or key == "entfernen":
+			open_seat_manager("dazuholen" if key == "dazuholen" else "tisch")
 		else:
 			open_help(key))
 	_ingame_menu.closed.connect(func() -> void: _ingame_menu = null)
@@ -920,37 +1100,48 @@ func _leave_now() -> void:
 		nav.home()
 
 
-# ================================================================= Gastgeber: Computer übernimmt (M4)
+# Herausgenommener App-Gast: noch einmal zu diesem Gastgeber (Beitrittsseite, ohne altes Token). Läuft die Partie und nimmt der
+# Gastgeber gerade niemanden auf, sagt die Beitrittsseite, wie er dazuholen kann; sonst steht man auf seiner Warteliste.
+func rejoin() -> void:
+	var ct := source as ClientTable
+	if leaving or ct == null or nav == null:
+		return
+	var address := ct.address
+	var port := ct.port
+	if ct.client != null:
+		ct.client.forget_token()
+	leaving = true
+	ct.leave()
+	JoinScreen._open_direct(nav, address, port)
 
-# Knopf „Computer spielt für …“, solange ein Gast getrennt ist (zuerst der, auf den das Spiel wartet). Kommt er zurück, spielt er
-# selbst weiter (HostTable._on_rejoined beendet die Vertretung).
-# Beta 1.3.3 (Nutzerbefund: „Computer spielt für Püppi“ wirkte wie ein Zustand): Der Knopf heißt „Computer für %s spielen lassen“ und
-# kommt erst, wenn der Gast 30 s weg (andere App) oder getrennt ist; vorher nur der Hinweis „%s ist kurz weg“ bzw. „… in einer anderen App“.
+
+# ================================================================= Gastgeber: Abwesende, Mitspieler (M4, Beta 1.4.2)
+
+# Sofort-Leiste, solange ein Gast getrennt oder in einer anderen App ist (zuerst der, auf den das Spiel wartet, dann wer dran ist):
+# „Kim ist getrennt“ bzw. „Kim ist kurz in einer anderen App“, dazu sofort „Computer übernimmt“ und „Aus dem Spiel nehmen“ (beide
+# mit Rückfrage; Beta 1.4.2 ersetzt den Knopf nach 30 s). Weitere Abwesende: „+1“, erreichbar über „Mitspieler“. Kommt der Gast
+# zurück, verschwindet die Leiste; eine Vertretung endet von selbst (HostTable._on_rejoined).
 func _refresh_substitute() -> void:
 	if _sub_btn == null:
 		return
 	var old_seat := _sub_seat
-	var old_hint := _sub_hint_label.text
+	var old_text := _sub_hint_label.text
+	var old_more := _sub_more.text
 	_sub_seat = -1
-	_sub_hint_seat = -1
-	if source is HostTable and not leaving and not str(view.get("phase", "")) in ["round_end", "game_over"]:
+	if source is HostTable and not leaving and str(view.get("phase", "")) != "game_over":
 		var ht := source as HostTable
-		var w := ht.waiting_seat()
-		var cur := int(view.get("turn", -1))
-		var list: Array = ht.substitutable_seats()
-		if not list.is_empty():
-			_sub_seat = w if list.has(w) else (cur if list.has(cur) else int(list[0]))
-		else:
-			var absent: Array = ht.absent_seats()
-			if not absent.is_empty():
-				_sub_hint_seat = w if absent.has(w) else (cur if absent.has(cur) else int(absent[0]))
-				var who := ht.seat_name(_sub_hint_seat)
-				_sub_hint_label.text = (I18n.t("%s ist kurz in einer anderen App") if ht.is_away(_sub_hint_seat) else I18n.t("%s ist kurz weg")) % who
-	_sub_btn.visible = _sub_seat >= 0
-	_sub_hint.visible = _sub_seat < 0 and _sub_hint_seat >= 0
-	if _sub_seat >= 0:
-		_sub_btn.text = I18n.t("Computer für %s spielen lassen") % (source as HostTable).seat_name(_sub_seat)
-	if _sub_seat != old_seat or _sub_hint_label.text != old_hint:
+		var absent: Array = ht.absent_seats()
+		if not absent.is_empty():
+			var w := ht.waiting_seat()
+			var cur := int(view.get("turn", -1))
+			_sub_seat = w if absent.has(w) else (cur if absent.has(cur) else int(absent[0]))
+			var who := ht.seat_name(_sub_seat)
+			_sub_hint_label.text = (I18n.t("%s ist kurz in einer anderen App") if ht.is_away(_sub_seat) else I18n.t("%s ist getrennt")) % who
+			_sub_more.text = ("+%d" % (absent.size() - 1)) if absent.size() > 1 else ""
+	_sub_hint_seat = _sub_seat
+	_sub_more.visible = _sub_more.text != ""
+	_sub_hint.visible = _sub_seat >= 0
+	if _sub_seat != old_seat or _sub_hint_label.text != old_text or _sub_more.text != old_more:
 		_layout()
 
 
@@ -964,6 +1155,65 @@ func ask_substitute() -> void:
 	_confirm = ConfirmBox.ask(_top, "Computer übernimmt?", I18n.t("Ein Computergegner spielt für %s. Kommt %s zurück, spielt er wieder selbst.") % [who, who], "Übernehmen", "Abbrechen")
 	_confirm.answered.connect(func(yes: bool) -> void:
 		_confirm = null
-		if yes and source is HostTable:
+		if yes and source is HostTable and (source as HostTable).seat_name(seat) == who:
 			(source as HostTable).substitute_bot(seat)
 		_refresh_substitute())
+
+
+# „Aus dem Spiel nehmen“ (Sofort-Leiste): Rückfrage wie im Feld „Mitspieler“ (SeatManager.ask_remove)
+func ask_kick() -> void:
+	if _sub_seat < 0 or not source is HostTable:
+		return
+	if _confirm != null and is_instance_valid(_confirm):
+		_confirm.queue_free()
+	_confirm = SeatManager.ask_remove(_top, source as HostTable, _sub_seat, _refresh_substitute)
+	if _confirm != null:
+		_confirm.answered.connect(func(_y: bool) -> void: _confirm = null)
+
+
+# Gastgeber eines Netzwerkspiels (nicht Weitergeben/Solo): darf Mitspieler dazuholen und entfernen
+func is_net_host() -> bool:
+	return source is HostTable and (source as HostTable).session != null
+
+
+# Feld „Mitspieler“: page "dazuholen" (Einladefeld) oder "tisch" (Sitzordnung, Entfernen)
+func open_seat_manager(page := "dazuholen") -> void:
+	if not is_net_host() or leaving or table == null or table.handover.visible:
+		return
+	if _confirm != null and is_instance_valid(_confirm):
+		_confirm.queue_free()
+		_confirm = null
+	if is_seat_manager_open():
+		_seat_mgr.show_page(page)
+		return
+	_seat_mgr = SeatManager.open(_top, source as HostTable, page)
+	_seat_mgr.closed.connect(func() -> void: _seat_mgr = null)
+
+
+func is_seat_manager_open() -> bool:
+	return _seat_mgr != null and is_instance_valid(_seat_mgr) and not _seat_mgr.is_queued_for_deletion()
+
+
+# Wartet jemand auf einen Platz, während das Feld „Mitspieler“ zu ist: einmal Bescheid sagen
+func _check_waiting() -> void:
+	if not is_net_host():
+		return
+	var w: Array = (source as HostTable).waiting_ids()
+	for id in w:
+		if not _waiting_seen.has(id) and not is_seat_manager_open():
+			var p: Dictionary = (source as HostTable).session.player(int(id))
+			table.show_notice(I18n.t("%s möchte mitspielen – ☰ → „Mitspieler dazuholen“.") % str(p.get("name", "?")))
+	_waiting_seen = w.duplicate()
+
+
+# Knöpfe der Sofort-Leiste flacher (Innenabstand oben/unten klein), im Stil der Tageszeit (nachts heller Rand)
+func _style_bar(night: bool) -> void:
+	var th: Theme = ScreenKit.night_theme() if night else UiTheme.get_theme()
+	for b: Button in [_sub_btn, _kick_btn]:
+		for st in ["normal", "hover", "pressed", "hover_pressed", "disabled"]:
+			var src: Theme = th if th.has_stylebox(st, "GhostButton") else UiTheme.get_theme()
+			if src.has_stylebox(st, "GhostButton"):
+				var sb := src.get_stylebox(st, "GhostButton").duplicate() as StyleBox
+				sb.content_margin_top = 4.0
+				sb.content_margin_bottom = 4.0
+				b.add_theme_stylebox_override(st, sb)
