@@ -1363,3 +1363,6 @@ msgstr "Connect to “%s” in your Wi-Fi settings (password: %s), then come bac
 
 msgid "Das Spiel-WLAN ist nicht verbunden."
 msgstr "The Game Wi-Fi is not connected."
+
+msgid "„Nicht stören“ ist an – die Spieltöne sind stumm."
+msgstr "Do Not Disturb is on – game sounds are muted."

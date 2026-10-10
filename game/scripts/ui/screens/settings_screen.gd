@@ -146,10 +146,16 @@ static func personal(parent: Control, section: Callable, tempo := true) -> void:
 	var cat := ScreenKit.hint("Der Mau-Ton klingt auf allen Geräten am Tisch, wenn jemand „Mau!“ ruft oder fertig wird. Die Sprechblase sieht man auch ohne Ton. Katze im Raum? Leise stellen.", UiFonts.size("hinweis"))
 	cat.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	sound.add_child(cat)
-	var toene_val := str(UiApp.setting("toene", "aus"))
-	var toene := ScreenKit.choice(levels, toene_val if AppSettings.TOENE.has(toene_val) else "aus", _on_toene, UiFonts.size("text"))
+	var toene_val := str(UiApp.setting("toene", "normal"))
+	var toene := ScreenKit.choice(levels, toene_val if AppSettings.TOENE.has(toene_val) else "normal", _on_toene, UiFonts.size("text"))
 	toene.name = "Toene"
 	sound.add_child(ScreenKit.row("Spieltöne", toene, 190.0, "Karte, Ziehen, Mischen, Flip, Sieg"))
+	var app_node := UiApp.app()
+	if app_node != null and app_node.sound != null and app_node.sound.dnd_muted():
+		var dnd := ScreenKit.hint(AppSound.dnd_text(), UiFonts.size("hinweis"))
+		dnd.name = "HinweisNichtStoeren"
+		dnd.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		sound.add_child(dnd)
 	var look: Control = section.call(parent, "Bedienung und Optik")
 	# Schriftgröße je Gerät (Beta 1.0.1): wirkt sofort auf alle Bildschirme und den Tisch (ScreenNav → UiFonts.set_level)
 	var big_hint := ScreenKit.hint("Tipp: Im großen Modus werden auch Karten, Ablage und Mitspieler riesig.", UiFonts.size("hinweis"))

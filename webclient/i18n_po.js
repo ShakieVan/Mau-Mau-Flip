@@ -1365,6 +1365,7 @@ window.MMF_I18N_PO = {
   "„Mau!“ rufst du, bevor du deine vorletzte Karte auf den Einsatz legst.": "Call “Mau!” before you put your second-to-last card on the stake.",
   "„Mau!“ rufst du, wenn du deine vorletzte Karte legen kannst – gerade passt keine.": "Call “Mau!” when you can play your second-to-last card – none fits right now.",
   "„Mau-Mau!“ (fertig geworden)": "“Mau-Mau!” (went out)",
+  "„Nicht stören“ ist an – die Spieltöne sind stumm.": "Do Not Disturb is on – game sounds are muted.",
   "① WLAN": "① Wi-Fi",
   "② Spiel": "② Game"
 };

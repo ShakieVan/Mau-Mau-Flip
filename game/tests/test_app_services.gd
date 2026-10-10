@@ -23,16 +23,17 @@ func _run() -> void:
 	var sound := AppSound.new()
 	sound.settings = settings
 	root.add_child(sound)
-	# Standard (AGENTS.md 20): Mau-Töne normal, übrige Spieltöne aus. Die genauen dB-Werte prüft test_app_sound.
+	# Standard (AGENTS.md 20): Mau-Töne normal, übrige Spieltöne ebenfalls normal. Die genauen dB-Werte prüft test_app_sound.
 	var mau_normal := float(AppSound.MAU_DB["normal"])
-	check(is_equal_approx(sound.volume_db("mau"), mau_normal) and sound.volume_db("karte") <= -80.0, "Ton: Mau normal, Spieltöne ab Werk aus")
-	settings.set_value("toene", "normal")
-	check(is_equal_approx(sound.volume_db("karte"), float(AppSound.TON_DB["normal"])), "Ton: Spieltöne normal")
+	check(is_equal_approx(sound.volume_db("mau"), mau_normal) and is_equal_approx(sound.volume_db("karte"), float(AppSound.TON_DB["normal"])), "Ton: Mau normal, Spieltöne ab Werk normal")
+	settings.set_value("toene", "aus")
+	check(sound.volume_db("karte") <= -80.0, "Ton: Spieltöne ausdrücklich aus bleiben aus")
 	settings.set_value("mau_ton", "leise")
 	check(is_equal_approx(sound.volume_db("mau"), float(AppSound.MAU_DB["leise"])) and sound.volume_db("mau") < mau_normal, "Ton: Mau leise ist leiser")
 	settings.set_value("mau_ton", "aus")
 	check(not sound.play("mau") and not sound.play("mau_mau") and sound.last_played == "", "Ton: Mau aus spielt nichts")
 	check(not sound.play("gibt_es_nicht") and AppSound.path_for("gibt_es_nicht") == "", "Ton: fehlende Datei bleibt still")
+	settings.set_value("toene", "normal")
 	for sound_name in AppSound.NAMES:
 		var has_file := AppSound.path_for(sound_name) != ""
 		if AppSound.is_mau(sound_name):

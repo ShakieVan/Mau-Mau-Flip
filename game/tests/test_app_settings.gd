@@ -26,6 +26,12 @@ func _init() -> void:
 	check(s.get_value("schrift") == "normal" and AppSettings.sanitize("schrift", "gross") == "gross" and AppSettings.sanitize("schrift", "riesig") == null
 		and AppSettings.sanitize("schrift", 2) == null, "Schriftgröße: Standard normal, nur normal/gross/sehr_gross")
 	check(not FileAccess.file_exists(path), "ohne Änderung keine Datei")
+	check(s.get_value("toene") == "normal" and not s.has_value("toene"), "Spieltöne ab Werk normal (nie gesetzt)")
+	s.set_value("toene", "aus")
+	check(AppSettings.new(path).get_value("toene") == "aus", "ausdrücklich gesetzte Spieltöne bleiben nach dem Laden")
+	s.reset("toene")
+	for suffix in ["", ".bak", ".tmp"]:
+		DirAccess.remove_absolute(path + suffix)
 	# Sofort gespeichert und beim nächsten Start wieder geladen; JSON-Zahlen kommen als float zurück.
 	check(s.set_value("mau_ton", "leise") and FileAccess.file_exists(path), "set_value speichert sofort")
 	s.set_value("vibration", false)

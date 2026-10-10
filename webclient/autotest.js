@@ -439,8 +439,8 @@
       app.mauTon(99, 'mau'); app.mauTon(99, 'mau'); app.mauTon(99, 'mau_mau');
       if ((app.mauEreignisse || 0) !== n0 + 2) this.fail('Mau-Ton-Entprellung: ' + ((app.mauEreignisse || 0) - n0) + ' statt 2 Töne');
       app.mauEreignisse = n0;
-      // Standard: Spieltöne aus, Mau-Ton normal (frisches Profil), nicht stumm
-      if (M.Speicher.get('toene', null) === null && (app.einstellungen.toene !== 'aus' || M.Ton.toene !== 'aus')) this.fail('Spieltöne sind nicht standardmäßig aus');
+      // Standard: Spieltöne normal, Mau-Ton normal (frisches Profil), nicht stumm
+      if (M.Speicher.get('toene', null) === null && (app.einstellungen.toene !== 'normal' || M.Ton.toene !== 'normal')) this.fail('Spieltöne sind nicht standardmäßig normal');
       if (M.Speicher.get('ton', null) === null && M.Ton.stufe !== 'normal') this.fail('Mau-Ton ist nicht standardmäßig normal');
       if (M.Ton.stumm) this.fail('Ton ist von Anfang an stumm');
       // Ton-Knopf in der Ecke: stumm und wieder an

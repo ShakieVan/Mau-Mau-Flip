@@ -89,12 +89,14 @@ func _run() -> void:
 		check(jb == FileAccess.get_file_as_bytes(entwurf + str(pair[1]) + ".ogg"), "%s ist %s unverändert" % [pair[0], pair[1]])
 	check(AppSound.path_for("sieg") == "" and not FileAccess.file_exists(web + "sieg.ogg") and not FileAccess.file_exists(web + "sieg.m4a"), "alter Sieg-Ton entfernt")
 	check(index is Dictionary and not index.has("sieg") and str(index.get("jubel_1", "")) == "jubel_1.m4a" and str(index.get("jubel_2", "")) == "jubel_2.m4a", "sfx/index.json nennt jubel_1/jubel_2, nicht sieg")
-	# Standardwerte: Mau-Ton normal (-2 dB), Spieltöne aus.
-	check(sound.level("mau_ton") == "normal" and sound.level("toene") == "aus", "Standard: mau_ton normal, toene aus")
+	# Standardwerte: Mau-Ton normal (-2 dB), Spieltöne normal (Nutzerentscheidung 10.10.2026).
+	check(sound.level("mau_ton") == "normal" and sound.level("toene") == "normal", "Standard: mau_ton normal, toene normal")
 	check(is_equal_approx(sound.volume_db("mau"), -2.0) and is_equal_approx(sound.volume_db("mau_mau"), -2.0), "Mau-Töne normal -2 dB")
-	check(sound.volume_db("karte") <= -80.0 and not sound.play("karte") and sound.last_played == "", "Spieltöne ab Werk aus: Karte still")
+	check(is_equal_approx(sound.volume_db("karte"), -4.5) and sound.play("karte"), "Spieltöne ab Werk normal: Karte -4,5 dB")
+	sound.last_played = ""
+	sound.now_override += 1000
 	var bare := AppSound.new()
-	check(bare.level("toene") == "aus" and bare.level("mau_ton") == "normal", "ohne Einstellungen: dieselben Standardwerte")
+	check(bare.level("toene") == "normal" and bare.level("mau_ton") == "normal", "ohne Einstellungen: dieselben Standardwerte")
 	bare.free()
 
 	# Lautstärke: Mau nach mau_ton, übrige Töne nach toene (unabhängig voneinander).
@@ -107,7 +109,7 @@ func _run() -> void:
 	check(not settings.set_value("toene", "laut") and is_equal_approx(sound.volume_db("karte"), -12.5), "toene: ungültiger Wert abgelehnt")
 	check(AppSound.TRIM_DB.is_empty(), "kein Feinabgleich je Ton: der Abgleich steckt in den Dateien (der Browser hat keinen)")
 	settings.data["toene"] = "laut"
-	check(sound.level("toene") == "aus", "toene: ungültiger gespeicherter Wert → aus")
+	check(sound.level("toene") == "normal", "toene: ungültiger gespeicherter Wert → Standard normal")
 	settings.set_value("toene", "aus")
 	check(not sound.play("karte") and sound.last_played == "", "toene aus: Karte still")
 	settings.set_value("toene", "normal")
@@ -200,6 +202,61 @@ func _run() -> void:
 	sound.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	sound.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
 	check(fake.calls.slice(-2) == ["pause", "resume"], "Android: Fokus weg/zurück → pause/resume")
+	# Neuaufbau beim Zurückkehren (Beta 1.5.1, S24: nach Anruf im Hintergrund blieben die alten Abspieler stumm): nur nach
+	# PAUSED → RESUMED, nicht bei FOCUS_IN (Benachrichtigungen herunterziehen); bis der neue Pool geladen ist, spielt der alte.
+	check(fake.rebuild_calls == 0 and sound.rebuilds == 0, "Neuaufbau: nicht bei FOCUS_IN")
+	sound.notification(Node.NOTIFICATION_APPLICATION_RESUMED)
+	check(sound.rebuilds == 0, "Neuaufbau: RESUMED ohne vorheriges PAUSED (App-Start) baut nicht neu auf")
+	sound.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	sound.notification(Node.NOTIFICATION_APPLICATION_PAUSED)
+	sound.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
+	check(sound.rebuilds == 0 and fake.rebuild_calls == 0, "Neuaufbau: FOCUS_IN nach PAUSED noch nicht")
+	sound.notification(Node.NOTIFICATION_APPLICATION_RESUMED)
+	check(sound.rebuilds == 1 and fake.rebuild_calls == 1, "Neuaufbau: bei RESUMED nach PAUSED")
+	check(fake.calls.slice(-2) == ["resume", "rebuild zurück in der App"], "Neuaufbau: erst fortsetzen, dann neu aufbauen")
+	sound.notification(Node.NOTIFICATION_APPLICATION_RESUMED)
+	sound.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	sound.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
+	check(sound.rebuilds == 1 and fake.rebuild_calls == 1, "Neuaufbau: einmal je Rückkehr, Benachrichtigungen ohne Neuaufbau")
+	sound.now_override = 305500
+	check(sound.play("karte") and sound.last_native and fake.played_on[-1] == 0, "Neuaufbau: während des Ladens spielt der alte Pool")
+	fake.finish_load()
+	sound.now_override = 305600
+	check(sound.play("karte") and sound.last_native and fake.played_on[-1] == 1, "Neuaufbau: nach dem Laden spielt der neue Pool")
+	fake.next_id = 0
+	sound.now_override = 305700
+	check(sound.play("karte") and not sound.last_native, "Neuaufbau: neuer Pool liefert 0 → Rückfall auf Godot")
+	fake.next_id = 50
+	sound.stop_all()
+	# „Nicht stören“ (Beta 1.5.1): Filter-Logik, Hinweis nur bei neu stumm geschalteten Tönen, nie ohne eingeschaltete Töne.
+	check(not AppSound.dnd_mutes(0, -1) and not AppSound.dnd_mutes(1, 0), "DND: unbekannt/alles erlaubt → nicht stumm")
+	check(AppSound.dnd_mutes(3, 0) and AppSound.dnd_mutes(4, 64), "DND: gar nichts/nur Wecker → stumm")
+	check(AppSound.dnd_mutes(2, 0) and AppSound.dnd_mutes(2, 128) and not AppSound.dnd_mutes(2, 64) and not AppSound.dnd_mutes(2, 64 | 128), "DND: nur Priorität → stumm, wenn Medien nicht erlaubt")
+	check(AppSound.dnd_mutes(2, -1), "DND: Priorität mit unlesbarer Richtlinie → vorsichtshalber Hinweis")
+	settings.set_value("toene", "normal")
+	settings.set_value("mau_ton", "normal")
+	fake.filter = 2
+	fake.categories = 0
+	sound.dnd_toasts = 0
+	sound._dnd_was_muted = false
+	check(sound.dnd_muted() and sound.dnd_check() and fake.toasts.size() == 1 and sound.dnd_toasts == 1, "DND: Hinweis (Toast) beim ersten Prüfen")
+	check(fake.toasts[0] == AppSound.dnd_text() and AppSound.dnd_text().contains("Nicht stören"), "DND: Text")
+	sound.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
+	check(fake.toasts.size() == 1, "DND: gleicher Zustand → nur einmal")
+	fake.filter = 1
+	check(not sound.dnd_check() and not sound.dnd_muted(), "DND: ausgeschaltet → kein Hinweis")
+	fake.filter = 3
+	check(sound.dnd_check() and fake.toasts.size() == 2, "DND: wieder an → neuer Hinweis")
+	settings.set_value("toene", "aus")
+	settings.set_value("mau_ton", "aus")
+	sound._dnd_was_muted = false
+	check(not sound.dnd_muted() and not sound.dnd_check() and fake.toasts.size() == 2, "DND: Töne beide aus → kein Hinweis")
+	settings.set_value("mau_ton", "leise")
+	check(sound.dnd_muted(), "DND: Mau-Ton leise genügt für den Hinweis")
+	settings.set_value("mau_ton", "normal")
+	settings.set_value("toene", "normal")
+	fake.filter = 1
+	sound._dnd_was_muted = false
 	sound.now_override = 306000
 	for i in range(8):
 		sound.play(["karte", "ziehen", "mischen", "flip", "fehler", "dran", "schnurren", "mau"][i])
@@ -237,6 +294,7 @@ class FakePool:
 	func play(n: String, vol: float) -> int:
 		calls.append("play " + n)
 		vols.append(vol)
+		played_on.append(generation)
 		if next_id <= 0:
 			return 0
 		next_id += 1
@@ -251,5 +309,37 @@ class FakePool:
 	func pause() -> void:
 		calls.append("pause")
 
+	# Neuaufbau wie SfxPool.rebuild: Austausch erst nach dem Laden (finish_load); bis dahin spielt der alte Pool (generation).
+	var rebuild_calls := 0
+	var generation := 0
+	var loading := false
+	var played_on: Array[int] = []
+
+	func rebuild(reason: String) -> bool:
+		calls.append("rebuild " + reason)
+		rebuild_calls += 1
+		if loading:
+			return false
+		loading = true
+		return true
+
+	func finish_load() -> void:
+		if loading:
+			loading = false
+			generation += 1
+
 	func resume() -> void:
 		calls.append("resume")
+
+	var filter := 1                  # NotificationManager.INTERRUPTION_FILTER_*
+	var categories := 0
+	var toasts: Array[String] = []
+
+	func interruptionFilter() -> int:
+		return filter
+
+	func priorityCategories() -> int:
+		return categories
+
+	func toast(text: String) -> void:
+		toasts.append(text)

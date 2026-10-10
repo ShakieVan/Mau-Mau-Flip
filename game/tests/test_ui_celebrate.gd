@@ -182,7 +182,8 @@ func _sound_file() -> void:
 	snd.settings = settings
 	snd.now_override = 5000
 	root.add_child(snd)
-	check(not snd.play("schnurren"), "Spieltöne ab Werk aus: Schnurren still")
+	settings.set_value("toene", "aus")
+	check(not snd.play("schnurren"), "Spieltöne aus: Schnurren still")
 	settings.set_value("toene", "normal")
 	check(snd.play("schnurren") and is_equal_approx(snd.last_db, float(AppSound.TON_DB["normal"])), "Schnurren in Spielton-Lautstärke")
 	snd.queue_free()

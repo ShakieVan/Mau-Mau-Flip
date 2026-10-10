@@ -384,7 +384,7 @@ func run() -> void:
 	check(tisch.contains("mauTon(e.seat, 'mau_mau')") and tisch.contains("mauBlase(e.seat, 'mau_mau'"), "Ereignis „finish“ → „Mau-Mau!“ (Ton und große Blase)")
 	var mau_knopf := app.substr(app.find("    mau() {"), 700)
 	check(app.find("    mau() {") >= 0 and not mau_knopf.contains("Ton.spiele") and not mau_knopf.contains("mauTon("), "Mau-Knopf spielt selbst keinen Ton (kein doppelter Ton)")
-	check(ton != "" and not ton.contains("mau(t)") and ton.contains("STUFEN_SPIEL") and ton.contains("stufeSpiel = 'aus'"), "ton.js: kein synthetischer Mau-Ton, Spieltöne standardmäßig aus")
+	check(ton != "" and not ton.contains("mau(t)") and ton.contains("STUFEN_SPIEL") and ton.contains("stufeSpiel = 'normal'"), "ton.js: kein synthetischer Mau-Ton, Spieltöne standardmäßig normal")
 	var blasen := js_list(tisch, "BLASEN")
 	check(blasen.size() >= 4, "mindestens 4 Varianten der Mau-Blase (%s)" % ", ".join(PackedStringArray(blasen)))
 	var css := read_web("style.css")

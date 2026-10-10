@@ -13,7 +13,7 @@ extends Node
 #   - Die Töne spielen auf JEDEM Gerät am Tisch (Ereignis „mau“ bzw. „finish“). Doppelte Auslöser fängt der Aufrufer ab
 #     (MauSound: 1 s je Platz); hier gibt es keine Gerätesperre mehr.
 # Übrige Töne (KI-erzeugt mit MOSS-SoundEffect v2.0, tools/make_sfx_moss.py --spiel, audio/sfx_README.md): Einstellung „toene“
-# (aus | leise | normal, Standard aus → still; leise -12.5 dB, normal -4.5 dB); mau_ton wirkt nicht auf sie. Der Abgleich der Töne
+# (aus | leise | normal, Standard normal; leise -12.5 dB, normal -4.5 dB); mau_ton wirkt nicht auf sie. Der Abgleich der Töne
 # untereinander steckt in den Dateien (karte dezent, dran und sieg am lautesten). Die Stufen liegen 2.5 dB bzw. 10.5 dB unter Mau
 # „normal“; im Browser-Client (webclient/ton.js STUFEN_SPIEL) entspricht das 0.75 bzw. 0.3 bei Mau 1.0, damit beide gleich klingen.
 # Derselbe Ton wird innerhalb von 40 ms nur einmal gestartet (z. B. mehrere Karten im selben Bild).
@@ -24,6 +24,8 @@ extends Node
 # (android/build/src/main/java/com/godot/game/SfxPool.java, Dateien als res/raw/sfx_<name>.ogg, kopiert von tools/build.ps1).
 # Lautstärken, Stufen, Jubel-Zufall und Sperre bleiben hier; nur das Abspielen wandert nach Java. Ist ein Ton dort (noch) nicht
 # geladen, spielt Godot wie bisher. Am PC und in Tests bleibt es bei Godot (native = null; Tests setzen eine Attrappe).
+# Beta 1.5.1: Nach PAUSED → RESUMED wird der SoundPool frisch angelegt (Android schaltet nach einem Anruf im Hintergrund die alten
+# Abspieler dauerhaft stumm, siehe _notification und SfxPool.rebuild).
 
 const DIR := "res://assets/sfx/"
 const NAMES := ["mau", "mau_mau", "karte", "ziehen", "mischen", "flip", "jubel_1", "jubel_2", "fehler", "dran", "schnurren"]
@@ -33,9 +35,17 @@ const MAU_NAMES := ["mau", "mau_mau"]
 const MAU_DB := {"aus": -80.0, "leise": -12.0, "normal": -2.0}
 const TON_DB := {"aus": -80.0, "leise": -12.5, "normal": -4.5}
 const MAU_TON_STANDARD := "normal"
-const TOENE_STANDARD := "aus"              # Spieltöne sind ab Werk aus (Nutzerwunsch 05.10.2026)
+const TOENE_STANDARD := "normal"           # Spieltöne ab Werk normal (Nutzerentscheidung 10.10.2026; vorher aus, 05.10.2026 „nur Mau-Ton an“)
 const TRIM_DB := {}                        # Feinabgleich je Ton in dB (leer: Dateien sind abgeglichen, audio/sfx_README.md; der Browser kennt keinen)
 const RETRIGGER_MS := 40
+
+# „Nicht stören“ (Beta 1.5.1): Android setzt die Lautstärke von Spieltönen (USAGE_GAME/Medien) auf 0, wenn der Filter Medien nicht erlaubt
+# (S24 des Nutzers: Zeitplan 20–7 Uhr). Die App umgeht das nicht, sie weist nur darauf hin (Toast + Zeile in den Einstellungen).
+const DND_ALL := 1
+const DND_PRIORITY := 2
+const DND_NONE := 3
+const DND_ALARMS := 4
+const DND_CATEGORY_MEDIA := 64            # NotificationManager.Policy.PRIORITY_CATEGORY_MEDIA
 const VOICES := 6
 
 var settings: AppSettings         # optional; ohne Einstellungen gelten die Standardwerte
@@ -53,6 +63,10 @@ var last_file := ""               # für Tests: Dateiname (ohne Endung) des zule
 var native: Object = null         # Android: SfxPool (JavaClassWrapper); Tests: Attrappe mit play/stopAll/fade/pause/resume
 var last_native := false          # für Tests: zuletzt über native gespielt
 var _native_playing: Array[Dictionary] = []   # {id, file, until (ms), vol} der über native gestarteten Töne
+var _dnd_was_muted := false        # letzter geprüfter Zustand: Hinweis nur, wenn „Nicht stören“ neu stumm schaltet
+var dnd_toasts := 0               # für Tests: wie oft der Hinweis gezeigt wurde
+var _was_paused := false          # PAUSED gesehen: beim nächsten RESUMED SoundPool neu aufbauen
+var rebuilds := 0                 # für Tests: angestoßene Neuaufbauten
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -60,6 +74,7 @@ func _ready() -> void:
 	preload_all()
 	if native == null and OS.get_name() == "Android":
 		native = _android_pool()
+		dnd_check()
 
 func _android_pool() -> Object:
 	# SoundPool anlegen; null = nicht verfügbar (dann spielt Godot).
@@ -75,12 +90,57 @@ func _android_pool() -> Object:
 
 func _notification(what: int) -> void:
 	# Wie Godots eigene Ausgabe: beim Verlassen anhalten, beim Zurückkehren fortsetzen.
+	# Neuaufbau (Beta 1.5.1, S24 10.10.2026): Beginnt ein Anruf, während die App im Hintergrund liegt, schaltet Android ihre
+	# vorhandenen Abspieler stumm und hebt das nicht wieder auf (auch neue Töne desselben SoundPool bleiben stumm). Deshalb nach
+	# PAUSED → RESUMED den Vorrat frisch anlegen (SfxPool.rebuild: alter Pool spielt, bis der neue geladen ist). Nicht bei jedem
+	# FOCUS_IN, damit z. B. das Herunterziehen der Benachrichtigungen nichts neu aufbaut.
 	if native == null:
 		return
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED:
 		native.pause()
+		if what == NOTIFICATION_APPLICATION_PAUSED:
+			_was_paused = true
 	elif what == NOTIFICATION_APPLICATION_FOCUS_IN or what == NOTIFICATION_APPLICATION_RESUMED:
 		native.resume()
+		if what == NOTIFICATION_APPLICATION_RESUMED and _was_paused:
+			_was_paused = false
+			native.rebuild("zurück in der App")
+			rebuilds += 1
+		dnd_check()
+
+# --- „Nicht stören“ ---
+
+static func dnd_mutes(filter: int, categories: int) -> bool:
+	# Schaltet dieser Unterbrechungsfilter Medien/Spieltöne stumm? filter 1 = alles erlaubt, 2 = nur Priorität (categories = erlaubte
+	# Kategorien, -1 = nicht lesbar → vorsichtshalber stumm), 3 = gar nichts, 4 = nur Wecker; 0/unbekannt = nein.
+	match filter:
+		DND_PRIORITY:
+			return categories < 0 or (categories & DND_CATEGORY_MEDIA) == 0
+		DND_NONE, DND_ALARMS:
+			return true
+	return false
+
+func dnd_muted() -> bool:
+	# true = Töne sind eingeschaltet, aber „Nicht stören“ macht sie stumm. Ohne Android-Anbindung immer false.
+	if native == null or (level("toene") == "aus" and level("mau_ton") == "aus"):
+		return false
+	var filter := int(native.interruptionFilter())
+	var categories := int(native.priorityCategories()) if filter == DND_PRIORITY else -1
+	return dnd_mutes(filter, categories)
+
+func dnd_check() -> bool:
+	# Beim Start und beim Zurückkehren: Toast „Nicht stören …“, wenn die Töne neu stumm sind (nicht bei jedem Zurückkehren, solange
+	# der Zustand gleich bleibt). true = Hinweis gezeigt. Kein Systemdialog, keine Berechtigungsanfrage.
+	var muted := dnd_muted()
+	var show := muted and not _dnd_was_muted
+	_dnd_was_muted = muted
+	if show:
+		dnd_toasts += 1
+		native.toast(dnd_text())
+	return show
+
+static func dnd_text() -> String:
+	return I18n.t("„Nicht stören“ ist an – die Spieltöne sind stumm.")
 
 func _ensure_players() -> void:
 	if not _players.is_empty():

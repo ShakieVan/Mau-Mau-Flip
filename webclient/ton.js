@@ -22,7 +22,7 @@
   const STANDARD_DATEIEN = {};  // falls sfx/index.json fehlt: alle Töne als m4a (Rückfall ogg)
   MAU_TOENE.concat(SPIEL_TOENE.filter(n => n !== 'sieg'), JUBEL).forEach(n => { STANDARD_DATEIEN[n] = n + '.m4a'; });
   let ctx = null, master = null, busMau = null, busSpiel = null, busSynth = null, rausch = null;
-  let stufeMau = 'normal', stufeSpiel = 'aus', stumm = false;
+  let stufeMau = 'normal', stufeSpiel = 'normal', stumm = false;
   const dateien = {};      // Name → AudioBuffer aus sfx/
   const zaehler = {};      // Name → wie oft wirklich abgespielt (Selbsttest)
   let ladeVersprechen = null;
@@ -62,7 +62,7 @@
     busSpiel.gain.value = STUFEN_SPIEL[stufeSpiel];
   }
   function setzeStufe(s) { stufeMau = STUFEN_MAU[s] !== undefined ? s : 'normal'; _pegel(); }       // Mau-Ton
-  function setzeToene(s) { stufeSpiel = STUFEN_SPIEL[s] !== undefined ? s : 'aus'; _pegel(); }     // Spieltöne
+  function setzeToene(s) { stufeSpiel = STUFEN_SPIEL[s] !== undefined ? s : 'normal'; _pegel(); }     // Spieltöne
   function setzeStumm(an) { stumm = !!an; _pegel(); }
 
   // Klangdateien aus sfx/. Je Eintrag erst die Endung, die der Browser sicher kann (m4a/AAC für Safari, sonst ogg), dann die andere.
