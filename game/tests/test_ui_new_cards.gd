@@ -57,6 +57,8 @@ func run() -> void:
 	await discard_test()
 	await discard_opponent_test()
 	await discard_joker_test()
+	await discard_undo_test()
+	await color_phase_test()
 	await highlight_test()
 	await plain_rules_test()
 	if app != null:
@@ -572,4 +574,86 @@ func discard_joker_test() -> void:
 	await settle(ts, 0.5)
 	check(g.color == "gelb" and g.state != "discard_pick" and (ts.view.get("hand", []) as Array).size() == 2 and not ts.hand.is_picking(),
 		"Ablegen-Joker: Blau abgelegt, weiter mit Gelb (%s)" % g.color)
+	await close_table(ts)
+
+
+# Beta 1.4.1 (Nutzerbefund 10.10.2026): Jeder Abbruchweg beim Ablegen-Joker nimmt den ganzen Zug zurück (kein Hängen):
+# Ablegefarbe weggeklickt (nichts gelegt), Spielfarbe weggeklickt, Zurück-Taste in beiden Schritten, Knopf „Zurücknehmen“.
+func discard_undo_test() -> void:
+	var ts := await make_table(discard_cfg(), 2, {"hands": [["hell_ablegen_joker", "hell_blau_3", "hell_blau_4", "hell_rot_7", "hell_gelb_2"],
+		["hell_gruen_1", "hell_gruen_2"]], "top": "hell_rot_5", "current": 0})
+	var g := game_of(ts)
+	var tv := ts.table
+	var joker := RulesFixture.card(g, 0, "hell_ablegen_joker")
+	var pick: PillButton = tv.get("_act_btns")["pick"]
+	var undo: PillButton = tv.get("_act_btns")["undo"]
+	# 1. Ablegefarbe weggeklickt: nichts gelegt, Karte bleibt in der Hand
+	ts.hand.play_requested.emit(joker, ts.hand.play_target)
+	await frames(2)
+	tv.wish_picker.cancel()
+	await settle(ts, 0.3)
+	check(g.state == "turn" and (g.hands[0] as Array).has(joker) and ts.hand.get_order().has(joker), "Abbruch Ablegefarbe: Joker bleibt in der Hand")
+	# 2.–5. Abbruch nach dem Legen
+	for way in ["rad", "rad_zurueck", "knopf", "zurueck"]:
+		ts.hand.play_requested.emit(joker, ts.hand.play_target)
+		await frames(2)
+		tv.wish_picker.close()
+		tv.wish_picker.color_chosen.emit("blau")
+		await settle(ts, 0.3)
+		check(g.state == "discard_pick" and pick.visible and undo.visible, "%s: Auswahl mit „Zurücknehmen“" % way)
+		ts.hand.toggle_pick(RulesFixture.card(g, 0, "hell_blau_4"))
+		match way:
+			"rad", "rad_zurueck":
+				pick.pressed.emit()
+				await frames(2)
+				check(tv.wish_picker.mode == "wheel" and not undo.visible, "%s: Farbrad der Spielfarbe offen" % way)
+				if way == "rad":
+					tv.wish_picker.drop(Vector2(-5000, -5000))      # Tipp daneben
+				else:
+					check(ts.on_back(), "%s: Zurück-Taste verbraucht" % way)
+			"knopf":
+				undo.pressed.emit()
+			"zurueck":
+				check(ts.on_back() and ts.get("_confirm") == null, "%s: Zurück-Taste nimmt zurück, kein „Partie verlassen?“" % way)
+		await settle(ts, 0.5)
+		check(g.state == "turn" and g.current_seat() == 0 and (g.hands[0] as Array).size() == 5 and (g.hands[0] as Array).has(joker),
+			"%s: Joker zurück in der Hand (%s)" % [way, g.state])
+		check(not tv.wish_picker.is_open() and not pick.visible and not undo.visible and not ts.hand.is_picking(), "%s: nichts hängt offen" % way)
+		check(tv.discard_cards().back().current_key() == "hell_rot_5" and g.color == "rot", "%s: alte Karte wieder oben" % way)
+		check_matches_view(ts, way)
+	# Danach wieder ganz normal: alle Blauen mit ab (Auswahl frisch, nicht die abgewählte von vorher), weiter mit Gelb
+	ts.hand.play_requested.emit(joker, ts.hand.play_target)
+	await frames(2)
+	tv.wish_picker.close()
+	tv.wish_picker.color_chosen.emit("blau")
+	await settle(ts, 0.3)
+	check(ts.hand.get_pick().size() == 2, "nach dem Zurücknehmen: Auswahl wieder vollständig (%d)" % ts.hand.get_pick().size())
+	pick.pressed.emit()
+	await frames(2)
+	tv.wish_picker.close()
+	tv.wish_picker.color_chosen.emit("gelb")
+	await settle(ts, 0.8)
+	check(g.color == "gelb" and (g.hands[0] as Array).size() == 2 and g.current_seat() == 1, "nach dem Zurücknehmen normal abgelegt")
+	await close_table(ts)
+
+
+# Farbwahl nach einem Flip mit Joker oben (Phase color) ist endgültig: Wegklicken und Zurück-Taste öffnen das Rad sofort wieder.
+func color_phase_test() -> void:
+	var ts := await make_table(RuleConfig.new(), 3, {"hands": [["hell_rot_flip", "hell_rot_1"], ["hell_gelb_1"], ["hell_gelb_2"]],
+		"top": "hell_rot_5", "discard": ["hell_blau_4/dunkel_wuenscher"], "current": 0})
+	var g := game_of(ts)
+	var tv := ts.table
+	ts.hand.play_requested.emit(RulesFixture.card(g, 0, "hell_rot_flip"), ts.hand.play_target)
+	await settle(ts, 0.5)
+	check(g.state == "color" and tv.wish_picker.mode == "wheel", "Flip mit Joker oben: Farbrad offen (%s)" % g.state)
+	tv.wish_picker.drop(Vector2(-5000, -5000))
+	await frames(2)
+	check(tv.wish_picker.mode == "wheel" and g.state == "color", "Phase color: Tipp daneben öffnet das Rad wieder")
+	check(ts.on_back() and ts.get("_confirm") == null, "Phase color: Zurück-Taste verbraucht")
+	await frames(2)
+	check(tv.wish_picker.mode == "wheel" and g.state == "color", "Phase color: Rad nach der Zurück-Taste wieder offen")
+	tv.wish_picker.close()
+	tv.wish_picker.color_chosen.emit("pink")
+	await settle(ts, 0.5)
+	check(g.state == "turn" and g.color == "pink", "Phase color: Farbe gewählt, es geht weiter")
 	await close_table(ts)

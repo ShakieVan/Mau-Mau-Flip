@@ -72,15 +72,16 @@ func _celebration() -> void:
 		var mat := sh.material as CanvasItemMaterial
 		check(mat != null and mat.blend_mode == CanvasItemMaterial.BLEND_MODE_ADD, "Funkelsterne additiv")
 		check(sh.stars.size() >= 120 and sh.glints.size() >= 10, "Mehr Sterne als bisher (99) plus Glitzerpunkte")
-		check(absf(TableEffects.SparkleShowerFx.LIFE - 2.6) < 0.01, "Sterne fallen so lange wie das Konfetti")
+		check(absf(TableEffects.SparkleShowerFx.LIFE - 3.6) < 0.01, "Sterneschauer: 3,6 s je Stern, gesamt ~5 s wie das Konfetti")
 		var sizes_ok := true
 		var phases := {}
 		var flashes_ok := true
 		for st in sh.stars:
-			sizes_ok = sizes_ok and float(st["size"]) >= 8.0 and float(st["size"]) <= 28.0
+			sizes_ok = sizes_ok and float(st["size"]) >= 14.0 and float(st["size"]) <= 42.0
 			phases[snappedf(float(st["ph"]), 0.001)] = true
 			flashes_ok = flashes_ok and (st["flash"] as Array).size() >= 1
-		check(sizes_ok, "Sterne 8–28 px")
+		check(sizes_ok, "Sterne 14–42 px")
+		check(absf(sh._end - 5.3) < 0.01, "Schauer ~5 s")
 		check(phases.size() > sh.stars.size() / 2, "Funkeln zeitversetzt je Stern")
 		check(flashes_ok, "Jeder Stern blitzt mindestens einmal auf")
 		var y0: float = (sh.stars[0]["pos"] as Vector2).y

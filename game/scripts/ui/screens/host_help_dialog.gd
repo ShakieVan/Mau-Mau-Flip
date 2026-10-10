@@ -16,6 +16,7 @@ const TIPS := [
 	"iPhone: am besten mit Safari öffnen.",
 	"Hotel- oder Gäste-WLAN: Dort finden sich die Handys oft nicht. Öffne dann lieber ein eigenes Spiel-WLAN.",
 	"Meldet ein Handy im Spiel-WLAN „Kein Internet“: einfach verbunden bleiben.",
+	"Mitspieler: Mobile Daten kurz ausschalten, bis das Spiel geladen ist.",
 ]
 
 var _card: PanelContainer

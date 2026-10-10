@@ -4,7 +4,7 @@ extends SceneTree
 # docs/module/optik_134_partieende_tag.png und _nacht.png, dazu nachts eine kurze Bildfolge der Funkelsterne (1.3.6):
 # docs/module/optik_136_funkeln_03.png, _08, _14, _20 (0,3 / 0,8 / 1,4 / 2,0 s nach dem Start)
 
-const SERIES := [0.3, 0.8, 1.4, 2.0]
+const SERIES := [1.0, 4.0]
 
 
 func _initialize() -> void:

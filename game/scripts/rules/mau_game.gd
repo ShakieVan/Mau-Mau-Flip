@@ -44,6 +44,8 @@ extends RefCounted
 #   "discard_pick" (Ereignis discard_pick, Sicht discard_pick = {seat, color}, hints.can_pick nur für ihn). {a:"discard_pick",
 #   cards: Teilmenge von can_pick, color: Spielfarbe nur beim Joker}: Die gewählten Karten kommen unter der Ablegen-Karte mit auf
 #   die Ablage und wirken nicht (Ereignis discard_color), beim Joker folgt das Farbereignis, dann geht es weiter.
+#   {a:"undo"} (hints.can_undo, nur der Leger in discard_pick): Die Ablegen-Karte kommt zurück in die Hand, der Zug läuft weiter
+#   wie vor dem Legen (Ereignis unplay). Die Farbwahl der Phase "color" (Flip mit Joker oben) ist nicht rücknehmbar.
 # - Ein „Mau!“-Ruf verfällt, wenn nach dem Legen bzw. Setzen mehr als eine Karte bleibt. Vor dem Legen darf rufen, wer eine Karte
 #   legen kann, nach der genau 1 Karte bleibt (ohne Ablegen-Karten heißt das: 2 Karten auf der Hand).
 # - Flip-Überraschung (flip_surprise = on): Liegt nach einem ausgeführten Flip (nicht am Rundenende) eine klassische Aktionskarte
@@ -233,6 +235,8 @@ func apply(seat: int, action: Dictionary) -> Dictionary:
 			why = _act_stop(seat, ev)
 		"discard_pick":
 			why = _act_discard_pick(seat, action, ev)
+		"undo":
+			why = _act_undo(seat, ev)
 		"mau":
 			why = _act_mau(seat, ev)
 		"catch":
@@ -607,6 +611,43 @@ func _act_discard_pick(seat: int, action: Dictionary, ev: Array) -> String:
 	return ""
 
 
+# Zurücknehmen (nur in der Phase discard_pick, nur der Leger): Die Ablegen-Karte geht an ihre Stelle in der Hand zurück, als
+# wäre sie nie gelegt worden (Phase, gezogene Karte, Farbe, Mau-Ruf wie vorher); eine Auswahl verfällt. Bis zur Auswahl ist nichts
+# endgültig – nur das Mau-Fenster des Vorgängers hat das Legen schon geschlossen (turn_started bleibt). Ereignis unplay
+# {seat, card, face, top, top_id} (top/top_id = wieder oberste Ablagekarte).
+func _act_undo(seat: int, ev: Array) -> String:
+	if state != "discard_pick" or dpick.is_empty():
+		return "Gerade gibt es nichts zurückzunehmen." if state in PLAY_PHASES else _phase_reason()
+	if seat != int(dpick.seat):
+		return "Du bist nicht dran."
+	var id := int(dpick.card)
+	if discard.is_empty() or int(discard.back()) != id:
+		return "Gerade gibt es nichts zurückzunehmen."
+	var u: Dictionary = dpick.get("undo", {}) if dpick.get("undo", {}) is Dictionary else {}
+	var key: String = _key[faces[side * n_cards + id]]
+	discard.pop_back()
+	dside.erase(id)
+	dlog.erase(id)
+	var hand: Array = hands[seat]
+	hand.insert(clampi(int(u.get("idx", hand.size())), 0, hand.size()), id)
+	dpick = {}
+	var st := str(u.get("state", "turn"))
+	state = st if st in ["turn", "drawn", "challenge"] else "turn"
+	drawn_id = int(u.get("drawn", -1)) if state == "drawn" else -1
+	pass_streak = int(u.get("streak", 0))
+	color = str(u.get("color", color))
+	wished = bool(u.get("wished", false))
+	mau_said[seat] = bool(u.get("mau", mau_said[seat]))
+	current = seat
+	var top := ""
+	var top_id := -1
+	if not discard.is_empty():
+		top_id = int(discard.back())
+		top = _key[faces[side * n_cards + top_id]]
+	ev.append({"e": "unplay", "seat": seat, "card": id, "face": key, "top": top, "top_id": top_id})
+	return ""
+
+
 # Wählbare Karten der offenen Ablege-Auswahl: Nicht-Joker-Karten der Ablegefarbe auf der Hand des Legers (Besitzerreihenfolge).
 func _pick_candidates(seat: int) -> Array:
 	var out: Array = []
@@ -856,6 +897,9 @@ func _mau_penalty(seat: int, ev: Array) -> void:
 func _play(p: int, id: int, wish: String, legal: bool, snap: Array, ev: Array) -> void:
 	var f := faces[side * n_cards + id]
 	var kind := _kind[f]
+	# Für {a:"undo"} in der Phase discard_pick: Lage vor dem Legen (nur bei Ablegen-Karten gebraucht)
+	var before := {"state": state, "drawn": drawn_id, "streak": pass_streak, "color": color, "wished": wished,
+		"idx": (hands[p] as Array).find(id), "mau": bool(mau_said[p])}
 	(hands[p] as Array).erase(id)
 	discard.append(id)
 	dlog[id] = {"s": p, "c": "", "h": false}
@@ -878,7 +922,7 @@ func _play(p: int, id: int, wish: String, legal: bool, snap: Array, ev: Array) -
 		if kind == DISCARD:
 			dcol = color
 		if kind == DISCARD_WILD or _color_count(p, dcol, -1) > 0:
-			dpick = {"seat": p, "color": dcol, "card": id, "wild": kind == DISCARD_WILD}
+			dpick = {"seat": p, "color": dcol, "card": id, "wild": kind == DISCARD_WILD, "undo": before}
 			state = "discard_pick"
 			current = p
 			ev.append({"e": "discard_pick", "seat": p, "color": dcol})
@@ -1568,6 +1612,7 @@ func _hints(me: int) -> Dictionary:
 	if config.discard_color == "on":
 		h["can_pick"] = []
 		h["pick_color"] = false
+		h["can_undo"] = false
 	if me >= 0 and state in PLAY_PHASES:
 		if me == current:
 			var playable: Array = []
@@ -1600,6 +1645,7 @@ func _hints(me: int) -> Dictionary:
 				"discard_pick":
 					h.can_pick = _pick_candidates(me)
 					h.pick_color = bool(dpick.get("wild", false))
+					h.can_undo = true
 		h.can_mau = _can_mau(me)
 		if config.mau_call == "catch" and mau_open >= 0 and mau_open != me and not mau_said[mau_open]:
 			h.catch = [mau_open]
@@ -1893,6 +1939,12 @@ static func from_dict(d: Dictionary) -> MauGame:
 	if not dp.is_empty():
 		g.dpick = {"seat": int(dp.get("seat", 0)), "color": str(dp.get("color", "")), "card": int(dp.get("card", -1)),
 			"wild": bool(dp.get("wild", false))}
+		var ud: Variant = dp.get("undo", {})
+		if ud is Dictionary and not (ud as Dictionary).is_empty():
+			var u: Dictionary = ud
+			g.dpick["undo"] = {"state": str(u.get("state", "turn")), "drawn": int(u.get("drawn", -1)),
+				"streak": int(u.get("streak", 0)), "color": str(u.get("color", "")), "wished": bool(u.get("wished", false)),
+				"idx": int(u.get("idx", 0)), "mau": bool(u.get("mau", false))}
 	return g
 
 

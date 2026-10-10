@@ -327,7 +327,7 @@ func _show() -> void:
 		c.queue_free()
 	match mode:
 		"game_wifi":
-			text = "Kamera auf den Code halten – so kommt das Handy ins Spiel-WLAN."
+			text = "Mitspieler: Mobile Daten kurz ausschalten, bis das Spiel geladen ist."   # 1.4.1: sonst lädt die Spielseite im Mobilnetz
 			_values.add_child(_value("Name", str(wifi.get("ssid", ""))))
 			if str(wifi.get("password", "")) != "":
 				_values.add_child(_value("Passwort", str(wifi.get("password", ""))))
@@ -353,7 +353,11 @@ func _show() -> void:
 	if hint != "":
 		small = (small + "\n" if small != "" else "") + hint
 	_text.text = text
-	_text.add_theme_font_override("font", UiFonts.text(800 if mode == "problem" else 600))
+	_text.add_theme_font_override("font", UiFonts.text(800 if mode in ["problem", "game_wifi"] else 600))
+	if mode == "game_wifi":
+		_text.add_theme_color_override("font_color", UiPalette.ALERT)
+	else:
+		_text.remove_theme_color_override("font_color")
 	_small.text = small
 	_small.visible = small != ""
 	_open.visible = mode == "none" and can

@@ -724,6 +724,14 @@ func on_back() -> bool:
 		_confirm.queue_free()
 		_confirm = null
 		return true
+	# Farbwahl wie ein Tipp daneben: Joker vor dem Legen zurück in die Hand, Ablegen-Joker nimmt den Zug zurück, nach einem Flip
+	# mit Joker oben kommt das Rad wieder (nicht wegklickbar)
+	if table != null and table.wish_picker.is_open():
+		table.wish_picker.cancel()
+		return true
+	if table != null and table.can_undo_pick():     # Farbe mit ablegen: eigene Auswahl offen → Karte zurück in die Hand
+		table.undo_pick()
+		return true
 	var phase := str(view.get("phase", ""))
 	if phase == "game_over":
 		_leave_now()

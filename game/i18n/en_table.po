@@ -897,3 +897,15 @@ msgstr "Let the computer take over?"
 
 msgid "Übernehmen"
 msgstr "Take over"
+
+msgid "Gerade gibt es nichts zurückzunehmen."
+msgstr "There is nothing to take back right now."
+
+msgid "Zurücknehmen"
+msgstr "Take back"
+
+msgid "Zurückgenommen"
+msgstr "Taken back"
+
+msgid "%s nimmt die Karte zurück"
+msgstr "%s takes the card back"

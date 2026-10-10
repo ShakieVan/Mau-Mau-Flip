@@ -205,15 +205,17 @@ func _init() -> void:
 	_sort_btn.pressed.connect(func() -> void: sort_pressed.emit())
 	_backs_btn = _pill("Rückseiten", "rueckseiten")
 	_backs_btn.pressed.connect(func() -> void: backs_pressed.emit())
-	for key in ["keep", "challenge", "accept", "pick"]:
-		var label: String = {"keep": "Behalten", "challenge": "Anzweifeln", "accept": "Annehmen", "pick": "Ablegen"}[key]
-		var icon: String = {"keep": "haken", "challenge": "kreuz", "accept": "stapel", "pick": "haken"}[key]
+	for key in ["keep", "challenge", "accept", "pick", "undo"]:
+		var label: String = {"keep": "Behalten", "challenge": "Anzweifeln", "accept": "Annehmen", "pick": "Ablegen", "undo": "Zurücknehmen"}[key]
+		var icon: String = {"keep": "haken", "challenge": "kreuz", "accept": "stapel", "pick": "haken", "undo": "zurueck"}[key]
 		var b := _pill(label, icon)
-		b.style = "primary"
+		b.style = "ghost" if key == "undo" else "primary"
 		b.visible = false
 		var a: String = key
 		if a == "pick":
 			b.pressed.connect(_on_pick_pressed)
+		elif a == "undo":
+			b.pressed.connect(undo_pick)
 		else:
 			b.pressed.connect(func() -> void: _emit_action({"a": a}))
 		_act_btns[key] = b
@@ -255,7 +257,7 @@ func _init() -> void:
 	handover = HandoverScreen.new()
 	_overlay.add_child(handover)
 	wish_picker.color_chosen.connect(_on_wheel_color)
-	wish_picker.cancelled.connect(func() -> void: _pick_wait = false)
+	wish_picker.cancelled.connect(_on_wheel_cancelled)
 	resized.connect(_layout)
 
 
@@ -778,6 +780,7 @@ func _apply_pick(v: Dictionary) -> void:
 			if hand != null and hand.has_method("clear_pick"):
 				hand.call("clear_pick")
 		b.visible = false
+		(_act_btns["undo"] as PillButton).visible = false
 		_layout_action_buttons()
 		return
 	_pick_color = bool(h.get("pick_color", false))
@@ -794,6 +797,7 @@ func _apply_pick(v: Dictionary) -> void:
 			_on_pick_pressed()
 			return
 	b.visible = not _pick_wait
+	(_act_btns["undo"] as PillButton).visible = not _pick_wait and bool(h.get("can_undo", false))
 	_update_pick_button()
 
 
@@ -821,9 +825,11 @@ func _on_pick_pressed() -> void:
 	if _pick_color:
 		_pick_wait = true
 		(_act_btns["pick"] as PillButton).visible = false
+		(_act_btns["undo"] as PillButton).visible = false
 		wish_picker.open_wheel(side, _own_counts_after(_pick_cards), "Mit welcher Farbe geht es weiter?")
 		return
 	(_act_btns["pick"] as PillButton).visible = false
+	(_act_btns["undo"] as PillButton).visible = false
 	_emit_action({"a": "discard_pick", "cards": _pick_cards.duplicate()})
 
 
@@ -833,7 +839,42 @@ func pick_retry() -> void:
 		return
 	_pick_wait = false
 	(_act_btns["pick"] as PillButton).visible = true
+	(_act_btns["undo"] as PillButton).visible = can_undo_pick()
 	_update_pick_button()
+
+
+# Eigene Ablege-Auswahl offen und der Gastgeber erlaubt das Zurücknehmen (hints.can_undo)?
+func can_undo_pick() -> bool:
+	return _pick_key != "" and bool((view.get("hints", {}) as Dictionary).get("can_undo", false))
+
+
+# Ganzen Zug zurücknehmen (Knopf „Zurücknehmen“, Zurück-Taste, Farbrad der Spielfarbe weggeklickt): Die Ablegen-Karte springt
+# zurück in die Hand, die Auswahl verfällt. Ohne hints.can_undo (alter Gastgeber) bleibt die Auswahl offen.
+func undo_pick() -> void:
+	if _pick_key == "" or input_locked:
+		return
+	if not can_undo_pick():
+		pick_retry()
+		return
+	if wish_picker.is_open():
+		wish_picker.close()
+	_pick_wait = false
+	(_act_btns["pick"] as PillButton).visible = false
+	(_act_btns["undo"] as PillButton).visible = false
+	_layout_action_buttons()
+	_emit_action({"a": "undo"})
+
+
+# Farbrad weggeklickt: beim Ablegen-Joker (Spielfarbe) den Zug zurücknehmen; die Farbwahl nach einem Flip mit Joker oben (Phase
+# color) ist endgültig und lässt sich nicht wegklicken – das Rad kommt sofort wieder.
+func _on_wheel_cancelled() -> void:
+	if _pick_wait:
+		undo_pick()
+		return
+	var h: Dictionary = view.get("hints", {})
+	if bool(h.get("need_color", false)) and str(view.get("phase", "")) == "color" and not input_locked:
+		open_color_wheel()
+		show_notice(I18n.t("Erst die Farbe wählen."))
 
 
 # Farbanzahl der Hand ohne die Karten, die gleich mit abgelegt werden
@@ -874,7 +915,7 @@ func _layout_action_buttons(all := false) -> void:
 	if big:                               # vor der Spielerliste, über der Hinweisleiste
 		x = BigLayout.list_rect(sz).position.x - 16.0
 		y = BigLayout.hint_y(sz) - 44.0 - BigLayout.PILL_H
-	for key in ["pick", "accept", "challenge", "keep"]:
+	for key in ["pick", "undo", "accept", "challenge", "keep"]:
 		var b: PillButton = _act_btns[key]
 		if not b.visible and not all:
 			continue
@@ -1312,7 +1353,7 @@ func play_event(ev: Dictionary, speed: float) -> float:
 		"draw":
 			return _ev_draw(ev, false)
 		"penalty":
-			return _ev_draw(ev, true)
+			return _ev_penalty(ev)
 		"skip":
 			return _ev_skip(ev)
 		"skip_all":
@@ -1355,7 +1396,31 @@ func play_event(ev: Dictionary, speed: float) -> float:
 			return _house.ev_stake_discard(ev)
 		"discard_color":
 			return _house.ev_discard_color(ev)
+		"unplay":
+			return _ev_unplay(ev)
 	return 0.0
+
+
+# Zurückgenommen (Farbe mit ablegen): Die Ablegen-Karte fliegt von der Ablage zurück zum Leger, darunter liegt wieder die alte Karte.
+func _ev_unplay(ev: Dictionary) -> float:
+	var seat := int(ev.get("seat", -1))
+	var face := str(ev.get("face", ""))
+	if not _discard.is_empty() and _discard[-1].current_key() == face:
+		var c: CardView = _discard.pop_back()
+		c.queue_free()
+	_set_top(str(ev.get("top", "")), int(ev.get("top_id", -1)))
+	_update_rays()
+	var to := _hand_point()
+	var w := HAND_CARD_W
+	if seat != my_seat:
+		var node := seat_node(seat)
+		if node == null:
+			return 0.0
+		to = _world.to_local(node.global_position)
+		w = pile_w * 0.6
+	var dur := _d(0.32)
+	fx.fly_card(face, _discard_pos, 0.0, pile_w, to, 0.0, w, dur, {})
+	return dur
 
 
 func _target() -> Dictionary:
@@ -1451,6 +1516,21 @@ func _land(face: String, id: int, seat: int) -> void:
 	UiApp.sound("karte")
 	if seat == my_seat:
 		UiApp.vibrate(15, 0.5)
+
+
+# Strafe für vergessenes „Mau!“: nur der Stempel. Die Karten fliegen beim gleich folgenden „draw“-Ereignis (mit der echten Zahl);
+# früher flogen sie hier und dort, also doppelt (1.4.1).
+func _ev_penalty(ev: Dictionary) -> float:
+	var seat := int(ev.get("seat", -1))
+	var count := maxi(int(ev.get("count", 1)), 1)
+	var node := seat_node(seat)
+	var victim_pos := _seat_point(seat) + Vector2(0, -150) if seat == my_seat else _seat_point(seat)
+	if node != null:
+		victim_pos = node.position
+	fx.stamp(victim_pos + Vector2(0, 48), I18n.t("Strafe +%d") % count, UiPalette.ALERT, 34, 0.8)
+	if seat == my_seat:
+		_edge_pulse()
+	return _d(0.35)
 
 
 func _ev_draw(ev: Dictionary, penalty: bool) -> float:

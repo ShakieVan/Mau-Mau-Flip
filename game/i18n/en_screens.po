@@ -1201,3 +1201,6 @@ msgstr "Send your players the link. The code alone only works with the default r
 
 msgid "Oder den Raumcode zum Abtippen:"
 msgstr "Or the room code to type in:"
+
+msgid "Mitspieler: Mobile Daten kurz ausschalten, bis das Spiel geladen ist."
+msgstr "Players: briefly turn off mobile data until the game has loaded."

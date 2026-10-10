@@ -173,6 +173,7 @@ func to_dict() -> Dictionary / static func from_dict(d) -> MauGame   # Speichern
 | `{a:"press"}` | Glücksspiel: Knopf drücken (erst nach einem `stake`). |
 | `{a:"stop"}` | Glücksspiel: aufhören (immer erlaubt, nach mindestens einem Druck ohne Treffer, also bei `need = "stake"` und Einsatz ≥ 1). Der Einsatz kommt unter die Ablage, der Zug ist vorbei. |
 | `{a:"discard_pick", cards:[<id>…], color:<farbe>?}` | Farbe mit ablegen, nur in Phase `discard_pick`: Teilmenge von `hints.can_pick` (auch leer); `color` = Spielfarbe, nur und Pflicht nach dem Ablegen-Joker. |
+| `{a:"undo"}` | Zurücknehmen (seit 1.4.1), nur in Phase `discard_pick` und nur der Leger (`hints.can_undo`): Die Ablegen-Karte kommt an ihre Stelle in der Hand zurück, Phase (`turn`/`drawn`), gezogene Karte, Farbe und Mau-Ruf wie vor dem Legen; Ereignis `unplay`. Die Clients schicken es, wenn die Spielfarbe des Ablegen-Jokers weggeklickt wird, bei der Zurück-Taste und mit dem Knopf „Zurücknehmen“. Die Farbwahl der Phase `color` ist endgültig (nicht wegklickbar). |
 
 Glücksspiel und Ablegen-Joker werden wie Wünscher mit `{a:"play", card, color}` gelegt; beim Ablegen-Joker ist `color` die Ablegefarbe, die Spielfarbe folgt mit `discard_pick`.
 
@@ -216,7 +217,7 @@ Alle Daten JSON-tauglich: Zahlen als `int`, keine Godot-Typen.
 - **Nur mit `gamble_cards=on`** (sonst fehlen die Felder, damit Sichten ohne die Hausregel unverändert bleiben):
   - `gamble`: während eines Glücksspiels `{seat, stake: Anzahl der Einsatzkarten, need: "stake"|"press", last: letzter Wert 0–10 oder −1}` für alle Plätze, sonst `{}`. Die Trefferquote und die Einsatzgesichter stehen nie in einer Sicht.
   - `hints.can_stake`: ids der setzbaren Karten (nur der Glücksspieler bei `need = "stake"`, sonst `[]`), `hints.can_press` (bool), `hints.can_stop` (bool, nur mit der Hausregel; sonst fehlt das Feld wie `can_stake`/`can_press`). Hinweistexte: „Leg eine Karte verdeckt auf deinen Einsatz.“, „Noch eine Karte setzen – oder aufhören?“ (bei `can_stop`) bzw. „Drück den Glücksspielknopf!“.
-- **Nur mit `discard_color=on`:** `discard_pick`: während der Auswahl `{seat, color}` (Ablegefarbe) für alle Plätze, sonst `{}` (keine Kandidatenzahl, das wäre ein Leck); `hints.can_pick` = ids der wählbaren Karten (nur der Leger), `hints.pick_color` = true nach dem Ablegen-Joker (Spielfarbe nötig).
+- **Nur mit `discard_color=on`:** `discard_pick`: während der Auswahl `{seat, color}` (Ablegefarbe) für alle Plätze, sonst `{}` (keine Kandidatenzahl, das wäre ein Leck); `hints.can_pick` = ids der wählbaren Karten (nur der Leger), `hints.pick_color` = true nach dem Ablegen-Joker (Spielfarbe nötig), `hints.can_undo` = true für den Leger während der Auswahl (seit 1.4.1).
 
 **Ereignisse:** `{e: <name>, seat?, …}`, z. B.:
 - `deal`, `play{seat, card, face}`, `draw{seat, count, faces?}` (`faces` nur für den Ziehenden)
@@ -232,7 +233,7 @@ Alle Daten JSON-tauglich: Zahlen als `int`, keine Godot-Typen.
   - bei einem Treffer `draw{…, reason:"gluecksspiel"}`, dann `stake_back{seat, count, cards*, faces*, backs}` (ganzer Einsatz zurück; Rückseiten wie beim Ziehen), danach `turn` des Nächsten.
   - bei 0 und leerer Hand `stake_discard{seat, count, cards*, faces*, reason:"empty"}` (Einsatz unter die Ablage), dann `finish` und `round_over` bzw. `turn`.
   - bei `{a:"stop"}` `stake_discard{seat, count, cards*, faces*, reason:"stop"}`, dann `turn` des Nächsten. Bleibt genau 1 Karte, gilt die normale Mau-Regel: Das Fenster hat schon das Setzen geöffnet (vorher rufen, sonst erwischbar, bis der Nächste handelt).
-- Farbe mit ablegen: `discard_pick{seat, color}` nach `play`, wenn die Auswahl beginnt (öffentlich); nach der Auswahl (bzw. direkt nach `play`, wenn es keine Kandidaten gibt) `discard_color{seat, color, cards, faces, count}`: öffentlich, nur die gewählten Karten, unter der Ablegen-Karte nach Rang sortiert; beim Ablegen-Joker folgt `color{color}` mit der Spielfarbe.
+- Farbe mit ablegen: `discard_pick{seat, color}` nach `play`, wenn die Auswahl beginnt (öffentlich); nach der Auswahl (bzw. direkt nach `play`, wenn es keine Kandidaten gibt) `discard_color{seat, color, cards, faces, count}`: öffentlich, nur die gewählten Karten, unter der Ablegen-Karte nach Rang sortiert; beim Ablegen-Joker folgt `color{color}` mit der Spielfarbe. Nach `{a:"undo"}`: `unplay{seat, card, face, top, top_id}` (öffentlich; `top`/`top_id` = wieder oberste Ablagekarte).
 
 ### Prüfungen (Pflicht)
 

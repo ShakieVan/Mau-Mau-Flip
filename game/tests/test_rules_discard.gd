@@ -32,6 +32,7 @@ func _initialize() -> void:
 	_dc_matching()
 	_dc_colored()
 	_dc_wild()
+	_dc_undo()
 	_dc_mau()
 	_dc_finish()
 	_dc_pending()
@@ -340,6 +341,65 @@ func _dc_wild() -> void:
 		and g.view_for(0).hints.text == "Wähle die Farbe, mit der es weitergeht.", "Joker ohne Kandidaten: nur Farbwahl")
 	ev = dc_act(g, 0, {"a": "discard_pick", "cards": [], "color": "gruen"}, "weiter mit Grün")
 	check(dc_names(ev) == ["discard_color", "color", "turn"] and g.color == "gruen" and int(dc_ev(ev, "discard_color").count) == 0, "Grün gilt")
+
+
+# Beta 1.4.1 (Nutzerbefund 10.10.2026): Wegklicken der Farbwahl beim Ablegen-Joker hing. {a:"undo"} nimmt den Zug in der Phase
+# discard_pick ganz zurück: Karte an alter Stelle in der Hand, Ablage, Farbe, Phase (auch drawn) und Mau-Ruf wie vorher.
+func _dc_undo() -> void:
+	var g := dc_make({"hands": [["hell_blau_3", "hell_ablegen_joker", "hell_gelb_1", "hell_gelb_7"], ["hell_blau_1", "hell_blau_2"],
+		["hell_gruen_1", "hell_gruen_2"]], "top": "hell_rot_5"})
+	var hand_before := RulesFixture.hand_keys(g, 0)
+	var order_before: Array = (g.hands[0] as Array).duplicate()
+	var top_before := RulesFixture.top_key(g)
+	var col_before := g.color
+	var n_discard := g.discard.size()
+	var r := g.apply(0, {"a": "undo"})
+	check(not bool(r.ok) and str(r.reason) == "Gerade gibt es nichts zurückzunehmen.", "Zurücknehmen ohne Auswahl abgelehnt (%s)" % r.reason)
+	check(not (g.view_for(0).hints as Dictionary).get("can_undo", true), "hints.can_undo aus außerhalb der Auswahl")
+	dc_play(g, 0, "hell_ablegen_joker", "Ablegen-Joker mit Gelb", "gelb")
+	check(g.phase() == "discard_pick" and bool(g.view_for(0).hints.can_undo) and not bool(g.view_for(1).hints.can_undo), "hints.can_undo nur für den Leger")
+	r = g.apply(1, {"a": "undo"})
+	check(not bool(r.ok) and g.phase() == "discard_pick", "Zurücknehmen von anderem Platz abgelehnt")
+	var ev := dc_act(g, 0, {"a": "mau"}, "Mau während der Auswahl") if g.view_for(0).hints.can_mau else []
+	ev = dc_act(g, 0, {"a": "undo"}, "Ablegen-Joker zurücknehmen")
+	var e := dc_ev(ev, "unplay")
+	check(dc_names(ev) == ["unplay"] and int(e.seat) == 0 and str(e.face) == "hell_ablegen_joker" and str(e.top) == top_before,
+		"Ereignis unplay (%s)" % str(ev))
+	check(g.phase() == "turn" and g.current_seat() == 0 and g.dpick.is_empty() and g.color == col_before and not g.wished,
+		"zurück im Zug, Farbe wie vorher (%s, %s)" % [g.phase(), g.color])
+	check(g.hands[0] == order_before and RulesFixture.hand_keys(g, 0) == hand_before, "Karte an alter Stelle zurück in der Hand")
+	check(RulesFixture.top_key(g) == top_before and g.discard.size() == n_discard and not g.dlog.has(int(e.card)), "Ablage wie vorher")
+	check(not g.mau_said[0], "Mau-Ruf aus der Auswahl verfällt")
+	check(RulesFixture.invariants(g) == "", "Invarianten nach dem Zurücknehmen")
+	var v := g.view_for(0)
+	check((v.hints.playable as Array).has(int(e.card)) and v.discard_pick.is_empty(), "Joker wieder legbar, keine Auswahl in der Sicht")
+	# Danach normal zu Ende: Gelbe mit ab, weiter mit Blau
+	dc_lay(g, 0, "hell_ablegen_joker", "erneut gelegt", "gelb", null, "blau")
+	check(g.color == "blau" and RulesFixture.hand_keys(g, 0) == ["hell_blau_3"] and g.current_seat() == 1, "nach dem Zurücknehmen normal abgelegt")
+	# Farbige Ablegen-Karte nach dem Ziehen (Phase drawn): zurück in die Phase drawn mit derselben gezogenen Karte
+	g = dc_make({"hands": [["hell_blau_2", "hell_rot_3"], ["hell_blau_1"], ["hell_gruen_1"]], "top": "hell_rot_5", "draw": ["hell_rot_ablegen"]})
+	dc_act(g, 0, {"a": "draw"}, "ziehen")
+	var drawn := g.drawn_id
+	check(g.phase() == "drawn" and RulesFixture.top_key(g) == "hell_rot_5", "gezogene Ablegen-Karte passt")
+	dc_play(g, 0, "hell_rot_ablegen", "gezogene Ablegen-Karte gelegt")
+	check(g.phase() == "discard_pick", "Auswahl nach der gezogenen Karte")
+	# Mitten in der Auswahl speichern und laden: Zurücknehmen geht auch danach
+	var h := MauGame.from_dict(JSON.parse_string(JSON.stringify(g.to_dict())))
+	check(JSON.stringify(h.to_dict()) == JSON.stringify(g.to_dict()), "Rundreise mit offener Auswahl samt Rücknahme-Stand")
+	for gg: MauGame in [g, h]:
+		dc_act(gg, 0, {"a": "undo"}, "gezogene Ablegen-Karte zurücknehmen")
+		check(gg.phase() == "drawn" and gg.drawn_id == drawn and RulesFixture.hand_keys(gg, 0).has("hell_rot_ablegen")
+			and RulesFixture.top_key(gg) == "hell_rot_5" and gg.color == "rot", "zurück in der Phase drawn (%s)" % gg.phase())
+		dc_act(gg, 0, {"a": "keep"}, "danach behalten")
+		check(gg.current_seat() == 1, "Behalten nach dem Zurücknehmen")
+	# Farbwahl nach einem Flip mit Joker oben (Phase color) ist endgültig: kein Zurücknehmen
+	g = dc_make({"hands": [["hell_rot_flip", "hell_rot_1"], ["hell_gelb_1"], ["hell_gelb_2"]], "top": "hell_rot_5",
+		"discard": ["hell_blau_4/dunkel_wuenscher"]})
+	dc_play(g, 0, "hell_rot_flip", "Flip mit Joker unten")
+	check(g.phase() == "color", "Phase color nach dem Flip")
+	r = g.apply(0, {"a": "undo"})
+	check(not bool(r.ok) and g.phase() == "color" and g.side == 1, "Phase color: Zurücknehmen abgelehnt (%s)" % r.reason)
+	check(not g.view_for(0).hints.get("can_undo", false), "Phase color: kein can_undo")
 
 
 func _dc_mau() -> void:

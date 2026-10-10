@@ -5,7 +5,7 @@
 (function (M) {
   'use strict';
 
-  const VERSION = '1.4.0';
+  const VERSION = '1.4.1';
   const PROTO = 1;
   // wach.mp4 (32×32, 2 s, H.264 Baseline, ohne Ton; erzeugt mit ffmpeg) als data:-URI
   const WACH_VIDEO = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAMzbW9vdgAAAGxtdmhkAAAAAAAAAAAAAAAAAAAD6AAAB9AAAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAl50cmFrAAAAXHRraGQAAAADAAAAAAAAAAAAAAABAAAAAAAAB9AAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAACAAAAAgAAAAAAAkZWR0cwAAABxlbHN0AAAAAAAAAAEAAAfQAAAAAAABAAAAAAHWbWRpYQAAACBtZGhkAAAAAAAAAAAAAAAAAABAAAAAgABVxAAAAAAALWhkbHIAAAAAAAAAAHZpZGUAAAAAAAAAAAAAAABWaWRlb0hhbmRsZXIAAAABgW1pbmYAAAAUdm1oZAAAAAEAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAAUFzdGJsAAAAuXN0c2QAAAAAAAAAAQAAAKlhdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAACAAIABIAAAASAAAAAAAAAABFExhdmM2My4xLjEwMSBsaWJ4MjY0AAAAAAAAAAAAAAAAGP//AAAAL2F2Y0MBQsAe/+EAFmdCwB7ZCWwEQAAAAwBAAAADAQPFi5IBAAZoy4DkTIAAAAAQcGFzcAAAAAEAAAABAAAAFGJ0cnQAAAAAAAAKpAAAAAAAAAAYc3R0cwAAAAAAAAABAAAABAAAIAAAAAAUc3RzcwAAAAAAAAABAAAAAQAAABxzdHNjAAAAAAAAAAEAAAABAAAABAAAAAEAAAAkc3RzegAAAAAAAAAAAAAABAAAAogAAAALAAAACwAAAAsAAAAUc3RjbwAAAAAAAAABAAADYwAAAGF1ZHRhAAAAWW1ldGEAAAAAAAAAIWhkbHIAAAAAAAAAAG1kaXJhcHBsAAAAAAAAAAAAAAAALGlsc3QAAAAkqXRvbwAAABxkYXRhAAAAAQAAAABMYXZmNjMuMS4xMDEAAAAIZnJlZQAAArFtZGF0AAACcgYF//9u3EXpvebZSLeWLNgg2SPu73gyNjQgLSBjb3JlIDE2NSByMzIyMyAwNDgwY2IwIC0gSC4yNjQvTVBFRy00IEFWQyBjb2RlYyAtIENvcHlsZWZ0IDIwMDMtMjAyNSAtIGh0dHA6Ly93d3cudmlkZW9sYW4ub3JnL3gyNjQuaHRtbCAtIG9wdGlvbnM6IGNhYmFjPTAgcmVmPTMgZGVibG9jaz0xOi0zOi0zIGFuYWx5c2U9MHgxOjB4MTExIG1lPWhleCBzdWJtZT03IHBzeT0xIHBzeV9yZD0yLjAwOjAuNzAgbWl4ZWRfcmVmPTEgbWVfcmFuZ2U9MTYgY2hyb21hX21lPTEgdHJlbGxpcz0xIDh4OGRjdD0wIGNxbT0wIGRlYWR6b25lPTIxLDExIGZhc3RfcHNraXA9MSBjaHJvbWFfcXBfb2Zmc2V0PS00IHRocmVhZHM9MSBsb29rYWhlYWRfdGhyZWFkcz0xIHNsaWNlZF90aHJlYWRzPTAgbnI9MCBkZWNpbWF0ZT0xIGludGVybGFjZWQ9MCBibHVyYXlfY29tcGF0PTAgY29uc3RyYWluZWRfaW50cmE9MCBiZnJhbWVzPTAgd2VpZ2h0cD0wIGtleWludD0yNTAga2V5aW50X21pbj0yIHNjZW5lY3V0PTQwIGludHJhX3JlZnJlc2g9MCByY19sb29rYWhlYWQ9NDAgcmM9Y3JmIG1idHJlZT0xIGNyZj00MC4wIHFjb21wPTAuNjAgcXBtaW49MCBxcG1heD02OSBxcHN0ZXA9NCBpcF9yYXRpbz0xLjQwIGFxPTE6MS4yMACAAAAADmWIhAXznJigACX3J114AAAAB0GaOAvnOWAAAAAHQZpUAvnOWAAAAAdBmmAVznLA';
@@ -210,7 +210,7 @@
       // Escape (PC): Farbwahl bzw. Fenster schließen
       document.addEventListener('keydown', e => {
         if (e.key !== 'Escape') return;
-        if (this.tisch && this.tisch.farbwahlOffen) { this.tisch.schliesseFarbwahl(); this.tisch.hand.waehle(null); return; }
+        if (this.tisch && this.tisch.farbwahlOffen) { this.tisch.abbrechenFarbwahl(); this.tisch.hand.waehle(null); return; }
         ['hilfe', 'ansicht', 'menue', 'runde', 'regeln', 'sogehts'].forEach(id => this.schliesse(id));
       });
       // Lobby
@@ -536,6 +536,7 @@
       if (a.a === 'wunsch') { this._farbwunsch(); return; }
       if (a.a === 'draw') { this.ziehen(); return; }
       if (a.a === 'ablegen') { this.ablegenBestaetigen(); return; }
+      if (a.a === 'undo') this._pick = null;   // Zurücknehmen: Auswahl der Mitablegekarten verwerfen
       this._sendeAkt(a);
     },
     _sendeAkt(a) {
@@ -657,7 +658,12 @@
       // Ablegen-Joker: zum Schluss die Spielfarbe (Zählung ohne die mitabgelegten Karten)
       const z = {};
       (v.hand || []).forEach(c => { if (karten.indexOf(c.id) >= 0) return; const k = M.Karten.zerlege(c.face); if (k.farbe) z[k.farbe] = (z[k.farbe] || 0) + 1; });
-      t.oeffneFarbwahl(v.side, z, farbe => { if (farbe && this.imAblegen()) this._sendeAkt({ a: 'discard_pick', cards: karten, color: farbe }); }, M.t('Mit welcher Farbe geht es weiter?'));
+      // Weggeklickt (✕, daneben, Escape): ganzen Zug zurücknehmen, die Ablegen-Karte springt zurück in die Hand (hints.can_undo)
+      t.oeffneFarbwahl(v.side, z, farbe => {
+        if (!this.imAblegen()) return;
+        if (farbe) this._sendeAkt({ a: 'discard_pick', cards: karten, color: farbe });
+        else if (h.can_undo) { this._pick = null; this._sendeAkt({ a: 'undo' }); }
+      }, M.t('Mit welcher Farbe geht es weiter?'));
     },
     // eigenes Glücksspiel läuft (Phase gamble, ich bin dran)
     imGluecksspiel() { const v = this.view; return !!(v && v.phase === 'gamble' && v.turn === v.seat && v.seat >= 0); },
@@ -711,7 +717,11 @@
     _farbwunsch() {
       const v = this.view;
       if (!v || !this.tisch || this.tisch.farbwahlOffen) return;
-      this.tisch.oeffneFarbwahl(v.side, this.zaehleFarben(v, null), farbe => { if (farbe) this._sendeAkt({ a: 'color', color: farbe }); });
+      // Phase color (Flip mit Joker oben) ist endgültig: Wegklicken schließt nur, „Farbe wählen“ bleibt als Knopf
+      this.tisch.oeffneFarbwahl(v.side, this.zaehleFarben(v, null), farbe => {
+        if (farbe) this._sendeAkt({ a: 'color', color: farbe });
+        else this.toast(M.t('Erst die Farbe wählen.'));
+      });
     },
     ziehen() {
       const v = this.view;

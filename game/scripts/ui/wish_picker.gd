@@ -125,6 +125,14 @@ func drop(global_pos: Vector2) -> String:
 	return c
 
 
+# Abbrechen von außen (Zurück-Taste): wie ein Tipp daneben
+func cancel() -> void:
+	if mode == "":
+		return
+	close()
+	cancelled.emit()
+
+
 # Farbrad: Tipp wählt, Tipp außerhalb bricht ab. Gibt true zurück, wenn das Ereignis verbraucht wurde.
 func handle_input(event: InputEvent, global_pos: Vector2) -> bool:
 	if mode != "wheel":

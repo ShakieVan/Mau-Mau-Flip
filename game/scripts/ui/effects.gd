@@ -217,18 +217,18 @@ func confetti(area: Rect2, colors: Array, amount := 220) -> void:
 	var p := CPUParticles2D.new()
 	p.position = Vector2(area.get_center().x, area.position.y - 10.0)
 	p.one_shot = true
-	p.explosiveness = 0.75
+	p.explosiveness = 0.3      # 1.4.1: über ~1,5 s verteilt, damit der Regen etwa 5 s dauert
 	p.amount = maxi(12, int(amount * factor()))
-	p.lifetime = 2.6
+	p.lifetime = 5.0
 	p.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
 	p.emission_rect_extents = Vector2(area.size.x * 0.5, 8.0)
 	p.direction = Vector2(0, 1)
 	p.spread = 30.0
 	p.initial_velocity_min = 80.0
 	p.initial_velocity_max = 240.0
-	p.gravity = Vector2(0, 320)
-	p.damping_min = 20.0
-	p.damping_max = 60.0
+	p.gravity = Vector2(0, 150)
+	p.damping_min = 25.0
+	p.damping_max = 70.0
 	p.angular_velocity_min = -540.0
 	p.angular_velocity_max = 540.0
 	p.angle_min = 0.0
@@ -257,11 +257,9 @@ func confetti(area: Rect2, colors: Array, amount := 220) -> void:
 func celebrate(area: Rect2, amount := 220) -> void:
 	if night > 0.5:
 		last_celebration = "sterne"
-		var colors: Array = []
-		for c in UiPalette.DARK_COLORS:
-			colors.append(UiPalette.glow(c))
-		colors.append(Color.WHITE)
-		colors.append(Color("#FFD76A"))
+		# 1.4.1: kräftige, gesättigte Neonfarben und deutlich mehr Gold
+		var colors: Array = [Color("#FF2FA8"), Color("#00E5FF"), Color("#FF8A00"), Color("#A855FF"),
+			Color.WHITE, Color("#FFD76A"), Color("#FFC400"), Color("#FFD76A"), Color("#FFC400"), Color("#FFE9A0"), Color("#FFC400")]
 		star_shower(area, colors, amount)
 	else:
 		last_celebration = "konfetti"
@@ -273,7 +271,7 @@ func celebrate(area: Rect2, amount := 220) -> void:
 
 # Sternenschauer (1.3.6, Nutzerwunsch „richtige kleine, funkelnde Sterne“ wie die Lichtschacht-Strahlen): Lichtpunkte mit hellem
 # Kern und feinen Strahlen (4 lange, 4 kurze diagonale), additiv, in den übergebenen Farben. Sie fallen und schweben wie das
-# Konfetti (2,6 s), die Strahlen werden je Stern zeitversetzt länger und kürzer und blitzen kurz auf; dazu stehende Glitzerpunkte,
+# Konfetti (~5 s), die Strahlen werden je Stern zeitversetzt länger und kürzer und blitzen kurz auf; dazu stehende Glitzerpunkte,
 # die kurz aufleuchten. „Reduziert“: wenige ruhige Lichtpunkte ohne Blitzen und Glitzer. Ein Knoten zeichnet alles (S10).
 func star_shower(area: Rect2, colors: Array, amount := 220) -> SparkleShowerFx:
 	var fx := SparkleShowerFx.new()
@@ -286,15 +284,15 @@ func star_shower(area: Rect2, colors: Array, amount := 220) -> SparkleShowerFx:
 	if reduced:
 		fx.setup(area, h, colors, maxi(8, int(amount * 0.05)), 0)
 	else:
-		fx.setup(area, h, colors, int(amount * 0.6), int(amount * 0.08))
+		fx.setup(area, h, colors, int(amount * 0.8), int(amount * 0.14))
 	add_child(fx)
 	return fx
 
 
 class SparkleShowerFx:
 	extends Node2D
-	const LIFE := 2.6
-	const GRAVITY := 200.0
+	const LIFE := 3.6      # 1.4.1: Schauer insgesamt ~5 s (Sterne starten über 1,4 s verteilt)
+	const GRAVITY := 130.0
 	var calm := false
 	var stars: Array = []       # je Stern: Start, Ort, Tempo, Größe, Farbe, Funkelphasen, Blitzzeiten
 	var glints: Array = []      # stehende Glitzerpunkte
@@ -306,11 +304,11 @@ class SparkleShowerFx:
 		for i in count:
 			var ang := deg_to_rad(90.0 + randf_range(-25.0, 25.0))
 			var st := {
-				"born": randf_range(0.0, 1.0) if calm else randf_range(0.0, 0.65),
+				"born": randf_range(0.0, 1.4),
 				"pos": Vector2(randf_range(area.position.x, area.end.x), top + randf_range(-8.0, 8.0)),
 				"vel": Vector2.from_angle(ang) * (randf_range(40.0, 90.0) if calm else randf_range(60.0, 200.0)),
 				"damp": randf_range(20.0, 50.0),
-				"size": randf_range(12.0, 20.0) if calm else lerpf(8.0, 28.0, pow(randf(), 0.7)),
+				"size": randf_range(12.0, 20.0) if calm else lerpf(14.0, 42.0, pow(randf(), 0.7)),
 				"color": colors[randi() % colors.size()] if not colors.is_empty() else Color.WHITE,
 				"ph": randf() * TAU, "ph2": randf() * TAU,
 				"sp": randf_range(5.0, 9.0), "sp2": randf_range(6.0, 11.0),
@@ -326,13 +324,13 @@ class SparkleShowerFx:
 			if randf() < 0.5 and not colors.is_empty():
 				gc = colors[randi() % colors.size()]
 			glints.append({
-				"born": randf_range(0.15, LIFE),
+				"born": randf_range(0.15, LIFE + 1.0),
 				"pos": Vector2(randf_range(area.position.x + 20.0, area.end.x - 20.0), randf_range(height * 0.06, height * 0.8)),
-				"size": randf_range(18.0, 36.0),
+				"size": randf_range(26.0, 52.0),
 				"color": gc,
 				"rot": randf_range(-0.2, 0.2),
 			})
-		_end = LIFE + 1.0 + 0.3
+		_end = 5.3
 
 	func _process(delta: float) -> void:
 		t += delta

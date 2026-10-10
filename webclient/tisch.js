@@ -444,6 +444,7 @@
       if (h.can_accept || (h.can_challenge && h.can_accept === undefined)) ak += '<button class="knopf klein" data-a="accept">' + (jagd || !p.amount ? M.t('Annehmen') : M.t('Annehmen (+%d)', p.amount)) + '</button>';
       if (h.need_color) ak += '<button class="knopf klein" data-a="wunsch">' + M.t('Farbe wählen') + '</button>';
       const pick = this.app.imAblegen && this.app.imAblegen() ? this.app.pickAuswahl(v) : null;
+      if (pick && h.can_undo) ak += '<button class="knopf klein" data-a="undo">' + M.t('Zurücknehmen') + '</button>';
       if (pick) ak += '<button class="knopf klein" data-a="ablegen">' + M.t('Ablegen (%d)', pick.length) + '</button>';
       if (this.aktionen.innerHTML !== ak) this.aktionen.innerHTML = ak;
       this.stapel.classList.toggle('ziehbar', !!h.can_draw);
@@ -901,8 +902,11 @@
         this.schliesseFarbwahl();
         beiWahl(farbe || null);
       };
+      this._beiWahl = beiWahl;
     }
-    schliesseFarbwahl() { this.farbwahl.hidden = true; this.farbwahl.onclick = null; }
+    schliesseFarbwahl() { this.farbwahl.hidden = true; this.farbwahl.onclick = null; this._beiWahl = null; }
+    // Escape: wie ✕ bzw. Tipp daneben (Rückruf mit null: Joker zurück in die Hand, Ablegen-Joker nimmt den Zug zurück)
+    abbrechenFarbwahl() { const f = this._beiWahl; this.schliesseFarbwahl(); if (f) f(null); }
     get farbwahlOffen() { return !this.farbwahl.hidden; }
 
     /* ---------- Effekte ---------- */
@@ -1041,26 +1045,26 @@
       if (this.root.dataset.seite === 'dunkel') this.sternenschauer(); else this.konfetti();
     }
     sternenschauer() {
-      const farben = ['#FF7FCF', '#19C6D4', '#FF8A1F', '#9A86FF', '#FFFFFF', '#FFD65A', '#FFFFFF', '#FFD65A'];
-      for (let i = 0; i < 40; i++) {
+      const farben = ['#FF2FA8', '#00E5FF', '#FF8A00', '#A855FF', '#FFFFFF', '#FFD65A', '#FFC400', '#FFD65A', '#FFC400', '#FFE9A0', '#FFC400'];
+      for (let i = 0; i < 64; i++) {
         const s = el('div', 'stern');
-        const dauer = 2200 + Math.random() * 1200;
+        const dauer = 3200 + Math.random() * 500;
         s.style.left = (this.g.cx + (Math.random() - 0.5) * 240) + 'px';
         s.style.top = (this.g.cy - 40) + 'px';
         s.style.setProperty('--c', farben[i % farben.length]);
-        s.style.setProperty('--s', (20 + Math.random() * 26).toFixed(0) + 'px');
+        s.style.setProperty('--s', (26 + Math.random() * 34).toFixed(0) + 'px');
         s.style.setProperty('--dx', ((Math.random() - 0.5) * 1300).toFixed(0) + 'px');
         s.style.setProperty('--dy', (-220 - Math.random() * 280).toFixed(0) + 'px');
         s.style.setProperty('--r', ((Math.random() < 0.5 ? -1 : 1) * (90 + Math.random() * 200)).toFixed(0) + 'deg');   // sanft drehen
         s.style.setProperty('--t', dauer.toFixed(0) + 'ms');
-        s.style.animationDelay = (Math.random() * 300).toFixed(0) + 'ms';
+        s.style.animationDelay = (Math.random() * 1400).toFixed(0) + 'ms';
         this.flug.appendChild(s);
-        setTimeout(() => s.remove(), dauer + 450);
+        setTimeout(() => s.remove(), dauer + 1850);
       }
     }
     konfetti() {
       const farben = ['#FF4D57', '#FFDD33', '#4FD36E', '#4C7DFF', '#FF9ECF', '#19C6D4', '#FF8A1F', '#8B6BFF'];
-      for (let i = 0; i < 46; i++) {
+      for (let i = 0; i < 70; i++) {
         const c = el('div', 'konfetti');
         c.style.left = (this.g.cx + (Math.random() - 0.5) * 200) + 'px';
         c.style.top = (this.g.cy - 40) + 'px';
@@ -1068,9 +1072,9 @@
         c.style.setProperty('--dx', ((Math.random() - 0.5) * 1400).toFixed(0) + 'px');
         c.style.setProperty('--dy', (-200 - Math.random() * 300).toFixed(0) + 'px');
         c.style.setProperty('--r', ((Math.random() - 0.5) * 1080).toFixed(0) + 'deg');
-        c.style.animationDelay = (Math.random() * 120).toFixed(0) + 'ms';
+        c.style.animationDelay = (Math.random() * 1500).toFixed(0) + 'ms';
         this.flug.appendChild(c);
-        setTimeout(() => c.remove(), 1900);
+        setTimeout(() => c.remove(), 5000);
       }
     }
     // Flip-Welle: alle Karten drehen sich (links → rechts versetzt)
@@ -1307,6 +1311,14 @@
         }
 
         // ---------- Hausregel Glücksspiel ----------
+        case 'unplay': {        // {seat, card, face, top, top_id}: Ablegen-Karte zurückgenommen, sie fliegt zurück, darunter die alte Karte
+          const von = { x: t.g.ablage.x, y: t.g.ablage.y, w: t.g.aw, rot: 0 };
+          const ziel = e.seat === ich ? { x: t.g.cx, y: t.H - 100, w: 190, rot: 0 } : Object.assign({ rot: -8 }, t.platzPos(e.seat));
+          if (e.top) t._zeigeAblage(Object.assign({}, t.v, { top: { id: e.top_id, face: e.top } }), t.v);
+          if (e.seat !== ich) t.banner(M.t('Zurückgenommen'), M.t('%s nimmt die Karte zurück', t.name(e.seat)), 'farbe', d(1100));
+          await t.fliege(e.face || 'rueckseite', von, ziel, d(300));
+          break;
+        }
         case 'discard_pick': {  // {seat, color}: Auswahl der mitabgelegten Karten beginnt (Phase discard_pick)
           const fi = K().FARB_INFO[e.color];
           if (e.seat !== ich) t.banner(M.t('Farbe ablegen'), M.t('%s wählt Karten in %s zum Mitablegen', t.name(e.seat), fi ? K().farbName(e.color) : ''), 'farbe', d(1300));
