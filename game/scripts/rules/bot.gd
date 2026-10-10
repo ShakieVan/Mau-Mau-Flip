@@ -39,7 +39,11 @@ static func choose(view: Dictionary, rng_seed: int, level := 1) -> Dictionary:
 	var act := {}
 	match state:
 		"color":
-			act = {"a": "color", "color": best_color(view, -1, rng)}
+			# Flip-Überraschung mit Ablegen-Joker oben: Die Farbwahl ist die Ablegefarbe (die Farbe, die am meisten Karten mitnimmt).
+			if discard_wish(view):
+				act = {"a": "color", "color": most_color(view, -1, rng)}
+			else:
+				act = {"a": "color", "color": best_color(view, -1, rng)}
 		"challenge":
 			act = _challenge(view, hints, rng, level)
 		"drawn":
@@ -62,6 +66,23 @@ static func choose(view: Dictionary, rng_seed: int, level := 1) -> Dictionary:
 	if bool(hints.get("can_mau", false)) and call:
 		return {"a": "mau"}
 	return act
+
+
+# Phase color nach einem Flip mit Ablegen-Joker oben (Hausregel flip_surprise, Flip-Spieler noch im Spiel): Die Farbe ist die
+# Ablegefarbe, die Spielfarbe folgt in discard_pick.
+static func discard_wish(view: Dictionary) -> bool:
+	if str(view.get("phase", "")) != "color" or str((view.get("rules", {}) as Dictionary).get("flip_surprise", "off")) != "on":
+		return false
+	var code := CardDB.code_of(str((view.get("top", {}) as Dictionary).get("face", "")))
+	if code < 0 or CardDB.kind_table()[code] != CardDB.DISCARD_WILD:
+		return false
+	var me := int(view.get("seat", -1))
+	if me < 0 or int(view.get("turn", -1)) != me:
+		return false
+	for p in view.get("players", []):
+		if int(p.get("seat", -1)) == me:
+			return int(p.get("place", 0)) == 0
+	return false
 
 
 # Karten auf der Hand nach dieser Aktion (play: die Karte, bei Ablegen-Karten dazu die, die der Bot danach mitablegen will

@@ -45,12 +45,19 @@ extends RefCounted
 #   cards: Teilmenge von can_pick, color: Spielfarbe nur beim Joker}: Die gewählten Karten kommen unter der Ablegen-Karte mit auf
 #   die Ablage und wirken nicht (Ereignis discard_color), beim Joker folgt das Farbereignis, dann geht es weiter.
 #   {a:"undo"} (hints.can_undo, nur der Leger in discard_pick): Die Ablegen-Karte kommt zurück in die Hand, der Zug läuft weiter
-#   wie vor dem Legen (Ereignis unplay). Die Farbwahl der Phase "color" (Flip mit Joker oben) ist nicht rücknehmbar.
+#   wie vor dem Legen (Ereignis unplay). Die Farbwahl der Phase "color" (Flip mit Joker oben) ist nicht rücknehmbar, ebenso eine
+#   Auswahl aus der Flip-Überraschung (dpick.flip: Die Ablegen-Karte kam nicht aus der Hand).
 # - Ein „Mau!“-Ruf verfällt, wenn nach dem Legen bzw. Setzen mehr als eine Karte bleibt. Vor dem Legen darf rufen, wer eine Karte
 #   legen kann, nach der genau 1 Karte bleibt (ohne Ablegen-Karten heißt das: 2 Karten auf der Hand).
-# - Flip-Überraschung (flip_surprise = on): Liegt nach einem ausgeführten Flip (nicht am Rundenende) eine klassische Aktionskarte
+# - Flip-Überraschung (flip_surprise = on): Liegt nach einem ausgeführten Flip (nicht am Rundenende) eine Aktions- oder Zusatzkarte
 #   oben (SURPRISE_KINDS), wirkt sie, als hätte der Flip-Spieler sie gelegt (öffentliches Ereignis flip_surprise {seat, face}
-#   direkt vor den Wirkungs-Ereignissen). Bei Wünscher +2/Farbjagd wählt er zuerst die Farbe (Phase "color"). Kein Anzweifeln.
+#   direkt vor den Wirkungs-Ereignissen). Bei Jokern (Wünscher +2, Farbjagd, Glücksspiel, Ablegen-Joker) wählt er zuerst die
+#   Farbe (Phase "color"). Kein Anzweifeln. Kartentausch: alle geben ihre Hand weiter (_swap_hands). Glücksspiel: Phase "gamble"
+#   für den Flip-Spieler. Farbe mit ablegen: Phase "discard_pick" wie nach dem Legen (dpick.flip, ohne Zurücknehmen); beim
+#   Ablegen-Joker ist die Farbwahl der Phase "color" die Ablegefarbe (vorläufig auch color, ohne Ereignis), die Spielfarbe folgt mit
+#   {a:"discard_pick"}. Ist der Flip-Spieler mit dem Flip fertig geworden, wirken Glücksspiel und Ablegen-Karten nicht (nichts zu
+#   setzen oder abzulegen; beim Joker wählt er nur die Farbe). Ein Flip oben wirkt nie (keine Kette), der einfache Wünscher nur
+#   mit der Farbwahl.
 # - Plätze mitten im Spiel (Beta 1.4.2): insert_player/remove_player nummerieren alle Plätze neu (_remap, Ereignis seats); Einzelheiten
 #   im Abschnitt „Plätze ändern“ und in docs/module/dazuholen.md.
 
@@ -63,8 +70,10 @@ const SIDES: Array[String] = ["hell", "dunkel"]
 const PLAY_PHASES := ["turn", "drawn", "challenge", "color", "gamble", "discard_pick"]
 const JAGD := "farbjagd"
 const PLUS2 := "wuenscher_plus2"
-# Flip-Überraschung: Diese Karten wirken, wenn sie nach einem Flip oben liegen (Flip, Wünscher und Zusatzkarten nicht).
-const SURPRISE_KINDS := ["plus1", "plus5", "aussetzen", "alle_aussetzen", "richtungswechsel", PLUS2, JAGD]
+# Flip-Überraschung: Diese Karten wirken, wenn sie nach einem Flip oben liegen (Flip nicht: keine Kette; der einfache Wünscher nur
+# mit der Farbwahl).
+const SURPRISE_KINDS := ["plus1", "plus5", "aussetzen", "alle_aussetzen", "richtungswechsel", PLUS2, JAGD, SWAP, GAMBLE, DISCARD,
+	DISCARD_WILD]
 const MIN_PLAYERS := 2
 const MAX_PLAYERS := 10
 const BAD_FIELD := -9999         # _int_field: Feld hat einen falschen Typ
@@ -98,7 +107,7 @@ var result := {}                 # Ergebnis der letzten Runde
 var pass_streak := 0             # aufeinanderfolgende Züge ohne Karte (beide Stapel leer)
 var seen := {}                   # Lagen bei fast leeren Stapeln → Anzahl (Stillstandsregel, _stalled)
 var gamble := {}                 # laufendes Glücksspiel {seat, q (geheim, 1–10), stake: [ids], need: "stake"|"press", last}
-var dpick := {}                  # offene Ablege-Auswahl {seat, color (Ablegefarbe), card (Ablegen-Karte), wild}
+var dpick := {}                  # offene Ablege-Auswahl {seat, color (Ablegefarbe), card (Ablegen-Karte), wild, undo | flip}
 var dlog := {}                   # Ablage-Protokoll: id → {s: Leger (-1 Startkarte), c: Wunschfarbe, h: verdeckter Einsatz}
 var dside := {}                  # nur flip_mode = card: id → Seite (0/1), mit der die Ablagekarte liegt
 
@@ -713,12 +722,20 @@ func _act_color(seat: int, action: Dictionary, ev: Array) -> String:
 	var c := _str_field(action, "color")
 	if not (CardDB.COLORS[SIDES[side]] as Array).has(c):
 		return _why("Wähle eine Farbe der %s.", [I18n.tr_arg(RulesText.side_name(SIDES[side]))])
+	var k := _surprise_kind(seat)
+	if k == DISCARD_WILD:
+		# Ablegen-Joker oben (Flip-Überraschung): c ist die Ablegefarbe; die Spielfarbe folgt mit {a:"discard_pick"}. Bis dahin gilt
+		# c vorläufig als Farbe (ohne Ereignis), damit der Zustand eine gültige Farbe hat.
+		color = c
+		wished = false
+		_surprise(seat, ev, c)
+		return ""
 	color = c
 	wished = true
 	_note_wish(c)
 	ev.append({"e": "color", "color": c, "seat": seat})
-	if _surprise_kind() != "":
-		_surprise(seat, ev)                # Wünscher +2/Farbjagd oben nach dem Flip
+	if k != "":
+		_surprise(seat, ev)                # Joker oben nach dem Flip: Wünscher +2, Farbjagd, Glücksspiel
 	else:
 		_advance(seat, false, ev)
 	return ""
@@ -856,6 +873,8 @@ func _act_undo(seat: int, ev: Array) -> String:
 		return "Gerade gibt es nichts zurückzunehmen." if state in PLAY_PHASES else _phase_reason()
 	if seat != int(dpick.seat):
 		return "Du bist nicht dran."
+	if bool(dpick.get("flip", false)):
+		return "Gerade gibt es nichts zurückzunehmen."      # Flip-Überraschung: Die Ablegen-Karte kam nicht aus der Hand
 	var id := int(dpick.card)
 	if discard.is_empty() or int(discard.back()) != id:
 		return "Gerade gibt es nichts zurückzunehmen."
@@ -1213,7 +1232,7 @@ func _play_rest(p: int, kind: String, legal: bool, snap: Array, ev: Array) -> vo
 				state = "color"                # Joker oben: Der Flip-Spieler wählt die Farbe (Überraschung danach in _act_color).
 				current = p
 				ev.append({"e": "choose_color", "seat": p})
-			elif _surprise_kind() != "":
+			elif _surprise_kind(p) != "":
 				_surprise(p, ev)
 			else:
 				_advance(p, false, ev)
@@ -1276,19 +1295,25 @@ func _discard_color(p: int, id: int, col: String, chosen: Array, ev: Array) -> v
 	ev.append({"e": "discard_color", "seat": p, "color": col, "cards": ids, "faces": keys, "count": ids.size()})
 
 
-# Flip-Überraschung (flip_surprise = on): klassische Aktionsart der Karte oben nach einem Flip, sonst "".
-func _surprise_kind() -> String:
+# Flip-Überraschung (flip_surprise = on): Aktionsart der Karte oben nach einem Flip von p, die wirkt, sonst "". Glücksspiel und
+# Ablegen-Karten wirken nicht, wenn p mit dem Flip fertig geworden ist (nichts zu setzen oder abzulegen).
+func _surprise_kind(p: int) -> String:
 	if config.flip_surprise != "on" or discard.is_empty():
 		return ""
 	var k := _kind[faces[side * n_cards + int(discard.back())]]
-	return k if SURPRISE_KINDS.has(k) else ""
+	if not SURPRISE_KINDS.has(k):
+		return ""
+	if (k == GAMBLE or k == DISCARD or k == DISCARD_WILD) and (p < 0 or p >= place.size() or place[p] != 0):
+		return ""
+	return k
 
 
-# Die Aktionskarte oben wirkt, als hätte der Flip-Spieler p sie gelegt (die Farbe steht schon fest, bei Jokern aus _act_color).
-# Anzweifeln gibt es dabei nicht: Niemand hat die Karte gelegt.
-func _surprise(p: int, ev: Array) -> void:
-	var k := _surprise_kind()
-	ev.append({"e": "flip_surprise", "seat": p, "face": _key[faces[side * n_cards + int(discard.back())]]})
+# Die Karte oben wirkt, als hätte der Flip-Spieler p sie gelegt (die Farbe steht schon fest, bei Jokern aus _act_color; beim
+# Ablegen-Joker ist dcol die Ablegefarbe). Anzweifeln und Zurücknehmen gibt es dabei nicht: Niemand hat die Karte gelegt.
+func _surprise(p: int, ev: Array, dcol := "") -> void:
+	var k := _surprise_kind(p)
+	var top := int(discard.back())
+	ev.append({"e": "flip_surprise", "seat": p, "face": _key[faces[side * n_cards + top]]})
 	match k:
 		"aussetzen":
 			_advance(p, true, ev)
@@ -1302,6 +1327,23 @@ func _surprise(p: int, ev: Array) -> void:
 				_advance(p, false, ev)
 			else:
 				_new_turn(p, ev)
+		SWAP:
+			_swap_hands(p, ev)                 # wie beim Legen: Fertige tauschen nicht mit, Mau-Fenster und Rufe verfallen
+			_advance(p, false, ev)
+		GAMBLE:
+			_start_gamble(p, ev)
+		DISCARD, DISCARD_WILD:
+			var wild := k == DISCARD_WILD
+			var col := dcol if wild else color
+			if wild or _color_count(p, col, -1) > 0:
+				dpick = {"seat": p, "color": col, "card": top, "wild": wild, "flip": true}
+				state = "discard_pick"
+				current = p
+				drawn_id = -1
+				ev.append({"e": "discard_pick", "seat": p, "color": col})
+				return
+			_discard_color(p, top, col, [], ev)
+			_play_rest(p, k, true, [], ev)
 		_:
 			_start_pending(p, k, true, [], false, ev, false)
 
@@ -1900,7 +1942,7 @@ func _hints(me: int) -> Dictionary:
 				"discard_pick":
 					h.can_pick = _pick_candidates(me)
 					h.pick_color = bool(dpick.get("wild", false))
-					h.can_undo = true
+					h.can_undo = not bool(dpick.get("flip", false))
 		h.can_mau = _can_mau(me)
 		if config.mau_call == "catch" and mau_open >= 0 and mau_open != me and not mau_said[mau_open]:
 			h.catch = [mau_open]
@@ -1970,7 +2012,10 @@ func _hint_parts(me: int, h: Dictionary) -> Array:
 			else:
 				out.append(I18n.part("Wähle, welche Karten in %s du mit ablegst.", [carg]))
 		"color":
-			out.append("Nach dem Flip liegt ein Joker oben – wähle die neue Farbe.")
+			if _surprise_kind(me) == DISCARD_WILD:
+				out.append("Nach dem Flip liegt ein Ablegen-Joker oben – wähle die Farbe, die du mit ablegst.")
+			else:
+				out.append("Nach dem Flip liegt ein Joker oben – wähle die neue Farbe.")
 		"gamble":
 			if str(gamble.need) != "stake":
 				out.append("Drück den Glücksspielknopf!")
@@ -2196,6 +2241,8 @@ static func from_dict(d: Dictionary) -> MauGame:
 	if not dp.is_empty():
 		g.dpick = {"seat": int(dp.get("seat", 0)), "color": str(dp.get("color", "")), "card": int(dp.get("card", -1)),
 			"wild": bool(dp.get("wild", false))}
+		if bool(dp.get("flip", false)):
+			g.dpick["flip"] = true
 		var ud: Variant = dp.get("undo", {})
 		if ud is Dictionary and not (ud as Dictionary).is_empty():
 			var u: Dictionary = ud

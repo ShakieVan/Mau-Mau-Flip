@@ -147,10 +147,10 @@
         if (e.e === 'gamble_roll' && !(e.value >= 0 && e.value <= 10)) this.fail('gamble_roll.value ' + e.value);
         if (e.e === 'swap_hands' && !Array.isArray(e.counts)) this.fail('swap_hands ohne counts');
         if (e.e === 'discard_color' && (!Array.isArray(e.faces) || e.faces.length !== (e.count | 0))) this.fail('discard_color: faces ≠ count');
-        // Flip-Überraschung: nur mit der Hausregel, direkt nach einem Flip (bzw. der Farbwahl danach), Gesicht = klassische Aktionskarte oben
+        // Flip-Überraschung: nur mit der Hausregel, direkt nach einem Flip (bzw. der Farbwahl danach), Gesicht = Aktions- oder Zusatzkarte oben
         if (e.e === 'flip_surprise') {
           const ar = typeof e.face === 'string' ? M.Karten.zerlege(e.face).art : '';
-          if (typeof e.seat !== 'number' || ['plus1', 'plus5', 'aussetzen', 'alle_aussetzen', 'richtungswechsel', 'wuenscher_plus2', 'farbjagd'].indexOf(ar) < 0) this.fail('flip_surprise ' + JSON.stringify(e));
+          if (typeof e.seat !== 'number' || ['plus1', 'plus5', 'aussetzen', 'alle_aussetzen', 'richtungswechsel', 'wuenscher_plus2', 'farbjagd', 'tausch', 'gluecksspiel', 'ablegen', 'ablegen_joker'].indexOf(ar) < 0) this.fail('flip_surprise ' + JSON.stringify(e));
           if (m.view && m.view.rules && m.view.rules.flip_surprise !== 'on') this.fail('flip_surprise ohne Hausregel');
           const vor = (m.events || [])[i - 1];
           if (vor && ['flip', 'color', 'choose_color'].indexOf(vor.e) < 0) this.fail('flip_surprise nicht direkt nach flip/color');

@@ -170,6 +170,43 @@ func _run() -> void:
 	check(started == 8 and sound.playing_count() == AppSound.VOICES, "8 Töne gestartet, alle %d Abspieler belegt" % AppSound.VOICES)
 	sound.stop_all()
 
+	# Android-Weg (Beta 1.4.8, Ton nach Telefonat): Töne gehen an SoundPool (Attrappe), Lautstärke linear, Jubel-Sperre und
+	# playing_count nach Länge, Ausblenden/Stopp/Pause an Java; liefert SoundPool 0 (noch nicht geladen), spielt Godot.
+	var fake := FakePool.new()
+	sound.stop_all()
+	sound.native = fake
+	sound.now_override = 300000
+	check(sound.play("karte") and sound.last_native and fake.calls[-1] == "play karte", "Android: Karte über SoundPool")
+	check(is_equal_approx(float(fake.vols[-1]), db_to_linear(-4.5)), "Android: Lautstärke -4,5 dB linear (%.3f)" % float(fake.vols[-1]))
+	check(sound.playing_count() == 1, "Android: laufender Ton zählt")
+	sound.now_override = 300000 + 400
+	check(sound.playing_count() == 0, "Android: nach seiner Länge zählt er nicht mehr")
+	sound.now_override = 301000
+	check(sound.play("mau") and is_equal_approx(float(fake.vols[-1]), db_to_linear(-2.0)), "Android: Mau -2 dB")
+	sound.jubel_pick = 0
+	check(sound.play("sieg") and sound.last_native and fake.calls[-1] == "play jubel_1", "Android: Jubel über SoundPool")
+	sound.now_override = 304000
+	check(not sound.play("sieg"), "Android: Jubel startet nicht doppelt")
+	sound.fade_out_jubel()
+	check(fake.calls[-1].begins_with("fade ") and fake.calls[-1].ends_with(" 600"), "Android: Jubel ausblenden in 600 ms")
+	check(sound.play("sieg"), "Android: nach dem Ausblenden darf Jubel wieder starten")
+	sound.jubel_pick = -1
+	fake.next_id = 0
+	sound.now_override = 305000
+	check(sound.play("ziehen") and not sound.last_native and sound.playing_count() >= 1, "Android: SoundPool liefert 0 → Godot spielt")
+	fake.next_id = 50
+	sound.stop_all()
+	check(fake.calls[-1] == "stopAll" and sound.playing_count() == 0, "Android: stop_all stoppt auch SoundPool")
+	sound.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	sound.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
+	check(fake.calls.slice(-2) == ["pause", "resume"], "Android: Fokus weg/zurück → pause/resume")
+	sound.now_override = 306000
+	for i in range(8):
+		sound.play(["karte", "ziehen", "mischen", "flip", "fehler", "dran", "schnurren", "mau"][i])
+	check(sound.playing_count() <= AppSound.VOICES, "Android: höchstens %d Stimmen gezählt" % AppSound.VOICES)
+	sound.stop_all()
+	sound.native = null
+
 	# Fehlende Dateien: alles still, keine Fehler.
 	var empty := AppSound.new()
 	empty.dir = "res://gibt_es_nicht/"
@@ -189,3 +226,30 @@ func _run() -> void:
 		DirAccess.remove_absolute(path + suffix)
 	print("RESULT: %d ok" % ok)
 	quit(1 if failed > 0 else 0)
+
+
+class FakePool:
+	extends RefCounted
+	var calls: Array[String] = []
+	var vols: Array[float] = []
+	var next_id := 50
+
+	func play(n: String, vol: float) -> int:
+		calls.append("play " + n)
+		vols.append(vol)
+		if next_id <= 0:
+			return 0
+		next_id += 1
+		return next_id
+
+	func stopAll() -> void:
+		calls.append("stopAll")
+
+	func fade(id: int, vol: float, ms: int) -> void:
+		calls.append("fade %d %d" % [id, ms])
+
+	func pause() -> void:
+		calls.append("pause")
+
+	func resume() -> void:
+		calls.append("resume")

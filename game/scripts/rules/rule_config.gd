@@ -22,7 +22,7 @@ const CHOICES := {
 	"swap_direction": ["clockwise", "counter", "play", "against"],  # Platz+1, Platz−1, in bzw. gegen die Spielrichtung
 	"gamble_cards": ["off", "on"],             # Hausregel Glücksspiel: 2 zusätzliche Joker, siehe docs/module/A.md
 	"discard_color": ["off", "on"],            # Hausregel Farbe mit ablegen: 6 zusätzliche Karten, siehe docs/module/A.md
-	"flip_surprise": ["off", "on"],            # Hausregel Flip-Überraschung: Aktionskarte oben nach dem Flip wirkt auf den Nächsten
+	"flip_surprise": ["off", "on"],            # Hausregel Flip-Überraschung: Karte oben nach dem Flip wirkt, als hätte der Flip-Spieler sie gelegt
 	"flip_mode": ["pile", "card"],             # Flip wendet die ganze Ablage (offiziell) oder nur die gelegte Flip-Karte (Hausregel)
 }
 const FLAGS := {
@@ -289,7 +289,7 @@ func describe() -> Array[String]:
 	if flip_mode == "card":
 		out.append(I18n.t("Flip dreht nur die gelegte Karte: Oben liegt ihre andere Seite, die übrige Ablage bleibt zur Seite gelegt."))
 	if flip_surprise == "on":
-		out.append(I18n.t("Flip-Überraschung: Die Aktionskarte, die nach dem Flip oben liegt, wirkt auf den Nächsten."))
+		out.append(I18n.t("Flip-Überraschung: Die Karte, die nach dem Flip oben liegt, wirkt, als hätte der Flip-Spieler sie gelegt."))
 	# Zusatzkarten: Mit genau einer Hausregel steht die Kartenzahl in ihrer Zeile (Kartentausch wie bisher „(116)“), mit mehreren
 	# in einer eigenen Zeile.
 	var extras := (1 if swap_cards == "on" else 0) + (1 if gamble_cards == "on" else 0) + (1 if discard_color == "on" else 0)

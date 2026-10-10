@@ -17,6 +17,13 @@ extends Node
 # untereinander steckt in den Dateien (karte dezent, dran und sieg am lautesten). Die Stufen liegen 2.5 dB bzw. 10.5 dB unter Mau
 # „normal“; im Browser-Client (webclient/ton.js STUFEN_SPIEL) entspricht das 0.75 bzw. 0.3 bei Mau 1.0, damit beide gleich klingen.
 # Derselbe Ton wird innerhalb von 40 ms nur einmal gestartet (z. B. mehrere Karten im selben Bild).
+#
+# Android (Beta 1.4.8): Nach einem Telefonat blieb die App stumm (S24, Android 16). Godot 4.6 gibt auf Android über einen einzigen
+# OpenSL-ES-Abspieler aus, der nie neu angelegt wird; bleibt seine Puffer-Kette nach einem Wechsel der Ausgabe stehen, ist bis zum
+# Neustart Ruhe, und GDScript kann den Treiber nicht neu starten. Deshalb spielen die Töne auf Android über SoundPool
+# (android/build/src/main/java/com/godot/game/SfxPool.java, Dateien als res/raw/sfx_<name>.ogg, kopiert von tools/build.ps1).
+# Lautstärken, Stufen, Jubel-Zufall und Sperre bleiben hier; nur das Abspielen wandert nach Java. Ist ein Ton dort (noch) nicht
+# geladen, spielt Godot wie bisher. Am PC und in Tests bleibt es bei Godot (native = null; Tests setzen eine Attrappe).
 
 const DIR := "res://assets/sfx/"
 const NAMES := ["mau", "mau_mau", "karte", "ziehen", "mischen", "flip", "jubel_1", "jubel_2", "fehler", "dran", "schnurren"]
@@ -43,11 +50,37 @@ var last_played := ""             # für Tests: zuletzt gestarteter Ton ("" = ke
 var last_db := 0.0
 var jubel_pick := -1             # für Tests: 0/1 erzwingt eine Jubel-Datei (-1 = Zufall)
 var last_file := ""               # für Tests: Dateiname (ohne Endung) des zuletzt gestarteten Tons
+var native: Object = null         # Android: SfxPool (JavaClassWrapper); Tests: Attrappe mit play/stopAll/fade/pause/resume
+var last_native := false          # für Tests: zuletzt über native gespielt
+var _native_playing: Array[Dictionary] = []   # {id, file, until (ms), vol} der über native gestarteten Töne
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_ensure_players()
 	preload_all()
+	if native == null and OS.get_name() == "Android":
+		native = _android_pool()
+
+func _android_pool() -> Object:
+	# SoundPool anlegen; null = nicht verfügbar (dann spielt Godot).
+	if not Engine.has_singleton("AndroidRuntime"):
+		return null
+	var activity: Variant = Engine.get_singleton("AndroidRuntime").getActivity()
+	var java: Variant = JavaClassWrapper.wrap("com.godot.game.SfxPool")
+	if activity == null or java == null:
+		return null
+	var found := int(java.init(activity, ",".join(PackedStringArray(NAMES))))
+	print("Töne über SoundPool: %d Dateien" % found)
+	return java if found > 0 else null
+
+func _notification(what: int) -> void:
+	# Wie Godots eigene Ausgabe: beim Verlassen anhalten, beim Zurückkehren fortsetzen.
+	if native == null:
+		return
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED:
+		native.pause()
+	elif what == NOTIFICATION_APPLICATION_FOCUS_IN or what == NOTIFICATION_APPLICATION_RESUMED:
+		native.resume()
 
 func _ensure_players() -> void:
 	if not _players.is_empty():
@@ -141,6 +174,9 @@ func _play_jubel() -> bool:
 	for p in _players:
 		if p.playing and JUBEL.has(_file_of(p)):
 			return false
+	for e in _native_active():
+		if JUBEL.has(str(e.file)):
+			return false
 	var pick: String = JUBEL[randi() % JUBEL.size()] if jubel_pick < 0 else JUBEL[jubel_pick % JUBEL.size()]
 	if not _start(pick, db):
 		return false
@@ -160,6 +196,10 @@ func fade_out_jubel() -> void:
 			var tw := create_tween()
 			tw.tween_property(p, "volume_db", -60.0, JUBEL_FADE_S)
 			tw.tween_callback(p.stop)
+	for e in _native_active():
+		if JUBEL.has(str(e.file)):
+			native.fade(int(e.id), float(e.vol), int(JUBEL_FADE_S * 1000.0))
+			_native_playing.erase(e)
 
 func play_preview(sound_name := "mau") -> bool:
 	# Probehören in den Einstellungen: "mau" oder "mau_mau" in der eingestellten Lautstärke; bei mau_ton „aus“ mit „leise“, denn
@@ -176,14 +216,40 @@ func _start(sound_name: String, db: float) -> bool:
 	_ensure_players()
 	if not is_inside_tree():
 		return false
-	var p := _free_player()
-	p.stream = s
-	p.volume_db = db
-	p.play()
+	last_native = _start_native(sound_name, s, db)
+	if not last_native:
+		var p := _free_player()
+		p.stream = s
+		p.volume_db = db
+		p.play()
 	last_played = sound_name
 	last_db = db
 	last_file = sound_name
 	return true
+
+func _start_native(sound_name: String, s: AudioStream, db: float) -> bool:
+	# Android: über SoundPool. false = nicht möglich (noch nicht geladen o. ä.), dann spielt Godot.
+	if native == null:
+		return false
+	var vol := clampf(db_to_linear(db), 0.0, 1.0)
+	var id := int(native.play(sound_name, vol))
+	if id <= 0:
+		return false
+	var active := _native_active()
+	if active.size() >= VOICES:
+		_native_playing.erase(active[0])     # SoundPool verdrängt den ältesten Ton selbst (6 Stimmen wie hier)
+	_native_playing.append({"id": id, "file": sound_name, "vol": vol, "until": now_ms() + int(ceil(s.get_length() * 1000.0))})
+	return true
+
+func _native_active() -> Array[Dictionary]:
+	# Über native gestartete Töne, die nach ihrer Länge noch laufen (SoundPool meldet das Ende nicht).
+	var now := now_ms()
+	var still: Array[Dictionary] = []
+	for e in _native_playing:
+		if int(e.until) > now:
+			still.append(e)
+	_native_playing = still
+	return still.duplicate()
 
 func _free_player() -> AudioStreamPlayer:
 	# Erst ein freier Abspieler, sonst der am längsten laufende (reihum).
@@ -197,7 +263,7 @@ func _free_player() -> AudioStreamPlayer:
 	return oldest
 
 func playing_count() -> int:
-	var n := 0
+	var n := _native_active().size()
 	for p in _players:
 		if p.playing:
 			n += 1
@@ -206,3 +272,6 @@ func playing_count() -> int:
 func stop_all() -> void:
 	for p in _players:
 		p.stop()
+	if native != null:
+		native.stopAll()
+	_native_playing.clear()

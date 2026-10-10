@@ -16,6 +16,8 @@ game/android/build/src/instrumented/assets/
 game/android/build/assetPackInstallTime/src/main/assets/
 game/android/build/local.properties
 game/android/build/libs/
+# Töne für SoundPool (Beta 1.4.8): tools/build.ps1 kopiert sie aus game/assets/sfx
+game/android/build/res/raw/sfx_*
 # vom Export je Bauart erzeugt (Manifest mit Berechtigungen aus dem Exportprofil, Symbole, Namen)
 game/android/build/src/debug/
 game/android/build/src/release/

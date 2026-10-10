@@ -551,6 +551,15 @@ try {
             }
             finally { $zip.Dispose() }
         }
+        # Beta 1.4.8 (Ton nach Telefonat): Töne spielen auf Android über SoundPool (SfxPool.java, scripts/app/sound.gd). Dafür liegen die
+        # .ogg aus game/assets/sfx als Rohressourcen res/raw/sfx_<name>.ogg in der APK (Godot packt nur die importierten Fassungen).
+        # Nicht nach src/main/assets: diesen Ordner leert der Godot-Export. Erzeugt, daher in .gitignore.
+        $rawDir = Join-Path $buildDir 'res/raw'
+        New-Item -ItemType Directory -Force $rawDir | Out-Null
+        Get-ChildItem -LiteralPath $rawDir -Filter 'sfx_*' | Remove-Item -Force
+        $sfx = @(Get-ChildItem -LiteralPath (Join-Path $gamePath 'assets/sfx') -Filter '*.ogg')
+        foreach ($f in $sfx) { Copy-Item -LiteralPath $f.FullName -Destination (Join-Path $rawDir ('sfx_' + $f.Name.ToLowerInvariant())) }
+        Write-Output ("SoundPool: {0} Töne nach res/raw kopiert" -f $sfx.Count)
         $apk = Join-Path $buildsDir 'MauMauFlip.apk'
         if (Test-Path -LiteralPath $apk) { Remove-Item -LiteralPath $apk -Force }
         # Release-Export mit dem Projektschlüssel (Vorabprüfung oben); Godot liest Pfad, Alias und Passwort aus diesen Variablen.

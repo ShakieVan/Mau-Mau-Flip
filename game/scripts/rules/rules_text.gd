@@ -132,8 +132,14 @@ static func card_help(key: String, config: RuleConfig = null) -> Array[String]:
 			else:
 				out.append(_t("Oben liegt dann die bisher unterste Ablagekarte mit ihrer anderen Seite. Eine Wunschfarbe verfällt."))
 			if cfg.flip_surprise == "on":
-				out.append(_t("Flip-Überraschung: Liegt danach eine Aktionskarte oben, wirkt sie auf den Nächsten, als hättest du sie gelegt. Bei Wünscher +2 und Farbjagd wählst du zuerst die Farbe."))
-				out.append(_t("Flip, Wünscher und Zusatzkarten oben wirken nicht; beim Joker wählst du nur die Farbe."))
+				out.append(_t("Flip-Überraschung: Die Karte, die danach oben liegt, wirkt, als hättest du sie gelegt. Bei Jokern wählst du zuerst die Farbe."))
+				if cfg.swap_cards == "on":
+					out.append(_t("Kartentausch oben: Alle geben ihre ganze Hand weiter."))
+				if cfg.gamble_cards == "on":
+					out.append(_t("Glücksspiel oben: Du wählst die Farbe und spielst Glücksspiel."))
+				if cfg.discard_color == "on":
+					out.append(_t("Ablegen-Karte oben: Du legst Karten ihrer Farbe mit ab, beim Ablegen-Joker wählst du Ablegefarbe und Spielfarbe. Zurücknehmen geht hier nicht."))
+				out.append(_t("Ein Flip oben wirkt nicht (keine Kette); beim Wünscher wählst du nur die Farbe."))
 			else:
 				out.append(_t("Liegt danach eine Aktionskarte oben, wirkt sie nicht. Liegt ein Joker oben, wählst du die Farbe."))
 			if cfg.flip_last_card == "execute":
@@ -322,7 +328,7 @@ static func overview(config: RuleConfig = null) -> Array[Dictionary]:
 	out.append({"title": _t("Helle Seite"), "text": _t("+1: Der Nächste zieht 1 und %s. Aussetzen: Der Nächste wird übersprungen. Richtungswechsel: Die Richtung dreht sich. Wünscher: Farbe wünschen. Wünscher +2: Farbe wünschen, der Nächste zieht 2 und %s.") % [cfg.penalty_tail(), cfg.penalty_tail()]})
 	out.append({"title": _t("Dunkle Seite"), "text": _t("+5: Der Nächste zieht 5 und %s. Alle aussetzen: Du bist sofort noch einmal dran. Richtungswechsel und Wünscher wie hell. Farbjagd: Farbe wünschen, der Nächste zieht, bis er diese Farbe hat, und %s.") % [cfg.penalty_tail(), cfg.penalty_tail()]})
 	var flip_top := _t("eine Aktionskarte oben wirkt nicht; liegt ein Joker oben, wählt der Flip-Spieler die Farbe.") if cfg.flip_surprise != "on" \
-		else _t("liegt ein Joker oben, wählt der Flip-Spieler die Farbe. Flip-Überraschung (Hausregel): Die Aktionskarte, die nach dem Flip oben liegt (+1, +5, Aussetzen, Alle aussetzen, Richtungswechsel, Wünscher +2, Farbjagd), wirkt auf den Nächsten, als hätte der Flip-Spieler sie gelegt; Stapeln gilt wie sonst.")
+		else _t("liegt ein Joker oben, wählt der Flip-Spieler die Farbe. Flip-Überraschung (Hausregel): Die Karte, die nach dem Flip oben liegt, wirkt, als hätte der Flip-Spieler sie gelegt – Aktionskarten auf den Nächsten, Kartentausch, Glücksspiel und Farbe mit ablegen wie beim eigenen Legen (ohne Zurücknehmen); Stapeln gilt wie sonst. Ein Flip oben wirkt nicht, es gibt keine Kette.")
 	var flip_turn := _t("Der Flip wendet Ablage, Nachziehstapel und alle Hände. Oben liegt dann die bisher unterste Ablagekarte mit ihrer anderen Seite.") if cfg.flip_mode != "card" \
 		else _t("Der Flip wendet Nachziehstapel und alle Hände, von der Ablage aber nur sich selbst (Hausregel): Oben liegt seine andere Seite, die übrige Ablage bleibt zur Seite gelegt.")
 	out.append({"title": _t("Flip"), "text": flip_turn + " " + _t("Eine Wunschfarbe verfällt,") + " " + flip_top})

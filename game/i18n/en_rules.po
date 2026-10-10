@@ -340,14 +340,14 @@ msgstr "Color Hunt: A drawn wild card ends the drawing."
 msgid "Flip dreht nur die gelegte Karte: Oben liegt ihre andere Seite, die übrige Ablage bleibt zur Seite gelegt."
 msgstr "Flip turns only the played card: its other side lies on top, the rest of the discard pile stays put on the side."
 
-msgid "Flip, Wünscher und Zusatzkarten oben wirken nicht; beim Joker wählst du nur die Farbe."
-msgstr "A Flip, Wild or extra card on top has no effect; with a wild card you only choose the color."
+msgid "Ein Flip oben wirkt nicht (keine Kette); beim Wünscher wählst du nur die Farbe."
+msgstr "A Flip on top has no effect (no chain); with a Wild you only choose the color."
 
-msgid "Flip-Überraschung: Die Aktionskarte, die nach dem Flip oben liegt, wirkt auf den Nächsten."
-msgstr "Flip Surprise: The action card lying on top after the Flip affects the next player."
+msgid "Flip-Überraschung: Die Karte, die nach dem Flip oben liegt, wirkt, als hätte der Flip-Spieler sie gelegt."
+msgstr "Flip Surprise: The card that ends up on top after the Flip takes effect as if the player who played the Flip had played it."
 
-msgid "Flip-Überraschung: Liegt danach eine Aktionskarte oben, wirkt sie auf den Nächsten, als hättest du sie gelegt. Bei Wünscher +2 und Farbjagd wählst du zuerst die Farbe."
-msgstr "Flip Surprise: If an action card ends up on top afterward, it affects the next player as if you had played it. With Wild +2 and Color Hunt you choose the color first."
+msgid "Flip-Überraschung: Die Karte, die danach oben liegt, wirkt, als hättest du sie gelegt. Bei Jokern wählst du zuerst die Farbe."
+msgstr "Flip Surprise: The card that ends up on top afterward takes effect as if you had played it. With wild cards you choose the color first."
 
 msgid "Für jedes Glücksspiel wird geheim eine Trefferquote zwischen 1:1 und 1:10 ausgelost."
 msgstr "For each gamble, a hit rate between 1:1 and 1:10 is drawn in secret."
@@ -784,8 +784,8 @@ msgstr "has no card in the current color"
 msgid "keine Karte in der aktuellen Farbe und keinen anderen Joker hat"
 msgstr "has no card in the current color and no other wild card"
 
-msgid "liegt ein Joker oben, wählt der Flip-Spieler die Farbe. Flip-Überraschung (Hausregel): Die Aktionskarte, die nach dem Flip oben liegt (+1, +5, Aussetzen, Alle aussetzen, Richtungswechsel, Wünscher +2, Farbjagd), wirkt auf den Nächsten, als hätte der Flip-Spieler sie gelegt; Stapeln gilt wie sonst."
-msgstr "if a wild card is on top, the player who played the Flip chooses the color. Flip Surprise (house rule): The action card that ends up on top after the Flip (+1, +5, Skip, Skip All, Reverse, Wild +2, Color Hunt) affects the next player as if the player who played the Flip had played it; stacking applies as usual."
+msgid "liegt ein Joker oben, wählt der Flip-Spieler die Farbe. Flip-Überraschung (Hausregel): Die Karte, die nach dem Flip oben liegt, wirkt, als hätte der Flip-Spieler sie gelegt – Aktionskarten auf den Nächsten, Kartentausch, Glücksspiel und Farbe mit ablegen wie beim eigenen Legen (ohne Zurücknehmen); Stapeln gilt wie sonst. Ein Flip oben wirkt nicht, es gibt keine Kette."
+msgstr "if a wild card is on top, the player who played the Flip chooses the color. Flip Surprise (house rule): The card that ends up on top after the Flip takes effect as if the player who played the Flip had played it – action cards hit the next player, Card Swap, Gamble and Discard Color work as when played (without taking back); stacking applies as usual. A Flip on top has no effect, there is no chain."
 
 msgid "mit %s"
 msgstr "with %s"
@@ -898,3 +898,12 @@ msgstr "The host took you out of the game."
 
 msgid "Der Gastgeber hat dich nicht dazugeholt."
 msgstr "The host didn't add you to the game."
+
+msgid "Kartentausch oben: Alle geben ihre ganze Hand weiter."
+msgstr "Card Swap on top: everyone passes on their whole hand."
+
+msgid "Glücksspiel oben: Du wählst die Farbe und spielst Glücksspiel."
+msgstr "Gamble on top: you choose the color and play Gamble."
+
+msgid "Ablegen-Karte oben: Du legst Karten ihrer Farbe mit ab, beim Ablegen-Joker wählst du Ablegefarbe und Spielfarbe. Zurücknehmen geht hier nicht."
+msgstr "Discard Color card on top: you discard cards of its color too; with the Discard Wild you choose the discard color and the play color. You can't take it back here."

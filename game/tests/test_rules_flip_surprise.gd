@@ -1,7 +1,8 @@
 extends SceneTree
 # Hausregel „Flip-Überraschung“ (flip_surprise, Protokoll 0.1.4 Nr. 1): Die klassische Aktionskarte, die nach einem Flip oben
 # liegt, wirkt, als hätte der Flip-Spieler sie gelegt. Geprüft: jede Kartenart, Joker oben mit Farbwahl (auch nach Speichern),
-# Stapeln, penalty_turn, keine Überraschung bei Flip/Wünscher/Zusatzkarten oben, am Rundenende und offiziell; Ereignis und
+# Stapeln, penalty_turn, keine Überraschung bei Flip/Wünscher oben (Zusatzkarten: test_rules_flip_surprise_cards.gd), am
+# Rundenende und offiziell; Ereignis und
 # Reihenfolge; dazu die neue „Familie“ und ihre Hebung in RuleConfig.migrate_dict (Protokoll 0.1.4 Nr. 2).
 
 var ok := 0
@@ -153,12 +154,13 @@ func _stacking_and_penalty_turn() -> void:
 
 func _no_surprise() -> void:
 	var extras := {"swap_cards": "on", "gamble_cards": "on", "discard_color": "on"}
-	for bottom in ["dunkel_lila_flip", "dunkel_lila_tausch", "dunkel_lila_ablegen", "dunkel_lila_7"]:
+	# Zusatzkarten oben wirken seit Beta 1.4.8 (test_rules_flip_surprise_cards.gd); Flip (keine Kette), Zahl und Wünscher nicht.
+	for bottom in ["dunkel_lila_flip", "dunkel_lila_7"]:
 		var g := flip_game(extras, bottom)
 		var ev := play_flip(g, "Flip mit %s unten" % bottom)
 		check(not names(ev).has("flip_surprise") and g.current_seat() == 1 and g.phase() == "turn" and not names(ev).has("swap_hands"),
 			"%s oben: keine Überraschung (%s)" % [bottom, str(names(ev))])
-	for bottom in ["dunkel_wuenscher", "dunkel_gluecksspiel", "dunkel_ablegen_joker"]:
+	for bottom in ["dunkel_wuenscher"]:
 		var g := flip_game(extras, bottom)
 		play_flip(g, "Flip mit %s unten" % bottom)
 		check(g.phase() == "color", "%s oben: Farbwahl" % bottom)

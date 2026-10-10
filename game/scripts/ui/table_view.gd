@@ -902,6 +902,11 @@ func undo_pick() -> void:
 # color) ist endgültig und lässt sich nicht wegklicken – das Rad kommt sofort wieder.
 func _on_wheel_cancelled() -> void:
 	if _pick_wait:
+		if not can_undo_pick() and not input_locked:
+			# Flip-Überraschung (Ablegen-Joker kam nicht aus der Hand): nichts zurückzunehmen, die Farbwahl kommt sofort wieder
+			wish_picker.open_wheel(side, _own_counts_after(_pick_cards), "Mit welcher Farbe geht es weiter?")
+			show_notice(I18n.t("Erst die Farbe wählen."))
+			return
 		undo_pick()
 		return
 	var h: Dictionary = view.get("hints", {})
@@ -1239,7 +1244,8 @@ func open_color_fields() -> void:
 
 
 func open_color_wheel() -> void:
-	wish_picker.open_wheel(side, _own_counts())
+	# Flip-Überraschung mit Ablegen-Joker oben: Die Farbwahl ist die Ablegefarbe (die Spielfarbe folgt nach der Auswahl).
+	wish_picker.open_wheel(side, _own_counts(), "Welche Farbe legst du mit ab?" if MauBot.discard_wish(view) else "")
 
 
 func _own_counts() -> Dictionary:

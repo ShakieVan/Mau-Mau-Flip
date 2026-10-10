@@ -69,6 +69,9 @@ msgstr "Choose which %s cards you discard too."
 msgid "Nach dem Flip liegt ein Joker oben – wähle die neue Farbe."
 msgstr "After the Flip, a wild card is on top – choose the new color."
 
+msgid "Nach dem Flip liegt ein Ablegen-Joker oben – wähle die Farbe, die du mit ablegst."
+msgstr "After the Flip, a Discard Wild is on top – choose the color you discard."
+
 msgid "Drück den Glücksspielknopf!"
 msgstr "Press the gamble button!"
 
@@ -760,8 +763,8 @@ msgstr "Only the played card"
 msgid "Flip-Überraschung"
 msgstr "Flip Surprise"
 
-msgid "Die Aktionskarte, die nach dem Flip oben liegt, wirkt auf den Nächsten."
-msgstr "The action card that ends up on top after the Flip affects the next player."
+msgid "Die Karte, die nach dem Flip oben liegt, wirkt, als hätte der Flip-Spieler sie gelegt – auch Zusatzkarten."
+msgstr "The card that ends up on top after the Flip takes effect as if the player who played the Flip had played it – extra cards too."
 
 msgid "An"
 msgstr "On"
