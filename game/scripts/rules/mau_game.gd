@@ -546,6 +546,11 @@ static func _int_field(action: Dictionary, key: String, fallback := -1) -> int:
 
 
 # Text-Aktionsfeld: nur String, sonst "".
+# Ausdrücklich leere Farbe (color: ""): Ablegefarbe des Ablegen-Jokers offen lassen (hints.pick_tap)
+static func _open_color(action: Dictionary) -> bool:
+	return action.get("color") is String and str(action.get("color")) == ""
+
+
 static func _str_field(action: Dictionary, key: String) -> String:
 	var v: Variant = action.get(key, "")
 	return v if v is String else ""
@@ -575,7 +580,9 @@ func _act_play(seat: int, action: Dictionary, ev: Array) -> String:
 	var wish := ""
 	if _wild[f] == 1:
 		wish = _str_field(action, "color")
-		if not (CardDB.COLORS[SIDES[side]] as Array).has(wish):
+		# Ablegen-Joker ohne Farbe (hints.pick_tap, 1.4.9): Die Ablegefarbe bleibt offen und ergibt sich aus der Auswahl.
+		var open_ok := _open_color(action) and _kind[f] == DISCARD_WILD
+		if not open_ok and not (CardDB.COLORS[SIDES[side]] as Array).has(wish):
 			return _why("Wähle eine Farbe der %s.", [I18n.tr_arg(RulesText.side_name(SIDES[side]))])
 	# Regelgerechtheit und die Hand fürs Anzweifeln mit der Hand zum Zeitpunkt der Entscheidung, also vor einer auto-Strafe,
 	# die _begin_turn noch verhängen kann (Hinweise und enforce-Prüfung beruhen auf derselben Hand).
@@ -720,13 +727,15 @@ func _act_color(seat: int, action: Dictionary, ev: Array) -> String:
 	if seat != current:
 		return "Du bist nicht dran."
 	var c := _str_field(action, "color")
-	if not (CardDB.COLORS[SIDES[side]] as Array).has(c):
-		return _why("Wähle eine Farbe der %s.", [I18n.tr_arg(RulesText.side_name(SIDES[side]))])
 	var k := _surprise_kind(seat)
+	var open := k == DISCARD_WILD and _open_color(action)
+	if not open and not (CardDB.COLORS[SIDES[side]] as Array).has(c):
+		return _why("Wähle eine Farbe der %s.", [I18n.tr_arg(RulesText.side_name(SIDES[side]))])
 	if k == DISCARD_WILD:
 		# Ablegen-Joker oben (Flip-Überraschung): c ist die Ablegefarbe; die Spielfarbe folgt mit {a:"discard_pick"}. Bis dahin gilt
-		# c vorläufig als Farbe (ohne Ereignis), damit der Zustand eine gültige Farbe hat.
-		color = c
+		# c vorläufig als Farbe (ohne Ereignis), damit der Zustand eine gültige Farbe hat. c = "" (hints.pick_tap): Ablegefarbe
+		# offen, vorläufige Farbe die erste der Seite (die Sicht zeigt bis zur Auswahl keine Farbe, siehe view_for).
+		color = c if not open else str((CardDB.COLORS[SIDES[side]] as Array)[0])
 		wished = false
 		_surprise(seat, ev, c)
 		return ""
@@ -837,6 +846,7 @@ func _act_discard_pick(seat: int, action: Dictionary, ev: Array) -> String:
 		return "Ungültige Aktion."
 	var cand := _pick_candidates(seat)
 	var chosen: Array = []
+	var col := str(dpick.color)
 	for x in raw:
 		var c := _int_field({"c": x}, "c")
 		if c == BAD_FIELD or chosen.has(c):
@@ -844,6 +854,12 @@ func _act_discard_pick(seat: int, action: Dictionary, ev: Array) -> String:
 		if not cand.has(c):
 			return "Diese Karte kannst du nicht mit ablegen."
 		chosen.append(c)
+	if col == "" and not chosen.is_empty():
+		# Offene Ablegefarbe (Ablegen-Joker, hints.pick_tap): Die Farbe der gewählten Karten ist die Ablegefarbe, alle gleich.
+		col = _color[faces[side * n_cards + int(chosen[0])]]
+		for c in chosen:
+			if _color[faces[side * n_cards + int(c)]] != col:
+				return "Leg nur Karten einer Farbe mit ab."
 	var wild := bool(dpick.get("wild", false))
 	var wish := ""
 	if wild:
@@ -851,7 +867,6 @@ func _act_discard_pick(seat: int, action: Dictionary, ev: Array) -> String:
 		if not (CardDB.COLORS[SIDES[side]] as Array).has(wish):
 			return "Wähle die Farbe, mit der es weitergeht."
 	var id := int(dpick.card)
-	var col := str(dpick.color)
 	dpick = {}
 	state = "turn"
 	_discard_color(seat, id, col, chosen, ev)
@@ -910,9 +925,22 @@ func _pick_candidates(seat: int) -> Array:
 		return out
 	var col := str(dpick.color)
 	for c in hands[seat]:
-		if _color[faces[side * n_cards + int(c)]] == col:
+		var cc: String = _color[faces[side * n_cards + int(c)]]
+		if cc != "" and (cc == col or col == ""):          # offene Ablegefarbe: alle farbigen Karten (nie Joker)
 			out.append(int(c))
 	return out
+
+
+# Offene Ablegefarbe: größte Zahl Karten einer Farbe auf der Hand (so viele kann die Auswahl höchstens mitnehmen)
+func _max_color_count(seat: int) -> int:
+	var counts := {}
+	var best := 0
+	for c in hands[seat]:
+		var cc: String = _color[faces[side * n_cards + int(c)]]
+		if cc != "":
+			counts[cc] = int(counts.get(cc, 0)) + 1
+			best = maxi(best, int(counts[cc]))
+	return best
 
 
 func _can_stop(seat: int) -> bool:
@@ -1757,7 +1785,8 @@ func _can_mau(seat: int) -> bool:
 	if state == "gamble":
 		return str(gamble.need) == "stake" and size == 2       # vor dem Setzen der vorletzten Karte
 	if state == "discard_pick":                                # wenn nach der Auswahl genau 1 Karte bleiben kann
-		return size >= 1 and size - _pick_candidates(seat).size() <= 1
+		var most := _max_color_count(seat) if str(dpick.get("color", "")) == "" else _pick_candidates(seat).size()
+		return size >= 1 and size - most <= 1
 	if not state in ["turn", "drawn", "challenge"]:
 		return false
 	# Vor dem Legen nur, wenn eine Karte legbar ist (sonst zieht man und hätte 3 Karten: kein „blinder“ Ruf), nach der genau
@@ -1896,6 +1925,8 @@ func view_for(seat: int) -> Dictionary:
 	# Farbe mit ablegen: offene Auswahl öffentlich nur mit Platz und Ablegefarbe (keine Kandidatenzahl, das wäre ein Leck).
 	if config.discard_color == "on":
 		v["discard_pick"] = {"seat": int(dpick.seat), "color": str(dpick.color)} if state == "discard_pick" and not dpick.is_empty() else {}
+		if state == "discard_pick" and not dpick.is_empty() and str(dpick.color) == "" and bool(dpick.get("flip", false)):
+			v["color"] = ""           # Flip-Überraschung mit offener Ablegefarbe: Die vorläufige Farbe ist keine (wie in Phase color)
 	return v
 
 
@@ -1910,6 +1941,8 @@ func _hints(me: int) -> Dictionary:
 		h["can_pick"] = []
 		h["pick_color"] = false
 		h["can_undo"] = false
+		h["pick_tap"] = true          # Gastgeber ab 1.4.9: Ablegen-Joker mit color "" legen, Ablegefarbe per Antippen (pick_open)
+		h["pick_open"] = false
 	if me >= 0 and state in PLAY_PHASES:
 		if me == current:
 			var playable: Array = []
@@ -1943,6 +1976,7 @@ func _hints(me: int) -> Dictionary:
 					h.can_pick = _pick_candidates(me)
 					h.pick_color = bool(dpick.get("wild", false))
 					h.can_undo = not bool(dpick.get("flip", false))
+					h.pick_open = str(dpick.get("color", "")) == ""
 		h.can_mau = _can_mau(me)
 		if config.mau_call == "catch" and mau_open >= 0 and mau_open != me and not mau_said[mau_open]:
 			h.catch = [mau_open]
@@ -1998,7 +2032,10 @@ func _hint_parts(me: int, h: Dictionary) -> Array:
 				var n := (gamble.stake as Array).size()
 				out.append(I18n.part("%s spielt Glücksspiel – Einsatz: %d Karte." if n == 1 else "%s spielt Glücksspiel – Einsatz: %d Karten.", [who, n]))
 			"discard_pick":
-				out.append(I18n.part("%s legt %s mit ab.", [who, I18n.tr_arg(RulesText.color_name(str(dpick.get("color", ""))))]))
+				if str(dpick.get("color", "")) == "":
+					out.append(I18n.part("%s wählt aus …", [who]))
+				else:
+					out.append(I18n.part("%s legt %s mit ab.", [who, I18n.tr_arg(RulesText.color_name(str(dpick.get("color", ""))))]))
 			_:
 				out.append(I18n.part("%s ist dran.", [who]))
 		return out
@@ -2007,6 +2044,8 @@ func _hint_parts(me: int, h: Dictionary) -> Array:
 			var carg := I18n.tr_arg(RulesText.color_name(str(dpick.get("color", ""))))
 			if (h.can_pick as Array).is_empty():
 				out.append("Wähle die Farbe, mit der es weitergeht.")
+			elif bool(h.get("pick_open", false)):
+				out.append("Tippe auf eine Karte der Farbe, die du mit ablegen willst.")
 			elif bool(h.pick_color):
 				out.append(I18n.part("Wähle, welche Karten in %s du mit ablegst, und die Farbe, mit der es weitergeht.", [carg]))
 			else:

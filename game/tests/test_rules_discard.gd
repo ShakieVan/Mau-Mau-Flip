@@ -32,6 +32,7 @@ func _initialize() -> void:
 	_dc_matching()
 	_dc_colored()
 	_dc_wild()
+	_dc_open()
 	_dc_undo()
 	_dc_mau()
 	_dc_finish()
@@ -307,6 +308,61 @@ func _dc_colored() -> void:
 	g = dc_make({"hands": [["hell_blau_ablegen", "hell_blau_9", "hell_gelb_1"], ["hell_blau_1"], ["hell_gruen_1"]], "top": "hell_blau_5"})
 	ev = dc_lay(g, 0, "hell_blau_ablegen", "Blau ablegen, nichts mit", "", [])
 	check(int(dc_ev(ev, "discard_color").count) == 0 and RulesFixture.hand_keys(g, 0) == ["hell_blau_9", "hell_gelb_1"], "leere Auswahl erlaubt")
+
+
+# 1.4.9: Ablegen-Joker mit offener Ablegefarbe (color: ""): Kandidaten = alle farbigen Karten, die Auswahl bestimmt die Farbe.
+func _dc_open() -> void:
+	var g := dc_make({"hands": [["hell_ablegen_joker", "hell_gelb_1", "hell_gelb_2", "hell_blau_3", "hell_wuenscher", "hell_rot_4"],
+		["hell_blau_1", "hell_blau_2"], ["hell_gruen_1", "hell_gruen_2"]], "top": "hell_rot_5"})
+	check(bool(g.view_for(0).hints.get("pick_tap", false)) and bool(g.view_for(1).hints.get("pick_tap", false)), "hints.pick_tap für alle")
+	var jid := RulesFixture.card(g, 0, "hell_ablegen_joker")
+	var old_color := g.color
+	var ev := dc_act(g, 0, {"a": "play", "card": jid, "color": ""}, "Ablegen-Joker mit offener Ablegefarbe")
+	var v := g.view_for(0)
+	check(dc_names(ev) == ["play", "discard_pick"] and str(dc_ev(ev, "discard_pick").color) == "" and g.color == old_color,
+		"offen: play, discard_pick ohne Farbe (%s)" % str(dc_names(ev)))
+	check(bool(v.hints.pick_open) and bool(v.hints.pick_color) and bool(v.hints.can_undo) and (v.hints.can_pick as Array).size() == 4
+		and str(v.discard_pick.color) == "" and str(v.color) == old_color, "offen: alle 4 farbigen Karten wählbar, keine Joker (%s)" % str(v.hints.can_pick))
+	check(str(v.hints.text) == "Tippe auf eine Karte der Farbe, die du mit ablegen willst.", "offen: Hinweis (%s)" % v.hints.text)
+	check(str(g.view_for(1).hints.text).ends_with("wählt aus …") and not bool(g.view_for(1).hints.pick_open), "offen: die anderen sehen „… wählt aus …“")
+	var gelb := [RulesFixture.card(g, 0, "hell_gelb_1"), RulesFixture.card(g, 0, "hell_gelb_2")]
+	var r := g.apply(0, {"a": "discard_pick", "cards": [gelb[0], RulesFixture.card(g, 0, "hell_blau_3")], "color": "rot"})
+	check(not bool(r.ok) and str(r.reason) == "Leg nur Karten einer Farbe mit ab." and g.phase() == "discard_pick", "offen: gemischte Farben abgelehnt")
+	r = g.apply(0, {"a": "discard_pick", "cards": [RulesFixture.card(g, 0, "hell_wuenscher")], "color": "rot"})
+	check(not bool(r.ok), "offen: Joker nicht wählbar")
+	ev = dc_act(g, 0, {"a": "discard_pick", "cards": gelb, "color": "blau"}, "offen: Gelbe mit ab, weiter mit Blau")
+	var e := dc_ev(ev, "discard_color")
+	check(str(e.color) == "gelb" and int(e.count) == 2 and g.color == "blau" and g.wished and g.current_seat() == 1, "offen: Ablegefarbe Gelb aus der Auswahl (%s)" % str(e))
+	# Leere Auswahl: Ablegefarbe "" (nichts mit ab), nur die Spielfarbe
+	g = dc_make({"hands": [["hell_ablegen_joker", "hell_gelb_1", "hell_blau_3"], ["hell_blau_1"], ["hell_gruen_1"]], "top": "hell_rot_5"})
+	dc_act(g, 0, {"a": "play", "card": RulesFixture.card(g, 0, "hell_ablegen_joker"), "color": ""}, "offen legen (2)")
+	ev = dc_act(g, 0, {"a": "discard_pick", "cards": [], "color": "gruen"}, "offen: nichts mit ab")
+	check(int(dc_ev(ev, "discard_color").count) == 0 and g.color == "gruen" and (g.hands[0] as Array).size() == 2, "offen: leere Auswahl")
+	# Mau in der offenen Auswahl: nur wenn eine Farbe alle bis auf eine Karte mitnehmen kann
+	g = dc_make({"hands": [["hell_ablegen_joker", "hell_gelb_1", "hell_gelb_2", "hell_blau_3"], ["hell_blau_1"], ["hell_gruen_1"]], "top": "hell_rot_5"})
+	dc_act(g, 0, {"a": "play", "card": RulesFixture.card(g, 0, "hell_ablegen_joker"), "color": ""}, "offen legen (3)")
+	check(bool(g.view_for(0).hints.can_mau), "offen: Mau möglich (2 Gelbe, 1 Blaue)")
+	g = dc_make({"hands": [["hell_ablegen_joker", "hell_gelb_1", "hell_blau_2", "hell_rot_3"], ["hell_blau_1"], ["hell_gruen_1"]], "top": "hell_rot_5"})
+	dc_act(g, 0, {"a": "play", "card": RulesFixture.card(g, 0, "hell_ablegen_joker"), "color": ""}, "offen legen (4)")
+	check(not bool(g.view_for(0).hints.can_mau), "offen: kein Mau bei drei Farben")
+	# Bot (z. B. „Computer spielt für …“) wählt in der offenen Auswahl nur eine Farbe; Rundreise behält die offene Farbe
+	var text := JSON.stringify(g.to_dict())
+	var h := MauGame.from_dict(JSON.parse_string(text))
+	check(JSON.stringify(h.to_dict()) == text and str(h.dpick.color) == "" and bool(h.view_for(0).hints.pick_open), "offen: Rundreise")
+	var a := _dc_bot(g, 0)
+	if str(a.get("a", "")) == "mau":
+		a = _dc_bot(g, 0)
+	check(str(a.get("a", "")) == "discard_pick" and (a.cards as Array).size() <= 1 and a.has("color"), "offen: Bot wählt eine Farbe (%s)" % str(a))
+	dc_act(g, 0, a, "offen: Bot-Auswahl gilt")
+	# Undo aus der offenen Auswahl
+	g = dc_make({"hands": [["hell_ablegen_joker", "hell_gelb_1", "hell_blau_3"], ["hell_blau_1"], ["hell_gruen_1"]], "top": "hell_rot_5"})
+	dc_act(g, 0, {"a": "play", "card": RulesFixture.card(g, 0, "hell_ablegen_joker"), "color": ""}, "offen legen (5)")
+	dc_act(g, 0, {"a": "undo"}, "offen: zurücknehmen")
+	check(g.phase() == "turn" and (g.hands[0] as Array).size() == 3 and RulesFixture.top_key(g) == "hell_rot_5", "offen: zurückgenommen")
+	# Farbige Ablegen-Karte: color "" ändert nichts (feste Farbe)
+	g = dc_make({"hands": [["hell_rot_ablegen", "hell_rot_1", "hell_blau_3"], ["hell_blau_1"], ["hell_gruen_1"]], "top": "hell_rot_5"})
+	dc_act(g, 0, {"a": "play", "card": RulesFixture.card(g, 0, "hell_rot_ablegen"), "color": ""}, "farbige Ablegen-Karte mit color \"\"")
+	check(str(g.view_for(0).discard_pick.color) == "rot" and not bool(g.view_for(0).hints.pick_open), "farbige Ablegen-Karte: Farbe fest")
 
 
 func _dc_wild() -> void:

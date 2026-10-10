@@ -186,7 +186,7 @@ func card_help() -> void:
 	var a := RulesText.card_help("hell_blau_ablegen", on)
 	check(a[0].contains("welche deiner Karten in Blau") and "\n".join(PackedStringArray(a)).contains("Passt auf Blau"), "Ablegen-Karte: Blau (%s)" % a[0])
 	var j := RulesText.card_help("dunkel_ablegen_joker", on)
-	check(j[0].begins_with("Joker: passt immer") and j[0].contains("Karten dieser Farbe du"), "Ablegen-Joker: Wirkung (%s)" % j[0])
+	check(j[0].begins_with("Joker: passt immer") and j[0].contains("Tippe auf eine Karte der Farbe") and j[0].contains("zum Schluss die Farbe"), "Ablegen-Joker: Wirkung (%s)" % j[0])
 	check("\n".join(PackedStringArray(j)).contains("Joker auf deiner Hand bleiben"), "Ablegen-Joker: Joker bleiben")
 	# Wertung mit Punkten
 	var pts := house(true, true, true, "klassisch500")

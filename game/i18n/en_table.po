@@ -944,3 +944,9 @@ msgstr "The host took you out of the game. You are now on their waiting list."
 
 msgid "Der Tisch wird geladen …"
 msgstr "Loading the table …"
+
+msgid "Tippe auf eine Karte der Farbe, die du mit ablegen willst."
+msgstr "Tap a card of the color you want to discard with it."
+
+msgid "Leg nur Karten einer Farbe mit ab."
+msgstr "Only discard cards of one color with it."

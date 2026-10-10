@@ -87,6 +87,8 @@ var _pick_key := ""                  # laufende eigene Auswahl „Farbe mit able
 var _pick_color := false             # Ablegen-Joker: nach der Auswahl noch die Spielfarbe wählen
 var _pick_wait := false              # Farbrad für die Spielfarbe ist offen
 var _pick_cards: Array = []
+var _pick_open := false               # Ablegen-Joker: Ablegefarbe per Antippen (hints.pick_open)
+var _open_wish_key := ""              # Flip-Überraschung: {a:"color", color:""} für diese Lage schon gesendet
 var _edge: ColorRect
 var _overlay: Control
 var _seats: Dictionary = {}           # Platz → OpponentSeat
@@ -762,6 +764,8 @@ func _apply_hints(h: Dictionary, turn: int) -> void:
 	var shown := ""
 	if not dp.is_empty() and (int(dp.get("seat", -1)) != my_seat or int(view.get("seat", 0)) < 0):
 		shown = I18n.t("%s wählt aus …") % str(_player(int(dp.get("seat", -1))).get("name", "?"))
+	elif not dp.is_empty() and _open_pick_hint() != "":
+		shown = _open_pick_hint()
 	else:
 		shown = _hint_local(text, h.get("lt", []) if h.get("lt") is Array else [])
 	sprueche.nothing_ok = highlight                              # ohne „Spielbare Karten hervorheben“ verrät „nichts passt“ nichts (1.4.6)
@@ -783,12 +787,35 @@ func _apply_hints(h: Dictionary, turn: int) -> void:
 	_act_btns["challenge"].visible = bool(h.get("can_challenge", false))
 	_act_btns["accept"].visible = bool(h.get("can_challenge", false))
 	_pile.highlight = bool(h.get("can_draw", false)) and me_turn
-	if bool(h.get("need_color", false)) and not wish_picker.is_open():
+	if bool(h.get("need_color", false)) and _open_discard_wish(h):
+		pass
+	elif bool(h.get("need_color", false)) and not wish_picker.is_open():
 		open_color_wheel()
 	_layout_action_buttons()
 
 
 # ================================================================= Farbe mit ablegen: Auswahl (Phase discard_pick)
+
+# Flip-Überraschung mit Ablegen-Joker oben (Phase color, Gastgeber ab 1.4.9 mit hints.pick_tap): kein Farbrad für die Ablegefarbe,
+# sondern gleich {a:"color", color:""} – die Ablegefarbe wählt man danach per Antippen einer Handkarte (Phase discard_pick, offen).
+# Einmal je Lage (Runde, oberste Karte); true = erledigt (kein Farbrad öffnen).
+func _open_discard_wish(h: Dictionary) -> bool:
+	if not bool(h.get("pick_tap", false)) or not MauBot.discard_wish(view) or int(view.get("seat", -1)) < 0:
+		return false
+	var key := "%s/%s" % [str(view.get("round", 0)), str((view.get("top", {}) as Dictionary).get("id", -1))]
+	if _open_wish_key == key:
+		return true
+	_open_wish_key = key
+	if wish_picker.is_open():
+		wish_picker.close()
+	_send_open_wish.call_deferred(key)           # ohne Eingabesperre: nur die Antwort auf die Lage, keine Eingabe
+	return true
+
+
+func _send_open_wish(key: String) -> void:
+	if _open_wish_key == key and str(view.get("phase", "")) == "color" and MauBot.discard_wish(view):
+		action.emit({"a": "color", "color": ""})
+
 
 static func discard_pick_of(v: Dictionary) -> Dictionary:
 	var raw: Variant = v.get("discard_pick", {})
@@ -808,6 +835,7 @@ func _apply_pick(v: Dictionary) -> void:
 		if _pick_key != "":
 			_pick_key = ""
 			_pick_wait = false
+			_pick_open = false
 			if wish_picker.mode == "wheel" and wish_picker.title != "":
 				wish_picker.close()
 			if hand != null and hand.has_method("clear_pick"):
@@ -821,13 +849,18 @@ func _apply_pick(v: Dictionary) -> void:
 	if key != _pick_key:
 		_pick_key = key
 		_pick_wait = false
+		_pick_open = bool(h.get("pick_open", false))
 		if hand != null and hand.has_method("set_pick"):
-			hand.call("set_pick", cands)
+			hand.call("set_pick", cands, _pick_open)
 			if not hand.is_connected("pick_changed", _on_pick_changed):
 				hand.connect("pick_changed", _on_pick_changed)
-		if _pick_color and cands.is_empty():   # Ablegen-Joker ohne Karten dieser Farbe: gleich die Spielfarbe
-			_pick_key = key
-			_on_pick_pressed()
+		if _pick_color and cands.is_empty():   # Ablegen-Joker ohne Karten dieser Farbe: gleich die Spielfarbe (auch während der Regie)
+			_pick_cards = []
+			_pick_wait = true
+			b.visible = false
+			(_act_btns["undo"] as PillButton).visible = false
+			wish_picker.open_wheel(side, _own_counts_after(_pick_cards), "Mit welcher Farbe geht es weiter?")
+			_layout_action_buttons()
 			return
 	b.visible = not _pick_wait
 	(_act_btns["undo"] as PillButton).visible = not _pick_wait and bool(h.get("can_undo", false))
@@ -836,6 +869,19 @@ func _apply_pick(v: Dictionary) -> void:
 
 func _on_pick_changed(_ids: Array) -> void:
 	_update_pick_button()
+	var t := _open_pick_hint()
+	if t != "":
+		hint_bar.show_hint(t, true)
+
+
+# Offene Ablegefarbe schon per Antippen gewählt: Hinweis wie bei fester Farbe (sonst "")
+func _open_pick_hint() -> String:
+	if not _pick_open or _pick_key == "" or hand == null or not hand.has_method("get_pick_color"):
+		return ""
+	var col := str(hand.call("get_pick_color"))
+	if col == "":
+		return ""
+	return I18n.t("Wähle, welche Karten in %s du mit ablegst, und die Farbe, mit der es weitergeht.") % I18n.t(RulesText.color_name(col))
 
 
 func picked_cards() -> Array:
@@ -847,7 +893,8 @@ func picked_cards() -> Array:
 func _update_pick_button() -> void:
 	var b: PillButton = _act_btns["pick"]
 	var cands: Array = (view.get("hints", {}) as Dictionary).get("can_pick", [])
-	b.text = I18n.t("Ablegen (%d)") % picked_cards().size() if not cands.is_empty() else "Weiter"
+	var n := picked_cards().size()
+	b.text = I18n.t("Ablegen (%d)") % n if not cands.is_empty() and (n > 0 or not _pick_open) else "Weiter"
 	_layout_action_buttons()
 
 

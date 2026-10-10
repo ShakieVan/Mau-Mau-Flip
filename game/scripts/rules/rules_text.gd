@@ -205,8 +205,8 @@ static func _discard_lines(kind: String, color: String, cfg: RuleConfig) -> Arra
 		out.append(_t("Danach wählst du, welche deiner Karten in %s du mit ablegst (alle, einige oder keine); sie kommen unter diese Karte, die oben bleibt.") % color)
 		out.append(_t("Passt auf %s und auf jede andere Ablegen-Karte.") % color)
 	else:
-		out.append(_t("Joker: passt immer. Du wählst eine Farbe und dann, welche deiner Karten dieser Farbe du mit ablegst; sie kommen unter den Joker."))
-		out.append(_t("Danach wählst du die Farbe, mit der es weitergeht – sie darf eine andere sein."))
+		out.append(_t("Joker: passt immer. Tippe auf eine Karte der Farbe, die du mit ablegen willst (alle Karten dieser Farbe werden gewählt), wähle ab, was du behalten willst, und zum Schluss die Farbe, mit der es weitergeht (auch eine andere)."))
+		out.append(_t("Die mitabgelegten Karten kommen unter den Joker."))
 	out.append(_t("Joker auf deiner Hand bleiben dort. Mitabgelegte Aktionskarten wirken nicht."))
 	var first := cfg.round_end == "first"
 	if cfg.mau_call != "off":
@@ -346,7 +346,7 @@ static func overview(config: RuleConfig = null) -> Array[Dictionary]:
 			gamble_text += " " + _t("Bleibt nach dem Setzen 1 Karte, gilt „Mau!“ wie beim Legen.")
 		out.append({"title": _t("Glücksspiel"), "text": gamble_text})
 	if discard_on:
-		var disc_text := _t("Hausregel: Wer eine Ablegen-Karte legt, wählt danach, welche eigenen Karten derselben Farbe er mit ablegt (alle, einige oder keine). Beim Ablegen-Joker wählst du zuerst die Ablegefarbe und danach getrennt die Farbe, mit der es weitergeht. Die Karten kommen unter die Ablegen-Karte, die oben bleibt. Joker bleiben auf der Hand, mitabgelegte Aktionskarten wirken nicht. Die farbige Ablegen-Karte passt auf ihre Farbe und auf jede andere Ablegen-Karte, der Ablegen-Joker immer.")
+		var disc_text := _t("Hausregel: Wer eine Ablegen-Karte legt, wählt danach, welche eigenen Karten derselben Farbe er mit ablegt (alle, einige oder keine). Beim Ablegen-Joker tippst du auf eine Karte der Farbe, die du mit ablegen willst (alle Karten dieser Farbe werden gewählt), und wählst zum Schluss getrennt die Farbe, mit der es weitergeht. Die Karten kommen unter die Ablegen-Karte, die oben bleibt. Joker bleiben auf der Hand, mitabgelegte Aktionskarten wirken nicht. Die farbige Ablegen-Karte passt auf ihre Farbe und auf jede andere Ablegen-Karte, der Ablegen-Joker immer.")
 		if cfg.mau_call != "off":
 			disc_text += " " + _t("Bleibt dir 1 Karte, ruf „Mau!“.")
 		out.append({"title": _t("Farbe ablegen"), "text": disc_text + " " + _t("Bleibt keine Karte, bist du fertig.")})

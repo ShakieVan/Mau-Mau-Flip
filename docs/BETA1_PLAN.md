@@ -177,6 +177,8 @@ func to_dict() -> Dictionary / static func from_dict(d) -> MauGame   # Speichern
 
 Glücksspiel und Ablegen-Joker werden wie Wünscher mit `{a:"play", card, color}` gelegt; beim Ablegen-Joker ist `color` die Ablegefarbe, die Spielfarbe folgt mit `discard_pick`.
 
+**Offene Ablegefarbe (seit 1.4.9, abwärtsverträglich):** Gastgeber ab 1.4.9 melden `hints.pick_tap = true` (immer, wenn `discard_color=on`). Dann darf der Ablegen-Joker mit ausdrücklich leerer Farbe gelegt werden (`{a:"play", card, color:""}`; fehlt `color`, bleibt es ein Fehler), ebenso bei der Flip-Überraschung `{a:"color", color:""}` in der Phase `color` mit Ablegen-Joker oben. Die Phase `discard_pick` beginnt dann mit `view.discard_pick.color = ""` und `hints.pick_open = true`; `hints.can_pick` = alle farbigen Handkarten (keine Joker). `{a:"discard_pick", cards, color}`: Die gewählten Karten müssen eine Farbe haben (sonst „Leg nur Karten einer Farbe mit ab.“); diese ist die Ablegefarbe (`discard_color{color}`; bei leerer Auswahl `""`). Bei der Flip-Überraschung zeigt `view.color` bis zur Auswahl `""`. Die App legt so (Ablegefarbe per Antippen einer Handkarte, kein erstes Farbrad); ohne `hints.pick_tap` (alter Gastgeber) wie bisher mit Farbrad. Clients, die eine Farbe mitschicken, verhalten sich unverändert.
+
 ### Phasen
 
 | Phase | Bedeutung |

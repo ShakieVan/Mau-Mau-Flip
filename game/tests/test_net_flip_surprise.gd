@@ -76,13 +76,15 @@ func run() -> void:
 	_gamble()
 	_discard()
 	_discard_wild()
+	_discard_wild_tap()
+	_discard_wild_play_tap()
 	check(leaks.is_empty(), "Gast sieht nur die eigene Hand (%s)" % str(leaks.slice(0, 3)))
 
 
 # Lage einsetzen: Anna (Flip-Spieler) ist dran mit [Flip, rest…], unter der Ablage liegt hell_blau_4/<back>.
-func inject(back: String, rest: Array) -> void:
+func inject(back: String, rest: Array, first := "hell_rot_flip") -> void:
 	var hands: Array = [[], []]
-	var mine: Array = ["hell_rot_flip"]
+	var mine: Array = [first]
 	mine.append_array(rest)
 	hands[anna_seat] = mine
 	hands[host.host_seat] = ["hell_gelb_1/dunkel_pink_6", "hell_gelb_3", "hell_gelb_5"]
@@ -201,6 +203,42 @@ func _discard_wild() -> void:
 	anna_act(pick, "Auswahl")
 	check(str(view().phase) == "turn" and int(view().turn) == host.host_seat and bool(view().wish) and ev_names().has("discard_color"),
 		"Ablegen-Joker: abgelegt, Spielfarbe gewünscht")
+
+
+# 1.4.9: Ablegefarbe per Antippen (hints.pick_tap): Flip-Überraschung mit {a:"color", color:""} → offene Auswahl über alle farbigen
+# Karten, gemischte Farben abgelehnt, dann Lila mit ab und Orange als Spielfarbe.
+func _discard_wild_tap() -> void:
+	inject("dunkel_ablegen_joker", ["hell_rot_1/dunkel_lila_1", "hell_rot_2/dunkel_lila_2", "hell_rot_3/dunkel_pink_3"])
+	flip_now("Ablegen-Joker offen")
+	check(bool(view().hints.get("pick_tap", false)) and str(view().phase) == "color", "Ablegen-Joker offen: Gastgeber meldet pick_tap")
+	anna_act({"a": "color", "color": ""}, "offene Ablegefarbe")
+	var h: Dictionary = view().hints
+	check(str(view().phase) == "discard_pick" and bool(h.get("pick_open", false)) and (h.can_pick as Array).size() == 3
+		and str(view().discard_pick.color) == "" and str(view().color) == "" and not bool(h.can_undo),
+		"Ablegen-Joker offen: alle farbigen Karten wählbar, keine Farbe sichtbar (%s)" % str(h.can_pick))
+	var n0 := anna_notices.size()
+	anna_act({"a": "discard_pick", "cards": [card_id("dunkel_lila_1"), card_id("dunkel_pink_3")], "color": "orange"}, "gemischt")
+	check(anna_notices.size() > n0 and host.game.phase() == "discard_pick", "Ablegen-Joker offen: gemischte Farben abgelehnt")
+	anna_act({"a": "discard_pick", "cards": [card_id("dunkel_lila_1"), card_id("dunkel_lila_2")], "color": "orange"}, "Lila mit ab")
+	var dc := ev_of("discard_color")
+	check(str(dc.get("color", "")) == "lila" and int(dc.get("count", -1)) == 2 and str(view().color) == "orange"
+		and int(view().turn) == host.host_seat, "Ablegen-Joker offen: Lila abgelegt, weiter mit Orange (%s)" % str(dc))
+
+
+# 1.4.9: Ablegen-Joker aus der Hand mit color "" legen (Gast), Ablegefarbe aus der Auswahl; Zurücknehmen geht.
+func _discard_wild_play_tap() -> void:
+	inject("dunkel_lila_1", ["hell_blau_1", "hell_blau_2", "hell_gelb_3"], "hell_ablegen_joker")
+	anna_act({"a": "play", "card": card_id("hell_ablegen_joker"), "color": ""}, "Joker offen legen")
+	var h: Dictionary = view().hints
+	check(str(view().phase) == "discard_pick" and bool(h.get("pick_open", false)) and (h.can_pick as Array).size() == 3 and bool(h.can_undo),
+		"Joker offen: Auswahl mit Zurücknehmen")
+	anna_act({"a": "undo"}, "zurücknehmen")
+	check(str(view().phase) == "turn" and card_id("hell_ablegen_joker") >= 0, "Joker offen: zurückgenommen")
+	anna_act({"a": "play", "card": card_id("hell_ablegen_joker"), "color": ""}, "Joker offen legen (2)")
+	anna_act({"a": "discard_pick", "cards": [card_id("hell_blau_1")], "color": "gelb"}, "eine Blaue")
+	var dc := ev_of("discard_color")
+	check(str(dc.get("color", "")) == "blau" and int(dc.get("count", -1)) == 1 and str(view().color) == "gelb"
+		and (view().hand as Array).size() == 2, "Joker offen: eine Blaue abgelegt, weiter mit Gelb (%s)" % str(dc))
 
 
 func _leak_check(events: Array, v: Dictionary) -> void:

@@ -5,7 +5,7 @@
 (function (M) {
   'use strict';
 
-  const VERSION = '1.4.8';
+  const VERSION = '1.4.9';
   const PROTO = 1;
   // wach.mp4 (32×32, 2 s, H.264 Baseline, ohne Ton; erzeugt mit ffmpeg) als data:-URI
   const WACH_VIDEO = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAMzbW9vdgAAAGxtdmhkAAAAAAAAAAAAAAAAAAAD6AAAB9AAAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAl50cmFrAAAAXHRraGQAAAADAAAAAAAAAAAAAAABAAAAAAAAB9AAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAACAAAAAgAAAAAAAkZWR0cwAAABxlbHN0AAAAAAAAAAEAAAfQAAAAAAABAAAAAAHWbWRpYQAAACBtZGhkAAAAAAAAAAAAAAAAAABAAAAAgABVxAAAAAAALWhkbHIAAAAAAAAAAHZpZGUAAAAAAAAAAAAAAABWaWRlb0hhbmRsZXIAAAABgW1pbmYAAAAUdm1oZAAAAAEAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAAUFzdGJsAAAAuXN0c2QAAAAAAAAAAQAAAKlhdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAACAAIABIAAAASAAAAAAAAAABFExhdmM2My4xLjEwMSBsaWJ4MjY0AAAAAAAAAAAAAAAAGP//AAAAL2F2Y0MBQsAe/+EAFmdCwB7ZCWwEQAAAAwBAAAADAQPFi5IBAAZoy4DkTIAAAAAQcGFzcAAAAAEAAAABAAAAFGJ0cnQAAAAAAAAKpAAAAAAAAAAYc3R0cwAAAAAAAAABAAAABAAAIAAAAAAUc3RzcwAAAAAAAAABAAAAAQAAABxzdHNjAAAAAAAAAAEAAAABAAAABAAAAAEAAAAkc3RzegAAAAAAAAAAAAAABAAAAogAAAALAAAACwAAAAsAAAAUc3RjbwAAAAAAAAABAAADYwAAAGF1ZHRhAAAAWW1ldGEAAAAAAAAAIWhkbHIAAAAAAAAAAG1kaXJhcHBsAAAAAAAAAAAAAAAALGlsc3QAAAAkqXRvbwAAABxkYXRhAAAAAQAAAABMYXZmNjMuMS4xMDEAAAAIZnJlZQAAArFtZGF0AAACcgYF//9u3EXpvebZSLeWLNgg2SPu73gyNjQgLSBjb3JlIDE2NSByMzIyMyAwNDgwY2IwIC0gSC4yNjQvTVBFRy00IEFWQyBjb2RlYyAtIENvcHlsZWZ0IDIwMDMtMjAyNSAtIGh0dHA6Ly93d3cudmlkZW9sYW4ub3JnL3gyNjQuaHRtbCAtIG9wdGlvbnM6IGNhYmFjPTAgcmVmPTMgZGVibG9jaz0xOi0zOi0zIGFuYWx5c2U9MHgxOjB4MTExIG1lPWhleCBzdWJtZT03IHBzeT0xIHBzeV9yZD0yLjAwOjAuNzAgbWl4ZWRfcmVmPTEgbWVfcmFuZ2U9MTYgY2hyb21hX21lPTEgdHJlbGxpcz0xIDh4OGRjdD0wIGNxbT0wIGRlYWR6b25lPTIxLDExIGZhc3RfcHNraXA9MSBjaHJvbWFfcXBfb2Zmc2V0PS00IHRocmVhZHM9MSBsb29rYWhlYWRfdGhyZWFkcz0xIHNsaWNlZF90aHJlYWRzPTAgbnI9MCBkZWNpbWF0ZT0xIGludGVybGFjZWQ9MCBibHVyYXlfY29tcGF0PTAgY29uc3RyYWluZWRfaW50cmE9MCBiZnJhbWVzPTAgd2VpZ2h0cD0wIGtleWludD0yNTAga2V5aW50X21pbj0yIHNjZW5lY3V0PTQwIGludHJhX3JlZnJlc2g9MCByY19sb29rYWhlYWQ9NDAgcmM9Y3JmIG1idHJlZT0xIGNyZj00MC4wIHFjb21wPTAuNjAgcXBtaW49MCBxcG1heD02OSBxcHN0ZXA9NCBpcF9yYXRpbz0xLjQwIGFxPTE6MS4yMACAAAAADmWIhAXznJigACX3J114AAAAB0GaOAvnOWAAAAAHQZpUAvnOWAAAAAdBmmAVznLA';
@@ -214,6 +214,7 @@
       // Escape (PC): Farbwahl bzw. Fenster schließen
       document.addEventListener('keydown', e => {
         if (e.key !== 'Escape') return;
+        if (this._vor && !this._vor.flip) { this.vorTipp(null); return; }
         if (this.tisch && this.tisch.farbwahlOffen) { this.tisch.abbrechenFarbwahl(); this.tisch.hand.waehle(null); return; }
         ['hilfe', 'ansicht', 'menue', 'runde', 'regeln', 'sogehts'].forEach(id => this.schliesse(id));
       });
@@ -570,6 +571,7 @@
       const t = this.tisch;
       if (!t) return;
       if (t.hand.rueck) { this.rueckseiten(); return; }
+      if (this._vor) { this.vorTipp(id); return; }
       if (id === null) { if (t.hand.gewaehlt !== null) t.hand.waehle(null); return; }
       if (this.imAblegen()) { this.pickTipp(id); return; }
       // Glücksspiel: Im eigenen Glücksspiel setzt ein Tipp die Karte verdeckt (welche, ist fast egal: alle kommen zurück oder unter die Ablage)
@@ -583,6 +585,7 @@
       if (t.hand.rueck) { this.rueckseiten(); return; }
       const c = (v.hand || []).find(h => h.id === id);
       if (!c) return;
+      if (this._vor) { this.vorTipp(id); return; }
       if (this.imGluecksspiel()) { this.setzen(id); return; }
       if (this.imAblegen()) { this.pickTipp(id); return; }
       const h = v.hints || {};
@@ -604,13 +607,54 @@
       // hints.wild: spielbare Karten, die eine Farbe brauchen (Gastgeber); Rückfall: am Gesicht erkennen
       if (Array.isArray(h.wild) ? h.wild.indexOf(id) >= 0 : M.Karten.istJoker(c.face)) {
         t.hand.waehle(id);
+        // Ablegen-Joker: kein erstes Farbrad, die Ablegefarbe wird per Tipp auf eine Handkarte gewählt (1.4.9)
+        if (M.Karten.zerlege(c.face).art === 'ablegen_joker') { this._starteVorwahl(id); return; }
         t.oeffneFarbwahl(v.side, this.zaehleFarben(v, id), farbe => {
           if (farbe) this._spieleKarte(id, farbe);
           else if (this.tisch) this.tisch.hand.waehle(null);
-        }, M.Karten.zerlege(c.face).art === 'ablegen_joker' ? M.t('Welche Farbe legst du mit ab?') : null);
+        });
         return;
       }
       this._spieleKarte(id);
+    },
+    // Vorwahl der Ablegefarbe beim Ablegen-Joker: {id} = Joker noch auf der Hand, {id:null, flip:true} = Flip-Überraschung (Joker liegt oben)
+    _starteVorwahl(id, flip) {
+      const v = this.view, t = this.tisch;
+      this._vor = { id: flip ? null : id, flip: !!flip };
+      if (!this.vorKarten(v).length) {   // keine farbigen Karten: Ablegefarbe egal, gleich weiter zum Farbrad der Spielfarbe
+        this._waehleAblegefarbe(M.Karten.FARBEN[v.side][0]);
+        return;
+      }
+      t.zeige(v, true);
+      this.toast(M.t('Tippe auf eine Karte der Farbe, die du mit ablegen willst.'), 'leise', 3500);
+    },
+    // wählbare Handkarten: farbig, kein Joker, nicht der Joker selbst
+    vorKarten(v) {
+      const K = M.Karten, id = this._vor ? this._vor.id : null;
+      return ((v && v.hand) || []).filter(c => c.id !== id && !K.istJoker(c.face) && K.zerlege(c.face).farbe).map(c => c.id);
+    },
+    vorTipp(id) {
+      const v = this.view, t = this.tisch;
+      if (id === null || id === this._vor.id) {   // daneben oder der Joker selbst: Legen abbrechen (bei der Flip-Überraschung geht das nicht)
+        if (!this._vor.flip) { this._vor = null; t.hand.waehle(null); t.zeige(v, true); }
+        else this.toast(M.t('Tippe auf eine Karte der Farbe, die du mit ablegen willst.'), 'leise', 3000);
+        return;
+      }
+      const c = (v.hand || []).find(h => h.id === id);
+      if (!c || this.vorKarten(v).indexOf(id) < 0) {
+        t.hand.wackeln(id);
+        this.toast(M.t('Tippe auf eine Karte der Farbe, die du mit ablegen willst.'), 'leise', 3000);
+        return;
+      }
+      M.Ton.spiele('tipp');
+      this._waehleAblegefarbe(M.Karten.zerlege(c.face).farbe);
+    },
+    _waehleAblegefarbe(farbe) {
+      const vor = this._vor;
+      this._vor = null;
+      if (!vor) return;
+      if (vor.flip) this._sendeAkt({ a: 'color', color: farbe });
+      else this._spieleKarte(vor.id, farbe);
     },
     _spieleKarte(id, farbe) {
       const a = { a: 'play', card: id };
@@ -728,11 +772,12 @@
     _farbwunsch() {
       const v = this.view;
       if (!v || !this.tisch || this.tisch.farbwahlOffen) return;
+      if (this.ablegeWunsch(v)) { if (!this._vor) this._starteVorwahl(null, true); else this.toast(M.t('Tippe auf eine Karte der Farbe, die du mit ablegen willst.'), 'leise', 3000); return; }
       // Phase color (Flip mit Joker oben) ist endgültig: Wegklicken schließt nur, „Farbe wählen“ bleibt als Knopf
       this.tisch.oeffneFarbwahl(v.side, this.zaehleFarben(v, null), farbe => {
         if (farbe) this._sendeAkt({ a: 'color', color: farbe });
         else this.toast(M.t('Erst die Farbe wählen.'));
-      }, this.ablegeWunsch(v) ? M.t('Welche Farbe legst du mit ab?') : undefined);
+      });
     },
     // Flip-Überraschung mit Ablegen-Joker oben (Phase color, ich spiele noch): Die Farbwahl ist die Ablegefarbe
     ablegeWunsch(v) {
@@ -815,6 +860,17 @@
     nachZeigen(v) {
       const h = v.hints || {};
       if (this.schwebend !== null && !(v.hand || []).some(c => c.id === this.schwebend)) this.schwebend = null;
+      if (this._vor) {   // Vorwahl der Ablegefarbe verfällt, wenn sich die Lage ändert
+        const gueltig = this._vor.flip ? this.ablegeWunsch(v)
+          : (v.turn === v.seat && (v.phase === 'turn' || v.phase === 'drawn') && (v.hand || []).some(c => c.id === this._vor.id));
+        if (!gueltig) { this._vor = null; if (!this.offen && this.tisch.hand.gewaehlt !== null) this.tisch.hand.waehle(null); }
+      }
+      if (v.phase !== 'discard_pick') this._pickAuto = null;
+      else if (this.imAblegen() && !this.offen && !this.tisch.farbwahlOffen) {   // Ablegen-Joker ohne wählbare Karten: gleich das Farbrad der Spielfarbe
+        const h2 = v.hints || {}, key = v.round + ':' + (v.top && v.top.id);
+        const joker = h2.pick_color !== undefined ? !!h2.pick_color : !!(v.top && M.Karten.zerlege(v.top.face).art === 'ablegen_joker');
+        if (joker && !(h2.can_pick || []).length && this._pickAuto !== key) { this._pickAuto = key; setTimeout(() => this.ablegenBestaetigen(), 0); }
+      }
       if (h.need_color && v.turn === v.seat && !this.tisch.farbwahlOffen && this._farbAuto !== v.round + ':' + (v.top && v.top.id)) {
         this._farbAuto = v.round + ':' + (v.top && v.top.id);
         this._farbwunsch();

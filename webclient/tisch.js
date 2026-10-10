@@ -465,7 +465,9 @@
       const hervor = !this.app.hervorheben || this.app.hervorheben();
       const aktiv = dran && (v.phase === 'turn' || v.phase === 'drawn' || (v.phase === 'challenge' && spielbar.length > 0) || (setzbar !== null && setzbar.length > 0));
       // Farbe mit ablegen: Auswahl angehoben, abgewählte Kandidaten bleiben hell, alles andere matt (unabhängig von „hervorheben“)
-      if (pick) this.hand.setze(reihe, { spielbar: pick, dran: true, kandidaten: h.can_pick || [] });
+      const vor = this.app._vor ? this.app.vorKarten(v) : null;   // Ablegen-Joker: Ablegefarbe per Tipp wählen (alle farbigen Karten leuchten)
+      if (vor) this.hand.setze(reihe, { spielbar: this.app._vor.id !== null ? [this.app._vor.id] : [], dran: true, kandidaten: vor });
+      else if (pick) this.hand.setze(reihe, { spielbar: pick, dran: true, kandidaten: h.can_pick || [] });
       else this.hand.setze(reihe, { spielbar: hervor ? markiert : [], dran: hervor && aktiv });
       if (!nurLayout && alt && alt.turn !== ich && v.turn === ich && dran) {
         M.Ton.spiele('dran');
@@ -490,6 +492,7 @@
     }
     // Freche Sprüche (Beta 1.4.4, spass.js): statt des Standardtextes gelegentlich ein Spruch; Pointe des falschen Tipps als Meldung
     _hinweisMitSpass(v, h) {
+      if (this.app._vor) return M.t('Tippe auf eine Karte der Farbe, die du mit ablegen willst.');
       const std = this.hinweisLokal(h) || this._hinweisErsatz(v);
       if (!M.Spass) return std;
       if (!M.Spass.beiNeu) M.Spass.beiNeu = () => { if (this.v) this.hinweis.textContent = this._hinweisMitSpass(this.v, this.v.hints || {}); };

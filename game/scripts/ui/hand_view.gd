@@ -137,6 +137,8 @@ var _seat_state := {}                   # Platz → {sort, order}: Sortierung je
 var _manual_seed: Array[int] = []       # gemerkte manuelle Reihenfolge für die nächste Hand
 var _pick_cands := {}                   # Auswahl „Farbe mit ablegen“ (Phase discard_pick): wählbare Karten …
 var _picked := {}                       # … und davon gewählte; leer = keine Auswahl
+var _pick_open := false                 # Ablegen-Joker: Ablegefarbe wird durch Antippen gewählt (set_pick(…, true))
+var _pick_col := ""                     # … die so gewählte Farbe
 
 
 class Slot:
@@ -595,12 +597,18 @@ func set_input_locked(on: bool) -> void:
 # Anzahl eigener Karten je Farbe der aktiven Seite (Farbfelder des Wünschers).
 # Auswahl „Farbe mit ablegen“ (Phase discard_pick): candidates sind wählbar und anfangs alle gewählt. Tippen (oder Hochziehen)
 # wählt ab bzw. wieder an; übrige Karten sind abgedunkelt. Leere Liste bzw. clear_pick() beendet die Auswahl.
-func set_pick(candidates: Array) -> void:
+# open (Ablegen-Joker, 1.4.9): Die Ablegefarbe ist noch offen. candidates sind alle farbigen Karten, anfangs keine gewählt; das
+# Antippen einer Karte wählt ihre Farbe (alle Kandidaten dieser Farbe), weiteres Antippen derselben Farbe wählt einzeln ab/an, eine
+# Karte einer anderen Farbe wechselt die Farbe.
+func set_pick(candidates: Array, open := false) -> void:
 	_pick_cands.clear()
 	_picked.clear()
+	_pick_open = open
+	_pick_col = ""
 	for raw in candidates:
 		_pick_cands[int(raw)] = true
-		_picked[int(raw)] = true
+		if not open:
+			_picked[int(raw)] = true
 	if not _pick_cands.is_empty() and _selected != -1:
 		_set_selected(-1)
 
@@ -608,6 +616,39 @@ func set_pick(candidates: Array) -> void:
 func clear_pick() -> void:
 	_pick_cands.clear()
 	_picked.clear()
+	_pick_open = false
+	_pick_col = ""
+
+
+# Offene Ablegefarbe: die zuletzt per Antippen gewählte Farbe ("" = noch keine)
+func get_pick_color() -> String:
+	return _pick_col
+
+
+func _card_color(id: int) -> String:
+	if not _slots.has(id):
+		return ""
+	return str(CardSort.parse((_slots[id] as Slot).face).color)
+
+
+# Antippen bzw. Hochziehen während der Auswahl
+func _pick_tap(id: int) -> void:
+	if not _pick_open:
+		toggle_pick(id)
+		return
+	if not _pick_cands.has(id) or not _order.has(id):
+		return
+	var col := _card_color(id)
+	if col == "" or col == _pick_col:
+		toggle_pick(id)
+		return
+	_pick_col = col
+	_picked.clear()
+	for c in _order:
+		if _pick_cands.has(c) and _card_color(c) == col:
+			_picked[c] = true
+	_vibrate(12, 0.4)
+	pick_changed.emit(get_pick())
 
 
 func is_picking() -> bool:
@@ -891,7 +932,7 @@ func _hover(p: Vector2) -> void:
 
 func _on_tap(id: int) -> void:
 	if is_picking():
-		toggle_pick(id)
+		_pick_tap(id)
 		return
 	if id == -1 or not _order.has(id):
 		if _selected != -1:
@@ -1072,7 +1113,7 @@ func _try_play(id: int, drop_global: Vector2) -> bool:
 	if not _order.has(id) or _peek:
 		return false
 	if is_picking():                     # Auswahl läuft: Hochziehen wählt nur an/ab, gespielt wird nichts
-		toggle_pick(id)
+		_pick_tap(id)
 		return false
 	var s: Slot = _slots[id]
 	if enforce_playable and not _playable.has(id):

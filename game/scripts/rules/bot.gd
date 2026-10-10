@@ -134,6 +134,16 @@ static func _pick_plan(view: Dictionary, cand: Array, rest: int) -> Array:
 static func _discard_pick(view: Dictionary, hints: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
 	var cand: Array = hints.get("can_pick", [])
 	var hand: Array = view.get("hand", [])
+	if bool(hints.get("pick_open", false)) and not cand.is_empty():
+		# Offene Ablegefarbe (z. B. „Computer spielt für …“ nach dem Legen eines Menschen): die Farbe mit den meisten Karten
+		var col := most_color(view, -1, rng)
+		var same: Array = []
+		var ctab := CardDB.color_table()
+		for item in hand:
+			var code := CardDB.code_of(str(item.face))
+			if code >= 0 and cand.has(int(item.id)) and ctab[code] == col:
+				same.append(int(item.id))
+		cand = same
 	var chosen := _pick_plan(view, cand, hand.size())
 	var act := {"a": "discard_pick", "cards": chosen}
 	if bool(hints.get("pick_color", false)):

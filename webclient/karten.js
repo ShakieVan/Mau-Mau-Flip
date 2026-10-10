@@ -190,7 +190,7 @@
         if (k.art === 'ablegen') {
           z.push(tr('Du wählst, welche deiner anderen Karten in %s mit abgelegt werden (alle sind vorausgewählt). Sie kommen unter diese Karte, die oben bleibt.', f));
           neben(tr('Passt auf %s und auf jede andere Ablegen-Karte.', f));
-        } else z.push(tr('Joker: passt immer. Erst wählst du die Farbe zum Mitablegen, dann die Karten, zum Schluss die Farbe, mit der es weitergeht (auch eine andere).'));
+        } else z.push(tr('Joker: passt immer. Tippe auf eine Karte der Farbe, die du mit ablegen willst (alle Karten dieser Farbe werden gewählt), wähle ab, was du behalten willst, und zum Schluss die Farbe, mit der es weitergeht (auch eine andere).'));
         z.push(tr('Joker auf deiner Hand bleiben dort. Mitabgelegte Aktionskarten wirken nicht.'));
         const fertig = r.round_end === 'last';
         if (r.mau_call !== 'off') z.push(fertig ? tr('Bleibt dir danach 1 Karte, ruf „Mau!“ (auch schon vorher erlaubt); bleibt keine, bist du fertig.')
@@ -228,7 +228,7 @@
     // Hausregeln mit Zusatzkarten (wie RuleConfig.describe)
     if (r.swap_cards === 'on') z.push(tr('Kartentausch: Wer einen legt, lässt alle ihre ganze Hand an den Nächsten weitergeben, %s.', tauschRichtung(r)));
     if (r.gamble_cards === 'on') z.push(tr('Glücksspiel (2 Joker): verdeckt setzen und drücken – weiter riskieren oder aufhören. Treffer: 1 bis 10 Karten ziehen, Einsatz zurück; Aufhören: Einsatz unter die Ablage.'));
-    if (r.discard_color === 'on') z.push(tr('Farbe ablegen: Wer eine Ablegen-Karte legt, wählt eigene Karten dieser Farbe zum Mitablegen; Joker bleiben auf der Hand. Beim Ablegen-Joker wählst du Ablegefarbe und Spielfarbe getrennt.'));
+    if (r.discard_color === 'on') z.push(tr('Farbe ablegen: Wer eine Ablegen-Karte legt, wählt eigene Karten dieser Farbe zum Mitablegen; Joker bleiben auf der Hand. Beim Ablegen-Joker tippst du eine Karte der Ablegefarbe an und wählst zum Schluss die Spielfarbe.'));
     if (r.flip_mode === 'card') z.push(tr('Flip dreht nur die gelegte Karte: Oben liegt ihre andere Seite, die übrige Ablage bleibt zur Seite gelegt.'));
     if (r.flip_surprise === 'on') z.push(tr('Flip-Überraschung: Die Karte, die nach dem Flip oben liegt, wirkt, als hätte der Flip-Spieler sie gelegt.'));
     if (kartenZahl(r) > 112) z.push(tr('Gespielt wird mit %d Karten.', kartenZahl(r)));

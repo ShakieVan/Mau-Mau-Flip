@@ -5,7 +5,9 @@ extends SceneTree
 #   Glücksspiel     Legen mit Farbwahl → Automat und Einsatzstapel; Setzen über die Hand (play_requested → stake), Druck über den
 #                   Knopf mit vorgegebenem Wurf 0 („Nichts!“) und Treffer 4 (Ziehen, Einsatz zurück); Glücksspiel bis zur leeren
 #                   Hand (Einsatz unter die Ablage, fertig); Gegner spielt (Stapel an seinem Platz, Erwischen geht); Mau-Knopf
-#   Farbe ablegen   eigene Ablegen-Karte (Aktionskarten der Farbe wirken nicht, liegen unter der Ablegen-Karte) und ein Gegner
+#   Farbe ablegen   eigene Ablegen-Karte (Aktionskarten der Farbe wirken nicht, liegen unter der Ablegen-Karte) und ein Gegner;
+#                   Ablegen-Joker (1.4.9): Ablegefarbe per Antippen, Abwählen, Farbwechsel, Farbrad der Spielfarbe, Zurücknehmen,
+#                   Flip-Überraschung, Weitergeben
 #   Hervorheben     Einstellung „hervorheben“ aus: kein Markieren, unpassende Karte springt zurück mit „Die Karte passt nicht.“
 #   ohne Hausregeln keine Glücksspiel-Teile; nach jedem Ablauf ruhen Automat und Einsatzstapel (kein Dauerzeichnen)
 #   godot_run.ps1 -Script res://tests/test_ui_new_cards.gd -Headless -Timeout 180
@@ -58,6 +60,8 @@ func run() -> void:
 	await discard_opponent_test()
 	await discard_joker_test()
 	await discard_undo_test()
+	await discard_flip_tap_test()
+	await discard_pass_test()
 	await color_phase_test()
 	await highlight_test()
 	await plain_rules_test()
@@ -76,18 +80,20 @@ func run() -> void:
 # ----------------------------------------------------------------- Vorrichtung
 
 # Tisch mit LocalTable aus einer gebauten Lage (Platz 0 = Mensch, übrige Computergegner, die nur auf pump() hin handeln)
-func make_table(cfg: RuleConfig, n: int, spec: Dictionary) -> TableScreen:
+# mode "pass" (Weitergeben): alle Plätze Menschen an einem Gerät
+func make_table(cfg: RuleConfig, n: int, spec: Dictionary, mode := "solo") -> TableScreen:
 	var g := RulesFixture.build(cfg, n, spec, 4711)
 	var seats: Array = []
 	for i in n:
-		if i > 0:
+		var human := i == 0 or mode == "pass"
+		if not human:
 			(g.players[i] as Dictionary)["kind"] = "bot"
-		seats.append({"name": str(g.players[i].name), "kind": "human" if i == 0 else "bot", "host": i == 0})
+		seats.append({"name": str(g.players[i].name), "kind": "human" if human else "bot", "host": i == 0})
 	var t := LocalTable.new()
 	t.auto_process = false
 	t.autosave = false
 	t.speed = 0.0
-	var data := {"mode": "solo", "game": g.to_dict(), "seats": seats, "host_seat": 0}
+	var data := {"mode": mode, "game": g.to_dict(), "seats": seats, "host_seat": 0}
 	var ts := TableScreen.create(t, func() -> void: t.resume(data))
 	root.add_child(ts)
 	await frames(3)
@@ -548,37 +554,69 @@ func plain_rules_test() -> void:
 	await close_table(ts)
 
 
-# Ablegen-Joker (0.1.3): Farbrad „Welche Farbe legst du mit ab?“ → Auswahl → Farbrad „Mit welcher Farbe geht es weiter?“
+# Ablegen-Joker (1.4.9, Nutzerwunsch): kein erstes Farbrad. Der Joker wird gelegt, Antippen einer Handkarte wählt ihre Farbe (alle
+# Karten dieser Farbe), weiteres Antippen wählt einzeln ab/an, eine andere Farbe wechselt die Auswahl; danach das Farbrad der Spielfarbe.
 func discard_joker_test() -> void:
 	var ts := await make_table(discard_cfg(), 2, {"hands": [["hell_ablegen_joker", "hell_blau_3", "hell_blau_4", "hell_rot_7", "hell_gelb_2"],
 		["hell_gruen_1", "hell_gruen_2"]], "top": "hell_rot_5", "current": 0})
 	var g := game_of(ts)
 	var tv := ts.table
 	var log := watch(ts)
+	check(bool((ts.view.hints as Dictionary).get("pick_tap", false)), "Ablegen-Joker: Gastgeber meldet pick_tap")
 	ts.hand.play_requested.emit(RulesFixture.card(g, 0, "hell_ablegen_joker"), ts.hand.play_target)
-	await frames(2)
-	check(tv.wish_picker.mode == "wheel" and tv.wish_picker.title == "Welche Farbe legst du mit ab?" and int(tv.wish_picker.counts.get("blau", 0)) == 2,
-		"Ablegen-Joker: erst die Ablegefarbe (mit Anzahl)")
-	tv.wish_picker.close()
-	tv.wish_picker.color_chosen.emit("blau")
 	await settle(ts, 0.3)
 	var pick: PillButton = tv.get("_act_btns")["pick"]
-	check(g.state == "discard_pick" and ts.hand.get_pick().size() == 2 and pick.visible and pick.text == "Ablegen (2)", "Ablegen-Joker: Auswahl Blau (%s)" % pick.text)
+	var undo: PillButton = tv.get("_act_btns")["undo"]
+	check(not tv.wish_picker.is_open() and g.state == "discard_pick" and str(g.dpick.color) == "" and ts.hand.is_picking()
+		and ts.hand.get_pick().is_empty(), "Ablegen-Joker: kein Farbrad, Joker liegt, noch nichts gewählt (%s)" % g.state)
+	check(tv.discard_cards().back().current_key() == "hell_ablegen_joker", "Ablegen-Joker: Joker liegt auf der Ablage")
+	check(pick.visible and pick.text == "Weiter" and undo.visible, "Ablegen-Joker: „Weiter“ und „Zurücknehmen“ (%s)" % pick.text)
+	check(tv.hint_bar.hint.contains("Tippe auf eine Karte der Farbe"), "Ablegen-Joker: Hinweis zum Antippen (%s)" % tv.hint_bar.hint)
+	var b3 := RulesFixture.card(g, 0, "hell_blau_3")
+	var b4 := RulesFixture.card(g, 0, "hell_blau_4")
+	var r7 := RulesFixture.card(g, 0, "hell_rot_7")
+	ts.hand.call("_on_tap", b3)
+	await frames(2)
+	check(sorted_ints(ts.hand.get_pick()) == sorted_ints([b3, b4]) and pick.text == "Ablegen (2)", "Antippen Blau: beide Blauen gewählt (%s)" % pick.text)
+	check(ts.hand.card_view(b4).state == CardView.State.SELECTED and ts.hand.card_view(r7).state != CardView.State.SELECTED,
+		"Antippen Blau: farbgleiche Karten hervorgehoben")
+	check(tv.hint_bar.hint.contains("Blau"), "Antippen Blau: Hinweis nennt die Farbe (%s)" % tv.hint_bar.hint)
+	ts.hand.call("_on_tap", b4)
+	check(ts.hand.get_pick() == [b3] and pick.text == "Ablegen (1)", "Abwählen: eine Blaue bleibt (%s)" % pick.text)
+	ts.hand.call("_on_tap", r7)
+	check(ts.hand.get_pick() == [r7] and pick.text == "Ablegen (1)" and str(ts.hand.get_pick_color()) == "rot", "Farbwechsel: jetzt Rot")
+	ts.hand._try_play(b4, ts.hand.play_target)          # Hochziehen wirkt wie Antippen
+	check(sorted_ints(ts.hand.get_pick()) == sorted_ints([b3, b4]) and g.state == "discard_pick", "Farbwechsel zurück zu Blau (Hochziehen)")
 	pick.pressed.emit()
 	await frames(2)
 	check(tv.wish_picker.mode == "wheel" and tv.wish_picker.title == "Mit welcher Farbe geht es weiter?" and not pick.visible
-		and int(tv.wish_picker.counts.get("blau", 0)) == 0, "Ablegen-Joker: danach die Spielfarbe (ohne die mitabgelegten)")
+		and int(tv.wish_picker.counts.get("blau", 0)) == 0, "Ablegen: danach das Farbrad der Spielfarbe (ohne die mitabgelegten)")
 	tv.wish_picker.close()
 	tv.wish_picker.color_chosen.emit("gelb")
 	await wait_event(log, "discard_color")
 	await settle(ts, 0.5)
+	check(toast_has(ts, "Du legst 2 blaue Karten mit ab."), "Ablegen-Joker: Hinweis Blau")
 	check(g.color == "gelb" and g.state != "discard_pick" and (ts.view.get("hand", []) as Array).size() == 2 and not ts.hand.is_picking(),
 		"Ablegen-Joker: Blau abgelegt, weiter mit Gelb (%s)" % g.color)
 	await close_table(ts)
+	# Ohne farbige Karten auf der Hand: gleich das Farbrad der Spielfarbe
+	ts = await make_table(discard_cfg(), 2, {"hands": [["hell_ablegen_joker", "hell_wuenscher", "hell_ablegen_joker"],
+		["hell_gruen_1", "hell_gruen_2"]], "top": "hell_rot_5", "current": 0})
+	g = game_of(ts)
+	tv = ts.table
+	ts.hand.play_requested.emit(RulesFixture.card(g, 0, "hell_ablegen_joker"), ts.hand.play_target)
+	await settle(ts, 0.3)
+	check(g.state == "discard_pick" and tv.wish_picker.mode == "wheel" and tv.wish_picker.title == "Mit welcher Farbe geht es weiter?",
+		"Ohne farbige Karten: gleich das Farbrad der Spielfarbe (%s, %s, %s, %s)" % [g.state, tv.wish_picker.mode, tv.wish_picker.title, ts.view.hand])
+	tv.wish_picker.close()
+	tv.wish_picker.color_chosen.emit("blau")
+	await settle(ts, 0.5)
+	check(g.color == "blau" and g.current_seat() == 1 and (g.hands[0] as Array).size() == 2, "Ohne farbige Karten: weiter mit Blau")
+	await close_table(ts)
 
 
-# Beta 1.4.1 (Nutzerbefund 10.10.2026): Jeder Abbruchweg beim Ablegen-Joker nimmt den ganzen Zug zurück (kein Hängen):
-# Ablegefarbe weggeklickt (nichts gelegt), Spielfarbe weggeklickt, Zurück-Taste in beiden Schritten, Knopf „Zurücknehmen“.
+# Beta 1.4.1/1.4.9: Jeder Abbruchweg nach dem Legen des Ablegen-Jokers nimmt den ganzen Zug zurück (kein Hängen):
+# Spielfarbe weggeklickt, Zurück-Taste im Farbrad und in der Auswahl, Knopf „Zurücknehmen“.
 func discard_undo_test() -> void:
 	var ts := await make_table(discard_cfg(), 2, {"hands": [["hell_ablegen_joker", "hell_blau_3", "hell_blau_4", "hell_rot_7", "hell_gelb_2"],
 		["hell_gruen_1", "hell_gruen_2"]], "top": "hell_rot_5", "current": 0})
@@ -587,21 +625,12 @@ func discard_undo_test() -> void:
 	var joker := RulesFixture.card(g, 0, "hell_ablegen_joker")
 	var pick: PillButton = tv.get("_act_btns")["pick"]
 	var undo: PillButton = tv.get("_act_btns")["undo"]
-	# 1. Ablegefarbe weggeklickt: nichts gelegt, Karte bleibt in der Hand
-	ts.hand.play_requested.emit(joker, ts.hand.play_target)
-	await frames(2)
-	tv.wish_picker.cancel()
-	await settle(ts, 0.3)
-	check(g.state == "turn" and (g.hands[0] as Array).has(joker) and ts.hand.get_order().has(joker), "Abbruch Ablegefarbe: Joker bleibt in der Hand")
-	# 2.–5. Abbruch nach dem Legen
 	for way in ["rad", "rad_zurueck", "knopf", "zurueck"]:
 		ts.hand.play_requested.emit(joker, ts.hand.play_target)
-		await frames(2)
-		tv.wish_picker.close()
-		tv.wish_picker.color_chosen.emit("blau")
 		await settle(ts, 0.3)
-		check(g.state == "discard_pick" and pick.visible and undo.visible, "%s: Auswahl mit „Zurücknehmen“" % way)
-		ts.hand.toggle_pick(RulesFixture.card(g, 0, "hell_blau_4"))
+		check(g.state == "discard_pick" and pick.visible and undo.visible and ts.hand.get_pick().is_empty(), "%s: Auswahl mit „Zurücknehmen“" % way)
+		ts.hand.call("_on_tap", RulesFixture.card(g, 0, "hell_blau_3"))
+		ts.hand.call("_on_tap", RulesFixture.card(g, 0, "hell_blau_4"))
 		match way:
 			"rad", "rad_zurueck":
 				pick.pressed.emit()
@@ -621,19 +650,93 @@ func discard_undo_test() -> void:
 		check(not tv.wish_picker.is_open() and not pick.visible and not undo.visible and not ts.hand.is_picking(), "%s: nichts hängt offen" % way)
 		check(tv.discard_cards().back().current_key() == "hell_rot_5" and g.color == "rot", "%s: alte Karte wieder oben" % way)
 		check_matches_view(ts, way)
-	# Danach wieder ganz normal: alle Blauen mit ab (Auswahl frisch, nicht die abgewählte von vorher), weiter mit Gelb
+	# Danach wieder ganz normal: Auswahl frisch (leer), Antippen Blau wählt beide, weiter mit Gelb
 	ts.hand.play_requested.emit(joker, ts.hand.play_target)
-	await frames(2)
-	tv.wish_picker.close()
-	tv.wish_picker.color_chosen.emit("blau")
 	await settle(ts, 0.3)
-	check(ts.hand.get_pick().size() == 2, "nach dem Zurücknehmen: Auswahl wieder vollständig (%d)" % ts.hand.get_pick().size())
+	check(ts.hand.get_pick().is_empty(), "nach dem Zurücknehmen: Auswahl frisch (%d)" % ts.hand.get_pick().size())
+	ts.hand.call("_on_tap", RulesFixture.card(g, 0, "hell_blau_3"))
+	check(ts.hand.get_pick().size() == 2, "nach dem Zurücknehmen: Blau wählt beide")
 	pick.pressed.emit()
 	await frames(2)
 	tv.wish_picker.close()
 	tv.wish_picker.color_chosen.emit("gelb")
 	await settle(ts, 0.8)
 	check(g.color == "gelb" and (g.hands[0] as Array).size() == 2 and g.current_seat() == 1, "nach dem Zurücknehmen normal abgelegt")
+	await close_table(ts)
+
+
+# Flip-Überraschung mit Ablegen-Joker oben (1.4.9): kein Farbrad für die Ablegefarbe, die App meldet {a:"color", color:""}; Auswahl per
+# Antippen ohne Zurücknehmen (Zurück-Taste und Wegklicken des Farbrads nehmen nichts zurück), dann die Spielfarbe.
+func discard_flip_tap_test() -> void:
+	var cfg := discard_cfg()
+	cfg.flip_surprise = "on"
+	var ts := await make_table(cfg, 2, {"hands": [["hell_rot_flip", "hell_rot_1/dunkel_lila_1", "hell_rot_2/dunkel_lila_2", "hell_rot_3/dunkel_pink_3"],
+		["hell_gelb_1", "hell_gelb_2"]], "top": "hell_rot_5", "discard": ["hell_blau_4/dunkel_ablegen_joker"], "current": 0})
+	var g := game_of(ts)
+	var tv := ts.table
+	var pick: PillButton = tv.get("_act_btns")["pick"]
+	var undo: PillButton = tv.get("_act_btns")["undo"]
+	ts.hand.play_requested.emit(RulesFixture.card(g, 0, "hell_rot_flip"), ts.hand.play_target)
+	var deadline := Time.get_ticks_msec() + 8000
+	while g.state != "discard_pick" and Time.get_ticks_msec() < deadline:
+		await frames(1)
+	await settle(ts, 0.5)
+	check(g.state == "discard_pick" and str(g.dpick.color) == "" and bool(g.dpick.get("flip", false)) and not tv.wish_picker.is_open(),
+		"Flip-Überraschung: kein Farbrad für die Ablegefarbe (%s)" % g.state)
+	check(pick.visible and not undo.visible and ts.hand.is_picking() and tv.hint_bar.hint.contains("Tippe auf eine Karte der Farbe"),
+		"Flip-Überraschung: Auswahl ohne „Zurücknehmen“, Hinweis (%s)" % tv.hint_bar.hint)
+	ts.hand.call("_on_tap", RulesFixture.card(g, 0, "dunkel_lila_1"))
+	check(ts.hand.get_pick().size() == 2, "Flip-Überraschung: Lila gewählt (beide)")
+	check(not tv.can_undo_pick() and g.state == "discard_pick", "Flip-Überraschung: nichts zurückzunehmen")
+	await frames(2)
+	pick.pressed.emit()
+	await frames(2)
+	check(tv.wish_picker.mode == "wheel" and tv.wish_picker.title == "Mit welcher Farbe geht es weiter?", "Flip-Überraschung: Farbrad der Spielfarbe")
+	tv.wish_picker.drop(Vector2(-5000, -5000))
+	await frames(2)
+	check(tv.wish_picker.mode == "wheel" and g.state == "discard_pick", "Flip-Überraschung: Wegklicken öffnet das Rad wieder")
+	tv.wish_picker.close()
+	tv.wish_picker.color_chosen.emit("orange")
+	await settle(ts, 0.8)
+	check(g.state == "turn" and g.color == "orange" and (g.hands[0] as Array).size() == 1 and g.current_seat() == 1,
+		"Flip-Überraschung: Lila abgelegt, weiter mit Orange (%s, %s)" % [g.state, g.color])
+	await close_table(ts)
+
+
+# Weitergeben (zwei Menschen an einem Handy): Ablegen-Joker per Antippen, danach Sichtschutz für den Nächsten ohne offene Auswahl.
+func discard_pass_test() -> void:
+	var ts := await make_table(discard_cfg(), 2, {"hands": [["hell_ablegen_joker", "hell_blau_3", "hell_blau_4", "hell_rot_7"],
+		["hell_gruen_1", "hell_gruen_2"]], "top": "hell_rot_5", "current": 0}, "pass")
+	var g := game_of(ts)
+	var tv := ts.table
+	var lt := ts.source as LocalTable
+	var until := Time.get_ticks_msec() + 5000
+	while lt.pending_handover() < 0 and lt.local_seat() < 0 and Time.get_ticks_msec() < until:
+		lt.pump()
+		await frames(1)
+	check(lt.pending_handover() == 0 and tv.handover.visible, "Weitergeben: erst der Sichtschutz für Platz 0")
+	tv.handover.hide_screen()                  # wie Gedrückthalten: Sichtschutz weg, dann aufdecken
+	tv.handover.revealed.emit()
+	await settle(ts, 0.3)
+	ts.hand.play_requested.emit(RulesFixture.card(g, 0, "hell_ablegen_joker"), ts.hand.play_target)
+	await settle(ts, 0.3)
+	check(g.state == "discard_pick" and not tv.wish_picker.is_open() and not tv.handover.visible, "Weitergeben: Auswahl ohne Farbrad und ohne Sichtschutz (%s, %s, %s)" % [g.state, tv.wish_picker.is_open(), tv.handover.visible])
+	ts.hand.call("_on_tap", RulesFixture.card(g, 0, "hell_blau_4"))
+	var pick: PillButton = tv.get("_act_btns")["pick"]
+	check(pick.text == "Ablegen (2)", "Weitergeben: Blau gewählt (%s)" % pick.text)
+	pick.pressed.emit()
+	await frames(2)
+	tv.wish_picker.close()
+	tv.wish_picker.color_chosen.emit("rot")
+	await settle(ts, 0.8)
+	until = Time.get_ticks_msec() + 5000
+	while lt.pending_handover() < 0 and Time.get_ticks_msec() < until:
+		lt.pump()
+		await frames(1)
+	await frames(2)
+	check(g.current_seat() == 1 and g.color == "rot" and (g.hands[0] as Array).size() == 1 and tv.handover.visible and not ts.hand.is_picking(),
+		"Weitergeben: abgelegt, Sichtschutz für den Nächsten (%d, %s, %d, %s, %s)" % [g.current_seat(), g.color, (g.hands[0] as Array).size(),
+		tv.handover.visible, ts.hand.is_picking()])
 	await close_table(ts)
 
 

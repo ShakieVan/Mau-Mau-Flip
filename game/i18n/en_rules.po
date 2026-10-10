@@ -211,8 +211,8 @@ msgstr "If no card is left, you are out."
 msgid "Bleibt nach dem Setzen 1 Karte, gilt „Mau!“ wie beim Legen."
 msgstr "If 1 card is left after staking, “Mau!” applies as when playing."
 
-msgid "Danach wählst du die Farbe, mit der es weitergeht – sie darf eine andere sein."
-msgstr "Then you choose the color to continue with – it may be a different one."
+msgid "Die mitabgelegten Karten kommen unter den Joker."
+msgstr "The cards discarded with it go under the wild card."
 
 msgid "Danach wählst du, welche deiner Karten in %s du mit ablegst (alle, einige oder keine); sie kommen unter diese Karte, die oben bleibt."
 msgstr "Then you choose which of your %s cards to discard with it (all, some or none); they go under this card, which stays on top."
@@ -394,8 +394,8 @@ msgstr "If you have only 2 cards left and it's your turn, tap “Mau!” – bef
 msgid "Hausregel: Der Glücksspiel-Joker passt immer; du wünschst eine Farbe, die nach dem Glücksspiel gilt. Dann legst du reihum eine beliebige Karte verdeckt auf deinen Einsatz und drückst den Glücksspielknopf. Je Glücksspiel wird geheim eine Trefferquote zwischen 1:1 und 1:10 ausgelost. Bei einem Treffer zeigt der Knopf 1 bis 10: So viele Karten ziehst du, nimmst den ganzen Einsatz zurück, und dein Zug ist vorbei. Zeigt er 0, geht es weiter; ist deine Hand dann leer, kommt der Einsatz unter den Ablagestapel und du %s. Nach einer 0 darfst du statt weiterzusetzen auch aufhören: Der ganze Einsatz kommt unter den Ablagestapel, dein Zug ist vorbei. Die Einsatzkarten wirken nicht."
 msgstr "House rule: The Gamble wild card always fits; you wish for a color that applies after the gamble. Then, in turn, you put any card face down on your stake and press the gamble button. For each Gamble, a hit rate between 1:1 and 1:10 is drawn in secret. On a hit the button shows 1 to 10: You draw that many cards, take your whole stake back, and your turn is over. If it shows 0, play goes on; if your hand is empty by then, the stake goes under the discard pile and you %s. After a 0 you may also stop instead of staking more: The whole stake goes under the discard pile and your turn is over. The stake cards have no effect."
 
-msgid "Hausregel: Wer eine Ablegen-Karte legt, wählt danach, welche eigenen Karten derselben Farbe er mit ablegt (alle, einige oder keine). Beim Ablegen-Joker wählst du zuerst die Ablegefarbe und danach getrennt die Farbe, mit der es weitergeht. Die Karten kommen unter die Ablegen-Karte, die oben bleibt. Joker bleiben auf der Hand, mitabgelegte Aktionskarten wirken nicht. Die farbige Ablegen-Karte passt auf ihre Farbe und auf jede andere Ablegen-Karte, der Ablegen-Joker immer."
-msgstr "House rule: Whoever plays a Discard Color card then chooses which of their own cards of the same color to discard with it (all, some or none). With the Discard Wild you first choose the color to discard and then, separately, the color to continue with. The cards go under the Discard Color card, which stays on top. Wild cards stay in your hand, and action cards discarded along with it have no effect. The colored Discard Color card fits its color and any other Discard Color card; the Discard Wild always fits."
+msgid "Hausregel: Wer eine Ablegen-Karte legt, wählt danach, welche eigenen Karten derselben Farbe er mit ablegt (alle, einige oder keine). Beim Ablegen-Joker tippst du auf eine Karte der Farbe, die du mit ablegen willst (alle Karten dieser Farbe werden gewählt), und wählst zum Schluss getrennt die Farbe, mit der es weitergeht. Die Karten kommen unter die Ablegen-Karte, die oben bleibt. Joker bleiben auf der Hand, mitabgelegte Aktionskarten wirken nicht. Die farbige Ablegen-Karte passt auf ihre Farbe und auf jede andere Ablegen-Karte, der Ablegen-Joker immer."
+msgstr "House rule: Whoever plays a Discard Color card then chooses which of their own cards of the same color to discard with it (all, some or none). With the Discard Wild you tap a card of the color you want to discard (all cards of that color get selected) and finally choose, separately, the color to continue with. The cards go under the Discard Color card, which stays on top. Wild cards stay in your hand, and action cards discarded along with it have no effect. The colored Discard Color card fits its color and any other Discard Color card; the Discard Wild always fits."
 
 msgid "Hausregel: Wer einen Kartentausch legt, lässt alle Spieler gleichzeitig ihre ganze Hand an den Nächsten weitergeben, %s. Danach ist der Nächste in Spielrichtung dran; zu zweit tauscht ihr einfach eure Hände. Der Kartentausch passt auf seine Farbe und auf jeden anderen Kartentausch."
 msgstr "House rule: Whoever plays a Card Swap makes all players pass their whole hand to the next player at the same time, %s. Then it's the next player's turn in the direction of play; with two players you simply swap hands. The Card Swap fits its color and any other Card Swap."
@@ -439,8 +439,8 @@ msgstr "Wild cards"
 msgid "Joker auf deiner Hand bleiben dort. Mitabgelegte Aktionskarten wirken nicht."
 msgstr "Wild cards in your hand stay there. Action cards discarded with it have no effect."
 
-msgid "Joker: passt immer. Du wählst eine Farbe und dann, welche deiner Karten dieser Farbe du mit ablegst; sie kommen unter den Joker."
-msgstr "Wild card: always fits. You choose a color and then which of your cards of that color to discard with it; they go under the wild card."
+msgid "Joker: passt immer. Tippe auf eine Karte der Farbe, die du mit ablegen willst (alle Karten dieser Farbe werden gewählt), wähle ab, was du behalten willst, und zum Schluss die Farbe, mit der es weitergeht (auch eine andere)."
+msgstr "Wild card: always matches. Tap a card of the color you want to discard with it (all cards of that color get selected), deselect what you want to keep, and finally choose the color the game continues with (it can be a different one)."
 
 msgid "Joker: passt immer. Du wünschst eine Farbe; sie gilt nach dem Glücksspiel."
 msgstr "Wild card: always matches. You wish for a color; it applies after the gamble."

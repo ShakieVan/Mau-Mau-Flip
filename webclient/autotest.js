@@ -267,7 +267,7 @@
       const oben = t.ablageKarten.lastElementChild;
       if (v.top && (!oben || oben.dataset.face !== v.top.face)) this.fail('Ablage zeigt ' + (oben && oben.dataset.face) + ' statt ' + v.top.face);
       if (t.stapelZahl.textContent.indexOf(String(v.draw_count)) < 0) this.fail('Stapelzahl falsch');
-      if (v.hints && v.hints.text && t.hinweis.textContent !== t.hinweisText(v.hints.text)) this.fail('Hinweistext weicht ab');
+      if (!this.app._vor && (!M.Spass || M.Spass.stufe === 'aus') && t.hinweis.textContent !== 'Tippe auf eine Karte der Farbe, die du mit ablegen willst.' && v.hints && v.hints.text && t.hinweis.textContent !== t.hinweisText(v.hints.text)) this.fail('Hinweistext weicht ab: ' + t.hinweis.textContent + ' | ' + v.hints.text + ' | ph ' + v.phase);
       if (!this.app.hervorheben() && t.hinweis.textContent.indexOf('nichts passt') >= 0) this.fail('Hinweis verrät „nichts passt“ trotz Hervorheben aus');
       if (t.root.dataset.seite !== v.side) this.fail('Seite ' + t.root.dataset.seite + ' statt ' + v.side);
       if (this.app.fehler.length) this.app.fehler.forEach(f => this.fail('JS-Fehler: ' + f));
@@ -302,7 +302,7 @@
     /* ---------- Ablauf ---------- */
     async lauf() {
       try {
-        const app = this.app;
+        const app = this.app; if (M.Spass && M.Spass.setzeStufe) M.Spass.setzeStufe('aus');   // Sprüche (1.4.4) ersetzen den Hinweis
         await this.warte(() => document.body.dataset.screen === 'start', 3000, 'Startseite');
         $('#name').value = 'Autotest';
         this.klick('#beitreten');
@@ -548,6 +548,11 @@
       this.prot('ZUG t' + v.turn + ' ' + v.phase + ' sp' + JSON.stringify(h.playable) + ' g' + app.tisch.hand.gewaehlt);
       const s0 = this.states, e0 = this.errs;
       const antwort = () => this.warte(() => this.states > s0 || this.errs > e0, 8000, 'Antwort auf Zug');
+      if (h.need_color && app.ablegeWunsch(v)) {   // Flip-Überraschung mit Ablegen-Joker: Ablegefarbe per Tipp (ohne farbige Karten gleich weiter)
+        app.aktion({ a: 'wunsch' });
+        if (app._vor) { const kv = app.vorKarten(v); await this.tippe(kv[this.zuege % kv.length]); this.haus.vorwahl = (this.haus.vorwahl | 0) + 1; }
+        await antwort(); this.zuege++; return;
+      }
       if (h.need_color) { app.aktion({ a: 'wunsch' }); await this.farbeWaehlen(); await antwort(); this.zuege++; return; }
       if (h.can_challenge) {
         const knopf = this.app.tisch.aktionen.querySelector('button[data-a="' + (this.zuege % 2 ? 'challenge' : 'accept') + '"]');
@@ -674,10 +679,25 @@
         else { await this.tippe(id); if (app.tisch.hand.gewaehlt !== id) this.fail('Antippen hebt die Karte nicht an'); await this.tippe(id); }
         if (Array.isArray(h.wild) ? h.wild.indexOf(id) >= 0 : M.Karten.istJoker(c.face)) {
           if (artVon(id) === 'ablegen_joker') {
-            await this.warte(() => app.tisch.farbwahlOffen, 3000, 'Ablegefarbe');
-            if (app.tisch.farbwahl.querySelector('.frage').textContent !== 'Welche Farbe legst du mit ab?') this.fail('Frage der Ablegefarbe fehlt');
-          }
-          await this.farbeWaehlen();
+            // 1.4.9: kein erstes Farbrad; mit farbigen Handkarten Vorwahl per Tipp, sonst gleich das Farbrad der Spielfarbe
+            if (app.tisch.farbwahlOffen && !app._vor) this.fail('Farbrad der Ablegefarbe statt Antippen');
+            if (app._vor) {
+              const kv = app.vorKarten(this.v);
+              if (!kv.length) this.fail('Vorwahl ohne farbige Karten');
+              if (app.tisch.farbwahlOffen) this.fail('Farbrad trotz Vorwahl');
+              if (app.tisch.hinweis.textContent !== 'Tippe auf eine Karte der Farbe, die du mit ablegen willst.') this.fail('Hinweis der Vorwahl: ' + app.tisch.hinweis.textContent);
+              if (app.tisch.hand.el.querySelectorAll('.hk.kandidat').length !== kv.length) this.fail('Vorwahl: farbige Karten nicht alle hervorgehoben');
+              if (this.zuege % 4 === 3) {   // Abbruch: Tipp auf den Joker selbst legt nichts
+                await this.tippe(id);
+                if (app._vor) this.fail('Vorwahl lässt sich nicht abbrechen');
+                await this.tippe(id); await this.tippe(id);
+                if (!app._vor) this.fail('Vorwahl startet nach Abbruch nicht neu');
+              }
+              await this.tippe(kv[this.zuege % kv.length]);
+              if (app._vor) this.fail('Tipp auf Farbkarte wählt keine Ablegefarbe');
+              this.haus.vorwahl = (this.haus.vorwahl | 0) + 1;
+            }
+          } else await this.farbeWaehlen();
         }
         await antwort();
         if (this.errs > e0) this.fail('Zug abgelehnt: ' + c.face);

@@ -613,7 +613,8 @@ func _card_face(id: int) -> String:
 	return ""
 
 
-# Ablegen-Joker: zuerst die Ablegefarbe im Farbrad (mit Frage), Farbfelder beim Ziehen gibt es für ihn nicht
+# Ablegen-Joker: Ablegefarbe per Antippen einer Handkarte (hints.pick_tap, ab 1.4.9), bei alten Gastgebern zuerst im Farbrad (mit
+# Frage); Farbfelder beim Ziehen gibt es für ihn nicht
 static func is_discard_joker(face: String) -> bool:
 	return str(CardDB.parse_key(face).get("kind", "")) == CardDB.DISCARD_WILD
 
@@ -651,6 +652,10 @@ func _on_play_requested(id: int, drop_global: Vector2) -> void:
 		if col != "":
 			_last_play = id
 			_act({"a": "play", "card": id, "color": col})
+		elif is_discard_joker(face) and bool((view.get("hints", {}) as Dictionary).get("pick_tap", false)):
+			# Gastgeber ab 1.4.9: kein Farbrad für die Ablegefarbe – der Joker wird gelegt, die Farbe wählt man per Antippen
+			_last_play = id
+			_act({"a": "play", "card": id, "color": ""})
 		else:
 			_pending_wild = id
 			if is_discard_joker(face):

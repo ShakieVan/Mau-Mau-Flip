@@ -409,9 +409,9 @@ func run() -> void:
 		check(karten.contains(k), "Regeltexte (karten.js): Tauschrichtung „%s“" % k)
 	check(not karten.contains("anzweifeln") and not karten.contains("Bluffen"), "Regeltexte (karten.js) ohne Anzweifeln")
 	check(karten.contains("weiter riskieren oder aufhören"), "Regeltexte (karten.js): Glücksspiel nennt das Aufhören")
-	check(tisch.contains("data-a=\"ablegen\">' + M.t('Ablegen (%d)'") and app.contains("'Welche Farbe legst du mit ab?'") and app.contains("'Mit welcher Farbe geht es weiter?'")
+	check(tisch.contains("data-a=\"ablegen\">' + M.t('Ablegen (%d)'") and app.contains("'Tippe auf eine Karte der Farbe, die du mit ablegen willst.'") and not app.contains("'Welche Farbe legst du mit ab?'") and app.contains("'Mit welcher Farbe geht es weiter?'")
 			and app.contains("a: 'discard_pick', cards") and css.contains(".hk.kandidat"),
-		"Farbe mit ablegen: Auswahl in der Hand, Knopf „Ablegen (n)“, zweistufige Farbwahl beim Joker")
+		"Farbe mit ablegen: Auswahl in der Hand, Knopf „Ablegen (n)“, Ablegefarbe beim Joker per Tipp, danach das Farbrad der Spielfarbe")
 	for k in ["case 'discard_pick'", "can_pick", "pick_color", "e: 'discard_pick'"]:
 		check(mock.contains(k), "mock.js kennt „%s“" % k)
 	check(autotest.contains("data-a=\"ablegen\"") and autotest.contains("abgewaehlt"), "autotest.js wählt beim Mitablegen (manchmal ab)")
