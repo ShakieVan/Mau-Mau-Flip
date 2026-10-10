@@ -301,3 +301,14 @@ Diese Sprüche dürfen den Hinweis „Nichts passt – zieh eine Karte“ ersetz
 38. Zieh eine – das Glück wartet vielleicht oben.
 39. Nichts passt. Die anderen freuen sich schon. Zieh! (F)
 40. Deine Hand: viel Auswahl, null Treffer. Zieh eine. (F)
+41. Heute im Sonderangebot: Karten! Zieh eine, bekomme 4!
+42. Du bist im VollZUG. Es kann nur voller werden.
+43. Zieh Leine … oder eine Karte.
+44. Deine Karten sind einsam. Hol ihnen neue Gesellschaft.
+45. Deine Karten wetten gerade, wie viele du noch halten kannst.
+46. Genieße das Leben in vollen ZÜGEN! Zieh eine.
+47. Ziehen oder nicht ziehen … keine Frage. Du MUSST!
+48. Einfach mal hochZIEHEN, anstatt zu schnauben.
+49. Die Karten in deiner Nähe wollen dich kennenlernen.
+50. Du hast noch nicht genug Karten!
+51. Bereichere dich doch mal wieder.

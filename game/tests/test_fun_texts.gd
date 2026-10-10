@@ -648,20 +648,21 @@ func check_english() -> void:
 # Beta 1.4.6: Anlass „nichts passt“ – ersetzt nur den reinen Hinweis „nichts passt, zieh eine Karte“ (Häufigkeit wie der Zug-Anlass)
 func check_nothing_fits() -> void:
 	var lines := FunTexts.lines_for("nichts_passt", "frech")
-	check(lines.size() == 40 and FunTexts.lines_for("nichts_passt", "nett").size() == 35 and FunTexts.lines_for("nichts_passt", "aus").is_empty(),
-		"nichts_passt: 40 Sprüche (35 davon nett, 5 frech)")
-	for l in lines:
-		check(l.contains("ieh") or l.contains("Stapel") or l.contains("Nachschub"), "Spruch nennt das Ziehen: " + l)
+	check(lines.size() == 51 and FunTexts.lines_for("nichts_passt", "nett").size() == 46 and FunTexts.lines_for("nichts_passt", "aus").is_empty(),
+		"nichts_passt: 51 Sprüche (46 davon nett, 5 frech)")
+	for i in lines.size():       # die ersten 40 nennen das Ziehen; die Nutzer-Sprüche 41–51 (1.4.7) deuten es an und gelten durch den Anlass
+		var l: String = lines[i]
+		check(i >= 40 or l.contains("ieh") or l.contains("Stapel") or l.contains("Nachschub"), "Spruch nennt das Ziehen: " + l)
 	var vw := view(ME, 7, NF)
 	check(FunTexts.nothing_fits(vw, vw.hints, ME) and not FunTexts.nothing_fits(vw, vw.hints, -1) and not FunTexts.nothing_fits(view(1), view(1).hints, ME),
 		"nothing_fits: nur im eigenen Zug mit dem reinen Hinweis")
-	# Immer: jeder Nichts-passt-Zug bekommt einen Spruch aus dem Anlass, alle 40 der Reihe nach verschieden, nie der Zug-/Tipp-Anlass
+	# Immer: jeder Nichts-passt-Zug bekommt einen Spruch aus dem Anlass, alle 51 der Reihe nach verschieden, nie der Zug-/Tipp-Anlass
 	var f := FunTexts.new()
 	f.set_freq("immer")
 	f.rng.seed = 5
 	var seen := {}
 	var bad := 0
-	for i in 40:
+	for i in 51:
 		f.tick(0.2)
 		show(f, view(1))
 		var t := show(f, view(ME, 7, NF))
@@ -669,7 +670,7 @@ func check_nothing_fits() -> void:
 			bad += 1
 		seen[f.line] = true
 	check(bad == 0, "immer: jeder Nichts-passt-Zug bekommt einen nichts_passt-Spruch (%d Ausnahmen)" % bad)
-	check(seen.size() == 40, "immer: 40 Züge, 40 verschiedene Sprüche (%d)" % seen.size())
+	check(seen.size() == 51, "immer: 51 Züge, 51 verschiedene Sprüche (%d)" % seen.size())
 	# kein falscher Tipp, keine Pointe nach dem Ziehen
 	f.observe([{"e": "draw", "seat": 0, "reason": "zug", "count": 1}], view(ME), ME)
 	check(f.take_notice() == "", "nichts_passt löst keine „verarscht“-Pointe aus")
@@ -716,19 +717,19 @@ func check_nothing_fits() -> void:
 	nohl.tick(40.0)
 	show(nohl, view(1))
 	check(show(nohl, view(ME, 7, NF)) == NF and not nohl.showing(), "Hervorheben aus: Hinweis bleibt")
-	# Stufe nett: keine frechen Zeilen (alle 35 kommen, kein (F))
+	# Stufe nett: keine frechen Zeilen (alle 46 kommen, kein (F))
 	var nt := FunTexts.new()
 	nt.set_freq("immer")
 	nt.set_level("nett")
 	nt.rng.seed = 8
 	var nett_seen := {}
-	for i in 35:
+	for i in 46:
 		nt.tick(0.2)
 		show(nt, view(1))
 		show(nt, view(ME, 7, NF))
 		nett_seen[nt.line] = true
 	var nett_lines := FunTexts.lines_for("nichts_passt", "nett")
-	check(nett_seen.size() == 35 and nett_seen.keys().all(func(l: Variant) -> bool: return nett_lines.has(l)), "nett: 35 Sprüche ohne die frechen")
+	check(nett_seen.size() == 46 and nett_seen.keys().all(func(l: Variant) -> bool: return nett_lines.has(l)), "nett: 46 Sprüche ohne die frechen")
 	# Häufigkeit wie der Zug-Anlass (oft: 65 %), selten < normal < oft
 	var rate := {}
 	for fq in ["selten", "normal", "oft"]:

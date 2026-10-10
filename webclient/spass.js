@@ -111,7 +111,18 @@
       ["Nichts zu legen, aber was zu ziehen!", "nett"],
       ["Zieh eine – das Glück wartet vielleicht oben.", "nett"],
       ["Nichts passt. Die anderen freuen sich schon. Zieh!", "frech"],
-      ["Deine Hand: viel Auswahl, null Treffer. Zieh eine.", "frech"]
+      ["Deine Hand: viel Auswahl, null Treffer. Zieh eine.", "frech"],
+      ["Heute im Sonderangebot: Karten! Zieh eine, bekomme 4!", "nett"],
+      ["Du bist im VollZUG. Es kann nur voller werden.", "nett"],
+      ["Zieh Leine … oder eine Karte.", "nett"],
+      ["Deine Karten sind einsam. Hol ihnen neue Gesellschaft.", "nett"],
+      ["Deine Karten wetten gerade, wie viele du noch halten kannst.", "nett"],
+      ["Genieße das Leben in vollen ZÜGEN! Zieh eine.", "nett"],
+      ["Ziehen oder nicht ziehen … keine Frage. Du MUSST!", "nett"],
+      ["Einfach mal hochZIEHEN, anstatt zu schnauben.", "nett"],
+      ["Die Karten in deiner Nähe wollen dich kennenlernen.", "nett"],
+      ["Du hast noch nicht genug Karten!", "nett"],
+      ["Bereichere dich doch mal wieder.", "nett"]
     ],
     tipp: [
       ["Im Ziehstapel liegt vielleicht genau die Karte, die du brauchst. Schau mal nach.", "frech"],

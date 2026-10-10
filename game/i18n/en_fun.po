@@ -929,3 +929,36 @@ msgstr "Nothing fits. The others are already delighted. Draw!"
 msgid "Deine Hand: viel Auswahl, null Treffer. Zieh eine."
 msgstr "Your hand: lots of choice, zero hits. Draw one."
 
+msgid "Heute im Sonderangebot: Karten! Zieh eine, bekomme 4!"
+msgstr "Special offer today: cards! Draw one, get four!"
+
+msgid "Du bist im VollZUG. Es kann nur voller werden."
+msgstr "Your hand is a full DRAWer. It can only get fuller."
+
+msgid "Zieh Leine … oder eine Karte."
+msgstr "Draw the line … or just a card."
+
+msgid "Deine Karten sind einsam. Hol ihnen neue Gesellschaft."
+msgstr "Your cards are lonely. Get them some new company."
+
+msgid "Deine Karten wetten gerade, wie viele du noch halten kannst."
+msgstr "Your cards are betting on how many more you can hold."
+
+msgid "Genieße das Leben in vollen ZÜGEN! Zieh eine."
+msgstr "Live life to the fullest – full of DRAWs! Draw one."
+
+msgid "Ziehen oder nicht ziehen … keine Frage. Du MUSST!"
+msgstr "To draw or not to draw … no question. You MUST!"
+
+msgid "Einfach mal hochZIEHEN, anstatt zu schnauben."
+msgstr "Instead of grumbling, just DRAW UP a card."
+
+msgid "Die Karten in deiner Nähe wollen dich kennenlernen."
+msgstr "The cards nearby want to get to know you."
+
+msgid "Du hast noch nicht genug Karten!"
+msgstr "You don't have enough cards yet!"
+
+msgid "Bereichere dich doch mal wieder."
+msgstr "Go on, enrich yourself – with cards."
+
