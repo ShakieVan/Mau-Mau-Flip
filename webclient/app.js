@@ -5,7 +5,7 @@
 (function (M) {
   'use strict';
 
-  const VERSION = '1.4.3';
+  const VERSION = '1.4.4';
   const PROTO = 1;
   // wach.mp4 (32×32, 2 s, H.264 Baseline, ohne Ton; erzeugt mit ffmpeg) als data:-URI
   const WACH_VIDEO = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAMzbW9vdgAAAGxtdmhkAAAAAAAAAAAAAAAAAAAD6AAAB9AAAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAl50cmFrAAAAXHRraGQAAAADAAAAAAAAAAAAAAABAAAAAAAAB9AAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAACAAAAAgAAAAAAAkZWR0cwAAABxlbHN0AAAAAAAAAAEAAAfQAAAAAAABAAAAAAHWbWRpYQAAACBtZGhkAAAAAAAAAAAAAAAAAABAAAAAgABVxAAAAAAALWhkbHIAAAAAAAAAAHZpZGUAAAAAAAAAAAAAAABWaWRlb0hhbmRsZXIAAAABgW1pbmYAAAAUdm1oZAAAAAEAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAAUFzdGJsAAAAuXN0c2QAAAAAAAAAAQAAAKlhdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAACAAIABIAAAASAAAAAAAAAABFExhdmM2My4xLjEwMSBsaWJ4MjY0AAAAAAAAAAAAAAAAGP//AAAAL2F2Y0MBQsAe/+EAFmdCwB7ZCWwEQAAAAwBAAAADAQPFi5IBAAZoy4DkTIAAAAAQcGFzcAAAAAEAAAABAAAAFGJ0cnQAAAAAAAAKpAAAAAAAAAAYc3R0cwAAAAAAAAABAAAABAAAIAAAAAAUc3RzcwAAAAAAAAABAAAAAQAAABxzdHNjAAAAAAAAAAEAAAABAAAABAAAAAEAAAAkc3RzegAAAAAAAAAAAAAABAAAAogAAAALAAAACwAAAAsAAAAUc3RjbwAAAAAAAAABAAADYwAAAGF1ZHRhAAAAWW1ldGEAAAAAAAAAIWhkbHIAAAAAAAAAAG1kaXJhcHBsAAAAAAAAAAAAAAAALGlsc3QAAAAkqXRvbwAAABxkYXRhAAAAAQAAAABMYXZmNjMuMS4xMDEAAAAIZnJlZQAAArFtZGF0AAACcgYF//9u3EXpvebZSLeWLNgg2SPu73gyNjQgLSBjb3JlIDE2NSByMzIyMyAwNDgwY2IwIC0gSC4yNjQvTVBFRy00IEFWQyBjb2RlYyAtIENvcHlsZWZ0IDIwMDMtMjAyNSAtIGh0dHA6Ly93d3cudmlkZW9sYW4ub3JnL3gyNjQuaHRtbCAtIG9wdGlvbnM6IGNhYmFjPTAgcmVmPTMgZGVibG9jaz0xOi0zOi0zIGFuYWx5c2U9MHgxOjB4MTExIG1lPWhleCBzdWJtZT03IHBzeT0xIHBzeV9yZD0yLjAwOjAuNzAgbWl4ZWRfcmVmPTEgbWVfcmFuZ2U9MTYgY2hyb21hX21lPTEgdHJlbGxpcz0xIDh4OGRjdD0wIGNxbT0wIGRlYWR6b25lPTIxLDExIGZhc3RfcHNraXA9MSBjaHJvbWFfcXBfb2Zmc2V0PS00IHRocmVhZHM9MSBsb29rYWhlYWRfdGhyZWFkcz0xIHNsaWNlZF90aHJlYWRzPTAgbnI9MCBkZWNpbWF0ZT0xIGludGVybGFjZWQ9MCBibHVyYXlfY29tcGF0PTAgY29uc3RyYWluZWRfaW50cmE9MCBiZnJhbWVzPTAgd2VpZ2h0cD0wIGtleWludD0yNTAga2V5aW50X21pbj0yIHNjZW5lY3V0PTQwIGludHJhX3JlZnJlc2g9MCByY19sb29rYWhlYWQ9NDAgcmM9Y3JmIG1idHJlZT0xIGNyZj00MC4wIHFjb21wPTAuNjAgcXBtaW49MCBxcG1heD02OSBxcHN0ZXA9NCBpcF9yYXRpbz0xLjQwIGFxPTE6MS4yMACAAAAADmWIhAXznJigACX3J114AAAAB0GaOAvnOWAAAAAHQZpUAvnOWAAAAAdBmmAVznLA';
@@ -49,7 +49,7 @@
     // ton = Mau-Ton (Aufnahmen, Standard normal), toene = übrige Spieltöne (Dateien aus sfx/, sonst synthetisch; Standard aus), stumm = Ton-Knopf in der Ecke
     // hervorheben = spielbare Karten hervorheben (persönliche Einstellung je Gerät, AGENTS.md Nr. 24; Standard an)
     // grosser_modus = großer Modus (Standard aus), zug_vibration = „Bei deinem Zug: Vibration“ (Standard an seit 1.2.1); beide je Gerät, wie App.settings
-    einstellungen: { ton: 'normal', toene: 'aus', stumm: false, effekte: 'voll', sort: 'farbe', vibration: true, vollbild: true, hervorheben: true, schrift: 'normal', grosser_modus: false, zug_vibration: true, sprache: 'auto' },
+    einstellungen: { ton: 'normal', toene: 'aus', stumm: false, effekte: 'voll', sort: 'farbe', vibration: true, vollbild: true, hervorheben: true, schrift: 'normal', grosser_modus: false, zug_vibration: true, sprache: 'auto', sprueche: 'frech' },
     _mauZuletzt: {},       // „art:Platz“ → Zeitpunkt des letzten Mau-Tons (Entprellung)
     // Online-Spiel (docs/online/ENTWURF.md): ?r=CODE auf einer vom Vermittler ausgelieferten Seite. Vermittler = eigener Ursprung.
     online: false,         // ?r= vorhanden
@@ -80,6 +80,8 @@
       this._schrift(e.schrift);
       e.grosser_modus = params.get('gross') ? params.get('gross') === '1' : Speicher.get('grosser_modus', false) === true;   // ?gross=1 für Test und Kontrollbilder
       e.zug_vibration = Speicher.get('zug_vibration', true) !== false;   // ab Werk an (Nutzerentscheidung 1.2.1), wirkt nur mit navigator.vibrate
+      e.sprueche = Speicher.get('sprueche', 'frech');   // freche Sprüche (Beta 1.4.4, spass.js): aus | nett | frech, je Gerät
+      if (M.Spass) M.Spass.setzeStufe(e.sprueche);
       this._gross(e.grosser_modus);
       M.Ton.setzeStufe(e.ton);
       M.Ton.setzeToene(e.toene);
@@ -458,6 +460,7 @@
           break;
         case 'state':
           if (!m.view) break;
+          if (M.Spass) M.Spass.beobachte(m.events || [], this.view, m.view.seat);   // freche Sprüche: Anlässe aus den Ereignissen (1.4.4)
           this.view = m.view;
           { const h = (m.view.players || []).find(p => p.host && p.away); this.hostApp(h ? h.name : ''); }
           if (this.screen !== 'tisch') this.zeigeScreen('tisch');
@@ -943,6 +946,7 @@
       if (k === 'schrift') { this._schrift(wert); if (this.tisch && this.view) this.tisch.zeige(this.view, true); }
       if (k === 'grosser_modus') this._gross(wert);
       if (k === 'zug_vibration' && wert) this.zugVibration();   // zum Ausprobieren
+      if (k === 'sprueche' && M.Spass) { M.Spass.setzeStufe(wert); if (this.tisch && this.view) this.tisch.zeige(this.view, true); }
       if (k === 'sprache') M.I18n.setze(wert);   // Hörer unten bauen Dynamisches neu
       this.menue();
     },

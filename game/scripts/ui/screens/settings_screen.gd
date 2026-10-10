@@ -16,6 +16,7 @@ var _install_btn: Button
 var _browser_btn: Button
 var _share_status: Label
 var _stats_list: VBoxContainer
+var _stats_titles: VBoxContainer           # Spaßtitel (1.4.4), über den Zahlen
 var _stats_confirm: ConfirmBox
 var _relay: LineEdit
 var _relay_status: Label
@@ -175,6 +176,11 @@ static func personal(parent: Control, section: Callable, tempo := true) -> void:
 	# Persönliche Hilfe, nie eine Regel des Gastgebers (AGENTS.md 24); der Tisch (HandView) hört auf App.settings.changed.
 	look.add_child(ScreenKit.switch_row("Spielbare Karten hervorheben", "Nur auf diesem Gerät: Karten, die du gerade legen kannst, werden in deiner Hand hervorgehoben.",
 		bool(UiApp.setting("hervorheben", true)), func(on: bool) -> void: _store("hervorheben", on), "Hervorheben"))
+	# Freche Sprüche (Beta 1.4.4, FunTexts): persönlich je Gerät, ab Werk frech; der Tisch hört auf App.settings.changed
+	var spr := ScreenKit.choice(FunTexts.LEVEL_NAMES, FunTexts.clean_level(UiApp.setting(FunTexts.SETTING, FunTexts.DEFAULT)),
+		func(v: String) -> void: _store(FunTexts.SETTING, v), UiFonts.size("text"))
+	spr.name = "Sprueche"
+	look.add_child(ScreenKit.row("Sprüche", spr, 190.0, "Ab und zu ein Spruch statt „Du bist dran“. Nett: ohne die frechen. Nur auf diesem Gerät."))
 	look.add_child(ScreenKit.switch_row("Vibration", "", bool(UiApp.setting("vibration", true)), func(on: bool) -> void: _store("vibration", on), "Vibration"))
 	var fx := ScreenKit.choice([["voll", "Voll"], ["reduziert", "Reduziert"]], str(UiApp.setting("effekte", "voll")), func(v: String) -> void: _store("effekte", v), UiFonts.size("text"))
 	fx.name = "Effekte"
@@ -349,6 +355,9 @@ func _build_stats(box: VBoxContainer) -> void:
 	var intro := ScreenKit.hint(AppStats.INTRO, UiFonts.size("hinweis"))
 	intro.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	box.add_child(intro)
+	_stats_titles = ScreenKit.vbox(4)
+	_stats_titles.name = "StatistikTitel"
+	box.add_child(_stats_titles)
 	_stats_list = ScreenKit.vbox(6)
 	_stats_list.name = "StatistikZahlen"
 	box.add_child(_stats_list)
@@ -377,10 +386,13 @@ func _fill_stats() -> void:
 		return
 	for c in _stats_list.get_children():
 		c.queue_free()
+	for c in _stats_titles.get_children():
+		c.queue_free()
 	var st := _stats()
 	if st == null or bool(st.call("is_empty")):
 		_stats_list.add_child(ScreenKit.text_block(AppStats.EMPTY, UiFonts.size("text")))
 		return
+	_fill_titles(st)
 	for entry in st.call("rows"):
 		var r := ScreenKit.hbox(12)
 		var l := ScreenKit.label(str(entry[0]), "", UiFonts.size("text"))
@@ -393,6 +405,31 @@ func _fill_stats() -> void:
 		v.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		r.add_child(v)
 		_stats_list.add_child(r)
+
+
+# Spaßtitel (Beta 1.4.4, FunTitles): ein bis drei verdiente Titel mit kurzer Erklärung, sonst ein freundlicher Hinweis
+func _fill_titles(st: Object) -> void:
+	var titles: Array = st.call("titles") if st.has_method("titles") else []
+	var head := ScreenKit.label(I18n.t("Deine Titel"), "", UiFonts.size("zeile"))
+	head.add_theme_font_override("font", UiFonts.text(800))
+	_stats_titles.add_child(head)
+	if titles.is_empty():
+		_stats_titles.add_child(ScreenKit.hint(I18n.t("Noch kein Titel verdient – spiel einfach weiter!"), UiFonts.size("hinweis")))
+	for t in titles:
+		var r := ScreenKit.hbox(12)
+		r.name = "Titel"
+		var name_l := ScreenKit.label("★ " + str(t["title"]), "", UiFonts.size("text"))
+		name_l.add_theme_font_override("font", UiFonts.text(800))
+		r.add_child(name_l)
+		var why := ScreenKit.hint(str(t["why"]), UiFonts.size("hinweis"))
+		why.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		why.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		r.add_child(why)
+		_stats_titles.add_child(r)
+	var gap := Control.new()
+	gap.custom_minimum_size = Vector2(0, 8)
+	gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_stats_titles.add_child(gap)
 
 
 func _ask_reset_stats() -> void:

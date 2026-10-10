@@ -63,6 +63,11 @@ func _process(delta: float) -> void:
 
 func _pill(center: Vector2, text: String, font: Font, fs: int, bg: Color, fg: Color, h: float, border := Color(0, 0, 0, 0)) -> void:
 	var tw := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	# Zu lange Texte (Sprüche, große Schrift, großer Modus mit Skalierung) schrumpfen, statt über den Rand zu laufen
+	var avail := size.x / maxf(scale.x, 0.01) - 40.0 - 24.0
+	if size.x > 0.0 and tw > avail and avail > 80.0:
+		fs = maxi(int(float(fs) * avail / tw), 12)
+		tw = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 	var r := Rect2(center.x - tw * 0.5 - 20.0, center.y - h * 0.5, tw + 40.0, h)
 	var shadow := StyleBoxFlat.new()
 	shadow.bg_color = Color(0, 0, 0, 0.0)

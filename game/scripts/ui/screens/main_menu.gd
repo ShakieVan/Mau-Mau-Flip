@@ -6,6 +6,8 @@ extends AppScreen
 var _update_btn: Button
 var _logo: LogoCard
 var _version: Label
+var _fx: TableEffects                # Konfetti/Sterne des Geheimtipps (Beta 1.4.4)
+var easter_count := 0                # Tests: so oft wurde der Katzen-Geheimtipp ausgelöst
 
 
 func build() -> void:
@@ -26,6 +28,7 @@ func build() -> void:
 	_logo = LogoCard.new()
 	_logo.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	left.add_child(_logo)
+	_logo.easter.connect(_on_easter)
 	var foot := ScreenKit.hbox(14)
 	left.add_child(foot)
 	_version = ScreenKit.label(I18n.t("Version %s · Ein Hobbyprojekt von ShakieVan") % _version_text(), "HintLabel", UiFonts.size("hinweis"))
@@ -72,6 +75,9 @@ func build() -> void:
 	settings.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	settings.pressed.connect(func() -> void: nav.push(SettingsScreen.new()))
 	row.add_child(settings)
+	_fx = TableEffects.new()
+	_fx.name = "GeheimEffekte"
+	add_child(_fx)
 	var app := UiApp.app()
 	var up: Variant = app.get("updater") if app != null else null
 	if up is Object and (up as Object).has_signal("changed"):
@@ -88,6 +94,18 @@ func _on_app_link() -> void:
 	if nav == null or app == null or not app.has_method("take_pending_link"):
 		return
 	JoinScreen.handle_link(nav, app.call("take_pending_link"))
+
+
+# Geheimtipps im Logo (Beta 1.4.4): "cat" = 7× schnell auf die Katze → Mau-Ton und kurzer Konfetti-/Sternenregen
+func _on_easter(kind: String) -> void:
+	if kind != "cat":
+		return
+	easter_count += 1
+	MauSound.play(-1, -1, "mau")
+	if _fx != null:
+		_fx.night = float(easter_count % 2)          # abwechselnd Konfetti und Sterne
+		_fx.reduced = UiApp.reduced_effects()
+		_fx.celebrate(Rect2(0, 0, maxf(size.x, 800.0), 10), 80)
 
 
 func on_enter() -> void:
@@ -166,13 +184,20 @@ static func _version_text() -> String:
 # Logo als abgerundete Tafel mit Schatten; schwebt sanft (reduzierte Effekte: still)
 class LogoCard:
 	extends Control
+	signal easter(kind: String)          # "cat" (7 Tipps), "sun" / "moon" (langes Drücken); Beta 1.4.4
 	var tex: Texture2D
 	var _t := 0.0
 	var _mat: ShaderMaterial
 	var _img: TextureRect
+	var _face: FaceLayer
+	var _fun := FunLogo.new()
+	var _press_region := ""
+	var _press_t := -1.0                 # Haltedauer in Sekunden, < 0 = nicht gedrückt
+	var _hold_done := false
+	var _hop_t := -1.0
 
 	func _init() -> void:
-		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		mouse_filter = Control.MOUSE_FILTER_STOP
 		var path := "res://assets/ui/logo_klein.png"
 		tex = load(path) as Texture2D if ResourceLoader.exists(path) else null
 		_img = TextureRect.new()
@@ -186,6 +211,8 @@ class LogoCard:
 		_mat.shader = sh
 		_img.material = _mat
 		add_child(_img)
+		_face = FaceLayer.new()
+		_img.add_child(_face)
 		resized.connect(_fit)
 
 	func _rect() -> Rect2:
@@ -202,12 +229,46 @@ class LogoCard:
 		_mat.set_shader_parameter("radius", r.size.x * 0.04)
 		queue_redraw()
 
+	func _gui_input(event: InputEvent) -> void:
+		var mb := event as InputEventMouseButton
+		if mb == null or mb.button_index != MOUSE_BUTTON_LEFT:
+			return
+		var r := _rect()
+		if mb.pressed:
+			_press_region = FunLogo.region((mb.position - r.position) / r.size)
+			_press_t = 0.0
+			_hold_done = false
+			return
+		var was := _press_t >= 0.0 and not _hold_done and _press_region == "cat"
+		_press_t = -1.0
+		if was and _fun.register_tap(Time.get_ticks_msec()):
+			hop()
+			easter.emit("cat")
+
+	# Kleiner Hüpfer der Katze beim 7. Tipp
+	func hop() -> void:
+		_hop_t = 0.0
+
 	func _process(delta: float) -> void:
+		# langes Drücken auf Sonne/Mond (Beta 1.4.4): grinst bzw. zwinkert kurz
+		if _press_t >= 0.0 and not _hold_done and (_press_region == "sun" or _press_region == "moon"):
+			_press_t += delta
+			if _press_t >= FunLogo.HOLD_S:
+				_hold_done = true
+				_face.start(_press_region)
+				easter.emit(_press_region)
+		_face.step(delta)
+		var lift := 0.0
+		if _hop_t >= 0.0:
+			_hop_t += delta
+			lift = sin(clampf(_hop_t / 0.5, 0.0, 1.0) * PI) * 14.0
+			if _hop_t >= 0.5:
+				_hop_t = -1.0
 		if UiApp.reduced_effects():
 			return
 		_t += delta
 		var r := _rect()
-		_img.position = r.position + Vector2(0, sin(_t * 0.9) * 4.0)
+		_img.position = r.position + Vector2(0, sin(_t * 0.9) * 4.0 - lift)
 		_img.rotation = sin(_t * 0.6) * 0.004
 
 	func _draw() -> void:
@@ -217,3 +278,68 @@ class LogoCard:
 		sb.shadow_size = 28
 		sb.shadow_offset = Vector2(0, 14)
 		draw_style_box(sb, r.grow(-2.0))
+
+
+# Gesichter für Sonne und Mond (Geheimtipp, Beta 1.4.4): liegt als Kind auf dem Logobild (Koordinaten des Bildes, 800 × 450)
+class FaceLayer:
+	extends Control
+	const DUR := 1.7
+	var kind := ""
+	var t := 0.0
+
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+	func start(k: String) -> void:
+		kind = k
+		t = 0.0
+		queue_redraw()
+
+	func step(delta: float) -> void:
+		if kind == "":
+			return
+		t += delta
+		if t >= DUR:
+			kind = ""
+		queue_redraw()
+
+	func _draw() -> void:
+		if kind == "":
+			return
+		var s := size.x / 800.0
+		var u := clampf(t / DUR, 0.0, 1.0)
+		var a := clampf(minf(u * 8.0, (1.0 - u) * 5.0), 0.0, 1.0)
+		var pop := 1.0 + 0.12 * sin(u * PI * 3.0)
+		if kind == "sun":
+			var c := Vector2(FunLogo.SUN.x, FunLogo.SUN.y + 2.0) * s
+			var ink := Color(0.35, 0.12, 0.05, a)
+			for sx in [-1.0, 1.0]:
+				draw_arc(c + Vector2(sx * 17.0, -8.0) * s * pop, 8.0 * s, PI * 1.1, PI * 1.9, 10, ink, 4.0 * s, true)
+				draw_circle(c + Vector2(sx * 30.0, 6.0) * s, 7.0 * s, Color(1.0, 0.45, 0.4, 0.55 * a))
+			var grin := PackedVector2Array()
+			for i in 15:
+				var ang := lerpf(0.0, PI, i / 14.0)
+				grin.append(c + Vector2(cos(ang) * 22.0, 4.0 + sin(ang) * 16.0 * pop) * s)
+			draw_colored_polygon(grin, ink)
+			var teeth := PackedVector2Array()
+			for i in 15:
+				var ang := lerpf(0.15, PI - 0.15, i / 14.0)
+				teeth.append(c + Vector2(cos(ang) * 17.0, 5.0 + sin(ang) * 6.0) * s)
+			draw_colored_polygon(teeth, Color(1, 0.97, 0.9, a))
+		else:
+			var c := Vector2(FunLogo.MOON.x, FunLogo.MOON.y) * s
+			var ink := Color(0.12, 0.09, 0.3, a)
+			draw_circle(c + Vector2(-17.0, -6.0) * s, 8.0 * s, Color(1, 1, 1, 0.9 * a))
+			draw_circle(c + Vector2(-15.0, -6.0) * s, 4.4 * s, ink)
+			draw_circle(c + Vector2(-16.5, -8.0) * s, 1.4 * s, Color(1, 1, 1, a))
+			# zwinkerndes Auge: geschlossen als nach oben gewölbter Bogen
+			draw_arc(c + Vector2(19.0, -5.0) * s, 8.0 * s, PI * 1.05, PI * 1.95, 10, ink, 4.0 * s, true)
+			draw_arc(c + Vector2(0.0, 8.0) * s, 13.0 * s, 0.25 * PI, 0.75 * PI, 10, ink, 3.2 * s, true)
+			# kleiner Funkelstern neben dem Auge
+			var tw := 0.5 + 0.5 * sin(u * PI * 6.0)
+			var sp := c + Vector2(40.0, -22.0) * s
+			var l := (6.0 + 8.0 * tw) * s
+			var col := Color(1, 0.95, 0.7, a)
+			draw_line(sp - Vector2(l, 0), sp + Vector2(l, 0), col, 2.2 * s, true)
+			draw_line(sp - Vector2(0, l), sp + Vector2(0, l), col, 2.2 * s, true)

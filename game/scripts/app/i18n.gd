@@ -23,7 +23,7 @@ const SETTING := "sprache"
 const CHOICES := ["auto", "de", "en"]
 const LANGS := ["de", "en"]
 const CHOICE_NAMES := [["auto", "Automatisch"], ["de", "Deutsch"], ["en", "English"]]
-const FILES := ["res://i18n/en_screens.po", "res://i18n/en_table.po", "res://i18n/en_rules.po"]
+const FILES := ["res://i18n/en_screens.po", "res://i18n/en_table.po", "res://i18n/en_rules.po", "res://i18n/en_fun.po"]
 
 static var _loaded := false
 static var collect := false            # Lückentest (test_i18n): jeden übersetzten Text merken

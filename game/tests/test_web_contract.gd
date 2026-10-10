@@ -435,6 +435,7 @@ func run() -> void:
 	pruefe_111(css, tisch, autotest, app, seite)
 	pruefe_113(css, tisch, mock, autotest, app)
 	pruefe_i18n(seite)
+	pruefe_spass(tisch, app, seite)
 	# Pegel der Spieltöne relativ zum Mau-Ton (normal) wie in der App (AppSound.TON_DB gegen MAU_DB), auf 0,5 dB genau
 	var stufen := RegEx.create_from_string("STUFEN_SPIEL = \\{ aus: 0, leise: ([0-9.]+), normal: ([0-9.]+) \\}").search(ton)
 	var pegel := []
@@ -845,7 +846,7 @@ func pruefe_i18n(seite: String) -> void:
 			print("i18n_en.js und .po übersetzen verschieden: " + str(k).left(80))
 	check(clash == 0, "keine widersprüchlichen Übersetzungen zwischen i18n_en.js und .po (%d)" % clash)
 	var used := {}
-	for name in ["app.js", "tisch.js", "hand.js", "karten.js", "netz.js", "ton.js"]:
+	for name in ["app.js", "tisch.js", "hand.js", "karten.js", "netz.js", "ton.js", "spass.js"]:
 		var src := read_web(name)
 		# M.t('…') und die Kurzform tr('…') (karten.js)
 		for m in RegEx.create_from_string(r"\b(?:M\.t|tr)\(\s*'((?:[^'\\]|\\.)*)'").search_all(src):
@@ -962,3 +963,51 @@ func pruefe_online(app: String, seite: String) -> void:
 	check(tisch.contains("else if (p.away) marken +=") and tisch.contains("M.t('kurz in einer anderen App')") and app.contains("p.away ? '<span class=\"marke weg app\">'"),
 		"tisch.js/app.js: Marke „kurz in einer anderen App“ am Platz, in der großen Liste und in der Lobby")
 	check(t.contains("weg()") and t.contains("zurueck()") and t.contains("'away'") and t.contains("'back'"), "netz_online.html: Chrome-Test des App-Wechsels")
+
+
+# Beta 1.4.4: freche Sprüche (webclient/spass.js) – gleiche Sprüche und Stufen wie die App (FunTexts), Einhängepunkte, Einstellung
+func pruefe_spass(tisch: String, app: String, seite: String) -> void:
+	var spass := read_web("spass.js")
+	check(spass != "" and spass.contains("M.Spass = S;"), "spass.js vorhanden")
+	var a := seite.find("spass.js")
+	check(a >= 0 and a < seite.find("tisch.js") and a > seite.find("i18n.js"), "index.html lädt spass.js nach i18n.js und vor tisch.js")
+	var fehlt: Array = []
+	for occ in FunTexts.LINES:
+		check(spass.contains("    %s: [" % occ), "Anlass im Browser: " + str(occ))
+		for e in FunTexts.LINES[occ]:
+			var de := str(e[0])
+			var q := "[\"%s\", \"%s\"]" % [de, e[1]]
+			if not spass.contains(q):
+				fehlt.append(de)
+	check(fehlt.is_empty(), "jeder Spruch mit gleicher Stufe auch in spass.js (%d fehlen: %s)" % [fehlt.size(), str(fehlt.slice(0, 3))])
+	var alias_js := "const ALIAS = { "
+	var al: Array = []
+	for k in FunTexts.ALIAS:
+		al.append("%s: '%s'" % [k, FunTexts.ALIAS[k]])
+	check(spass.contains(alias_js + ", ".join(al) + " };"), "Anlass-Aliase gleich (farbjagd_du, autsch_du → pech_du)")
+	check(spass.contains("TIP_CHANCE = 0.1") and spass.contains("GLUECK_STAKE = 3") and spass.contains("GLUECK_DISCARD = 4") and spass.contains("GLUECK_FINISH_CHANCE = 0.5")
+			and FunTexts.TIP_CHANCE == 0.1 and FunTexts.GLUECK_STAKE == 3 and FunTexts.GLUECK_DISCARD == 4 and FunTexts.GLUECK_FINISH_CHANCE == 0.5,
+		"Tipp-/Glück-Größen gleich")
+	check(spass.contains("case 'stake_discard'") and spass.contains("case 'discard_color'") and spass.contains("case 'finish'") and spass.contains("this._reihe('glueck', '')")
+			and spass.contains("seat === ich ? 'autsch_du' : 'autsch'") and spass.contains("this.anlass === 'tipp'") and spass.contains("occ = 'tipp'"),
+		"Glück-Auslöser, Pech auf dich und falscher Tipp im Browser wie in der App")
+	for c in [["SHOW_TIME = ", FunTexts.SHOW_TIME], ["COOLDOWN = ", FunTexts.COOLDOWN], ["GAP = ", FunTexts.GAP], ["TURN_CHANCE = ", FunTexts.TURN_CHANCE],
+			["SLOW_OTHER = ", FunTexts.SLOW_OTHER], ["MANY = ", FunTexts.MANY], ["JAGD_MANY = ", FunTexts.JAGD_MANY]]:
+		var v := float(c[1])
+		var txt := str(int(v)) if is_equal_approx(v, roundf(v)) else str(v)
+		check(spass.contains(str(c[0]) + txt + ",") or spass.contains(str(c[0]) + txt + ";"), "gleiche Größe wie FunTexts: %s%s" % [c[0], txt])
+	var po := _dict_js(read_web("i18n_po.js"), "window.MMF_I18N_PO = ")
+	var ohne: Array = []
+	for de in FunTexts.all_lines() + ["Sprüche", "Nett", "Frech"]:
+		if not po.has(de):
+			ohne.append(de)
+	check(ohne.is_empty(), "Sprüche im englischen Wörterbuch des Browsers (i18n_po.js, aus en_fun.po; %d fehlen)" % ohne.size())
+	check(tisch.contains("this.hinweis.textContent = this._hinweisMitSpass(v, h);") and tisch.contains("M.Spass.hinweis(v, h, v.seat, std, false)")
+			and tisch.contains("M.Spass.pointe()") and app.contains("M.Spass.beobachte(m.events || [], this.view, m.view.seat)"),
+		"Einhängepunkte: Hinweisleiste (tisch.js), Ereignisse vor der neuen Sicht (app.js)")
+	check(app.contains("sprueche: 'frech'") and app.contains("Speicher.get('sprueche', 'frech')") and app.contains("k === 'sprueche'")
+			and seite.contains("data-set=\"sprueche\" data-wert=\"aus\"") and seite.contains("data-set=\"sprueche\" data-wert=\"nett\"")
+			and seite.contains("data-set=\"sprueche\" data-wert=\"frech\""),
+		"Einstellung Sprüche im Lite-Menü: Aus/Nett/Frech, ab Werk frech, je Gerät gespeichert")
+	check(spass.contains("ersetzbar(v, h || {}, ich)") and spass.contains("t.indexOf('Mau') >= 0") and spass.contains("h.need_color")
+			and spass.contains("v.pending && Object.keys(v.pending).length"), "Browser: nie bei Mau-Pflicht, Farbwahl, Strafe")

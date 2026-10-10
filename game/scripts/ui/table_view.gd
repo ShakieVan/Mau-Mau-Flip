@@ -66,6 +66,7 @@ var gamble_machine: GambleMachineScript   # Glücksspiel-Automat (nur während e
 var stake_pile: StakePileScript           # Einsatzstapel des Glücksspielers
 var staking := false                  # eigener Einsatz fällig: ausgespielte Handkarten gehen auf den Einsatz
 var highlight := true                 # „Spielbare Karten hervorheben“ (persönliche Einstellung)
+var sprueche := FunTexts.new()        # Freche Sprüche in der Hinweisleiste (Beta 1.4.4, fun_texts.gd; nur dieses Gerät)
 
 var _bg: TableBackground
 var _world: Node2D
@@ -128,6 +129,7 @@ var _list_turn := -1
 var _list_dir := 0
 var _list_flip := -1.0                # Richtungswechsel: 0 … 1 (Zeilen klappen zu, Reihenfolge dreht, klappen auf); < 0 = aus
 var _was_my_turn := false
+var fun: FunFx                        # Ostereier (Beta 1.4.4): Mau-Katze, Himmel, Stempel, Applaus (fun_fx.gd)
 
 
 # ================================================================= Aufbau
@@ -185,6 +187,8 @@ func _init() -> void:
 	gamble_machine.name = "Gluecksspiel"
 	_world.add_child(gamble_machine)
 	_house = HouseRulesScript.new(self)
+	fun = FunFx.new()
+	fun.mount(self, _bg, _world)
 	hand_layer = Node2D.new()
 	hand_layer.name = "Hand"
 	_world.add_child(hand_layer)
@@ -269,6 +273,7 @@ func _ready() -> void:
 	add_to_group(GROUP)
 	reduced = UiApp.reduced_effects()
 	highlight = HandView.truthy(UiApp.setting("hervorheben", true))
+	sprueche.set_level(UiApp.setting(FunTexts.SETTING, FunTexts.DEFAULT))
 	var app := UiApp.app()
 	var st: Variant = app.get("settings") if app != null else null
 	if st is Object and (st as Object).has_signal("changed"):
@@ -283,6 +288,10 @@ func _on_setting_changed(key: String, value: Variant) -> void:
 		set_big(HandView.truthy(value))
 	elif key == "effekte":
 		reduced = str(value) == "reduziert"
+	elif key == FunTexts.SETTING:
+		sprueche.set_level(value)
+		if not view.is_empty():
+			_apply_hints(view.get("hints", {}), int(view.get("turn", -1)))
 	elif key == "hervorheben":
 		highlight = HandView.truthy(value)
 		if not view.is_empty():
@@ -308,6 +317,8 @@ func set_reduced(on: bool) -> void:
 		fx_top.reduced = on
 	if _bg:
 		_bg.motion = not on
+	if fun:
+		fun.set_reduced(on)
 	if list_header:
 		list_header.reduced = on
 	if me_badge:
@@ -398,6 +409,7 @@ func _layout() -> void:
 	_place_seats(false)
 	if _house != null:
 		_house.place_pile()
+	fun.set_pile(_draw_pos, pile_w)
 	update_hand_target()
 
 
@@ -406,6 +418,7 @@ func _layout() -> void:
 func set_big(on: bool) -> void:
 	var changed := on != big
 	big = on
+	fun.big = on
 	_bg.calm = on
 	_ring.visible = not on
 	for s in _seats:
@@ -547,6 +560,7 @@ func update_hand_target() -> void:
 # ================================================================= Abgleich mit der Sicht
 
 func handle_state(events: Array, new_view: Dictionary) -> void:
+	sprueche.observe(events, view, my_seat)
 	_close_browser_on(events)
 	director.enqueue(events, new_view)
 
@@ -623,6 +637,7 @@ func apply_view(v: Dictionary) -> void:
 		var node: OpponentSeat = _seats[s]
 		node.set_turn(s == turn and not str(v.get("phase", "")) in ["round_over", "game_over"], s == next)
 	_apply_me(v, turn, next)
+	fun.on_view(v)
 	if big:
 		_update_list(true)
 	_apply_hints(v.get("hints", {}), turn)
@@ -745,7 +760,10 @@ func _apply_hints(h: Dictionary, turn: int) -> void:
 		shown = I18n.t("%s wählt aus …") % str(_player(int(dp.get("seat", -1))).get("name", "?"))
 	else:
 		shown = _hint_local(text, h.get("lt", []) if h.get("lt") is Array else [])
-	hint_bar.show_hint(shown, me_turn)
+	hint_bar.show_hint(sprueche.hint_for(view, h, my_seat, shown, handover.visible), me_turn)   # gelegentlich ein Spruch (1.4.4)
+	var pointe := sprueche.take_notice()
+	if pointe != "":
+		show_notice(pointe)
 	var me_player := _player(my_seat)
 	if bool(h.get("can_mau", false)):
 		mau_button.mode = MauButton.Mode.READY
@@ -1163,6 +1181,7 @@ func set_night(v: float) -> void:
 	if _bg == null:
 		return
 	_bg.tageszeit = night
+	fun.set_night(night)
 	_ring.color = UiPalette.ring_color(night)
 	gamble_machine.night = night
 	stake_pile.night = night
@@ -1295,6 +1314,8 @@ func _tap(p: Vector2) -> bool:
 		if _gamble_pressable():
 			press_gamble()
 		return true
+	if fun.tap(wp):                                                # Mau-Katze auf dem Ziehstapel wegschieben (1.4.4)
+		return true
 	if Rect2(_draw_pos - Vector2(pile_w, pile_w * 1.6) * 0.62, Vector2(pile_w, pile_w * 1.6) * 1.24).has_point(wp):
 		if _pile.highlight and not input_locked:
 			_emit_action({"a": "draw"})
@@ -1357,6 +1378,7 @@ func play_event(ev: Dictionary, speed: float) -> float:
 	var e := str(ev.get("e", ""))
 	if ev.has("seat"):
 		_poke(int(ev.get("seat", -1)))
+	fun.on_event(ev, int(_player(int(ev.get("seat", -1))).get("count", -1)))
 	match e:
 		"deal":
 			return _ev_deal(ev)
@@ -2290,6 +2312,8 @@ func is_flipping() -> bool:
 
 
 func _process(delta: float) -> void:
+	if sprueche.tick(delta) and not view.is_empty():
+		_apply_hints(view.get("hints", {}), int(view.get("turn", -1)))
 	if big:
 		_step_list(delta)
 	if _hand_halo_want or _hand_halo.visible:

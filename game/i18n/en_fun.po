@@ -1,0 +1,793 @@
+# Mau-Mau Flip – Englisch, Bereich D: Sprüche (Quelle docs/module/sprueche.md) (Beta 1.4.4, Ostereier Teil 1; FunTexts, webclient/spass.js).
+# msgid = deutscher Text exakt wie in game/scripts/ui/fun_texts.gd, msgstr = Englisch (sinngemäß witzig, nicht wörtlich).
+msgid ""
+msgstr ""
+"Project-Id-Version: Mau-Mau Flip\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+# --- Einstellung
+msgid "Sprüche"
+msgstr "Wisecracks"
+
+msgid "Nett"
+msgstr "Nice"
+
+msgid "Frech"
+msgstr "Cheeky"
+
+msgid "Ab und zu ein Spruch statt „Du bist dran“. Nett: ohne die frechen. Nur auf diesem Gerät."
+msgstr "Now and then a wisecrack instead of “Your turn”. Nice: without the cheeky ones. Only on this device."
+
+# --- zug
+msgid "Die anderen warten schon auf dich."
+msgstr "Everyone's waiting on you."
+
+msgid "Was ist eigentlich deine Lieblingsfarbe?"
+msgstr "So, what's your favorite color, anyway?"
+
+msgid "Die Karten welcher Farbe stören dich am meisten?"
+msgstr "Which color's cards annoy you the most?"
+
+msgid "Tu einfach so, als würdest du einen fiesen Plan schmieden."
+msgstr "Just act like you're hatching an evil plan."
+
+msgid "Bühne frei für dich!"
+msgstr "The stage is yours!"
+
+msgid "Alle Augen auf dich."
+msgstr "All eyes on you."
+
+msgid "Jetzt kommt dein großer Auftritt."
+msgstr "Showtime. Your big moment."
+
+msgid "Na, schon eine Idee?"
+msgstr "Any bright ideas yet?"
+
+msgid "Zeig mal, was du draufhast."
+msgstr "Show us what you've got."
+
+msgid "Deine Karten, deine Entscheidung."
+msgstr "Your cards, your call."
+
+msgid "Ganz ruhig – du schaffst das."
+msgstr "Easy now – you've got this."
+
+msgid "Die Katze schaut gespannt zu."
+msgstr "The cat is watching with bated whiskers."
+
+msgid "Heute ist dein Glückstag. Vielleicht."
+msgstr "Today's your lucky day. Maybe."
+
+msgid "Mach was Schlaues. Oder was Lustiges."
+msgstr "Do something clever. Or something funny."
+
+msgid "Jetzt nur nicht die falsche Farbe erwischen."
+msgstr "Whatever you do, don't pick the wrong color."
+
+msgid "Spannung! Was legst du?"
+msgstr "The suspense! What will you play?"
+
+msgid "Dein Moment ist gekommen."
+msgstr "Your moment has arrived."
+
+msgid "Erst denken, dann legen. Oder umgekehrt."
+msgstr "Think first, then play. Or the other way round."
+
+msgid "Die Ablage hat Hunger."
+msgstr "The discard pile is hungry."
+
+msgid "Leg los – im wahrsten Sinne."
+msgstr "Lay it on us – literally."
+
+# --- zug_name
+msgid "%s hat gesagt, du wärst doof! Zahl's heim!"
+msgstr "%s said you're a dummy! Pay them back!"
+
+msgid "%s hat dir gerade in die Karten geguckt. Ich hab's genau gesehen."
+msgstr "%s just peeked at your cards. I saw it, I swear."
+
+msgid "%s lacht schon über deine Karten."
+msgstr "%s is already laughing at your cards."
+
+msgid "%s meint, du verlierst sowieso."
+msgstr "%s says you're going to lose anyway."
+
+msgid "Zeig %s mal, wo der Hammer hängt."
+msgstr "Show %s who's boss."
+
+msgid "%s hat heimlich Karten gezählt. Pass auf!"
+msgstr "%s has been counting cards. Watch out!"
+
+msgid "Gerüchten zufolge blufft %s."
+msgstr "Rumor has it %s is bluffing."
+
+msgid "%s hat eben die Augen verdreht. Rache?"
+msgstr "%s just rolled their eyes. Revenge?"
+
+msgid "Du weißt, was zu tun ist: %s ärgern."
+msgstr "You know what to do: annoy %s."
+
+msgid "%s hat behauptet, du kannst nicht mischen."
+msgstr "%s claimed you can't shuffle."
+
+msgid "Ich würde ja %s eine reinwürgen. Nur so ein Gedanke."
+msgstr "I'd stick it to %s, if I were you. Just a thought."
+
+msgid "%s grinst verdächtig. Sei auf der Hut."
+msgstr "%s is grinning suspiciously. Stay sharp."
+
+msgid "%s hat gerade gegähnt. Weck %s mal auf!"
+msgstr "%s just yawned. Wake %s up!"
+
+msgid "Für %s wäre jetzt ein „+5“ genau richtig."
+msgstr "A “+5” would suit %s just fine right now."
+
+msgid "%s hält dich für harmlos. Beweis das Gegenteil."
+msgstr "%s thinks you're harmless. Prove them wrong."
+
+msgid "Psst: %s hat nur noch schlechte Karten. Glaube ich."
+msgstr "Psst: %s only has bad cards left. I think."
+
+msgid "%s hat gesagt, Katzen sind doof. Unverzeihlich!"
+msgstr "%s said cats are dumb. Unforgivable!"
+
+msgid "%s hat dich „Anfänger“ genannt. Tu was!"
+msgstr "%s called you a “beginner”. Do something!"
+
+msgid "Wenn du %s jetzt aussetzen lässt, sag ich nichts."
+msgstr "Make %s skip a turn and I won't tell a soul."
+
+msgid "%s wettet gegen dich. Mit Keksen."
+msgstr "%s is betting against you. With cookies."
+
+# --- tipp
+msgid "Im Ziehstapel liegt vielleicht genau die Karte, die du brauchst. Schau mal nach."
+msgstr "The draw pile might hold exactly the card you need. Take a look."
+
+msgid "Oben auf dem Stapel liegt ein Joker. Ganz sicher."
+msgstr "There's a Joker on top of the pile. Totally sure."
+
+msgid "Die nächste Karte ist bestimmt in deiner Lieblingsfarbe."
+msgstr "The next card is surely in your favorite color."
+
+msgid "Psst: Ziehen lohnt sich gerade besonders."
+msgstr "Psst: drawing really pays off right now."
+
+msgid "Ich hab gehört, der Stapel verteilt heute Geschenke."
+msgstr "I heard the pile is handing out presents today."
+
+msgid "Der Ziehstapel hat dir gerade zugezwinkert."
+msgstr "The draw pile just winked at you."
+
+msgid "Da wartet eine Überraschung im Stapel auf dich."
+msgstr "There's a surprise waiting for you in the pile."
+
+msgid "Zieh doch mal – nur so zum Spaß."
+msgstr "Go on, draw one – just for fun."
+
+msgid "Die Katze sagt, im Stapel liegt was Gutes."
+msgstr "The cat says there's something good in the pile."
+
+msgid "Heute gibt's im Stapel zwei zum Preis von einer."
+msgstr "Today the pile has two for the price of one."
+
+msgid "Ich würde jetzt ziehen. Vertrau mir."
+msgstr "I'd draw right now. Trust me."
+
+msgid "Der Stapel ist heute in Spendierlaune."
+msgstr "The pile is feeling generous today."
+
+msgid "Gerüchten zufolge liegt da ein Joker ganz oben."
+msgstr "Rumor has it there's a Joker right on top."
+
+msgid "Die oberste Karte glänzt so verheißungsvoll."
+msgstr "The top card is shimmering so promisingly."
+
+msgid "Ein Blick in den Stapel kann nicht schaden. Oder?"
+msgstr "A peek at the pile can't hurt. Can it?"
+
+msgid "Dein Glück liegt nur eine Karte entfernt."
+msgstr "Your luck is just one card away."
+
+msgid "Zieh! Der Stapel hat dich lieb."
+msgstr "Draw! The pile loves you."
+
+msgid "Mein sechster Sinn sagt: ziehen!"
+msgstr "My sixth sense says: draw!"
+
+msgid "Ich hab da so ein Gefühl beim Stapel …"
+msgstr "I've got a feeling about that pile …"
+
+msgid "Die beste Karte des Spiels wartet auf dich. Im Stapel."
+msgstr "The best card in the game is waiting for you. In the pile."
+
+# --- verarscht
+msgid "Hehe, verarscht!"
+msgstr "Hehe, gotcha!"
+
+msgid "War gelogen."
+msgstr "I lied."
+
+msgid "Reingefallen!"
+msgstr "Fell for it!"
+
+msgid "Ups, falscher Stapel."
+msgstr "Oops, wrong pile."
+
+msgid "Hab ich das gesagt? Muss jemand anderes gewesen sein."
+msgstr "Did I say that? Must have been somebody else."
+
+msgid "Na, wenigstens hast du jetzt eine Karte mehr."
+msgstr "Well, at least you've got one more card now."
+
+msgid "Kleiner Scherz unter Freunden."
+msgstr "Just a little joke between friends."
+
+msgid "Die Katze hat gelogen, nicht ich."
+msgstr "The cat lied, not me."
+
+msgid "Haha! Der älteste Trick der Welt."
+msgstr "Ha! The oldest trick in the book."
+
+msgid "Tja. Glaub nicht alles, was auf dem Bildschirm steht."
+msgstr "Well. Don't believe everything you read on the screen."
+
+msgid "Mein sechster Sinn hat heute frei."
+msgstr "My sixth sense has the day off."
+
+msgid "Ich nehm alles zurück."
+msgstr "I take it all back."
+
+msgid "Das war ein Test. Du hast bestanden. Nicht."
+msgstr "That was a test. You passed. Not."
+
+msgid "Erwischt – diesmal du!"
+msgstr "Gotcha – this time it's you!"
+
+msgid "Gerüchte sind halt Gerüchte."
+msgstr "Rumors are just rumors."
+
+msgid "Oh. Das war wohl doch nichts."
+msgstr "Oh. Guess that was nothing after all."
+
+msgid "Sorry, ich konnte nicht widerstehen."
+msgstr "Sorry, I couldn't resist."
+
+msgid "Wenigstens ehrlich gezogen."
+msgstr "At least you drew fair and square."
+
+msgid "Der Stapel war heute doch geizig."
+msgstr "The pile was stingy after all."
+
+msgid "Nächstes Mal glaubst du mir bestimmt wieder."
+msgstr "Next time you'll believe me again, I bet."
+
+# --- langsam
+msgid "Worauf wartest du, Weihnachten?"
+msgstr "What are you waiting for, Christmas?"
+
+msgid "Wenn du noch länger brauchst, schlafen alle ein."
+msgstr "Take any longer and everyone falls asleep."
+
+msgid "Trink ruhig aus, wir haben Zeit. *hust hust*"
+msgstr "Finish your drink, we've got all day. *cough cough*"
+
+msgid "Lass die anderen ruhig schmoren."
+msgstr "Go on, let the others stew."
+
+msgid "Die Katze ist schon eingeschlafen."
+msgstr "The cat has already dozed off."
+
+msgid "Soll ich dir einen Kaffee bringen?"
+msgstr "Shall I bring you a coffee?"
+
+msgid "Schach ist ein anderes Spiel."
+msgstr "Chess is a different game, you know."
+
+msgid "Die Karten werden vom Anschauen nicht besser."
+msgstr "Staring won't make the cards any better."
+
+msgid "Hallo? Jemand zu Hause?"
+msgstr "Hello? Anybody home?"
+
+msgid "Ich hab inzwischen die Steuererklärung gemacht."
+msgstr "I've done my taxes while waiting."
+
+msgid "Kleiner Tipp: Irgendeine Karte geht immer. Fast."
+msgstr "Pro tip: some card always works. Almost."
+
+msgid "Die anderen altern gerade sichtbar."
+msgstr "The others are visibly aging right now."
+
+msgid "Das ist kein Schönheitswettbewerb. Leg einfach was."
+msgstr "This isn't a beauty contest. Just play something."
+
+msgid "Tick, tack, tick, tack …"
+msgstr "Tick, tock, tick, tock …"
+
+msgid "Mein Akku ist gleich leer. Deiner auch?"
+msgstr "My battery's nearly dead. Yours too?"
+
+msgid "Noch eine Runde Nachdenken, und es ist Frühling."
+msgstr "One more round of thinking and it's spring."
+
+msgid "Die Ablage fragt, ob du sie vergessen hast."
+msgstr "The discard pile asks if you've forgotten it."
+
+msgid "Du denkst so laut, man hört es bis hier."
+msgstr "You're thinking so loud I can hear it from here."
+
+msgid "Grübel, grübel und studier …"
+msgstr "Ponder, ponder, ponder …"
+
+msgid "Nimm dir Zeit. Aber nicht ALLE Zeit."
+msgstr "Take your time. Just not ALL the time."
+
+# --- langsam_andere
+msgid "%s schmiedet offenbar einen Masterplan."
+msgstr "%s is clearly forging a master plan."
+
+msgid "%s denkt nach. Das kann dauern."
+msgstr "%s is thinking. This could take a while."
+
+msgid "Wetten, %s hat die Regeln vergessen?"
+msgstr "Bet %s forgot the rules."
+
+msgid "%s zählt heimlich Schäfchen."
+msgstr "%s is secretly counting sheep."
+
+msgid "Ob %s eingeschlafen ist?"
+msgstr "Has %s fallen asleep?"
+
+msgid "%s sucht noch die passende Farbe. Seit Stunden."
+msgstr "%s is still looking for the right color. For hours."
+
+msgid "%s braucht wohl einen Taschenrechner."
+msgstr "%s must be looking for a calculator."
+
+msgid "Zeit für einen Snack – %s braucht noch."
+msgstr "Snack time – %s needs a bit longer."
+
+msgid "%s meditiert gerade."
+msgstr "%s is meditating right now."
+
+msgid "Achtung, %s denkt! Bitte nicht stören."
+msgstr "Careful, %s is thinking! Do not disturb."
+
+msgid "Hat jemand %s gesehen?"
+msgstr "Has anyone seen %s?"
+
+msgid "%s schreibt vermutlich gerade ein Buch."
+msgstr "%s is probably writing a novel."
+
+msgid "Bis %s legt, kannst du in Ruhe Tee kochen."
+msgstr "You could brew a whole pot of tea before %s plays."
+
+msgid "%s plant was Fieses. Ganz sicher."
+msgstr "%s is plotting something nasty. Definitely."
+
+msgid "%s hat den Faden verloren. Und die Karten."
+msgstr "%s has lost the thread. And the cards."
+
+msgid "Man hört förmlich, wie es bei %s rattert."
+msgstr "You can practically hear the gears turning in %s's head."
+
+msgid "%s wartet auf eine Eingebung."
+msgstr "%s is waiting for divine inspiration."
+
+msgid "Das Universum dehnt sich aus. %s denkt noch."
+msgstr "The universe is expanding. %s is still thinking."
+
+msgid "Vielleicht braucht %s einen Wecker."
+msgstr "Maybe %s needs an alarm clock."
+
+msgid "%s macht es heute spannend."
+msgstr "%s is keeping us in suspense today."
+
+# --- viele
+msgid "Komm schon, zieh noch eine. Das macht das Kraut auch nicht mehr fett."
+msgstr "Go on, draw another. In for a penny, in for a pound."
+
+msgid "Lass den anderen auch noch ein paar Karten."
+msgstr "Leave a few cards for the others."
+
+msgid "Du könntest auch einfach aufgeben."
+msgstr "You could always just give up."
+
+msgid "Sammelst du die etwa?"
+msgstr "Are you collecting them?"
+
+msgid "Deine Hand braucht bald einen Anbau."
+msgstr "Your hand will soon need an extension."
+
+msgid "Beeindruckende Sammlung!"
+msgstr "Impressive collection!"
+
+msgid "Planst du einen eigenen Kartenladen?"
+msgstr "Planning to open your own card shop?"
+
+msgid "Ein Fächer? Das ist schon ein Sonnenschirm."
+msgstr "A fan? That's a parasol by now."
+
+msgid "Wenigstens wird dir beim Sortieren nicht langweilig."
+msgstr "At least you won't be bored sorting them."
+
+msgid "Das sind ja mehr Karten als Freunde."
+msgstr "That's more cards than friends."
+
+msgid "Wer viel hat, kann viel legen. Theoretisch."
+msgstr "More cards, more options. In theory."
+
+msgid "Der Ziehstapel vermisst dich schon."
+msgstr "The draw pile misses you already."
+
+msgid "Hast du den halben Stapel abonniert?"
+msgstr "Did you subscribe to half the deck?"
+
+msgid "Kopf hoch, Rekorde sind auch was wert."
+msgstr "Chin up, records count for something."
+
+msgid "Halte durch, es kann nur besser werden. Glaube ich."
+msgstr "Hang in there, it can only get better. I think."
+
+msgid "Deine Karten haben Karten bekommen."
+msgstr "Your cards had baby cards."
+
+msgid "Noch zehn mehr und du bekommst einen Pokal."
+msgstr "Ten more and you get a trophy."
+
+msgid "Wenigstens hast du jetzt Auswahl."
+msgstr "At least you've got plenty of choice."
+
+msgid "Du siehst aus wie ein Fächer-Model."
+msgstr "You look like a professional fan model."
+
+msgid "Das wird ein langer Abend für dich."
+msgstr "This is going to be a long evening for you."
+
+# --- wenige
+msgid "Du bist bald fertig – oder hast du einfach keine Lust mehr?"
+msgstr "Almost done – or are you just bored?"
+
+msgid "Komm schon, willst du jetzt schon fertig machen?"
+msgstr "Really? Finishing already?"
+
+msgid "Wenn du jetzt fertig machst, kannst du nur noch zuschauen."
+msgstr "Finish now and all you can do is watch."
+
+msgid "Willst du die anderen nicht noch etwas länger leiden sehen?"
+msgstr "Don't you want to watch them suffer a bit longer?"
+
+msgid "Die anderen werden langsam nervös."
+msgstr "The others are getting nervous."
+
+msgid "Ganz schön eilig heute, was?"
+msgstr "In quite a hurry today, huh?"
+
+msgid "Vergiss das „Mau!“ nicht!"
+msgstr "Don't forget to say “Mau!”"
+
+msgid "Gleich ist es geschafft. Oder doch nicht?"
+msgstr "Almost there. Or maybe not?"
+
+msgid "Die Ziellinie ist in Sicht!"
+msgstr "The finish line is in sight!"
+
+msgid "Psst – nicht zu früh freuen."
+msgstr "Psst – don't celebrate too early."
+
+msgid "Die anderen schmieden schon Rachepläne."
+msgstr "The others are already plotting revenge."
+
+msgid "Fast leer – fast genial."
+msgstr "Almost empty – almost genius."
+
+msgid "Nur nicht übermütig werden."
+msgstr "Don't get cocky."
+
+msgid "Wer zuletzt lacht …"
+msgstr "Whoever laughs last …"
+
+msgid "Die Karten verlassen dich. Verständlich."
+msgstr "Your cards are leaving you. Understandable."
+
+msgid "Noch ein paar Züge bis zum Ruhm."
+msgstr "A few more turns to glory."
+
+msgid "Jetzt bloß kein „+5“ kassieren."
+msgstr "Just don't get hit with a “+5” now."
+
+msgid "Ich spüre einen Sieg … oder ist das Hunger?"
+msgstr "I smell victory … or is that hunger?"
+
+msgid "Halt dich fest, gleich wird's spannend."
+msgstr "Hold on tight, it's about to get exciting."
+
+msgid "Sieht gut aus. Zu gut."
+msgstr "Looks good. Too good."
+
+# --- richtung
+msgid "Und jetzt rückwärts. Alle kotzen schon."
+msgstr "And now backwards. Somebody fetch a bucket."
+
+msgid "Rückwärtsgang eingelegt!"
+msgstr "Reverse gear engaged!"
+
+msgid "Kommando zurück!"
+msgstr "About face!"
+
+msgid "Alles andersrum – wie im Spiegel."
+msgstr "Everything's flipped – like in a mirror."
+
+msgid "Uff, mir wird schwindelig."
+msgstr "Whoa, I'm getting dizzy."
+
+msgid "Einmal im Kreis und zurück."
+msgstr "Once around the circle and back again."
+
+msgid "Wer hat am Lenkrad gedreht?"
+msgstr "Who grabbed the steering wheel?"
+
+msgid "Rolle rückwärts!"
+msgstr "Backflip!"
+
+msgid "Umleitung! Bitte der Beschilderung folgen."
+msgstr "Detour! Please follow the signs."
+
+msgid "Moonwalk-Modus aktiviert."
+msgstr "Moonwalk mode activated."
+
+msgid "Die Erde dreht sich jetzt andersrum. Fast."
+msgstr "The Earth now spins the other way. Almost."
+
+msgid "Rückwärts ist das neue Vorwärts."
+msgstr "Backwards is the new forwards."
+
+msgid "Halt, falsche Richtung! Ach nee, Absicht."
+msgstr "Stop, wrong way! Oh wait, on purpose."
+
+msgid "Kehrtwende!"
+msgstr "U-turn!"
+
+msgid "Und alle drehen sich um. Schwindelfrei?"
+msgstr "And everyone turns around. Feeling dizzy?"
+
+msgid "Der Zug fährt jetzt in die Gegenrichtung."
+msgstr "The train now runs in the opposite direction."
+
+msgid "Zurück auf Los. Aber nur die Richtung."
+msgstr "Back to Go. But only the direction."
+
+msgid "Wer eben noch zuletzt kam, kommt jetzt zuerst."
+msgstr "Whoever was last is now first."
+
+msgid "Uhrzeigersinn ist sowieso überbewertet."
+msgstr "Clockwise is overrated anyway."
+
+msgid "Bitte anschnallen, es geht rückwärts."
+msgstr "Please buckle up, we're going backwards."
+
+# --- pech_du
+msgid "Autsch!"
+msgstr "Ouch!"
+
+msgid "Das tat weh."
+msgstr "That hurt."
+
+msgid "Farbenblind?"
+msgstr "Color-blind?"
+
+msgid "Heute ist nicht dein Tag, oder?"
+msgstr "Not your day today, is it?"
+
+msgid "Mitgefangen, mitgehangen."
+msgstr "Caught in the crossfire."
+
+msgid "Die Karten mögen dich. Sehr."
+msgstr "The cards like you. A lot."
+
+msgid "Na, Hauptsache, die anderen freuen sich."
+msgstr "Well, as long as everyone else is happy."
+
+msgid "Das gibt einen blauen Fleck."
+msgstr "That'll leave a bruise."
+
+msgid "Kopf hoch, schlimmer geht immer."
+msgstr "Chin up, it could always be worse."
+
+msgid "Wer zuletzt lacht … bist wohl nicht du."
+msgstr "Whoever laughs last … probably isn't you."
+
+msgid "Das war gemein. Herrlich gemein."
+msgstr "That was mean. Gloriously mean."
+
+msgid "Gesammelte Werke, Band 2."
+msgstr "Collected Works, Volume 2."
+
+msgid "Und plötzlich: Kartenflut."
+msgstr "And suddenly: card flood."
+
+msgid "Mein Beileid."
+msgstr "My condolences."
+
+msgid "Das Universum hat entschieden."
+msgstr "The universe has spoken."
+
+msgid "Ziehen, ziehen, ziehen …"
+msgstr "Draw, draw, draw …"
+
+msgid "Pech im Spiel, Glück in der Liebe."
+msgstr "Unlucky at cards, lucky in love."
+
+msgid "Rache ist süß – merk dir das."
+msgstr "Revenge is sweet – remember that."
+
+msgid "Huch, wo kommen die alle her?"
+msgstr "Whoa, where did they all come from?"
+
+msgid "Kleiner Rückschlag. Ganz kleiner. Okay, großer."
+msgstr "A small setback. A tiny one. Okay, a big one."
+
+# --- pech
+msgid "%s hat heute echt kein Glück."
+msgstr "%s is having no luck at all today."
+
+msgid "Der Automat mag %s. Leider."
+msgstr "The machine likes %s. Sadly."
+
+msgid "%s zockt heute mit dem Feuer."
+msgstr "%s is playing with fire today."
+
+msgid "%s und das Glücksspiel – eine tragische Liebesgeschichte."
+msgstr "%s and gambling – a tragic love story."
+
+msgid "Jemand sollte %s das Zocken verbieten."
+msgstr "Someone should ban %s from gambling."
+
+msgid "Die Glückssträhne von %s ist eher eine Pechsträhne."
+msgstr "%s's lucky streak looks more like a bad one."
+
+# --- farbjagd
+msgid "Farbenblind, %s?"
+msgstr "Color-blind, %s?"
+
+msgid "%s hat die halbe Ablage gefunden."
+msgstr "%s found half the discard pile."
+
+msgid "%s hat lange gesucht."
+msgstr "%s searched for ages."
+
+msgid "%s sammelt Karten wie andere Briefmarken."
+msgstr "%s collects cards like others collect stamps."
+
+msgid "Bei %s wird die Hand gerade sehr voll."
+msgstr "%s's hand is getting very full."
+
+# --- autsch
+msgid "So knapp vor dem Ziel. Autsch!"
+msgstr "So close to the finish. Ouch!"
+
+msgid "So kurz vor Schluss – das tut weh."
+msgstr "So close to the end – that stings."
+
+msgid "Fast fertig und dann das. Gemein!"
+msgstr "Almost done and then this. Mean!"
+
+msgid "Hehe. Ich meine: Oh nein!"
+msgstr "Hehe. I mean: oh no!"
+
+# --- glueck
+msgid "Läuft bei dir!"
+msgstr "You're on a roll!"
+
+msgid "Glückspilz!"
+msgstr "Lucky duck!"
+
+msgid "Das Glück ist mit dir."
+msgstr "Lady Luck is with you."
+
+msgid "Schon wieder? Unglaublich."
+msgstr "Again? Unbelievable."
+
+msgid "Hast du einen Glücksbringer dabei?"
+msgstr "Got a lucky charm on you?"
+
+msgid "Die Karten lieben dich heute."
+msgstr "The cards love you today."
+
+msgid "Volltreffer!"
+msgstr "Bullseye!"
+
+msgid "Dir droht bald Spielbank-Verbot!"
+msgstr "You'll be banned from the casino soon!"
+
+msgid "Dir gelingt heute alles."
+msgstr "Everything works out for you today."
+
+msgid "Respekt!"
+msgstr "Respect!"
+
+msgid "Wie machst du das nur?"
+msgstr "How do you even do that?"
+
+msgid "Die anderen staunen."
+msgstr "The others are amazed."
+
+msgid "Ein Hoch auf dich!"
+msgstr "Three cheers for you!"
+
+msgid "Sieht nach Talent aus. Oder nach Glück."
+msgstr "Looks like talent. Or luck."
+
+msgid "Bitte etwas von dem Glück abgeben."
+msgstr "Please share some of that luck."
+
+msgid "Die Katze ist beeindruckt."
+msgstr "The cat is impressed."
+
+msgid "Zufall? Ich glaube nicht."
+msgstr "Coincidence? I think not."
+
+msgid "Jetzt nur nicht abheben."
+msgstr "Just don't let it go to your head."
+
+msgid "So sehen Gewinner aus."
+msgstr "This is what winners look like."
+
+msgid "Bravo, weiter so!"
+msgstr "Bravo, keep it up!"
+
+# --- Mau-Katze, Stempel, Spaßtitel (fun_fx.gd, fun_titles.gd, stats.gd, settings_screen.gd)
+msgid "Mpf!"
+msgstr "Hmph!"
+
+msgid "Karten gezogen"
+msgstr "Cards drawn"
+
+msgid "Selbst ausgesetzt"
+msgstr "Times skipped"
+
+msgid "Deine Titel"
+msgstr "Your titles"
+
+msgid "Noch kein Titel verdient – spiel einfach weiter!"
+msgstr "No title earned yet – just keep playing!"
+
+msgid "Ziehkönig"
+msgstr "Draw King"
+
+msgid "Erwischt-Meister"
+msgstr "Catch Champion"
+
+msgid "Glücksritter"
+msgstr "Gambler"
+
+msgid "Schnurrkatze"
+msgstr "Purr Cat"
+
+msgid "Flipper"
+msgstr "Flipper"
+
+msgid "Tauschbörse"
+msgstr "Swap Shop"
+
+msgid "Die meisten Karten gezogen"
+msgstr "Drew the most cards"
+
+msgid "Andere beim Vergessen von „Mau!“ erwischt"
+msgstr "Caught others forgetting \"Mau!\""
+
+msgid "Beim Glücksspiel hoch gepokert und getroffen"
+msgstr "Played high at the gamble and hit"
+
+msgid "Oft ausgesetzt, dafür gut ausgeschlafen"
+msgstr "Skipped often, but well rested"
+
+msgid "Die Welt oft auf den Kopf gestellt"
+msgstr "Turned the world upside down often"
+
+msgid "Hände reihum weitergegeben"
+msgstr "Passed hands around"

@@ -14,7 +14,7 @@ const VERSION := 1
 
 # Zähler (alle int ≥ 0). Reihenfolge = Anzeige in den Einstellungen.
 const KEYS := ["partien", "runden", "runden_gewonnen", "partien_gewonnen", "mau_mau", "erwischt_selbst", "erwischt_worden",
-	"groesste_hand", "gluecksspiel_max", "kartentausch", "flip", "partien_weitergeben"]
+	"groesste_hand", "gluecksspiel_max", "kartentausch", "flip", "partien_weitergeben", "gezogen", "aussetzen"]
 const MAX_KEYS := ["groesste_hand", "gluecksspiel_max"]   # Höchstwerte statt Summen
 
 const TITLE := "Deine Statistik"
@@ -40,6 +40,8 @@ const LABELS := {
 	"kartentausch": "Kartentausch gelegt",
 	"flip": "Flip gelegt",
 	"partien_weitergeben": "Partien beim Weitergeben",
+	"gezogen": "Karten gezogen",
+	"aussetzen": "Selbst ausgesetzt",
 }
 
 var path := PATH
@@ -146,6 +148,12 @@ func record(events: Array, view: Dictionary, mode: String) -> String:
 			"play":
 				if seat == me and str(ev.get("face", "")).ends_with("_flip"):
 					_add("flip")
+			"draw":
+				if seat == me and str(ev.get("reason", "")) != "join":
+					_add("gezogen", maxi(int(ev.get("count", 1)), 1))
+			"skip":
+				if seat == me:
+					_add("aussetzen")
 	if not shared and me >= 0:
 		var hand: Variant = view.get("hand", [])
 		if hand is Array:
@@ -170,6 +178,11 @@ func rows() -> Array:
 		var v := value(key)
 		out.append([str(LABELS[key]), "–" if v == 0 and MAX_KEYS.has(key) else str(v)])
 	return out
+
+
+# Spaßtitel (FunTitles): [{key, title, why, power}], höchstens drei, stärkste zuerst; leer, solange keiner verdient ist
+func titles() -> Array:
+	return FunTitles.earned(data)
 
 
 static func _seat_of(entry: Variant) -> int:

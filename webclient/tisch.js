@@ -429,7 +429,7 @@
       const dran = v.turn === ich && (v.phase === 'turn' || v.phase === 'drawn' || v.phase === 'challenge' || v.phase === 'color' || v.phase === 'gamble' || v.phase === 'discard_pick');
       this._zeigeAutomat(v);
       if (!this._tauschLaeuft && this.hand.el.getAttribute('style')) this.hand.el.removeAttribute('style');   // Rest einer Tausch-Animation
-      this.hinweis.textContent = this.hinweisLokal(h) || this._hinweisErsatz(v);
+      this.hinweis.textContent = this._hinweisMitSpass(v, h);   // gelegentlich ein Spruch (spass.js, 1.4.4)
       this.hinweis.classList.toggle('dran', v.turn === ich && dran);
       this.ichKranz.classList.toggle('an', dran);
       this.ichZahl.classList.toggle('dran', dran);
@@ -487,6 +487,16 @@
       const kurz = this.hinweisText(t);
       if (kurz === t) return Array.isArray(h.lt) && h.lt.length ? M.I18n.render(h.lt) : M.t(t);
       return M.I18n.render(/Denk an „Mau!“$/.test(kurz) ? ['Du bist dran.', 'Denk an „Mau!“'] : ['Du bist dran.']);
+    }
+    // Freche Sprüche (Beta 1.4.4, spass.js): statt des Standardtextes gelegentlich ein Spruch; Pointe des falschen Tipps als Meldung
+    _hinweisMitSpass(v, h) {
+      const std = this.hinweisLokal(h) || this._hinweisErsatz(v);
+      if (!M.Spass) return std;
+      if (!M.Spass.beiNeu) M.Spass.beiNeu = () => { if (this.v) this.hinweis.textContent = this._hinweisMitSpass(this.v, this.v.hints || {}); };
+      const t = M.Spass.hinweis(v, h, v.seat, std, false);
+      const p = M.Spass.pointe();
+      if (p && this.app.toast) this.app.toast(p, 'leise', 3000);
+      return t;
     }
     _hinweisErsatz(v) {
       const p = (v.players || []).find(x => x.seat === v.turn);
