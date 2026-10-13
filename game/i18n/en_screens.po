@@ -1366,3 +1366,46 @@ msgstr "The Game Wi-Fi is not connected."
 
 msgid "„Nicht stören“ ist an – die Spieltöne sind stumm."
 msgstr "Do Not Disturb is on – game sounds are muted."
+
+# --- Gastgeber-Übergabe (Beta 1.6.1: ☰-Menü, Auswahldialog, Hauptmenü, So geht's)
+msgid "Gastgeber übergeben …"
+msgstr "Hand over hosting …"
+
+msgid "Gastgeber übergeben"
+msgstr "Hand over hosting"
+
+msgid "Wer führt das Spiel weiter? Es läuft dann über sein Handy, du spielst als Gast weiter."
+msgstr "Who should run the game? It then runs on their phone, and you keep playing as a guest."
+
+msgid "Übergeben"
+msgstr "Hand over"
+
+msgid "Partie fortsetzen"
+msgstr "Continue game"
+
+msgid "%s · Runde %d · vor %d min"
+msgstr "%s · Round %d · %d min ago"
+
+msgid "Partie verwerfen"
+msgstr "Discard game"
+
+msgid "Partie verwerfen?"
+msgstr "Discard game?"
+
+msgid "Der gespeicherte Spielstand wird gelöscht."
+msgstr "The saved game will be deleted."
+
+msgid "Verwerfen"
+msgstr "Discard"
+
+msgid "Deine Partie von vor %d min fortsetzen?"
+msgstr "Continue your game from %d min ago?"
+
+msgid "Verbinde mit den anderen …"
+msgstr "Connecting to the others …"
+
+msgid "Ausfall"
+msgstr "Dropout"
+
+msgid "Fällt der Gastgeber aus, führt ein Mitspieler mit der App das Spiel weiter. Dafür hat jede App eine Sicherung des ganzen Spielstands – die App zeigt fremde Karten nie, wer schummeln will, käme aber heran."
+msgstr "If the host drops out, another player with the app keeps the game going. For this, every app holds a backup of the whole game – the app never shows other players' cards, but someone set on cheating could get at them."

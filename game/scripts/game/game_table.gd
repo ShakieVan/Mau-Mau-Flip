@@ -194,10 +194,16 @@ func _changed(events: Array) -> void:
 		if str((e as Dictionary).get("e", "")) == "round_start":
 			_extra_pause = ROUND_PAUSE
 	_after_change()
-	if autosave:
-		_save()
+	_persist()
 	_distribute(events)
 	_after_distribute()
+
+
+# Speicherstand nach einer Änderung, vor dem Verteilen. HostTable (Beta 1.6.1): zusätzlich die Sicherung an die App-Gäste – erst
+# Sicherung und eigene Datei, dann die Sichten (docs/module/uebergabe.md Abschnitt 2).
+func _persist() -> void:
+	if autosave:
+		_save()
 
 
 # --- Computergegner ---
@@ -296,15 +302,14 @@ func _ui_busy() -> bool:
 func _save() -> void:
 	if game == null:
 		return
-	var d := {"format": 1, "mode": mode(), "saved": Time.get_datetime_string_from_system(), "game": game.to_dict(),
+	write_saved(save_path, _snapshot())
+
+
+# Spielstand als Dictionary (Datei bzw. Sicherung). Mau-Mau Flip (Beta 1.6.1): aus _save() herausgelöst; HostTable liefert format 2
+# (MatchSnapshot), Übung und Weitergeben bleiben bei format 1.
+func _snapshot() -> Dictionary:
+	return {"format": 1, "mode": mode(), "saved": Time.get_datetime_string_from_system(), "game": game.to_dict(),
 		"seats": seats.duplicate(true), "host_seat": host_seat, "extra": _save_extra()}
-	var tmp := save_path + ".tmp"
-	var f := FileAccess.open(tmp, FileAccess.WRITE)
-	if f == null:
-		return
-	f.store_string(JSON.stringify(d))
-	f.close()
-	DirAccess.rename_absolute(tmp, save_path)
 
 
 # Gespeicherte Plätze zurückholen (JSON macht aus Zahlen float).

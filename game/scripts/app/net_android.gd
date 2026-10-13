@@ -392,6 +392,14 @@ static func game_wifi_permission() -> String:
 	return "android.permission.NEARBY_WIFI_DEVICES" if int((wifi_stub if wifi_stub is Dictionary else {}).get("sdk", 34)) >= 33 \
 		else "android.permission.ACCESS_FINE_LOCATION"
 
+static func game_wifi_request_permission() -> bool:
+	# true = Erlaubnis schon da; false = Dialog angestoßen (Antwort über on_request_permissions_result). Beta 1.6.1: über Java, weil
+	# Android 12 FINE nur zusammen mit COARSE anfragt (GameWifi.requestPermission).
+	var j := _wifi_java()
+	if not j.is_empty():
+		return bool(j[0].requestPermission(j[1]))
+	return OS.request_permission(game_wifi_permission())
+
 static func game_wifi_start() -> String:
 	# "" = Start angestoßen (Ergebnis über game_wifi_state()), sonst Fehlercode.
 	if wifi_stub is Dictionary:

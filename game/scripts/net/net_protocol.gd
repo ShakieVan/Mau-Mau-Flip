@@ -10,6 +10,12 @@ extends RefCounted
 # Host → Client: welcome {id, token, host_name} · reject {code, text} · lobby {rev, players, rules, host_id} · start {seat}
 #                state {seq_ack?, events, view} · err {text} · pong {ts} · bye {text}
 #                Spielerlisten (lobby.players, view.players): away:true = kurz in einer anderen App; view: host:true = Gastgeber
+# Gastgeber-Übergabe (Beta 1.6.1, docs/module/uebergabe.md; nur App, Lite und ältere Geräte ignorieren die neuen Felder und Typen):
+#   Client → Host: hello zusätzlich bk:[gen, epoch, seq] („kann Sicherungen halten“, ohne Sicherung [0, "", 0]) und bk_token (Token
+#                  des eigenen Platzes aus der Sicherung) · handover_no {} (handover own:true abgelehnt, Sicherung passt nicht mehr)
+#   Host → Client: welcome zusätzlich gid, gen, epoch · bk {gid, gen, epoch, seq, z} (Sicherung: z = base64(gzip(JSON))) ·
+#                  alive {gid, gen, epoch, seq} (Lebenszeichen nach BACKUP_ALIVE_MS Stille) ·
+#                  handover {gid, gen, epoch, seq, within_ms, z} bzw. {own:true, gid, gen, epoch, seq, within_ms} ohne z
 # Zahlen: JSON kennt nur float; decode() wandelt ganzzahlige Werte in int (Kennungen, Plätze, Zeitstempel in ms).
 
 const PROTO := 1                          # Protokollversion: bei jeder inkompatiblen Änderung erhöhen
@@ -54,6 +60,31 @@ const CLOSE_ROOM_FULL := 4409
 const CLOSE_RATE := 4429
 const CLOSE_BAD_TOKEN := 4403
 const CLOSE_ROOM_ENDED := 1001
+const RELAY_INFO_TIMEOUT_MS := 6000       # Beta 1.6.1: GET /info?room= beim vorsichtigen Neuverbinden des Gastgebers
+
+# --- Gastgeber-Übergabe (Beta 1.6.1, docs/module/uebergabe.md) ---
+const BACKUP_ALIVE_MS := 15000            # so lange nichts an die App-Gäste → {t:"alive"} (Raum darf in Spielpausen ruhen)
+const T_SILENT_MS := 40000                # Gast: so lange kein bk/alive/state (oder ab 4503) → „Gastgeber fehlt“
+const T_AWAY_MS := 180000                 # Gast: Gastgeber in einer anderen App → erst nach so langer Zeit ab dem away
+const AWAY_LINK_MS := 2000                # away bis zu so lange nach 4503 gehört noch dazu
+const T_STEP_MS := 12000                  # Wartezeit je Rang der Ersatz-Rangfolge
+const PROBE_MS := 8000                    # frische Probe-Verbindung als Gast: so lange ohne Antwort → niemand führt
+const HANDOVER_WITHIN_MS := 8000          # geplante Übergabe: so lange hat das Ziel für den room-Rahmen
+const HANDOVER_TIMEOUT_MS := 25000        # geplante Übergabe: so lange wartet der alte Gastgeber auf 4000
+const TAKEOVER_SETTLE_MAX_MS := 15000     # Einschwingzeit nach einer Übernahme (Bots und Aktionen warten)
+const SNAPSHOT_MAX := 128 * 1024          # Byte je verschickter Sicherung (z), darüber wird sie nicht verschickt
+const SNAPSHOT_UNPACK_MAX := 512 * 1024   # Byte beim Entpacken (gzip)
+const RESUME_MAX_H := 12                  # „Partie fortsetzen“ höchstens so viele Stunden nach dem Stand
+const RESUME_QUIET_MIN := 5               # eigene Gastgeber-Datei jünger: fortsetzen ohne Rückfrage
+const ROOM_LIFE_S := 86400                # Vermittler: Raum lebt höchstens 24 h (life_s)
+const ROOM_GRACE_S := 600                 # Vermittler: Raum ohne Gastgeber höchstens 10 min (grace_s)
+const SWEEP_EXTRA := 256                  # 4012-Rundumschlag: c bis max_c + so viele
+const SWEEP_PER_FRAME := 150              # … höchstens so viele Rahmen je Frame
+const SWEEP_BUDGET := 100                 # … auf einmal höchstens so viele (host_burst 400 des Vermittlers, Nachbau 200; Spielverkehr
+                                          #   zählt mit und hat Vorrang), dann
+const SWEEP_REFILL_PER_S := 100           # … so viele je Sekunde (host_rate 200/s, Platz für den übrigen Verkehr)
+const BK_NONE := [0, "", 0]               # hello.bk einer App ohne Sicherung
+
 const APK_RELEASE_URL := "https://github.com/ShakieVan/Mau-Mau-Flip/releases/latest"
 const APK_BETA_URL := "https://github.com/ShakieVan/Mau-Mau-Flip-Beta/releases/latest"
 
@@ -231,7 +262,15 @@ static func clean_client_message(msg: Dictionary) -> Dictionary:
 				"kind": str(msg.kind) if msg.get("kind") is String and KINDS.has(msg.kind) else "web"}
 			if msg.get("token") is String and str(msg.token).length() <= 64:
 				out["token"] = str(msg.token)
+			# Beta 1.6.1 (Gastgeber-Übergabe): Stand der Sicherung und Token des eigenen Platzes daraus
+			var bk := clean_bk_mark(msg.get("bk"))
+			if not bk.is_empty():
+				out["bk"] = bk
+			if msg.get("bk_token") is String and str(msg.bk_token) != "" and str(msg.bk_token).length() <= 64:
+				out["bk_token"] = str(msg.bk_token)
 			return out
+		"handover_no":
+			return {"t": "handover_no"}  # Beta 1.6.1: handover own:true abgelehnt (ohne weitere Felder)
 		"act":
 			var a = msg.get("a")
 			if not a is Dictionary:
@@ -353,12 +392,134 @@ static func unique_name(wanted: String, taken: Array) -> String:
 
 # --- Begrüßung ---
 
-static func make_hello(player_name: String, kind := "app", token := "", game := "") -> Dictionary:
+static func make_hello(player_name: String, kind := "app", token := "", game := "", bk: Array = [], bk_token := "") -> Dictionary:
+	# bk (Beta 1.6.1): [gen, epoch, seq] der eigenen Sicherung bzw. BK_NONE – nur Apps, die Sicherungen halten können; bk_token: Token
+	# des eigenen Platzes aus der Sicherung (nur wenn eine Sicherung derselben Partie vorliegt).
 	var msg := {"t": "hello", "proto": PROTO, "game": game if game != "" else game_version(), "name": clean_name(player_name),
 		"kind": kind if KINDS.has(kind) else "app"}
 	if token != "":
 		msg["token"] = token
+	var mark := clean_bk_mark(bk)
+	if not mark.is_empty():
+		msg["bk"] = mark
+	if bk_token != "":
+		msg["bk_token"] = bk_token.left(64)
 	return msg
+
+# ---------- Gastgeber-Übergabe (Beta 1.6.1, docs/module/uebergabe.md Abschnitte 1–3) ----------
+
+static func clean_bk_mark(v) -> Array:
+	# [gen, epoch, seq] prüfen: gen, seq ganze Zahlen ≥ 0, epoch Hex-Text ≤ 16 Zeichen. [] = ungültig/fehlt.
+	if not v is Array or (v as Array).size() != 3:
+		return []
+	var gen = v[0]
+	var epoch = v[1]
+	var seq = v[2]
+	if gen is float and is_finite(gen) and gen == floorf(gen):
+		gen = int(gen)
+	if seq is float and is_finite(seq) and seq == floorf(seq):
+		seq = int(seq)
+	if not gen is int or not seq is int or not epoch is String or int(gen) < 0 or int(seq) < 0 or str(epoch).length() > 16:
+		return []
+	if str(epoch) != "" and not str(epoch).is_valid_hex_number():
+		return []
+	return [int(gen), str(epoch), int(seq)]
+
+static func compare_marks(a: Array, b: Array) -> int:
+	# Stand [gen, epoch, seq] vergleichen: nach gen, bei gleicher gen und epoch nach seq. -1 / 0 / 1; 2 = gleiche gen, andere epoch
+	# (zwei Zweige, nicht vergleichbar).
+	if a.size() != 3 or b.size() != 3:
+		return 2
+	if int(a[0]) != int(b[0]):
+		return -1 if int(a[0]) < int(b[0]) else 1
+	if str(a[1]) != str(b[1]):
+		return 2
+	if int(a[2]) != int(b[2]):
+		return -1 if int(a[2]) < int(b[2]) else 1
+	return 0
+
+static func new_gid() -> String:
+	return Crypto.new().generate_random_bytes(8).hex_encode()      # Kennung der Partie (bleibt über alle Übergaben)
+
+static func new_epoch() -> String:
+	return Crypto.new().generate_random_bytes(4).hex_encode()      # neu bei jedem gen-Wechsel
+
+static func pack_snapshot(data: Dictionary) -> String:
+	# Spielstand → z = base64(gzip(JSON)). "" = größer als SNAPSHOT_MAX (nicht verschicken).
+	var z := Marshalls.raw_to_base64(JSON.stringify(data).to_utf8_buffer().compress(FileAccess.COMPRESSION_GZIP))
+	return z if z.length() <= SNAPSHOT_MAX else ""
+
+static func unpack_snapshot(z: String) -> Dictionary:
+	# z → Spielstand; {} = ungültig oder zu groß.
+	if z == "" or z.length() > SNAPSHOT_MAX:
+		return {}
+	var raw := Marshalls.base64_to_raw(z)
+	if raw.is_empty():
+		return {}
+	var plain := raw.decompress_dynamic(SNAPSHOT_UNPACK_MAX, FileAccess.COMPRESSION_GZIP)
+	if plain.is_empty():
+		return {}
+	var data = JSON.parse_string(plain.get_string_from_utf8())
+	return data if data is Dictionary else {}
+
+static func backup_head(gid: String, mark: Array) -> Dictionary:
+	# gemeinsamer Kopf von bk, alive und handover
+	return {"gid": gid, "gen": int(mark[0]), "epoch": str(mark[1]), "seq": int(mark[2])}
+
+static func make_bk(gid: String, mark: Array, z: String) -> Dictionary:
+	var m := backup_head(gid, mark)
+	m["t"] = "bk"
+	m["z"] = z
+	return m
+
+static func make_alive(gid: String, mark: Array) -> Dictionary:
+	var m := backup_head(gid, mark)
+	m["t"] = "alive"
+	return m
+
+static func make_handover(gid: String, mark: Array, z := "", within_ms := HANDOVER_WITHIN_MS, host_gen := 0) -> Dictionary:
+	# z "": handover own:true – das Ziel nimmt seine eigene Sicherung mit genau diesem Stand (mark = dessen hello.bk). host_gen = gen des
+	# Absenders: Ist die gen des Ziels nicht höher, führt es mit host_gen + 1 weiter (sonst holte der Absender das Spiel zurück).
+	var m := backup_head(gid, mark)
+	m["t"] = "handover"
+	m["within_ms"] = within_ms
+	if z != "":
+		m["z"] = z
+	else:
+		m["own"] = true
+		if host_gen > 0:
+			m["host_gen"] = host_gen
+	return m
+
+static func clean_backup_message(msg: Dictionary) -> Dictionary:
+	# Gast: bk/alive/handover vom Gastgeber prüfen (Kopf gültig, z bzw. own passend). {} = verwerfen.
+	var t := str(msg.get("t", ""))
+	if not t in ["bk", "alive", "handover"]:
+		return {}
+	var gid = msg.get("gid")
+	var mark := clean_bk_mark([msg.get("gen"), msg.get("epoch"), msg.get("seq")])
+	if not gid is String or str(gid) == "" or str(gid).length() > 32 or not str(gid).is_valid_hex_number() or mark.is_empty() or int(mark[0]) < 1:
+		return {}
+	var out := make_alive(str(gid), mark)
+	out["t"] = t
+	if t == "alive":
+		return out
+	var z = msg.get("z")
+	if t == "bk":
+		if not z is String or str(z) == "" or str(z).length() > SNAPSHOT_MAX:
+			return {}
+		out["z"] = str(z)
+		return out
+	out["within_ms"] = clampi(int(msg.within_ms), 1000, 60000) if msg.get("within_ms") is int else HANDOVER_WITHIN_MS
+	if msg.get("own") == true:
+		out["own"] = true
+		if msg.get("host_gen") is int and int(msg.host_gen) >= 1 and int(msg.host_gen) < 1000000:
+			out["host_gen"] = int(msg.host_gen)
+	elif z is String and str(z) != "" and str(z).length() <= SNAPSHOT_MAX:
+		out["z"] = str(z)
+	else:
+		return {}
+	return out
 
 static func compare_versions(a: String, b: String) -> int:
 	# "0.1.10" > "0.1.9": -1, 0, 1. Nicht-Zahlen zählen als 0.

@@ -83,6 +83,18 @@ func add_option(text: String, icon_name := "") -> Button:
 	return b
 
 
+# Mau-Mau Flip (Beta 1.6.1, Gastgeber-Übergabe): Warnzeile über den Antworten, fett in Signalrot (z. B. „Dein Spielstand ist
+# vielleicht nicht der neueste.“ bei „Spiel als Gastgeber fortsetzen?“)
+func add_note(text: String) -> Label:
+	var l := ScreenKit.text_block(text, UiFonts.size("text"))
+	l.name = "Warnung%d" % _box.get_child_count()
+	l.add_theme_font_override("font", UiFonts.text(700))
+	l.add_theme_color_override("font_color", UiPalette.ALERT)
+	_box.add_child(l)
+	_box.move_child(l, _row.get_index())
+	return l
+
+
 # Wie „Nein“ (z. B. Zurück-Taste bei offener Rückfrage)
 func cancel() -> void:
 	_answer(false)

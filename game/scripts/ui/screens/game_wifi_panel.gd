@@ -238,12 +238,11 @@ func dismiss_problem() -> void:
 
 # true = Erlaubnis da; false = Dialog offen (Antwort über on_request_permissions_result) bzw. abgelehnt.
 func _ask_permission() -> bool:
-	var perm := NetAndroid.game_wifi_permission()
 	if NetAndroid.wifi_stub is Dictionary:
 		problem = "permission"
 		refresh_net()
 		return false
-	if OS.request_permission(perm):
+	if NetAndroid.game_wifi_request_permission():
 		return true
 	_waiting_permission = true
 	if not get_tree().on_request_permissions_result.is_connected(_on_permission):

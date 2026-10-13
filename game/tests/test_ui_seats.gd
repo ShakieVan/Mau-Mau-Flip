@@ -128,6 +128,10 @@ func net_flow() -> void:
 	await frames(2)
 	var keys := _menu_keys(hts)
 	check(keys.slice(0, 2) == ["dazuholen", "entfernen"] and keys.has("einstellungen"), "M: Menü des Gastgebers (%s)" % [keys])
+	# Beta 1.6.1: „Gastgeber übergeben …“ nach den Mitspieler-Einträgen, ausgegraut (nur Computergegner, kein Online-Raum)
+	var ho := hts._ingame_menu.find_child("Wahl_uebergeben", true, false) as Button
+	var ho_why := hts._ingame_menu.find_child("Grund", true, false) as Label
+	check(keys.find("uebergeben") == 2 and ho.disabled and ho_why != null and ho_why.text != "", "M: „Gastgeber übergeben …“ ausgegraut mit Grund (%s)" % [ho_why.text if ho_why != null else "-"])
 	hts._ingame_menu._choose("dazuholen")
 	await frames(2)
 	var sm := hts._seat_mgr

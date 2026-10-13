@@ -16,6 +16,18 @@ extends Node
 # App-Wechsel (Beta 1.3.3, Nutzerbefund: Threema für Screenshots, danach bis zu 70 s alter Stand): PAUSED/FOCUS_OUT → „away“ sofort
 # hinaus (senden + poll, Best effort); RESUMED/FOCUS_IN → check_now(): „back“ (der Gastgeber schickt darauf den vollen Stand) und
 # „ping“ – kommt binnen 3 s nichts, sofort neu verbinden (mit Token). Wartet gerade ein Neuversuch, startet er sofort.
+# Mau-Mau Flip (Beta 1.6.1, Gastgeber-Übergabe, docs/module/uebergabe.md Abschnitte 3.4, 3.5, 4.3):
+#  - hello.bk/bk_token: bk = Marke der eigenen Sicherung ([] = nicht senden, BK_NONE = „kann Sicherungen halten“), bk_token = Token
+#    des eigenen Platzes daraus (setzt ClientTable). welcome_info hält gid/gen/epoch aus dem welcome, welcomes zählt die Annahmen.
+#  - Wanduhr (clock, einspritzbar): last_host_wall = letzte Nachricht des Gastgebers (nicht das „pong“ des Vermittlers),
+#    host_away_wall = erstes 4503 seit der letzten Annahme, away_code_wall = letztes 4503. reached = seit dem letzten
+#    (Neu-)Verbinden hat der Vermittler geantwortet (Socket offen oder Schließcode) – unterscheidet „Gastgeber schweigt“ von
+#    „eigenes Netz weg“.
+#  - reconnect_now(): sofort neu als Gast anmelden (neue c, Token bleibt), ohne „bye“.
+#  - connect_probe(): frische Probe-Verbindung als Gast (Gastgeber beim vorsichtigen Neuverbinden). probe_result: answered (welcome
+#    oder reject – ein Gastgeber antwortet) | away (4503) | gone (Raum weg/voll) | silent (Socket offen, probe_ms ohne Antwort) |
+#    unreachable (Vermittler nicht erreicht); Signal probe_done.
+#  - query_info(): GET <vermittler>/info?room=CODE → info_result {ok, open, host}; Signal info_done.
 
 signal state_changed(state: String)
 signal welcomed(id: int, host_name: String)
@@ -23,6 +35,8 @@ signal message(msg: Dictionary)
 signal rejected(code: String, text: String)
 signal closed(text: String)
 signal log_line(text: String)
+signal probe_done(result: String)        # Beta 1.6.1: Ergebnis von connect_probe()
+signal info_done(result: Dictionary)     # Beta 1.6.1: Ergebnis von query_info()
 
 const RETRY_MS := [1000, 2000, 4000, 5000]
 const PING_MS := 5000
@@ -79,6 +93,26 @@ var _probe_deadline := -1
 var _resume_deadline := -1               # nach check_now(): bis dahin muss etwas kommen, sonst sofort neu verbinden
 var _checked_ms := -100000
 static var _tokens := {}
+# --- Gastgeber-Übergabe (Beta 1.6.1) ---
+var bk: Array = []                       # hello.bk: [] = nicht senden; sonst [gen, epoch, seq] der eigenen Sicherung (BK_NONE = keine)
+var bk_token := ""                       # hello.bk_token: Token des eigenen Platzes aus der Sicherung
+var clock := Callable()                  # Tests: () -> Wanduhr in ms (sonst Time.get_unix_time_from_system)
+var welcome_info := {}                   # aus dem letzten welcome: {gid, gen, epoch} (Lite-Gastgeber gibt es nicht; ältere: {})
+var welcomes := 0                        # Anzahl der Annahmen (welcome) seit dem Anlegen
+var last_host_wall := 0                  # Wanduhr (ms): letzte Nachricht des Gastgebers
+var host_away_wall := 0                  # Wanduhr (ms): erstes 4503 seit der letzten Annahme (Gastgeber kurz weg)
+var away_code_wall := 0                  # Wanduhr (ms): letztes 4503
+var reached := false                     # seit dem letzten (Neu-)Verbinden: Vermittler bzw. Gastgeber hat geantwortet
+var probe_mode := false                  # connect_probe(): eine einzige Anmeldung, Ergebnis in probe_result
+var probe_ms := NetProtocol.PROBE_MS
+var probe_result := ""                   # "" = läuft | answered | away | gone | silent | unreachable
+var info_timeout_ms := NetProtocol.RELAY_INFO_TIMEOUT_MS
+var info_result := {}                    # query_info(): {} = läuft bzw. keine, sonst {ok, open, host}
+var _probe_started := -1
+var _http: HTTPClient
+var _http_sent := false
+var _http_body := PackedByteArray()
+var _http_deadline := -1
 
 func connect_to(host_address: String, host_port := NetProtocol.PORT, name_of_player := "Gast", client_kind := "app") -> Error:
 	var link := NetProtocol.parse_room_link(host_address)
@@ -97,6 +131,7 @@ func connect_to(host_address: String, host_port := NetProtocol.PORT, name_of_pla
 	close_text = ""
 	reject_code = ""
 	_reset_removed()
+	reached = false
 	_set_state("connecting")
 	NetAddresses.bind_for("join", address)   # Android: Sockets ins richtige Netz (WLAN bzw. eigener Hotspot)
 	return _open()
@@ -120,8 +155,85 @@ func connect_relay(relay: String, code: String, name_of_player := "Gast", client
 		_final(I18n.t("Raumcode oder Vermittler-Adresse ungültig."))
 		return ERR_INVALID_PARAMETER
 	token = _load_token(_key()) if reuse_token else ""
+	reached = false
 	_set_state("connecting")
 	return _open()
+
+
+# Mau-Mau Flip (Beta 1.6.1, Gastgeber-Übergabe): frische Probe-Verbindung als Gast mit diesem Token (Abschnitt 3.4). Eine einzige
+# Anmeldung ohne Neuverbinden und ohne gespeicherte Token; Ergebnis in probe_result (Signal probe_done). Bei „answered“ bleibt die
+# Verbindung offen (host_name gilt), der Aufrufer schließt sie.
+func connect_probe(relay: String, code: String, name_of_player: String, with_token: String, wait_ms := NetProtocol.PROBE_MS) -> Error:
+	probe_mode = true
+	probe_ms = wait_ms
+	probe_result = ""
+	auto_reconnect = false
+	reuse_token = false
+	persist_tokens = false
+	connect_timeout_ms = maxi(connect_timeout_ms, wait_ms + 1000)    # die Probe-Frist entscheidet
+	_probe_started = Time.get_ticks_msec()
+	var err := connect_relay(relay, code, name_of_player, "app")
+	token = with_token
+	if err != OK and probe_result == "":
+		_probe_end("unreachable")
+	return err
+
+
+# Beta 1.6.1: sofort neu als Gast anmelden (neue c beim Vermittler, gleiches Token), ohne „bye“. Für den Wächter (HostSwitch):
+# „Gastgeber fehlt“ bzw. frische Probe vor einer Übernahme. reached gilt danach für diesen Versuch.
+func reconnect_now() -> void:
+	if state == "idle" or state == "closed":
+		return
+	_unhold()
+	if _ws != null:
+		_ws.close()
+		_ws = null
+	_retry_at = -1
+	_resume_deadline = -1
+	reached = false
+	_set_state("connecting")
+	_open()
+
+
+# Beta 1.6.1: GET <vermittler>/info?room=CODE (nur online). Ergebnis in info_result ({ok:false} = nicht erreichbar, sonst
+# {ok:true, open, host}) und Signal info_done.
+func query_info() -> Error:
+	_abort_info()
+	info_result = {}
+	if not is_online():
+		_info_end({"ok": false})
+		return ERR_UNAVAILABLE
+	var tls := relay_url.begins_with("https://")
+	var hostport := relay_url.substr(8 if tls else 7)
+	var host := hostport
+	var hport := 443 if tls else 80
+	var colon := hostport.rfind(":")
+	if colon > 0:
+		host = hostport.left(colon)
+		hport = int(hostport.substr(colon + 1))
+	_http = HTTPClient.new()
+	_http_sent = false
+	_http_body = PackedByteArray()
+	_http_deadline = Time.get_ticks_msec() + info_timeout_ms
+	NetAddresses.hold_unbound(info_hold_id())     # Android: Bindung an ein Netz ohne Internet aussetzen (wie beim Socket)
+	var err := _http.connect_to_host(("https://" if tls else "http://") + host, hport, TLSOptions.client() if tls else null)
+	if err != OK:
+		_abort_info()
+		_info_end({"ok": false})
+	return err
+
+
+func info_pending() -> bool:
+	return _http != null
+
+
+func info_hold_id() -> String:
+	return "relay_info:%d" % get_instance_id()
+
+
+# Wanduhr in ms (Fristen über Pausen hinweg, Abschnitt 3.4)
+func wall_ms() -> int:
+	return _wall()
 
 func _reset_removed() -> void:
 	removed = false
@@ -150,6 +262,7 @@ func close(text := "") -> void:
 			_closing_until = Time.get_ticks_msec() + 1000
 		_ws = null
 	_unhold()
+	_abort_info()
 	_retry_at = -1
 	if state != "idle" and state != "closed":
 		_final(text if text != "" else I18n.t("Verbindung beendet."))
@@ -180,6 +293,8 @@ func _notification(what: int) -> void:
 		_closing = null
 		_retry_at = -1
 		_unhold()
+		_http = null
+		NetAddresses.release_hold(info_hold_id())
 		if state != "idle" and state != "closed":
 			NetAddresses.release("join")
 			state = "closed"
@@ -241,6 +356,10 @@ func poll() -> void:
 	if _retry_at >= 0 and now >= _retry_at:
 		_retry_at = -1
 		_open()
+	if _http != null:
+		_poll_info(now)
+	if probe_mode and probe_result == "" and _probe_started >= 0 and now - _probe_started > probe_ms:
+		_probe_end("silent" if reached else "unreachable")
 	if _ws == null:
 		return
 	_ws.poll()
@@ -251,9 +370,11 @@ func poll() -> void:
 		NetAddresses.expire_holds()
 	if st == WebSocketPeer.STATE_OPEN and not _was_open:
 		_was_open = true
+		reached = true
 		_last_rx_ms = now
 		_sent_token = token
-		var hello := NetProtocol.make_hello(player_name, kind, token)
+		var app := kind == "app"
+		var hello := NetProtocol.make_hello(player_name, kind, token, "", bk if app else [], bk_token if app else "")
 		hello.merge(hello_override, true)
 		_ws.send_text(NetProtocol.encode(hello))
 	# Auch nach dem Schließen abholen: „reject“ bzw. „bye“ kommen direkt vor dem Close-Rahmen.
@@ -267,6 +388,7 @@ func poll() -> void:
 			continue
 		if is_online() and bytes.size() == 4 and bytes.get_string_from_utf8() == "pong":
 			continue    # Herzschlag des Vermittlers
+		last_host_wall = _wall()     # Beta 1.6.1: Lebenszeichen des Gastgebers (Wächter HostSwitch)
 		_handle(NetProtocol.decode(bytes.get_string_from_utf8(), NetProtocol.MAX_HOST_MESSAGE))
 	if _ws == null:
 		return
@@ -296,8 +418,13 @@ func poll() -> void:
 				_lost(I18n.t("Gastgeber %s:%d nicht erreichbar.") % [address, port])
 	elif st == WebSocketPeer.STATE_CLOSED:
 		var code := _ws.get_close_code()
+		if code >= 4000 or code == NetProtocol.CLOSE_ROOM_ENDED:
+			reached = true     # Beta 1.6.1: der Vermittler (bzw. Gastgeber) hat geantwortet
 		if code == NetWs.CLOSE_REPLACED:
 			_ws = null
+			if probe_mode:
+				_probe_end("silent")
+				return
 			_final(I18n.t("Diese Verbindung wurde durch eine neuere ersetzt."))
 			return
 		if is_online() and _relay_close(code):
@@ -309,6 +436,17 @@ func _ping_every() -> int:
 
 func _relay_close(code: int) -> bool:
 	# Schließcodes des Vermittlers. true = erledigt (endgültig oder Warten geplant).
+	if probe_mode:
+		# Beta 1.6.1: Probe – 4503 = kein Gastgeber angemeldet, Raum weg/voll = nichts zu übernehmen; 4012 = neu anmelden (unten)
+		if code == NetProtocol.CLOSE_HOST_AWAY:
+			_ws = null
+			away_code_wall = _wall()
+			_probe_end("away")
+			return true
+		if code in [NetProtocol.CLOSE_ROOM_UNKNOWN, NetProtocol.CLOSE_ROOM_FULL, NetProtocol.CLOSE_ROOM_ENDED]:
+			_ws = null
+			_probe_end("gone")
+			return true
 	match code:
 		NetProtocol.CLOSE_ROOM_UNKNOWN:
 			_ws = null
@@ -332,6 +470,10 @@ func _relay_close(code: int) -> bool:
 			return true
 		NetProtocol.CLOSE_HOST_AWAY:
 			_ws = null
+			# Beta 1.6.1 (Wächter HostSwitch): Frist ab dem ersten 4503 dieser Abwesenheit, Treffer der Probe am letzten
+			away_code_wall = _wall()
+			if not host_away:
+				host_away_wall = away_code_wall
 			host_away = true
 			var wait := host_away_ms
 			_retry_at = Time.get_ticks_msec() + wait
@@ -373,6 +515,8 @@ func _handle(msg: Dictionary) -> void:
 	match str(msg.t):
 		"welcome":
 			my_id = int(msg.get("id", 0)) if msg.get("id") is int else 0
+			welcome_info = _clean_welcome(msg)     # Beta 1.6.1: gid/gen/epoch (ältere Gastgeber schicken sie nicht)
+			welcomes += 1
 			token = str(msg.get("token", "")).left(64)
 			# Altes Token nicht mehr bekannt (Gerätetest 1.4.2: herausgenommen, während die App im Hintergrund war; der Gastgeber
 			# nimmt ihn als Neuen auf die Warteliste): merken, damit der Tisch es sagen kann
@@ -391,6 +535,8 @@ func _handle(msg: Dictionary) -> void:
 			if app_away and _ws != null:
 				_ws.send_text(NetProtocol.encode({"t": "away"}))   # neu angemeldet, aber noch in der anderen App
 			welcomed.emit(my_id, host_name)
+			if probe_mode and probe_result == "":
+				_probe_end("answered", false)     # Verbindung bleibt offen, der Aufrufer schließt sie
 		"reject":
 			reject_code = str(msg.get("code", "")).left(16)
 			var text := I18n.msg_text(msg, "Abgelehnt.").left(400)   # Bausteine (lt) bzw. deutsche msgid → eigene Sprache
@@ -404,6 +550,8 @@ func _handle(msg: Dictionary) -> void:
 					# Seit Beta 1.4.2 kann der Gastgeber dazuholen; abgelehnt wird nur, solange er niemanden aufnimmt
 					text = I18n.t("Das Spiel läuft schon. Bitte den Gastgeber, dich dazuzuholen (☰ → Mitspieler dazuholen).")
 			_log("Abgelehnt (%s): %s" % [reject_code, text])
+			if probe_mode and probe_result == "":
+				probe_result = "answered"     # Beta 1.6.1: ein Gastgeber hat geantwortet (Signal nach dem Schließen)
 			if _ws != null:
 				_ws.close()
 				_closing = _ws
@@ -411,6 +559,8 @@ func _handle(msg: Dictionary) -> void:
 				_ws = null
 			rejected.emit(reject_code, text)
 			_final(text)
+			if probe_mode and probe_result == "answered":
+				probe_done.emit(probe_result)
 		"bye":
 			var text := I18n.msg_text(msg, "Der Gastgeber hat das Spiel beendet.").left(400)
 			bye_id = str(msg.get("text", "")).left(400)
@@ -511,3 +661,81 @@ func _store_token(key: String, value: String) -> void:
 
 func _log(text: String) -> void:
 	log_line.emit(text)
+
+# ---------- Mau-Mau Flip (Beta 1.6.1, Gastgeber-Übergabe) ----------
+
+func _wall() -> int:
+	return int(clock.call()) if clock.is_valid() else int(Time.get_unix_time_from_system() * 1000.0)
+
+static func _clean_welcome(msg: Dictionary) -> Dictionary:
+	var out := {}
+	var g = msg.get("gid")
+	if g is String and str(g) != "" and str(g).length() <= 32 and str(g).is_valid_hex_number():
+		out["gid"] = str(g)
+		out["gen"] = int(msg.gen) if msg.get("gen") is int else 0
+		out["epoch"] = str(msg.epoch).left(16) if msg.get("epoch") is String else ""
+	return out
+
+func _probe_end(result: String, close_socket := true) -> void:
+	# Probe fertig: Ergebnis merken, Signal; außer bei „answered“ (welcome) ist die Verbindung danach zu.
+	if probe_result != "" and probe_result != result:
+		return
+	probe_result = result
+	_probe_started = -1
+	if close_socket:
+		if _ws != null:
+			_ws.close()
+			_ws = null
+		_retry_at = -1
+		if state != "idle" and state != "closed":
+			_final(I18n.t("Verbindung beendet."))
+	probe_done.emit(result)
+
+func _poll_info(now: int) -> void:
+	# GET /info?room= abarbeiten (wie NetRelayHost._poll_http)
+	_http.poll()
+	var st := _http.get_status()
+	if st == HTTPClient.STATUS_CONNECTED and not _http_sent:
+		if _http.request(HTTPClient.METHOD_GET, "/info?room=" + room.uri_encode(), ["Accept: application/json"]) != OK:
+			_abort_info()
+			_info_end({"ok": false})
+			return
+		_http_sent = true
+	elif st == HTTPClient.STATUS_BODY:
+		_http_body.append_array(_http.read_response_body_chunk())
+		if _http_body.size() > 16384:
+			_abort_info()
+			_info_end({"ok": false})
+			return
+	elif _http_sent and _http.has_response() and (st == HTTPClient.STATUS_CONNECTED or st == HTTPClient.STATUS_DISCONNECTED):
+		var code := _http.get_response_code()
+		var body := _http_body.get_string_from_utf8()
+		_abort_info()
+		var data = JSON.parse_string(body) if code == 200 else null
+		var r = (data as Dictionary).get("room") if data is Dictionary else null
+		if not r is Dictionary:
+			_info_end({"ok": false})
+		else:
+			# open:false = Raum weg; host fehlt (ältere Vermittler) = vorsichtshalber „jemand ist da“
+			_info_end({"ok": true, "open": r.get("open") != false, "host": r.get("open") != false and r.get("host") != false})
+		return
+	elif st in [HTTPClient.STATUS_CANT_RESOLVE, HTTPClient.STATUS_CANT_CONNECT, HTTPClient.STATUS_CONNECTION_ERROR,
+			HTTPClient.STATUS_TLS_HANDSHAKE_ERROR] or (st == HTTPClient.STATUS_DISCONNECTED and _http_sent):
+		_abort_info()
+		_info_end({"ok": false})
+		return
+	else:
+		NetAddresses.expire_holds()
+	if now > _http_deadline:
+		_abort_info()
+		_info_end({"ok": false})
+
+func _info_end(result: Dictionary) -> void:
+	info_result = result
+	info_done.emit(result)
+
+func _abort_info() -> void:
+	NetAddresses.release_hold(info_hold_id())
+	if _http != null:
+		_http.close()
+		_http = null

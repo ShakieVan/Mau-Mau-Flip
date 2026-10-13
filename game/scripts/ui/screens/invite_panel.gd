@@ -213,8 +213,8 @@ func refresh_online() -> void:
 	var view := st
 	if st == "off":
 		view = "setup" if relay_url() == "" else "off"
-	elif st == "away":
-		view = "open"
+	elif st in ["away", "check", "stepped_down"]:
+		view = "open"                 # Beta 1.6.1: check (Probe beim Neuverbinden) und Abtreten wie away
 	for k in _on_views:
 		(_on_views[k] as Control).visible = k == view
 	_on_custom.visible = not NetProtocol.is_default_relay(relay_url())
@@ -224,7 +224,7 @@ func refresh_online() -> void:
 		var link := str(info.get("link", ""))
 		_on_code.text = code
 		_on_link.text = link.trim_prefix("https://")
-		_on_status.text = I18n.t("Online-Verbindung unterbrochen – verbinde neu …") if st == "away" else \
+		_on_status.text = I18n.t("Online-Verbindung unterbrochen – verbinde neu …") if st != "open" else \
 			(I18n.t("1 Mitspieler online") if online_guests == 1 else (I18n.t("%d Mitspieler online") % online_guests if online_guests > 1 else I18n.t("Warte auf Mitspieler …")))
 		if link != _on_qr_text:
 			_on_qr_text = link

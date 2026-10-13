@@ -950,3 +950,72 @@ msgstr "Tap a card of the color you want to discard with it."
 
 msgid "Leg nur Karten einer Farbe mit ab."
 msgstr "Only discard cards of one color with it."
+
+# --- Gastgeber-Übergabe (Beta 1.6.1, HostTable)
+msgid "Nur Mitspieler mit der App können Gastgeber werden."
+msgstr "Only players with the app can become host."
+
+msgid "%s ist gerade nicht verbunden."
+msgstr "%s is not connected right now."
+
+msgid "Geht in dieser Version nur, wenn alle online mitspielen."
+msgstr "In this version, this only works if everyone plays online."
+
+msgid "Gastgeber wechselt zu %s …"
+msgstr "Host is switching to %s …"
+
+msgid "Übergabe an %s hat nicht geklappt. Du bleibst Gastgeber."
+msgstr "Handing over to %s didn't work. You stay the host."
+
+msgid "Einen Moment – der Gastgeber wechselt."
+msgstr "One moment – the host is changing."
+
+msgid "Einen Moment – gleich geht es weiter."
+msgstr "One moment – the game continues shortly."
+
+# --- Gastgeber-Übergabe (Beta 1.6.1, HostSwitch: Übernahme, Abtreten, Fortsetzen)
+msgid "%s führt das Spiel weiter (Gastgeber war weg)."
+msgstr "%s is continuing the game (the host was gone)."
+
+msgid "%s ist jetzt Gastgeber."
+msgstr "%s is the host now."
+
+msgid "Du bist jetzt Gastgeber. Bitte lass die App offen."
+msgstr "You are the host now. Please keep the app open."
+
+msgid "Du spielst jetzt als Gast weiter. Gastgeber ist %s."
+msgstr "You keep playing as a guest. %s is the host."
+
+msgid "%s führt das Spiel inzwischen. Du spielst als Gast weiter."
+msgstr "%s is running the game now. You keep playing as a guest."
+
+msgid "Dein Spielstand ist vielleicht nicht der neueste."
+msgstr "Your saved game may not be the latest."
+
+msgid "WLAN-Mitspieler kommen dann nicht mit."
+msgstr "Players on Wi-Fi won't come along."
+
+msgid "Der Online-Raum ist abgelaufen. Die Partie lässt sich nicht mehr fortsetzen."
+msgstr "The online room has expired. This game can no longer be continued."
+
+# --- Gastgeber-Übergabe (Beta 1.6.1, Tisch: Verbindungsstreifen, Rückfrage)
+msgid "Gastgeber antwortet nicht – warte …"
+msgstr "The host isn't answering – waiting …"
+
+msgid "Gastgeber antwortet nicht. Du übernimmst in %d s."
+msgstr "The host isn't answering. You'll take over in %d s."
+
+msgid "Spiel als Gastgeber fortsetzen"
+msgstr "Continue game as host"
+
+msgid "Spiel als Gastgeber fortsetzen?"
+msgstr "Continue the game as host?"
+
+msgid "Dein Handy führt das Spiel ab jetzt. Die anderen kommen von selbst wieder dazu."
+msgstr "Your phone runs the game from now on. The others will rejoin on their own."
+
+msgid "Fortsetzen"
+msgstr "Continue"
+
+msgid "Weiter warten"
+msgstr "Keep waiting"

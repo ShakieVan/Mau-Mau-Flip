@@ -27,6 +27,7 @@ func _init() -> void:
 	test_utf8()
 	test_http_helpers()
 	test_interfaces()
+	test_handover()
 	print("RESULT: %d ok" % (checks - failures) if failures == 0 else "RESULT: %d ok, %d FAIL" % [checks - failures, failures])
 	quit(1 if failures else 0)
 
@@ -68,6 +69,70 @@ func test_client_messages() -> void:
 	check(NetProtocol.auto_reply("{\"t\":\"away\"}") == "" and NetProtocol.auto_reply("{\"t\":\"back\"}") == "", "away/back gehen an die Sitzung")
 	check(NetProtocol.RESUME_PROBE_MS == 3000 and NetProtocol.SUB_OFFER_MS == 0, "Rückkehr-Prüfung 3 s, Vertretung sofort (Beta 1.4.2)")
 	check(NetProtocol.clean_client_message({"t": "neu", "x": 1}).get("x") == 1, "unbekannter Typ geht durch")
+
+# Mau-Mau Flip (Beta 1.6.1, Gastgeber-Übergabe, docs/module/uebergabe.md 1–3.5): Begrüßung mit bk/bk_token, Stand-Marken,
+# Sicherung packen/entpacken, bk/alive/handover bauen und beim Gast prüfen.
+func test_handover() -> void:
+	var h := NetProtocol.make_hello("Kim", "app", "tok", "", [3, "a1b2c3d4", 17], "platz-tok")
+	check(h.bk == [3, "a1b2c3d4", 17] and h.bk_token == "platz-tok", "make_hello mit bk und bk_token")
+	check(not NetProtocol.make_hello("Kim").has("bk") and not NetProtocol.make_hello("Kim").has("bk_token"), "ohne Sicherung: keine Felder")
+	check(NetProtocol.make_hello("Kim", "app", "", "", NetProtocol.BK_NONE).bk == [0, "", 0], "App ohne Sicherung schickt bk [0, \"\", 0]")
+	var wire := NetProtocol.decode(NetProtocol.encode(h))
+	var c := NetProtocol.clean_client_message(wire)
+	check(c.bk == [3, "a1b2c3d4", 17] and c.bk[0] is int and c.bk[2] is int and c.bk_token == "platz-tok", "hello: bk und bk_token bleiben (über JSON)")
+	var bad := NetProtocol.clean_client_message({"t": "hello", "proto": 1, "bk": [1, "xyz!", 2], "bk_token": "y".repeat(65)})
+	check(not bad.has("bk") and not bad.has("bk_token"), "hello: ungültiges bk/bk_token verworfen")
+	check(NetProtocol.clean_bk_mark([1.0, "ab", 2.0]) == [1, "ab", 2], "Marke: ganzzahlige floats werden int")
+	for v in [[1, "ab"], [-1, "", 0], [1, 5, 2], [1.5, "", 0], "1,ab,2", [1, "0123456789abcdef0", 1], null]:
+		check(NetProtocol.clean_bk_mark(v).is_empty(), "Marke ungültig: %s" % str(v))
+	check(NetProtocol.clean_client_message({"t": "handover_no", "x": 1}) == {"t": "handover_no"}, "handover_no auf {t} gekürzt")
+	check(NetProtocol.compare_marks([2, "aa", 1], [1, "bb", 99]) == 1 and NetProtocol.compare_marks([1, "aa", 5], [1, "aa", 7]) == -1
+		and NetProtocol.compare_marks([1, "aa", 5], [1, "aa", 5]) == 0 and NetProtocol.compare_marks([1, "aa", 5], [1, "bb", 5]) == 2,
+		"Marken vergleichen: gen, dann seq; andere epoch = nicht vergleichbar")
+	var gid := NetProtocol.new_gid()
+	var epoch := NetProtocol.new_epoch()
+	check(gid.length() == 16 and gid.is_valid_hex_number() and epoch.length() == 8 and gid != NetProtocol.new_gid(), "gid 8 Byte, epoch 4 Byte (hex, zufällig)")
+	# Sicherung: gzip + base64, Rundweg, Grenze
+	var data := {"format": 2, "gid": gid, "game": {"faces": range(232), "hands": [[1, 2, 3], [4, 5]]}, "seats": [{"name": "Kim", "token": "t1"}]}
+	var z := NetProtocol.pack_snapshot(data)
+	check(z != "" and z.length() < JSON.stringify(data).length(), "Sicherung gepackt (%d statt %d Zeichen)" % [z.length(), JSON.stringify(data).length()])
+	var back := NetProtocol.unpack_snapshot(z)
+	check(str(back.get("gid")) == gid and (back.game.faces as Array).size() == 232 and str(back.seats[0].token) == "t1", "Sicherung entpackt")
+	var noise := PackedByteArray()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	for i in 110000:
+		noise.append(rng.randi_range(0, 255))
+	check(NetProtocol.pack_snapshot({"x": Marshalls.raw_to_base64(noise)}) == "", "über SNAPSHOT_MAX: nicht verschicken")
+	check(NetProtocol.unpack_snapshot("").is_empty(), "leere Sicherung")
+	# bk/alive/handover
+	var mark := [2, epoch, 41]
+	var bk := NetProtocol.make_bk(gid, mark, z)
+	check(bk.t == "bk" and bk.gen == 2 and bk.epoch == epoch and bk.seq == 41 and bk.z == z and bk.gid == gid, "bk gebaut")
+	var al := NetProtocol.make_alive(gid, mark)
+	check(al == {"t": "alive", "gid": gid, "gen": 2, "epoch": epoch, "seq": 41}, "alive gebaut")
+	var ho := NetProtocol.make_handover(gid, mark, z)
+	check(ho.t == "handover" and ho.z == z and not ho.has("own") and ho.within_ms == NetProtocol.HANDOVER_WITHIN_MS, "handover mit Stand")
+	var own := NetProtocol.make_handover(gid, mark)
+	check(own.own == true and not own.has("z") and not own.has("host_gen"), "handover own:true ohne z")
+	var own_g := NetProtocol.make_handover(gid, mark, "", 3000, 5)
+	check(own_g.own == true and own_g.host_gen == 5 and NetProtocol.make_handover(gid, mark, z, 3000, 5).get("host_gen") == null,
+		"handover own:true mit host_gen (nur ohne z)")
+	check(not NetProtocol.clean_backup_message({"t": "handover", "gid": gid, "gen": 1, "epoch": epoch, "seq": 1, "own": true, "host_gen": "x"}).has("host_gen"),
+		"handover: kaputte host_gen weg")
+	for m in [bk, al, ho, own, own_g]:
+		var got := NetProtocol.clean_backup_message(NetProtocol.decode(NetProtocol.encode(m), NetProtocol.MAX_HOST_MESSAGE))
+		check(got == m, "Gast prüft %s: unverändert (%s)" % [m.t, str(got).left(120)])
+	check(NetProtocol.clean_backup_message({"t": "bk", "gid": gid, "gen": 0, "epoch": epoch, "seq": 1, "z": z}).is_empty(), "bk mit gen 0 verworfen")
+	check(NetProtocol.clean_backup_message({"t": "bk", "gid": "nicht hex", "gen": 1, "epoch": epoch, "seq": 1, "z": z}).is_empty(), "bk mit kaputter gid verworfen")
+	check(NetProtocol.clean_backup_message({"t": "bk", "gid": gid, "gen": 1, "epoch": epoch, "seq": 1}).is_empty(), "bk ohne z verworfen")
+	check(NetProtocol.clean_backup_message({"t": "handover", "gid": gid, "gen": 1, "epoch": epoch, "seq": 1}).is_empty(), "handover ohne z und ohne own verworfen")
+	check(NetProtocol.clean_backup_message({"t": "handover", "gid": gid, "gen": 1, "epoch": epoch, "seq": 1, "own": true, "within_ms": 999999}).within_ms == 60000,
+		"handover: within_ms begrenzt")
+	check(NetProtocol.clean_backup_message({"t": "state", "gid": gid}).is_empty(), "andere Typen nicht")
+	check(NetProtocol.HANDOVER_WITHIN_MS == 8000 and NetProtocol.PROBE_MS == 8000 and NetProtocol.T_STEP_MS == 12000
+		and NetProtocol.TAKEOVER_SETTLE_MAX_MS == 15000 and NetProtocol.SNAPSHOT_MAX == 131072 and NetProtocol.HANDOVER_TIMEOUT_MS == 25000,
+		"Fristen und Grenzen wie im Entwurf")
 
 func test_names() -> void:
 	check(NetProtocol.clean_name("  Lena  ") == "Lena", "Leerraum an den Rändern")

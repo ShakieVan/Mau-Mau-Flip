@@ -371,7 +371,7 @@ func test_resume() -> void:
 	host.use_discovery = false
 	host.save_path = SAVE
 	host.state_changed.connect(func(_e: Array, _v: Dictionary) -> void: host_states += 1)
-	check(host.resume(saved_for_resume, PORT2, PORT2) == OK, "Fortsetzen: resume")
+	check(host.resume(saved_for_resume, -1, PORT2, PORT2) == OK, "Fortsetzen: resume")
 	var anna_seat := -1
 	for s in host.seats.size():
 		if str(host.seats[s].name) == "Anna":
@@ -391,6 +391,10 @@ func test_resume() -> void:
 	for s in host.seats.size():
 		if str(host.seats[s].name) == "Ben":
 			ben_seat = s
+	# Beta 1.6.1: Die Vertretung („Computer spielt für Ben“) steht im Spielstand und überlebt das Fortsetzen; für den Auto-Ersatz
+	# hier wieder aufheben.
+	check(host.is_substituted(ben_seat), "Fortsetzen: Vertretung für Ben bleibt")
+	host._substitute.erase(ben_seat)
 	host.auto_substitute_s = 0.2
 	var end := Time.get_ticks_msec() + 8000
 	var waited := false

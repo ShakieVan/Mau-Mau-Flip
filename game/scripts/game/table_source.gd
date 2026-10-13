@@ -13,6 +13,9 @@ signal connection_changed(state: String)                   # Client: "connecting
 signal game_started(seat: int)                             # zusätzlich: Partie beginnt (Lobby → Tisch), eigener Platz
 
 const SAVE_PATH := "user://laufende_partie.json"
+# Mau-Mau Flip (Beta 1.6.1, Gastgeber-Übergabe): Netzpartie in eigener Datei (MatchSnapshot, docs/module/uebergabe.md Abschnitt 2),
+# damit sich Übung/Weitergeben und Netzpartie nicht gegenseitig überschreiben. Ein Gerät spielt immer nur eine Netzpartie.
+const NET_SAVE_PATH := "user://netz_partie.json"
 
 
 # Spielaktion des eigenen Platzes, z. B. {a:"play", card:17, color:"blau"}. Ablehnungen kommen als notice.
@@ -45,7 +48,7 @@ func leave() -> void:
 	pass
 
 
-# --- Speicherstand (user://laufende_partie.json), gemeinsam für alle Spielarten mit eigenem Regelwerk ---
+# --- Speicherstand (user://laufende_partie.json bzw. NET_SAVE_PATH), gemeinsam für alle Spielarten mit eigenem Regelwerk ---
 
 static func has_saved(path := SAVE_PATH) -> bool:
 	return not load_saved(path).is_empty()
@@ -64,3 +67,16 @@ static func load_saved(path := SAVE_PATH) -> Dictionary:
 static func clear_saved(path := SAVE_PATH) -> void:
 	if FileAccess.file_exists(path):
 		DirAccess.remove_absolute(path)
+	if FileAccess.file_exists(path + ".tmp"):
+		DirAccess.remove_absolute(path + ".tmp")
+
+
+# Atomar schreiben (erst .tmp, dann umbenennen): Ein Absturz mitten im Schreiben lässt den alten Stand stehen. false = Fehler.
+static func write_saved(path: String, data: Dictionary) -> bool:
+	var tmp := path + ".tmp"
+	var f := FileAccess.open(tmp, FileAccess.WRITE)
+	if f == null:
+		return false
+	f.store_string(JSON.stringify(data))
+	f.close()
+	return DirAccess.rename_absolute(tmp, path) == OK

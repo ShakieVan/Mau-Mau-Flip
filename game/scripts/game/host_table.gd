@@ -20,6 +20,23 @@ extends GameTable
 # jeweils als eigener Stand hinaus (nie zusammen mit Ereignissen in alter Platznummerierung). Der Neue bekommt {t:"start", seat},
 # der Entfernte „bye“.
 # Speicherstand nach jeder Änderung (user://laufende_partie.json), resume() setzt eine Partie samt Token der Gäste fort.
+# Mau-Mau Flip (Beta 1.6.1, Gastgeber-Übergabe, docs/module/uebergabe.md Abschnitte 1, 2, 4.1, 4.5, 4.6):
+#  - Speicherstand als MatchSnapshot (format 2) in TableSource.NET_SAVE_PATH; jeder Menschenplatz hat dauerhaft ein Token, auch der
+#    Gastgeber (seats[host_seat].token, entsteht in start()). Abstammung: gid (Partie), gen (steigt genau bei Wechsel von host_seat),
+#    epoch (neu je gen), parent, seq (je Änderung).
+#  - Nach jeder Änderung zuerst Sicherung ({t:"bk"} an App-Gäste mit hello.bk) und eigene Datei, danach die Sichten; nach
+#    alive_ms Stille {t:"alive"}. backup_enabled schaltet die Sicherung ab (Tests mit vielen Zügen je pump()).
+#  - resume(data, my_seat): eigener Zweig (my_seat < 0 oder = host_seat) oder Übernahme (gen + 1); Warteliste und Vertretungen
+#    kommen mit; Einschwingzeit (_settling, höchstens settle_max_ms): Bots und Aktionen warten, bis die Erben zurück sind.
+#  - Eingefroren (_frozen): bei Code 4000 (replaced) und während einer Übergabe – kein Speichern, kein Verteilen, keine Bots, keine
+#    Meldungen „getrennt“. Danach Signal stepped_down; die Oberfläche (HostSwitch) ruft handover_shutdown() und meldet sich als Gast an.
+#  - handover_to(seat): geplante Übergabe; Abstammungsregel bei hello.bk (jüngerer Zweig → handover own:true); Fehlschlag nach
+#    handover_timeout_ms prüft das Socket (check_now) und taut auf.
+#  - Vorsichtiges Neuverbinden: online_check (Probe als Gast durch die Oberfläche), dann probe_done(). Ohne Empfänger: sofort anmelden.
+#  - Schließen der App beendet den Online-Raum nicht (Übernahme möglich); nur leave() („Tisch verlassen“) schickt {k:"end"}.
+
+signal stepped_down(new_host: String)         # Beta 1.6.1: ein anderes Gerät führt jetzt das Spiel ("" = Name unbekannt)
+signal online_check(info: Dictionary)         # Beta 1.6.1: /info meldet einen Gastgeber – Probe als Gast, dann probe_done()
 
 const BOT_NAMES := ["Minka", "Mogli", "Luna", "Tiger", "Socke", "Krümel", "Flocke", "Pünktchen", "Schnurri", "Mieze"]
 
@@ -40,9 +57,41 @@ var _seat_ops: Array = []         # aufgeschobene Platzaufträge [{op: "in"|"bot
 var _ops_busy := false
 var _gone_names := {}             # in dieser Partie herausgenommene Namen (neue Computergegner heißen anders)
 
+# --- Gastgeber-Übergabe (Beta 1.6.1) ---
+var backup_enabled := true        # Sicherung an App-Gäste ({t:"bk"}, {t:"alive"})
+var alive_ms := NetProtocol.BACKUP_ALIVE_MS
+var settle_max_ms := NetProtocol.TAKEOVER_SETTLE_MAX_MS
+var handover_within_ms := NetProtocol.HANDOVER_WITHIN_MS
+var handover_timeout_ms := NetProtocol.HANDOVER_TIMEOUT_MS
+var clock := Callable()           # Tests: () -> Wanduhr in s (sonst Time.get_unix_time_from_system)
+var ms_clock := Callable()        # Tests: () -> Monotonuhr in ms (sonst Time.get_ticks_msec)
+var gid := ""                     # Kennung der Partie (bleibt über alle Übergaben)
+var gen := 0                      # Generation des Gastgebers (steigt genau bei Wechsel von host_seat)
+var epoch := ""                   # neu je gen
+var parent: Array = NetProtocol.BK_NONE.duplicate()   # [gen, epoch, seq] des Stands, aus dem dieser Zweig entstand
+var seq := 0                      # Zähler der Schnappschüsse (je _changed)
+var _frozen := false              # eingefroren: replaced oder Übergabe läuft
+var _settling := false            # Einschwingzeit nach resume()
+var _settle_until := 0
+var _settle_tokens: Array = []    # auf deren hello wartet die Einschwingzeit
+var _settle_note: Array = []      # Meldung an alle am Ende der Einschwingzeit (Bausteine, announce_after_settle)
+var _handover := {}               # laufende Übergabe {seat, id, name, own, until, checking}
+var _own_tried := {}              # "Token:gen" -> true: handover own:true höchstens einmal je Gast und gen
+var _last_bk_ms := 0              # zuletzt bk/alive an die App-Gäste
+var _step_note := {}              # stepped_down wartet auf das Ende von session.poll() {name}
+var _addrs: Array = []            # eigene Adressen für wlan.addrs (einmal je start/resume, nicht je Änderung: JNI auf Android)
+
+
+func _init() -> void:
+	save_path = NET_SAVE_PATH       # Beta 1.6.1: eigene Datei der Netzpartie
+
 
 # Lobby eröffnen. host_name "" = Name aus den Einstellungen.
 func open(host_name := "", port_first := NetProtocol.PORT, port_last := NetProtocol.PORT_LAST) -> Error:
+	return _open_session(host_name, port_first, port_last, false)
+
+
+func _open_session(host_name: String, port_first: int, port_last: int, quiet: bool) -> Error:
 	_close_session()
 	session = NetHostSession.new()
 	session.name = "Sitzung"
@@ -57,10 +106,13 @@ func open(host_name := "", port_first := NetProtocol.PORT, port_last := NetProto
 	session.player_away.connect(_on_away)
 	session.message.connect(_on_message)
 	session.lobby_changed.connect(func() -> void: lobby_changed.emit(session.lobby_message()))
+	session.replaced.connect(_on_replaced)
+	session.online_needs_check.connect(_on_needs_check)
 	var err := session.start(host_name if host_name != "" else _own_name(), port_first, port_last, threaded)
 	if err != OK:
 		_close_session()
-		notice.emit(I18n.t("Das Spiel ließ sich nicht eröffnen (Port %d–%d belegt?).") % [port_first, port_last])
+		if not quiet:
+			notice.emit(I18n.t("Das Spiel ließ sich nicht eröffnen (Port %d–%d belegt?).") % [port_first, port_last])
 		return err
 	session.set_rules(rules.to_dict())
 	return OK
@@ -138,32 +190,67 @@ func start(rng_seed := 0) -> bool:
 	var list: Array = []
 	for id in _seat_ids:
 		var p: Dictionary = session.player(id)
+		var tok := str(p.token)
+		if id == session.host_id:
+			tok = _new_token()     # Beta 1.6.1: auch der Gastgeber-Platz hat ein Token (Rückkehr als Gast nach einer Übergabe)
 		list.append({"name": str(p.name), "kind": "bot" if str(p.kind) == "bot" else "human", "host": id == session.host_id,
-			"id": id, "net": str(p.kind), "token": str(p.token)})
+			"id": id, "net": str(p.kind), "token": tok})
 	_create_game(rules, list, rng_seed)
 	for s in _seat_ids.size():
 		game.set_connected(s, bool(session.player(_seat_ids[s]).connected))
+		_note_link(s)
 	_seq.clear()
 	_waiting_seat = -1
+	_reset_handover_state()
+	gid = NetProtocol.new_gid()
+	gen = 1
+	epoch = NetProtocol.new_epoch()
+	parent = NetProtocol.BK_NONE.duplicate()
+	seq = 0
+	_last_bk_ms = _now_ms()
+	_note_addrs()
+	_update_welcome()
 	session.send_start()
 	game_started.emit(host_seat)
 	_begin_round()
 	return true
 
 
-# Partie fortsetzen (Daten aus TableSource.load_saved()): Sitzung neu eröffnen, Gäste mit ihren Token eintragen (getrennt, bis sie
-# zurückkommen), Computergegner neu anlegen.
-func resume(data: Dictionary, port_first := NetProtocol.PORT, port_last := NetProtocol.PORT_LAST) -> Error:
-	if str(data.get("mode", "")) != "host" or not data.get("game") is Dictionary:
+# Partie fortsetzen (Daten aus TableSource.load_saved() bzw. einer Sicherung, MatchSnapshot): Sitzung neu eröffnen, Gäste mit ihren
+# Token eintragen (getrennt, bis sie zurückkommen), Computergegner neu anlegen.
+# Beta 1.6.1: my_seat < 0 oder = host_seat: eigener Zweig (gen, epoch bleiben; WLAN zuerst auf dem gespeicherten Port). Sonst
+# Übernahme durch den Gast auf my_seat: host_seat wechselt, der alte Gastgeber-Platz wird ein getrennter App-Gast mit seinem Token,
+# parent = alter Stand, gen + 1, neue epoch. Alle Tokens bleiben an ihren Plätzen. Warteliste, join_open und Vertretungen kommen mit;
+# ein Online-Raum wird übernommen (open_online_existing). Danach Einschwingzeit (Bots und Aktionen warten auf die Erben).
+func resume(data: Dictionary, my_seat := -1, port_first := NetProtocol.PORT, port_last := NetProtocol.PORT_LAST) -> Error:
+	var snap := MatchSnapshot.clean(data)
+	if snap.is_empty():
 		return ERR_INVALID_DATA
-	var saved: Array = data.get("seats", [])
-	var hs := int(data.get("host_seat", 0))
-	var host_name := str(saved[hs].name) if hs >= 0 and hs < saved.size() else ""
-	rules = RuleConfig.from_dict((data.game as Dictionary).get("config", {}))
-	var err := open(host_name, port_first, port_last)
+	var saved: Array = snap.seats
+	var old_hs := int(snap.host_seat)
+	if my_seat >= saved.size():
+		return ERR_INVALID_PARAMETER
+	var takeover := my_seat >= 0 and my_seat != old_hs
+	if takeover and (str(saved[my_seat].get("kind", "")) == "bot" or str(saved[my_seat].get("token", "")) == ""):
+		return ERR_INVALID_PARAMETER
+	var hs := my_seat if takeover else old_hs
+	var host_name := str(saved[hs].name)
+	rules = RuleConfig.from_dict((snap.game as Dictionary).get("config", {}))
+	var err := ERR_UNAVAILABLE
+	var wp := int(snap.wlan.port)
+	if not takeover and wp > 0 and wp >= port_first and wp <= port_last:
+		err = _open_session(host_name, wp, wp, true)     # gleiche Adresse: App- und Browser-Gäste finden von selbst zurück
+	if err != OK:
+		err = open(host_name, port_first, port_last)
 	if err != OK:
 		return err
-	_restore_seats(data)
+	_restore_seats(snap)
+	if takeover:
+		for s in seats.size():
+			seats[s].host = s == hs
+		seats[old_hs].net = "app"            # der alte Gastgeber kommt mit der App zurück (online)
+		seats[old_hs].link = "online"
+		host_seat = hs
 	var ids: Array = []
 	for s in seats.size():
 		var p: Dictionary = seats[s]
@@ -173,15 +260,53 @@ func resume(data: Dictionary, port_first := NetProtocol.PORT, port_last := NetPr
 		elif str(p.kind) == "bot":
 			id = session.add_local_player(str(p.name), "bot")
 		else:
-			id = _restore_guest(p)
+			id = session.restore_player(str(p.name), str(p.get("net", "app")), str(p.get("token", "")))
 		p.id = id
 		ids.append(id)
 	session.set_seat_order(ids)
 	_seat_ids = ids
-	game = MauGame.from_dict(data.game)
+	for w in snap.waiting:
+		session.restore_player(str(w.name), str(w.net), str(w.token), true)
+	session.join_open = bool(snap.join_open)
+	game = MauGame.from_dict(snap.game)
+	if game.seat_count() != seats.size():
+		_close_session("", false)
+		return ERR_INVALID_DATA
+	game.set_host(host_seat)
 	for s in seats.size():
 		game.set_connected(s, s == host_seat or str(seats[s].kind) == "bot")
+	for s in snap.substitute:
+		if _is_remote(int(s)):
+			_substitute[int(s)] = true
+	_gone_names.clear()
+	for n in snap.gone_names:
+		_gone_names[str(n)] = true
+	_seq.clear()
+	_waiting_seat = -1
+	_reset_handover_state()
+	gid = str(snap.gid) if str(snap.gid) != "" else NetProtocol.new_gid()
+	gen = maxi(int(snap.gen), 1)
+	epoch = str(snap.epoch) if str(snap.epoch) != "" else NetProtocol.new_epoch()
+	parent = (snap.parent as Array).duplicate()
+	seq = int(snap.seq)
+	if takeover:
+		parent = [gen, epoch, seq]
+		gen += 1
+		epoch = NetProtocol.new_epoch()
+	_note_addrs()
+	_update_welcome()
+	# Einschwingzeit: auf die Erben und alle, die die letzte Sicherung hatten (außer dem eigenen Platz)
+	_settle_tokens = []
+	for t in (snap.heirs as Array) + (snap.bk_to as Array):
+		if str(t) != "" and str(t) != str(seats[host_seat].get("token", "")) and not _settle_tokens.has(str(t)):
+			_settle_tokens.append(str(t))
+	_settling = not _settle_tokens.is_empty()
+	_settle_until = _now_ms() + settle_max_ms
 	session.set_running(true)
+	var o: Dictionary = snap.online
+	if not o.is_empty() and str(o.relay) != "" and str(o.token) != "":
+		session.open_online_existing(str(o.relay), str(o.room), str(o.token), o.conns, int(o.max_c), int(o.created_unix))
+	_last_bk_ms = _now_ms()
 	_plan_dirty = true
 	game_started.emit(host_seat)
 	_changed([])
@@ -190,7 +315,7 @@ func resume(data: Dictionary, port_first := NetProtocol.PORT, port_last := NetPr
 
 # Ein Computergegner spielt für diesen Platz, bis der Mensch zurückkommt bzw. selbst wieder handelt.
 func substitute_bot(seat: int) -> void:
-	if game == null or seat < 0 or seat >= seats.size() or seat == host_seat or is_bot(seat):
+	if game == null or _frozen or seat < 0 or seat >= seats.size() or seat == host_seat or is_bot(seat):
 		return
 	_substitute[seat] = true
 	_waiting_seat = -1
@@ -248,7 +373,7 @@ func waiting_ids() -> Array:
 
 # Wartenden an Stelle at (0 … Spielerzahl, Index in der neuen Sitzordnung) an den Tisch holen. false = nicht möglich.
 func seat_in(id: int, at: int) -> bool:
-	if game == null or session == null or not session.is_waiting(id) or _queued(id) or not _room_for_one():
+	if game == null or _frozen or session == null or not session.is_waiting(id) or _queued(id) or not _room_for_one():
 		return false
 	_seat_ops.append({"op": "in", "id": id, "at": at, "name": str(session.player(id).name)})
 	_run_seat_ops()
@@ -257,7 +382,7 @@ func seat_in(id: int, at: int) -> bool:
 
 # Computergegner an Stelle at dazuholen. false = kein Platz frei.
 func add_bot_at(at: int, bot_name := "") -> bool:
-	if game == null or session == null or not _room_for_one():
+	if game == null or _frozen or session == null or not _room_for_one():
 		return false
 	if bot_name == "":
 		bot_name = free_bot_name()
@@ -284,7 +409,7 @@ func free_bot_name() -> String:
 
 # Platz herausnehmen (Mensch oder Computer, nie der Gastgeber). Ist der Platz am Zug, sofort; sonst nach diesem Zug.
 func remove_seat(seat: int) -> bool:
-	if game == null or seat < 0 or seat >= seats.size() or seat == host_seat:
+	if game == null or _frozen or seat < 0 or seat >= seats.size() or seat == host_seat:
 		return false
 	var id := int(_seat_ids[seat])
 	if _queued(id):
@@ -337,7 +462,7 @@ func _room_for_one() -> bool:
 # Aufgeschobene Aufträge der Reihe nach ausführen, solange das Regelwerk es erlaubt. Jeder ausgeführte Auftrag geht als eigener Stand
 # hinaus (_changed in _seat_insert/_seat_remove), danach kommt der nächste.
 func _run_seat_ops() -> void:
-	if _ops_busy or game == null or session == null:
+	if _ops_busy or _frozen or game == null or session == null:
 		return
 	_ops_busy = true
 	while not _seat_ops.is_empty() and game != null:
@@ -387,6 +512,7 @@ func _seat_insert(o: Dictionary) -> void:
 	_waiting_seat = -1
 	_plan_dirty = true
 	game.set_connected(at, bool(p.get("connected", true)))
+	_note_link(at)
 	session.set_seat_order(_seat_ids)            # holt ihn auch von der Warteliste (waiting weg)
 	if not bot:
 		session.send_to(id, {"t": "start", "seat": at})
@@ -426,6 +552,10 @@ func act(action: Dictionary) -> void:
 	if game == null:
 		notice.emit("Die Partie hat noch nicht begonnen.")
 		return
+	var wait := _hold_reason()
+	if wait != "":
+		notice.emit(I18n.t(wait))
+		return
 	var r := _apply(host_seat, action)
 	if not bool(r.ok):
 		notice.emit(I18n.reason(r))
@@ -437,25 +567,31 @@ func back_to_lobby() -> void:
 	_plan = {}
 	_seat_ops.clear()
 	_substitute.clear()
+	_reset_handover_state()
+	gid = ""
 	if session != null:
+		session.welcome_extra = {}
 		session.set_running(false)
 	if autosave:
 		clear_saved(save_path)
 
 
+# „Tisch verlassen“: ausdrückliches Ende – „bye“ an alle, der Online-Raum wird beendet, der Speicherstand gelöscht.
 func leave() -> void:
 	_close_session()
 	if autosave:
 		clear_saved(save_path)
 
 
-func _close_session() -> void:
+# end_room (Beta 1.6.1): Online-Raum beim Vermittler beenden ({k:"end"}); beim Abtreten (handover_shutdown) bleibt er offen.
+func _close_session(text := "Der Gastgeber hat das Spiel beendet.", end_room := true) -> void:
 	game = null
 	_plan = {}
 	_seat_ops.clear()
 	_substitute.clear()
+	_reset_handover_state()
 	if session != null:
-		session.stop("Der Gastgeber hat das Spiel beendet.")
+		session.stop(text, end_room)
 		if session.is_inside_tree():
 			session.queue_free()
 		else:
@@ -463,18 +599,370 @@ func _close_session() -> void:
 		session = null
 
 
+# --- Gastgeber-Übergabe (Beta 1.6.1, docs/module/uebergabe.md) ---
+
+# Stand [gen, epoch, seq] dieses Gastgebers.
+func mark() -> Array:
+	return [gen, epoch, seq]
+
+
+func is_frozen() -> bool:
+	return _frozen
+
+
+func is_settling() -> bool:
+	return _settling
+
+
+# Platz, an den gerade übergeben wird (−1 = keine Übergabe).
+func handover_seat() -> int:
+	return int(_handover.get("seat", -1)) if not _handover.is_empty() else -1
+
+
+# Token des Gastgeber-Platzes (Probe als Gast beim vorsichtigen Neuverbinden, Rückkehr nach dem Abtreten).
+func host_token() -> String:
+	return str(seats[host_seat].get("token", "")) if host_seat >= 0 and host_seat < seats.size() else ""
+
+
+# Ersatz-Rangfolge (Abschnitt 4.2): Tokens der App-Gäste im bk-Verteiler, verbunden und nicht away, im Uhrzeigersinn ab dem Platz
+# nach dem Gastgeber. Mit WLAN-Mitspielern am Tisch leer (Stufe 1: keine automatische Übernahme).
+func heirs() -> Array:
+	var out: Array = []
+	if session == null or game == null or wlan_humans():
+		return out
+	var ok := {}
+	for id in session.backup_ids():
+		if not session.is_away(id):
+			ok[id] = true
+	for i in range(1, seats.size()):
+		var s := (host_seat + i) % seats.size()
+		if _is_remote(s) and ok.has(int(_seat_ids[s])):
+			out.append(str(seats[s].get("token", "")))
+	return out
+
+
+# Sitzt ein entfernter Mensch am Tisch, der (zuletzt) über das WLAN verbunden war?
+func wlan_humans() -> bool:
+	for s in seats.size():
+		if _is_remote(s) and str(seats[s].get("link", "")) == "wlan":
+			return true
+	return false
+
+
+# Warum an diesen Platz nicht übergeben werden kann (Bausteine für den Dialog, ausgegraut); [] = möglich.
+func handover_block(seat: int) -> Array:
+	if game == null or session == null or _frozen or seat < 0 or seat >= seats.size() or seat == host_seat:
+		return [I18n.part("Das geht gerade nicht.")]
+	var id := int(_seat_ids[seat])
+	if not _is_remote(seat) or str(session.player(id).get("kind", "")) != "app" or session.backup_mark(id).is_empty():
+		return [I18n.part("Nur Mitspieler mit der App können Gastgeber werden.")]
+	if not session.backup_ids().has(id) or session.is_away(id):
+		return [I18n.part("%s ist gerade nicht verbunden.", [seat_name(seat)])]
+	if session.online_room().is_empty() or wlan_humans():
+		return [I18n.part("Geht in dieser Version nur, wenn alle online mitspielen.")]
+	if session.online_state() != "open":
+		return [I18n.part("Das geht gerade nicht.")]
+	return []
+
+
+# Geplante Übergabe (Abschnitt 4.1): Das Ziel bekommt den vollständigen Stand ({t:"handover", z}), alle die Meldung, der Tisch friert
+# ein. Das Ziel übernimmt den Raum (der Vermittler schließt diesen Gastgeber mit 4000 → stepped_down). Kommt binnen
+# handover_timeout_ms kein 4000, prüft check_now() das Socket; lebt es, taut der Tisch auf. false = nicht möglich (notice).
+func handover_to(seat: int) -> bool:
+	var why := handover_block(seat)
+	if not why.is_empty():
+		notice.emit(I18n.render(why))
+		return false
+	var z := MatchSnapshot.pack(_snapshot())
+	if z == "":
+		push_warning("Gastgeber-Übergabe: Spielstand zu groß")
+		notice.emit(I18n.t("Das geht gerade nicht."))
+		return false
+	return _begin_handover(seat, NetProtocol.make_handover(gid, mark(), z, handover_within_ms), false)
+
+
+func _begin_handover(seat: int, msg: Dictionary, own: bool) -> bool:
+	var id := int(_seat_ids[seat])
+	if not session.send_to(id, msg):
+		return false
+	if not own:
+		_tell_all([I18n.part("Gastgeber wechselt zu %s …", [seat_name(seat)])])
+	session.flush()
+	_frozen = true
+	_handover = {"seat": seat, "id": id, "name": seat_name(seat), "own": own, "until": _now_ms() + handover_timeout_ms, "checking": false}
+	return true
+
+
+# Probe als Gast (online_check) beendet: other = ein anderes Gerät führt den Raum (abtreten), sonst als Gastgeber anmelden.
+func probe_done(other: bool, new_host := "") -> void:
+	if session == null or session.relay == null:
+		return
+	if not other:
+		session.relay.claim()
+		return
+	session.relay.step_down()
+	_frozen = true
+	_handover = {}
+	_step_note = {"name": new_host}
+
+
+# Meldung an alle, sobald die Einschwingzeit vorbei ist (z. B. „%s ist jetzt Gastgeber.“); ohne Einschwingzeit sofort.
+func announce_after_settle(lt: Array) -> void:
+	if _settling:
+		_settle_note = lt
+	elif not _frozen:
+		_tell_all(lt)
+
+
+# Abtreten (Abschnitt 4.5): Tisch ohne „bye“ und ohne end abbauen. Ergebnis: eigener Stand mit role "guest" und my_seat (liegt auch in
+# save_path), damit die Oberfläche als Gast zurückkehrt (Token seats[my_seat].token) und hello.bk schickt.
+func handover_shutdown() -> Dictionary:
+	var d := {}
+	if game != null:
+		d = MatchSnapshot.make(game.to_dict(), seats, host_seat, _save_extra(), _unix(), "guest")
+		d["my_seat"] = host_seat
+		if autosave:
+			write_saved(save_path, d)
+	_close_session("", false)
+	_frozen = false
+	return d
+
+
+func _reset_handover_state() -> void:
+	_frozen = false
+	_settling = false
+	_settle_tokens = []
+	_settle_note = []
+	_handover = {}
+	_own_tried.clear()
+	_step_note = {}
+
+
+func _update_welcome() -> void:
+	if session != null:
+		session.welcome_extra = {"gid": gid, "gen": gen, "epoch": epoch}
+
+
+# Warum Aktionen gerade warten müssen (msgid; "" = keine): Übergabe/Abtreten bzw. Einschwingzeit.
+func _hold_reason() -> String:
+	if _frozen:
+		return "Einen Moment – der Gastgeber wechselt."
+	if _settling:
+		return "Einen Moment – gleich geht es weiter."
+	return ""
+
+
+# Code 4000 (über NetHostSession.replaced): sofort einfrieren; stepped_down kommt nach session.poll() (_poll_extra).
+func _on_replaced() -> void:
+	_frozen = true
+	_step_note = {"name": str(_handover.get("name", "")) if not bool(_handover.get("own", true)) else ""}
+	_handover = {}
+
+
+func _on_needs_check(info: Dictionary) -> void:
+	if online_check.get_connections().is_empty():
+		if session != null and session.relay != null:
+			session.relay.claim()       # niemand probt: anmelden wie bis 1.6.0
+		return
+	online_check.emit(info)
+
+
+func _emit_stepped_down() -> void:
+	var n := str(_step_note.get("name", ""))
+	_step_note = {}
+	if stepped_down.get_connections().is_empty() or game == null:
+		# Noch keine Oberfläche dafür: Online aufgeben wie bis 1.6.0 (Online-Gäste getrennt), mit WLAN-Gästen und Bots weiterspielen.
+		_frozen = false
+		_handover = {}
+		if session != null and session.relay != null:
+			session.relay.give_up("Der Online-Raum wird jetzt von einem anderen Gerät geführt.")
+		if game != null:
+			_resync_connected()
+			_changed([])
+		return
+	stepped_down.emit(n)
+
+
+func _poll_handover(now: int) -> void:
+	if _handover.is_empty():
+		return
+	var r := session.relay
+	if not bool(_handover.checking):
+		if now < int(_handover.until):
+			return
+		_handover.checking = true
+		if r != null:
+			r.check_now()
+		return
+	if r == null or r.state in ["open", "failed", "off"] and not (r.state == "open" and r.check_pending()):
+		_handover_failed()     # Socket lebt ohne 4000 (bzw. kein Raum mehr): Übergabe gescheitert, weiter Gastgeber
+
+
+func _handover_failed() -> void:
+	var n := str(_handover.get("name", ""))
+	var own := bool(_handover.get("own", false))
+	_handover = {}
+	_frozen = false
+	_resync_connected()
+	_plan_dirty = true
+	if not own:
+		notice.emit(I18n.t("Übergabe an %s hat nicht geklappt. Du bleibst Gastgeber.") % n)
+	_changed([])
+
+
+# Nach dem Auftauen: Verbindungsstand aus der Sitzung übernehmen (eingefroren wirkten _on_left/_on_rejoined nicht).
+func _resync_connected() -> void:
+	if game == null or session == null:
+		return
+	for s in seats.size():
+		if _is_remote(s):
+			game.set_connected(s, bool(session.player(int(_seat_ids[s])).get("connected", false)))
+
+
+func _poll_settle(now: int) -> void:
+	if not _settling:
+		return
+	var back := true
+	for t in _settle_tokens:
+		var id := _id_of_token(str(t))
+		if id >= 0 and not bool(session.player(id).get("connected", false)):
+			back = false
+			break
+	if back or now >= _settle_until:
+		_settling = false
+		_settle_tokens = []
+		_plan_dirty = true
+		if not _settle_note.is_empty():
+			var lt := _settle_note
+			_settle_note = []
+			_tell_all(lt)
+
+
+func _poll_alive(now: int) -> void:
+	if _frozen or not backup_enabled or gid == "" or now - _last_bk_ms < alive_ms:
+		return
+	if not (game.phase() in MauGame.PLAY_PHASES or game.phase() == "round_over"):
+		return
+	_last_bk_ms = now
+	var ids := session.backup_ids()
+	if not ids.is_empty():
+		session.send_many(ids, NetProtocol.encode(NetProtocol.make_alive(gid, mark())))
+
+
+# Abstammungsregel (Abschnitt 4.3.5): Hält ein App-Gast einen jüngeren Zweig (hello.bk), bekommt er das Spiel zurück
+# (handover own:true ohne z; das Ziel nimmt seine eigene Sicherung oder antwortet handover_no). Je Gast und gen höchstens einmal.
+func _check_lineage(id: int) -> void:
+	if _frozen or gid == "" or game == null:
+		return
+	var m := session.backup_mark(id)
+	if m.is_empty() or int(m[0]) < 1:
+		return
+	var s := _seat_ids.find(id)
+	if s < 0 or not _is_remote(s):
+		return
+	var newer := int(m[0]) > gen
+	if not newer and _settling and int(m[0]) == int(parent[0]) and str(m[1]) == str(parent[1]) and int(m[2]) > int(parent[2]):
+		newer = true     # neuerer Stand derselben Vorgeneration, noch keine Aktion angenommen
+	if not newer:
+		return
+	var key := "%s:%d" % [str(seats[s].get("token", "")), gen]
+	if _own_tried.has(key) or not handover_block(s).is_empty():
+		return
+	_own_tried[key] = true
+	# host_gen: Liegt die gen des Ziels nicht schon darüber (Einschwing-Regel), führt es mit host_gen + 1 weiter – sonst holte dieser
+	# Gastgeber das Spiel mit seiner höheren gen gleich wieder zurück (Hin und Her).
+	_begin_handover(s, NetProtocol.make_handover(gid, m, "", handover_within_ms, gen), true)
+
+
+func _id_of_token(t: String) -> int:
+	if session == null or t == "":
+		return -1
+	for id in session.players:
+		if str(session.players[id].get("token", "")) == t:
+			return int(id)
+	return -1
+
+
+# Über welchen Weg ein entfernter Platz (zuletzt) verbunden war: "online" (Vermittler) oder "wlan" – für wlan_humans und den Stand.
+func _note_link(s: int) -> void:
+	if not _is_remote(s) or session == null:
+		return
+	var p: Dictionary = session.player(int(_seat_ids[s]))
+	if bool(p.get("connected", false)):
+		seats[s]["link"] = "online" if bool(p.get("online", false)) else "wlan"
+
+
+# Eigene Adressen für wlan.addrs merken (Stufe 2 liest sie). NetAddresses fragt auf Android per JNI alle Netze ab – nicht je Änderung.
+func _note_addrs() -> void:
+	_addrs = NetAddresses.own_addresses().map(func(a): return str(a.address))
+
+
+func _new_token() -> String:
+	return Crypto.new().generate_random_bytes(NetProtocol.TOKEN_LENGTH / 2).hex_encode()
+
+
+func _now_ms() -> int:
+	return int(ms_clock.call()) if ms_clock.is_valid() else Time.get_ticks_msec()
+
+
+func _unix() -> int:
+	return int(clock.call()) if clock.is_valid() else int(Time.get_unix_time_from_system())
+
+
 # --- intern ---
+
+func _changed(events: Array) -> void:
+	if _frozen:
+		return       # Beta 1.6.1: eingefroren – kein Speichern, kein Verteilen (Abschnitt 3.3)
+	super._changed(events)
+
+
+# Beta 1.6.1: erst Sicherung (eigene Datei, {t:"bk"} an die App-Gäste mit hello.bk), danach verteilt _distribute die Sichten.
+func _persist() -> void:
+	if game == null:
+		return
+	seq += 1
+	var ids: Array = session.backup_ids() if backup_enabled and gid != "" and session != null else []
+	if not autosave and ids.is_empty():
+		return
+	var snap := _snapshot()
+	if autosave:
+		write_saved(save_path, snap)
+	if ids.is_empty():
+		return
+	var z := MatchSnapshot.pack(snap)
+	if z == "":
+		push_warning("Sicherung zu groß – nicht verschickt (seq %d)" % seq)
+		return
+	session.send_many(ids, NetProtocol.encode(NetProtocol.make_bk(gid, mark(), z)))
+	_last_bk_ms = _now_ms()
+
+
+func _snapshot() -> Dictionary:
+	return MatchSnapshot.make(game.to_dict(), seats, host_seat, _save_extra(), _unix())
+
 
 func _poll_extra() -> void:
 	if session != null:
 		session.poll()
+	if not _step_note.is_empty():
+		_emit_stepped_down()     # nach session.poll(): die Oberfläche darf jetzt die Sitzung abbauen
+	if game == null or session == null:
+		return
+	var now := _now_ms()
+	_poll_settle(now)
+	_poll_handover(now)
+	if game != null and session != null:
+		_poll_alive(now)
 
 
 func _bots_paused() -> bool:
-	return session == null
+	return session == null or _frozen or _settling
 
 
 func _pre_step() -> bool:
+	if _frozen or _settling:
+		return false
 	# nie für einen Gast, der nur kurz in einer anderen App ist
 	if auto_substitute_s > 0.0 and _waiting_seat >= 0 and not is_away(_waiting_seat) and Time.get_ticks_msec() - _wait_since > int(auto_substitute_s * 1000.0):
 		substitute_bot(_waiting_seat)
@@ -540,7 +1028,7 @@ func _tell_all(lt: Array) -> void:
 
 
 func _on_left(id: int) -> void:
-	if game == null:
+	if game == null or _frozen:
 		return
 	var s := _seat_ids.find(id)
 	if s < 0:
@@ -554,22 +1042,27 @@ func _on_left(id: int) -> void:
 
 
 func _on_rejoined(id: int) -> void:
-	if game == null:
+	if game == null or _frozen:
 		return
 	var s := _seat_ids.find(id)
 	if s < 0:
 		return
 	game.set_connected(s, true)
+	_note_link(s)
 	if _substitute.has(s):
 		_substitute.erase(s)
 	notice.emit(I18n.t("%s ist wieder da.") % seat_name(s))
-	_changed([])                 # schickt allen (auch dem Zurückgekehrten) sofort den aktuellen Stand
+	# Beta 1.6.1: Abstammung zuerst – hält er einen jüngeren Zweig, bekommt er das Spiel zurück. Ein bk vorher (_changed) überschriebe
+	# seine Sicherung (höhere gen), und handover own:true fände seine Marke nicht mehr.
+	_check_lineage(id)
+	if not _frozen:
+		_changed([])             # schickt allen (auch dem Zurückgekehrten) sofort den aktuellen Stand
 
 
 # „away“/„back“ (Gast oder Gastgeber selbst): Änderung → alle bekommen den neuen Stand; „back“ ohne Änderung → nur dieser Gast
 # (er will nach der Rückkehr in die App den vollen Stand).
 func _on_away(id: int, _on: bool, changed: bool) -> void:
-	if game == null:
+	if game == null or _frozen:
 		return
 	var s := _seat_ids.find(id)
 	if s < 0:
@@ -581,6 +1074,11 @@ func _on_away(id: int, _on: bool, changed: bool) -> void:
 
 
 func _on_message(id: int, msg: Dictionary) -> void:
+	if str(msg.get("t", "")) == "handover_no":
+		# Beta 1.6.1: Ziel von handover own:true hat abgelehnt (Sicherung passt nicht mehr) → auftauen, weiter Gastgeber
+		if not _handover.is_empty() and int(_handover.id) == id:
+			_handover_failed()
+		return
 	if str(msg.get("t", "")) != "act":
 		return
 	if msg.get("seq") is int:
@@ -595,6 +1093,10 @@ func _on_message(id: int, msg: Dictionary) -> void:
 		return
 	if str(a.get("a", "")) == "next_round" and id != session.host_id:
 		_err(id, "Die nächste Runde startet der Gastgeber.")
+		return
+	var wait := _hold_reason()
+	if wait != "":
+		_err(id, wait)            # Beta 1.6.1: Übergabe bzw. Einschwingzeit
 		return
 	if _substitute.has(s) and str(a.get("a", "")) != "":
 		_substitute.erase(s)    # der Mensch spielt wieder selbst
@@ -613,18 +1115,27 @@ func _err(id: int, text: String, lt: Array = []) -> void:
 	session.send_to(id, msg)
 
 
-func _restore_guest(p: Dictionary) -> int:
-	# Gast mit Token wieder eintragen (NetHostSession hat dafür keine eigene Funktion; Felder wie in _hello).
-	var id: int = session._next_id
-	session._next_id += 1
-	session.players[id] = {"id": id, "name": str(p.name), "kind": str(p.get("net", "app")), "token": str(p.get("token", "")),
-		"connected": false, "ready": true, "seat": session._next_seat(), "conn": -1, "local": false, "address": "",
-		"gone_since": maxi(Time.get_ticks_msec(), 1)}
-	return id
-
-
+# Beta 1.6.1: Felder des Schnappschusses über das Regelwerk hinaus (MatchSnapshot.EXTRA_KEYS).
 func _save_extra() -> Dictionary:
-	return {"port": port()}
+	var sub: Array = _substitute.keys().map(func(k): return int(k))
+	sub.sort()
+	var waiting: Array = []
+	var bk_to: Array = []
+	var online := {}
+	var addrs: Array = []
+	if session != null:
+		for id in session.waiting_ids():
+			var p: Dictionary = session.player(id)
+			waiting.append({"name": str(p.name), "net": str(p.kind), "token": str(p.get("token", ""))})
+		for id in session.backup_ids():
+			var s := _seat_ids.find(id)
+			if s >= 0:
+				bk_to.append(str(seats[s].get("token", "")))
+		online = session.online_room()
+		addrs = _addrs.duplicate()
+	return {"gid": gid, "gen": gen, "epoch": epoch, "parent": parent.duplicate(), "seq": seq, "substitute": sub,
+		"gone_names": _gone_names.keys(), "waiting": waiting, "join_open": session != null and session.join_open, "heirs": heirs(),
+		"bk_to": bk_to, "wlan_humans": wlan_humans(), "online": online, "wlan": {"port": port(), "addrs": addrs}}
 
 
 func _apk_info() -> Dictionary:

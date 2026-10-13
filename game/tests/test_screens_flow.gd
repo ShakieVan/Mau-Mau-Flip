@@ -324,7 +324,11 @@ func pass_house_rules() -> void:
 	g.force_rolls([0, 3])
 	_reveal(ts)
 	await _settle(ts)
-	check(int(ts.view.get("seat", -1)) == other and (ts.view.hints.playable as Array).has(gid), "Hausregeln Weitergeben: Glücksspiel spielbar")
+	var until := Time.get_ticks_msec() + 5000
+	while not (int(ts.view.get("seat", -1)) == other and (ts.view.get("hints", {}).get("playable", []) as Array).has(gid)) and Time.get_ticks_msec() < until:
+		await wait(0.05)
+	check(int(ts.view.get("seat", -1)) == other and (ts.view.hints.playable as Array).has(gid), "Hausregeln Weitergeben: Glücksspiel spielbar (Platz %s/%d, Karte %d, spielbar %s, Phase %s, oben %s)"
+		% [ts.view.get("seat", -1), other, gid, ts.view.get("hints", {}).get("playable", []), g.phase(), g.discard_top() if g.has_method("discard_top") else "?"])
 	ts._act({"a": "play", "card": gid, "color": str((ts.view.get("colors", ["rot"]) as Array)[0])})
 	var covered_during := false
 	var deadline := Time.get_ticks_msec() + 15000
@@ -396,6 +400,19 @@ func _give(g: MauGame, seat: int, kind: String) -> int:
 			g.draw_pile.remove_at(i)
 			(g.hands[seat] as Array).append(id)
 			return id
+	# Beide Karten dieser Art liegen bei einem anderen Platz (z. B. nach dem Kartentausch): gegen die erste eigene Karte tauschen
+	# (Kartenzahlen bleiben gleich; wackelte im parallelen Bau je nach Mischung)
+	var mine: Array = g.hands[seat]
+	for s in g.hands.size():
+		if s == seat or mine.is_empty():
+			continue
+		var theirs: Array = g.hands[s]
+		for j in theirs.size():
+			var id := int(theirs[j])
+			if str(g._kind[g.faces[g.side * g.n_cards + id]]) == kind:
+				theirs[j] = mine[0]
+				mine[0] = id
+				return id
 	return -1
 
 

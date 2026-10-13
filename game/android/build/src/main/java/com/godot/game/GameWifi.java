@@ -55,6 +55,21 @@ public final class GameWifi {
         return activity.checkSelfPermission(requiredPermission()) == PackageManager.PERMISSION_GRANTED;
     }
 
+    // Beta 1.6.1: Ab Android 12 übergeht das System eine Anfrage nach ACCESS_FINE_LOCATION ohne ACCESS_COARSE_LOCATION (kein Dialog;
+    // Befund der Draw2Race-Sitzung beim Übernehmen des Spiel-WLANs). OS.request_permission fragt nur eine Erlaubnis an, deshalb bis
+    // Android 12 hier beide zusammen. Die Antwort kommt wie gewohnt je Erlaubnis über on_request_permissions_result.
+    // true = schon erteilt, false = Dialog angestoßen.
+    public static boolean requestPermission(final Activity activity) {
+        if (granted(activity)) {
+            return true;
+        }
+        final String[] perms = Build.VERSION.SDK_INT >= 33
+                ? new String[] {"android.permission.NEARBY_WIFI_DEVICES"}
+                : new String[] {"android.permission.ACCESS_FINE_LOCATION", "android.permission.ACCESS_COARSE_LOCATION"};
+        activity.runOnUiThread(() -> activity.requestPermissions(perms, 4711));
+        return false;
+    }
+
     private static boolean locationOn(Activity activity) {
         if (Build.VERSION.SDK_INT < 28) {
             return true;

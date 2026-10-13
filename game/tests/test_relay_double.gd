@@ -75,7 +75,7 @@ func test_codes() -> void:
 		and not SettingsScreen.relay_test_text(true, i1, 42, "1.2.2", 404).contains("Sync fork")
 		and SettingsScreen.relay_test_text(true, "<html>", 42, "1.2.2", -1).contains("kein Vermittler"), "Text „Verbindung testen“")
 	check(InviteSteps.online_glow("open", 0) and not InviteSteps.online_glow("open", 1) and not InviteSteps.online_glow("connecting", 0)
-		and InviteSteps.online_done("away", 1) and not InviteSteps.online_done("off", 1), "Online-Weg: Leuchten und Haken")
+		and InviteSteps.online_done("away", 1) and InviteSteps.online_done("check", 1) and not InviteSteps.online_done("off", 1), "Online-Weg: Leuchten und Haken")
 	# Wortliste des Nachbaus steht in relay/src/words.js, alle Wörter sind gültige Codes
 	var words_js := ProjectSettings.globalize_path("res://").path_join("../relay/src/words.js")
 	if FileAccess.file_exists(words_js):
@@ -418,8 +418,8 @@ func test_sockets() -> void:
 	check(opened.size() == 2 and int(opened[1][0]) > conn, "neue Verbindungsnummer")
 	check(wait(all, func(): return closed.size() == 1 and int(closed[0][0]) == conn and int(closed[0][1]) == NetProtocol.CLOSE_HOST_AWAY, 3000),
 		"alte Verbindung gilt erst nach der Frist als getrennt")
-	# Ende: Gast bekommt 1001
-	host.close()
+	# Ende: Gast bekommt 1001 (Beta 1.6.1: das Raum-Ende ist ausdrücklich, close() allein lässt den Raum offen)
+	host.close(true)
 	check(wait(all, func(): return guest.state == "closed"), "Raum beendet → Gast endgültig getrennt")
 	check(guest.close_text != "", "Grund: " + guest.close_text)
 	guest.free()

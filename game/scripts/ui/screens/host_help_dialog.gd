@@ -10,6 +10,8 @@ const TEXTS := [
 	["② Spiel", "Danach den Spiel-Code scannen oder die Adresse im Browser eintippen. Mit der App: „Mit anderen spielen“ → „Beitreten“, das Spiel erscheint von selbst."],
 	["Grüner Haken", "Zeigt, was schon geklappt hat. Der nächste Schritt leuchtet."],
 	["Mitspieler", "Nach rechts blättern: Dort siehst du alle, änderst die Sitzordnung mit den Pfeilen und fügst Computergegner hinzu."],
+	# Mau-Mau Flip (Beta 1.6.1, Gastgeber-Übergabe): Sicherung bei allen App-Gästen, ehrlich benannt (docs/module/uebergabe.md 5, 6)
+	["Ausfall", "Fällt der Gastgeber aus, führt ein Mitspieler mit der App das Spiel weiter. Dafür hat jede App eine Sicherung des ganzen Spielstands – die App zeigt fremde Karten nie, wer schummeln will, käme aber heran."],
 ]
 const TIPS := [
 	"Warnseite „nicht sicher“? Das ist normal im eigenen WLAN: „Weiter“ bzw. „Trotzdem öffnen“.",

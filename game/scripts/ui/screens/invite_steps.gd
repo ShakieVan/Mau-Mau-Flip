@@ -58,4 +58,4 @@ static func online_glow(state: String, online_guests: int) -> bool:
 
 
 static func online_done(state: String, online_guests: int) -> bool:
-	return online_guests > 0 and state in ["open", "away"]
+	return online_guests > 0 and state in ["open", "away", "check"]     # check (Beta 1.6.1): Probe beim Neuverbinden, wie away

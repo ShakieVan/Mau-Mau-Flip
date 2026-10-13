@@ -91,11 +91,29 @@ public class GodotApp extends GodotActivity {
 		}
 	}
 
+	// Mau-Mau Flip (Beta 1.6.1, Gerätetest mit gesperrten Testhandys): Ist die Eigenschaft log.tag.MauMauFlipTestLock auf VERBOSE
+	// gesetzt, erscheint die App über dem Sperrbildschirm und schaltet ihn dabei ein. Das Handy bleibt gesperrt: Home, Benachrichtigungen
+	// und jede andere App (Browser, QR-Scanner, Installationsdialog) liegen weiter hinter der Sperre. Setzen kann die Eigenschaft nur
+	// adb, keine App; beim Neustart verfällt sie.
+	//   adb shell setprop log.tag.MauMauFlipTestLock VERBOSE      (aus: … INFO)
+	//   adb shell am start -n de.maumauflip.game/com.godot.game.GodotAppLauncher
+	private static final String TEST_LOCK_TAG = "MauMauFlipTestLock";
+
+	private void applyTestLock() {
+		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O_MR1) {
+			return;
+		}
+		boolean on = Log.isLoggable(TEST_LOCK_TAG, Log.VERBOSE);
+		setShowWhenLocked(on);
+		setTurnScreenOn(on);
+	}
+
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		SplashScreen.installSplashScreen(this);
 		EdgeToEdge.enable(this);
 		super.onCreate(savedInstanceState);
+		applyTestLock();
 		// Mau-Mau Flip (Beta 1.0.2, App-Link „In der App spielen“): Adresse des Gastgebers merken (AppLink.java). Nicht nach einer
 		// Wiederherstellung oder aus dem Verlauf, sonst träte die App einem alten Spiel erneut bei.
 		Intent start = getIntent();
@@ -109,6 +127,7 @@ public class GodotApp extends GodotActivity {
 	@Override
 	public void onNewIntent(Intent intent) {
 		super.onNewIntent(intent);
+		applyTestLock();
 		AppLink.remember(intent);
 		QrScan.remember(intent);
 	}
@@ -116,6 +135,7 @@ public class GodotApp extends GodotActivity {
 	@Override
 	public void onResume() {
 		super.onResume();
+		applyTestLock();
 		updateWindowAppearance.run();
 	}
 

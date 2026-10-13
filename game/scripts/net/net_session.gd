@@ -18,6 +18,16 @@ extends Node
 # der Partie mit seat = −1, waiting = true auf der Warteliste statt „reject running“. Sie bekommen welcome und {t:"lobby", late:true,
 # waiting:true, host_name, …}; die Spielsteuerung holt sie an den Tisch (set_waiting false, set_seat_order, start). ordered_ids()
 # kennt nur Sitzende, waiting_ids() die Wartenden. Ein getrennter Wartender verfällt nach WAIT_DROP_MS.
+# Mau-Mau Flip (Beta 1.6.1, Gastgeber-Übergabe, docs/module/uebergabe.md Abschnitte 1.4, 3 und 3.5):
+#  - stop(text, end_room := false): Der Online-Raum endet ({k:"end"}) nur noch ausdrücklich (HostTable.leave, close_online, finish);
+#    Freigeben, Abtreten und Übergeben lassen ihn offen.
+#  - hello.bk ([gen, epoch, seq]) je Spieler in players[id].bk (backup_ids(): wer Sicherungen bekommt); hello.bk_token erkennt einen
+#    Spieler, wenn token unbekannt ist. welcome bekommt zusätzlich welcome_extra (gid, gen, epoch; setzt die Spielsteuerung).
+#  - restore_player() trägt Gäste aus einem Spielstand ein, open_online_existing() übernimmt den Raum, online_room() liefert ihn für
+#    den Spielstand, send_many() schickt einen Text an mehrere Spieler (online ein send-Rahmen).
+#  - Vermittler: replaced (Code 4000) und online_needs_check (/info meldet einen Gastgeber) gehen an die Spielsteuerung. Hört niemand
+#    zu, gilt das Verhalten bis 1.6.0 (4000 → Online aufgeben, needs_check → sofort als Gastgeber anmelden).
+#  - app_resumed(): „wieder da“ erst, wenn der Vermittler wieder offen ist (ein 4000 aus dem Hintergrund wird so zuerst gelesen).
 #
 # Nutzung: var s := NetHostSession.new(); add_child(s); s.start("Lena"); var me := s.host_id; s.message.connect(…)
 
@@ -30,7 +40,9 @@ signal lobby_changed
 signal finished                          # finish() ist fertig: alles geschlossen
 signal log_line(text: String)
 signal page_visited(address: String)     # ein fremdes Gerät (nicht dieses) hat die Spielseite „/“ abgerufen (Lobby, Beta 1.0.2)
-signal online_changed(state: String, info: Dictionary)   # Online-Spiel: off | connecting | open | away | failed; info {room, link, error, relay}
+signal online_changed(state: String, info: Dictionary)   # Online-Spiel: off | connecting | open | away | check | stepped_down | failed; info {room, link, error, relay}
+signal replaced                          # Beta 1.6.1: ein anderes Gerät führt den Online-Raum (Code 4000) – abtreten
+signal online_needs_check(info: Dictionary)   # Beta 1.6.1: beim Neuverbinden meldet /info einen Gastgeber; Probe, dann relay.claim()/step_down()
 
 const HELLO_TIMEOUT_MS := 10000
 const CLOSE_GRACE_MS := 3000             # nach „reject“/„bye“: so lange darf der Client selbst schließen (NetServer.close_ws)
@@ -63,6 +75,11 @@ var _next_id := 1
 var _dirty := false
 var _stopping := false
 var _finish_at := 0
+var welcome_extra := {}                  # Beta 1.6.1: zusätzliche Felder im welcome (gid, gen, epoch; die Spielsteuerung setzt sie)
+var _finish_end := true                  # finish(): Online-Raum beenden
+var _unaway_pending := false             # Beta 1.6.1: „Gastgeber wieder da“ wartet, bis der Vermittler offen ist
+var _unaway_until := 0                   # … höchstens bis dahin (ms); danach „wieder da“ für die WLAN-Gäste, außer bei check/stepped_down
+var unaway_max_ms := NetProtocol.RELAY_INFO_TIMEOUT_MS + NetProtocol.RESUME_PROBE_MS
 
 # ---------- Lebenszyklus ----------
 
@@ -109,18 +126,21 @@ func start(name_of_host: String, port_first := NetProtocol.PORT, port_last := Ne
 	_log("Gastgeber „%s“ bereit auf Port %d (Protokoll %d, Version %s)" % [host_name, server.port, NetProtocol.PROTO, game_version])
 	return OK
 
-func finish(text := "Der Gastgeber hat das Spiel beendet.") -> void:
+func finish(text := "Der Gastgeber hat das Spiel beendet.", end_room := true) -> void:
 	# Nicht blockierend beenden: allen „bye“ schicken, poll() schließt alles, sobald die Clients getrennt haben (höchstens FINISH_MS),
-	# dann Signal finished. Bevorzugt vor stop(text), weil die Clients dabei weiter abgefragt werden.
+	# dann Signal finished. Bevorzugt vor stop(text), weil die Clients dabei weiter abgefragt werden. end_room: Online-Raum beenden.
 	if (server == null and relay == null) or _finish_at > 0:
 		return
+	_finish_end = end_room
 	_bye_all(text, FINISH_MS - 500)
 	_finish_at = Time.get_ticks_msec() + FINISH_MS
 
-func stop(text := "") -> void:
+func stop(text := "", end_room := false) -> void:
 	# Sofort beenden; mit text vorher „bye“ an alle und bis zu 1 s warten. Signale gehen dabei keine mehr hinaus.
+	# end_room (Beta 1.6.1): Online-Raum beim Vermittler beenden ({k:"end"}); sonst bleibt er offen (Übernahme durch einen Gast).
 	_stopping = true
 	_finish_at = 0
+	_unaway_pending = false
 	if text != "" and (server != null or relay != null):
 		_bye_all(text, 800)
 		var end := Time.get_ticks_msec() + 1000
@@ -130,7 +150,7 @@ func stop(text := "") -> void:
 			if relay != null:
 				relay.poll()
 			OS.delay_msec(5)
-	_close_relay()
+	_close_relay(end_room)
 	if server != null:
 		server.stop()
 		_drop_node(server)
@@ -223,9 +243,23 @@ func app_paused() -> void:
 	flush()
 
 # Gastgeber-App wieder vorn: Vermittler-Verbindung sofort prüfen, „away“ zurücknehmen (alle bekommen den aktuellen Stand).
+# Beta 1.6.1: Zuerst liest der Vermittler-Socket, was im Hintergrund kam (ein 4000 → abtreten, dann kein „wieder da“). Verbindet er
+# gerade neu (away/check/connecting), kommt „wieder da“ erst, wenn er wieder offen ist.
 func app_resumed() -> void:
 	if relay != null:
 		relay.check_now()
+		relay.poll()
+		if relay != null and relay.state == "stepped_down":
+			_unaway_pending = false
+			return
+		if relay != null and relay.state in ["away", "check", "connecting"]:
+			_unaway_pending = true
+			_unaway_until = Time.get_ticks_msec() + unaway_max_ms   # ohne Internet bliebe der Vermittler sonst für immer „away“
+			return
+	_unaway_now()
+
+func _unaway_now() -> void:
+	_unaway_pending = false
 	if host_id != 0 and players.has(host_id) and bool(players[host_id].get("away", false)):
 		set_away(host_id, false)
 		flush()
@@ -273,12 +307,16 @@ func poll() -> void:
 	if discovery != null:
 		discovery.poll()
 	var now := Time.get_ticks_msec()
+	# Beta 1.6.1: „wieder da“ nicht ewig aufschieben (kein Internet: Vermittler bleibt away, ohne Signal). Ein 4000 kommt nur über ein
+	# offenes Socket; während der Probe (check) entscheidet der Vermittler gleich selbst (open/stepped_down).
+	if _unaway_pending and now >= _unaway_until and (relay == null or not relay.state in ["check", "stepped_down"]):
+		_unaway_now()
 	for conn in _pending.keys():
 		if now - int(_pending[conn].since_ms) > hello_timeout_ms:
 			_pending.erase(conn)
 			_close(conn, NetWs.CLOSE_TIMEOUT, "Anmeldung fehlt")
 	if _finish_at > 0 and (_active() == 0 or now > _finish_at):
-		stop()
+		stop("", _finish_end)
 		finished.emit()
 		return
 	for id in waiting_ids():
@@ -377,6 +415,43 @@ func accepts_late() -> bool:
 
 func player(id: int) -> Dictionary:
 	return players.get(id, {})
+
+# Mau-Mau Flip (Beta 1.6.1, Gastgeber-Übergabe): Gast aus einem Spielstand eintragen – getrennt, bereit, mit seinem Token (er meldet
+# sich damit wieder an). net: "app" | "web". waiting: zurück auf die Warteliste (Platz −1). Ergebnis: id, −1 = voll.
+func restore_player(player_name: String, net: String, player_token: String, waiting := false) -> int:
+	if players.size() >= max_players:
+		return -1
+	var id := _next_id
+	_next_id += 1
+	players[id] = {"id": id, "name": NetProtocol.clean_name(player_name), "kind": net if NetProtocol.KINDS.has(net) else "app",
+		"token": player_token.left(64), "connected": false, "ready": true, "seat": -1 if waiting else _next_seat(), "conn": -1,
+		"local": false, "address": "", "gone_since": maxi(Time.get_ticks_msec(), 1)}
+	if waiting:
+		players[id].waiting = true
+	_changed()
+	return id
+
+# Beta 1.6.1: denselben Text an mehrere Spieler (online ein einziger send-Rahmen); nicht verbundene und lokale werden übergangen.
+func send_many(ids: Array, text: String) -> void:
+	var conns := []
+	for id in ids:
+		if players.has(id) and int(players[id].conn) >= 0:
+			conns.append(int(players[id].conn))
+	if not conns.is_empty():
+		_send_many(conns, text)
+
+# Beta 1.6.1: verbundene App-Gäste, die im hello bk geschickt haben (können Sicherungen halten), ohne Wartende – nach Platz.
+func backup_ids() -> Array:
+	var out := []
+	for id in ordered_ids():
+		var p: Dictionary = players[id]
+		if not bool(p.local) and bool(p.connected) and int(p.conn) >= 0 and p.get("bk") is Array:
+			out.append(id)
+	return out
+
+# Beta 1.6.1: Stand der Sicherung [gen, epoch, seq] aus dem letzten hello des Spielers; [] = keiner (Browser, alte App).
+func backup_mark(id: int) -> Array:
+	return players[id].get("bk", []) if players.has(id) and players[id].get("bk") is Array else []
 
 func seat_of(id: int) -> int:
 	return int(players[id].seat) if players.has(id) else -1
@@ -552,10 +627,9 @@ func _hello(conn: int, msg: Dictionary, conn_info: Dictionary) -> void:
 	var token := str(msg.get("token", ""))
 	var known := -1
 	if problem.is_empty() and token != "":
-		for id in players:
-			if not players[id].local and players[id].token == token:
-				known = id
-				break
+		known = _id_by_token(token)
+	if problem.is_empty() and known < 0 and str(msg.get("bk_token", "")) != "":
+		known = _id_by_token(str(msg.bk_token))     # Beta 1.6.1: Platz-Token aus der Sicherung (Rückfallebene)
 	if problem.is_empty() and known < 0:
 		if running and not accepts_late():
 			problem = {"code": "running", "text": "Die Partie läuft schon. Warte, bis der Gastgeber eine neue Runde eröffnet."}
@@ -582,9 +656,9 @@ func _hello(conn: int, msg: Dictionary, conn_info: Dictionary) -> void:
 		p.kind = msg.kind
 		p.address = str(conn_info.get("address", ""))
 		p.online = bool(conn_info.get("online", false))
+		_set_bk(p, msg)
 		_conn_player[conn] = known
-		_send(conn, NetProtocol.encode({"t": "welcome", "id": known, "token": p.token, "host_name": host_name,
-			"proto": NetProtocol.PROTO, "game": game_version}))
+		_send(conn, NetProtocol.encode(_welcome(known, str(p.token))))
 		_log("Spieler %d „%s“ wieder da (%s)" % [known, p.name, conn_info.get("address", "?")])
 		player_rejoined.emit(known)
 		_changed(true)
@@ -598,19 +672,47 @@ func _hello(conn: int, msg: Dictionary, conn_info: Dictionary) -> void:
 		"address": str(conn_info.get("address", "")), "online": bool(conn_info.get("online", false))}
 	if late:
 		players[id].waiting = true          # mitten in der Partie: Warteliste, der Gastgeber holt ihn an den Tisch
+	_set_bk(players[id], msg)
 	_conn_player[conn] = id
-	_send(conn, NetProtocol.encode({"t": "welcome", "id": id, "token": new_token, "host_name": host_name,
-		"proto": NetProtocol.PROTO, "game": game_version}))
+	_send(conn, NetProtocol.encode(_welcome(id, new_token)))
 	_log("Spieler %d „%s“ beigetreten (%s, %s)" % [id, players[id].name, msg.kind, conn_info.get("address", "?")])
 	if late:
 		_log("Spieler %d „%s“ wartet auf einen Platz" % [id, players[id].name])
 	player_joined.emit(id)
 	_changed(true)
 
+func _id_by_token(t: String) -> int:
+	for id in players:
+		if not players[id].local and str(players[id].token) == t:
+			return id
+	return -1
+
+func _set_bk(p: Dictionary, msg: Dictionary) -> void:
+	# Beta 1.6.1: hello.bk merken (bereinigt in clean_client_message); ohne bk bekommt der Spieler keine Sicherungen.
+	if msg.get("bk") is Array and str(msg.get("kind", "")) == "app":
+		p.bk = (msg.bk as Array).duplicate()
+	else:
+		p.erase("bk")
+
+func _welcome(id: int, player_token: String) -> Dictionary:
+	var w := {"t": "welcome", "id": id, "token": player_token, "host_name": host_name, "proto": NetProtocol.PROTO, "game": game_version}
+	for key in ["gid", "gen", "epoch"]:      # Beta 1.6.1 (Lite ignoriert die Felder)
+		if welcome_extra.has(key):
+			w[key] = welcome_extra[key]
+	return w
+
 # ---------- Online-Spiel ----------
 
 func open_online(relay_url: String) -> Error:
 	# Raum beim Vermittler öffnen (zusätzlich zum WLAN). Fortschritt über online_changed.
+	return _new_relay().open(relay_url)
+
+# Mau-Mau Flip (Beta 1.6.1, Gastgeber-Übergabe): bestehenden Online-Raum als Gastgeber übernehmen (Gegenstück zu open_online,
+# docs/module/uebergabe.md 3.2). conns: c der Online-Gäste aus dem Spielstand (ohne RELAY_CONN_BASE), sie bekommen 4012.
+func open_online_existing(relay_url: String, room: String, room_token: String, conns: Array, max_c := 0, created_unix := 0) -> Error:
+	return _new_relay().open_existing(relay_url, room, room_token, conns, max_c, created_unix)
+
+func _new_relay() -> NetRelayHost:
 	_close_relay()
 	var r := NetRelayHost.new()
 	r.name = "NetRelayHost"
@@ -625,8 +727,38 @@ func open_online(relay_url: String) -> Error:
 	r.log_line.connect(_log)
 	r.state_changed.connect(func(st: String) -> void:
 		if relay == r:
+			_on_relay_state(st)
 			online_changed.emit(st, r.info()))
-	return r.open(relay_url)
+	r.replaced.connect(func() -> void:
+		if relay == r:
+			_on_relay_replaced())
+	r.needs_check.connect(func(i: Dictionary) -> void:
+		if relay == r:
+			_on_relay_check(i))
+	return r
+
+func _on_relay_state(st: String) -> void:
+	# Beta 1.6.1: aufgeschobenes „Gastgeber wieder da“ (app_resumed)
+	if not _unaway_pending:
+		return
+	if st == "stepped_down":
+		_unaway_pending = false
+	elif st in ["open", "failed", "off"]:
+		_unaway_now()
+
+func _on_relay_replaced() -> void:
+	# Code 4000: Die Spielsteuerung tritt ab (HostTable → _frozen, dann Gast). Hört niemand zu, Online aufgeben wie bis 1.6.0.
+	if replaced.get_connections().is_empty():
+		relay.give_up("Der Online-Raum wird jetzt von einem anderen Gerät geführt.")
+		return
+	replaced.emit()
+
+func _on_relay_check(i: Dictionary) -> void:
+	# /info meldet einen Gastgeber: Die Spielsteuerung prüft per Probe (claim/step_down). Ohne Empfänger sofort anmelden.
+	if online_needs_check.get_connections().is_empty():
+		relay.claim()
+		return
+	online_needs_check.emit(i)
 
 func close_online() -> void:
 	# Online-Raum schließen: Online-Gäste bekommen „bye“, der Raum wird beendet. WLAN-Gäste bleiben.
@@ -634,9 +766,21 @@ func close_online() -> void:
 		return
 	var conns := _connected_conns().filter(func(c): return int(c) >= NetProtocol.RELAY_CONN_BASE)
 	relay.send_text_many(conns, NetProtocol.encode({"t": "bye", "text": "Der Gastgeber hat das Online-Spiel geschlossen."}))
-	_close_relay()
+	_close_relay(true)
 	online_changed.emit("off", {})
 	_changed()
+
+# Beta 1.6.1: Online-Raum für den Spielstand: {relay, room, token, conns, max_c, created_unix}; {} = kein Raum.
+func online_room() -> Dictionary:
+	if relay == null or relay.room == "" or relay.token == "":
+		return {}
+	var conns := []
+	for p in players.values():
+		if int(p.conn) >= NetProtocol.RELAY_CONN_BASE:
+			conns.append(int(p.conn) - NetProtocol.RELAY_CONN_BASE)
+	conns.sort()
+	return {"relay": relay.relay_url, "room": relay.room, "token": relay.token, "conns": conns, "max_c": relay.max_c,
+		"created_unix": relay.created_unix}
 
 func online_state() -> String:
 	return relay.state if relay != null else "off"
@@ -644,16 +788,18 @@ func online_state() -> String:
 func online_info() -> Dictionary:
 	return relay.info() if relay != null else {}
 
-func _close_relay() -> void:
-	# Vermittler trennen; Online-Spieler gelten als getrennt (Platz bleibt wie bei WLAN-Gästen).
+func _close_relay(end_room := false) -> void:
+	# Vermittler trennen; Online-Spieler gelten als getrennt (Platz bleibt wie bei WLAN-Gästen). end_room (Beta 1.6.1): Raum beenden.
 	if relay == null:
 		return
 	var r := relay
 	relay = null
+	if _unaway_pending and not _stopping:
+		_unaway_now()                 # Beta 1.6.1: ohne Vermittler kommt kein Signal mehr, das „wieder da“ auslöst
 	for c in [[r.ws_opened, _on_open], [r.ws_message, _on_message], [r.ws_closed, _on_closed], [r.ws_dropped, _on_dropped]]:
 		if (c[0] as Signal).is_connected(c[1]):
 			(c[0] as Signal).disconnect(c[1])
-	r.close()
+	r.close(end_room)
 	for conn in _pending.keys():
 		if int(conn) >= NetProtocol.RELAY_CONN_BASE:
 			_pending.erase(conn)

@@ -1,0 +1,7682 @@
+{
+ "stand": "2026-10-13",
+ "modell": "OpenMOSS-Team/MOSS-SoundEffect-v2.0",
+ "lizenz_modell": "Apache-2.0",
+ "skript": "tools/make_ostereier.py",
+ "einstellungen": {
+  "schritte": 100,
+  "cfg": 4.0,
+  "sigma_shift": 5.0,
+  "abtastrate": 48000,
+  "leitplanke": "Tiefpass vor-/rückwärts 6–3,5 kHz, über 6 kHz ≤ −30 dB",
+  "lautheit": "höchste Momentan-Lautheit (400 ms, BS.1770)",
+  "ogg": "Vorbis q6, mono, 48 kHz",
+  "handy_modell": "Hochpass 400 Hz (8. Ordnung), Tiefpass 8 kHz, +5 dB um 1,5 kHz",
+  "ast": "MIT/ast-finetuned-audioset-10-10-0.4593"
+ },
+ "toene": {
+  "gaehnen": {
+   "titel": "Gähnen",
+   "ziel_s": [
+    2.5,
+    3.6
+   ],
+   "ziel_lufs": -19.0,
+   "daueransage_s": 3.0,
+   "prompts": {
+    "herzhaft": {
+     "prompt": "a man gives a long, hearty, exaggerated yawn, deep breath in, then a drawn-out funny yawning groan that ends in a relaxed sigh, close-up, quiet room, no words",
+     "seeds": [
+      3101,
+      3102,
+      3103,
+      3104,
+      3105,
+      3106
+     ]
+    },
+    "muede": {
+     "prompt": "a very tired person yawning loudly and widely, one long stretching yawn with a low voice, close microphone, dry room, no speech",
+     "seeds": [
+      3101,
+      3102,
+      3103
+     ]
+    },
+    "komisch": {
+     "prompt": "a comical big yawn from an adult man, the yawn sound rises and then falls, ending with a satisfied smack of the lips, close-up, no talking",
+     "seeds": [
+      3101,
+      3102,
+      3103
+     ]
+    }
+   },
+   "behalten": 6
+  },
+  "gaehnen2": {
+   "titel": "Gähnen, Runde 2",
+   "ziel_s": [
+    2.0,
+    3.3
+   ],
+   "ziel_lufs": -19.0,
+   "daueransage_s": 3.0,
+   "prompts": {
+    "frau": {
+     "prompt": "a young woman yawns lightly, a long airy open-mouthed breath in, a soft breathy haaah that rises and then falls in pitch, then a short relaxed breath out, effortless and gentle, close-up, quiet room, no words",
+     "seeds": [
+      4101,
+      4102,
+      4103,
+      4104,
+      4105,
+      4106,
+      4107,
+      4108,
+      4109,
+      4110,
+      4111,
+      4112,
+      4113,
+      4114,
+      4115,
+      4116,
+      4117,
+      4118
+     ],
+     "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow"
+    },
+    "morgen": {
+     "prompt": "a sleepy person yawning in the morning while stretching, a big wide-open airy yawn, breathy haaaah rising and falling, then a short relaxed exhale and a small content mm, close-up, bedroom, no words",
+     "seeds": [
+      4101,
+      4102,
+      4103,
+      4104,
+      4105,
+      4106
+     ],
+     "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow"
+    },
+    "comic": {
+     "prompt": "cartoon yawn sound effect, a funny exaggerated airy yawn, a breathy haaaa-aah that swoops up and down in pitch, light and playful, ending with a quick satisfied mm, animated cartoon, no words",
+     "seeds": [
+      4101,
+      4102,
+      4103,
+      4104,
+      4105,
+      4106
+     ],
+     "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow"
+    },
+    "hoeflich": {
+     "prompt": "a short polite yawn behind a hand, a quiet airy breath in with the mouth wide open, slightly muffled by the hand, then a soft relaxed breath out, close-up, quiet room, no words",
+     "seeds": [
+      4101,
+      4102,
+      4103,
+      4104,
+      4105,
+      4106
+     ],
+     "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow"
+    },
+    "kind": {
+     "prompt": "a tired child yawning, a long airy breathy yawn with a gentle haaah rising and falling in pitch, followed by a small sleepy sigh, close-up, quiet room, no words",
+     "seeds": [
+      4101,
+      4102,
+      4103,
+      4104,
+      4105,
+      4106
+     ],
+     "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow"
+    },
+    "frau_im_prompt": {
+     "prompt": "a young woman yawns lightly, a long airy open-mouthed breath in, a soft breathy haaah that rises and then falls in pitch, then a short relaxed breath out, effortless and gentle, close-up, quiet room, no groaning, no moaning, no grunting, no straining, no words",
+     "seeds": [
+      4101,
+      4102
+     ],
+     "negativ": ""
+    },
+    "morgen_im_prompt": {
+     "prompt": "a sleepy person yawning in the morning while stretching, a big wide-open airy yawn, breathy haaaah rising and falling, then a short relaxed exhale and a small content mm, close-up, bedroom, no groaning, no moaning, no grunting, no straining, no words",
+     "seeds": [
+      4101,
+      4102
+     ],
+     "negativ": ""
+    },
+    "comic_im_prompt": {
+     "prompt": "cartoon yawn sound effect, a funny exaggerated airy yawn, a breathy haaaa-aah that swoops up and down in pitch, light and playful, ending with a quick satisfied mm, animated cartoon, no groaning, no moaning, no grunting, no straining, no words",
+     "seeds": [
+      4101,
+      4102
+     ],
+     "negativ": ""
+    },
+    "hoeflich_im_prompt": {
+     "prompt": "a short polite yawn behind a hand, a quiet airy breath in with the mouth wide open, slightly muffled by the hand, then a soft relaxed breath out, close-up, quiet room, no groaning, no moaning, no grunting, no straining, no words",
+     "seeds": [
+      4101,
+      4102
+     ],
+     "negativ": ""
+    },
+    "kind_im_prompt": {
+     "prompt": "a tired child yawning, a long airy breathy yawn with a gentle haaah rising and falling in pitch, followed by a small sleepy sigh, close-up, quiet room, no groaning, no moaning, no grunting, no straining, no words",
+     "seeds": [
+      4101,
+      4102
+     ],
+     "negativ": ""
+    },
+    "comic2": {
+     "prompt": "a person does a big funny exaggerated cartoon-style yawn with their own voice, a long breathy open-mouthed haaaah sliding up and then down in pitch, then a relaxed breath out and a tiny satisfied mm, human voice only, close-up, quiet room, no words",
+     "seeds": [
+      4111,
+      4112,
+      4113,
+      4114,
+      4115,
+      4116
+     ],
+     "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow, whistle, slide whistle, theremin, trumpet, musical instrument, animal, dog, dog yawn, howl"
+    },
+    "morgen2": {
+     "prompt": "a sleepy young woman yawning widely in the morning, a long airy human yawn, breathy haaaah rising and then falling in pitch, then a short relaxed exhale with a soft content mm, close-up, bedroom, no words",
+     "seeds": [
+      4111,
+      4112,
+      4113,
+      4114,
+      4115,
+      4116,
+      4117,
+      4118
+     ],
+     "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow, whistle, slide whistle, theremin, trumpet, musical instrument, animal, dog, dog yawn, howl"
+    },
+    "jugend": {
+     "prompt": "a tired teenager yawning lazily, a long airy open-mouthed human yawn, breathy haaah rising and then falling in pitch, then a relaxed breath out, effortless, close-up, quiet room, no words",
+     "seeds": [
+      4121,
+      4122,
+      4123,
+      4124,
+      4125,
+      4126
+     ],
+     "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow, whistle, slide whistle, theremin, trumpet, musical instrument, animal, dog, dog yawn, howl"
+    },
+    "hoeflich2": {
+     "prompt": "a young woman gives a short polite yawn behind her hand, a soft airy open-mouthed breath in, a gentle breathy haaah rising and then falling in pitch, then a quick relaxed breath out, close-up, quiet room, no words",
+     "seeds": [
+      4131,
+      4132,
+      4133,
+      4134,
+      4135,
+      4136
+     ],
+     "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow, whistle, slide whistle, theremin, trumpet, musical instrument, animal, dog, dog yawn, howl"
+    }
+   },
+   "behalten": 8
+  },
+  "schnarchen": {
+   "titel": "Schnarchen",
+   "ziel_s": [
+    4.0,
+    5.2
+   ],
+   "ziel_lufs": -19.0,
+   "daueransage_s": 4.5,
+   "prompts": {
+    "tief": {
+     "prompt": "a man snoring loudly, three slow deep snores, each a long rattling inhale followed by a soft puffing exhale, close-up, quiet bedroom, no words",
+     "seeds": [
+      3201,
+      3202,
+      3203
+     ]
+    },
+    "komisch": {
+     "prompt": "comedic cartoon snoring, a sleeping man snores with a loud rumbling inhale and a funny lip-flapping exhale, two or three breaths, close microphone",
+     "seeds": [
+      3201,
+      3202,
+      3203
+     ]
+    },
+    "ruhig": {
+     "prompt": "a person sleeping and snoring steadily, a heavy snore on each breath in and a soft sigh out, indoor, close-up, no talking",
+     "seeds": [
+      3201,
+      3202,
+      3203
+     ]
+    }
+   },
+   "behalten": 6
+  },
+  "wecker": {
+   "titel": "Wecker",
+   "ziel_s": [
+    4.3,
+    5.8
+   ],
+   "ziel_lufs": -17.5,
+   "daueransage_s": 5.0,
+   "prompts": {
+    "ticken_dann": {
+     "prompt": "an old mechanical wind-up alarm clock ticking steadily for three seconds, then its bell suddenly rings loudly and shrilly for two seconds, close-up, indoor",
+     "seeds": [
+      3301,
+      3302,
+      3303,
+      3304,
+      3305,
+      3306
+     ]
+    },
+    "zwei_glocken": {
+     "prompt": "a vintage twin-bell alarm clock, loud regular tick tock for about three seconds, then a sudden loud metallic ringing of the bells for two seconds, close-up, quiet bedroom",
+     "seeds": [
+      3301,
+      3302,
+      3303,
+      3304
+     ]
+    },
+    "tick_tack": {
+     "prompt": "clock ticking, tick tock tick tock tick tock, then a mechanical alarm clock goes off with rapid loud bell ringing, close-up, dry room",
+     "seeds": [
+      3301,
+      3302,
+      3303,
+      3304,
+      3305,
+      3306,
+      3307,
+      3308
+     ]
+    },
+    "leise_tick": {
+     "prompt": "a mechanical alarm clock softly ticking, tick tock tick tock, for three seconds in a quiet bedroom, then suddenly its loud bell rings rapidly for two seconds, close-up",
+     "seeds": [
+      3311,
+      3312,
+      3313,
+      3314
+     ]
+    }
+   },
+   "behalten": 6
+  },
+  "klingeln": {
+   "titel": "Nur Klingeln (Ausweichlösung)",
+   "ziel_s": [
+    1.2,
+    1.8
+   ],
+   "ziel_lufs": -17.5,
+   "daueransage_s": 1.5,
+   "prompts": {
+    "hammer": {
+     "prompt": "a mechanical alarm clock bell ringing loudly, rapid metal hammer striking the bells, close-up, short",
+     "seeds": [
+      3351,
+      3352,
+      3353
+     ]
+    },
+    "schrill": {
+     "prompt": "old twin-bell alarm clock ringing, shrill continuous metallic ringing, indoor, close-up",
+     "seeds": [
+      3351,
+      3352,
+      3353
+     ]
+    }
+   },
+   "behalten": 3
+  },
+  "papierkugel_wurf": {
+   "titel": "Papierkugel: Knüllen und Wurf",
+   "ziel_s": [
+    0.6,
+    1.3
+   ],
+   "ziel_lufs": -21.0,
+   "daueransage_s": 1.0,
+   "prompts": {
+    "knuellen_wusch": {
+     "prompt": "a sheet of paper quickly crumpled into a ball by hand, then a short soft whoosh as it is thrown, close-up, dry room",
+     "seeds": [
+      3401,
+      3402,
+      3403
+     ]
+    },
+    "knistern": {
+     "prompt": "crumpling paper into a ball, crinkling and crackling paper, followed by a quick swish of a throw through the air, close-up",
+     "seeds": [
+      3401,
+      3402,
+      3403
+     ]
+    },
+    "schnell": {
+     "prompt": "hands quickly scrunching a piece of paper into a tight ball, short crinkly crumple, then a fast airy swoosh, indoor",
+     "seeds": [
+      3401,
+      3402,
+      3403
+     ]
+    }
+   },
+   "behalten": 6
+  },
+  "papierkugel_plopp": {
+   "titel": "Papierkugel: Treffer (Plopp)",
+   "ziel_s": [
+    0.2,
+    0.5
+   ],
+   "ziel_lufs": -21.5,
+   "daueransage_s": 1.0,
+   "prompts": {
+    "tisch": {
+     "prompt": "a light crumpled paper ball lands softly on a table, one soft papery plop, close-up, quiet room",
+     "seeds": [
+      3501,
+      3502,
+      3503
+     ]
+    },
+    "dumpf": {
+     "prompt": "a small ball of paper hits a wooden desk, soft dull tap with a tiny crinkle, single hit, close-up",
+     "seeds": [
+      3501,
+      3502,
+      3503
+     ]
+    },
+    "kopf": {
+     "prompt": "a crumpled paper ball bounces off a person's head, one soft light papery bonk, single short hit, comedic",
+     "seeds": [
+      3501,
+      3502,
+      3503
+     ]
+    },
+    "kissen": {
+     "prompt": "a crumpled paper ball softly lands on a cushion, a gentle muffled papery plop, very short, close-up, quiet room",
+     "seeds": [
+      3504,
+      3505,
+      3506
+     ]
+    }
+   },
+   "behalten": 6
+  },
+  "lachen": {
+   "titel": "Lachen (Reaktion 😂)",
+   "ziel_s": [
+    1.1,
+    1.9
+   ],
+   "ziel_lufs": -19.0,
+   "daueransage_s": 1.5,
+   "prompts": {
+    "kichern": {
+     "prompt": "a person giggling contagiously, a short burst of happy giggles, no words, close-up, indoor",
+     "seeds": [
+      3601,
+      3602,
+      3603
+     ]
+    },
+    "herzlich": {
+     "prompt": "a man chuckling and laughing heartily for a moment, warm amused laughter, no speech, close microphone",
+     "seeds": [
+      3601,
+      3602,
+      3603
+     ]
+    },
+    "zu_zweit": {
+     "prompt": "two friends bursting into short infectious laughter together, joyful giggling, no words, dry room",
+     "seeds": [
+      3601,
+      3602,
+      3603
+     ]
+    }
+   },
+   "behalten": 6
+  },
+  "schreck": {
+   "titel": "Schreck (Reaktion 😱)",
+   "ziel_s": [
+    0.5,
+    1.0
+   ],
+   "ziel_lufs": -19.0,
+   "daueransage_s": 1.0,
+   "prompts": {
+    "oh": {
+     "prompt": "a person gasps in surprise, a short sharp startled intake of breath with a tiny voiced oh, close-up, no words",
+     "seeds": [
+      3701,
+      3702,
+      3703,
+      3704,
+      3705
+     ]
+    },
+    "frau": {
+     "prompt": "a woman gasps in shock, a single quick surprised gasp, close microphone, dry room, no speech",
+     "seeds": [
+      3701,
+      3702,
+      3703
+     ]
+    },
+    "mann": {
+     "prompt": "a man gasps, startled and surprised, one short breathy gasp, indoor, close-up, no talking",
+     "seeds": [
+      3701,
+      3702,
+      3703
+     ]
+    }
+   },
+   "behalten": 6
+  },
+  "klatschen": {
+   "titel": "Klatschen (Reaktion 👏)",
+   "ziel_s": [
+    1.1,
+    1.9
+   ],
+   "ziel_lufs": -19.0,
+   "daueransage_s": 1.5,
+   "prompts": {
+    "wenige": {
+     "prompt": "a few people clapping their hands briefly, short friendly applause from three or four people, small room, close-up, no cheering",
+     "seeds": [
+      3801,
+      3802,
+      3803
+     ]
+    },
+    "kurz": {
+     "prompt": "a short burst of applause from a small group that stops quickly, indoor, no voices",
+     "seeds": [
+      3801,
+      3802,
+      3803
+     ]
+    },
+    "begeistert": {
+     "prompt": "two or three people clapping hands enthusiastically for a moment, short lively applause, dry room, no voices",
+     "seeds": [
+      3801,
+      3802,
+      3803
+     ]
+    }
+   },
+   "behalten": 6
+  },
+  "daumen": {
+   "titel": "Daumen hoch (Reaktion 👍)",
+   "ziel_s": [
+    0.25,
+    0.6
+   ],
+   "ziel_lufs": -19.0,
+   "daueransage_s": 1.0,
+   "prompts": {
+    "pling": {
+     "prompt": "a single soft friendly pling notification, warm round mallet note, very short, user interface confirmation",
+     "seeds": [
+      3901,
+      3902,
+      3903
+     ]
+    },
+    "plopp": {
+     "prompt": "a short cheerful cartoon pop with a soft ringing ping, positive confirmation sound, very short",
+     "seeds": [
+      3901,
+      3902,
+      3903
+     ]
+    },
+    "marimba": {
+     "prompt": "one soft marimba note, short and round, gentle positive notification, warm",
+     "seeds": [
+      3901,
+      3902,
+      3903
+     ]
+    }
+   },
+   "behalten": 6
+  }
+ },
+ "kandidaten": [
+  {
+   "roh": "gaehnen_herzhaft_3105",
+   "ton": "gaehnen",
+   "variante": "herzhaft",
+   "prompt": "a man gives a long, hearty, exaggerated yawn, deep breath in, then a drawn-out funny yawning groan that ends in a relaxed sigh, close-up, quiet room, no words",
+   "seed": 3105,
+   "sekunden_prompt": 3.0,
+   "roh_spitze_dbfs": -1.6,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 2.84,
+   "lufs": -18.9,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -10.2,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -30.8,
+   "ueber_6k_db": -42.4,
+   "ueber_10k_db": -95.7,
+   "ueber_12k_db": -135.4,
+   "mitten_500_4k_db": -0.5,
+   "unter_300_db": -11.8,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 36.7,
+    "schaerfe": 3.0
+   },
+   "natuerliche_dauer_s": 2.824,
+   "gekuerzt": false,
+   "einblenden_s": 0.04,
+   "ausblenden_s": 0.35,
+   "sim_lufs": -18.6,
+   "sim_mitten_500_4k_db": -0.0,
+   "sim_pegelverlust_db": 0.3,
+   "ast_erwartet": [
+    "Groan",
+    0.651
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.017
+   ],
+   "ast_katze": [
+    "Cat",
+    0.005
+   ],
+   "ast_top": [
+    [
+     "Groan",
+     0.651
+    ],
+    [
+     "Sound effect",
+     0.164
+    ],
+    [
+     "Gasp",
+     0.099
+    ],
+    [
+     "Sigh",
+     0.095
+    ],
+    [
+     "Wail, moan",
+     0.069
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 2.49,
+   "id": "gaehnen_01",
+   "notiz": "Prompt „herzhaft“: Mann, lang und übertrieben, endet mit einem Seufzer. AudioSet: „Groan“ 0,65 (Spitze: „Groan“ 0,65)."
+  },
+  {
+   "roh": "gaehnen_herzhaft_3106",
+   "ton": "gaehnen",
+   "variante": "herzhaft",
+   "prompt": "a man gives a long, hearty, exaggerated yawn, deep breath in, then a drawn-out funny yawning groan that ends in a relaxed sigh, close-up, quiet room, no words",
+   "seed": 3106,
+   "sekunden_prompt": 3.0,
+   "roh_spitze_dbfs": -0.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 2.8,
+   "lufs": -18.9,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -10.5,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -28.5,
+   "ueber_6k_db": -42.5,
+   "ueber_10k_db": -92.3,
+   "ueber_12k_db": -109.5,
+   "mitten_500_4k_db": -1.4,
+   "unter_300_db": -8.5,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 15.5,
+    "schaerfe": 3.9
+   },
+   "natuerliche_dauer_s": 2.775,
+   "gekuerzt": false,
+   "einblenden_s": 0.04,
+   "ausblenden_s": 0.35,
+   "sim_lufs": -17.3,
+   "sim_mitten_500_4k_db": -0.4,
+   "sim_pegelverlust_db": 1.6,
+   "ast_erwartet": [
+    "Groan",
+    0.494
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.097
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Groan",
+     0.494
+    ],
+    [
+     "Grunt",
+     0.209
+    ],
+    [
+     "Speech",
+     0.097
+    ],
+    [
+     "Sigh",
+     0.087
+    ],
+    [
+     "Sound effect",
+     0.053
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 1.9,
+   "id": "gaehnen_02",
+   "notiz": "Prompt „herzhaft“: Mann, lang und übertrieben, endet mit einem Seufzer. AudioSet: „Groan“ 0,49 (Spitze: „Groan“ 0,49)."
+  },
+  {
+   "roh": "gaehnen_herzhaft_3104",
+   "ton": "gaehnen",
+   "variante": "herzhaft",
+   "prompt": "a man gives a long, hearty, exaggerated yawn, deep breath in, then a drawn-out funny yawning groan that ends in a relaxed sigh, close-up, quiet room, no words",
+   "seed": 3104,
+   "sekunden_prompt": 3.0,
+   "roh_spitze_dbfs": -0.7,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 2.95,
+   "lufs": -19.0,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -9.8,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -31.0,
+   "ueber_6k_db": -50.9,
+   "ueber_10k_db": -90.8,
+   "ueber_12k_db": -136.4,
+   "mitten_500_4k_db": -0.7,
+   "unter_300_db": -10.6,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 35.9,
+    "schaerfe": 1.6
+   },
+   "natuerliche_dauer_s": 2.933,
+   "gekuerzt": false,
+   "einblenden_s": 0.04,
+   "ausblenden_s": 0.35,
+   "sim_lufs": -17.8,
+   "sim_mitten_500_4k_db": -0.2,
+   "sim_pegelverlust_db": 1.2,
+   "ast_erwartet": [
+    "Groan",
+    0.379
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.031
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Groan",
+     0.379
+    ],
+    [
+     "Sound effect",
+     0.152
+    ],
+    [
+     "Wail, moan",
+     0.085
+    ],
+    [
+     "Grunt",
+     0.083
+    ],
+    [
+     "Speech",
+     0.031
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 1.46,
+   "id": "gaehnen_03",
+   "notiz": "Prompt „herzhaft“: Mann, lang und übertrieben, endet mit einem Seufzer. AudioSet: „Groan“ 0,38 (Spitze: „Groan“ 0,38)."
+  },
+  {
+   "roh": "gaehnen_herzhaft_3102",
+   "ton": "gaehnen",
+   "variante": "herzhaft",
+   "prompt": "a man gives a long, hearty, exaggerated yawn, deep breath in, then a drawn-out funny yawning groan that ends in a relaxed sigh, close-up, quiet room, no words",
+   "seed": 3102,
+   "sekunden_prompt": 3.0,
+   "roh_spitze_dbfs": -0.5,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 2.84,
+   "lufs": -19.0,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -6.5,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -25.0,
+   "ueber_6k_db": -39.9,
+   "ueber_10k_db": -81.2,
+   "ueber_12k_db": -113.2,
+   "mitten_500_4k_db": -3.5,
+   "unter_300_db": -8.5,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 16.2,
+    "schaerfe": 1.9
+   },
+   "natuerliche_dauer_s": 2.824,
+   "gekuerzt": false,
+   "einblenden_s": 0.04,
+   "ausblenden_s": 0.35,
+   "sim_lufs": -18.7,
+   "sim_mitten_500_4k_db": -1.5,
+   "sim_pegelverlust_db": 0.3,
+   "ast_erwartet": [
+    "Sigh",
+    0.225
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.025
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Sigh",
+     0.225
+    ],
+    [
+     "Gasp",
+     0.159
+    ],
+    [
+     "Groan",
+     0.139
+    ],
+    [
+     "Speech",
+     0.025
+    ],
+    [
+     "Wail, moan",
+     0.024
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 0.89,
+   "id": "gaehnen_04",
+   "notiz": "Prompt „herzhaft“: Mann, lang und übertrieben, endet mit einem Seufzer. AudioSet: „Sigh“ 0,23 (Spitze: „Sigh“ 0,23)."
+  },
+  {
+   "roh": "gaehnen_muede_3101",
+   "ton": "gaehnen",
+   "variante": "muede",
+   "prompt": "a very tired person yawning loudly and widely, one long stretching yawn with a low voice, close microphone, dry room, no speech",
+   "seed": 3101,
+   "sekunden_prompt": 3.0,
+   "roh_spitze_dbfs": -1.3,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 2.34,
+   "lufs": -18.9,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -10.5,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -33.8,
+   "ueber_6k_db": -49.4,
+   "ueber_10k_db": -92.2,
+   "ueber_12k_db": -117.1,
+   "mitten_500_4k_db": -0.1,
+   "unter_300_db": -26.9,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 18.6,
+    "schaerfe": 3.1
+   },
+   "natuerliche_dauer_s": 2.318,
+   "gekuerzt": false,
+   "einblenden_s": 0.04,
+   "ausblenden_s": 0.35,
+   "sim_lufs": -18.1,
+   "sim_mitten_500_4k_db": -0.0,
+   "sim_pegelverlust_db": 0.8,
+   "ast_erwartet": [
+    "Groan",
+    0.59
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.013
+   ],
+   "ast_katze": [
+    "Cat",
+    0.001
+   ],
+   "ast_top": [
+    [
+     "Groan",
+     0.59
+    ],
+    [
+     "Wail, moan",
+     0.224
+    ],
+    [
+     "Sound effect",
+     0.126
+    ],
+    [
+     "Gasp",
+     0.08
+    ],
+    [
+     "Grunt",
+     0.059
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,32 s)"
+   ],
+   "punkte": 0.3,
+   "id": "gaehnen_05",
+   "notiz": "Prompt „muede“: sehr müde, breit, tiefe Stimme. AudioSet: „Groan“ 0,59 (Spitze: „Groan“ 0,59). Hinweis: etwas kürzer als das Ziel (2,32 s)."
+  },
+  {
+   "roh": "gaehnen_muede_3103",
+   "ton": "gaehnen",
+   "variante": "muede",
+   "prompt": "a very tired person yawning loudly and widely, one long stretching yawn with a low voice, close microphone, dry room, no speech",
+   "seed": 3103,
+   "sekunden_prompt": 3.0,
+   "roh_spitze_dbfs": -0.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 2.43,
+   "lufs": -19.1,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -9.2,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -28.8,
+   "ueber_6k_db": -44.9,
+   "ueber_10k_db": -84.3,
+   "ueber_12k_db": -130.5,
+   "mitten_500_4k_db": -0.2,
+   "unter_300_db": -19.1,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 39.1,
+    "schaerfe": 3.0
+   },
+   "natuerliche_dauer_s": 2.413,
+   "gekuerzt": false,
+   "einblenden_s": 0.04,
+   "ausblenden_s": 0.35,
+   "sim_lufs": -16.3,
+   "sim_mitten_500_4k_db": -0.1,
+   "sim_pegelverlust_db": 2.8,
+   "ast_erwartet": [
+    "Groan",
+    0.528
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.034
+   ],
+   "ast_katze": [
+    "Roaring cats (lions, tigers)",
+    0.004
+   ],
+   "ast_top": [
+    [
+     "Groan",
+     0.528
+    ],
+    [
+     "Grunt",
+     0.459
+    ],
+    [
+     "Sound effect",
+     0.126
+    ],
+    [
+     "Roar",
+     0.085
+    ],
+    [
+     "Burping, eructation",
+     0.04
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,41 s)"
+   ],
+   "punkte": -0.11,
+   "id": "gaehnen_06",
+   "notiz": "Prompt „muede“: sehr müde, breit, tiefe Stimme. AudioSet: „Groan“ 0,53 (Spitze: „Groan“ 0,53). Hinweis: etwas kürzer als das Ziel (2,41 s)."
+  },
+  {
+   "roh": "gaehnen2_frau_4112",
+   "ton": "gaehnen2",
+   "variante": "frau",
+   "prompt": "a young woman yawns lightly, a long airy open-mouthed breath in, a soft breathy haaah that rises and then falls in pitch, then a short relaxed breath out, effortless and gentle, close-up, quiet room, no words",
+   "seed": 4112,
+   "sekunden_prompt": 3.0,
+   "roh_spitze_dbfs": -14.5,
+   "roh_leer": false,
+   "roh_leise": false,
+   "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow",
+   "dauer_s": 2.2,
+   "lufs": -18.9,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -13.9,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -45.4,
+   "ueber_6k_db": -58.5,
+   "ueber_10k_db": -140.9,
+   "ueber_12k_db": -142.3,
+   "mitten_500_4k_db": -29.1,
+   "unter_300_db": -0.0,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 15.4,
+    "schaerfe": 6.6
+   },
+   "natuerliche_dauer_s": 2.178,
+   "gekuerzt": false,
+   "einblenden_s": 0.04,
+   "ausblenden_s": 0.3,
+   "sim_lufs": -42.4,
+   "sim_mitten_500_4k_db": -1.5,
+   "sim_pegelverlust_db": -23.5,
+   "ast_atem_summe": 1.107,
+   "ast_meiden": {
+    "Groan": 0.022,
+    "Grunt": 0.002,
+    "Wail, moan": 0.008,
+    "Whimper": 0.003,
+    "Screaming": 0.0,
+    "Yell": 0.0,
+    "Shout": 0.0,
+    "Bellow": 0.0,
+    "Roar": 0.001,
+    "Growling": 0.0,
+    "Burping, eructation": 0.001,
+    "Fart": 0.0,
+    "Snoring": 0.001,
+    "Singing": 0.001,
+    "Music": 0.009,
+    "Babbling": 0.0,
+    "Whistle": 0.0,
+    "Whistling": 0.0,
+    "Musical instrument": 0.001,
+    "Theremin": 0.0,
+    "Animal": 0.001,
+    "Dog": 0.0,
+    "Howl": 0.0,
+    "Whale vocalization": 0.0,
+    "Humming": 0.001
+   },
+   "stimme": {
+    "stimmhaft_anteil": 0.92,
+    "schwerpunkt_hz": 675.0,
+    "ende_stimmhaft": 0.94,
+    "ende_schwerpunkt_hz": 620.0,
+    "f0_median_hz": 205.0,
+    "f0_p10_hz": 198.0,
+    "f0_p90_hz": 253.0,
+    "anstieg_ht": 0.0,
+    "abfall_ht": 4.4,
+    "gipfel_lage": 0.0
+   },
+   "ast_erwartet": [
+    "Sigh",
+    0.919
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.044
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Sigh",
+     0.919
+    ],
+    [
+     "Gasp",
+     0.177
+    ],
+    [
+     "Speech",
+     0.044
+    ],
+    [
+     "Sound effect",
+     0.04
+    ],
+    [
+     "Male speech, man speaking",
+     0.023
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 4.91,
+   "id": "gaehnen2_01",
+   "notiz": "Prompt „frau“: Frau, leicht und luftig. Gemessen: mittlere Stimme (Grundton im Mittel 205 Hz), überwiegend Stimme, Tonhöhe fällt um 4 Halbtöne, endet summend (kleines „mm“?). AudioSet: „Sigh“ 0,92 (Spitze: „Sigh“ 0,92). Kontrolle Stöhnen: „Groan“ 0,02, „Grunt“ 0,00, „Wail, moan“ 0,01; Atemklassen zusammen 1,11."
+  },
+  {
+   "roh": "gaehnen2_frau_4110",
+   "ton": "gaehnen2",
+   "variante": "frau",
+   "prompt": "a young woman yawns lightly, a long airy open-mouthed breath in, a soft breathy haaah that rises and then falls in pitch, then a short relaxed breath out, effortless and gentle, close-up, quiet room, no words",
+   "seed": 4110,
+   "sekunden_prompt": 3.0,
+   "roh_spitze_dbfs": -31.1,
+   "roh_leer": false,
+   "roh_leise": true,
+   "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow",
+   "dauer_s": 2.62,
+   "lufs": -18.9,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -12.1,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -24.3,
+   "ueber_6k_db": -45.0,
+   "ueber_10k_db": -76.3,
+   "ueber_12k_db": -141.8,
+   "mitten_500_4k_db": -14.9,
+   "unter_300_db": -2.1,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 19.4,
+    "schaerfe": 6.4
+   },
+   "natuerliche_dauer_s": 2.603,
+   "gekuerzt": false,
+   "einblenden_s": 0.04,
+   "ausblenden_s": 0.3,
+   "sim_lufs": -28.3,
+   "sim_mitten_500_4k_db": -0.5,
+   "sim_pegelverlust_db": -9.4,
+   "ast_atem_summe": 0.992,
+   "ast_meiden": {
+    "Groan": 0.009,
+    "Grunt": 0.0,
+    "Wail, moan": 0.017,
+    "Whimper": 0.005,
+    "Screaming": 0.0,
+    "Yell": 0.0,
+    "Shout": 0.0,
+    "Bellow": 0.0,
+    "Roar": 0.0,
+    "Growling": 0.0,
+    "Burping, eructation": 0.0,
+    "Fart": 0.0,
+    "Snoring": 0.0,
+    "Singing": 0.0,
+    "Music": 0.006,
+    "Babbling": 0.0,
+    "Whistle": 0.0,
+    "Whistling": 0.0,
+    "Musical instrument": 0.001,
+    "Theremin": 0.0,
+    "Animal": 0.001,
+    "Dog": 0.0,
+    "Howl": 0.0,
+    "Whale vocalization": 0.0,
+    "Humming": 0.0
+   },
+   "stimme": {
+    "stimmhaft_anteil": 0.57,
+    "schwerpunkt_hz": 1243.0,
+    "ende_stimmhaft": 0.0,
+    "ende_schwerpunkt_hz": 1969.0,
+    "f0_median_hz": 268.0,
+    "f0_p10_hz": 210.0,
+    "f0_p90_hz": 316.0,
+    "anstieg_ht": -0.1,
+    "abfall_ht": 7.7,
+    "gipfel_lage": 0.0
+   },
+   "ast_erwartet": [
+    "Sigh",
+    0.693
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.025
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Sigh",
+     0.693
+    ],
+    [
+     "Gasp",
+     0.287
+    ],
+    [
+     "Speech",
+     0.025
+    ],
+    [
+     "Wail, moan",
+     0.017
+    ],
+    [
+     "Breathing",
+     0.012
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "Original sehr leise"
+   ],
+   "punkte": 4.55,
+   "id": "gaehnen2_02",
+   "notiz": "Prompt „frau“: Frau, leicht und luftig. Gemessen: hohe Stimme (Grundton im Mittel 268 Hz), halb gehaucht, halb Stimme, Tonhöhe fällt um 8 Halbtöne, endet gehaucht. AudioSet: „Sigh“ 0,69 (Spitze: „Sigh“ 0,69). Kontrolle Stöhnen: „Groan“ 0,01, „Grunt“ 0,00, „Wail, moan“ 0,02; Atemklassen zusammen 0,99. Hinweis: Original sehr leise."
+  },
+  {
+   "roh": "gaehnen2_morgen_4101",
+   "ton": "gaehnen2",
+   "variante": "morgen",
+   "prompt": "a sleepy person yawning in the morning while stretching, a big wide-open airy yawn, breathy haaaah rising and falling, then a short relaxed exhale and a small content mm, close-up, bedroom, no words",
+   "seed": 4101,
+   "sekunden_prompt": 3.0,
+   "roh_spitze_dbfs": -10.7,
+   "roh_leer": false,
+   "roh_leise": false,
+   "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow",
+   "dauer_s": 2.31,
+   "lufs": -19.1,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -8.4,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -28.8,
+   "ueber_6k_db": -42.2,
+   "ueber_10k_db": -83.3,
+   "ueber_12k_db": -141.7,
+   "mitten_500_4k_db": -1.3,
+   "unter_300_db": -11.8,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 31.1,
+    "schaerfe": 3.1
+   },
+   "natuerliche_dauer_s": 2.289,
+   "gekuerzt": false,
+   "einblenden_s": 0.04,
+   "ausblenden_s": 0.3,
+   "sim_lufs": -17.3,
+   "sim_mitten_500_4k_db": -0.4,
+   "sim_pegelverlust_db": 1.8,
+   "ast_atem_summe": 1.028,
+   "ast_meiden": {
+    "Groan": 0.025,
+    "Grunt": 0.002,
+    "Wail, moan": 0.006,
+    "Whimper": 0.001,
+    "Screaming": 0.0,
+    "Yell": 0.0,
+    "Shout": 0.0,
+    "Bellow": 0.0,
+    "Roar": 0.001,
+    "Growling": 0.0,
+    "Burping, eructation": 0.001,
+    "Fart": 0.0,
+    "Snoring": 0.001,
+    "Singing": 0.0,
+    "Music": 0.005,
+    "Babbling": 0.0,
+    "Whistle": 0.0,
+    "Whistling": 0.0,
+    "Musical instrument": 0.001,
+    "Theremin": 0.0,
+    "Animal": 0.001,
+    "Dog": 0.0,
+    "Howl": 0.0,
+    "Whale vocalization": 0.0,
+    "Humming": 0.0
+   },
+   "stimme": {
+    "stimmhaft_anteil": 0.04,
+    "schwerpunkt_hz": 1527.0,
+    "ende_stimmhaft": 0.0,
+    "ende_schwerpunkt_hz": 1398.0
+   },
+   "ast_erwartet": [
+    "Sigh",
+    0.794
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.132
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Sigh",
+     0.794
+    ],
+    [
+     "Gasp",
+     0.193
+    ],
+    [
+     "Speech",
+     0.132
+    ],
+    [
+     "Sound effect",
+     0.079
+    ],
+    [
+     "Breathing",
+     0.041
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ],
+   "punkte": 3.88,
+   "id": "gaehnen2_03",
+   "notiz": "Prompt „morgen“: verschlafen am Morgen mit Strecken, kleines „mm“. Gemessen: fast nur Atem, kaum Stimme, endet gehaucht. AudioSet: „Sigh“ 0,79 (Spitze: „Sigh“ 0,79). Kontrolle Stöhnen: „Groan“ 0,03, „Grunt“ 0,00, „Wail, moan“ 0,01; Atemklassen zusammen 1,03. Hinweis: fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+  },
+  {
+   "roh": "gaehnen2_hoeflich2_4136",
+   "ton": "gaehnen2",
+   "variante": "hoeflich2",
+   "prompt": "a young woman gives a short polite yawn behind her hand, a soft airy open-mouthed breath in, a gentle breathy haaah rising and then falling in pitch, then a quick relaxed breath out, close-up, quiet room, no words",
+   "seed": 4136,
+   "sekunden_prompt": 3.0,
+   "roh_spitze_dbfs": -21.4,
+   "roh_leer": false,
+   "roh_leise": false,
+   "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow, whistle, slide whistle, theremin, trumpet, musical instrument, animal, dog, dog yawn, howl",
+   "dauer_s": 2.18,
+   "lufs": -18.9,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -7.1,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -21.2,
+   "ueber_6k_db": -46.5,
+   "ueber_10k_db": -77.4,
+   "ueber_12k_db": -100.3,
+   "mitten_500_4k_db": -15.1,
+   "unter_300_db": -2.9,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 45.0,
+    "schaerfe": 6.1
+   },
+   "natuerliche_dauer_s": 2.161,
+   "gekuerzt": false,
+   "einblenden_s": 0.04,
+   "ausblenden_s": 0.3,
+   "sim_lufs": -25.1,
+   "sim_mitten_500_4k_db": -1.6,
+   "sim_pegelverlust_db": -6.2,
+   "ast_atem_summe": 0.858,
+   "ast_meiden": {
+    "Groan": 0.004,
+    "Grunt": 0.001,
+    "Wail, moan": 0.008,
+    "Whimper": 0.016,
+    "Screaming": 0.0,
+    "Yell": 0.0,
+    "Shout": 0.0,
+    "Bellow": 0.0,
+    "Roar": 0.0,
+    "Growling": 0.0,
+    "Burping, eructation": 0.001,
+    "Fart": 0.0,
+    "Snoring": 0.0,
+    "Singing": 0.001,
+    "Music": 0.022,
+    "Babbling": 0.0,
+    "Whistle": 0.0,
+    "Whistling": 0.0,
+    "Musical instrument": 0.002,
+    "Theremin": 0.0,
+    "Animal": 0.001,
+    "Dog": 0.0,
+    "Howl": 0.0,
+    "Whale vocalization": 0.0,
+    "Humming": 0.0
+   },
+   "stimme": {
+    "stimmhaft_anteil": 0.55,
+    "schwerpunkt_hz": 1351.0,
+    "ende_stimmhaft": 0.39,
+    "ende_schwerpunkt_hz": 1884.0,
+    "f0_median_hz": 154.0,
+    "f0_p10_hz": 153.0,
+    "f0_p90_hz": 347.0,
+    "anstieg_ht": 14.2,
+    "abfall_ht": 14.0,
+    "gipfel_lage": 0.49
+   },
+   "ast_erwartet": [
+    "Sigh",
+    0.486
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.018
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Sigh",
+     0.486
+    ],
+    [
+     "Gasp",
+     0.357
+    ],
+    [
+     "Snort",
+     0.03
+    ],
+    [
+     "Sound effect",
+     0.022
+    ],
+    [
+     "Music",
+     0.022
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 3.51,
+   "id": "gaehnen2_04",
+   "notiz": "Prompt „hoeflich2“: Frau, höflich hinter der Hand, sanft. Gemessen: mittlere Stimme (Grundton im Mittel 154 Hz), halb gehaucht, halb Stimme, Tonhöhe steigt um 14 und fällt um 14 Halbtöne, endet mit Stimme. AudioSet: „Sigh“ 0,49 (Spitze: „Sigh“ 0,49). Kontrolle Stöhnen: „Groan“ 0,00, „Grunt“ 0,00, „Wail, moan“ 0,01; Atemklassen zusammen 0,86."
+  },
+  {
+   "roh": "gaehnen2_jugend_4123",
+   "ton": "gaehnen2",
+   "variante": "jugend",
+   "prompt": "a tired teenager yawning lazily, a long airy open-mouthed human yawn, breathy haaah rising and then falling in pitch, then a relaxed breath out, effortless, close-up, quiet room, no words",
+   "seed": 4123,
+   "sekunden_prompt": 3.0,
+   "roh_spitze_dbfs": -18.9,
+   "roh_leer": false,
+   "roh_leise": false,
+   "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow, whistle, slide whistle, theremin, trumpet, musical instrument, animal, dog, dog yawn, howl",
+   "dauer_s": 2.26,
+   "lufs": -18.9,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -13.0,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -41.5,
+   "ueber_6k_db": -54.1,
+   "ueber_10k_db": -115.0,
+   "ueber_12k_db": -142.1,
+   "mitten_500_4k_db": -23.7,
+   "unter_300_db": -5.4,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 15.3,
+    "schaerfe": 5.4
+   },
+   "natuerliche_dauer_s": 2.238,
+   "gekuerzt": false,
+   "einblenden_s": 0.04,
+   "ausblenden_s": 0.3,
+   "sim_lufs": -36.0,
+   "sim_mitten_500_4k_db": -4.5,
+   "sim_pegelverlust_db": -17.1,
+   "ast_atem_summe": 0.796,
+   "ast_meiden": {
+    "Groan": 0.085,
+    "Grunt": 0.007,
+    "Wail, moan": 0.026,
+    "Whimper": 0.012,
+    "Screaming": 0.002,
+    "Yell": 0.0,
+    "Shout": 0.0,
+    "Bellow": 0.0,
+    "Roar": 0.011,
+    "Growling": 0.001,
+    "Burping, eructation": 0.002,
+    "Fart": 0.0,
+    "Snoring": 0.001,
+    "Singing": 0.0,
+    "Music": 0.004,
+    "Babbling": 0.002,
+    "Whistle": 0.0,
+    "Whistling": 0.0,
+    "Musical instrument": 0.001,
+    "Theremin": 0.0,
+    "Animal": 0.009,
+    "Dog": 0.001,
+    "Howl": 0.001,
+    "Whale vocalization": 0.001,
+    "Humming": 0.003
+   },
+   "stimme": {
+    "stimmhaft_anteil": 0.79,
+    "schwerpunkt_hz": 888.0,
+    "ende_stimmhaft": 0.58,
+    "ende_schwerpunkt_hz": 1554.0,
+    "f0_median_hz": 292.0,
+    "f0_p10_hz": 256.0,
+    "f0_p90_hz": 313.0,
+    "anstieg_ht": -0.1,
+    "abfall_ht": 4.0,
+    "gipfel_lage": 0.0
+   },
+   "ast_erwartet": [
+    "Sigh",
+    0.659
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.015
+   ],
+   "ast_katze": [
+    "Cat",
+    0.001
+   ],
+   "ast_top": [
+    [
+     "Sigh",
+     0.659
+    ],
+    [
+     "Gasp",
+     0.117
+    ],
+    [
+     "Groan",
+     0.085
+    ],
+    [
+     "Sound effect",
+     0.07
+    ],
+    [
+     "Wail, moan",
+     0.026
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "etwas „Groan“ (AudioSet 0,09)"
+   ],
+   "punkte": 2.84,
+   "id": "gaehnen2_05",
+   "notiz": "Prompt „jugend“: müder Jugendlicher, lässig. Gemessen: hohe Stimme (Grundton im Mittel 292 Hz), überwiegend Stimme, Tonhöhe fällt um 4 Halbtöne, endet mit Stimme. AudioSet: „Sigh“ 0,66 (Spitze: „Sigh“ 0,66). Kontrolle Stöhnen: „Groan“ 0,09, „Grunt“ 0,01, „Wail, moan“ 0,03; Atemklassen zusammen 0,80. Hinweis: etwas „Groan“ (AudioSet 0,09)."
+  },
+  {
+   "roh": "gaehnen2_frau_4118",
+   "ton": "gaehnen2",
+   "variante": "frau",
+   "prompt": "a young woman yawns lightly, a long airy open-mouthed breath in, a soft breathy haaah that rises and then falls in pitch, then a short relaxed breath out, effortless and gentle, close-up, quiet room, no words",
+   "seed": 4118,
+   "sekunden_prompt": 3.0,
+   "roh_spitze_dbfs": -9.4,
+   "roh_leer": false,
+   "roh_leise": false,
+   "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow",
+   "dauer_s": 2.6,
+   "lufs": -18.9,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -13.5,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -51.2,
+   "ueber_6k_db": -61.1,
+   "ueber_10k_db": -140.4,
+   "ueber_12k_db": -141.9,
+   "mitten_500_4k_db": -21.1,
+   "unter_300_db": -1.0,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 22.3,
+    "schaerfe": 8.9
+   },
+   "natuerliche_dauer_s": 2.583,
+   "gekuerzt": false,
+   "einblenden_s": 0.04,
+   "ausblenden_s": 0.3,
+   "sim_lufs": -34.4,
+   "sim_mitten_500_4k_db": -2.5,
+   "sim_pegelverlust_db": -15.5,
+   "ast_atem_summe": 0.773,
+   "ast_meiden": {
+    "Groan": 0.035,
+    "Grunt": 0.001,
+    "Wail, moan": 0.076,
+    "Whimper": 0.015,
+    "Screaming": 0.001,
+    "Yell": 0.0,
+    "Shout": 0.0,
+    "Bellow": 0.0,
+    "Roar": 0.001,
+    "Growling": 0.0,
+    "Burping, eructation": 0.0,
+    "Fart": 0.0,
+    "Snoring": 0.0,
+    "Singing": 0.0,
+    "Music": 0.004,
+    "Babbling": 0.0,
+    "Whistle": 0.0,
+    "Whistling": 0.0,
+    "Musical instrument": 0.001,
+    "Theremin": 0.0,
+    "Animal": 0.0,
+    "Dog": 0.0,
+    "Howl": 0.0,
+    "Whale vocalization": 0.0,
+    "Humming": 0.001
+   },
+   "stimme": {
+    "stimmhaft_anteil": 0.85,
+    "schwerpunkt_hz": 744.0,
+    "ende_stimmhaft": 1.0,
+    "ende_schwerpunkt_hz": 772.0,
+    "f0_median_hz": 269.0,
+    "f0_p10_hz": 225.0,
+    "f0_p90_hz": 343.0,
+    "anstieg_ht": 4.4,
+    "abfall_ht": 1.9,
+    "gipfel_lage": 0.58
+   },
+   "ast_erwartet": [
+    "Gasp",
+    0.503
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.01
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Gasp",
+     0.503
+    ],
+    [
+     "Sigh",
+     0.265
+    ],
+    [
+     "Wail, moan",
+     0.076
+    ],
+    [
+     "Groan",
+     0.035
+    ],
+    [
+     "Sound effect",
+     0.025
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "etwas „Wail, moan“ (AudioSet 0,08)"
+   ],
+   "punkte": 2.47,
+   "id": "gaehnen2_06",
+   "notiz": "Prompt „frau“: Frau, leicht und luftig. Gemessen: hohe Stimme (Grundton im Mittel 269 Hz), überwiegend Stimme, Tonhöhe steigt um 4 Halbtöne, endet summend (kleines „mm“?). AudioSet: „Gasp“ 0,50 (Spitze: „Gasp“ 0,50). Kontrolle Stöhnen: „Groan“ 0,04, „Grunt“ 0,00, „Wail, moan“ 0,08; Atemklassen zusammen 0,77. Hinweis: etwas „Wail, moan“ (AudioSet 0,08)."
+  },
+  {
+   "roh": "gaehnen2_morgen2_4115",
+   "ton": "gaehnen2",
+   "variante": "morgen2",
+   "prompt": "a sleepy young woman yawning widely in the morning, a long airy human yawn, breathy haaaah rising and then falling in pitch, then a short relaxed exhale with a soft content mm, close-up, bedroom, no words",
+   "seed": 4115,
+   "sekunden_prompt": 3.0,
+   "roh_spitze_dbfs": -2.8,
+   "roh_leer": false,
+   "roh_leise": false,
+   "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow, whistle, slide whistle, theremin, trumpet, musical instrument, animal, dog, dog yawn, howl",
+   "dauer_s": 2.02,
+   "lufs": -18.9,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -12.3,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -30.7,
+   "ueber_6k_db": -42.2,
+   "ueber_10k_db": -140.5,
+   "ueber_12k_db": -142.0,
+   "mitten_500_4k_db": -7.5,
+   "unter_300_db": -6.1,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 19.2,
+    "schaerfe": 7.2
+   },
+   "natuerliche_dauer_s": 1.996,
+   "gekuerzt": false,
+   "einblenden_s": 0.04,
+   "ausblenden_s": 0.3,
+   "sim_lufs": -22.9,
+   "sim_mitten_500_4k_db": -1.8,
+   "sim_pegelverlust_db": -4.0,
+   "ast_atem_summe": 0.573,
+   "ast_meiden": {
+    "Groan": 0.06,
+    "Grunt": 0.001,
+    "Wail, moan": 0.073,
+    "Whimper": 0.039,
+    "Screaming": 0.002,
+    "Yell": 0.0,
+    "Shout": 0.0,
+    "Bellow": 0.001,
+    "Roar": 0.001,
+    "Growling": 0.001,
+    "Burping, eructation": 0.0,
+    "Fart": 0.0,
+    "Snoring": 0.002,
+    "Singing": 0.002,
+    "Music": 0.007,
+    "Babbling": 0.002,
+    "Whistle": 0.0,
+    "Whistling": 0.0,
+    "Musical instrument": 0.001,
+    "Theremin": 0.001,
+    "Animal": 0.003,
+    "Dog": 0.001,
+    "Howl": 0.001,
+    "Whale vocalization": 0.0,
+    "Humming": 0.013
+   },
+   "stimme": {
+    "stimmhaft_anteil": 0.66,
+    "schwerpunkt_hz": 1379.0,
+    "ende_stimmhaft": 0.14,
+    "ende_schwerpunkt_hz": 2200.0,
+    "f0_median_hz": 244.0,
+    "f0_p10_hz": 211.0,
+    "f0_p90_hz": 385.0,
+    "anstieg_ht": 4.2,
+    "abfall_ht": 11.1,
+    "gipfel_lage": 0.37
+   },
+   "ast_erwartet": [
+    "Sigh",
+    0.281
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.026
+   ],
+   "ast_katze": [
+    "Cat",
+    0.001
+   ],
+   "ast_top": [
+    [
+     "Sigh",
+     0.281
+    ],
+    [
+     "Gasp",
+     0.245
+    ],
+    [
+     "Wail, moan",
+     0.073
+    ],
+    [
+     "Groan",
+     0.06
+    ],
+    [
+     "Breathing",
+     0.047
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 1.28,
+   "id": "gaehnen2_07",
+   "notiz": "Prompt „morgen2“: Frau, verschlafen am Morgen, weit offen, kleines „mm“. Gemessen: mittlere Stimme (Grundton im Mittel 244 Hz), überwiegend Stimme, Tonhöhe steigt um 4 und fällt um 11 Halbtöne, endet gehaucht. AudioSet: „Sigh“ 0,28 (Spitze: „Sigh“ 0,28). Kontrolle Stöhnen: „Groan“ 0,06, „Grunt“ 0,00, „Wail, moan“ 0,07; Atemklassen zusammen 0,57."
+  },
+  {
+   "roh": "gaehnen2_hoeflich2_4133",
+   "ton": "gaehnen2",
+   "variante": "hoeflich2",
+   "prompt": "a young woman gives a short polite yawn behind her hand, a soft airy open-mouthed breath in, a gentle breathy haaah rising and then falling in pitch, then a quick relaxed breath out, close-up, quiet room, no words",
+   "seed": 4133,
+   "sekunden_prompt": 3.0,
+   "roh_spitze_dbfs": -13.9,
+   "roh_leer": false,
+   "roh_leise": false,
+   "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow, whistle, slide whistle, theremin, trumpet, musical instrument, animal, dog, dog yawn, howl",
+   "dauer_s": 1.89,
+   "lufs": -18.9,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -13.5,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -39.9,
+   "ueber_6k_db": -58.5,
+   "ueber_10k_db": -114.4,
+   "ueber_12k_db": -141.9,
+   "mitten_500_4k_db": -25.8,
+   "unter_300_db": -0.0,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 18.6,
+    "schaerfe": 7.5
+   },
+   "natuerliche_dauer_s": 1.871,
+   "gekuerzt": false,
+   "einblenden_s": 0.04,
+   "ausblenden_s": 0.3,
+   "sim_lufs": -38.7,
+   "sim_mitten_500_4k_db": -3.6,
+   "sim_pegelverlust_db": -19.8,
+   "ast_atem_summe": 0.939,
+   "ast_meiden": {
+    "Groan": 0.011,
+    "Grunt": 0.001,
+    "Wail, moan": 0.005,
+    "Whimper": 0.005,
+    "Screaming": 0.0,
+    "Yell": 0.0,
+    "Shout": 0.0,
+    "Bellow": 0.0,
+    "Roar": 0.0,
+    "Growling": 0.0,
+    "Burping, eructation": 0.0,
+    "Fart": 0.0,
+    "Snoring": 0.001,
+    "Singing": 0.004,
+    "Music": 0.02,
+    "Babbling": 0.0,
+    "Whistle": 0.0,
+    "Whistling": 0.0,
+    "Musical instrument": 0.001,
+    "Theremin": 0.0,
+    "Animal": 0.001,
+    "Dog": 0.0,
+    "Howl": 0.0,
+    "Whale vocalization": 0.0,
+    "Humming": 0.017
+   },
+   "stimme": {
+    "stimmhaft_anteil": 0.58,
+    "schwerpunkt_hz": 433.0,
+    "ende_stimmhaft": 0.0,
+    "ende_schwerpunkt_hz": 1967.0,
+    "f0_median_hz": 223.0,
+    "f0_p10_hz": 215.0,
+    "f0_p90_hz": 234.0,
+    "anstieg_ht": 0.9,
+    "abfall_ht": 0.0,
+    "gipfel_lage": 0.96
+   },
+   "ast_erwartet": [
+    "Sigh",
+    0.671
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.038
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Sigh",
+     0.671
+    ],
+    [
+     "Gasp",
+     0.263
+    ],
+    [
+     "Speech",
+     0.038
+    ],
+    [
+     "Sound effect",
+     0.032
+    ],
+    [
+     "Music",
+     0.02
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "etwas kürzer als das Ziel (1,87 s)"
+   ],
+   "punkte": 1.17,
+   "id": "gaehnen2_08",
+   "notiz": "Prompt „hoeflich2“: Frau, höflich hinter der Hand, sanft. Gemessen: mittlere Stimme (Grundton im Mittel 223 Hz), halb gehaucht, halb Stimme, Tonhöhe fast gleich, endet gehaucht. AudioSet: „Sigh“ 0,67 (Spitze: „Sigh“ 0,67). Kontrolle Stöhnen: „Groan“ 0,01, „Grunt“ 0,00, „Wail, moan“ 0,01; Atemklassen zusammen 0,94. Hinweis: etwas kürzer als das Ziel (1,87 s)."
+  },
+  {
+   "roh": "schnarchen_ruhig_3203",
+   "ton": "schnarchen",
+   "variante": "ruhig",
+   "prompt": "a person sleeping and snoring steadily, a heavy snore on each breath in and a soft sigh out, indoor, close-up, no talking",
+   "seed": 3203,
+   "sekunden_prompt": 4.5,
+   "roh_spitze_dbfs": -4.8,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 4.17,
+   "lufs": -19.0,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -2.2,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -21.5,
+   "ueber_6k_db": -34.2,
+   "ueber_10k_db": -81.9,
+   "ueber_12k_db": -102.2,
+   "mitten_500_4k_db": -8.7,
+   "unter_300_db": -0.7,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 15.6,
+    "schaerfe": 3.4
+   },
+   "natuerliche_dauer_s": 4.147,
+   "gekuerzt": false,
+   "einblenden_s": 0.05,
+   "ausblenden_s": 0.4,
+   "sim_lufs": -25.7,
+   "sim_mitten_500_4k_db": -0.2,
+   "sim_pegelverlust_db": -6.7,
+   "ast_erwartet": [
+    "Snoring",
+    0.503
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.004
+   ],
+   "ast_katze": [
+    "Cat",
+    0.001
+   ],
+   "ast_top": [
+    [
+     "Snoring",
+     0.503
+    ],
+    [
+     "Snort",
+     0.237
+    ],
+    [
+     "Breathing",
+     0.06
+    ],
+    [
+     "Sound effect",
+     0.02
+    ],
+    [
+     "Gasp",
+     0.01
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 1.66,
+   "id": "schnarchen_01",
+   "notiz": "Prompt „ruhig“: gleichmäßig, Schnarcher beim Einatmen, sanft aus. AudioSet: „Snoring“ 0,50 (Spitze: „Snoring“ 0,50)."
+  },
+  {
+   "roh": "schnarchen_komisch_3203",
+   "ton": "schnarchen",
+   "variante": "komisch",
+   "prompt": "comedic cartoon snoring, a sleeping man snores with a loud rumbling inhale and a funny lip-flapping exhale, two or three breaths, close microphone",
+   "seed": 3203,
+   "sekunden_prompt": 4.5,
+   "roh_spitze_dbfs": -1.5,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 4.23,
+   "lufs": -19.1,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -5.1,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 5800.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -16.1,
+   "ueber_6k_db": -30.9,
+   "ueber_10k_db": -77.5,
+   "ueber_12k_db": -98.0,
+   "mitten_500_4k_db": -4.4,
+   "unter_300_db": -2.2,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 39.2,
+    "schaerfe": 3.4
+   },
+   "natuerliche_dauer_s": 4.206,
+   "gekuerzt": false,
+   "einblenden_s": 0.05,
+   "ausblenden_s": 0.4,
+   "sim_lufs": -21.4,
+   "sim_mitten_500_4k_db": -0.2,
+   "sim_pegelverlust_db": -2.3,
+   "ast_erwartet": [
+    "Snoring",
+    0.392
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.008
+   ],
+   "ast_katze": [
+    "Cat",
+    0.001
+   ],
+   "ast_top": [
+    [
+     "Snoring",
+     0.392
+    ],
+    [
+     "Snort",
+     0.079
+    ],
+    [
+     "Sound effect",
+     0.039
+    ],
+    [
+     "Speech",
+     0.008
+    ],
+    [
+     "Breathing",
+     0.006
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "ähnlich wie schnarchen_01 (gleicher Seed, Spektrogramm r = 0,89)"
+   ],
+   "punkte": 1.43,
+   "id": "schnarchen_02",
+   "notiz": "Prompt „komisch“: komisch, Lippenflattern beim Ausatmen. AudioSet: „Snoring“ 0,39 (Spitze: „Snoring“ 0,39). Tiefpass 5,80 kHz (Leitplanke). Hinweis: ähnlich wie schnarchen_01 (gleicher Seed, Spektrogramm r = 0,89)."
+  },
+  {
+   "roh": "schnarchen_tief_3203",
+   "ton": "schnarchen",
+   "variante": "tief",
+   "prompt": "a man snoring loudly, three slow deep snores, each a long rattling inhale followed by a soft puffing exhale, close-up, quiet bedroom, no words",
+   "seed": 3203,
+   "sekunden_prompt": 4.5,
+   "roh_spitze_dbfs": -5.5,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 4.19,
+   "lufs": -19.0,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -3.8,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 5550.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -13.0,
+   "ueber_6k_db": -31.1,
+   "ueber_10k_db": -76.9,
+   "ueber_12k_db": -98.2,
+   "mitten_500_4k_db": -5.9,
+   "unter_300_db": -1.4,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 15.3,
+    "schaerfe": 4.0
+   },
+   "natuerliche_dauer_s": 4.166,
+   "gekuerzt": false,
+   "einblenden_s": 0.05,
+   "ausblenden_s": 0.4,
+   "sim_lufs": -22.3,
+   "sim_mitten_500_4k_db": -0.2,
+   "sim_pegelverlust_db": -3.3,
+   "ast_erwartet": [
+    "Snort",
+    0.223
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.008
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Breathing",
+     0.304
+    ],
+    [
+     "Snort",
+     0.223
+    ],
+    [
+     "Sigh",
+     0.159
+    ],
+    [
+     "Gasp",
+     0.096
+    ],
+    [
+     "Sound effect",
+     0.013
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "ähnlich wie schnarchen_02 (gleicher Seed, Spektrogramm r = 0,85)",
+    "ähnlich wie schnarchen_01 (gleicher Seed, Spektrogramm r = 0,88)"
+   ],
+   "punkte": 0.73,
+   "id": "schnarchen_03",
+   "notiz": "Prompt „tief“: drei tiefe Schnarcher, Ausatmen als Pusten. AudioSet: „Snort“ 0,22 (Spitze: „Breathing“ 0,30). Tiefpass 5,55 kHz (Leitplanke). Hinweis: ähnlich wie schnarchen_02 (gleicher Seed, Spektrogramm r = 0,85); ähnlich wie schnarchen_01 (gleicher Seed, Spektrogramm r = 0,88)."
+  },
+  {
+   "roh": "schnarchen_tief_3201",
+   "ton": "schnarchen",
+   "variante": "tief",
+   "prompt": "a man snoring loudly, three slow deep snores, each a long rattling inhale followed by a soft puffing exhale, close-up, quiet bedroom, no words",
+   "seed": 3201,
+   "sekunden_prompt": 4.5,
+   "roh_spitze_dbfs": -4.1,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 4.29,
+   "lufs": -19.0,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -6.3,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -16.3,
+   "ueber_6k_db": -31.6,
+   "ueber_10k_db": -73.5,
+   "ueber_12k_db": -89.1,
+   "mitten_500_4k_db": -11.1,
+   "unter_300_db": -0.5,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 27.3,
+    "schaerfe": 5.6
+   },
+   "natuerliche_dauer_s": 4.268,
+   "gekuerzt": false,
+   "einblenden_s": 0.05,
+   "ausblenden_s": 0.4,
+   "sim_lufs": -22.2,
+   "sim_mitten_500_4k_db": -1.1,
+   "sim_pegelverlust_db": -3.2,
+   "ast_erwartet": [
+    "Snort",
+    0.147
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.009
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Gasp",
+     0.216
+    ],
+    [
+     "Sigh",
+     0.194
+    ],
+    [
+     "Snort",
+     0.147
+    ],
+    [
+     "Breathing",
+     0.11
+    ],
+    [
+     "Sound effect",
+     0.017
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 0.43,
+   "id": "schnarchen_04",
+   "notiz": "Prompt „tief“: drei tiefe Schnarcher, Ausatmen als Pusten. AudioSet: „Snort“ 0,15 (Spitze: „Gasp“ 0,22)."
+  },
+  {
+   "roh": "schnarchen_komisch_3202",
+   "ton": "schnarchen",
+   "variante": "komisch",
+   "prompt": "comedic cartoon snoring, a sleeping man snores with a loud rumbling inhale and a funny lip-flapping exhale, two or three breaths, close microphone",
+   "seed": 3202,
+   "sekunden_prompt": 4.5,
+   "roh_spitze_dbfs": -3.2,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 4.25,
+   "lufs": -19.2,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -3.4,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -13.6,
+   "ueber_6k_db": -31.6,
+   "ueber_10k_db": -71.8,
+   "ueber_12k_db": -95.3,
+   "mitten_500_4k_db": -2.6,
+   "unter_300_db": -4.6,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 17.3,
+    "schaerfe": 4.3
+   },
+   "natuerliche_dauer_s": 4.23,
+   "gekuerzt": false,
+   "einblenden_s": 0.05,
+   "ausblenden_s": 0.4,
+   "sim_lufs": -18.9,
+   "sim_mitten_500_4k_db": -0.6,
+   "sim_pegelverlust_db": 0.3,
+   "ast_erwartet": [
+    "Snoring",
+    0.106
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.042
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Grunt",
+     0.14
+    ],
+    [
+     "Snoring",
+     0.106
+    ],
+    [
+     "Snort",
+     0.06
+    ],
+    [
+     "Burping, eructation",
+     0.047
+    ],
+    [
+     "Speech",
+     0.042
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 0.41,
+   "id": "schnarchen_05",
+   "notiz": "Prompt „komisch“: komisch, Lippenflattern beim Ausatmen. AudioSet: „Snoring“ 0,11 (Spitze: „Grunt“ 0,14)."
+  },
+  {
+   "roh": "schnarchen_komisch_3201",
+   "ton": "schnarchen",
+   "variante": "komisch",
+   "prompt": "comedic cartoon snoring, a sleeping man snores with a loud rumbling inhale and a funny lip-flapping exhale, two or three breaths, close microphone",
+   "seed": 3201,
+   "sekunden_prompt": 4.5,
+   "roh_spitze_dbfs": -1.2,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 4.35,
+   "lufs": -19.2,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -5.2,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 5800.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -15.8,
+   "ueber_6k_db": -31.3,
+   "ueber_10k_db": -75.2,
+   "ueber_12k_db": -92.1,
+   "mitten_500_4k_db": -2.5,
+   "unter_300_db": -4.6,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 38.2,
+    "schaerfe": 3.1
+   },
+   "natuerliche_dauer_s": 4.333,
+   "gekuerzt": false,
+   "einblenden_s": 0.05,
+   "ausblenden_s": 0.4,
+   "sim_lufs": -17.1,
+   "sim_mitten_500_4k_db": -0.4,
+   "sim_pegelverlust_db": 2.1,
+   "ast_erwartet": [
+    "Snoring",
+    0.065
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.008
+   ],
+   "ast_katze": [
+    "Cat",
+    0.001
+   ],
+   "ast_top": [
+    [
+     "Sound effect",
+     0.198
+    ],
+    [
+     "Grunt",
+     0.101
+    ],
+    [
+     "Snoring",
+     0.065
+    ],
+    [
+     "Snort",
+     0.049
+    ],
+    [
+     "Roar",
+     0.026
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "ähnlich wie schnarchen_04 (gleicher Seed, Spektrogramm r = 0,88)"
+   ],
+   "punkte": 0.14,
+   "id": "schnarchen_06",
+   "notiz": "Prompt „komisch“: komisch, Lippenflattern beim Ausatmen. AudioSet: „Snoring“ 0,07 (Spitze: „Sound effect“ 0,20). Tiefpass 5,80 kHz (Leitplanke). Hinweis: ähnlich wie schnarchen_04 (gleicher Seed, Spektrogramm r = 0,88)."
+  },
+  {
+   "roh": "wecker_ticken_dann_3305",
+   "ton": "wecker",
+   "variante": "ticken_dann",
+   "prompt": "an old mechanical wind-up alarm clock ticking steadily for three seconds, then its bell suddenly rings loudly and shrilly for two seconds, close-up, indoor",
+   "seed": 3305,
+   "sekunden_prompt": 5.0,
+   "roh_spitze_dbfs": -0.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 5.06,
+   "lufs": -17.7,
+   "ziel_lufs": -17.5,
+   "spitze_dbtp": -3.6,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 4550.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -1.2,
+   "ueber_6k_db": -30.5,
+   "ueber_10k_db": -73.0,
+   "ueber_12k_db": -89.4,
+   "mitten_500_4k_db": -1.6,
+   "unter_300_db": -10.3,
+   "linien_2_6k": [
+    [
+     4400,
+     13.5,
+     -12.7
+    ],
+    [
+     5302,
+     12.6,
+     -12.1
+    ]
+   ],
+   "puls_15_50": {
+    "hz": 25.0,
+    "schaerfe": 4.3
+   },
+   "natuerliche_dauer_s": 5.038,
+   "gekuerzt": false,
+   "einblenden_s": 0.01,
+   "ausblenden_s": 0.12,
+   "sim_lufs": -15.4,
+   "sim_mitten_500_4k_db": -0.6,
+   "sim_pegelverlust_db": 2.3,
+   "wecker": {
+    "klingeln_ab_s": 2.968,
+    "klingeln_bis_s": 5.03,
+    "klingeln_dauer_s": 2.062,
+    "klingel_pegel_db": -18.3,
+    "ticks": 7,
+    "tick_zeiten_s": [
+     0.049,
+     0.415,
+     1.052,
+     1.415,
+     2.053,
+     2.414,
+     2.914
+    ],
+    "erster_tick_s": 0.049,
+    "ticken_dauer_s": 2.919,
+    "tick_abstand_s": 0.433,
+    "tick_streuung": 0.26,
+    "ticken_rel_db": -8.7,
+    "nach_klingeln_rel_db": null
+   },
+   "wecker_schnitt": {
+    "klingeln_natuerlich_s": 2.04,
+    "klingeln_ausgeblendet": false,
+    "start_s": 0.002,
+    "roh_klingeln_ab_s": 3.0,
+    "roh_ticken_rel_db": -14.1,
+    "ticken_angehoben_db": 0.0
+   },
+   "klingeln_ab_s": 2.968,
+   "ast_ticken_bester": 0.613,
+   "ast_klingeln_bester": 0.321,
+   "ast_erwartet": [
+    "Tick-tock",
+    0.504
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.018
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Tick-tock",
+     0.504
+    ],
+    [
+     "Clock",
+     0.419
+    ],
+    [
+     "Tick",
+     0.363
+    ],
+    [
+     "Alarm clock",
+     0.117
+    ],
+    [
+     "Speech",
+     0.018
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "schmale Linie bei 4400 Hz (+13,5 dB über der Umgebung): auf Piepen achten (bei einer Glocke zu erwarten)"
+   ],
+   "punkte": 2.88,
+   "id": "wecker_01",
+   "notiz": "Prompt „ticken_dann“: alter Aufziehwecker: 3 s Ticken, dann 2 s schrilles Klingeln. Ticken ab 0,05 s (7 Ticks, Abstand 0,43 s), Klingeln ab 2,97 s, 2,06 s lang. AudioSet: „Tick-tock“ 0,50 (Spitze: „Tick-tock“ 0,50). Tiefpass 4,55 kHz (Leitplanke). Hinweis: schmale Linie bei 4400 Hz (+13,5 dB über der Umgebung): auf Piepen achten (bei einer Glocke zu erwarten)."
+  },
+  {
+   "roh": "wecker_tick_tack_3304",
+   "ton": "wecker",
+   "variante": "tick_tack",
+   "prompt": "clock ticking, tick tock tick tock tick tock, then a mechanical alarm clock goes off with rapid loud bell ringing, close-up, dry room",
+   "seed": 3304,
+   "sekunden_prompt": 5.0,
+   "roh_spitze_dbfs": -0.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 4.94,
+   "lufs": -17.5,
+   "ziel_lufs": -17.5,
+   "spitze_dbtp": -6.8,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 4550.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -0.7,
+   "ueber_6k_db": -30.9,
+   "ueber_10k_db": -74.1,
+   "ueber_12k_db": -85.2,
+   "mitten_500_4k_db": -0.9,
+   "unter_300_db": -20.1,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 20.3,
+    "schaerfe": 9.0
+   },
+   "natuerliche_dauer_s": 4.92,
+   "gekuerzt": false,
+   "einblenden_s": 0.01,
+   "ausblenden_s": 0.12,
+   "sim_lufs": -14.3,
+   "sim_mitten_500_4k_db": -0.4,
+   "sim_pegelverlust_db": 3.2,
+   "wecker": {
+    "klingeln_ab_s": 2.873,
+    "klingeln_bis_s": 4.92,
+    "klingeln_dauer_s": 2.047,
+    "klingel_pegel_db": -19.2,
+    "ticks": 12,
+    "tick_zeiten_s": [
+     0.034,
+     0.221,
+     0.504,
+     0.742,
+     0.877,
+     1.11,
+     1.299,
+     1.572,
+     1.799,
+     2.012,
+     2.498,
+     2.725
+    ],
+    "erster_tick_s": 0.034,
+    "ticken_dauer_s": 2.839,
+    "tick_abstand_s": 0.227,
+    "tick_streuung": 0.35,
+    "ticken_rel_db": -12.4,
+    "nach_klingeln_rel_db": null
+   },
+   "wecker_schnitt": {
+    "klingeln_natuerlich_s": 2.047,
+    "klingeln_ausgeblendet": false,
+    "start_s": 0.12,
+    "roh_klingeln_ab_s": 2.993,
+    "roh_ticken_rel_db": -34.4,
+    "ticken_angehoben_db": 18.4
+   },
+   "klingeln_ab_s": 2.873,
+   "ast_ticken_bester": 0.199,
+   "ast_klingeln_bester": 0.33,
+   "ast_erwartet": [
+    "Alarm clock",
+    0.596
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.022
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Alarm clock",
+     0.596
+    ],
+    [
+     "Clock",
+     0.195
+    ],
+    [
+     "Tick-tock",
+     0.107
+    ],
+    [
+     "Buzzer",
+     0.074
+    ],
+    [
+     "Telephone bell ringing",
+     0.07
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "Ticken war 34,4 dB leiser als das Klingeln: mit weicher Pegelkurve um 18,4 dB angehoben (kein Schnitt)"
+   ],
+   "punkte": 2.74,
+   "id": "wecker_02",
+   "notiz": "Prompt „tick_tack“: Tick-Tack, dann schnelles lautes Klingeln. Ticken ab 0,03 s (12 Ticks, Abstand 0,23 s), Klingeln ab 2,87 s, 2,05 s lang. AudioSet: „Alarm clock“ 0,60 (Spitze: „Alarm clock“ 0,60). Tiefpass 4,55 kHz (Leitplanke). Hinweis: Ticken war 34,4 dB leiser als das Klingeln: mit weicher Pegelkurve um 18,4 dB angehoben (kein Schnitt)."
+  },
+  {
+   "roh": "wecker_leise_tick_3313",
+   "ton": "wecker",
+   "variante": "leise_tick",
+   "prompt": "a mechanical alarm clock softly ticking, tick tock tick tock, for three seconds in a quiet bedroom, then suddenly its loud bell rings rapidly for two seconds, close-up",
+   "seed": 3313,
+   "sekunden_prompt": 5.0,
+   "roh_spitze_dbfs": -0.7,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 4.81,
+   "lufs": -17.5,
+   "ziel_lufs": -17.5,
+   "spitze_dbtp": -7.1,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 4850.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -1.0,
+   "ueber_6k_db": -31.0,
+   "ueber_10k_db": -59.5,
+   "ueber_12k_db": -101.0,
+   "mitten_500_4k_db": -0.1,
+   "unter_300_db": -25.9,
+   "linien_2_6k": [
+    [
+     3732,
+     14.9,
+     -2.6
+    ],
+    [
+     4400,
+     13.3,
+     -22.0
+    ],
+    [
+     3761,
+     13.1,
+     -4.4
+    ]
+   ],
+   "puls_15_50": {
+    "hz": 30.0,
+    "schaerfe": 16.9
+   },
+   "natuerliche_dauer_s": 4.793,
+   "gekuerzt": false,
+   "einblenden_s": 0.01,
+   "ausblenden_s": 0.12,
+   "sim_lufs": -16.2,
+   "sim_mitten_500_4k_db": -0.0,
+   "sim_pegelverlust_db": 1.3,
+   "wecker": {
+    "klingeln_ab_s": 3.274,
+    "klingeln_bis_s": 4.76,
+    "klingeln_dauer_s": 1.486,
+    "klingel_pegel_db": -19.7,
+    "ticks": 6,
+    "tick_zeiten_s": [
+     0.022,
+     0.412,
+     1.02,
+     1.41,
+     2.019,
+     2.911
+    ],
+    "erster_tick_s": 0.022,
+    "ticken_dauer_s": 3.252,
+    "tick_abstand_s": 0.608,
+    "tick_streuung": 0.32,
+    "ticken_rel_db": -26.0,
+    "nach_klingeln_rel_db": null
+   },
+   "wecker_schnitt": {
+    "klingeln_natuerlich_s": 1.52,
+    "klingeln_ausgeblendet": false,
+    "start_s": 0.217,
+    "roh_klingeln_ab_s": 3.49,
+    "roh_ticken_rel_db": -22.6,
+    "ticken_angehoben_db": 6.6
+   },
+   "klingeln_ab_s": 3.274,
+   "ast_ticken_bester": 0.644,
+   "ast_klingeln_bester": 0.778,
+   "ast_erwartet": [
+    "Alarm clock",
+    0.427
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.009
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Alarm clock",
+     0.427
+    ],
+    [
+     "Clock",
+     0.256
+    ],
+    [
+     "Telephone bell ringing",
+     0.123
+    ],
+    [
+     "Tick-tock",
+     0.106
+    ],
+    [
+     "Tick",
+     0.038
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "Hüllkurve pulsiert mit 30 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 16,9)",
+    "schmale Linie bei 3732 Hz (+14,9 dB über der Umgebung): auf Piepen achten (bei einer Glocke zu erwarten)",
+    "Ticken war 22,6 dB leiser als das Klingeln: mit weicher Pegelkurve um 6,6 dB angehoben (kein Schnitt)"
+   ],
+   "punkte": 2.4,
+   "id": "wecker_03",
+   "notiz": "Prompt „leise_tick“: leises Tick-Tack im stillen Zimmer, dann plötzlich lautes Klingeln. Ticken ab 0,02 s (6 Ticks, Abstand 0,61 s), Klingeln ab 3,27 s, 1,49 s lang. AudioSet: „Alarm clock“ 0,43 (Spitze: „Alarm clock“ 0,43). Tiefpass 4,85 kHz (Leitplanke). Hinweis: Hüllkurve pulsiert mit 30 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 16,9); schmale Linie bei 3732 Hz (+14,9 dB über der Umgebung): auf Piepen achten (bei einer Glocke zu erwarten); Ticken war 22,6 dB leiser als das Klingeln: mit weicher Pegelkurve um 6,6 dB angehoben (kein Schnitt)."
+  },
+  {
+   "roh": "wecker_ticken_dann_3301",
+   "ton": "wecker",
+   "variante": "ticken_dann",
+   "prompt": "an old mechanical wind-up alarm clock ticking steadily for three seconds, then its bell suddenly rings loudly and shrilly for two seconds, close-up, indoor",
+   "seed": 3301,
+   "sekunden_prompt": 5.0,
+   "roh_spitze_dbfs": -0.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 5.06,
+   "lufs": -17.5,
+   "ziel_lufs": -17.5,
+   "spitze_dbtp": -6.9,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 5350.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -2.7,
+   "ueber_6k_db": -31.1,
+   "ueber_10k_db": -80.3,
+   "ueber_12k_db": -86.4,
+   "mitten_500_4k_db": -0.3,
+   "unter_300_db": -24.1,
+   "linien_2_6k": [
+    [
+     2050,
+     24.0,
+     0.0
+    ],
+    [
+     3310,
+     21.2,
+     -6.2
+    ],
+    [
+     3333,
+     18.1,
+     -9.2
+    ]
+   ],
+   "puls_15_50": {
+    "hz": 31.0,
+    "schaerfe": 9.6
+   },
+   "natuerliche_dauer_s": 5.04,
+   "gekuerzt": false,
+   "einblenden_s": 0.01,
+   "ausblenden_s": 0.12,
+   "sim_lufs": -15.2,
+   "sim_mitten_500_4k_db": -0.2,
+   "sim_pegelverlust_db": 2.3,
+   "wecker": {
+    "klingeln_ab_s": 3.018,
+    "klingeln_bis_s": 5.02,
+    "klingeln_dauer_s": 2.002,
+    "klingel_pegel_db": -19.5,
+    "ticks": 9,
+    "tick_zeiten_s": [
+     0.029,
+     0.152,
+     0.279,
+     1.029,
+     1.154,
+     1.28,
+     2.029,
+     2.154,
+     2.28
+    ],
+    "erster_tick_s": 0.029,
+    "ticken_dauer_s": 2.989,
+    "tick_abstand_s": 0.126,
+    "tick_streuung": 0.96,
+    "ticken_rel_db": 4.4,
+    "nach_klingeln_rel_db": null
+   },
+   "wecker_schnitt": {
+    "klingeln_natuerlich_s": 2.022,
+    "klingeln_ausgeblendet": false,
+    "start_s": 0.0,
+    "roh_klingeln_ab_s": 3.018,
+    "roh_ticken_rel_db": 4.2,
+    "ticken_angehoben_db": 0.0
+   },
+   "klingeln_ab_s": 3.018,
+   "ast_ticken_bester": 0.135,
+   "ast_klingeln_bester": 0.763,
+   "ast_erwartet": [
+    "Alarm clock",
+    0.788
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.008
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Alarm clock",
+     0.788
+    ],
+    [
+     "Alarm",
+     0.27
+    ],
+    [
+     "Telephone bell ringing",
+     0.163
+    ],
+    [
+     "Clock",
+     0.138
+    ],
+    [
+     "Sound effect",
+     0.052
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "schmale Linie bei 2050 Hz (+24,0 dB über der Umgebung): auf Piepen achten (bei einer Glocke zu erwarten)",
+    "Ticken unregelmäßig (Streuung 0,96)",
+    "Ticken fast so laut wie das Klingeln (eher Klingelstöße?)"
+   ],
+   "punkte": 2.35,
+   "id": "wecker_04",
+   "notiz": "Prompt „ticken_dann“: alter Aufziehwecker: 3 s Ticken, dann 2 s schrilles Klingeln. Ticken ab 0,03 s (9 Ticks, Abstand 0,13 s), Klingeln ab 3,02 s, 2,00 s lang. AudioSet: „Alarm clock“ 0,79 (Spitze: „Alarm clock“ 0,79). Tiefpass 5,35 kHz (Leitplanke). Hinweis: schmale Linie bei 2050 Hz (+24,0 dB über der Umgebung): auf Piepen achten (bei einer Glocke zu erwarten); Ticken unregelmäßig (Streuung 0,96); Ticken fast so laut wie das Klingeln (eher Klingelstöße?)."
+  },
+  {
+   "roh": "wecker_tick_tack_3303",
+   "ton": "wecker",
+   "variante": "tick_tack",
+   "prompt": "clock ticking, tick tock tick tock tick tock, then a mechanical alarm clock goes off with rapid loud bell ringing, close-up, dry room",
+   "seed": 3303,
+   "sekunden_prompt": 5.0,
+   "roh_spitze_dbfs": -0.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 5.08,
+   "lufs": -17.5,
+   "ziel_lufs": -17.5,
+   "spitze_dbtp": -6.8,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 4300.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -3.6,
+   "ueber_6k_db": -30.7,
+   "ueber_10k_db": -90.2,
+   "ueber_12k_db": -109.0,
+   "mitten_500_4k_db": -0.3,
+   "unter_300_db": -21.0,
+   "linien_2_6k": [
+    [
+     4095,
+     12.3,
+     -18.9
+    ]
+   ],
+   "puls_15_50": {
+    "hz": 17.5,
+    "schaerfe": 10.8
+   },
+   "natuerliche_dauer_s": 5.06,
+   "gekuerzt": false,
+   "einblenden_s": 0.01,
+   "ausblenden_s": 0.12,
+   "sim_lufs": -15.2,
+   "sim_mitten_500_4k_db": -0.2,
+   "sim_pegelverlust_db": 2.3,
+   "wecker": {
+    "klingeln_ab_s": 2.785,
+    "klingeln_bis_s": 5.04,
+    "klingeln_dauer_s": 2.255,
+    "klingel_pegel_db": -17.4,
+    "ticks": 5,
+    "tick_zeiten_s": [
+     0.055,
+     0.821,
+     1.028,
+     1.822,
+     2.036
+    ],
+    "erster_tick_s": 0.055,
+    "ticken_dauer_s": 2.73,
+    "tick_abstand_s": 0.49,
+    "tick_streuung": 0.58,
+    "ticken_rel_db": -22.2,
+    "nach_klingeln_rel_db": null
+   },
+   "wecker_schnitt": {
+    "klingeln_natuerlich_s": 2.276,
+    "klingeln_ausgeblendet": false,
+    "start_s": 0.0,
+    "roh_klingeln_ab_s": 2.784,
+    "roh_ticken_rel_db": -17.1,
+    "ticken_angehoben_db": 0.0
+   },
+   "klingeln_ab_s": 2.785,
+   "ast_ticken_bester": 0.008,
+   "ast_klingeln_bester": 0.238,
+   "ast_erwartet": [
+    "Alarm clock",
+    0.881
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.007
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Alarm clock",
+     0.881
+    ],
+    [
+     "Alarm",
+     0.229
+    ],
+    [
+     "Clock",
+     0.17
+    ],
+    [
+     "Music",
+     0.06
+    ],
+    [
+     "Buzzer",
+     0.055
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "AudioSet „Beep, bleep“ 0,35: auf Quietschen/Piepen/Tierähnliches achten",
+    "Hüllkurve pulsiert mit 18 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 10,8)",
+    "schmale Linie bei 4095 Hz (+12,3 dB über der Umgebung): auf Piepen achten (bei einer Glocke zu erwarten)",
+    "Ticken unregelmäßig (Streuung 0,58)",
+    "AudioSet hört im ersten Teil kein Ticken"
+   ],
+   "punkte": 0.76,
+   "id": "wecker_05",
+   "notiz": "Prompt „tick_tack“: Tick-Tack, dann schnelles lautes Klingeln. Ticken ab 0,06 s (5 Ticks, Abstand 0,49 s), Klingeln ab 2,79 s, 2,25 s lang. AudioSet: „Alarm clock“ 0,88 (Spitze: „Alarm clock“ 0,88). Tiefpass 4,30 kHz (Leitplanke). Hinweis: AudioSet „Beep, bleep“ 0,35: auf Quietschen/Piepen/Tierähnliches achten; Hüllkurve pulsiert mit 18 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 10,8); schmale Linie bei 4095 Hz (+12,3 dB über der Umgebung): auf Piepen achten (bei einer Glocke zu erwarten); Ticken unregelmäßig (Streuung 0,58); AudioSet hört im ersten Teil kein Ticken."
+  },
+  {
+   "roh": "wecker_tick_tack_3302",
+   "ton": "wecker",
+   "variante": "tick_tack",
+   "prompt": "clock ticking, tick tock tick tock tick tock, then a mechanical alarm clock goes off with rapid loud bell ringing, close-up, dry room",
+   "seed": 3302,
+   "sekunden_prompt": 5.0,
+   "roh_spitze_dbfs": -0.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 5.03,
+   "lufs": -17.5,
+   "ziel_lufs": -17.5,
+   "spitze_dbtp": -8.8,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 4550.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -5.0,
+   "ueber_6k_db": -30.6,
+   "ueber_10k_db": -98.5,
+   "ueber_12k_db": -112.8,
+   "mitten_500_4k_db": -0.0,
+   "unter_300_db": -25.8,
+   "linien_2_6k": [
+    [
+     3287,
+     31.6,
+     0.0
+    ],
+    [
+     3333,
+     26.3,
+     -5.3
+    ],
+    [
+     3375,
+     13.9,
+     -17.7
+    ]
+   ],
+   "puls_15_50": {
+    "hz": 15.1,
+    "schaerfe": 6.3
+   },
+   "natuerliche_dauer_s": 5.01,
+   "gekuerzt": false,
+   "einblenden_s": 0.01,
+   "ausblenden_s": 0.12,
+   "sim_lufs": -16.6,
+   "sim_mitten_500_4k_db": -0.0,
+   "sim_pegelverlust_db": 0.9,
+   "wecker": {
+    "klingeln_ab_s": 3.129,
+    "klingeln_bis_s": 5.0,
+    "klingeln_dauer_s": 1.871,
+    "klingel_pegel_db": -19.9,
+    "ticks": 4,
+    "tick_zeiten_s": [
+     0.008,
+     1.006,
+     2.006,
+     3.006
+    ],
+    "erster_tick_s": 0.008,
+    "ticken_dauer_s": 3.121,
+    "tick_abstand_s": 1.0,
+    "tick_streuung": 0.0,
+    "ticken_rel_db": -8.3,
+    "nach_klingeln_rel_db": null
+   },
+   "wecker_schnitt": {
+    "klingeln_natuerlich_s": 1.883,
+    "klingeln_ausgeblendet": false,
+    "start_s": 0.0,
+    "roh_klingeln_ab_s": 3.127,
+    "roh_ticken_rel_db": -6.9,
+    "ticken_angehoben_db": 0.0
+   },
+   "klingeln_ab_s": 3.129,
+   "ast_ticken_bester": 0.569,
+   "ast_klingeln_bester": 0.1,
+   "ast_erwartet": [
+    "Tick",
+    0.159
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.006
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Tick",
+     0.159
+    ],
+    [
+     "Doorbell",
+     0.151
+    ],
+    [
+     "Tick-tock",
+     0.107
+    ],
+    [
+     "Alarm clock",
+     0.097
+    ],
+    [
+     "Clock",
+     0.051
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "schmale Linie bei 3287 Hz (+31,6 dB über der Umgebung): auf Piepen achten (bei einer Glocke zu erwarten)"
+   ],
+   "punkte": 0.27,
+   "id": "wecker_06",
+   "notiz": "Prompt „tick_tack“: Tick-Tack, dann schnelles lautes Klingeln. Ticken ab 0,01 s (4 Ticks, Abstand 1,00 s), Klingeln ab 3,13 s, 1,87 s lang. AudioSet: „Tick“ 0,16 (Spitze: „Tick“ 0,16). Tiefpass 4,55 kHz (Leitplanke). Hinweis: schmale Linie bei 3287 Hz (+31,6 dB über der Umgebung): auf Piepen achten (bei einer Glocke zu erwarten)."
+  },
+  {
+   "roh": "klingeln_hammer_3351",
+   "ton": "klingeln",
+   "variante": "hammer",
+   "prompt": "a mechanical alarm clock bell ringing loudly, rapid metal hammer striking the bells, close-up, short",
+   "seed": 3351,
+   "sekunden_prompt": 1.5,
+   "roh_spitze_dbfs": -0.1,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 1.82,
+   "lufs": -17.6,
+   "ziel_lufs": -17.5,
+   "spitze_dbtp": -6.2,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 4150.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -0.8,
+   "ueber_6k_db": -31.1,
+   "ueber_10k_db": -70.5,
+   "ueber_12k_db": -105.9,
+   "mitten_500_4k_db": -1.0,
+   "unter_300_db": -19.5,
+   "linien_2_6k": [
+    [
+     4699,
+     20.1,
+     -10.3
+    ],
+    [
+     4710,
+     19.1,
+     -11.7
+    ],
+    [
+     4669,
+     18.9,
+     -11.0
+    ]
+   ],
+   "puls_15_50": {
+    "hz": 19.3,
+    "schaerfe": 7.7
+   },
+   "natuerliche_dauer_s": 2.084,
+   "gekuerzt": true,
+   "einblenden_s": 0.005,
+   "ausblenden_s": 0.3,
+   "sim_lufs": -15.0,
+   "sim_mitten_500_4k_db": -0.5,
+   "sim_pegelverlust_db": 2.6,
+   "ast_erwartet": [
+    "Alarm clock",
+    0.748
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.016
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Alarm clock",
+     0.748
+    ],
+    [
+     "Alarm",
+     0.078
+    ],
+    [
+     "Clock",
+     0.061
+    ],
+    [
+     "Sound effect",
+     0.045
+    ],
+    [
+     "Telephone bell ringing",
+     0.03
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "schmale Linie bei 4699 Hz (+20,1 dB über der Umgebung): auf Piepen achten (bei einer Glocke zu erwarten)",
+    "natürlich 2,1 s, auf 1,80 s gekürzt und ausgeblendet"
+   ],
+   "punkte": 1.31,
+   "id": "klingeln_01",
+   "notiz": "Prompt „hammer“: Klöppel schlägt schnell auf die Glocken. AudioSet: „Alarm clock“ 0,75 (Spitze: „Alarm clock“ 0,75). Tiefpass 4,15 kHz (Leitplanke). Hinweis: schmale Linie bei 4699 Hz (+20,1 dB über der Umgebung): auf Piepen achten (bei einer Glocke zu erwarten); natürlich 2,1 s, auf 1,80 s gekürzt und ausgeblendet."
+  },
+  {
+   "roh": "klingeln_schrill_3353",
+   "ton": "klingeln",
+   "variante": "schrill",
+   "prompt": "old twin-bell alarm clock ringing, shrill continuous metallic ringing, indoor, close-up",
+   "seed": 3353,
+   "sekunden_prompt": 1.5,
+   "roh_spitze_dbfs": -0.1,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 1.82,
+   "lufs": -17.5,
+   "ziel_lufs": -17.5,
+   "spitze_dbtp": -11.1,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 4650.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -2.1,
+   "ueber_6k_db": -31.0,
+   "ueber_10k_db": -88.7,
+   "ueber_12k_db": -108.5,
+   "mitten_500_4k_db": -0.0,
+   "unter_300_db": -51.0,
+   "linien_2_6k": [
+    [
+     3380,
+     22.8,
+     0.0
+    ],
+    [
+     3369,
+     22.2,
+     -0.6
+    ],
+    [
+     5900,
+     22.0,
+     -18.7
+    ]
+   ],
+   "puls_15_50": {
+    "hz": 19.9,
+    "schaerfe": 7.0
+   },
+   "natuerliche_dauer_s": 1.962,
+   "gekuerzt": true,
+   "einblenden_s": 0.005,
+   "ausblenden_s": 0.3,
+   "sim_lufs": -16.9,
+   "sim_mitten_500_4k_db": -0.0,
+   "sim_pegelverlust_db": 0.6,
+   "ast_erwartet": [
+    "Alarm clock",
+    0.71
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.011
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Alarm clock",
+     0.71
+    ],
+    [
+     "Alarm",
+     0.181
+    ],
+    [
+     "Telephone bell ringing",
+     0.099
+    ],
+    [
+     "Buzzer",
+     0.052
+    ],
+    [
+     "Sound effect",
+     0.037
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "schmale Linie bei 3380 Hz (+22,8 dB über der Umgebung): auf Piepen achten (bei einer Glocke zu erwarten)",
+    "natürlich 2,0 s, auf 1,80 s gekürzt und ausgeblendet"
+   ],
+   "punkte": 1.28,
+   "id": "klingeln_02",
+   "notiz": "Prompt „schrill“: alter Wecker, schrill und durchgehend. AudioSet: „Alarm clock“ 0,71 (Spitze: „Alarm clock“ 0,71). Tiefpass 4,65 kHz (Leitplanke). Hinweis: schmale Linie bei 3380 Hz (+22,8 dB über der Umgebung): auf Piepen achten (bei einer Glocke zu erwarten); natürlich 2,0 s, auf 1,80 s gekürzt und ausgeblendet."
+  },
+  {
+   "roh": "klingeln_hammer_3353",
+   "ton": "klingeln",
+   "variante": "hammer",
+   "prompt": "a mechanical alarm clock bell ringing loudly, rapid metal hammer striking the bells, close-up, short",
+   "seed": 3353,
+   "sekunden_prompt": 1.5,
+   "roh_spitze_dbfs": -0.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 1.82,
+   "lufs": -17.6,
+   "ziel_lufs": -17.5,
+   "spitze_dbtp": -9.5,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 4200.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -2.7,
+   "ueber_6k_db": -31.3,
+   "ueber_10k_db": -95.0,
+   "ueber_12k_db": -111.4,
+   "mitten_500_4k_db": -0.1,
+   "unter_300_db": -29.7,
+   "linien_2_6k": [
+    [
+     3357,
+     17.1,
+     -8.8
+    ]
+   ],
+   "puls_15_50": {
+    "hz": 19.9,
+    "schaerfe": 7.2
+   },
+   "natuerliche_dauer_s": 2.483,
+   "gekuerzt": true,
+   "einblenden_s": 0.005,
+   "ausblenden_s": 0.3,
+   "sim_lufs": -14.1,
+   "sim_mitten_500_4k_db": -0.0,
+   "sim_pegelverlust_db": 3.5,
+   "ast_erwartet": [
+    "Alarm clock",
+    0.669
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.014
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Alarm clock",
+     0.669
+    ],
+    [
+     "Telephone bell ringing",
+     0.182
+    ],
+    [
+     "Alarm",
+     0.146
+    ],
+    [
+     "Buzzer",
+     0.057
+    ],
+    [
+     "Sound effect",
+     0.038
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "schmale Linie bei 3357 Hz (+17,1 dB über der Umgebung): auf Piepen achten (bei einer Glocke zu erwarten)",
+    "natürlich 2,5 s, auf 1,80 s gekürzt und ausgeblendet"
+   ],
+   "punkte": 0.96,
+   "id": "klingeln_03",
+   "notiz": "Prompt „hammer“: Klöppel schlägt schnell auf die Glocken. AudioSet: „Alarm clock“ 0,67 (Spitze: „Alarm clock“ 0,67). Tiefpass 4,20 kHz (Leitplanke). Hinweis: schmale Linie bei 3357 Hz (+17,1 dB über der Umgebung): auf Piepen achten (bei einer Glocke zu erwarten); natürlich 2,5 s, auf 1,80 s gekürzt und ausgeblendet."
+  },
+  {
+   "roh": "papierkugel_wurf_knuellen_wusch_3403",
+   "ton": "papierkugel_wurf",
+   "variante": "knuellen_wusch",
+   "prompt": "a sheet of paper quickly crumpled into a ball by hand, then a short soft whoosh as it is thrown, close-up, dry room",
+   "seed": 3403,
+   "sekunden_prompt": 1.0,
+   "roh_spitze_dbfs": -4.8,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 1.01,
+   "lufs": -22.4,
+   "ziel_lufs": -21.0,
+   "spitze_dbtp": -1.1,
+   "begrenzer_db": 1.9,
+   "tiefpass_hz": 5050.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -10.0,
+   "ueber_6k_db": -31.0,
+   "ueber_10k_db": -80.3,
+   "ueber_12k_db": -93.1,
+   "mitten_500_4k_db": -0.3,
+   "unter_300_db": -20.6,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 16.0,
+    "schaerfe": 4.3
+   },
+   "natuerliche_dauer_s": 0.976,
+   "gekuerzt": false,
+   "einblenden_s": 0.005,
+   "ausblenden_s": 0.12,
+   "sim_lufs": -20.3,
+   "sim_mitten_500_4k_db": -0.2,
+   "sim_pegelverlust_db": 2.1,
+   "ast_erwartet": [
+    "Whip",
+    0.341
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.003
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Whip",
+     0.341
+    ],
+    [
+     "Slap, smack",
+     0.032
+    ],
+    [
+     "Crackle",
+     0.025
+    ],
+    [
+     "Sound effect",
+     0.018
+    ],
+    [
+     "Burst, pop",
+     0.011
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 1.24,
+   "id": "papierkugel_wurf_01",
+   "notiz": "Prompt „knuellen_wusch“: Blatt zusammenknüllen, dann kurzes weiches Wusch. AudioSet: „Whip“ 0,34 (Spitze: „Whip“ 0,34). Tiefpass 5,05 kHz (Leitplanke)."
+  },
+  {
+   "roh": "papierkugel_wurf_knuellen_wusch_3401",
+   "ton": "papierkugel_wurf",
+   "variante": "knuellen_wusch",
+   "prompt": "a sheet of paper quickly crumpled into a ball by hand, then a short soft whoosh as it is thrown, close-up, dry room",
+   "seed": 3401,
+   "sekunden_prompt": 1.0,
+   "roh_spitze_dbfs": -4.5,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 1.29,
+   "lufs": -23.1,
+   "ziel_lufs": -21.0,
+   "spitze_dbtp": -1.1,
+   "begrenzer_db": 4.4,
+   "tiefpass_hz": 5350.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -12.2,
+   "ueber_6k_db": -30.8,
+   "ueber_10k_db": -78.2,
+   "ueber_12k_db": -100.4,
+   "mitten_500_4k_db": -0.4,
+   "unter_300_db": -15.5,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 29.9,
+    "schaerfe": 3.8
+   },
+   "natuerliche_dauer_s": 1.265,
+   "gekuerzt": false,
+   "einblenden_s": 0.005,
+   "ausblenden_s": 0.12,
+   "sim_lufs": -20.5,
+   "sim_mitten_500_4k_db": -0.1,
+   "sim_pegelverlust_db": 2.6,
+   "ast_erwartet": [
+    "Crackle",
+    0.276
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.007
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Crackle",
+     0.276
+    ],
+    [
+     "Scrape",
+     0.104
+    ],
+    [
+     "Crack",
+     0.096
+    ],
+    [
+     "Crushing",
+     0.048
+    ],
+    [
+     "Breaking",
+     0.023
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 0.91,
+   "id": "papierkugel_wurf_02",
+   "notiz": "Prompt „knuellen_wusch“: Blatt zusammenknüllen, dann kurzes weiches Wusch. AudioSet: „Crackle“ 0,28 (Spitze: „Crackle“ 0,28). Tiefpass 5,35 kHz (Leitplanke)."
+  },
+  {
+   "roh": "papierkugel_wurf_knistern_3401",
+   "ton": "papierkugel_wurf",
+   "variante": "knistern",
+   "prompt": "crumpling paper into a ball, crinkling and crackling paper, followed by a quick swish of a throw through the air, close-up",
+   "seed": 3401,
+   "sekunden_prompt": 1.0,
+   "roh_spitze_dbfs": -9.7,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 1.32,
+   "lufs": -21.5,
+   "ziel_lufs": -21.0,
+   "spitze_dbtp": -1.2,
+   "begrenzer_db": 2.3,
+   "tiefpass_hz": 5300.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -9.5,
+   "ueber_6k_db": -30.4,
+   "ueber_10k_db": -76.2,
+   "ueber_12k_db": -97.2,
+   "mitten_500_4k_db": -1.0,
+   "unter_300_db": -8.5,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 15.7,
+    "schaerfe": 4.0
+   },
+   "natuerliche_dauer_s": 1.351,
+   "gekuerzt": true,
+   "einblenden_s": 0.005,
+   "ausblenden_s": 0.12,
+   "sim_lufs": -19.1,
+   "sim_mitten_500_4k_db": -0.2,
+   "sim_pegelverlust_db": 2.4,
+   "ast_erwartet": [
+    "Crackle",
+    0.269
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.009
+   ],
+   "ast_katze": [
+    "Cat",
+    0.001
+   ],
+   "ast_top": [
+    [
+     "Crackle",
+     0.269
+    ],
+    [
+     "Scrape",
+     0.155
+    ],
+    [
+     "Sound effect",
+     0.039
+    ],
+    [
+     "Walk, footsteps",
+     0.036
+    ],
+    [
+     "Flap",
+     0.024
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 0.9,
+   "id": "papierkugel_wurf_03",
+   "notiz": "Prompt „knistern“: knisterndes Knüllen, dann schneller Wurf. AudioSet: „Crackle“ 0,27 (Spitze: „Crackle“ 0,27). Tiefpass 5,30 kHz (Leitplanke)."
+  },
+  {
+   "roh": "papierkugel_wurf_schnell_3401",
+   "ton": "papierkugel_wurf",
+   "variante": "schnell",
+   "prompt": "hands quickly scrunching a piece of paper into a tight ball, short crinkly crumple, then a fast airy swoosh, indoor",
+   "seed": 3401,
+   "sekunden_prompt": 1.0,
+   "roh_spitze_dbfs": -7.3,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 1.32,
+   "lufs": -21.4,
+   "ziel_lufs": -21.0,
+   "spitze_dbtp": -1.2,
+   "begrenzer_db": 0.3,
+   "tiefpass_hz": 5300.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -10.5,
+   "ueber_6k_db": -30.4,
+   "ueber_10k_db": -77.2,
+   "ueber_12k_db": -100.8,
+   "mitten_500_4k_db": -0.5,
+   "unter_300_db": -12.6,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 29.8,
+    "schaerfe": 3.2
+   },
+   "natuerliche_dauer_s": 1.366,
+   "gekuerzt": true,
+   "einblenden_s": 0.005,
+   "ausblenden_s": 0.12,
+   "sim_lufs": -19.4,
+   "sim_mitten_500_4k_db": -0.2,
+   "sim_pegelverlust_db": 2.0,
+   "ast_erwartet": [
+    "Crackle",
+    0.236
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.005
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Crackle",
+     0.236
+    ],
+    [
+     "Crack",
+     0.038
+    ],
+    [
+     "Scrape",
+     0.036
+    ],
+    [
+     "Walk, footsteps",
+     0.033
+    ],
+    [
+     "Crushing",
+     0.024
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 0.82,
+   "id": "papierkugel_wurf_04",
+   "notiz": "Prompt „schnell“: schnell und kurz geknüllt, luftiges Wusch. AudioSet: „Crackle“ 0,24 (Spitze: „Crackle“ 0,24). Tiefpass 5,30 kHz (Leitplanke)."
+  },
+  {
+   "roh": "papierkugel_wurf_knistern_3403",
+   "ton": "papierkugel_wurf",
+   "variante": "knistern",
+   "prompt": "crumpling paper into a ball, crinkling and crackling paper, followed by a quick swish of a throw through the air, close-up",
+   "seed": 3403,
+   "sekunden_prompt": 1.0,
+   "roh_spitze_dbfs": -5.6,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 1.32,
+   "lufs": -22.2,
+   "ziel_lufs": -21.0,
+   "spitze_dbtp": -1.1,
+   "begrenzer_db": 1.9,
+   "tiefpass_hz": 5050.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -8.9,
+   "ueber_6k_db": -30.9,
+   "ueber_10k_db": -79.2,
+   "ueber_12k_db": -102.4,
+   "mitten_500_4k_db": -0.4,
+   "unter_300_db": -18.5,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 16.4,
+    "schaerfe": 3.5
+   },
+   "natuerliche_dauer_s": 1.302,
+   "gekuerzt": true,
+   "einblenden_s": 0.005,
+   "ausblenden_s": 0.12,
+   "sim_lufs": -20.2,
+   "sim_mitten_500_4k_db": -0.2,
+   "sim_pegelverlust_db": 2.0,
+   "ast_erwartet": [
+    "Crackle",
+    0.102
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.01
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Crackle",
+     0.102
+    ],
+    [
+     "Scrape",
+     0.032
+    ],
+    [
+     "Crack",
+     0.025
+    ],
+    [
+     "Walk, footsteps",
+     0.022
+    ],
+    [
+     "Sound effect",
+     0.02
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 0.27,
+   "id": "papierkugel_wurf_05",
+   "notiz": "Prompt „knistern“: knisterndes Knüllen, dann schneller Wurf. AudioSet: „Crackle“ 0,10 (Spitze: „Crackle“ 0,10). Tiefpass 5,05 kHz (Leitplanke)."
+  },
+  {
+   "roh": "papierkugel_wurf_knistern_3402",
+   "ton": "papierkugel_wurf",
+   "variante": "knistern",
+   "prompt": "crumpling paper into a ball, crinkling and crackling paper, followed by a quick swish of a throw through the air, close-up",
+   "seed": 3402,
+   "sekunden_prompt": 1.0,
+   "roh_spitze_dbfs": -2.5,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 1.28,
+   "lufs": -21.3,
+   "ziel_lufs": -21.0,
+   "spitze_dbtp": -1.2,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 5050.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -8.2,
+   "ueber_6k_db": -30.6,
+   "ueber_10k_db": -78.0,
+   "ueber_12k_db": -101.5,
+   "mitten_500_4k_db": -1.5,
+   "unter_300_db": -8.2,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 27.1,
+    "schaerfe": 2.1
+   },
+   "natuerliche_dauer_s": 1.265,
+   "gekuerzt": false,
+   "einblenden_s": 0.005,
+   "ausblenden_s": 0.12,
+   "sim_lufs": -19.7,
+   "sim_mitten_500_4k_db": -0.4,
+   "sim_pegelverlust_db": 1.6,
+   "ast_erwartet": [
+    "Crackle",
+    0.113
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.027
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Crackle",
+     0.113
+    ],
+    [
+     "Breaking",
+     0.052
+    ],
+    [
+     "Speech",
+     0.027
+    ],
+    [
+     "Slam",
+     0.025
+    ],
+    [
+     "Walk, footsteps",
+     0.024
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 0.26,
+   "id": "papierkugel_wurf_06",
+   "notiz": "Prompt „knistern“: knisterndes Knüllen, dann schneller Wurf. AudioSet: „Crackle“ 0,11 (Spitze: „Crackle“ 0,11). Tiefpass 5,05 kHz (Leitplanke)."
+  },
+  {
+   "roh": "papierkugel_plopp_dumpf_3501",
+   "ton": "papierkugel_plopp",
+   "variante": "dumpf",
+   "prompt": "a small ball of paper hits a wooden desk, soft dull tap with a tiny crinkle, single hit, close-up",
+   "seed": 3501,
+   "sekunden_prompt": 1.0,
+   "roh_spitze_dbfs": -12.7,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 0.3,
+   "lufs": -26.5,
+   "ziel_lufs": -21.5,
+   "spitze_dbtp": -1.1,
+   "begrenzer_db": 5.5,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -18.5,
+   "ueber_6k_db": -32.1,
+   "ueber_10k_db": -76.3,
+   "ueber_12k_db": -100.8,
+   "mitten_500_4k_db": -4.9,
+   "unter_300_db": -4.2,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 49.9,
+    "schaerfe": 2.1
+   },
+   "natuerliche_dauer_s": 0.284,
+   "gekuerzt": false,
+   "einblenden_s": 0.003,
+   "ausblenden_s": 0.08,
+   "sim_lufs": -28.0,
+   "sim_mitten_500_4k_db": -0.7,
+   "sim_pegelverlust_db": -1.5,
+   "ast_erwartet": [
+    "Knock",
+    0.143
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.017
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Door",
+     0.189
+    ],
+    [
+     "Knock",
+     0.143
+    ],
+    [
+     "Slam",
+     0.045
+    ],
+    [
+     "Tap",
+     0.022
+    ],
+    [
+     "Thunk",
+     0.019
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "nur −26,5 LUFS statt −21,5: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser"
+   ],
+   "punkte": -0.47,
+   "id": "papierkugel_plopp_01",
+   "notiz": "Prompt „dumpf“: dumpfer Tipp auf Holz mit kleinem Knistern. AudioSet: „Knock“ 0,14 (Spitze: „Door“ 0,19). Hinweis: nur −26,5 LUFS statt −21,5: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser."
+  },
+  {
+   "roh": "papierkugel_plopp_kopf_3501",
+   "ton": "papierkugel_plopp",
+   "variante": "kopf",
+   "prompt": "a crumpled paper ball bounces off a person's head, one soft light papery bonk, single short hit, comedic",
+   "seed": 3501,
+   "sekunden_prompt": 1.0,
+   "roh_spitze_dbfs": -31.8,
+   "roh_leer": false,
+   "roh_leise": true,
+   "dauer_s": 0.32,
+   "lufs": -21.5,
+   "ziel_lufs": -21.5,
+   "spitze_dbtp": -1.2,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 5700.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -12.3,
+   "ueber_6k_db": -31.0,
+   "ueber_10k_db": -75.6,
+   "ueber_12k_db": -95.9,
+   "mitten_500_4k_db": -9.7,
+   "unter_300_db": -0.9,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 15.0,
+    "schaerfe": 3.2
+   },
+   "natuerliche_dauer_s": 0.3,
+   "gekuerzt": false,
+   "einblenden_s": 0.003,
+   "ausblenden_s": 0.08,
+   "sim_lufs": -25.7,
+   "sim_mitten_500_4k_db": -0.9,
+   "sim_pegelverlust_db": -4.2,
+   "ast_erwartet": [
+    "Slap, smack",
+    0.004
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.009
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Explosion",
+     0.176
+    ],
+    [
+     "Burst, pop",
+     0.175
+    ],
+    [
+     "Bang",
+     0.12
+    ],
+    [
+     "Gunshot, gunfire",
+     0.112
+    ],
+    [
+     "Artillery fire",
+     0.051
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "AudioSet hört eher einen Knall (Explosion/Bang 0,18): zu hart?",
+    "AudioSet erkennt keine der erwarteten Klassen",
+    "Original sehr leise"
+   ],
+   "punkte": -0.57,
+   "id": "papierkugel_plopp_02",
+   "notiz": "Prompt „kopf“: prallt vom Kopf ab, weiches „Bonk“. AudioSet: „Slap, smack“ 0,00 (Spitze: „Explosion“ 0,18). Tiefpass 5,70 kHz (Leitplanke). Hinweis: AudioSet hört eher einen Knall (Explosion/Bang 0,18): zu hart?; AudioSet erkennt keine der erwarteten Klassen; Original sehr leise."
+  },
+  {
+   "roh": "papierkugel_plopp_dumpf_3502",
+   "ton": "papierkugel_plopp",
+   "variante": "dumpf",
+   "prompt": "a small ball of paper hits a wooden desk, soft dull tap with a tiny crinkle, single hit, close-up",
+   "seed": 3502,
+   "sekunden_prompt": 1.0,
+   "roh_spitze_dbfs": -23.4,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 0.52,
+   "lufs": -25.7,
+   "ziel_lufs": -21.5,
+   "spitze_dbtp": -1.0,
+   "begrenzer_db": 5.3,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -24.3,
+   "ueber_6k_db": -38.3,
+   "ueber_10k_db": -85.6,
+   "ueber_12k_db": -104.8,
+   "mitten_500_4k_db": -2.2,
+   "unter_300_db": -7.9,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 24.4,
+    "schaerfe": 3.9
+   },
+   "natuerliche_dauer_s": 0.527,
+   "gekuerzt": true,
+   "einblenden_s": 0.003,
+   "ausblenden_s": 0.08,
+   "sim_lufs": -24.7,
+   "sim_mitten_500_4k_db": -0.6,
+   "sim_pegelverlust_db": 1.0,
+   "ast_erwartet": [
+    "Crackle",
+    0.028
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.016
+   ],
+   "ast_katze": [
+    "Meow",
+    0.001
+   ],
+   "ast_top": [
+    [
+     "Crack",
+     0.051
+    ],
+    [
+     "Sound effect",
+     0.043
+    ],
+    [
+     "Crackle",
+     0.028
+    ],
+    [
+     "Door",
+     0.022
+    ],
+    [
+     "Speech",
+     0.016
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen",
+    "nur −25,7 LUFS statt −21,5: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser"
+   ],
+   "punkte": -0.67,
+   "id": "papierkugel_plopp_03",
+   "notiz": "Prompt „dumpf“: dumpfer Tipp auf Holz mit kleinem Knistern. AudioSet: „Crackle“ 0,03 (Spitze: „Crack“ 0,05). Hinweis: AudioSet erkennt keine der erwarteten Klassen; nur −25,7 LUFS statt −21,5: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser."
+  },
+  {
+   "roh": "papierkugel_plopp_tisch_3501",
+   "ton": "papierkugel_plopp",
+   "variante": "tisch",
+   "prompt": "a light crumpled paper ball lands softly on a table, one soft papery plop, close-up, quiet room",
+   "seed": 3501,
+   "sekunden_prompt": 1.0,
+   "roh_spitze_dbfs": -34.6,
+   "roh_leer": false,
+   "roh_leise": true,
+   "dauer_s": 0.39,
+   "lufs": -21.6,
+   "ziel_lufs": -21.5,
+   "spitze_dbtp": -2.1,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 5650.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -12.6,
+   "ueber_6k_db": -30.8,
+   "ueber_10k_db": -76.1,
+   "ueber_12k_db": -94.1,
+   "mitten_500_4k_db": -8.0,
+   "unter_300_db": -2.4,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 26.4,
+    "schaerfe": 2.3
+   },
+   "natuerliche_dauer_s": 0.37,
+   "gekuerzt": false,
+   "einblenden_s": 0.003,
+   "ausblenden_s": 0.08,
+   "sim_lufs": -24.6,
+   "sim_mitten_500_4k_db": -1.6,
+   "sim_pegelverlust_db": -3.0,
+   "ast_erwartet": [
+    "Crackle",
+    0.002
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.008
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Explosion",
+     0.326
+    ],
+    [
+     "Burst, pop",
+     0.257
+    ],
+    [
+     "Bang",
+     0.066
+    ],
+    [
+     "Gunshot, gunfire",
+     0.063
+    ],
+    [
+     "Artillery fire",
+     0.048
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "AudioSet hört eher einen Knall (Explosion/Bang 0,33): zu hart?",
+    "AudioSet erkennt keine der erwarteten Klassen",
+    "Original sehr leise"
+   ],
+   "punkte": -0.82,
+   "id": "papierkugel_plopp_04",
+   "notiz": "Prompt „tisch“: leichte Kugel landet weich auf dem Tisch. AudioSet: „Crackle“ 0,00 (Spitze: „Explosion“ 0,33). Tiefpass 5,65 kHz (Leitplanke). Hinweis: AudioSet hört eher einen Knall (Explosion/Bang 0,33): zu hart?; AudioSet erkennt keine der erwarteten Klassen; Original sehr leise."
+  },
+  {
+   "roh": "papierkugel_plopp_kissen_3505",
+   "ton": "papierkugel_plopp",
+   "variante": "kissen",
+   "prompt": "a crumpled paper ball softly lands on a cushion, a gentle muffled papery plop, very short, close-up, quiet room",
+   "seed": 3505,
+   "sekunden_prompt": 1.0,
+   "roh_spitze_dbfs": -26.3,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 0.52,
+   "lufs": -21.7,
+   "ziel_lufs": -21.5,
+   "spitze_dbtp": -2.1,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 5350.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -8.9,
+   "ueber_6k_db": -31.0,
+   "ueber_10k_db": -72.8,
+   "ueber_12k_db": -95.6,
+   "mitten_500_4k_db": -1.6,
+   "unter_300_db": -6.7,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 35.2,
+    "schaerfe": 2.6
+   },
+   "natuerliche_dauer_s": 1.172,
+   "gekuerzt": true,
+   "einblenden_s": 0.003,
+   "ausblenden_s": 0.08,
+   "sim_lufs": -20.0,
+   "sim_mitten_500_4k_db": -0.2,
+   "sim_pegelverlust_db": 1.7,
+   "ast_erwartet": [
+    "Crackle",
+    0.029
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.007
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Scrape",
+     0.205
+    ],
+    [
+     "Zipper (clothing)",
+     0.095
+    ],
+    [
+     "Scratch",
+     0.056
+    ],
+    [
+     "Flap",
+     0.051
+    ],
+    [
+     "Sound effect",
+     0.047
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "natürlich 1,2 s, auf 0,50 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ],
+   "punkte": -1.01,
+   "id": "papierkugel_plopp_05",
+   "notiz": "Prompt „kissen“: landet auf einem Kissen, gedämpftes Plopp. AudioSet: „Crackle“ 0,03 (Spitze: „Scrape“ 0,20). Tiefpass 5,35 kHz (Leitplanke). Hinweis: natürlich 1,2 s, auf 0,50 s gekürzt und ausgeblendet; AudioSet erkennt keine der erwarteten Klassen."
+  },
+  {
+   "roh": "papierkugel_plopp_kissen_3504",
+   "ton": "papierkugel_plopp",
+   "variante": "kissen",
+   "prompt": "a crumpled paper ball softly lands on a cushion, a gentle muffled papery plop, very short, close-up, quiet room",
+   "seed": 3504,
+   "sekunden_prompt": 1.0,
+   "roh_spitze_dbfs": -0.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 0.41,
+   "lufs": -27.2,
+   "ziel_lufs": -21.5,
+   "spitze_dbtp": -1.1,
+   "begrenzer_db": 5.8,
+   "tiefpass_hz": 5950.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -17.0,
+   "ueber_6k_db": -30.4,
+   "ueber_10k_db": -70.8,
+   "ueber_12k_db": -96.1,
+   "mitten_500_4k_db": -0.8,
+   "unter_300_db": -9.5,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 24.4,
+    "schaerfe": 2.0
+   },
+   "natuerliche_dauer_s": 0.392,
+   "gekuerzt": false,
+   "einblenden_s": 0.003,
+   "ausblenden_s": 0.08,
+   "sim_lufs": -24.1,
+   "sim_mitten_500_4k_db": -0.1,
+   "sim_pegelverlust_db": 3.1,
+   "ast_erwartet": [
+    "Slap, smack",
+    0.032
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.029
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Whip",
+     0.061
+    ],
+    [
+     "Firecracker",
+     0.052
+    ],
+    [
+     "Burst, pop",
+     0.041
+    ],
+    [
+     "Slap, smack",
+     0.032
+    ],
+    [
+     "Speech",
+     0.029
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen",
+    "nur −27,2 LUFS statt −21,5: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser"
+   ],
+   "punkte": -1.26,
+   "id": "papierkugel_plopp_06",
+   "notiz": "Prompt „kissen“: landet auf einem Kissen, gedämpftes Plopp. AudioSet: „Slap, smack“ 0,03 (Spitze: „Whip“ 0,06). Tiefpass 5,95 kHz (Leitplanke). Hinweis: AudioSet erkennt keine der erwarteten Klassen; nur −27,2 LUFS statt −21,5: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser."
+  },
+  {
+   "roh": "lachen_herzlich_3602",
+   "ton": "lachen",
+   "variante": "herzlich",
+   "prompt": "a man chuckling and laughing heartily for a moment, warm amused laughter, no speech, close microphone",
+   "seed": 3602,
+   "sekunden_prompt": 1.5,
+   "roh_spitze_dbfs": -1.7,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 1.92,
+   "lufs": -19.0,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -7.2,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -34.8,
+   "ueber_6k_db": -44.6,
+   "ueber_10k_db": -101.9,
+   "ueber_12k_db": -109.7,
+   "mitten_500_4k_db": -8.0,
+   "unter_300_db": -1.4,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 16.5,
+    "schaerfe": 5.6
+   },
+   "natuerliche_dauer_s": 1.928,
+   "gekuerzt": true,
+   "einblenden_s": 0.03,
+   "ausblenden_s": 0.3,
+   "sim_lufs": -24.5,
+   "sim_mitten_500_4k_db": -0.6,
+   "sim_pegelverlust_db": -5.5,
+   "ast_erwartet": [
+    "Snicker",
+    0.411
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.04
+   ],
+   "ast_katze": [
+    "Cat",
+    0.001
+   ],
+   "ast_top": [
+    [
+     "Snicker",
+     0.411
+    ],
+    [
+     "Chuckle, chortle",
+     0.361
+    ],
+    [
+     "Laughter",
+     0.086
+    ],
+    [
+     "Giggle",
+     0.052
+    ],
+    [
+     "Speech",
+     0.04
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 1.35,
+   "id": "lachen_01",
+   "notiz": "Prompt „herzlich“: Mann, herzlich und warm. AudioSet: „Snicker“ 0,41 (Spitze: „Snicker“ 0,41)."
+  },
+  {
+   "roh": "lachen_kichern_3602",
+   "ton": "lachen",
+   "variante": "kichern",
+   "prompt": "a person giggling contagiously, a short burst of happy giggles, no words, close-up, indoor",
+   "seed": 3602,
+   "sekunden_prompt": 1.5,
+   "roh_spitze_dbfs": -0.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 1.92,
+   "lufs": -19.1,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -4.5,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -27.7,
+   "ueber_6k_db": -39.2,
+   "ueber_10k_db": -87.4,
+   "ueber_12k_db": -114.5,
+   "mitten_500_4k_db": -2.7,
+   "unter_300_db": -9.4,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 15.0,
+    "schaerfe": 11.6
+   },
+   "natuerliche_dauer_s": 1.902,
+   "gekuerzt": true,
+   "einblenden_s": 0.03,
+   "ausblenden_s": 0.3,
+   "sim_lufs": -18.9,
+   "sim_mitten_500_4k_db": -0.3,
+   "sim_pegelverlust_db": 0.2,
+   "ast_erwartet": [
+    "Chuckle, chortle",
+    0.326
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.033
+   ],
+   "ast_katze": [
+    "Cat",
+    0.002
+   ],
+   "ast_top": [
+    [
+     "Chuckle, chortle",
+     0.326
+    ],
+    [
+     "Snicker",
+     0.325
+    ],
+    [
+     "Giggle",
+     0.105
+    ],
+    [
+     "Laughter",
+     0.093
+    ],
+    [
+     "Throat clearing",
+     0.048
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 1.25,
+   "id": "lachen_02",
+   "notiz": "Prompt „kichern“: ansteckendes Kichern. AudioSet: „Chuckle, chortle“ 0,33 (Spitze: „Chuckle, chortle“ 0,33)."
+  },
+  {
+   "roh": "lachen_herzlich_3603",
+   "ton": "lachen",
+   "variante": "herzlich",
+   "prompt": "a man chuckling and laughing heartily for a moment, warm amused laughter, no speech, close microphone",
+   "seed": 3603,
+   "sekunden_prompt": 1.5,
+   "roh_spitze_dbfs": -0.9,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 1.92,
+   "lufs": -19.0,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -3.9,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -30.8,
+   "ueber_6k_db": -44.7,
+   "ueber_10k_db": -89.9,
+   "ueber_12k_db": -115.4,
+   "mitten_500_4k_db": -6.6,
+   "unter_300_db": -3.3,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 17.6,
+    "schaerfe": 9.1
+   },
+   "natuerliche_dauer_s": 1.902,
+   "gekuerzt": true,
+   "einblenden_s": 0.03,
+   "ausblenden_s": 0.3,
+   "sim_lufs": -22.9,
+   "sim_mitten_500_4k_db": -0.7,
+   "sim_pegelverlust_db": -3.9,
+   "ast_erwartet": [
+    "Snicker",
+    0.207
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.026
+   ],
+   "ast_katze": [
+    "Cat",
+    0.002
+   ],
+   "ast_top": [
+    [
+     "Snicker",
+     0.207
+    ],
+    [
+     "Chuckle, chortle",
+     0.188
+    ],
+    [
+     "Throat clearing",
+     0.136
+    ],
+    [
+     "Laughter",
+     0.091
+    ],
+    [
+     "Giggle",
+     0.065
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 0.59,
+   "id": "lachen_03",
+   "notiz": "Prompt „herzlich“: Mann, herzlich und warm. AudioSet: „Snicker“ 0,21 (Spitze: „Snicker“ 0,21)."
+  },
+  {
+   "roh": "lachen_herzlich_3601",
+   "ton": "lachen",
+   "variante": "herzlich",
+   "prompt": "a man chuckling and laughing heartily for a moment, warm amused laughter, no speech, close microphone",
+   "seed": 3601,
+   "sekunden_prompt": 1.5,
+   "roh_spitze_dbfs": -0.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 1.92,
+   "lufs": -19.0,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -2.2,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -37.3,
+   "ueber_6k_db": -48.2,
+   "ueber_10k_db": -100.6,
+   "ueber_12k_db": -109.1,
+   "mitten_500_4k_db": -6.6,
+   "unter_300_db": -1.6,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 16.1,
+    "schaerfe": 6.6
+   },
+   "natuerliche_dauer_s": 1.909,
+   "gekuerzt": true,
+   "einblenden_s": 0.03,
+   "ausblenden_s": 0.3,
+   "sim_lufs": -24.6,
+   "sim_mitten_500_4k_db": -0.5,
+   "sim_pegelverlust_db": -5.6,
+   "ast_erwartet": [
+    "Snicker",
+    0.221
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.072
+   ],
+   "ast_katze": [
+    "Cat",
+    0.001
+   ],
+   "ast_top": [
+    [
+     "Snicker",
+     0.221
+    ],
+    [
+     "Chuckle, chortle",
+     0.154
+    ],
+    [
+     "Speech",
+     0.072
+    ],
+    [
+     "Laughter",
+     0.043
+    ],
+    [
+     "Sound effect",
+     0.033
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 0.58,
+   "id": "lachen_04",
+   "notiz": "Prompt „herzlich“: Mann, herzlich und warm. AudioSet: „Snicker“ 0,22 (Spitze: „Snicker“ 0,22)."
+  },
+  {
+   "roh": "lachen_kichern_3601",
+   "ton": "lachen",
+   "variante": "kichern",
+   "prompt": "a person giggling contagiously, a short burst of happy giggles, no words, close-up, indoor",
+   "seed": 3601,
+   "sekunden_prompt": 1.5,
+   "roh_spitze_dbfs": -0.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 1.92,
+   "lufs": -19.0,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -8.3,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -31.5,
+   "ueber_6k_db": -43.0,
+   "ueber_10k_db": -94.9,
+   "ueber_12k_db": -114.3,
+   "mitten_500_4k_db": -2.2,
+   "unter_300_db": -13.1,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 16.6,
+    "schaerfe": 8.9
+   },
+   "natuerliche_dauer_s": 1.946,
+   "gekuerzt": true,
+   "einblenden_s": 0.03,
+   "ausblenden_s": 0.3,
+   "sim_lufs": -18.7,
+   "sim_mitten_500_4k_db": -1.5,
+   "sim_pegelverlust_db": 0.3,
+   "ast_erwartet": [
+    "Snicker",
+    0.146
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.056
+   ],
+   "ast_katze": [
+    "Cat",
+    0.003
+   ],
+   "ast_top": [
+    [
+     "Snicker",
+     0.146
+    ],
+    [
+     "Chuckle, chortle",
+     0.141
+    ],
+    [
+     "Giggle",
+     0.082
+    ],
+    [
+     "Throat clearing",
+     0.071
+    ],
+    [
+     "Sound effect",
+     0.069
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 0.51,
+   "id": "lachen_05",
+   "notiz": "Prompt „kichern“: ansteckendes Kichern. AudioSet: „Snicker“ 0,15 (Spitze: „Snicker“ 0,15)."
+  },
+  {
+   "roh": "lachen_kichern_3603",
+   "ton": "lachen",
+   "variante": "kichern",
+   "prompt": "a person giggling contagiously, a short burst of happy giggles, no words, close-up, indoor",
+   "seed": 3603,
+   "sekunden_prompt": 1.5,
+   "roh_spitze_dbfs": -0.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 1.92,
+   "lufs": -19.1,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -6.7,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -25.8,
+   "ueber_6k_db": -41.6,
+   "ueber_10k_db": -84.1,
+   "ueber_12k_db": -113.0,
+   "mitten_500_4k_db": -1.0,
+   "unter_300_db": -17.2,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 17.5,
+    "schaerfe": 9.9
+   },
+   "natuerliche_dauer_s": 1.902,
+   "gekuerzt": true,
+   "einblenden_s": 0.03,
+   "ausblenden_s": 0.3,
+   "sim_lufs": -17.0,
+   "sim_mitten_500_4k_db": -0.1,
+   "sim_pegelverlust_db": 2.1,
+   "ast_erwartet": [
+    "Giggle",
+    0.141
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.035
+   ],
+   "ast_katze": [
+    "Cat",
+    0.002
+   ],
+   "ast_top": [
+    [
+     "Giggle",
+     0.141
+    ],
+    [
+     "Chuckle, chortle",
+     0.136
+    ],
+    [
+     "Snicker",
+     0.13
+    ],
+    [
+     "Laughter",
+     0.057
+    ],
+    [
+     "Throat clearing",
+     0.044
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 0.42,
+   "id": "lachen_06",
+   "notiz": "Prompt „kichern“: ansteckendes Kichern. AudioSet: „Giggle“ 0,14 (Spitze: „Giggle“ 0,14)."
+  },
+  {
+   "roh": "schreck_oh_3701",
+   "ton": "schreck",
+   "variante": "oh",
+   "prompt": "a person gasps in surprise, a short sharp startled intake of breath with a tiny voiced oh, close-up, no words",
+   "seed": 3701,
+   "sekunden_prompt": 1.0,
+   "roh_spitze_dbfs": -10.7,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 0.6,
+   "lufs": -19.2,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -5.5,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 5350.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -8.5,
+   "ueber_6k_db": -30.6,
+   "ueber_10k_db": -72.2,
+   "ueber_12k_db": -102.5,
+   "mitten_500_4k_db": -3.5,
+   "unter_300_db": -30.8,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 15.0,
+    "schaerfe": 3.0
+   },
+   "natuerliche_dauer_s": 0.586,
+   "gekuerzt": false,
+   "einblenden_s": 0.02,
+   "ausblenden_s": 0.15,
+   "sim_lufs": -17.7,
+   "sim_mitten_500_4k_db": -2.1,
+   "sim_pegelverlust_db": 1.5,
+   "ast_erwartet": [
+    "Gasp",
+    0.702
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.011
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Gasp",
+     0.702
+    ],
+    [
+     "Snort",
+     0.07
+    ],
+    [
+     "Sigh",
+     0.044
+    ],
+    [
+     "Sneeze",
+     0.019
+    ],
+    [
+     "Breathing",
+     0.011
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 2.73,
+   "id": "schreck_01",
+   "notiz": "Prompt „oh“: scharfes Luftschnappen mit kleinem „Oh“. AudioSet: „Gasp“ 0,70 (Spitze: „Gasp“ 0,70). Tiefpass 5,35 kHz (Leitplanke)."
+  },
+  {
+   "roh": "schreck_oh_3704",
+   "ton": "schreck",
+   "variante": "oh",
+   "prompt": "a person gasps in surprise, a short sharp startled intake of breath with a tiny voiced oh, close-up, no words",
+   "seed": 3704,
+   "sekunden_prompt": 1.0,
+   "roh_spitze_dbfs": -0.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 0.78,
+   "lufs": -19.1,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -7.6,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 5550.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -15.2,
+   "ueber_6k_db": -31.2,
+   "ueber_10k_db": -85.9,
+   "ueber_12k_db": -108.3,
+   "mitten_500_4k_db": -1.2,
+   "unter_300_db": -18.6,
+   "linien_2_6k": [
+    [
+     2566,
+     13.7,
+     -15.6
+    ],
+    [
+     2583,
+     12.9,
+     -16.4
+    ]
+   ],
+   "puls_15_50": {
+    "hz": 21.5,
+    "schaerfe": 2.1
+   },
+   "natuerliche_dauer_s": 0.765,
+   "gekuerzt": false,
+   "einblenden_s": 0.02,
+   "ausblenden_s": 0.15,
+   "sim_lufs": -16.1,
+   "sim_mitten_500_4k_db": -0.4,
+   "sim_pegelverlust_db": 3.0,
+   "ast_erwartet": [
+    "Sigh",
+    0.656
+   ],
+   "ast_sprache": [
+    "Male speech, man speaking",
+    0.03
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Sigh",
+     0.656
+    ],
+    [
+     "Gasp",
+     0.43
+    ],
+    [
+     "Groan",
+     0.076
+    ],
+    [
+     "Male speech, man speaking",
+     0.03
+    ],
+    [
+     "Speech",
+     0.028
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "schmale Linie bei 2566 Hz (+13,7 dB über der Umgebung): auf Piepen achten"
+   ],
+   "punkte": 1.97,
+   "id": "schreck_02",
+   "notiz": "Prompt „oh“: scharfes Luftschnappen mit kleinem „Oh“. AudioSet: „Sigh“ 0,66 (Spitze: „Sigh“ 0,66). Tiefpass 5,55 kHz (Leitplanke). Hinweis: schmale Linie bei 2566 Hz (+13,7 dB über der Umgebung): auf Piepen achten."
+  },
+  {
+   "roh": "schreck_frau_3703",
+   "ton": "schreck",
+   "variante": "frau",
+   "prompt": "a woman gasps in shock, a single quick surprised gasp, close microphone, dry room, no speech",
+   "seed": 3703,
+   "sekunden_prompt": 1.0,
+   "roh_spitze_dbfs": -0.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 1.02,
+   "lufs": -19.0,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -8.8,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -21.8,
+   "ueber_6k_db": -32.5,
+   "ueber_10k_db": -83.9,
+   "ueber_12k_db": -141.9,
+   "mitten_500_4k_db": -8.9,
+   "unter_300_db": -2.1,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 16.1,
+    "schaerfe": 5.0
+   },
+   "natuerliche_dauer_s": 1.002,
+   "gekuerzt": true,
+   "einblenden_s": 0.02,
+   "ausblenden_s": 0.15,
+   "sim_lufs": -23.1,
+   "sim_mitten_500_4k_db": -0.3,
+   "sim_pegelverlust_db": -4.1,
+   "ast_erwartet": [
+    "Sigh",
+    0.527
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.018
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Sigh",
+     0.527
+    ],
+    [
+     "Gasp",
+     0.293
+    ],
+    [
+     "Throat clearing",
+     0.047
+    ],
+    [
+     "Groan",
+     0.032
+    ],
+    [
+     "Speech",
+     0.018
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 1.9,
+   "id": "schreck_03",
+   "notiz": "Prompt „frau“: Frau, ein kurzes erschrockenes Luftschnappen. AudioSet: „Sigh“ 0,53 (Spitze: „Sigh“ 0,53)."
+  },
+  {
+   "roh": "schreck_frau_3701",
+   "ton": "schreck",
+   "variante": "frau",
+   "prompt": "a woman gasps in shock, a single quick surprised gasp, close microphone, dry room, no speech",
+   "seed": 3701,
+   "sekunden_prompt": 1.0,
+   "roh_spitze_dbfs": -9.6,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 1.02,
+   "lufs": -19.1,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -4.7,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -14.8,
+   "ueber_6k_db": -33.2,
+   "ueber_10k_db": -69.1,
+   "ueber_12k_db": -102.8,
+   "mitten_500_4k_db": -0.0,
+   "unter_300_db": -40.2,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 19.8,
+    "schaerfe": 2.9
+   },
+   "natuerliche_dauer_s": 1.002,
+   "gekuerzt": true,
+   "einblenden_s": 0.02,
+   "ausblenden_s": 0.15,
+   "sim_lufs": -15.7,
+   "sim_mitten_500_4k_db": -0.0,
+   "sim_pegelverlust_db": 3.4,
+   "ast_erwartet": [
+    "Gasp",
+    0.489
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.036
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Gasp",
+     0.489
+    ],
+    [
+     "Sigh",
+     0.299
+    ],
+    [
+     "Throat clearing",
+     0.108
+    ],
+    [
+     "Speech",
+     0.036
+    ],
+    [
+     "Groan",
+     0.03
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 1.79,
+   "id": "schreck_04",
+   "notiz": "Prompt „frau“: Frau, ein kurzes erschrockenes Luftschnappen. AudioSet: „Gasp“ 0,49 (Spitze: „Gasp“ 0,49)."
+  },
+  {
+   "roh": "schreck_oh_3705",
+   "ton": "schreck",
+   "variante": "oh",
+   "prompt": "a person gasps in surprise, a short sharp startled intake of breath with a tiny voiced oh, close-up, no words",
+   "seed": 3705,
+   "sekunden_prompt": 1.0,
+   "roh_spitze_dbfs": -17.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 0.91,
+   "lufs": -19.3,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -7.5,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 5850.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -15.9,
+   "ueber_6k_db": -30.7,
+   "ueber_10k_db": -74.0,
+   "ueber_12k_db": -104.9,
+   "mitten_500_4k_db": -0.6,
+   "unter_300_db": -24.4,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 43.9,
+    "schaerfe": 2.3
+   },
+   "natuerliche_dauer_s": 0.896,
+   "gekuerzt": false,
+   "einblenden_s": 0.02,
+   "ausblenden_s": 0.15,
+   "sim_lufs": -15.9,
+   "sim_mitten_500_4k_db": -0.2,
+   "sim_pegelverlust_db": 3.4,
+   "ast_erwartet": [
+    "Gasp",
+    0.266
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.014
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Gasp",
+     0.266
+    ],
+    [
+     "Sneeze",
+     0.101
+    ],
+    [
+     "Snort",
+     0.083
+    ],
+    [
+     "Speech",
+     0.014
+    ],
+    [
+     "Sigh",
+     0.012
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 0.89,
+   "id": "schreck_05",
+   "notiz": "Prompt „oh“: scharfes Luftschnappen mit kleinem „Oh“. AudioSet: „Gasp“ 0,27 (Spitze: „Gasp“ 0,27). Tiefpass 5,85 kHz (Leitplanke)."
+  },
+  {
+   "roh": "schreck_frau_3702",
+   "ton": "schreck",
+   "variante": "frau",
+   "prompt": "a woman gasps in shock, a single quick surprised gasp, close microphone, dry room, no speech",
+   "seed": 3702,
+   "sekunden_prompt": 1.0,
+   "roh_spitze_dbfs": -0.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 0.47,
+   "lufs": -19.0,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -8.3,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -26.1,
+   "ueber_6k_db": -41.2,
+   "ueber_10k_db": -85.8,
+   "ueber_12k_db": -119.7,
+   "mitten_500_4k_db": -7.1,
+   "unter_300_db": -10.6,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 15.0,
+    "schaerfe": 12.0
+   },
+   "natuerliche_dauer_s": 0.448,
+   "gekuerzt": false,
+   "einblenden_s": 0.02,
+   "ausblenden_s": 0.15,
+   "sim_lufs": -21.0,
+   "sim_mitten_500_4k_db": -1.8,
+   "sim_pegelverlust_db": -2.0,
+   "ast_erwartet": [
+    "Gasp",
+    0.559
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.046
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Gasp",
+     0.559
+    ],
+    [
+     "Sigh",
+     0.162
+    ],
+    [
+     "Groan",
+     0.077
+    ],
+    [
+     "Speech",
+     0.046
+    ],
+    [
+     "Male speech, man speaking",
+     0.025
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "etwas kürzer als das Ziel (0,45 s)"
+   ],
+   "punkte": 0.14,
+   "id": "schreck_06",
+   "notiz": "Prompt „frau“: Frau, ein kurzes erschrockenes Luftschnappen. AudioSet: „Gasp“ 0,56 (Spitze: „Gasp“ 0,56). Hinweis: etwas kürzer als das Ziel (0,45 s)."
+  },
+  {
+   "roh": "klatschen_wenige_3803",
+   "ton": "klatschen",
+   "variante": "wenige",
+   "prompt": "a few people clapping their hands briefly, short friendly applause from three or four people, small room, close-up, no cheering",
+   "seed": 3803,
+   "sekunden_prompt": 1.5,
+   "roh_spitze_dbfs": -0.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 1.92,
+   "lufs": -19.2,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -2.0,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 5000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -11.8,
+   "ueber_6k_db": -30.8,
+   "ueber_10k_db": -101.9,
+   "ueber_12k_db": -107.3,
+   "mitten_500_4k_db": -0.3,
+   "unter_300_db": -19.0,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 15.9,
+    "schaerfe": 6.2
+   },
+   "natuerliche_dauer_s": 2.062,
+   "gekuerzt": true,
+   "einblenden_s": 0.005,
+   "ausblenden_s": 0.35,
+   "sim_lufs": -16.5,
+   "sim_mitten_500_4k_db": -0.1,
+   "sim_pegelverlust_db": 2.7,
+   "ast_erwartet": [
+    "Clapping",
+    0.879
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.012
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Clapping",
+     0.879
+    ],
+    [
+     "Applause",
+     0.084
+    ],
+    [
+     "Sound effect",
+     0.082
+    ],
+    [
+     "Tap",
+     0.036
+    ],
+    [
+     "Ping",
+     0.017
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "natürlich 2,1 s, auf 1,90 s gekürzt und ausgeblendet"
+   ],
+   "punkte": 2.34,
+   "id": "klatschen_01",
+   "notiz": "Prompt „wenige“: drei, vier Leute klatschen kurz. AudioSet: „Clapping“ 0,88 (Spitze: „Clapping“ 0,88). Tiefpass 5,00 kHz (Leitplanke). Hinweis: natürlich 2,1 s, auf 1,90 s gekürzt und ausgeblendet."
+  },
+  {
+   "roh": "klatschen_begeistert_3802",
+   "ton": "klatschen",
+   "variante": "begeistert",
+   "prompt": "two or three people clapping hands enthusiastically for a moment, short lively applause, dry room, no voices",
+   "seed": 3802,
+   "sekunden_prompt": 1.5,
+   "roh_spitze_dbfs": -0.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 1.92,
+   "lufs": -19.2,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -4.5,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 5600.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -15.6,
+   "ueber_6k_db": -30.4,
+   "ueber_10k_db": -79.6,
+   "ueber_12k_db": -107.4,
+   "mitten_500_4k_db": -0.2,
+   "unter_300_db": -19.4,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 17.1,
+    "schaerfe": 5.6
+   },
+   "natuerliche_dauer_s": 2.374,
+   "gekuerzt": true,
+   "einblenden_s": 0.005,
+   "ausblenden_s": 0.35,
+   "sim_lufs": -16.3,
+   "sim_mitten_500_4k_db": -0.1,
+   "sim_pegelverlust_db": 2.9,
+   "ast_erwartet": [
+    "Clapping",
+    0.863
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.025
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Clapping",
+     0.863
+    ],
+    [
+     "Tap",
+     0.089
+    ],
+    [
+     "Applause",
+     0.062
+    ],
+    [
+     "Ping",
+     0.058
+    ],
+    [
+     "Sound effect",
+     0.052
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "natürlich 2,4 s, auf 1,90 s gekürzt und ausgeblendet"
+   ],
+   "punkte": 2.23,
+   "id": "klatschen_02",
+   "notiz": "Prompt „begeistert“: zwei, drei Leute, begeistert. AudioSet: „Clapping“ 0,86 (Spitze: „Clapping“ 0,86). Tiefpass 5,60 kHz (Leitplanke). Hinweis: natürlich 2,4 s, auf 1,90 s gekürzt und ausgeblendet."
+  },
+  {
+   "roh": "klatschen_wenige_3802",
+   "ton": "klatschen",
+   "variante": "wenige",
+   "prompt": "a few people clapping their hands briefly, short friendly applause from three or four people, small room, close-up, no cheering",
+   "seed": 3802,
+   "sekunden_prompt": 1.5,
+   "roh_spitze_dbfs": -0.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 1.92,
+   "lufs": -20.3,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -1.0,
+   "begrenzer_db": 3.0,
+   "tiefpass_hz": 5550.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -14.7,
+   "ueber_6k_db": -30.8,
+   "ueber_10k_db": -79.9,
+   "ueber_12k_db": -95.2,
+   "mitten_500_4k_db": -0.4,
+   "unter_300_db": -18.6,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 17.2,
+    "schaerfe": 4.2
+   },
+   "natuerliche_dauer_s": 2.005,
+   "gekuerzt": true,
+   "einblenden_s": 0.005,
+   "ausblenden_s": 0.35,
+   "sim_lufs": -17.8,
+   "sim_mitten_500_4k_db": -0.2,
+   "sim_pegelverlust_db": 2.5,
+   "ast_erwartet": [
+    "Clapping",
+    0.832
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.013
+   ],
+   "ast_katze": [
+    "Meow",
+    0.001
+   ],
+   "ast_top": [
+    [
+     "Clapping",
+     0.832
+    ],
+    [
+     "Finger snapping",
+     0.09
+    ],
+    [
+     "Sound effect",
+     0.085
+    ],
+    [
+     "Tap",
+     0.068
+    ],
+    [
+     "Ping",
+     0.043
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "natürlich 2,0 s, auf 1,90 s gekürzt und ausgeblendet"
+   ],
+   "punkte": 2.14,
+   "id": "klatschen_03",
+   "notiz": "Prompt „wenige“: drei, vier Leute klatschen kurz. AudioSet: „Clapping“ 0,83 (Spitze: „Clapping“ 0,83). Tiefpass 5,55 kHz (Leitplanke). Hinweis: natürlich 2,0 s, auf 1,90 s gekürzt und ausgeblendet."
+  },
+  {
+   "roh": "klatschen_begeistert_3803",
+   "ton": "klatschen",
+   "variante": "begeistert",
+   "prompt": "two or three people clapping hands enthusiastically for a moment, short lively applause, dry room, no voices",
+   "seed": 3803,
+   "sekunden_prompt": 1.5,
+   "roh_spitze_dbfs": -0.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 1.92,
+   "lufs": -19.3,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -8.7,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 5450.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -15.8,
+   "ueber_6k_db": -30.4,
+   "ueber_10k_db": -105.3,
+   "ueber_12k_db": -115.8,
+   "mitten_500_4k_db": -0.1,
+   "unter_300_db": -23.7,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 16.0,
+    "schaerfe": 9.9
+   },
+   "natuerliche_dauer_s": 3.023,
+   "gekuerzt": true,
+   "einblenden_s": 0.005,
+   "ausblenden_s": 0.35,
+   "sim_lufs": -16.1,
+   "sim_mitten_500_4k_db": -0.0,
+   "sim_pegelverlust_db": 3.2,
+   "ast_erwartet": [
+    "Clapping",
+    0.825
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.015
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Clapping",
+     0.825
+    ],
+    [
+     "Applause",
+     0.339
+    ],
+    [
+     "Sound effect",
+     0.075
+    ],
+    [
+     "Tap",
+     0.022
+    ],
+    [
+     "Music",
+     0.018
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "natürlich 3,0 s, auf 1,90 s gekürzt und ausgeblendet",
+    "ähnlich wie klatschen_01 (gleicher Seed, Spektrogramm r = 0,89)"
+   ],
+   "punkte": 2.09,
+   "id": "klatschen_04",
+   "notiz": "Prompt „begeistert“: zwei, drei Leute, begeistert. AudioSet: „Clapping“ 0,82 (Spitze: „Clapping“ 0,82). Tiefpass 5,45 kHz (Leitplanke). Hinweis: natürlich 3,0 s, auf 1,90 s gekürzt und ausgeblendet; ähnlich wie klatschen_01 (gleicher Seed, Spektrogramm r = 0,89)."
+  },
+  {
+   "roh": "klatschen_wenige_3801",
+   "ton": "klatschen",
+   "variante": "wenige",
+   "prompt": "a few people clapping their hands briefly, short friendly applause from three or four people, small room, close-up, no cheering",
+   "seed": 3801,
+   "sekunden_prompt": 1.5,
+   "roh_spitze_dbfs": -2.4,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 1.92,
+   "lufs": -19.6,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -1.1,
+   "begrenzer_db": 1.0,
+   "tiefpass_hz": 5600.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -12.7,
+   "ueber_6k_db": -30.1,
+   "ueber_10k_db": -76.0,
+   "ueber_12k_db": -97.1,
+   "mitten_500_4k_db": -0.4,
+   "unter_300_db": -20.4,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 15.5,
+    "schaerfe": 3.5
+   },
+   "natuerliche_dauer_s": 2.091,
+   "gekuerzt": true,
+   "einblenden_s": 0.005,
+   "ausblenden_s": 0.35,
+   "sim_lufs": -17.5,
+   "sim_mitten_500_4k_db": -0.2,
+   "sim_pegelverlust_db": 2.1,
+   "ast_erwartet": [
+    "Clapping",
+    0.722
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.02
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Clapping",
+     0.722
+    ],
+    [
+     "Applause",
+     0.366
+    ],
+    [
+     "Sound effect",
+     0.118
+    ],
+    [
+     "Speech",
+     0.02
+    ],
+    [
+     "Tap",
+     0.02
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "natürlich 2,1 s, auf 1,90 s gekürzt und ausgeblendet"
+   ],
+   "punkte": 1.72,
+   "id": "klatschen_05",
+   "notiz": "Prompt „wenige“: drei, vier Leute klatschen kurz. AudioSet: „Clapping“ 0,72 (Spitze: „Clapping“ 0,72). Tiefpass 5,60 kHz (Leitplanke). Hinweis: natürlich 2,1 s, auf 1,90 s gekürzt und ausgeblendet."
+  },
+  {
+   "roh": "klatschen_kurz_3802",
+   "ton": "klatschen",
+   "variante": "kurz",
+   "prompt": "a short burst of applause from a small group that stops quickly, indoor, no voices",
+   "seed": 3802,
+   "sekunden_prompt": 1.5,
+   "roh_spitze_dbfs": -0.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 1.92,
+   "lufs": -19.3,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -6.3,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -18.9,
+   "ueber_6k_db": -31.3,
+   "ueber_10k_db": -78.2,
+   "ueber_12k_db": -108.8,
+   "mitten_500_4k_db": -0.1,
+   "unter_300_db": -23.5,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 16.8,
+    "schaerfe": 4.0
+   },
+   "natuerliche_dauer_s": 2.109,
+   "gekuerzt": true,
+   "einblenden_s": 0.005,
+   "ausblenden_s": 0.35,
+   "sim_lufs": -16.2,
+   "sim_mitten_500_4k_db": -0.0,
+   "sim_pegelverlust_db": 3.1,
+   "ast_erwartet": [
+    "Clapping",
+    0.673
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.023
+   ],
+   "ast_katze": [
+    "Cat",
+    0.001
+   ],
+   "ast_top": [
+    [
+     "Clapping",
+     0.673
+    ],
+    [
+     "Applause",
+     0.621
+    ],
+    [
+     "Sound effect",
+     0.097
+    ],
+    [
+     "Speech",
+     0.023
+    ],
+    [
+     "Crowd",
+     0.016
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "natürlich 2,1 s, auf 1,90 s gekürzt und ausgeblendet"
+   ],
+   "punkte": 1.45,
+   "id": "klatschen_06",
+   "notiz": "Prompt „kurz“: kleine Gruppe, hört schnell auf. AudioSet: „Clapping“ 0,67 (Spitze: „Clapping“ 0,67). Hinweis: natürlich 2,1 s, auf 1,90 s gekürzt und ausgeblendet."
+  },
+  {
+   "roh": "daumen_marimba_3902",
+   "ton": "daumen",
+   "variante": "marimba",
+   "prompt": "one soft marimba note, short and round, gentle positive notification, warm",
+   "seed": 3902,
+   "sekunden_prompt": 1.0,
+   "roh_spitze_dbfs": -12.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 0.62,
+   "lufs": -18.9,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -7.8,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -69.9,
+   "ueber_6k_db": -78.0,
+   "ueber_10k_db": -126.3,
+   "ueber_12k_db": -130.0,
+   "mitten_500_4k_db": -28.2,
+   "unter_300_db": -35.9,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 37.1,
+    "schaerfe": 9.1
+   },
+   "natuerliche_dauer_s": 1.077,
+   "gekuerzt": true,
+   "einblenden_s": 0.003,
+   "ausblenden_s": 0.2,
+   "sim_lufs": -19.6,
+   "sim_mitten_500_4k_db": -24.2,
+   "sim_pegelverlust_db": -0.7,
+   "ast_erwartet": [
+    "Ding",
+    0.454
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.004
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Ding",
+     0.454
+    ],
+    [
+     "Clang",
+     0.353
+    ],
+    [
+     "Sound effect",
+     0.034
+    ],
+    [
+     "Ding-dong",
+     0.02
+    ],
+    [
+     "Doorbell",
+     0.017
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "natürlich 1,1 s, auf 0,60 s gekürzt und ausgeblendet"
+   ],
+   "punkte": 0.77,
+   "id": "daumen_01",
+   "notiz": "Prompt „marimba“: ein weicher Marimba-Ton. AudioSet: „Ding“ 0,45 (Spitze: „Ding“ 0,45). Hinweis: natürlich 1,1 s, auf 0,60 s gekürzt und ausgeblendet."
+  },
+  {
+   "roh": "daumen_plopp_3902",
+   "ton": "daumen",
+   "variante": "plopp",
+   "prompt": "a short cheerful cartoon pop with a soft ringing ping, positive confirmation sound, very short",
+   "seed": 3902,
+   "sekunden_prompt": 1.0,
+   "roh_spitze_dbfs": -0.4,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 0.62,
+   "lufs": -18.9,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -5.6,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -39.7,
+   "ueber_6k_db": -53.7,
+   "ueber_10k_db": -108.6,
+   "ueber_12k_db": -115.9,
+   "mitten_500_4k_db": -7.4,
+   "unter_300_db": -5.7,
+   "linien_2_6k": [
+    [
+     4916,
+     12.2,
+     -43.1
+    ],
+    [
+     4951,
+     12.2,
+     -43.6
+    ]
+   ],
+   "puls_15_50": {
+    "hz": 16.2,
+    "schaerfe": 2.5
+   },
+   "natuerliche_dauer_s": 0.928,
+   "gekuerzt": true,
+   "einblenden_s": 0.003,
+   "ausblenden_s": 0.2,
+   "sim_lufs": -20.3,
+   "sim_mitten_500_4k_db": -1.8,
+   "sim_pegelverlust_db": -1.4,
+   "ast_erwartet": [
+    "Ringtone",
+    0.526
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.013
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Ringtone",
+     0.526
+    ],
+    [
+     "Music",
+     0.277
+    ],
+    [
+     "Sound effect",
+     0.244
+    ],
+    [
+     "Marimba, xylophone",
+     0.026
+    ],
+    [
+     "Video game music",
+     0.015
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "schmale Linie bei 4916 Hz (+12,2 dB über der Umgebung): auf Piepen achten",
+    "natürlich 0,9 s, auf 0,60 s gekürzt und ausgeblendet"
+   ],
+   "punkte": 0.49,
+   "id": "daumen_02",
+   "notiz": "Prompt „plopp“: fröhliches Plopp mit kleinem Nachklang. AudioSet: „Ringtone“ 0,53 (Spitze: „Ringtone“ 0,53). Hinweis: schmale Linie bei 4916 Hz (+12,2 dB über der Umgebung): auf Piepen achten; natürlich 0,9 s, auf 0,60 s gekürzt und ausgeblendet."
+  },
+  {
+   "roh": "daumen_plopp_3903",
+   "ton": "daumen",
+   "variante": "plopp",
+   "prompt": "a short cheerful cartoon pop with a soft ringing ping, positive confirmation sound, very short",
+   "seed": 3903,
+   "sekunden_prompt": 1.0,
+   "roh_spitze_dbfs": -0.7,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 0.62,
+   "lufs": -19.0,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -8.7,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -36.7,
+   "ueber_6k_db": -48.7,
+   "ueber_10k_db": -91.0,
+   "ueber_12k_db": -115.3,
+   "mitten_500_4k_db": -0.0,
+   "unter_300_db": -38.5,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 16.0,
+    "schaerfe": 2.4
+   },
+   "natuerliche_dauer_s": 0.866,
+   "gekuerzt": true,
+   "einblenden_s": 0.003,
+   "ausblenden_s": 0.2,
+   "sim_lufs": -16.7,
+   "sim_mitten_500_4k_db": -0.0,
+   "sim_pegelverlust_db": 2.3,
+   "ast_erwartet": [
+    "Ringtone",
+    0.346
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.01
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Music",
+     0.618
+    ],
+    [
+     "Ringtone",
+     0.346
+    ],
+    [
+     "Ding-dong",
+     0.073
+    ],
+    [
+     "Doorbell",
+     0.067
+    ],
+    [
+     "Ice cream truck, ice cream van",
+     0.052
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "natürlich 0,9 s, auf 0,60 s gekürzt und ausgeblendet"
+   ],
+   "punkte": 0.24,
+   "id": "daumen_03",
+   "notiz": "Prompt „plopp“: fröhliches Plopp mit kleinem Nachklang. AudioSet: „Ringtone“ 0,35 (Spitze: „Music“ 0,62). Hinweis: natürlich 0,9 s, auf 0,60 s gekürzt und ausgeblendet."
+  },
+  {
+   "roh": "daumen_plopp_3901",
+   "ton": "daumen",
+   "variante": "plopp",
+   "prompt": "a short cheerful cartoon pop with a soft ringing ping, positive confirmation sound, very short",
+   "seed": 3901,
+   "sekunden_prompt": 1.0,
+   "roh_spitze_dbfs": -0.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 0.62,
+   "lufs": -18.9,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -10.9,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -46.9,
+   "ueber_6k_db": -56.9,
+   "ueber_10k_db": -120.1,
+   "ueber_12k_db": -123.8,
+   "mitten_500_4k_db": -11.6,
+   "unter_300_db": -27.7,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 47.7,
+    "schaerfe": 9.4
+   },
+   "natuerliche_dauer_s": 1.044,
+   "gekuerzt": true,
+   "einblenden_s": 0.003,
+   "ausblenden_s": 0.2,
+   "sim_lufs": -21.4,
+   "sim_mitten_500_4k_db": -3.7,
+   "sim_pegelverlust_db": -2.5,
+   "ast_erwartet": [
+    "Ringtone",
+    0.331
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.015
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Music",
+     0.353
+    ],
+    [
+     "Ringtone",
+     0.331
+    ],
+    [
+     "Sound effect",
+     0.131
+    ],
+    [
+     "Telephone bell ringing",
+     0.046
+    ],
+    [
+     "Marimba, xylophone",
+     0.017
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "natürlich 1,0 s, auf 0,60 s gekürzt und ausgeblendet"
+   ],
+   "punkte": 0.15,
+   "id": "daumen_04",
+   "notiz": "Prompt „plopp“: fröhliches Plopp mit kleinem Nachklang. AudioSet: „Ringtone“ 0,33 (Spitze: „Music“ 0,35). Hinweis: natürlich 1,0 s, auf 0,60 s gekürzt und ausgeblendet."
+  },
+  {
+   "roh": "daumen_pling_3902",
+   "ton": "daumen",
+   "variante": "pling",
+   "prompt": "a single soft friendly pling notification, warm round mallet note, very short, user interface confirmation",
+   "seed": 3902,
+   "sekunden_prompt": 1.0,
+   "roh_spitze_dbfs": -4.4,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 0.62,
+   "lufs": -18.9,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -8.3,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -52.8,
+   "ueber_6k_db": -63.9,
+   "ueber_10k_db": -111.9,
+   "ueber_12k_db": -116.3,
+   "mitten_500_4k_db": -16.8,
+   "unter_300_db": -3.4,
+   "linien_2_6k": [
+    [
+     4980,
+     18.0,
+     -47.7
+    ],
+    [
+     4998,
+     17.6,
+     -48.0
+    ],
+    [
+     4951,
+     16.6,
+     -49.1
+    ]
+   ],
+   "puls_15_50": {
+    "hz": 39.7,
+    "schaerfe": 2.7
+   },
+   "natuerliche_dauer_s": 0.761,
+   "gekuerzt": true,
+   "einblenden_s": 0.003,
+   "ausblenden_s": 0.2,
+   "sim_lufs": -24.5,
+   "sim_mitten_500_4k_db": -7.0,
+   "sim_pegelverlust_db": -5.6,
+   "ast_erwartet": [
+    "Ringtone",
+    0.378
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.012
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Music",
+     0.459
+    ],
+    [
+     "Ringtone",
+     0.378
+    ],
+    [
+     "Marimba, xylophone",
+     0.185
+    ],
+    [
+     "Percussion",
+     0.042
+    ],
+    [
+     "Sound effect",
+     0.041
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "schmale Linie bei 4980 Hz (+18,0 dB über der Umgebung): auf Piepen achten",
+    "natürlich 0,8 s, auf 0,60 s gekürzt und ausgeblendet"
+   ],
+   "punkte": -0.31,
+   "id": "daumen_05",
+   "notiz": "Prompt „pling“: weiches „Pling“, runder Schlägelton. AudioSet: „Ringtone“ 0,38 (Spitze: „Music“ 0,46). Hinweis: schmale Linie bei 4980 Hz (+18,0 dB über der Umgebung): auf Piepen achten; natürlich 0,8 s, auf 0,60 s gekürzt und ausgeblendet."
+  },
+  {
+   "roh": "daumen_pling_3901",
+   "ton": "daumen",
+   "variante": "pling",
+   "prompt": "a single soft friendly pling notification, warm round mallet note, very short, user interface confirmation",
+   "seed": 3901,
+   "sekunden_prompt": 1.0,
+   "roh_spitze_dbfs": -0.4,
+   "roh_leer": false,
+   "roh_leise": false,
+   "dauer_s": 0.62,
+   "lufs": -18.9,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -10.6,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -57.5,
+   "ueber_6k_db": -68.0,
+   "ueber_10k_db": -119.9,
+   "ueber_12k_db": -123.7,
+   "mitten_500_4k_db": -26.0,
+   "unter_300_db": -29.8,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 32.0,
+    "schaerfe": 1.8
+   },
+   "natuerliche_dauer_s": 1.108,
+   "gekuerzt": true,
+   "einblenden_s": 0.003,
+   "ausblenden_s": 0.2,
+   "sim_lufs": -26.4,
+   "sim_mitten_500_4k_db": -14.6,
+   "sim_pegelverlust_db": -7.5,
+   "ast_erwartet": [
+    "Ringtone",
+    0.138
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.009
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Music",
+     0.157
+    ],
+    [
+     "Ringtone",
+     0.138
+    ],
+    [
+     "Sound effect",
+     0.113
+    ],
+    [
+     "Doorbell",
+     0.076
+    ],
+    [
+     "Ding-dong",
+     0.048
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "natürlich 1,1 s, auf 0,60 s gekürzt und ausgeblendet",
+    "ähnlich wie daumen_04 (gleicher Seed, Spektrogramm r = 0,88)"
+   ],
+   "punkte": -0.85,
+   "id": "daumen_06",
+   "notiz": "Prompt „pling“: weiches „Pling“, runder Schlägelton. AudioSet: „Ringtone“ 0,14 (Spitze: „Music“ 0,16). Hinweis: natürlich 1,1 s, auf 0,60 s gekürzt und ausgeblendet; ähnlich wie daumen_04 (gleicher Seed, Spektrogramm r = 0,88)."
+  }
+ ],
+ "verworfen": [
+  {
+   "roh": "gaehnen_herzhaft_3101",
+   "ton": "gaehnen",
+   "punkte": 0.18,
+   "gruende": [
+    "fast gleich wie gaehnen_komisch_3101 (Spektrogramm r = 0,91)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,41 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen_herzhaft_3103",
+   "ton": "gaehnen",
+   "punkte": -0.99,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "AudioSet „Roar“ 0,22: auf Quietschen/Piepen/Tierähnliches achten",
+    "etwas kürzer als das Ziel (2,47 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen_muede_3102",
+   "ton": "gaehnen",
+   "punkte": 0.74,
+   "gruende": [
+    "fast gleich wie gaehnen_herzhaft_3102 (Spektrogramm r = 0,94)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen_komisch_3101",
+   "ton": "gaehnen",
+   "punkte": 0.21,
+   "gruende": [
+    "fast gleich wie gaehnen_muede_3101 (Spektrogramm r = 0,94)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,32 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen_komisch_3102",
+   "ton": "gaehnen",
+   "punkte": -2.38,
+   "gruende": [
+    "katzenähnlich (AudioSet „Cat“ 0,13)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen_komisch_3103",
+   "ton": "gaehnen",
+   "punkte": -0.29,
+   "gruende": [
+    "fast gleich wie gaehnen_muede_3103 (Spektrogramm r = 0,93)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,42 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen2_frau_4101",
+   "ton": "gaehnen2",
+   "punkte": 0.8,
+   "gruende": [
+    "weniger Punkte (höchstens 3 je Prompt-Variante)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen2_frau_4102",
+   "ton": "gaehnen2",
+   "punkte": -3.4,
+   "gruende": [
+    "weniger Punkte (höchstens 3 je Prompt-Variante)"
+   ],
+   "hinweise": [
+    "Hüllkurve pulsiert mit 26 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 10,4)",
+    "etwas kürzer als das Ziel (1,57 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen2_frau_4103",
+   "ton": "gaehnen2",
+   "punkte": -3.46,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,10)"
+   ],
+   "hinweise": [
+    "etwas „Humming“ (AudioSet 0,38)"
+   ]
+  },
+  {
+   "roh": "gaehnen2_frau_4104",
+   "ton": "gaehnen2",
+   "punkte": -5.5,
+   "gruende": [
+    "zu kurz (1,43 s)"
+   ],
+   "hinweise": [
+    "Hüllkurve pulsiert mit 22 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 14,2)",
+    "schmale Linie bei 3310 Hz (+13,3 dB über der Umgebung): auf Piepen achten"
+   ]
+  },
+  {
+   "roh": "gaehnen2_frau_4105",
+   "ton": "gaehnen2",
+   "punkte": -0.18,
+   "gruende": [
+    "weniger Punkte (höchstens 3 je Prompt-Variante)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen2_frau_4106",
+   "ton": "gaehnen2",
+   "punkte": -0.47,
+   "gruende": [
+    "fast gleich wie gaehnen2_frau_4113 (Spektrogramm r = 0,90)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (1,62 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen2_morgen_4102",
+   "ton": "gaehnen2",
+   "punkte": -6.69,
+   "gruende": [
+    "klingt nach „Animal“ (AudioSet 0,24, Grenze 0,20)",
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,03)"
+   ],
+   "hinweise": [
+    "etwas „Roar“ (AudioSet 0,14)",
+    "etwas „Howl“ (AudioSet 0,14)",
+    "Hüllkurve pulsiert mit 20 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 10,1)",
+    "schmale Linie bei 3439 Hz (+13,2 dB über der Umgebung): auf Piepen achten",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen2_morgen_4103",
+   "ton": "gaehnen2",
+   "punkte": -12.11,
+   "gruende": [
+    "klingt nach „Growling“ (AudioSet 0,17, Grenze 0,15)",
+    "klingt nach „Animal“ (AudioSet 0,78, Grenze 0,20)",
+    "klingt nach „Dog“ (AudioSet 0,49, Grenze 0,15)",
+    "klingt nach „Howl“ (AudioSet 0,50, Grenze 0,15)",
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,01)"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen2_morgen_4104",
+   "ton": "gaehnen2",
+   "punkte": -9.16,
+   "gruende": [
+    "klingt nach „Humming“ (AudioSet 0,70, Grenze 0,40)",
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,01)",
+    "fast gleich wie gaehnen2_kind_4104 (Spektrogramm r = 0,95)"
+   ],
+   "hinweise": [
+    "Hüllkurve pulsiert mit 23 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 26,2)",
+    "schmale Linie bei 2208 Hz (+14,8 dB über der Umgebung): auf Piepen achten",
+    "etwas kürzer als das Ziel (1,94 s)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen2_morgen_4105",
+   "ton": "gaehnen2",
+   "punkte": 0.02,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "Original sehr leise",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen2_morgen_4106",
+   "ton": "gaehnen2",
+   "punkte": -2.78,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "etwas „Groan“ (AudioSet 0,09)",
+    "Hüllkurve pulsiert mit 19 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 13,5)",
+    "schmale Linie bei 2150 Hz (+12,0 dB über der Umgebung): auf Piepen achten"
+   ]
+  },
+  {
+   "roh": "gaehnen2_comic_4101",
+   "ton": "gaehnen2",
+   "punkte": -1.62,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,00)"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen2_comic_4102",
+   "ton": "gaehnen2",
+   "punkte": -7.58,
+   "gruende": [
+    "klingt nach „Whistle“ (AudioSet 0,50, Grenze 0,20)",
+    "klingt nach „Whistling“ (AudioSet 0,44, Grenze 0,20)",
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,00)"
+   ],
+   "hinweise": [
+    "Hüllkurve pulsiert mit 17 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 33,4)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen2_comic_4103",
+   "ton": "gaehnen2",
+   "punkte": -9.0,
+   "gruende": [
+    "klingt nach „Music“ (AudioSet 0,55, Grenze 0,25)",
+    "klingt nach „Theremin“ (AudioSet 0,79, Grenze 0,20)",
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,00)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2367 Hz (+13,1 dB über der Umgebung): auf Piepen achten",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen2_comic_4104",
+   "ton": "gaehnen2",
+   "punkte": -2.98,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,01)"
+   ],
+   "hinweise": [
+    "etwas „Howl“ (AudioSet 0,11)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen2_comic_4105",
+   "ton": "gaehnen2",
+   "punkte": -7.76,
+   "gruende": [
+    "klingt nach „Whistle“ (AudioSet 0,69, Grenze 0,20)",
+    "Katzen-Leitplanke: schmale Linie bei 2185 Hz (+20,5 dB über der Umgebung), Piepen",
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,00)"
+   ],
+   "hinweise": [
+    "etwas „Whistling“ (AudioSet 0,18)",
+    "Hüllkurve pulsiert mit 19 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 10,5)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen2_comic_4106",
+   "ton": "gaehnen2",
+   "punkte": -5.19,
+   "gruende": [
+    "klingt nach „Whistle“ (AudioSet 0,54, Grenze 0,20)",
+    "Katzen-Leitplanke: schmale Linie bei 2080 Hz (+25,6 dB über der Umgebung), Piepen",
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,00)"
+   ],
+   "hinweise": [
+    "etwas „Music“ (AudioSet 0,13)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen2_hoeflich_4101",
+   "ton": "gaehnen2",
+   "punkte": -0.55,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "Original sehr leise",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen2_hoeflich_4102",
+   "ton": "gaehnen2",
+   "punkte": -1.03,
+   "gruende": [
+    "zu kurz (0,61 s)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen2_hoeflich_4103",
+   "ton": "gaehnen2",
+   "punkte": -3.03,
+   "gruende": [
+    "zu kurz (0,52 s)"
+   ],
+   "hinweise": [
+    "nur −23,1 LUFS statt −19,0: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen2_hoeflich_4104",
+   "ton": "gaehnen2",
+   "punkte": -0.09,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "Original sehr leise",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen2_hoeflich_4105",
+   "ton": "gaehnen2",
+   "punkte": 0.08,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "Original sehr leise",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen2_hoeflich_4106",
+   "ton": "gaehnen2",
+   "punkte": -0.67,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,06)"
+   ],
+   "hinweise": [
+    "Original sehr leise"
+   ]
+  },
+  {
+   "roh": "gaehnen2_kind_4101",
+   "ton": "gaehnen2",
+   "punkte": -0.64,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,12)"
+   ],
+   "hinweise": [
+    "etwas „Wail, moan“ (AudioSet 0,13)"
+   ]
+  },
+  {
+   "roh": "gaehnen2_kind_4102",
+   "ton": "gaehnen2",
+   "punkte": -3.87,
+   "gruende": [
+    "klingt nach „Wail, moan“ (AudioSet 0,28, Grenze 0,15)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen2_kind_4103",
+   "ton": "gaehnen2",
+   "punkte": -4.69,
+   "gruende": [
+    "klingt nach „Howl“ (AudioSet 0,19, Grenze 0,15)",
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,03)"
+   ],
+   "hinweise": [
+    "leichter Katzen-Verdacht (AudioSet „Meow“ 0,04)",
+    "etwas „Wail, moan“ (AudioSet 0,11)",
+    "etwas „Animal“ (AudioSet 0,13)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen2_kind_4104",
+   "ton": "gaehnen2",
+   "punkte": -5.78,
+   "gruende": [
+    "klingt nach „Humming“ (AudioSet 0,75, Grenze 0,40)",
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,02)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 4500 Hz (+13,1 dB über der Umgebung): auf Piepen achten",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen2_kind_4105",
+   "ton": "gaehnen2",
+   "punkte": 0.4,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen2_kind_4106",
+   "ton": "gaehnen2",
+   "punkte": -3.51,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "Hüllkurve pulsiert mit 19 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 23,1)",
+    "schmale Linie bei 2144 Hz (+13,1 dB über der Umgebung): auf Piepen achten",
+    "etwas kürzer als das Ziel (1,99 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen2_frau_im_prompt_4101",
+   "ton": "gaehnen2",
+   "punkte": -2.84,
+   "gruende": [
+    "klingt nach „Wail, moan“ (AudioSet 0,24, Grenze 0,15)"
+   ],
+   "hinweise": [
+    "etwas „Groan“ (AudioSet 0,08)",
+    "Hüllkurve pulsiert mit 24 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 12,2)"
+   ]
+  },
+  {
+   "roh": "gaehnen2_frau_im_prompt_4102",
+   "ton": "gaehnen2",
+   "punkte": -5.04,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,13)",
+    "fast gleich wie gaehnen2_frau_4102 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen2_kind_im_prompt_4102 (Spektrogramm r = 0,92)"
+   ],
+   "hinweise": [
+    "Hüllkurve pulsiert mit 17 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 16,9)",
+    "etwas kürzer als das Ziel (1,77 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen2_morgen_im_prompt_4101",
+   "ton": "gaehnen2",
+   "punkte": 0.25,
+   "gruende": [
+    "klingt nach „Wail, moan“ (AudioSet 0,16, Grenze 0,15)"
+   ],
+   "hinweise": [
+    "etwas „Groan“ (AudioSet 0,10)"
+   ]
+  },
+  {
+   "roh": "gaehnen2_morgen_im_prompt_4102",
+   "ton": "gaehnen2",
+   "punkte": -4.36,
+   "gruende": [
+    "klingt nach „Groan“ (AudioSet 0,35, Grenze 0,15)",
+    "klingt nach „Wail, moan“ (AudioSet 0,56, Grenze 0,15)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen2_comic_im_prompt_4101",
+   "ton": "gaehnen2",
+   "punkte": -2.01,
+   "gruende": [
+    "klingt nach „Groan“ (AudioSet 0,17, Grenze 0,15)",
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,06)"
+   ],
+   "hinweise": [
+    "etwas „Wail, moan“ (AudioSet 0,11)",
+    "etwas „Fart“ (AudioSet 0,07)"
+   ]
+  },
+  {
+   "roh": "gaehnen2_comic_im_prompt_4102",
+   "ton": "gaehnen2",
+   "punkte": -5.42,
+   "gruende": [
+    "klingt nach „Groan“ (AudioSet 0,53, Grenze 0,15)",
+    "klingt nach „Wail, moan“ (AudioSet 0,27, Grenze 0,15)",
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,03)"
+   ],
+   "hinweise": [
+    "etwas „Grunt“ (AudioSet 0,10)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen2_hoeflich_im_prompt_4101",
+   "ton": "gaehnen2",
+   "punkte": 0.74,
+   "gruende": [
+    "klingt nach „Wail, moan“ (AudioSet 0,16, Grenze 0,15)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen2_hoeflich_im_prompt_4102",
+   "ton": "gaehnen2",
+   "punkte": 0.4,
+   "gruende": [
+    "klingt nach „Wail, moan“ (AudioSet 0,21, Grenze 0,15)"
+   ],
+   "hinweise": [
+    "etwas „Groan“ (AudioSet 0,09)"
+   ]
+  },
+  {
+   "roh": "gaehnen2_kind_im_prompt_4101",
+   "ton": "gaehnen2",
+   "punkte": -1.69,
+   "gruende": [
+    "klingt nach „Groan“ (AudioSet 0,24, Grenze 0,15)",
+    "klingt nach „Wail, moan“ (AudioSet 0,15, Grenze 0,15)",
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,14)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen2_kind_im_prompt_4102",
+   "ton": "gaehnen2",
+   "punkte": -3.9,
+   "gruende": [
+    "klingt nach „Wail, moan“ (AudioSet 0,16, Grenze 0,15)",
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,11)"
+   ],
+   "hinweise": [
+    "etwas Sprache-Verdacht (AudioSet „Speech“ 0,18), auf Wörter achten",
+    "etwas kürzer als das Ziel (1,82 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen2_frau_4107",
+   "ton": "gaehnen2",
+   "punkte": -0.72,
+   "gruende": [
+    "klingt nach „Wail, moan“ (AudioSet 0,18, Grenze 0,15)"
+   ],
+   "hinweise": [
+    "Hüllkurve pulsiert mit 18 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 14,7)"
+   ]
+  },
+  {
+   "roh": "gaehnen2_frau_4108",
+   "ton": "gaehnen2",
+   "punkte": 0.59,
+   "gruende": [
+    "weniger Punkte (höchstens 3 je Prompt-Variante)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (1,50 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen2_frau_4109",
+   "ton": "gaehnen2",
+   "punkte": -0.38,
+   "gruende": [
+    "weniger Punkte (höchstens 3 je Prompt-Variante)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (1,86 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen2_frau_4111",
+   "ton": "gaehnen2",
+   "punkte": -5.72,
+   "gruende": [
+    "fast gleich wie gaehnen2_morgen2_4111 (Spektrogramm r = 0,93)"
+   ],
+   "hinweise": [
+    "etwas „Groan“ (AudioSet 0,10)",
+    "Hüllkurve pulsiert mit 24 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 17,0)",
+    "etwas kürzer als das Ziel (1,60 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen2_comic2_4111",
+   "ton": "gaehnen2",
+   "punkte": -2.78,
+   "gruende": [
+    "klingt nach „Groan“ (AudioSet 0,45, Grenze 0,15)",
+    "klingt nach „Wail, moan“ (AudioSet 0,18, Grenze 0,15)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 4453 Hz (+12,2 dB über der Umgebung): auf Piepen achten"
+   ]
+  },
+  {
+   "roh": "gaehnen2_comic2_4112",
+   "ton": "gaehnen2",
+   "punkte": -3.94,
+   "gruende": [
+    "klingt nach „Groan“ (AudioSet 0,28, Grenze 0,15)",
+    "klingt nach „Wail, moan“ (AudioSet 0,25, Grenze 0,15)",
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,03)"
+   ],
+   "hinweise": [
+    "etwas „Screaming“ (AudioSet 0,08)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen2_comic2_4113",
+   "ton": "gaehnen2",
+   "punkte": -3.84,
+   "gruende": [
+    "klingt nach „Groan“ (AudioSet 0,20, Grenze 0,15)",
+    "klingt nach „Wail, moan“ (AudioSet 0,20, Grenze 0,15)",
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,08)"
+   ],
+   "hinweise": [
+    "etwas „Yell“ (AudioSet 0,12)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen2_comic2_4114",
+   "ton": "gaehnen2",
+   "punkte": -2.5,
+   "gruende": [
+    "klingt nach „Groan“ (AudioSet 0,15, Grenze 0,15)",
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,01)"
+   ],
+   "hinweise": [
+    "etwas „Wail, moan“ (AudioSet 0,09)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen2_comic2_4115",
+   "ton": "gaehnen2",
+   "punkte": -4.09,
+   "gruende": [
+    "klingt nach „Groan“ (AudioSet 0,15, Grenze 0,15)",
+    "klingt nach „Screaming“ (AudioSet 0,35, Grenze 0,15)",
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,03)"
+   ],
+   "hinweise": [
+    "etwas „Wail, moan“ (AudioSet 0,08)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen2_comic2_4116",
+   "ton": "gaehnen2",
+   "punkte": -6.8,
+   "gruende": [
+    "klingt nach „Wail, moan“ (AudioSet 0,39, Grenze 0,15)",
+    "klingt nach „Screaming“ (AudioSet 0,26, Grenze 0,15)",
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,00)"
+   ],
+   "hinweise": [
+    "etwas „Groan“ (AudioSet 0,09)",
+    "AudioSet erkennt keine der erwarteten Klassen",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen2_morgen2_4111",
+   "ton": "gaehnen2",
+   "punkte": -3.71,
+   "gruende": [
+    "klingt nach „Groan“ (AudioSet 0,21, Grenze 0,15)",
+    "klingt nach „Wail, moan“ (AudioSet 0,22, Grenze 0,15)"
+   ],
+   "hinweise": [
+    "Hüllkurve pulsiert mit 22 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 20,5)",
+    "etwas kürzer als das Ziel (1,59 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen2_morgen2_4112",
+   "ton": "gaehnen2",
+   "punkte": 0.99,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen2_morgen2_4113",
+   "ton": "gaehnen2",
+   "punkte": 1.3,
+   "gruende": [
+    "klingt nach „Groan“ (AudioSet 0,21, Grenze 0,15)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (1,95 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen2_morgen2_4114",
+   "ton": "gaehnen2",
+   "punkte": -0.63,
+   "gruende": [
+    "fast gleich wie gaehnen2_frau_4114 (Spektrogramm r = 0,91)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen2_jugend_4121",
+   "ton": "gaehnen2",
+   "punkte": -4.51,
+   "gruende": [
+    "klingt nach „Wail, moan“ (AudioSet 0,20, Grenze 0,15)",
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,09)"
+   ],
+   "hinweise": [
+    "Hüllkurve pulsiert mit 18 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 21,6)"
+   ]
+  },
+  {
+   "roh": "gaehnen2_jugend_4122",
+   "ton": "gaehnen2",
+   "punkte": -2.83,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,03)"
+   ],
+   "hinweise": [
+    "etwas „Humming“ (AudioSet 0,36)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen2_jugend_4124",
+   "ton": "gaehnen2",
+   "punkte": -5.72,
+   "gruende": [
+    "Katzen-Leitplanke: schmale Linie bei 2185 Hz (+23,0 dB über der Umgebung), Piepen",
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,03)"
+   ],
+   "hinweise": [
+    "etwas „Whistle“ (AudioSet 0,13)",
+    "Hüllkurve pulsiert mit 17 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 12,3)",
+    "etwas kürzer als das Ziel (1,99 s)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen2_jugend_4125",
+   "ton": "gaehnen2",
+   "punkte": -3.36,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,12)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2074 Hz (+12,7 dB über der Umgebung): auf Piepen achten",
+    "etwas kürzer als das Ziel (1,94 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen2_jugend_4126",
+   "ton": "gaehnen2",
+   "punkte": -14.27,
+   "gruende": [
+    "klingt nach „Animal“ (AudioSet 0,61, Grenze 0,20)",
+    "klingt nach „Dog“ (AudioSet 0,48, Grenze 0,15)",
+    "klingt nach „Howl“ (AudioSet 0,79, Grenze 0,15)",
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,00)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2080 Hz (+18,8 dB über der Umgebung): auf Piepen achten",
+    "etwas kürzer als das Ziel (1,71 s)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen2_frau_4113",
+   "ton": "gaehnen2",
+   "punkte": 0.5,
+   "gruende": [
+    "fast gleich wie gaehnen2_morgen2_4113 (Spektrogramm r = 0,90)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (1,94 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen2_frau_4114",
+   "ton": "gaehnen2",
+   "punkte": -0.5,
+   "gruende": [
+    "weniger Punkte (höchstens 3 je Prompt-Variante)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen2_frau_4115",
+   "ton": "gaehnen2",
+   "punkte": -0.73,
+   "gruende": [
+    "weniger Punkte (höchstens 3 je Prompt-Variante)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (1,81 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen2_frau_4116",
+   "ton": "gaehnen2",
+   "punkte": -0.92,
+   "gruende": [
+    "fast gleich wie gaehnen2_morgen2_4116 (Spektrogramm r = 0,96)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen2_frau_4117",
+   "ton": "gaehnen2",
+   "punkte": -2.98,
+   "gruende": [
+    "weniger Punkte (höchstens 3 je Prompt-Variante)"
+   ],
+   "hinweise": [
+    "etwas „Groan“ (AudioSet 0,10)",
+    "etwas kürzer als das Ziel (1,62 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen2_morgen2_4116",
+   "ton": "gaehnen2",
+   "punkte": 0.21,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (1,99 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen2_morgen2_4117",
+   "ton": "gaehnen2",
+   "punkte": -4.08,
+   "gruende": [
+    "fast gleich wie gaehnen2_frau_4117 (Spektrogramm r = 0,91)"
+   ],
+   "hinweise": [
+    "etwas „Groan“ (AudioSet 0,09)",
+    "schmale Linie bei 4910 Hz (+12,7 dB über der Umgebung): auf Piepen achten",
+    "etwas kürzer als das Ziel (1,63 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen2_morgen2_4118",
+   "ton": "gaehnen2",
+   "punkte": -1.01,
+   "gruende": [
+    "klingt nach „Groan“ (AudioSet 0,23, Grenze 0,15)"
+   ],
+   "hinweise": [
+    "etwas „Wail, moan“ (AudioSet 0,12)"
+   ]
+  },
+  {
+   "roh": "gaehnen2_hoeflich2_4131",
+   "ton": "gaehnen2",
+   "punkte": 0.86,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen2_hoeflich2_4132",
+   "ton": "gaehnen2",
+   "punkte": 0.86,
+   "gruende": [
+    "weniger Punkte (höchstens 3 je Prompt-Variante)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen2_hoeflich2_4134",
+   "ton": "gaehnen2",
+   "punkte": -3.62,
+   "gruende": [
+    "klingt nach „Groan“ (AudioSet 0,20, Grenze 0,15)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2830 Hz (+14,6 dB über der Umgebung): auf Piepen achten",
+    "etwas kürzer als das Ziel (1,56 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen2_hoeflich2_4135",
+   "ton": "gaehnen2",
+   "punkte": -2.87,
+   "gruende": [
+    "weniger Punkte (höchstens 3 je Prompt-Variante)"
+   ],
+   "hinweise": [
+    "etwas „Wail, moan“ (AudioSet 0,10)",
+    "etwas kürzer als das Ziel (1,62 s)"
+   ]
+  },
+  {
+   "roh": "schnarchen_tief_3202",
+   "ton": "schnarchen",
+   "punkte": -1.85,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (3,12 s)"
+   ]
+  },
+  {
+   "roh": "schnarchen_ruhig_3201",
+   "ton": "schnarchen",
+   "punkte": -1.32,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (3,91 s)"
+   ]
+  },
+  {
+   "roh": "schnarchen_ruhig_3202",
+   "ton": "schnarchen",
+   "punkte": -0.89,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (3,38 s)"
+   ]
+  },
+  {
+   "roh": "wecker_ticken_dann_3302",
+   "ton": "wecker",
+   "punkte": -9.38,
+   "gruende": [
+    "zu kurz (1,11 s)",
+    "kaum Ticken vor dem Klingeln (1 Ticks)",
+    "Ticken zu kurz (0,2 s)"
+   ],
+   "hinweise": [
+    "AudioSet „Beep, bleep“ 0,20: auf Quietschen/Piepen/Tierähnliches achten",
+    "schmale Linie bei 3333 Hz (+37,5 dB über der Umgebung): auf Piepen achten (bei einer Glocke zu erwarten)",
+    "AudioSet erkennt keine der erwarteten Klassen",
+    "Ticken war 24,1 dB leiser als das Klingeln: mit weicher Pegelkurve um 8,1 dB angehoben (kein Schnitt)",
+    "AudioSet hört im ersten Teil kein Ticken",
+    "AudioSet hört im zweiten Teil keine Klingel"
+   ]
+  },
+  {
+   "roh": "wecker_ticken_dann_3303",
+   "ton": "wecker",
+   "punkte": -8.68,
+   "gruende": [
+    "zu kurz (2,35 s)",
+    "kaum Ticken vor dem Klingeln (0 Ticks)",
+    "Ticken zu kurz (0,0 s)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 4148 Hz (+30,2 dB über der Umgebung): auf Piepen achten (bei einer Glocke zu erwarten)",
+    "AudioSet erkennt keine der erwarteten Klassen",
+    "klingelte 5,1 s: nach 1,95 s in 0,4 s ausgeblendet",
+    "AudioSet hört im ersten Teil kein Ticken"
+   ]
+  },
+  {
+   "roh": "wecker_ticken_dann_3304",
+   "ton": "wecker",
+   "punkte": -0.43,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "AudioSet „Squeal“ 0,33: auf Quietschen/Piepen/Tierähnliches achten",
+    "Ticken war 44,2 dB leiser als das Klingeln: mit weicher Pegelkurve um 28,2 dB angehoben (kein Schnitt)",
+    "AudioSet hört im zweiten Teil keine Klingel"
+   ]
+  },
+  {
+   "roh": "wecker_ticken_dann_3306",
+   "ton": "wecker",
+   "punkte": -10.05,
+   "gruende": [
+    "zu kurz (2,37 s)",
+    "kaum Ticken vor dem Klingeln (0 Ticks)",
+    "Ticken zu kurz (0,0 s)"
+   ],
+   "hinweise": [
+    "Hüllkurve pulsiert mit 20 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 11,3)",
+    "schmale Linie bei 2695 Hz (+28,8 dB über der Umgebung): auf Piepen achten (bei einer Glocke zu erwarten)",
+    "klingelte 5,1 s: nach 1,95 s in 0,4 s ausgeblendet",
+    "AudioSet hört im ersten Teil kein Ticken"
+   ]
+  },
+  {
+   "roh": "wecker_zwei_glocken_3301",
+   "ton": "wecker",
+   "punkte": -4.58,
+   "gruende": [
+    "zu kurz (2,35 s)",
+    "kaum Ticken vor dem Klingeln (0 Ticks)",
+    "Ticken zu kurz (0,0 s)"
+   ],
+   "hinweise": [
+    "AudioSet „Beep, bleep“ 0,17: auf Quietschen/Piepen/Tierähnliches achten",
+    "Hüllkurve pulsiert mit 24 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 21,9)",
+    "schmale Linie bei 2050 Hz (+24,2 dB über der Umgebung): auf Piepen achten (bei einer Glocke zu erwarten)",
+    "klingelte 5,0 s: nach 1,95 s in 0,4 s ausgeblendet",
+    "AudioSet hört im ersten Teil kein Ticken"
+   ]
+  },
+  {
+   "roh": "wecker_zwei_glocken_3302",
+   "ton": "wecker",
+   "punkte": -4.1,
+   "gruende": [
+    "zu kurz (2,35 s)",
+    "kaum Ticken vor dem Klingeln (0 Ticks)",
+    "Ticken zu kurz (0,0 s)"
+   ],
+   "hinweise": [
+    "AudioSet „Squeal“ 0,15: auf Quietschen/Piepen/Tierähnliches achten",
+    "schmale Linie bei 3333 Hz (+26,8 dB über der Umgebung): auf Piepen achten (bei einer Glocke zu erwarten)",
+    "klingelte 3,3 s: nach 1,95 s in 0,4 s ausgeblendet",
+    "AudioSet hört im ersten Teil kein Ticken"
+   ]
+  },
+  {
+   "roh": "wecker_zwei_glocken_3303",
+   "ton": "wecker",
+   "punkte": -7.23,
+   "gruende": [
+    "zu kurz (2,35 s)",
+    "kaum Ticken vor dem Klingeln (0 Ticks)",
+    "Ticken zu kurz (0,0 s)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 4148 Hz (+24,7 dB über der Umgebung): auf Piepen achten (bei einer Glocke zu erwarten)",
+    "klingelte 4,0 s: nach 1,95 s in 0,4 s ausgeblendet",
+    "AudioSet hört im ersten Teil kein Ticken"
+   ]
+  },
+  {
+   "roh": "wecker_zwei_glocken_3304",
+   "ton": "wecker",
+   "punkte": -3.71,
+   "gruende": [
+    "zu kurz (2,35 s)",
+    "kaum Ticken vor dem Klingeln (0 Ticks)",
+    "Ticken zu kurz (0,0 s)"
+   ],
+   "hinweise": [
+    "AudioSet „Frog“ 0,17: auf Quietschen/Piepen/Tierähnliches achten",
+    "schmale Linie bei 3738 Hz (+12,7 dB über der Umgebung): auf Piepen achten (bei einer Glocke zu erwarten)",
+    "klingelte 5,0 s: nach 1,95 s in 0,4 s ausgeblendet",
+    "AudioSet hört im ersten Teil kein Ticken"
+   ]
+  },
+  {
+   "roh": "wecker_tick_tack_3301",
+   "ton": "wecker",
+   "punkte": 1.31,
+   "gruende": [
+    "fast gleich wie wecker_ticken_dann_3301 (Spektrogramm r = 0,96)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2050 Hz (+23,7 dB über der Umgebung): auf Piepen achten (bei einer Glocke zu erwarten)",
+    "Ticken unregelmäßig (Streuung 0,97)",
+    "Ticken fast so laut wie das Klingeln (eher Klingelstöße?)",
+    "AudioSet hört im ersten Teil kein Ticken"
+   ]
+  },
+  {
+   "roh": "wecker_tick_tack_3305",
+   "ton": "wecker",
+   "punkte": -0.07,
+   "gruende": [
+    "fast gleich wie wecker_ticken_dann_3305 (Spektrogramm r = 0,99)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 4400 Hz (+12,7 dB über der Umgebung): auf Piepen achten (bei einer Glocke zu erwarten)",
+    "Ticken fast so laut wie das Klingeln (eher Klingelstöße?)"
+   ]
+  },
+  {
+   "roh": "wecker_tick_tack_3306",
+   "ton": "wecker",
+   "punkte": -2.66,
+   "gruende": [
+    "kaum Ticken vor dem Klingeln (3 Ticks)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2689 Hz (+26,0 dB über der Umgebung): auf Piepen achten (bei einer Glocke zu erwarten)",
+    "Ticken fast so laut wie das Klingeln (eher Klingelstöße?)",
+    "AudioSet hört im ersten Teil kein Ticken"
+   ]
+  },
+  {
+   "roh": "wecker_tick_tack_3307",
+   "ton": "wecker",
+   "punkte": 0.12,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "schmale Linie bei 4101 Hz (+20,3 dB über der Umgebung): auf Piepen achten (bei einer Glocke zu erwarten)",
+    "etwas kürzer als das Ziel (4,10 s)",
+    "Ticken unregelmäßig (Streuung 0,78)",
+    "tickte länger: Anfang um 0,9 s gekürzt (weich eingeblendet)",
+    "AudioSet hört im ersten Teil kein Ticken"
+   ]
+  },
+  {
+   "roh": "wecker_tick_tack_3308",
+   "ton": "wecker",
+   "punkte": -2.24,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "AudioSet „Squeal“ 0,39: auf Quietschen/Piepen/Tierähnliches achten",
+    "schmale Linie bei 4119 Hz (+25,1 dB über der Umgebung): auf Piepen achten (bei einer Glocke zu erwarten)",
+    "AudioSet erkennt keine der erwarteten Klassen",
+    "Ticken fast so laut wie das Klingeln (eher Klingelstöße?)",
+    "AudioSet hört im zweiten Teil keine Klingel"
+   ]
+  },
+  {
+   "roh": "wecker_leise_tick_3311",
+   "ton": "wecker",
+   "punkte": -2.41,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen",
+    "Ticken unregelmäßig (Streuung 0,58)",
+    "tickte länger: Anfang um 0,7 s gekürzt (weich eingeblendet)",
+    "Ticken fast so laut wie das Klingeln (eher Klingelstöße?)"
+   ]
+  },
+  {
+   "roh": "wecker_leise_tick_3312",
+   "ton": "wecker",
+   "punkte": -7.96,
+   "gruende": [
+    "zu kurz (2,74 s)",
+    "kaum Ticken vor dem Klingeln (2 Ticks)",
+    "Ticken zu kurz (1,1 s)"
+   ],
+   "hinweise": [
+    "etwas Sprache-Verdacht (AudioSet „Speech“ 0,33), auf Wörter achten",
+    "schmale Linie bei 2126 Hz (+25,4 dB über der Umgebung): auf Piepen achten (bei einer Glocke zu erwarten)",
+    "AudioSet erkennt keine der erwarteten Klassen",
+    "Ticken war 33,2 dB leiser als das Klingeln: mit weicher Pegelkurve um 17,2 dB angehoben (kein Schnitt)"
+   ]
+  },
+  {
+   "roh": "wecker_leise_tick_3314",
+   "ton": "wecker",
+   "punkte": -5.94,
+   "gruende": [
+    "zu kurz (1,93 s)",
+    "kaum Ticken vor dem Klingeln (0 Ticks)",
+    "Ticken zu kurz (0,0 s)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 3597 Hz (+12,3 dB über der Umgebung): auf Piepen achten (bei einer Glocke zu erwarten)",
+    "Ticken war 57,4 dB leiser als das Klingeln: mit weicher Pegelkurve um 30,0 dB angehoben (kein Schnitt)",
+    "AudioSet hört im ersten Teil kein Ticken"
+   ]
+  },
+  {
+   "roh": "klingeln_hammer_3352",
+   "ton": "klingeln",
+   "punkte": -1.05,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "schmale Linie bei 3304 Hz (+24,3 dB über der Umgebung): auf Piepen achten (bei einer Glocke zu erwarten)",
+    "natürlich 2,0 s, auf 1,80 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "klingeln_schrill_3351",
+   "ton": "klingeln",
+   "punkte": 0.3,
+   "gruende": [
+    "fast gleich wie klingeln_hammer_3351 (Spektrogramm r = 0,97)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 4699 Hz (+18,7 dB über der Umgebung): auf Piepen achten (bei einer Glocke zu erwarten)",
+    "natürlich 2,1 s, auf 1,80 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "klingeln_schrill_3352",
+   "ton": "klingeln",
+   "punkte": 0.64,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "schmale Linie bei 3304 Hz (+28,1 dB über der Umgebung): auf Piepen achten (bei einer Glocke zu erwarten)",
+    "natürlich 2,4 s, auf 1,80 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "papierkugel_wurf_knuellen_wusch_3402",
+   "ton": "papierkugel_wurf",
+   "punkte": 0.23,
+   "gruende": [
+    "fast gleich wie papierkugel_wurf_knistern_3402 (Spektrogramm r = 0,91)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "papierkugel_wurf_schnell_3402",
+   "ton": "papierkugel_wurf",
+   "punkte": 0.23,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "papierkugel_wurf_schnell_3403",
+   "ton": "papierkugel_wurf",
+   "punkte": 0.11,
+   "gruende": [
+    "fast gleich wie papierkugel_wurf_knistern_3403 (Spektrogramm r = 0,93)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "papierkugel_plopp_tisch_3502",
+   "ton": "papierkugel_plopp",
+   "punkte": -3.26,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "natürlich 0,8 s, auf 0,50 s gekürzt und ausgeblendet",
+    "nur −31,1 LUFS statt −21,5: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser"
+   ]
+  },
+  {
+   "roh": "papierkugel_plopp_tisch_3503",
+   "ton": "papierkugel_plopp",
+   "punkte": -1.47,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen",
+    "nur −28,0 LUFS statt −21,5: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser"
+   ]
+  },
+  {
+   "roh": "papierkugel_plopp_dumpf_3503",
+   "ton": "papierkugel_plopp",
+   "punkte": -1.28,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen",
+    "nur −27,6 LUFS statt −21,5: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser"
+   ]
+  },
+  {
+   "roh": "papierkugel_plopp_kopf_3502",
+   "ton": "papierkugel_plopp",
+   "punkte": -2.73,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "nur −33,0 LUFS statt −21,5: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser"
+   ]
+  },
+  {
+   "roh": "papierkugel_plopp_kopf_3503",
+   "ton": "papierkugel_plopp",
+   "punkte": -1.32,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "AudioSet hört eher einen Knall (Explosion/Bang 0,20): zu hart?",
+    "AudioSet erkennt keine der erwarteten Klassen",
+    "nur −26,5 LUFS statt −21,5: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser"
+   ]
+  },
+  {
+   "roh": "papierkugel_plopp_kissen_3506",
+   "ton": "papierkugel_plopp",
+   "punkte": -1.97,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "AudioSet hört eher einen Knall (Explosion/Bang 0,37): zu hart?",
+    "natürlich 0,6 s, auf 0,50 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "lachen_zu_zweit_3601",
+   "ton": "lachen",
+   "punkte": 0.23,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "lachen_zu_zweit_3602",
+   "ton": "lachen",
+   "punkte": 0.0,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "natürlich 2,3 s, auf 1,90 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "lachen_zu_zweit_3603",
+   "ton": "lachen",
+   "punkte": 0.4,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "schreck_oh_3702",
+   "ton": "schreck",
+   "punkte": -0.09,
+   "gruende": [
+    "fast gleich wie schreck_mann_3702 (Spektrogramm r = 0,95)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (0,46 s)"
+   ]
+  },
+  {
+   "roh": "schreck_oh_3703",
+   "ton": "schreck",
+   "punkte": 1.78,
+   "gruende": [
+    "fast gleich wie schreck_frau_3703 (Spektrogramm r = 0,98)",
+    "fast gleich wie schreck_mann_3703 (Spektrogramm r = 0,99)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "schreck_mann_3701",
+   "ton": "schreck",
+   "punkte": -0.22,
+   "gruende": [
+    "fast gleich wie schreck_frau_3701 (Spektrogramm r = 0,94)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2718 Hz (+12,1 dB über der Umgebung): auf Piepen achten"
+   ]
+  },
+  {
+   "roh": "schreck_mann_3702",
+   "ton": "schreck",
+   "punkte": 0.02,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (0,46 s)"
+   ]
+  },
+  {
+   "roh": "schreck_mann_3703",
+   "ton": "schreck",
+   "punkte": 1.82,
+   "gruende": [
+    "fast gleich wie schreck_frau_3703 (Spektrogramm r = 0,96)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2173 Hz (+12,6 dB über der Umgebung): auf Piepen achten"
+   ]
+  },
+  {
+   "roh": "klatschen_kurz_3801",
+   "ton": "klatschen",
+   "punkte": 1.26,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "natürlich 2,4 s, auf 1,90 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "klatschen_kurz_3803",
+   "ton": "klatschen",
+   "punkte": 0.71,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "natürlich 2,2 s, auf 1,90 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "klatschen_begeistert_3801",
+   "ton": "klatschen",
+   "punkte": 1.33,
+   "gruende": [
+    "fast gleich wie klatschen_wenige_3801 (Spektrogramm r = 0,94)"
+   ],
+   "hinweise": [
+    "natürlich 2,1 s, auf 1,90 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "daumen_pling_3903",
+   "ton": "daumen",
+   "punkte": -0.39,
+   "gruende": [
+    "Katzen-Leitplanke: schmale Linie bei 2097 Hz (+25,2 dB über der Umgebung), Piepen"
+   ],
+   "hinweise": [
+    "natürlich 1,0 s, auf 0,60 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "daumen_marimba_3901",
+   "ton": "daumen",
+   "punkte": -1.28,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "natürlich 0,9 s, auf 0,60 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "daumen_marimba_3903",
+   "ton": "daumen",
+   "punkte": 1.28,
+   "gruende": [
+    "Katzen-Leitplanke: schmale Linie bei 2097 Hz (+39,2 dB über der Umgebung), Piepen"
+   ],
+   "hinweise": [
+    "natürlich 1,4 s, auf 0,60 s gekürzt und ausgeblendet"
+   ]
+  }
+ ]
+}

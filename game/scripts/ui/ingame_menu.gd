@@ -11,6 +11,9 @@ signal closed
 const ITEMS := [["einstellungen", "Einstellungen"], ["regeln", "Regeln ansehen"], ["bedienung", "So geht's"]]
 # Nur beim Gastgeber eines Netzwerkspiels davor (Beta 1.4.2, docs/module/dazuholen.md): Feld „Mitspieler“ (SeatManager)
 const HOST_ITEMS := [["dazuholen", "Mitspieler dazuholen"], ["entfernen", "Mitspieler entfernen"]]
+# Mau-Mau Flip (Beta 1.6.1, Gastgeber-Übergabe): Eintrag des Netz-Gastgebers. Ein dritter Wert in einem Eintrag ist der Grund, warum
+# es gerade nicht geht (ausgegraut, Grund klein darunter; "" = wählbar).
+const HANDOVER_ITEM := ["uebergeben", "Gastgeber übergeben …"]
 
 var _card: PanelContainer
 var night := false
@@ -35,7 +38,13 @@ func _build(at: Vector2, items: Array) -> void:
 	_card = ScreenKit.card(22.0)
 	_card.position = at
 	add_child(_card)
-	var v := ScreenKit.vbox(12)
+	# Raster statt Spalte (Beta 1.6.1): Mit „Gastgeber übergeben …“ hat der Gastgeber sechs Einträge; passt die Spalte nicht auf
+	# den Bildschirm, werden die Knöpfe flacher, die Karte rückt nach oben und notfalls in zwei Spalten (_fit).
+	var v := GridContainer.new()
+	v.name = "Eintraege"
+	v.columns = 1
+	v.add_theme_constant_override("v_separation", 12)
+	v.add_theme_constant_override("h_separation", 12)
 	_card.add_child(v)
 	for it in items:
 		var b := ScreenKit.button(str(it[1]), "GhostButton", "", 360.0)
@@ -43,10 +52,49 @@ func _build(at: Vector2, items: Array) -> void:
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		b.add_theme_font_size_override("font_size", UiFonts.size("zeile"))
 		b.pressed.connect(_choose.bind(str(it[0])))
-		v.add_child(b)
+		var reason := str(it[2]) if (it as Array).size() > 2 else ""
+		if reason == "":
+			v.add_child(b)
+			continue
+		# ausgegraut mit Grund (Beta 1.6.1): Knopf und Grund dicht untereinander
+		b.disabled = true
+		var box := ScreenKit.vbox(0)
+		box.name = "Gesperrt_" + str(it[0])
+		v.add_child(box)
+		box.add_child(b)
+		var why := ScreenKit.hint(reason, UiFonts.size("klein"))
+		why.name = "Grund"
+		why.custom_minimum_size.x = 360.0
+		box.add_child(why)
 	_card.reset_size()
+	_fit(v, at)
 	modulate.a = 0.0
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.12)
+
+
+# Karte ganz auf dem Bildschirm halten: erst flachere Knöpfe (64 px), dann nach oben rücken, dann zwei Spalten.
+func _fit(grid: GridContainer, at: Vector2) -> void:
+	var room := get_viewport_rect().size.y - 12.0
+	if at.y + _card.get_combined_minimum_size().y <= room:
+		return
+	grid.add_theme_constant_override("v_separation", 8)
+	for b in grid.find_children("Wahl_*", "Button", true, false):
+		(b as Button).custom_minimum_size.y = 64.0
+	_card.reset_size()
+	var h := _card.get_combined_minimum_size().y
+	if h > room - 10.0:
+		grid.columns = 2
+		for c in grid.get_children():
+			(c as Control).size_flags_vertical = Control.SIZE_SHRINK_BEGIN   # Nachbar mit Grund streckt sonst den Knopf
+		_place.call_deferred(at.y)        # Mindestgröße des Rasters steht erst nach dem Umbau fest
+		return
+	_card.position.y = clampf(room - h, 10.0, at.y)
+
+
+func _place(top: float) -> void:
+	_card.reset_size()
+	var room := get_viewport_rect().size.y - 12.0
+	_card.position.y = clampf(room - _card.size.y, 10.0, top)
 
 
 func _draw() -> void:

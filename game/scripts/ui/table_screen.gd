@@ -44,7 +44,7 @@ var leaving := false
 var _top: Control
 var _menu_btn: Button
 var _menu_night := -1                  # zuletzt angewandte Seite des Zurück-Knopfs (0 Tag, 1 Nacht)
-var _online_away := false              # Gastgeber: Vermittler-Verbindung unterbrochen (Hinweis oben, Beta 1.3.3)
+var _host_strip := ""                  # Gastgeber: Text des Streifens oben (Vermittler unterbrochen, Beta 1.3.3; Übergabe, 1.6.1)
 var _round_menu: Button
 var _conn: PanelContainer
 var _conn_label: Label
@@ -81,6 +81,10 @@ var _sub_next_ms := 0                # nächste Prüfung der Abwesenheit
 var _seat_mgr: SeatManager           # Feld „Mitspieler“ (Gastgeber im Netzwerkspiel, Beta 1.4.2)
 var _waiting_seen: Array = []        # Wartende, zu denen schon ein Hinweis kam
 var _host_app_away := false          # Gast: Gastgeber kurz in einer anderen App (Hinweis oben)
+var _switch: HostSwitch              # Beta 1.6.1: Gastgeber-Übergabe (Wächter, Abtreten; HostSwitch hängt an der Quelle)
+var _switch_strip := false           # Beta 1.6.1: der Streifen oben zeigt gerade den HostSwitch („Gastgeber antwortet nicht …“)
+var _conn_take: Button               # … mit „Spiel als Gastgeber fortsetzen“ (App-Gast mit Sicherung, Rückfrage)
+var _pick: HostPickDialog            # ☰ → „Gastgeber übergeben …“ (Netz-Gastgeber)
 
 
 # starter: wird aufgerufen, sobald der Tisch an der Quelle hängt (z. B. LocalTable.start, HostTable.start)
@@ -162,6 +166,10 @@ func build() -> void:
 			source.lobby_changed.connect(_on_client_lobby)
 		if source is GameTable:
 			(source as GameTable).busy_check = _ui_busy
+		# Mau-Mau Flip (Beta 1.6.1, Gastgeber-Übergabe): Wächter bzw. Abtreten; wechselt das Gerät die Rolle, kommt ein neuer Tisch
+		if source is ClientTable or source is HostTable:
+			_switch = HostSwitch.ensure(source)
+			_switch.swapped.connect(_on_switch_swapped)
 		var v := source.current_view()
 		if not v.is_empty():
 			_on_state([], v)
@@ -245,6 +253,12 @@ func _build_top() -> void:
 	_conn_rejoin.visible = false
 	_conn_rejoin.pressed.connect(rejoin)
 	row.add_child(_conn_rejoin)
+	_conn_take = ScreenKit.button("Spiel als Gastgeber fortsetzen", "PrimaryButton", "start")
+	_conn_take.name = "AlsGastgeberFortsetzen"
+	_conn_take.add_theme_font_size_override("font_size", UiFonts.size("text"))
+	_conn_take.visible = false
+	_conn_take.pressed.connect(ask_continue_as_host)
+	row.add_child(_conn_take)
 	_conn_menu = ScreenKit.button("Zum Menü", "DarkButton")
 	_conn_menu.visible = false
 	_conn_menu.pressed.connect(_leave_now)
@@ -321,7 +335,11 @@ func _layout() -> void:
 	_round_menu.size = Vector2(_round_menu.get_combined_minimum_size().x + 20.0, ScreenKit.TOUCH)
 	_round_menu.position = Vector2(sz.x - _round_menu.size.x - 22.0, 14.0)
 	_conn.reset_size()
-	_conn.position = Vector2((sz.x - _conn.size.x) * 0.5, 16.0)
+	# Beta 1.6.1: Mit mehreren Knöpfen („Selbst eröffnen“, „Spiel als Gastgeber fortsetzen“, …) und großer Schrift wird die Leiste
+	# breiter als der Bildschirm (S10: links abgeschnitten) – dann verkleinern statt abschneiden.
+	var k := minf(1.0, (sz.x - 32.0) / maxf(_conn.size.x, 1.0))
+	_conn.scale = Vector2(k, k)
+	_conn.position = Vector2((sz.x - _conn.size.x * k) * 0.5, 16.0)
 	_bar_shape(true, 0)
 	if table.big:
 		_sub_hint.position = Vector2(14.0 + _menu_btn.size.x + 14.0, 10.0)
@@ -428,6 +446,8 @@ func _process(_delta: float) -> void:
 			_settings_ov.close()
 		if is_seat_manager_open():
 			_seat_mgr.close()
+	if is_pick_open() and (leaving or not is_net_host() or (source as HostTable).is_frozen()):
+		_pick.close()                     # Beta 1.6.1: Übergabe läuft schon bzw. kein Gastgeber mehr
 	_sync_conn_hint()
 	_sync_menu_night()
 	# „Computer für … spielen lassen“ verdeckt sonst die Frage über dem Farbrad (Ablegen-Joker)
@@ -541,8 +561,10 @@ func _on_connection(state: String) -> void:
 			_conn_host.visible = false
 			_conn_sub.visible = false
 			_conn_rejoin.visible = false
+			_conn_take.visible = false
 			_conn.visible = true
 		"closed", "rejected", "ended":
+			_conn_take.visible = false
 			# Spielende und Gastgeber weg (N6) bzw. Wiederverbinden abgelehnt: klar „Spiel beendet“, Weg ins Menü
 			var over := state == "ended" or (state == "rejected" and not view.is_empty())
 			_conn_label.text = "Spiel beendet." if over else "Verbindung zum Gastgeber beendet."
@@ -586,6 +608,26 @@ func _on_client_lobby(l: Dictionary) -> void:
 		nav.toast("Der Gastgeber hat dich aus dem Spiel genommen. Du stehst jetzt auf seiner Warteliste.")
 	else:
 		nav.toast("Diese Partie ist vorbei. Der Gastgeber hat eine neue Runde eröffnet.")
+
+
+# Beta 1.6.1 (Gastgeber-Übergabe): Dieses Gerät führt das Spiel jetzt (Übernahme) bzw. spielt als Gast weiter (Abtreten). Der neue
+# Tisch bekommt die neue Quelle samt HostSwitch; dieser Tisch ist zu Ende (seine Quelle fasst die Datei nicht mehr an).
+func _on_switch_swapped(new_src: TableSource, note: String) -> void:
+	if leaving or nav == null:
+		return
+	leaving = true
+	if source != null:
+		for c in [[source.state_changed, _on_state], [source.notice, _on_notice], [source.handover, _on_handover],
+				[source.connection_changed, _on_connection], [source.lobby_changed, _on_client_lobby]]:
+			if (c[0] as Signal).is_connected(c[1]):
+				(c[0] as Signal).disconnect(c[1])
+	source = null
+	if _confirm != null and is_instance_valid(_confirm):
+		_confirm.queue_free()
+		_confirm = null
+	nav.replace(TableScreen.create(new_src))
+	if note != "":
+		nav.toast(note)
 
 
 # ================================================================= Oberfläche → Quelle
@@ -788,16 +830,18 @@ func _conn_hint() -> String:
 
 func _sync_conn_hint() -> void:
 	if source is HostTable:
-		var s: NetHostSession = (source as HostTable).session
-		var away := s != null and s.online_state() == "away"
-		if away == _online_away:
+		# Gastgeber: Vermittler unterbrochen bzw. vorsichtiges Neuverbinden („check“, Beta 1.6.1 wie „away“), Übergabe, Einschwingzeit
+		var text := _host_strip_text()
+		if text == _host_strip:
 			return
-		_online_away = away
-		_conn_label.text = "Online-Verbindung unterbrochen – verbinde neu …"
-		for b: Control in [_conn_menu, _conn_save, _conn_host, _conn_sub, _conn_rejoin]:
+		_host_strip = text
+		_conn_label.text = text
+		for b: Control in [_conn_menu, _conn_save, _conn_host, _conn_sub, _conn_rejoin, _conn_take]:
 			b.visible = false
-		_conn.visible = away
+		_conn.visible = text != ""
 		_layout()
+	elif _sync_switch_strip():
+		return
 	elif _conn.visible and _conn_label.text != _conn_hint() and source != null and source.has_method("connection_state") \
 			and str(source.call("connection_state")) == "connecting":
 		_conn_label.text = _conn_hint()
@@ -810,7 +854,7 @@ func _sync_conn_hint() -> void:
 			_host_app_away = true
 			if not _conn.visible or _conn_label.text != text:
 				_conn_label.text = text
-				for b: Control in [_conn_menu, _conn_save, _conn_host, _conn_sub, _conn_rejoin]:
+				for b: Control in [_conn_menu, _conn_save, _conn_host, _conn_sub, _conn_rejoin, _conn_take]:
 					b.visible = false
 				_conn.visible = true
 				_layout()
@@ -829,6 +873,154 @@ func _away_host_name() -> String:
 		if p is Dictionary and bool(p.get("host", false)) and bool(p.get("away", false)):
 			return str(p.get("name", ""))
 	return ""
+
+
+# ================================================================= Gastgeber-Übergabe (Beta 1.6.1, docs/module/uebergabe.md 4.1, 4.4, 6)
+
+func _switch_ok() -> bool:
+	return _switch != null and is_instance_valid(_switch)
+
+
+# Streifen des Gastgebers ("" = keiner): während der Übergabe „Gastgeber wechselt zu %s …“, beim Abtreten „Einen Moment …“,
+# Vermittler unterbrochen bzw. vorsichtiges Neuverbinden („check“ wie „away“), Einschwingzeit nach dem Fortsetzen.
+func _host_strip_text() -> String:
+	var ht := source as HostTable
+	if ht == null or leaving:
+		return ""
+	if _switch_ok() and _switch.state == "joining":
+		return I18n.t("Einen Moment – der Gastgeber wechselt.")
+	if ht.is_frozen():
+		var s := ht.handover_seat()
+		return I18n.t("Gastgeber wechselt zu %s …") % ht.seat_name(s) if s >= 0 else I18n.t("Einen Moment – der Gastgeber wechselt.")
+	var sess := ht.session
+	if sess != null and sess.online_state() in ["away", "check"]:
+		return I18n.t("Online-Verbindung unterbrochen – verbinde neu …")
+	if ht.is_settling():
+		return I18n.t("Einen Moment – gleich geht es weiter.")
+	return ""
+
+
+# Streifen des App-Gasts aus dem Wächter ("" = keiner): Gastgeber fehlt (mit Rang-Countdown), Übernahme läuft, Raum abgelaufen.
+func _switch_text() -> String:
+	if not _switch_ok() or leaving:
+		return ""
+	match _switch.state:
+		"missing", "waiting", "checking":
+			var ms := _switch.countdown_ms()
+			if ms >= 0:
+				return I18n.t("Gastgeber antwortet nicht. Du übernimmst in %d s.") % ceili(ms / 1000.0)
+			return I18n.t("Gastgeber antwortet nicht – warte …")
+		"taking", "joining":
+			return I18n.t("Einen Moment – der Gastgeber wechselt.")
+		"gone":
+			return I18n.t(_switch.last_error if _switch.last_error != "" else "Der Online-Raum ist abgelaufen. Die Partie lässt sich nicht mehr fortsetzen.")
+	return ""
+
+
+# true = der Streifen gehört gerade dem Wächter. Knopf „Spiel als Gastgeber fortsetzen“, sobald der Gastgeber fehlt (can_continue);
+# bei abgelaufenem Raum „Zum Menü“. Endet die Lage, gilt wieder der Verbindungsstand der Quelle.
+func _sync_switch_strip() -> bool:
+	var text := _switch_text()
+	if text == "":
+		if _switch_strip:
+			_switch_strip = false
+			_conn_take.visible = false
+			_conn_menu.visible = false
+			var st := str(source.call("connection_state")) if source != null and source.has_method("connection_state") else "open"
+			if st == "open":
+				_conn.visible = false
+				_layout()
+			else:
+				_on_connection(st)
+		return false
+	var gone := _switch.state == "gone"
+	var take := not gone and _switch.can_continue()
+	if not _switch_strip or not _conn.visible or _conn_label.text != text or _conn_take.visible != take or _conn_menu.visible != gone:
+		_switch_strip = true
+		_conn_label.text = text
+		for b: Control in [_conn_save, _conn_host, _conn_sub, _conn_rejoin]:
+			b.visible = false
+		_conn_take.visible = take
+		_conn_menu.visible = gone
+		_conn.visible = true
+		_layout()
+	return true
+
+
+# Knopf im Streifen: Rückfrage mit Warnzeilen (Sicherung nicht aktuell, WLAN-Mitspieler), dann HostSwitch.continue_as_host()
+# (/info und frische Probe, dann Übernahme; der neue Tisch kommt über swapped).
+func ask_continue_as_host() -> void:
+	if not _switch_ok() or not _switch.can_continue() or leaving:
+		return
+	if _confirm != null and is_instance_valid(_confirm):
+		_confirm.queue_free()
+	_confirm = ConfirmBox.ask(_top, "Spiel als Gastgeber fortsetzen?",
+		"Dein Handy führt das Spiel ab jetzt. Die anderen kommen von selbst wieder dazu.", "Fortsetzen", "Weiter warten")
+	_confirm.name = "AlsGastgeberFortsetzen"
+	for w in _switch.continue_warnings():
+		_confirm.add_note(I18n.render([w]))
+	_confirm.answered.connect(func(yes: bool) -> void:
+		_confirm = null
+		if yes and _switch_ok() and not _switch.continue_as_host():
+			table.show_notice(I18n.t("Das geht gerade nicht.")))
+
+
+# ☰-Eintrag „Gastgeber übergeben …“: [] = kein Eintrag (kein Netz-Gastgeber), sonst [key, Text, Grund] (Grund "" = wählbar).
+# Ausgegraut, wenn niemand wählbar ist; der Grund ist der aussagekräftigste der Mitspieler (Version vor „nicht verbunden“ vor „App“).
+func handover_entry() -> Array:
+	if not is_net_host():
+		return []
+	var item: Array = IngameMenu.HANDOVER_ITEM.duplicate()
+	var ht := source as HostTable
+	if str(view.get("phase", "")) in ["", "game_over"] or ht.game == null:
+		item.append(I18n.t("Das geht gerade nicht."))
+		return item
+	var best := ""
+	var best_rank := -1
+	var cands := handover_candidates()
+	for c: Dictionary in cands:
+		var why := str(c.reason)
+		if why == "":
+			item.append("")
+			return item
+		var r := 3 if why == I18n.t("Geht in dieser Version nur, wenn alle online mitspielen.") else (1 if why == I18n.t("Nur Mitspieler mit der App können Gastgeber werden.") or why == I18n.t("Das geht gerade nicht.") else 2)
+		if r > best_rank:
+			best_rank = r
+			best = why
+	item.append(best if best != "" else I18n.t("Nur Mitspieler mit der App können Gastgeber werden."))
+	return item
+
+
+# Mitspieler für den Auswahldialog (ohne Computergegner und ohne den Gastgeber): [{seat, name, kind, reason}]
+func handover_candidates() -> Array:
+	var out: Array = []
+	var ht := source as HostTable
+	if ht == null or ht.game == null:
+		return out
+	for s in ht.seats.size():
+		var p: Dictionary = ht.seats[s]
+		if s == ht.host_seat or str(p.get("kind", "")) == "bot":
+			continue
+		out.append({"seat": s, "name": str(p.get("name", "?")), "kind": "human", "reason": I18n.render(ht.handover_block(s))})
+	return out
+
+
+func open_host_pick() -> void:
+	if not is_net_host() or leaving or is_pick_open():
+		return
+	if _confirm != null and is_instance_valid(_confirm):
+		_confirm.queue_free()
+		_confirm = null
+	_pick = HostPickDialog.open(_top, handover_candidates)
+	_pick.chosen.connect(func(seat: int, who: String) -> void:
+		var ht := source as HostTable
+		if ht != null and not leaving and ht.seat_name(seat) == who:
+			ht.handover_to(seat))          # gesperrt → notice mit dem Grund
+	_pick.closed.connect(func() -> void: _pick = null)
+
+
+func is_pick_open() -> bool:
+	return _pick != null and is_instance_valid(_pick) and not _pick.is_queued_for_deletion()
 
 
 # Zurück-Knopf nachts hell (Nutzerbefund 07.10.2026: auf der Nachtseite unsichtbar): heller Pfeil und heller Rand, tagsüber wie bisher.
@@ -864,6 +1056,9 @@ func on_back() -> bool:
 		return true
 	if is_seat_manager_open():
 		_seat_mgr.on_back()
+		return true
+	if is_pick_open():
+		_pick.close()
 		return true
 	if is_settings_open():
 		_settings_ov.close()
@@ -975,10 +1170,15 @@ func open_menu() -> void:
 		_confirm = null
 	var at := _burger.position + Vector2(_burger.size.x + 12.0, 0.0) if table.big else _burger.position + Vector2(0.0, _burger.size.y + 10.0)
 	var items: Array = (IngameMenu.HOST_ITEMS + IngameMenu.ITEMS) if is_net_host() else IngameMenu.ITEMS
+	var ho := handover_entry()              # Beta 1.6.1: „Gastgeber übergeben …“ nach den Mitspieler-Einträgen
+	if not ho.is_empty():
+		items = IngameMenu.HOST_ITEMS + [ho] + IngameMenu.ITEMS
 	_ingame_menu = IngameMenu.open(_top, at, items)
 	_ingame_menu.chosen.connect(func(key: String) -> void:
 		if key == "einstellungen":
 			open_settings()
+		elif key == "uebergeben":
+			open_host_pick()
 		elif key == "dazuholen" or key == "entfernen":
 			open_seat_manager("dazuholen" if key == "dazuholen" else "tisch")
 		else:
