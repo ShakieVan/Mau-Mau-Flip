@@ -1,7 +1,7 @@
 class_name MainMenuScreen
 extends AppScreen
 # Hauptmenü: Logo links (Katze mit Tag- und Nachtkarte), rechts die Spielarten als große Knöpfe, darunter Regeln und
-# Einstellungen; klein: Version, „Update ↓“ (nur wenn der Updater eine neuere Version kennt) und „App teilen“.
+# Einstellungen; unter dem Logo „Update ↓“ (nur wenn der Updater eine neuere Version kennt) und „App teilen“, darunter klein die Version.
 
 var _update_btn: Button
 var _logo: LogoCard
@@ -43,23 +43,33 @@ func build() -> void:
 	_logo.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	left.add_child(_logo)
 	_logo.easter.connect(_on_easter)
-	var foot := ScreenKit.hbox(14)
+	# Fußzeile (Beta 1.6.4, Nutzerbefund S24 Ultra mit 1.6.0): Versionstext, „App teilen“ und „Update ↓“ lagen in einer Zeile. Deren
+	# Mindestbreite (~1070 px) machte die linke Spalte breiter als ihren Anteil, und die Knopfspalte lief rechts aus dem Bild. Jetzt: Knöpfe
+	# in einer umbrechenden Reihe („Update ↓“ zuerst, sonnengelb), darunter der Versionstext mit Wortumbruch – die Fußzeile ist nie
+	# breiter als ihr breitester Knopf.
+	var foot := ScreenKit.vbox(8)
+	foot.name = "Fuss"
 	left.add_child(foot)
-	_version = ScreenKit.label(I18n.t("Version %s · Ein Hobbyprojekt von ShakieVan") % _version_text(), "HintLabel", UiFonts.size("hinweis"))
-	_version.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	foot.add_child(_version)
-	foot.add_child(ScreenKit.spacer())
-	var share := ScreenKit.button("App teilen", "GhostButton", "teilen")
-	share.add_theme_font_size_override("font_size", UiFonts.size("text"))
-	share.name = "AppTeilen"
-	share.pressed.connect(_share)
-	foot.add_child(share)
+	var btns := HFlowContainer.new()
+	btns.name = "FussKnoepfe"
+	btns.add_theme_constant_override("h_separation", 14)
+	btns.add_theme_constant_override("v_separation", 10)
+	foot.add_child(btns)
 	_update_btn = ScreenKit.button("Update ↓", "PrimaryButton", "update")
 	_update_btn.name = "Update"
 	_update_btn.add_theme_font_size_override("font_size", UiFonts.size("text"))
 	_update_btn.visible = false
 	_update_btn.pressed.connect(func() -> void: nav.push(SettingsScreen.new()))
-	foot.add_child(_update_btn)
+	btns.add_child(_update_btn)
+	var share := ScreenKit.button("App teilen", "GhostButton", "teilen")
+	share.add_theme_font_size_override("font_size", UiFonts.size("text"))
+	share.name = "AppTeilen"
+	share.pressed.connect(_share)
+	btns.add_child(share)
+	_version = ScreenKit.label(I18n.t("Version %s · Ein Hobbyprojekt von ShakieVan") % _version_text(), "HintLabel", UiFonts.size("hinweis"))
+	_version.name = "Version"
+	_version.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	foot.add_child(_version)
 	# Knöpfe rechts
 	var right := ScreenKit.vbox(16)
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -174,6 +184,11 @@ func _big(text: String, sub: String, icon_name: String, variation := "") -> Butt
 	inner.offset_right = -24
 	inner.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	b.add_child(inner)
+	# Beta 1.6.4: Ein Button zählt seine Kinder nicht zur Mindestgröße – die Mindestbreite folgt dem Inhalt (Symbol + Texte, auch live
+	# bei geänderter Schrift), damit die Knopfspalte nie schmaler als ihr Text wird.
+	var fit := func() -> void:
+		b.custom_minimum_size.x = inner.get_combined_minimum_size().x + inner.offset_left - inner.offset_right
+	inner.minimum_size_changed.connect(fit)
 	var ic := TextureRect.new()
 	ic.texture = ScreenKit.icon(icon_name)
 	ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -193,6 +208,7 @@ func _big(text: String, sub: String, icon_name: String, variation := "") -> Butt
 	var s := ScreenKit.label(sub, "", UiFonts.size("hinweis"), Color(UiPalette.INK, 0.78))
 	s.name = "Unterzeile"
 	texts.add_child(s)
+	fit.call()
 	return b
 
 
