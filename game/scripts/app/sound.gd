@@ -31,11 +31,14 @@ extends Node
 # eingestellten Stufe, „leise“ bleibt relativ) und fade_out(name, ms) zum Ausblenden von Schnarchen bzw. Wecker. SfxPool.java bleibt
 # unverändert (lädt, was NAMES als CSV übergibt; tools/build.ps1 kopiert jede assets/sfx/*.ogg nach res/raw). Stimmen bleiben 6
 # (VOICES und SfxPool.MAX_STREAMS sind gekoppelt).
+# Beta 1.6.6 (Furzkissen, docs/module/eastereggs2.md 12.4): neunter Necken-Ton "furzkissen" (audio/entwurf/ostereier/furzkissen_02.ogg,
+# unverändert kopiert, −20,9 LUFS, Spitze −4,9 dBTP, 0,78 s) – laut beim Ziel, leise (QUIET_DB) bei allen anderen, auch beim Leger.
 
 const DIR := "res://assets/sfx/"
-const TEASE_NAMES := ["schnarchen", "wecker", "papier_wurf", "papier_plopp", "lachen", "schreck", "klatschen", "daumen"]   # Beta 1.6.3
+const TEASE_NAMES := ["schnarchen", "wecker", "papier_wurf", "papier_plopp", "lachen", "schreck", "klatschen", "daumen",
+	"furzkissen"]                          # Beta 1.6.3; Beta 1.6.6: Furzkissen (eastereggs2.md 12.4)
 const NAMES := ["mau", "mau_mau", "karte", "ziehen", "mischen", "flip", "jubel_1", "jubel_2", "fehler", "dran", "schnurren",
-	"schnarchen", "wecker", "papier_wurf", "papier_plopp", "lachen", "schreck", "klatschen", "daumen"]
+	"schnarchen", "wecker", "papier_wurf", "papier_plopp", "lachen", "schreck", "klatschen", "daumen", "furzkissen"]
 const QUIET_DB := -12.0                    # Beta 1.6.3: „leise“ für Absender/Zuschauer beim Necken (relativ zur Stufe „Spieltöne“)
 const JUBEL := ["jubel_1", "jubel_2"]       # Ereignis "sieg" spielt zufällig eine der beiden Jubel-Dateien (Nutzerentscheidung 10.10.2026)
 const JUBEL_FADE_S := 0.6

@@ -1129,7 +1129,26 @@ body.nk-unten.rahmen-hinweis[data-screen="tisch"] .quer { align-items: flex-end;
 .nk-mk i { display: block; width: 46px; height: 46px; padding: 8px; border-radius: 50%; background: var(--nk-grund); border: 3px solid var(--nk-rand); }
 .nk-mk span { font-size: calc(12px * var(--fs)); font-weight: 700; white-space: nowrap; }
 .nk-mk[style*="--rest"] i { background: conic-gradient(rgba(255,214,90,.8) calc(var(--rest) * 360deg), transparent 0), var(--nk-grund); }
-.nk-info { margin: 6px 4px 0; max-width: 280px; font-size: calc(13px * var(--fs)); font-weight: 600; opacity: .85; }
+.nk-info { margin: 6px 4px 0; max-width: 280px; font-size: calc(13px * var(--fs)); font-weight: 600; opacity: .85; white-space: pre-line; }
+/* Beta 1.6.6: Zeile „Furzkissen“ mit „Mit Namen“ / „Geheim“ (Knöpfe mindestens 44 px hoch), bricht bei großer Schrift um */
+.nk-kissen { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; margin: 8px 0 0; padding-top: 8px; border-top: 2px dashed rgba(127,127,127,.4); }
+.nk-kissen[hidden] { display: none; }
+.nk-kt { display: flex; align-items: center; gap: 4px; font-size: calc(12px * var(--fs)); font-weight: 800; white-space: nowrap; }
+.nk-kt i { display: block; width: 46px; height: 38px; }
+.nk-kb { min-height: 44px; min-width: 44px; padding: 0 12px; border-radius: 22px; background: var(--nk-grund); color: var(--nk-tinte); border: 3px solid var(--nk-rand);
+  font: 800 calc(13px * var(--fs)) / 1.1 var(--f-ui); white-space: nowrap; }
+.nk-kb[data-kissen="geheim"] { border-style: dashed; }
+.nk-kb:active { transform: scale(.94); }
+.nk-kb.grau { opacity: .42; filter: grayscale(1); }
+.nk-kissen.grau .nk-kt i { opacity: .5; filter: grayscale(1); }
+.nk-kb.drueck { animation: nkDrueck .25s ease-out; }
+.nk-kb.wackel { animation: nkWackel .3s ease-in-out; }
+body.reduziert .nk-kb.wackel { animation: none; }
+/* Kissen-Farben (Menü und Bühne): rosa Gummi, Mundstück dunkler, Naht und Glanz */
+.nk-kf { fill: #FF7EB0; }
+.nk-kd { fill: #E2508A; }
+.nk-kn { fill: none; stroke: #B8336A; stroke-width: 1.6; stroke-linecap: round; opacity: .7; }
+.nk-glanz { fill: none; stroke: #FFFFFF; stroke-width: 3; stroke-linecap: round; opacity: .7; }
 
 /* Zeile für den Betroffenen über dem eigenen Namensschild */
 .nk-zeile { max-width: min(92vw, 520px); padding: 8px 16px; border-radius: 20px; background: var(--nk-grund); color: var(--nk-tinte); border: 2.5px solid var(--nk-rand); box-shadow: var(--nk-schein);
@@ -1195,6 +1214,30 @@ body.nk-unten.rahmen-hinweis[data-screen="tisch"] .quer { align-items: flex-end;
 .nk-mpf.links { transform: translate(-100%, -50%); }
 #tisch.wechselt .nk-zzz b, #tisch.wechselt .nk-wecker .sw, #tisch.wechselt .nk-mpf { transition: var(--tr); }   /* Flip: Farben wechseln mit der Schrift */
 #tisch[data-seite="dunkel"] .nk-mpf { background: #170E36; color: #FFF7E8; border-color: #9A86FF; }
+/* Beta 1.6.6 Furzkissen auf der Bühne: Kissen (.nk-kk) wird nach 120 ms plattgedrückt, Wolke (.nk-wolke) quillt aus dem Mundstück,
+   „Pfffrt!“ (.nk-pf) springt oben rechts auf; danach „Kim war's!“ bzw. „Wer war das?“ als Schild (.nk-wer). Größe setzt necken.js. */
+.flug .nk-furz { pointer-events: none; transform: translate(-50%, -50%); transition: opacity .35s; filter: drop-shadow(0 3px 3px rgba(0,0,0,.3)) var(--nk-glow); }
+.flug .nk-furz.aus { opacity: 0 !important; }
+.nk-furz .nk-kk { position: absolute; inset: 0; transform-origin: 50% 92%; animation: nkKissenPlatt .55s cubic-bezier(.2,1.4,.4,1) .12s both; }
+.nk-furz .nk-kk svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.nk-furz .nk-wolke { position: absolute; left: 96%; top: 58%; width: 0; height: 0; }   /* Mundstück nach dem Plattdrücken */
+.nk-furz .nk-wolke b { position: absolute; left: -20px; top: -20px; width: 40px; height: 40px; border-radius: 50%; background: radial-gradient(circle at 40% 38%, rgba(226,236,170,.95), rgba(150,178,82,.9) 70%); box-shadow: 0 0 0 2px rgba(110,130,60,.35); opacity: 0;
+  animation: nkWolke 1.3s ease-out both; animation-delay: calc(.14s + var(--n) * .07s); }
+#tisch[data-seite="dunkel"] .nk-furz .nk-wolke b { background: radial-gradient(circle at 40% 38%, rgba(236,250,190,.95), rgba(170,214,110,.85) 70%); box-shadow: 0 0 12px rgba(196,236,140,.75); }
+.nk-furz .nk-wolke b:nth-child(1) { --n: 0; --wx: 30px; --wy: 8px; } .nk-furz .nk-wolke b:nth-child(2) { --n: 1; --wx: 56px; --wy: -8px; width: 50px; height: 50px; }
+.nk-furz .nk-wolke b:nth-child(3) { --n: 2; --wx: 46px; --wy: 26px; width: 32px; height: 32px; } .nk-furz .nk-wolke b:nth-child(4) { --n: 3; --wx: 84px; --wy: 12px; }
+.nk-furz .nk-pf { position: absolute; left: 62%; bottom: 78%; padding: 3px 12px; border-radius: 16px; background: var(--nk-grund); color: var(--nk-tinte); border: 2.5px solid var(--nk-tinte);
+  font: italic 900 26px var(--f-brand); white-space: nowrap; transform-origin: 10% 100%; animation: nkPf .5s cubic-bezier(.3,1.7,.5,1) .16s both; }
+.nk-furz.ziel .nk-pf { font-size: 32px; }
+#tisch[data-seite="dunkel"] .nk-furz .nk-pf { background: #170E36; color: #FFF7E8; border-color: #9A86FF; }
+@keyframes nkKissenPlatt { 0% { transform: scale(1, 1); } 30% { transform: scale(1.28, .5); } 60% { transform: scale(1.14, .68); } 100% { transform: scale(1.2, .6); } }
+@keyframes nkWolke { 0% { opacity: 0; transform: translate(0, 0) scale(.2); } 20% { opacity: 1; } 70% { opacity: .85; } 100% { opacity: 0; transform: translate(var(--wx), var(--wy)) scale(1.45); } }
+@keyframes nkPf { 0% { opacity: 0; transform: scale(.3) rotate(-14deg); } 60% { opacity: 1; transform: scale(1.12) rotate(4deg); } 100% { transform: scale(1) rotate(-3deg); } }
+.nk-furz.still .nk-kk { animation: nkErscheint .3s ease-out both; }
+.nk-furz.still .nk-wolke b { animation: nkBlende 1.2s ease-in-out both; transform: translate(var(--wx), var(--wy)); }
+.nk-furz.still .nk-pf { animation: nkErscheint .3s ease-out both; }
+.nk-mpf.nk-wer { transform: translate(-50%, -100%); font: 800 22px/1.2 var(--f-ui); }
+#tisch.wechselt .nk-furz .nk-pf, #tisch.wechselt .nk-furz .nk-wolke b { transition: var(--tr); }   /* Flip: Farben wechseln mit der Schrift */
 .nk-stauch { animation: nkStauch .42s ease-out !important; }
 @keyframes nkStauch { 0% { transform: scale(1); } 25% { transform: scale(1.18, .72); } 55% { transform: scale(.9, 1.12); } 100% { transform: scale(1); } }
 body.reduziert .nk-zzz b, body.reduziert .nk-wecker, body.reduziert .nk-wecker svg, body.reduziert .nk-wecker.klingelt svg, body.reduziert .nk-wecker .nk-glocken,

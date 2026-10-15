@@ -26,8 +26,9 @@ Bis 05.10.2026 stand hier: „synthetisch, eigenes Skript `tools/make_sfx.py`, k
 | Necken: Wecker | `wecker` | `klingeln_01` (nur Klingeln; das 3-s-Ticken zeigt nur die Animation) | Weckerklingeln. −19,1 LUFS, Spitze −6,2 dBFS | 1,82 s |
 | Necken: Papierkugel | `papier_wurf` / `papier_plopp` | `papierkugel_wurf_03` / `papierkugel_plopp_01` | Wurf beim Absender, Plopp beim Ziel (Zuschauer leise). −23,6 LUFS / Mittel −24,7 dB, Spitze je −1,2 dBFS | 1,32 s / 0,30 s |
 | Necken: Reaktionen | `lachen`, `schreck`, `klatschen`, `daumen` | `lachen_06`, `schreck_01`, `klatschen_05`, `daumen_04` | 😂 😱 👏 👍 an den ganzen Tisch, auf jedem Gerät höchstens 2 gleichzeitig. −23,8 / −19,4 / −21,5 / −20,0 LUFS | 1,92 / 0,61 / 1,92 / 0,62 s |
+| Necken: Furzkissen | `furzkissen` | `audio/entwurf/ostereier/furzkissen_02` (Nutzerwahl 15.10.2026) | Pups des Furzkissens (Beta 1.6.6, docs/module/eastereggs2.md 12); laut beim Ziel, leise bei allen anderen (auch beim Leger). −20,9 LUFS, Spitze −4,9 dBTP | 0,78 s |
 
-Die acht Necken-Töne (Nutzerwahl 13.10.2026 über `audio/entwurf/ostereier/hoeren.html`, Generator `tools/make_ostereier.py`) sind wie das Schnurren **unverändert kopiert** (Herkunft MOSS-SoundEffect v2.0, Apache 2.0) und liegen unter der Einstellung „Spieltöne“; `TRIM_DB` bleibt leer. Die `*_handy.ogg` der Entwürfe sind nur Simulationen und kommen nicht ins Spiel.
+Die acht Necken-Töne (ab Beta 1.6.6 neun mit dem Furzkissen, Nutzerwahl 15.10.2026; sonst Nutzerwahl 13.10.2026 über `audio/entwurf/ostereier/hoeren.html`, Generator `tools/make_ostereier.py`) sind wie das Schnurren **unverändert kopiert** (Herkunft MOSS-SoundEffect v2.0, Apache 2.0) und liegen unter der Einstellung „Spieltöne“; `TRIM_DB` bleibt leer. Die `*_handy.ogg` der Entwürfe sind nur Simulationen und kommen nicht ins Spiel.
 
 Ausgabe (alle mono, 48 kHz, 20 ms Stille am Ende):
 

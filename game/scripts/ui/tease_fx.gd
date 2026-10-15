@@ -11,6 +11,12 @@ extends Node
 #               zurück und bleibt 3 s liegen (höchstens 3 je Platz). Bot: „Mpf!“.
 #   Reaktion    😂 👏 👍 😱 (ab 1.6.5 feste Bilder aus Fluent Emoji, wie im Browser) steigen 1,6 s am Platz des Absenders auf; Ton
 #               auf allen Geräten, je Gerät höchstens 2 gleichzeitig und je Name 600 ms Sperre (Jubel und Mau behalten ihre Stimmen).
+#   Furzkissen  (Beta 1.6.6, eastereggs2.md 12.4) Menüzeile „Furzkissen“ mit „Mit Namen“/„Geheim“. Der Leger bekommt nur eine leise
+#               Zeile „Kissen liegt bei Kim.“ (fx k "kissen", kein Bild, kein Ton). Beim Pups (k "kissen_pop", alle): Am Platz des
+#               Ziels erscheint ein Kissen, wird plattgedrückt (der Avatar staucht sich), eine kleine Wolke steigt aus dem Ventil,
+#               „Pfffrt!“; danach an derselben Stelle „Kim war's!“ bzw. „Wer war das?“ (geheim, auch beim Leger). Ton laut beim
+#               Ziel, leise bei allen anderen (auch beim Leger: ein lauteres Handy verriete ihn), Vibration 150 ms beim Ziel. Beim Ziel
+#               groß über dem eigenen Namensschild. Reduziert: kein Plattdrücken, Kissen und Wolke blenden ein und aus.
 # Bedienung: Kopf eines Gegners → Necken-Menü (TeaseMenu), Fächer ohne sichtbare Rückseiten ebenso; die 4 Reaktionsknöpfe am eigenen
 # Platz (TeaseMenu.ReactionBar, Beta 1.6.5: ein Tipp sendet, kein Fächer mehr). Beide zeigen nur, was nach TeaseRules mit der
 # lokalen Uhr gerade geht (source.fx_check).
@@ -44,6 +50,12 @@ const RATE_GRAY_S := 1.2                   # fx_no "rate": Knöpfe kurz ausgegra
 const REOPEN_GAP_MS := 400                 # derselbe Kopf direkt nach dem Schließen: nicht gleich wieder öffnen
 const SYNC_S := 0.15                       # Beta 1.6.3: Abstand der Regelprüfung in tick (Reaktionsknöpfe, Menüeinträge)
 const REACT_GAP := 10.0                    # Beta 1.6.5: Abstand zwischen den Reaktionsknöpfen
+const CUSHION_S := 2.6                     # Beta 1.6.6: Furzkissen sichtbar (Erscheinen, Plattdrücken, Wolke, Ausblenden)
+const CUSHION_W := 50.0                    # halbe Kissenbreite an Mitspielern (× k), etwa wie der Wecker
+const CUSHION_W_ME := 62.0                 # beim Ziel groß über dem eigenen Namensschild
+const CUSHION_LINE_AT := 1.15              # „Kim war's!“/„Wer war das?“ ab hier (nach „Pfffrt!“) …
+const CUSHION_LINE_S := 2.8                # … so lange
+const CUSHION_VIBE_MS := 150
 
 var table: TableView
 var source: TableSource
@@ -68,6 +80,7 @@ var shown := 0                             # Tests: Zahl der gezeigten Effekte
 var _react_play: Array = []                # [{name, until}] laufende Reaktionstöne (ms auf der Uhr now)
 var _react_last := {}                      # Name → ms
 var _vibes: Array = []                     # [{at, ms}] geplante Vibrationen
+var _later_q: Array = []                   # Beta 1.6.6: [{at, cb}] geplante Schritte (Zeile nach dem Pups)
 var _rate_until := -1.0
 var _last_target := -1                     # Ziel des letzten eigenen Wunschs (für „Zu spät – Kim …“)
 var _turn := -1
@@ -161,6 +174,14 @@ func tick(delta: float) -> void:
 		else:
 			still.append(v)
 	_vibes = still
+	if not _later_q.is_empty():
+		var due: Array = []
+		var keep: Array = []
+		for e in _later_q:
+			(due if now >= float(e.at) else keep).append(e)
+		_later_q = keep
+		for e in due:
+			(e.cb as Callable).call()
 	# Beta 1.6.3: Regeln (fx_check, Menüeinträge) nur alle SYNC_S neu prüfen; Sicht, fx, fx_no und fx_offs prüfen sofort.
 	_sync_left -= delta
 	var full := _sync_left <= 0.0
@@ -257,6 +278,7 @@ func clear() -> void:
 		e.queue_free()
 		layer.remove_child(e)
 	_vibes.clear()
+	_later_q.clear()
 
 
 # ================================================================= Angenommenes Necken (fx_event)
@@ -277,11 +299,25 @@ func on_fx(msg: Dictionary) -> void:
 			_ball(from, to)
 		"react":
 			_react(from, str(msg.get("r", "")))
+		"kissen":                                 # TeaseRules.CUSHION
+			_cushion_placed(from, to)
+		"kissen_pop":                             # TeaseRules.CUSHION_POP
+			_cushion_pop(from, to, msg.get("reveal") is bool and bool(msg.reveal))
 
 
 # Eigener Wunsch abgelehnt (fx_no): „late“/„busy“ als leise Zeile, „rate“ graut kurz aus. Kein Fehlerton.
+# Beta 1.6.6: Kissen (source.fx_refused_kind == "kissen"): „busy“ → „Da liegt schon ein Kissen.“, „rate“ → „Das Kissen muss sich erst
+# wieder aufpusten.“ (ohne Restzeit; die übrigen Knöpfe bleiben aktiv, das Kissen hat keinen Eimer).
 func on_refused(why: String) -> void:
 	if not enabled or table == null:
+		return
+	if source != null and str(source.fx_refused_kind) == TeaseRules.CUSHION:
+		match why:
+			"busy":
+				table.show_notice(I18n.t("Da liegt schon ein Kissen."))
+			"rate":
+				table.show_notice(I18n.t("Das Kissen muss sich erst wieder aufpusten."))
+		_refresh_menu()
 		return
 	var who := _name(_last_target)
 	match why:
@@ -516,6 +552,197 @@ func _react_sound(r: String) -> bool:
 	_react_last[r] = ms
 	_react_play.append({"name": r, "until": ms + int(REACT_LEN_MS[r])})
 	return true
+
+
+# ================================================================= Furzkissen (Beta 1.6.6, eastereggs2.md 12.4)
+
+# Bestätigung (nur beim Leger): leise Zeile, kein Bild am Ziel und kein Ton (sonst hörte es der Tisch)
+func _cushion_placed(from: int, to: int) -> void:
+	if to < 0 or from != _me():
+		return
+	table.show_notice(I18n.t("Kissen liegt bei %s.") % _name(to))
+	_refresh_menu()
+
+
+# Pups am Platz to: Kissen + Wolke + „Pfffrt!“, danach die Zeile mit dem Absender (nur mit reveal und from, sonst „Wer war das?“)
+func _cushion_pop(from: int, to: int, reveal: bool) -> void:
+	if to < 0:
+		return
+	var me := _me()
+	var fx := CushionFx.new()
+	_setup(fx, "kissen", to)
+	fx.target = to
+	fx.cw = (CUSHION_W_ME if to == me else CUSHION_W) * k()
+	_place_cushion(fx, to)
+	_add(fx)
+	_play("furzkissen", to != me)
+	if to == me:
+		_vibrate(CUSHION_VIBE_MS)
+	if not reduced:
+		var node: OpponentSeat = _seat_badge(to)
+		if node != null:
+			node.set("_bump", 1.0)
+			node.create_tween().tween_property(node, "_bump", 0.0, 0.45)
+	# mit Namen: „Kim war's!“ (eigener Name: „Das warst du!“); geheim bzw. ohne from: „Wer war das?“ – auch beim Leger selbst
+	var line := I18n.t("Wer war das?")
+	if reveal and from >= 0:
+		line = I18n.t("Das warst du!") if from == me else I18n.t("%s war's!") % _name(from)
+	_later_q.append({"at": now + CUSHION_LINE_AT, "cb": _cushion_line.bind(line, weakref(fx), to)})
+
+
+# Zeile nach dem Pups an der Stelle von „Pfffrt!“ (beim Ziel in Bannergröße)
+func _cushion_line(text: String, fx_ref: WeakRef, to: int) -> void:
+	if not enabled or layer == null:
+		return
+	var b := TextFx.new()
+	_setup(b, "text", to)
+	b.text = text
+	b.color = UiPalette.CREAM if to != _me() else UiPalette.TURN
+	b.size_px = int((UiFonts.size("hinweisleiste") if to == _me() else 30) * k())
+	b.dur = CUSHION_LINE_S
+	b.rise = 0.0 if reduced else 10.0
+	var p := Vector2(anchor(to).pos)
+	var fx: CushionFx = fx_ref.get_ref() as CushionFx
+	if fx != null and is_instance_valid(fx):
+		p = fx.position + fx.text_at(b.text_width())
+		if to == _me() and not fx.text_side:  # beim Ziel neben dem Kissen (darüber liegt meist ein Fächer)
+			p = fx.position + Vector2(fx.dir * (fx.cw * 1.7 + b.text_width() * 0.5), -fx.cw * 0.2)
+	b.position = _clamp_text(p, b.text_width())
+	_add(b)
+
+
+# Lage nach _choose: links neben dem Avatar (Wolke nach links), darüber, rechts neben dem Kopf, darunter; großer Modus in der Zeile
+# vor der Kartenzahl; beim Ziel groß über dem eigenen Namensschild. Hart gemieden wie bei den übrigen Effekten (Mau, Erwischt,
+# Stapel, Hand, Knöpfe), beim Ziel zusätzlich die Reaktionsknöpfe.
+func _place_cushion(fx: CushionFx, seat: int) -> void:
+	var a := anchor(seat)
+	var c := Vector2(a.pos)
+	var r := float(a.r)
+	var lst := _list_mode(seat)
+	if lst:                                   # großer Modus: etwas kleiner, damit es in die Zeile passt; Text neben der Wolke
+		fx.cw *= 0.8
+		fx.text_side = true
+	var cw := fx.cw
+	var hd := head_of(seat)
+	var hr: Rect2 = hd.rect
+	var cands: Array = []
+	var add := func(pos: Vector2, dir: float) -> void:
+		fx.dir = dir
+		cands.append({"pos": pos, "dir": dir, "rel": fx.area()})
+	if lst:
+		add.call(Vector2(float(hd.count_x) - cw * 1.4 - 8.0, c.y + r * 0.2), -1.0)
+		add.call(c + Vector2(r + cw * 1.4, r * 0.2), 1.0)
+		if seat == _me():                     # Zeile „Du“: davor liegen die Reaktionsknöpfe – dann knapp darüber
+			add.call(c + Vector2(r + cw * 1.4, -r - cw * 0.45), 1.0)
+	elif seat == _me():
+		add.call(c + Vector2(r * 0.2 + cw * 0.4, -r - cw * 0.75), 1.0)
+		add.call(c + Vector2(r * 0.2 + cw * 0.4, -r - cw * 1.1), 1.0)
+		add.call(Vector2(hr.end.x + cw * 1.3 + 8.0, c.y), 1.0)
+		add.call(c + Vector2(-r - cw * 1.4, -cw * 0.3), -1.0)
+	else:
+		add.call(c + Vector2(-r - cw * 1.35, r * 0.45), -1.0)
+		add.call(c + Vector2(0.0, -r - cw * 0.7), 1.0)
+		add.call(Vector2(hr.end.x + cw * 1.3 + 8.0, c.y + r * 0.3), 1.0)
+		add.call(c + Vector2(0.0, r + cw * 1.6), 1.0)
+	var blk := _blockers(seat)
+	# Fächer der Mitspieler weich meiden (das Kissen samt „Pfffrt!“ soll keine Karten zudecken, wenn es woanders Platz hat)
+	var soft: Array[Rect2] = blk.soft
+	for st in table.get("_seats"):
+		var sn: OpponentSeat = table.seat_node(int(st))
+		if sn == null or not sn.is_visible_in_tree() or sn.list_mode or int(st) == _me():
+			continue
+		var av := _g2l(sn.avatar_global())
+		var half := (OpponentSeat.BAR_W if sn.compact else sn.fan_max_w) * 0.5 + 6.0
+		var fan_h := sn.header_height() * 0.5 + 6.0 + (OpponentSeat.BAR_H + 20.0 if sn.compact else sn.card_w * 1.62)
+		soft.append(_rect_of(av + Vector2(-half, sn.avatar_radius() * 0.6), av + Vector2(half, fan_h)))
+	if seat == _me() and reactions != null and reactions.visible:
+		var hard: Array[Rect2] = blk.hard
+		var rb := reactions.bounds()
+		var xf := layer.get_global_transform_with_canvas().affine_inverse() * reactions.get_global_transform_with_canvas()
+		hard.append(_rect_of(xf * rb.position, xf * rb.end))
+	var best := _choose(cands, blk)
+	fx.position = Vector2(best.pos)
+	fx.dir = float(best.dir)
+
+
+# Furzkissen: runder rosa Gummi mit Ventil zur Seite dir (±1); w = halbe Breite, sq = plattgedrückt (0 … 1)
+const CUSHION_PINK := Color("#E8577F")
+const CUSHION_DARK := Color("#B93A62")
+const CLOUD_DAY := Color("#B5C46E")
+const CLOUD_NIGHT := Color("#C9EE7E")
+
+
+static func draw_cushion(ci: CanvasItem, c: Vector2, w: float, sq := 0.0, dir := 1.0, night_v := 0.0, alpha := 1.0) -> void:
+	var lw := maxf(1.5, w * 0.075)
+	var sx := 1.0 + 0.16 * sq
+	var sy := 1.0 - 0.38 * sq
+	var h := w * 0.72
+	var bottom := h * 0.82
+	var cy := c.y + bottom * (1.0 - sy)              # Unterkante bleibt liegen
+	var ink := Color(INK, alpha)
+	var ell := func(cx: float, cyy: float, rx: float, ry: float, a0: float, a1: float, n: int) -> PackedVector2Array:
+		var out := PackedVector2Array()
+		for i in n + 1:
+			var a := lerpf(a0, a1, float(i) / float(n))
+			out.append(Vector2(cx + cos(a) * rx, cyy + sin(a) * ry))
+		return out
+	if night_v > 0.5:                                  # leichter Neon-Schein (folgt der Form)
+		for i in 2:
+			var g: PackedVector2Array = ell.call(c.x, cy, w * sx * (1.14 + i * 0.12), h * sy * (1.28 + i * 0.2), 0.0, TAU, 36)
+			g.remove_at(g.size() - 1)
+			ci.draw_colored_polygon(g, Color(CUSHION_PINK, (0.16 - i * 0.07) * alpha))
+	# Ventil (Röhrchen mit Rand), hinter dem Körper
+	var base := Vector2(c.x + dir * w * sx * 0.82, cy + h * sy * 0.2)
+	var tip := Vector2(c.x + dir * (w * sx + w * 0.34), cy + h * sy * 0.08 - w * 0.06 * sq)
+	var n := (tip - base).normalized().orthogonal()
+	var tube := PackedVector2Array([base + n * w * 0.12, tip + n * w * 0.08, tip - n * w * 0.08, base - n * w * 0.12])
+	ci.draw_colored_polygon(tube, Color(CUSHION_DARK, alpha))
+	var tl := tube.duplicate()
+	tl.append(tube[0])
+	ci.draw_polyline(tl, ink, lw, true)
+	ci.draw_circle(tip, w * 0.1 + lw * 0.5, ink)
+	ci.draw_circle(tip, w * 0.1 - lw * 0.4, Color(CUSHION_DARK.darkened(0.25), alpha))
+	# Körper: Ellipse, unten etwas flacher
+	var pts := PackedVector2Array()
+	for i in 36:
+		var a := TAU * i / 36.0
+		var y := sin(a) * h * sy
+		if y > 0.0:
+			y *= 0.82
+		pts.append(Vector2(c.x + cos(a) * w * sx, cy + y))
+	ci.draw_colored_polygon(pts, Color(CUSHION_PINK, alpha))
+	# Naht: dunklere untere Hälfte (Mondsichel zwischen Unterkante und Naht)
+	var low := PackedVector2Array()
+	for i in 19:
+		var a := PI * i / 18.0
+		low.append(Vector2(c.x + cos(a) * w * sx * 0.98, cy + sin(a) * h * sy * 0.8))
+	for i in range(17, 0, -1):
+		var a := PI * i / 18.0
+		low.append(Vector2(c.x + cos(a) * w * sx * 0.9, cy + sin(a) * h * sy * 0.3))
+	ci.draw_colored_polygon(low, Color(CUSHION_DARK, 0.55 * alpha))
+	ci.draw_polyline(ell.call(c.x, cy, w * sx * 0.95, h * sy * 0.3, 0.12, PI - 0.12, 16), Color(CUSHION_DARK.darkened(0.2), alpha), lw * 0.8, true)
+	var outline := pts.duplicate()
+	outline.append(pts[0])
+	ci.draw_polyline(outline, ink, lw * 1.2, true)
+	# Glanz oben links (als Ellipsenbogen, wird mit plattgedrückt)
+	ci.draw_polyline(ell.call(c.x - w * sx * 0.28, cy - h * sy * 0.22, w * sx * 0.36, h * sy * 0.48, PI * 1.08, PI * 1.5, 10),
+		Color(UiPalette.CREAM, 0.85 * alpha), lw * 1.6, true)
+	ci.draw_circle(Vector2(c.x + w * sx * 0.16, cy - h * sy * 0.62), lw * 0.9, Color(UiPalette.CREAM, 0.75 * alpha))
+
+
+# kleine Wolke aus mehreren Kreisen (Mitte c, Radius rr). pass 0 = Rand (für alle Bäusche zuerst), 1 = Füllung, so verschmelzen
+# überlappende Bäusche zu einer Wolke (mit Rand je Bausch sahen sie aus wie Trauben).
+static func draw_puff(ci: CanvasItem, c: Vector2, rr: float, night_v: float, alpha: float, pass_i := 1) -> void:
+	var col := CLOUD_NIGHT if night_v > 0.5 else CLOUD_DAY
+	var offs := [Vector2(0, 0), Vector2(-0.55, 0.15), Vector2(0.5, 0.2), Vector2(0.1, -0.45)]
+	var rs := [0.62, 0.45, 0.48, 0.42]
+	for i in offs.size():
+		if pass_i == 0:
+			ci.draw_circle(c + (offs[i] as Vector2) * rr, rr * float(rs[i]) + maxf(1.5, rr * 0.08), Color(col.darkened(0.35), 0.9 * alpha))
+		else:
+			ci.draw_circle(c + (offs[i] as Vector2) * rr, rr * float(rs[i]), Color(col, 0.97 * alpha))
+	if pass_i == 1:
+		ci.draw_circle(c + Vector2(-0.12, -0.2) * rr, rr * 0.2, Color(UiPalette.CREAM, 0.45 * alpha))
 
 
 func _setup(fx: TeaseEffect, kind: String, seat: int) -> void:
@@ -793,7 +1020,21 @@ func menu_items(seat: int) -> Dictionary:
 					items.append(it)
 	if node != null and node.backs_visible():
 		items.append({"key": "backs", "label": I18n.t("Karten ansehen"), "on": true, "progress": 1.0})
-	return {"items": items, "note": note}
+	# Beta 1.6.6: Furzkissen als eigene Zeile mit „Mit Namen“/„Geheim“. Die Vorprüfung kennt nur das eigene Kissen (fremde verrät sie
+	# nie, auch beim Gastgeber nicht): rate = eigene Sperre, busy = eigenes Kissen liegt schon bei diesem Ziel.
+	var cushion := {}
+	if not off and kinds.has(TeaseRules.CUSHION):
+		var why := source.fx_check({"k": TeaseRules.CUSHION, "to": seat, "reveal": true}) if source != null else "mode"
+		cushion = {"label": I18n.t("Furzkissen"), "on": why == "", "why": why, "opts": [
+			{"key": "kissen_name", "label": I18n.t("Mit Namen")}, {"key": "kissen_geheim", "label": I18n.t("Geheim")}]}
+		var cn := ""
+		if why == "rate":
+			cn = I18n.t("Das Kissen muss sich erst wieder aufpusten.")
+		elif why == "busy":
+			cn = I18n.t("Da liegt schon ein Kissen.")
+		if cn != "":
+			note = cn if note == "" else note + "\n" + cn
+	return {"items": items, "note": note, "cushion": cushion}
 
 
 func _item(key: String, label: String, req: Dictionary) -> Dictionary:
@@ -823,6 +1064,7 @@ func open_menu(seat: int) -> bool:
 	var d := menu_items(seat)
 	menu.items = d.items
 	menu.note = str(d.note)
+	menu.cushion = d.cushion
 	menu.chosen.connect(_on_menu_chosen)
 	menu.closed.connect(_on_menu_closed)
 	var ov: Control = table.get("_overlay")
@@ -859,7 +1101,7 @@ func _refresh_menu() -> void:
 		return
 	var d := menu_items(menu.seat)
 	menu.title = menu_title(menu.seat)
-	menu.set_items(d.items, str(d.note))
+	menu.set_items(d.items, str(d.note), d.cushion)
 	if menu.size_changed:
 		place_menu()
 
@@ -873,6 +1115,10 @@ func _on_menu_chosen(key: String) -> void:
 		close_menu(false)
 		if node != null and node.backs_visible():
 			table.backs_viewer.show_backs(node.player_name(), node.keys)
+		return
+	if key == "kissen_name" or key == "kissen_geheim":
+		send({"k": TeaseRules.CUSHION, "to": seat, "reveal": key == "kissen_name"})
+		close_menu(false)
 		return
 	var kk: String = {"ball": "ball", "snore": "snore", "alarm": "alarm"}.get(key, "")
 	if kk == "":
@@ -1243,6 +1489,8 @@ static func draw_icon(ci: CanvasItem, kind: String, c: Vector2, s: float, t := 0
 			ci.draw_string(f, c + Vector2(s * 0.5, -s * 0.5), "Z", HORIZONTAL_ALIGNMENT_LEFT, -1, int(s * 0.9), INK)
 		"alarm":
 			draw_clock(ci, c, s, t * TAU / 3.0, 0.0)
+		"kissen":                                     # Beta 1.6.6: Furzkissen
+			draw_cushion(ci, c + Vector2(-s * 0.15, s * 0.15), s * 0.95, 0.0, 1.0, 0.0)
 		"backs":
 			for i in 2:
 				var off := Vector2((i - 0.5) * s * 0.55, (0.5 - i) * s * 0.12)
@@ -1644,3 +1892,105 @@ class TextFx:
 		var day := night < 0.5
 		draw_string_outline(f, p, text, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px, maxi(5, size_px / 5), Color(UiPalette.CREAM if day else UiPalette.INK, 0.95 * a))
 		draw_string(f, p, text, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px, Color(UiPalette.INK if day else color, a))
+
+
+# Beta 1.6.6: Furzkissen am Platz des Ziels – erscheint, wird plattgedrückt (mit kleinem Nachfedern), aus dem Ventil steigt eine
+# Wolke zur Seite dir, „Pfffrt!“ springt auf; nach CUSHION_S ausgeblendet. Reduziert: liegt schon flach, blendet nur ein und aus.
+class CushionFx:
+	extends TeaseEffect
+	var target := -1
+	var cw := CUSHION_W           # halbe Kissenbreite (TeaseFx setzt sie samt k)
+	var dir := 1.0                # Ventil und Wolke nach rechts (1) oder links (−1)
+	var text_side := false        # großer Modus: „Pfffrt!“ und die Zeile neben der Wolke (text_at)
+
+	# Umriss relativ zur Kissenmitte: Kissen, Ventil und Wolke zur Seite d, darüber „Pfffrt!“
+	static func bounds(w: float, d: float) -> Rect2:
+		var x0 := -1.3 * w
+		var x1 := 3.2 * w
+		if d < 0.0:
+			x0 = -3.2 * w
+			x1 = 1.3 * w
+		return Rect2(Vector2(x0, -1.95 * w), Vector2(x1 - x0, 2.55 * w))
+
+	# Mitte von „Pfffrt!“ (und danach der Zeile mit dem Absender), relativ zur Kissenmitte; w_text = Breite des Textes (−1: „Pfffrt!“).
+	# Großer Modus (text_side): in der Zeile neben der Wolke statt darüber (darüber liegt die nächste Zeile bzw. „Reihenfolge“).
+	func text_at(w_text := -1.0) -> Vector2:
+		if text_side:
+			var tw := w_text if w_text >= 0.0 else pfffrt_w()
+			return Vector2(dir * (cw * 2.2 + tw * 0.5), -cw * 0.05)
+		return Vector2(dir * cw * 0.75, -cw * 1.45)
+
+	func pfffrt_fs() -> int:
+		return int(cw * (0.6 if text_side else 0.72))
+
+	func pfffrt_w() -> float:
+		return UiFonts.title(800, true, 100.0).get_string_size(I18n.t("Pfffrt!"), HORIZONTAL_ALIGNMENT_LEFT, -1, pfffrt_fs()).x
+
+	# Umriss samt Text (relativ zur Kissenmitte) für die Platzwahl
+	func area() -> Rect2:
+		var b := bounds(cw, dir)
+		if text_side:                     # Text in der Zeile: oben nur die Wolke
+			b = Rect2(Vector2(b.position.x, -1.15 * cw), Vector2(b.size.x, 1.75 * cw))
+		if text_side:
+			var c := text_at()
+			b = b.merge(Rect2(c - Vector2(pfffrt_w() * 0.5 + 6.0, cw * 0.45), Vector2(pfffrt_w() + 12.0, cw * 0.9)))
+		return b
+
+	func squash() -> float:
+		if reduced:
+			return 0.5
+		if t < 0.12:
+			return 0.0
+		var u := clampf((t - 0.12) / 0.16, 0.0, 1.0)
+		var sq := 1.0 - (1.0 - u) * (1.0 - u)
+		if t > 0.28:
+			sq -= 0.14 * sin((t - 0.28) * 16.0) * exp(-(t - 0.28) * 6.0)
+		return clampf(sq, 0.0, 1.0)
+
+	func step(delta: float) -> bool:
+		super.step(delta)
+		return t < CUSHION_S
+
+	func _draw() -> void:
+		var a_in := clampf(t / 0.12, 0.0, 1.0)
+		var alpha := minf(a_in, clampf((CUSHION_S - t) / 0.4, 0.0, 1.0))
+		var sq := squash()
+		var sc := 1.0 if reduced else lerpf(0.6, 1.0, 1.0 - (1.0 - a_in) * (1.0 - a_in))
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE * sc)
+		TeaseFx.draw_cushion(self, Vector2.ZERO, cw, sq, dir, night, alpha)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		# Wolke aus dem Ventil: vier Bäusche nacheinander, wachsen, steigen schräg auf und verblassen
+		var h := cw * 0.72                      # wie TeaseFx.draw_cushion
+		var sx := 1.0 + 0.16 * sq
+		var sy := 1.0 - 0.38 * sq
+		var tip := Vector2(dir * (cw * sx + cw * 0.34), h * 0.82 * (1.0 - sy) + h * sy * 0.08 - cw * 0.06 * sq)
+		for k_i in 8:                           # erst alle Ränder, dann alle Füllungen (eine zusammenhängende Wolke)
+			var i := k_i % 4
+			var born := 0.2 + i * 0.09
+			var u := (t - born) / 1.15
+			if u <= 0.0 or u >= 1.0:
+				continue
+			var ue := 0.5 if reduced else 1.0 - (1.0 - u) * (1.0 - u)
+			var pa := clampf(minf(u / 0.12, (1.0 - u) / 0.45), 0.0, 1.0) * alpha
+			var p := tip + Vector2(dir * cw * (0.15 + 0.45 * ue) * (1.0 + i * 0.35), -cw * (0.05 + 0.45 * ue) * (0.7 + i * 0.12))
+			var rr := cw * (0.24 + 0.24 * ue) * (1.0 - i * 0.08)
+			TeaseFx.draw_puff(self, p, rr, night, pa, 0 if k_i < 4 else 1)
+		# „Pfffrt!“
+		var t0 := 0.18
+		var t1 := 1.45
+		if t >= t0 and t <= t1:
+			var tt := t - t0
+			var pop := 1.0 if reduced else 0.55 + 0.45 * minf(tt / 0.12, 1.0) + 0.12 * sin(minf(tt / 0.3, 1.0) * PI)
+			var ta := clampf(minf(tt / 0.08, (t1 - t) / 0.3), 0.0, 1.0) * alpha
+			var f := UiFonts.title(800, true, 100.0)
+			var fs := pfffrt_fs()
+			var txt := I18n.t("Pfffrt!")
+			var tw := f.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+			var rise := 0.0 if reduced else tt * 14.0
+			draw_set_transform(text_at() + Vector2(0.0, -rise), -0.1 * dir, Vector2.ONE * pop)
+			var day := night < 0.5
+			var edge := Color(UiPalette.INK if day else UiPalette.NIGHT, 0.95 * ta)
+			var fill := Color(Color("#FF7FA3") if day else Color("#FF9CBB"), ta)
+			draw_string_outline(f, Vector2(-tw * 0.5, fs * 0.34), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, maxi(5, fs / 5), edge)
+			draw_string(f, Vector2(-tw * 0.5, fs * 0.34), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, fill)
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

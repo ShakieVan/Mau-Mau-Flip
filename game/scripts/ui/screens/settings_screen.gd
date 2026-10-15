@@ -203,7 +203,8 @@ static func personal(parent: Control, section: Callable, tempo := true) -> void:
 	look.add_child(oft_row)
 	# Mau-Mau Flip (Beta 1.6.3, Easter Eggs Teil 2): Necken je Gerät, ab Werk an, nicht an „Sprüche“ gekoppelt; der Tisch hört auf
 	# App.settings.changed (TeaseFx.set_enabled → source.set_fx_off). Aus: nichts sehen, hören oder schicken.
-	look.add_child(ScreenKit.switch_row("Necken (Papierkugel, Schnarchen, Wecker, Reaktionen)", "Mitspieler können dir Schnarchen, einen Wecker oder eine Papierkugel schicken.",
+	look.add_child(ScreenKit.switch_row("Necken (Papierkugel, Furzkissen, Schnarchen, Wecker, Reaktionen)",
+		"Mitspieler können dir Schnarchen, einen Wecker, eine Papierkugel oder ein Furzkissen schicken.",
 		bool(UiApp.setting("necken", true)), func(on: bool) -> void: _store("necken", on), "Necken"))
 	look.add_child(ScreenKit.switch_row("Vibration", "", bool(UiApp.setting("vibration", true)), func(on: bool) -> void: _store("vibration", on), "Vibration"))
 	var fx := ScreenKit.choice([["voll", "Voll"], ["reduziert", "Reduziert"]], str(UiApp.setting("effekte", "voll")), func(v: String) -> void: _store("effekte", v), UiFonts.size("text"))

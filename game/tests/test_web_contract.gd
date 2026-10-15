@@ -1089,8 +1089,25 @@ func pruefe_necken(tisch: String, app: String, seite: String) -> void:
 		var web_svg := FileAccess.get_file_as_bytes(web_dir.path_join("bilder/reaktionen/%s.svg" % r))
 		var app_svg := FileAccess.get_file_as_bytes("res://assets/ui/reaktionen/%s.svg" % r)
 		check(web_svg.size() > 1000 and web_svg == app_svg, "webclient/bilder/reaktionen/%s.svg gleich dem Bild der App" % r)
+	# Beta 1.6.6 Furzkissen (docs/module/eastereggs2.md Abschnitt 12): Konstanten, Prüfzweig, Spiegel ohne Eimer, Bereinigung wie
+	# NetProtocol (kissen/kissen_pop, fx_no.k), Bestätigung nur für den eigenen Platz, Ton beim Ziel normal und sonst leise
+	check(nk.contains("const CUSHION = '%s', CUSHION_POP = '%s';" % [TeaseRules.CUSHION, TeaseRules.CUSHION_POP])
+			and nk.contains("const CUSHION_BLOCK_MIN_MS = %d, CUSHION_BLOCK_MAX_MS = %d;" % [TeaseRules.CUSHION_BLOCK_MIN_MS, TeaseRules.CUSHION_BLOCK_MAX_MS])
+			and nk.contains(liste.call("CUSHION_TRIGGERS", TeaseRules.CUSHION_TRIGGERS)), "necken.js: Kissen-Konstanten wie TeaseRules")
+	var zweig := nk.find("if (k === CUSHION) {")
+	check(zweig > nk.find("if (tgt.off) return 'off';") and zweig < nk.find("if (k === 'ball') {")
+			and nk.find("if (this.cushionUntil[sender] !== undefined && now < this.cushionUntil[sender]) return 'rate';") < nk.find("if (this.cushions[to] !== undefined) return 'busy';"),
+		"necken.js: Kissen-Prüfzweig wie TeaseRules.check (Phase, erst Sperre, dann Ziel)")
+	var verb := nk.find("verbuche(msg, now) {")
+	check(verb > 0 and nk.find("if (k === CUSHION) {", verb) < nk.find("this._take('table'", verb) and nk.contains("this.legeKissen(from, to, msg.reveal === true, now, CUSHION_BLOCK_MIN_MS)")
+			and nk.contains("if (k === CUSHION_POP) { delete this.cushions[to]; return; }"), "necken.js: Spiegel wie TeaseRules.commit (Kissen ohne Eimer, Mindestsperre, Pups räumt ab)")
+	check(nk.contains("if (k === CUSHION_POP) return cleanKissenPop(m);") and nk.contains("if (m.reveal && from < 0) return null;")
+			and nk.contains("typeof m.reveal === 'boolean' ? { t: 'fx', k, from, to, reveal: m.reveal } : null") and nk.contains("m && m.k === CUSHION ? CUSHION : ''"),
+		"necken.js: Bereinigung wie NetProtocol.clean_fx/_clean_cushion_pop/clean_fx_no_kind")
+	check(nk.contains("if (req.k === CUSHION) m.reveal = req.reveal === true;") and nk.contains("if (f.k === CUSHION && f.from !== v.seat) return false;")
+			and nk.contains("this._ton('furzkissen', ziel ? 1 : LEISE)"), "necken.js: Kissen-Wunsch mit reveal, Bestätigung nur vom eigenen Platz, Ton beim Ziel normal, sonst leise")
 	var ton := read_web("ton.js")
-	var toene := ["schnarchen", "wecker", "papier_wurf", "papier_plopp", "lachen", "schreck", "klatschen", "daumen"]
+	var toene := ["schnarchen", "wecker", "papier_wurf", "papier_plopp", "lachen", "schreck", "klatschen", "daumen", "furzkissen"]
 	check(ton.contains(liste.call("NECK_TOENE", toene)) and ton.contains("function stoppe(name, ms)") and ton.contains("function spiele(name, pegel)"),
 		"ton.js: Neck-Töne, spiele mit Pegel, stoppe mit Rampe")
 	check(nk.contains("const LEISE = 0.25;") and nk.contains("this._rt.length >= 2") and nk.contains("< 600"), "necken.js: leise −12 dB, Reaktionstöne höchstens 2 gleichzeitig, 600 ms je Name")
@@ -1104,3 +1121,5 @@ func pruefe_necken(tisch: String, app: String, seite: String) -> void:
 			and css.contains("body.reduziert .nk-zzz b") and css.contains("@media (prefers-reduced-motion: reduce) {\n  .nk-zzz b"), "style.css: Necken-Ebene nur am Tisch, Tag/Nacht, reduzierte Effekte")
 	var t := read_web("test/lite_necken.html")
 	check(t.contains("data-ok") and t.contains("Alter Gastgeber") and t.contains("fx_pref nach welcome"), "webclient/test/lite_necken.html: Chrome-Test des Neckens vorhanden")
+	check(t.contains("Beta 1.6.6: Furzkissen") and t.contains("kissen_pop"), "webclient/test/lite_necken.html: Chrome-Test des Furzkissens vorhanden")
+	check(FileAccess.get_file_as_bytes(web_dir.path_join("sfx/furzkissen.ogg")) == FileAccess.get_file_as_bytes("res://assets/sfx/furzkissen.ogg"), "webclient/sfx/furzkissen.ogg gleich dem Ton der App")

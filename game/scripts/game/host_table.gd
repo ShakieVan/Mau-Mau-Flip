@@ -55,6 +55,11 @@ extends GameTable
 #  - fx_pref je Spieler-id (_fx_off_ids, nur im Speicher; nach einer Übernahme schicken die Gäste ihn mit dem nächsten welcome neu):
 #    Ändert sich die Liste der Plätze (auch durch Platzwechsel, _after_distribute), geht {t:"fx_offs"} an alle Sitzenden; ein
 #    zurückkehrender oder dazugeholter Gast bekommt sie einzeln. Kein _changed, kein _persist, kein bk, kein seq.
+# Mau-Mau Flip (Beta 1.6.6, Furzkissen, docs/module/eastereggs2.md Abschnitt 12):
+#  - fx kissen {to, reveal}: tease prüft (busy = liegt schon eins, rate = Sperre des Legers), _cushion_place lost die Sperre (1–3 min,
+#    fx_rand) aus und bestätigt nur dem Leger. Ausgelöst wird in GameTable._apply bei der nächsten angenommenen Lege-/Zieh-Aktion des
+#    Ziels (auch Bots); _cushion_pop schickt kissen_pop an alle Sitzenden, geheim ohne from (nur der Leger bekommt from). Offene Kissen
+#    stehen nicht im Speicherstand und nicht in der Sicherung: Übergabe, Rundenende und seats lassen sie verfallen.
 
 signal stepped_down(new_host: String)         # Beta 1.6.1: ein anderes Gerät führt jetzt das Spiel ("" = Name unbekannt)
 signal online_check(info: Dictionary)         # Beta 1.6.1: /info meldet einen Gastgeber – Probe als Gast, dann probe_done()
@@ -1809,9 +1814,12 @@ func _on_fx(id: int, msg: Dictionary) -> void:
 	if why != "":
 		if why in TeaseRules.REFUSALS:
 			if id == session.host_id:
-				fx_refused.emit(why)
+				_fx_refuse(why, str(msg.k))
 			else:
-				session.send_to(id, {"t": "fx_no", "why": why})
+				session.send_to(id, NetProtocol.make_fx_no(why, str(msg.k)))
+		return
+	if str(msg.k) == TeaseRules.CUSHION:
+		_cushion_place(id, sender, int(msg.to), (msg.get("reveal") is bool and bool(msg.reveal)), now)
 		return
 	var m := NetProtocol.make_fx(str(msg.k), sender, int(msg.get("to", -1)), str(msg.get("r", "")))
 	var ids: Array = []
@@ -1820,6 +1828,51 @@ func _on_fx(id: int, msg: Dictionary) -> void:
 			ids.append(int(_seat_ids[s]))   # sitzende entfernte Menschen; send_many übergeht nicht verbundene
 	session.send_many(ids, NetProtocol.encode(m))
 	_fx_deliver(m)                   # verbuchen und am eigenen Tisch zeigen
+
+
+# Beta 1.6.6: Vorprüfung des Gastgeber-Bildschirms. tease ist hier maßgeblich und kennt fremde Kissen – das darf die Oberfläche nicht
+# verraten: Liegt bei diesem Ziel das Kissen eines anderen, sieht der Knopf aus wie bei jedem Gast (aktiv), der Gastgeber erfährt es
+# erst beim Drücken (fx_refused busy wie fx_no an einen Gast).
+func fx_check(req: Dictionary) -> String:
+	var why := super.fx_check(req)
+	if why == "busy" and str(req.get("k", "")) == TeaseRules.CUSHION and req.get("to") is int \
+			and int(tease.cushion_at(int(req.to)).get("from", -1)) != local_seat():
+		return ""
+	return why
+
+
+# Beta 1.6.6 (Furzkissen, docs/module/eastereggs2.md Abschnitt 12): legen. Die Sperre des Legers wird hier ausgelost (1–3 min, fx_rand)
+# und nie verschickt. Bestätigung nur an den Leger – auch der Gastgeber-Bildschirm erfährt nichts, wenn er nicht selbst gelegt hat.
+func _cushion_place(id: int, sender: int, to: int, reveal: bool, now: int) -> void:
+	tease.place_cushion(sender, to, reveal, now, _cushion_block_ms())
+	var m := NetProtocol.make_cushion(sender, to, reveal)
+	if id == session.host_id:
+		fx_event.emit(m)
+	else:
+		session.send_to(id, m)
+
+
+# Beta 1.6.6: Das Kissen am Platz seat löst aus (GameTable._apply, nach dem Stand dieses Zugs). reveal: alle bekommen from. Geheim: alle
+# Sitzenden ohne from, nur der Leger (falls entfernt und verbunden) eine Kopie mit from; der eigene Tisch zeigt from nur, wenn der Gastgeber
+# selbst gelegt hat. Ziel oder Leger mit Necken aus, eingefroren oder in der Einschwingzeit: verfällt still.
+func _cushion_pop(seat: int, c: Dictionary) -> void:
+	if game == null or session == null or _frozen or _settling:
+		return
+	var offs := _fx_off_seats_now()
+	var from := int(c.get("from", -1))
+	if offs.has(seat) or offs.has(from) or from < 0 or from >= seats.size():
+		return
+	var reveal := bool(c.get("reveal", false))
+	var m := NetProtocol.make_cushion_pop(seat, reveal, from if reveal else -1)
+	var mine := NetProtocol.make_cushion_pop(seat, reveal, from)
+	var ids: Array = []
+	for s in seats.size():
+		if _is_remote(s) and (reveal or s != from):
+			ids.append(int(_seat_ids[s]))
+	session.send_many(ids, NetProtocol.encode(m))
+	if not reveal and from != host_seat and _is_remote(from):
+		session.send_to(int(_seat_ids[from]), mine)
+	_fx_deliver(mine if from == host_seat else m)
 
 
 func _on_fx_pref(id: int, off: bool) -> void:

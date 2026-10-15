@@ -10,6 +10,17 @@ extends SceneTree
 #   sehr_gross / gross_sehr_gross_nacht   Schrift „Sehr groß“ (normal bzw. großer Modus)
 #   rundenende                   Rundenende: Knöpfe über der Tafel, eine Reaktion steigt auf
 #   en_tag                       Englisch (Hinweis englisch, Knöpfe ohne Text)
+# SERIE=166 nach docs/module/optik_166_*.png (Furzkissen, eastereggs2.md 12.4):
+#   menue_tag / menue_nacht      Necken-Menü mit der Zeile „Furzkissen“ (Mit Namen / Geheim)
+#   menue_gesperrt               nach dem eigenen Kissen: grau, „Das Kissen muss sich erst wieder aufpusten.“ (und „Da liegt schon …“)
+#   bestaetigung                 Leger: leise Zeile „Kissen liegt bei Kim.“
+#   pups_tag / pups_nacht        Kissen plattgedrückt, Wolke, „Pfffrt!“ an Kim; pups_oben_nacht an Lena (oben)
+#   zeile_tag / zeile_geheim     danach „Du war's!“ bzw. „Wer war das?“
+#   ziel_tag / ziel_nacht        beim Ziel (ich): groß über dem eigenen Namensschild, danach „Kim war's!“ (ziel_zeile)
+#   gross_menue / gross_pups_tag / gross_pups_nacht   großer Modus
+#   sehr_gross                   Schrift „Sehr groß“: Menü mit Kissen-Zeile
+#   reduziert                    Effekte reduziert: liegt flach, keine Bewegung
+#   en_menue / en_pups           Englisch
 # SERIE=163 nach docs/module/optik_163_*.png (docs/module/eastereggs2.md 9; Stand 1.6.3, Reaktionsknopf seit 1.6.5 wie oben):
 #   menue_tag / menue_nacht      Necken-Menü am Spieler am Zug (ab 10 s: Kugel, Schnarchen, Wecker, Karten ansehen)
 #   menue_ausgegraut             vor 10 s: Schnarchen/Wecker ausgegraut mit Ring und Hinweis
@@ -128,8 +139,11 @@ func run() -> void:
 	var kim := 1 if me != 1 else 2
 	show(kim)
 	await create_timer(0.5).timeout
-	if serie == "165":
-		await run_165(me, kim)
+	if serie == "165" or serie == "166":
+		if serie == "165":
+			await run_165(me, kim)
+		else:
+			await run_166(me, kim)
 		I18n.set_language("de")
 		for key in before:
 			app.settings.set_value(key, before[key])
@@ -359,3 +373,131 @@ func run_165(me: int, kim: int) -> void:
 	show(kim)
 	await create_timer(0.5).timeout
 	await shot("en_tag")
+
+
+# Beta 1.6.6: Furzkissen (Bestätigung nur beim Leger, Pups für alle)
+func placed(from: int, to: int, reveal: bool) -> void:
+	var m := NetProtocol.make_cushion(from, to, reveal)
+	fake.tease.commit(m, clock)
+	fake.fx_event.emit(m)
+
+
+func pop(to: int, reveal: bool, from := -1) -> void:
+	clock += 300
+	var m := NetProtocol.make_cushion_pop(to, reveal, from)
+	fake.tease.commit(m, clock)
+	fake.fx_event.emit(m)
+
+
+func run_166(me: int, kim: int) -> void:
+	var lena := 2
+	var ben := 3 if me != 3 else 0
+	# Menü mit der Kissen-Zeile, Tag und Nacht
+	for tm in ["tag", "nacht"]:
+		clock += 20000
+		ts.table.set_night(1.0 if tm == "nacht" else 0.0)
+		show(kim)
+		await create_timer(0.4).timeout
+		tz.close_menu(false)
+		tz.open_menu(kim)
+		await create_timer(0.3).timeout
+		await shot("menue_" + tm)
+	tz.close_menu(false)
+	# Leger: Bestätigung als leise Zeile, danach gesperrt
+	ts.table.set_night(0.0)
+	placed(me, kim, true)
+	await create_timer(0.4).timeout
+	await shot("bestaetigung")
+	tz.open_menu(kim)
+	await create_timer(0.3).timeout
+	await shot("menue_gesperrt")
+	tz.close_menu(false)
+	await create_timer(3.0).timeout
+	# Pups an Kim: mit Namen (ich war's), dann nachts geheim; oben an Lena
+	pop(kim, true, me)
+	await create_timer(0.45).timeout
+	await shot("pups_tag")
+	await create_timer(1.0).timeout
+	await shot("zeile_tag")
+	await create_timer(3.0).timeout
+	ts.table.set_night(1.0)
+	pop(kim, false)
+	await create_timer(0.45).timeout
+	await shot("pups_nacht")
+	await create_timer(1.0).timeout
+	await shot("zeile_geheim")
+	await create_timer(3.0).timeout
+	pop(lena, true, ben)
+	await create_timer(0.5).timeout
+	await shot("pups_oben_nacht")
+	await create_timer(3.0).timeout
+	# beim Ziel (ich): groß über dem eigenen Namensschild
+	for tm in ["tag", "nacht"]:
+		ts.table.set_night(1.0 if tm == "nacht" else 0.0)
+		pop(me, true, kim)
+		await create_timer(0.45).timeout
+		await shot("ziel_" + tm)
+		if tm == "tag":
+			await create_timer(1.0).timeout
+			await shot("ziel_zeile")
+			await create_timer(2.5).timeout
+		else:
+			await create_timer(3.5).timeout
+	# reduziert
+	ts.table.set_night(0.0)
+	ts.table.reduced = true
+	pop(ben, true, kim)
+	await create_timer(0.6).timeout
+	await shot("reduziert")
+	ts.table.reduced = false
+	await create_timer(3.0).timeout
+	# großer Modus
+	clock += 200000
+	ts.table.set_big(true)
+	await process_frame
+	ts._layout()
+	show(kim)
+	await create_timer(0.9).timeout
+	tz.open_menu(kim)
+	await create_timer(0.4).timeout
+	await shot("gross_menue")
+	tz.close_menu(false)
+	pop(kim, true, me)
+	await create_timer(0.45).timeout
+	await shot("gross_pups_tag")
+	await create_timer(3.0).timeout
+	ts.table.set_night(1.0)
+	pop(me, false)
+	await create_timer(0.45).timeout
+	await shot("gross_pups_nacht")
+	await create_timer(3.0).timeout
+	ts.table.set_night(0.0)
+	ts.table.set_big(false)
+	await process_frame
+	ts._layout()
+	# Schrift „Sehr groß“
+	UiFonts.set_level("sehr_gross", root)
+	await process_frame
+	ts._layout()
+	show(kim)
+	await create_timer(0.6).timeout
+	tz.open_menu(kim)
+	await create_timer(0.4).timeout
+	await shot("sehr_gross")
+	tz.close_menu(false)
+	UiFonts.set_level("normal", root)
+	await process_frame
+	ts._layout()
+	# Englisch
+	I18n.set_language("en")
+	show(kim)
+	await create_timer(0.5).timeout
+	tz.open_menu(kim)
+	await create_timer(0.3).timeout
+	await shot("en_menue")
+	tz.close_menu(false)
+	pop(lena, true, kim)
+	await create_timer(0.45).timeout
+	await shot("en_pups")
+	await create_timer(1.0).timeout
+	await shot("en_zeile")

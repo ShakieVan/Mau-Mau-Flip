@@ -25,6 +25,8 @@ extends TableSource
 # Mau-Mau Flip (Beta 1.6.3, Easter Eggs Teil 2 „Necken“, docs/module/eastereggs2.md Abschnitte 4 und 6.1):
 #  - send_fx(req) → {t:"fx"}; set_fx_off(off) → {t:"fx_pref"} (auch nach jedem welcome). fx → fx_event (nur mit Platz und Sicht),
 #    fx_no → fx_refused, fx_offs → fx_offs_changed. Sichten und Ereignisse füttern den Spiegel tease (fx_check der Oberfläche).
+#  - Beta 1.6.6 (Furzkissen): fx kissen (nur als Leger: Bestätigung, Spiegel sperrt die Mindestzeit) und kissen_pop (alle) → fx_event;
+#    fx_no mit k:"kissen" setzt fx_refused_kind.
 
 signal backup_changed                              # Beta 1.6.1: neue Sicherung (bk) liegt in backup
 signal handover_received(msg: Dictionary)          # Beta 1.6.1: geprüftes {t:"handover"} (z oder own:true) → HostSwitch
@@ -531,12 +533,14 @@ func _on_message(msg: Dictionary) -> void:
 			state_changed.emit(evs, _view)
 		"fx":
 			var m := NetProtocol.clean_fx(msg)   # Beta 1.6.3: Necken (an alle Sitzenden, auch an den Absender)
-			if not m.is_empty() and _seat >= 0 and not _view.is_empty():
+			# Beta 1.6.6: die Kissen-Bestätigung gilt nur für den eigenen Platz (sie geht nur an den Leger)
+			if not m.is_empty() and _seat >= 0 and not _view.is_empty() \
+					and (str(m.k) != TeaseRules.CUSHION or int(m.from) == _seat):
 				_fx_deliver(m)
 		"fx_no":
 			var why := NetProtocol.clean_fx_no(msg)   # Beta 1.6.3: eigener Wunsch abgelehnt
 			if why != "":
-				fx_refused.emit(why)
+				_fx_refuse(why, NetProtocol.clean_fx_no_kind(msg))   # Beta 1.6.6: fx_refused_kind (Furzkissen)
 		"fx_offs":
 			var offs := NetProtocol.clean_fx_offs(msg)   # Beta 1.6.3: Plätze mit Necken aus
 			if offs != _fx_offs:

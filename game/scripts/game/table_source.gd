@@ -12,8 +12,10 @@ signal lobby_changed(lobby: Dictionary)                    # Netz: Lobby-Stand {
 signal connection_changed(state: String)                   # Client: "connecting" | "open" | "closed" | "rejected"
 signal game_started(seat: int)                             # zusätzlich: Partie beginnt (Lobby → Tisch), eigener Platz
 # Mau-Mau Flip (Beta 1.6.3, Easter Eggs Teil 2 „Necken“, docs/module/eastereggs2.md Abschnitt 6.1 „Schnittstelle“):
-signal fx_event(msg: Dictionary)          # angenommenes Necken {t:"fx", k, from, to?, r?} – kommt auf allen Geräten (auch beim Absender)
-signal fx_refused(why: String)            # eigener Wunsch abgelehnt: "late" | "busy" | "rate" (kein Fehlerton, leise Zeile bzw. ausgrauen)
+signal fx_event(msg: Dictionary)          # angenommenes Necken {t:"fx", k, from, to?, r?} – kommt auf allen Geräten (auch beim Absender);
+                                          # Beta 1.6.6: k "kissen" (nur beim Leger: Bestätigung) und "kissen_pop" (alle, from nur bei reveal)
+signal fx_refused(why: String)            # eigener Wunsch abgelehnt: "late" | "busy" | "rate" (kein Fehlerton, leise Zeile bzw. ausgrauen);
+                                          # Beta 1.6.6: fx_refused_kind sagt, ob es ein Furzkissen war
 signal fx_offs_changed(seats: Array)      # Plätze mit Necken aus (fx_offs) haben sich geändert
 
 # Necken (Beta 1.6.3): Gastgeber = maßgebliche Regeln, sonst lokaler Spiegel (gleiche Sichten, Ereignisse und fx) für fx_check().
@@ -21,6 +23,9 @@ var tease := TeaseRules.new()
 var fx_clock := Callable()                # Tests: () -> Monotonuhr in ms fürs Necken (sonst Time.get_ticks_msec bzw. HostTable._now_ms)
 var _fx_offs: Array = []                  # Plätze mit Necken aus (vom Gastgeber; beim Gastgeber selbst berechnet)
 var _fx_off_self := setting_fx_off()      # Necken an diesem Gerät aus (Einstellung „necken“; set_fx_off ändert es)
+# Furzkissen (Beta 1.6.6, docs/module/eastereggs2.md Abschnitt 12.6):
+var fx_refused_kind := ""                 # Art der zuletzt abgelehnten eigenen Bitte: "kissen" oder "" (übrige Arten); gilt beim fx_refused
+var fx_rand := Callable()                 # Tests: () -> float in [0, 1] für die Kissen-Sperre (sonst randf()); nur Gastgeber und Übung
 
 const SAVE_PATH := "user://laufende_partie.json"
 # Mau-Mau Flip (Beta 1.6.1, Gastgeber-Übergabe): Netzpartie in eigener Datei (MatchSnapshot, docs/module/uebergabe.md Abschnitt 2),
@@ -60,7 +65,8 @@ func leave() -> void:
 
 # --- Necken (Beta 1.6.3, docs/module/eastereggs2.md Abschnitt 6.1) ---
 
-# Necken schicken: {k:"snore"|"alarm"|"ball", to} bzw. {k:"react", r}. Ergebnis kommt als fx_event (an alle) oder fx_refused.
+# Necken schicken: {k:"snore"|"alarm"|"ball", to} bzw. {k:"react", r}; Beta 1.6.6: {k:"kissen", to, reveal}. Ergebnis kommt als fx_event
+# (an alle; Kissen: Bestätigung nur an den Leger) oder fx_refused.
 func send_fx(_req: Dictionary) -> void:
 	pass
 
@@ -114,6 +120,17 @@ func _fx_now() -> int:
 func _fx_deliver(m: Dictionary) -> void:
 	tease.commit(m, _fx_now())
 	fx_event.emit(m)
+
+
+# Eigene Bitte abgelehnt (late/busy/rate): fx_refused_kind gilt während des Signals (und bis zur nächsten Ablehnung).
+func _fx_refuse(why: String, k := "") -> void:
+	fx_refused_kind = TeaseRules.CUSHION if k == TeaseRules.CUSHION else ""
+	fx_refused.emit(why)
+
+
+# Beta 1.6.6: Sperre des Legers nach einem Kissen, zufällig 1–3 min (maßgeblich nur beim Gastgeber bzw. in der Übung).
+func _cushion_block_ms() -> int:
+	return TeaseRules.cushion_block_ms(float(fx_rand.call()) if fx_rand.is_valid() else randf())
 
 
 # Einstellung „necken“ dieses Geräts (App.settings; ohne App: an).

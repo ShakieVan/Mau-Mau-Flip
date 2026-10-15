@@ -107,7 +107,7 @@
     leeren();
     await lade('');
     const App = w.MMF.App;
-    ok(App.version === '1.6.5', 'Version 1.6.5 (' + App.version + ')');
+    ok(App.version === '1.6.6', 'Version 1.6.6 (' + App.version + ')');
     ok(!!N() && App.einstellungen.necken === true, 'necken.js geladen, Necken ab Werk an');
     let s = await beitreten('Kim');
     ok(JSON.stringify(s.msgs('fx_pref')) === '[{"t":"fx_pref","off":false}]', 'fx_pref nach welcome (' + JSON.stringify(s.msgs('fx_pref')) + ')');
@@ -376,6 +376,147 @@
     ok(!w.document.querySelector('#toasts .toast.fehler') && w.MMF.App.fehler.length === 0 && !s.gesendet.some(x => /"t":"log"/.test(x)), 'alter Gastgeber: keine Fehlermeldung, kein Neuverbinden');
     ok(s.readyState === 1 && w.MMF.App.screen === 'tisch', 'alter Gastgeber: Verbindung und Tisch bleiben');
 
+    // Beta 1.6.6: Furzkissen (docs/module/eastereggs2.md Abschnitt 12)
+    leeren();
+    await lade('');
+    s = await beitreten('Kim');
+    s.rx({ t: 'start', seat: 0 });
+    s.rx({ t: 'state', events: [], view: sicht(1) });
+    await warte(400);
+    {
+      const m = $('#nk-menue'), reihe = () => m.querySelector('.nk-kissen'), kb = x => m.querySelector('button[data-kissen="' + x + '"]');
+      kopf(2).click();
+      await warte(30);
+      ok(sichtbar(m) && sichtbar(reihe()) && !kb('name').classList.contains('grau') && !kb('geheim').classList.contains('grau'), 'Kissen: Zeile im Menü am Computergegner, beide Knöpfe aktiv');
+      ok(reihe().querySelector('.nk-kt span').textContent === 'Furzkissen' && kb('name').textContent === 'Mit Namen' && kb('geheim').textContent === 'Geheim', 'Kissen: Texte „Furzkissen“, „Mit Namen“, „Geheim“');
+      ok(kb('name').offsetHeight >= 44 && kb('geheim').offsetHeight >= 44 && kb('geheim').offsetWidth >= 44, 'Kissen: Knöpfe mindestens 44 px (' + kb('name').offsetHeight + ')');   // ohne Transform (Aufspringen des Menüs)
+      {
+        const mr = m.getBoundingClientRect();
+        ok(mr.left >= 0 && mr.top >= 0 && mr.right <= w.innerWidth && mr.bottom <= w.innerHeight, 'Kissen: Menü ganz im Fenster (' + JSON.stringify([mr.left, mr.top, mr.right, mr.bottom]) + ')');
+      }
+      toene = [];
+      kb('geheim').click();
+      await warte(20);
+      ok(JSON.stringify(s.msgs('fx')) === '[{"t":"fx","k":"kissen","to":2,"reveal":false}]' && !sichtbar(m), 'Kissen „Geheim“ geschickt, Menü zu (' + JSON.stringify(s.msgs('fx')) + ')');
+      ok(!$('#tisch .nk-furz') && toasts().every(t => !/Kissen/.test(t)), 'Kissen: vor der Bestätigung nichts zu sehen');
+      // Bestätigung nur beim Leger: leise Zeile, kein Bild, kein Ton
+      s.rx({ t: 'fx', k: 'kissen', from: 0, to: 2, reveal: false });
+      await warte(40);
+      ok(toasts().indexOf('Kissen liegt bei Tom.') >= 0 && !$('#tisch .nk-furz') && !toene.some(t => t[0] === 'furzkissen'), 'Bestätigung „Kissen liegt bei Tom.“ ohne Bild und Ton (' + toasts().join(' | ') + ')');
+      ok(N().pruefe({ k: 'kissen', to: 2 }) === 'rate' && N().pruefe({ k: 'kissen', to: 3 }) === 'rate' && N().regeln.cushions[2] && N().regeln.cushions[2].from === 0, 'Spiegel: eigenes Kissen gemerkt, eigene Sperre (60 s) für alle Ziele');
+      ok(N().pruefe({ k: 'ball', to: 2 }) === '', 'Kissen geht in keinen Eimer (Papierkugel weiter frei)');
+      kopf(3).click();
+      await warte(30);
+      ok(kb('name').classList.contains('grau') && kb('geheim').classList.contains('grau') && m.querySelector('.nk-info').textContent === 'Das Kissen muss sich erst wieder aufpusten.', 'Sperre: Kissen-Knöpfe grau, Hinweis ohne Restzeit (' + m.querySelector('.nk-info').textContent + ')');
+      { const n = s.msgs('fx').length; kb('name').click(); await warte(20); ok(s.msgs('fx').length === n && kb('name').classList.contains('wackel'), 'Sperre: grauer Kissen-Knopf schickt nichts und wackelt'); }
+      N().zu();
+      // fremde Bestätigung (gehört nie hierher): verworfen
+      const g0 = N().gezeigt.length, t0 = toasts().length;
+      s.rx({ t: 'fx', k: 'kissen', from: 1, to: 3, reveal: true });
+      await warte(30);
+      ok(N().gezeigt.length === g0 && N().regeln.cushions[3] === undefined && toasts().length === t0, 'fremde Kissen-Bestätigung verworfen');
+      // Pups beim Bot (geheim, Kopie des Legers mit from): leise, „Wer war das?“
+      toene = []; vib = [];
+      s.rx({ t: 'fx', k: 'kissen_pop', to: 2, reveal: false, from: 0 });
+      await warte(60);
+      const ki = $('#tisch .nk-furz');
+      ok(!!ki && !ki.classList.contains('ziel') && !!ki.querySelector('.nk-pf') && ki.querySelector('.nk-pf').textContent === 'Pfffrt!' && w.document.querySelectorAll('#tisch .nk-furz .nk-wolke b').length === 4, 'Pups: Kissen, Wolke und „Pfffrt!“ am Platz des Ziels');
+      await warte(200);
+      ok(JSON.stringify(toene.filter(t => t[0] === 'furzkissen')) === '[["furzkissen",0.25]]' && vib.length === 0, 'Pups beim Mitspieler: Ton leise (auch beim Leger), keine Vibration (' + JSON.stringify(toene) + ')');
+      ok(N().regeln.cushions[2] === undefined && N().pruefe({ k: 'kissen', to: 2 }) === 'rate', 'Pups räumt das Kissen im Spiegel ab, die Sperre bleibt');
+      await warte(1400);
+      ok(($('#tisch .nk-wer') || {}).textContent === 'Wer war das?', 'geheim: „Wer war das?“ – auch beim Leger (' + ($('#tisch .nk-wer') || {}).textContent + ')');
+      await warte(1200);
+      ok(!$('#tisch .nk-furz'), 'Kissen nach dem Pups wieder weg');
+      // Pups bei mir (Ziel) mit Namen: groß, Ton normal, Vibration, Zeile „Lena war's!“
+      toene = []; vib = [];
+      s.rx({ t: 'fx', k: 'kissen_pop', to: 0, reveal: true, from: 1 });
+      await warte(300);
+      ok(!!$('#tisch .nk-furz.ziel') && JSON.stringify(toene.filter(t => t[0] === 'furzkissen')) === '[["furzkissen",1]]' && vib.indexOf(150) >= 0, 'Pups beim Ziel: groß, Ton normal, Vibration 150 ms (' + JSON.stringify(toene) + ' ' + JSON.stringify(vib) + ')');
+      await warte(1300);
+      ok(($('.nk-zeile') || {}).textContent === 'Lena war\'s!' && !$('#tisch .nk-wer'), 'Ziel: Zeile „Lena war\'s!“ über dem eigenen Namensschild');
+      // Zuschauer: Pups bei Mia ohne from (geheim) → leise, „Wer war das?“; mit Namen → „Lena war's!“ als Schild
+      toene = [];
+      s.rx({ t: 'fx', k: 'kissen_pop', to: 3, reveal: true, from: 1 });
+      await warte(1500);
+      ok(($('#tisch .nk-wer') || {}).textContent === 'Lena war\'s!' && toene.some(t => t[0] === 'furzkissen' && t[1] === 0.25), 'Zuschauer: Schild „Lena war\'s!“, Ton leise');
+      await warte(2800);
+      // kaputte Kissen-Nachrichten
+      const g1 = N().gezeigt.length;
+      [{ t: 'fx', k: 'kissen_pop', to: 2, reveal: true }, { t: 'fx', k: 'kissen_pop', to: 2, reveal: 'ja' }, { t: 'fx', k: 'kissen_pop', to: 2, reveal: false, from: 2 },
+        { t: 'fx', k: 'kissen_pop', to: 12, reveal: false }, { t: 'fx', k: 'kissen_pop', to: 2, reveal: false, from: null }, { t: 'fx', k: 'kissen', from: 0, to: 2 },
+        { t: 'fx', k: 'kissen', from: 0, to: 0, reveal: true }, { t: 'fx_no', why: 'quatsch', k: 'kissen' }].forEach(x => s.rx(x));
+      await warte(300);
+      ok(N().gezeigt.length === g1 && !$('#tisch .nk-furz'), 'kaputte Kissen-Nachrichten verworfen');
+      // Ablehnungen mit k:"kissen": busy (fremdes Kissen bleibt grau) und rate (ohne Restzeit)
+      N().regeln.cushionUntil = {};   // Sperre vorbei (statt 60 s zu warten)
+      kopf(3).click();
+      await warte(30);
+      ok(!kb('name').classList.contains('grau') && m.querySelector('.nk-info').hidden, 'nach der Sperre: Kissen-Knöpfe wieder aktiv');
+      kb('name').click();
+      await warte(20);
+      ok(JSON.stringify(s.msgs('fx').slice(-1)) === '[{"t":"fx","k":"kissen","to":3,"reveal":true}]', 'Kissen „Mit Namen“ geschickt (reveal:true)');
+      s.rx({ t: 'fx_no', why: 'busy', k: 'kissen' });
+      await warte(20);
+      ok(toasts().indexOf('Da liegt schon ein Kissen.') >= 0 && toasts().indexOf('Mia wird gerade schon geweckt.') < 0, 'fx_no busy mit k → „Da liegt schon ein Kissen.“');
+      ok(N().pruefe({ k: 'kissen', to: 3 }) === 'busy' && N().pruefe({ k: 'kissen', to: 1 }) === '', 'nach busy: Kissen bei Mia bleibt grau, andere frei');
+      kopf(3).click();
+      await warte(30);
+      ok(kb('geheim').classList.contains('grau') && m.querySelector('.nk-info').textContent === 'Da liegt schon ein Kissen.', 'Menü: „Da liegt schon ein Kissen.“');
+      N().zu();
+      s.rx({ t: 'fx', k: 'kissen_pop', to: 3, reveal: false });
+      await warte(30);
+      ok(N().pruefe({ k: 'kissen', to: 3 }) === '', 'Pups bei Mia: Ziel wieder frei');
+      s.rx({ t: 'fx_no', why: 'rate', k: 'kissen' });
+      await warte(20);
+      ok(toasts().indexOf('Das Kissen muss sich erst wieder aufpusten.') >= 0 && N().pruefe({ k: 'kissen', to: 1 }) === 'rate', 'fx_no rate mit k → „Das Kissen muss sich erst wieder aufpusten.“, Knopf grau');
+      ok(!w.document.querySelector('#toasts .toast.fehler'), 'Kissen-Ablehnungen sind keine Fehler');
+      await warte(2900);
+      // Rundenende: offene Kissen verfallen still, die Sperre bleibt; seats leert beides
+      N().regeln.cushionUntil = {};
+      s.rx({ t: 'fx', k: 'kissen', from: 0, to: 1, reveal: true });
+      await warte(20);
+      s.rx({ t: 'state', events: [], view: sicht(1, { phase: 'round_over' }) });
+      await warte(60);
+      ok(Object.keys(N().regeln.cushions).length === 0 && N().regeln.cushionUntil[0] > 0, 'Rundenende: Kissen verfallen, Sperre bleibt');
+      s.rx({ t: 'state', events: [], view: sicht(1) });
+      await warte(60);
+      ok(N().pruefe({ k: 'kissen', to: 1 }) === 'rate', 'neue Runde: Sperre gilt weiter');
+      s.rx({ t: 'state', events: [{ e: 'seats', map: [0, 1, 2, 3], join: -1 }], view: sicht(1) });
+      await warte(60);
+      ok(N().pruefe({ k: 'kissen', to: 1 }) === '', 'seats: Sperre und Kissen geleert');
+      // seats während des Pupses: Ton und Schild kommen nicht mehr
+      toene = [];
+      s.rx({ t: 'fx', k: 'kissen_pop', to: 2, reveal: false });
+      await warte(30);
+      s.rx({ t: 'state', events: [{ e: 'seats', map: [0, 1, 2, 3], join: -1 }], view: sicht(1) });
+      await warte(1700);
+      ok(!toene.some(t => t[0] === 'furzkissen') && !$('#tisch .nk-wer') && !$('#tisch .nk-furz'), 'seats während des Pupses: abgeräumt, kein Ton, kein Schild');
+      // Necken aus beim Ziel: Kissen-Zeile weg
+      s.rx({ t: 'fx_offs', seats: [2] });
+      await warte(20);
+      kopf(2).click();
+      await warte(30);
+      ok(reihe().hidden && m.querySelector('.nk-info').textContent === 'Tom möchte gerade nicht geneckt werden.', 'Necken aus beim Ziel: keine Kissen-Zeile');
+      N().zu();
+      s.rx({ t: 'fx_offs', seats: [] });
+      // Effekte reduziert: Kissen blendet nur
+      w.MMF.App.einstellungen.effekte = 'reduziert'; w.document.body.classList.add('reduziert');
+      s.rx({ t: 'fx', k: 'kissen_pop', to: 1, reveal: false });
+      await warte(60);
+      ok(!!$('#tisch .nk-furz.still'), 'Effekte reduziert: Kissen ohne Plattdrücken (still)');
+      w.MMF.App.einstellungen.effekte = 'voll'; w.document.body.classList.remove('reduziert');
+      await warte(4300);
+      // Necken aus an diesem Gerät: Pups weder sehen noch hören
+      w.MMF.App.einstellen('necken', 'false');
+      w.MMF.App.schliesse('menue');
+      toene = [];
+      s.rx({ t: 'fx', k: 'kissen_pop', to: 0, reveal: true, from: 1 });
+      await warte(400);
+      ok(!$('#tisch .nk-furz') && !toene.some(t => t[0] === 'furzkissen'), 'Necken aus: Pups weder sichtbar noch hörbar');
+      ok(w.MMF.App.fehler.length === 0, 'Kissen: keine Fehler im Lite (' + w.MMF.App.fehler.join(' | ') + ')');
+    }
+
     // Regeln (Spiegel von TeaseRules) direkt
     const R = new w.MMF.Necken.Regeln();
     const T = (turn, phase, offs) => w.MMF.Necken.Regeln.tischAusSicht(sicht(turn, { phase: phase || 'turn' }), offs || [], 'client');
@@ -397,6 +538,24 @@
     R.notiereEreignisse([{ e: 'seats', map: [0, 1] }], 91000);
     ok(R.turn === -1 && Object.keys(R.buckets).length === 0, 'Regeln: seats leert den Zustand');
     ok(JSON.stringify(w.MMF.Necken.Regeln.caps('pass').kinds) === '[]' && w.MMF.Necken.Regeln.caps('solo').bots_only === true, 'Regeln: caps');
+    // Beta 1.6.6: Furzkissen im Spiegel
+    {
+      const K = new w.MMF.Necken.Regeln();
+      K.notiereZug(1, 'turn', 0);
+      ok(JSON.stringify(w.MMF.Necken.Regeln.caps('solo').kinds) === '["ball","kissen"]' && w.MMF.Necken.Regeln.caps('client').kinds.indexOf('kissen') >= 0, 'Regeln: caps mit Kissen (solo nur Bots)');
+      ok(K.pruefe(0, { k: 'kissen', to: 2 }, T(1), 100) === '' && K.pruefe(0, { k: 'kissen', to: 1 }, T(1), 100) === '' && K.pruefe(0, { k: 'kissen', to: 0 }, T(1), 100) === 'self', 'Regeln: Kissen auf Bot und Spieler am Zug, nie auf sich selbst');
+      ok(K.pruefe(0, { k: 'kissen', to: 2 }, T(1, 'round_over'), 100) === 'phase' && K.pruefe(0, { k: 'kissen', to: 1 }, T(1, 'turn', [1]), 100) === 'off' && K.pruefe(0, { k: 'kissen', to: 1 }, T(1, 'turn', [0]), 100) === 'off', 'Regeln: Kissen nur in der Runde, nicht bei Necken aus');
+      K.verbuche({ k: 'kissen', from: 0, to: 2, reveal: true }, 1000);
+      ok(Object.keys(K.buckets).length === 0 && K.pruefe(0, { k: 'kissen', to: 3 }, T(1), 60999) === 'rate' && K.pruefe(0, { k: 'kissen', to: 3 }, T(1), 61000) === '', 'Regeln: Kissen ohne Eimer, Mindestsperre 60 s');
+      ok(K.pruefe(0, { k: 'kissen', to: 2 }, T(1), 61000) === 'busy', 'Regeln: eigenes Kissen liegt noch → busy');
+      K.verbuche({ k: 'kissen_pop', to: 2, reveal: true, from: 0 }, 62000);
+      ok(K.pruefe(0, { k: 'kissen', to: 2 }, T(1), 62000) === '' && Object.keys(K.buckets).length === 0, 'Regeln: Pups räumt ab, ohne Eimer');
+      ok(w.MMF.Necken.CUSHION_BLOCK_MIN_MS === 60000 && w.MMF.Necken.CUSHION_BLOCK_MAX_MS === 180000 && JSON.stringify(w.MMF.Necken.CUSHION_TRIGGERS) === '["play","draw","accept","stake"]', 'Regeln: Kissen-Konstanten wie TeaseRules');
+      const cf = w.MMF.Necken.cleanFx;
+      ok(JSON.stringify(cf({ k: 'kissen_pop', to: 2, reveal: false, from: 0 })) === '{"t":"fx","k":"kissen_pop","to":2,"reveal":false,"from":0}' && JSON.stringify(cf({ k: 'kissen_pop', to: 2, reveal: false })) === '{"t":"fx","k":"kissen_pop","to":2,"reveal":false}'
+        && cf({ k: 'kissen_pop', to: 2, reveal: true }) === null && JSON.stringify(cf({ k: 'kissen', from: 0, to: 2, reveal: true, x: 1 })) === '{"t":"fx","k":"kissen","from":0,"to":2,"reveal":true}', 'cleanFx: kissen/kissen_pop wie NetProtocol');
+      ok(w.MMF.Necken.cleanFxNoKind({ why: 'busy', k: 'kissen' }) === 'kissen' && w.MMF.Necken.cleanFxNoKind({ why: 'busy' }) === '' && w.MMF.Necken.cleanFxNoKind({ why: 'busy', k: 'ball' }) === '', 'cleanFxNoKind wie NetProtocol.clean_fx_no_kind');
+    }
   }
   lauf().then(() => {}, e => fehler.push('Ausnahme: ' + (e && e.stack || e))).then(() => {
     const el = document.getElementById('autotest-result');

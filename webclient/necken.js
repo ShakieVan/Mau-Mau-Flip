@@ -17,12 +17,23 @@
  *  - Einstellung „necken“ (je Gerät, ab Werk an, Lite-Menü): aus = nichts sehen, nichts hören, nichts schicken.
  *  - Ältere Gastgeber (≤ 1.6.2) übergehen fx/fx_pref (dann geschieht beim Necken schlicht nichts); ältere Lite-Fassungen übergehen
  *    fx, fx_no und fx_offs (app.js nachricht: default: break).
+ *  - Beta 1.6.6 Furzkissen (Abschnitt 12): Menüeintrag mit „Mit Namen“ / „Geheim“ → {t:"fx", k:"kissen", to, reveal}. Der Gastgeber
+ *    bestätigt nur dem Leger ({k:"kissen", from, to, reveal} → leise Zeile „Kissen liegt bei …“, kein Bild, kein Ton) bzw. lehnt mit
+ *    fx_no {why:"busy"|"rate", k:"kissen"} ab. Beim nächsten Legen/Ziehen des Ziels kommt an alle {k:"kissen_pop", to, reveal, from?}:
+ *    Kissen am Platz des Ziels wird plattgedrückt, Wolke, „Pfffrt!“, Ton beim Ziel normal, bei allen anderen leise (auch beim Leger,
+ *    sonst verriete sein Handy den geheimen Absender), Vibration nur beim Ziel, danach „Kim war's!“ bzw. „Wer war das?“. Der Spiegel
+ *    kennt nur das eigene Kissen und sperrt die Mindestzeit (60 s); die echte Sperre (1–3 min) kennt nur der Gastgeber.
+ *    Lite bis 1.6.5 verwirft beide Arten (FX_KINDS ohne „kissen“), ein Gastgeber bis 1.6.5 den Wunsch.
  */
 (function (M) {
   'use strict';
 
   /* ---------- Regeln: Spiegel von TeaseRules (tease_rules.gd) ---------- */
-  const FX_KINDS = ['snore', 'alarm', 'ball', 'react'];
+  const FX_KINDS = ['snore', 'alarm', 'ball', 'react', 'kissen'];
+  // Beta 1.6.6 Furzkissen (TeaseRules.CUSHION …): kissen_pop schickt nur der Gastgeber (nie ein Wunsch); Auslöser prüft nur er
+  const CUSHION = 'kissen', CUSHION_POP = 'kissen_pop';
+  const CUSHION_BLOCK_MIN_MS = 60000, CUSHION_BLOCK_MAX_MS = 180000;
+  const CUSHION_TRIGGERS = ['play', 'draw', 'accept', 'stake'];
   const FX_REACTS = ['lachen', 'schreck', 'klatschen', 'daumen'];
   const WAKE_KINDS = ['snore', 'alarm'];
   const FX_SLOW_MS = 10000;
@@ -37,11 +48,12 @@
   const ganz = v => typeof v === 'number' && Number.isInteger(v);
 
   class Regeln {
-    constructor() { this.turn = -1; this.turnNo = 0; this.since = 0; this.sent = {}; this.busyUntil = {}; this.lastBall = {}; this.buckets = {}; }
-    // host/client: alles; solo: nur die Papierkugel auf Computergegner; pass und sonst: nichts
+    // Beta 1.6.6: cushions = Ziel → {from, reveal, at} (nur das eigene Kissen, aus der Bestätigung), cushionUntil = Leger → ms
+    constructor() { this.turn = -1; this.turnNo = 0; this.since = 0; this.sent = {}; this.busyUntil = {}; this.lastBall = {}; this.buckets = {}; this.cushions = {}; this.cushionUntil = {}; }
+    // host/client: alles; solo: Papierkugel und Furzkissen auf Computergegner; pass und sonst: nichts
     static caps(mode) {
       if (mode === 'host' || mode === 'client') return { kinds: FX_KINDS.slice(), bots_only: false };
-      if (mode === 'solo') return { kinds: ['ball'], bots_only: true };
+      if (mode === 'solo') return { kinds: ['ball', CUSHION], bots_only: true };
       return { kinds: [], bots_only: false };
     }
     // Tisch-Beschreibung aus einer Sicht: {mode, phase, turn, seats:[{bot, gone, off}]}, offs = Plätze mit Necken aus
@@ -59,7 +71,7 @@
     notiereSicht(view, now) { this.notiereZug(view && ganz(view.turn) ? view.turn : -1, String((view && view.phase) || ''), now); }
     // Platz am Zug: Wechsel = neue Zugnummer, Uhr neu, laufende Weckaktion vorbei
     notiereZug(cur, phase, now) {
-      if (TURN_PHASES.indexOf(phase) < 0) cur = -1;
+      if (TURN_PHASES.indexOf(phase) < 0) { cur = -1; this.cushions = {}; }   // 1.6.6: Runde vorbei – offene Kissen verfallen still
       if (cur !== this.turn) { this.turn = cur; this.turnNo++; this.since = now; this.busyUntil = {}; }
     }
     // Ereignis mit dem Platz am Zug setzt dessen Uhr zurück (wie die Denkblase); „seats“ leert alles (Platznummern verschieben sich)
@@ -71,7 +83,7 @@
       });
     }
     notiereAktion(seat, now) { if (seat === this.turn && this.turn >= 0) this.since = now; }
-    reset() { this.turn = -1; this.turnNo++; this.since = 0; this.sent = {}; this.busyUntil = {}; this.lastBall = {}; this.buckets = {}; }
+    reset() { this.turn = -1; this.turnNo++; this.since = 0; this.sent = {}; this.busyUntil = {}; this.lastBall = {}; this.buckets = {}; this.cushions = {}; this.cushionUntil = {}; }
     // Restzeit bis Schnarchen/Wecker (ms); −1 = nicht am Zug
     restMs(seat, now) { return seat < 0 || seat !== this.turn ? -1 : Math.max(0, FX_SLOW_MS - (now - this.since)); }
     // "" = erlaubt, sonst der Grund (wie TeaseRules.check)
@@ -100,6 +112,13 @@
       if (cap.bots_only && !tgt.bot) return 'target';
       if (tgt.gone) return 'target';
       if (tgt.off) return 'off';
+      if (k === CUSHION) {
+        // 1.6.6: jeder andere Platz (Übung: nur Bots), nur während der Runde; erst die eigene Sperre, dann das (eigene) Kissen am Ziel
+        if (TURN_PHASES.indexOf(phase) < 0) return 'phase';
+        if (this.cushionUntil[sender] !== undefined && now < this.cushionUntil[sender]) return 'rate';
+        if (this.cushions[to] !== undefined) return 'busy';
+        return '';
+      }
       if (k === 'ball') {
         if (TURN_PHASES.indexOf(phase) < 0) return 'phase';
         if (this._level(sender + ':ball', BALL_BUCKET, BALL_REFILL_MS, now) < 1) return 'rate';
@@ -116,6 +135,9 @@
     // angenommenes Ereignis {k, from, to?, r?} verbuchen (beim Empfang), ohne Prüfung
     verbuche(msg, now) {
       const k = String(msg.k || ''), from = ganz(msg.from) ? msg.from : -1, to = ganz(msg.to) ? msg.to : -1;
+      // 1.6.6: Kissen gehen in keinen Eimer (das Legen ist geheim). Bestätigung = eigenes Kissen, Sperre nur die Mindestzeit
+      if (k === CUSHION) { if (from >= 0 && to >= 0) this.legeKissen(from, to, msg.reveal === true, now, CUSHION_BLOCK_MIN_MS); return; }
+      if (k === CUSHION_POP) { delete this.cushions[to]; return; }
       this._take('table', TABLE_BUCKET, TABLE_REFILL_MS, now);
       if (k === 'react') this._take(from + ':react', REACT_BUCKET, REACT_REFILL_MS, now);
       else if (k === 'ball') { this._take(from + ':ball', BALL_BUCKET, BALL_REFILL_MS, now); if (to >= 0) this.lastBall[to] = now; }
@@ -124,6 +146,8 @@
         if (to >= 0) this.busyUntil[to] = now + WAKE_BUSY_MS[k];
       }
     }
+    // 1.6.6 (wie TeaseRules.place_cushion): Kissen auf den Platz to, Sperre des Legers bis now + blockMs
+    legeKissen(from, to, reveal, now, blockMs) { this.cushions[to] = { from, reveal: !!reveal, at: now }; this.cushionUntil[from] = now + blockMs; }
     _tischOk(now) { return this._level('table', TABLE_BUCKET, TABLE_REFILL_MS, now) >= 1 ? '' : 'rate'; }
     _level(key, cap, refill, now) {
       const b = this.buckets[key];
@@ -136,13 +160,32 @@
   const platz = v => (ganz(v) && v >= 0 && v < MAX_PLAYERS ? v : -1);
   function cleanFx(m) {
     const k = m && typeof m.k === 'string' ? m.k : '';
+    if (k === CUSHION_POP) return cleanKissenPop(m);
     const from = platz(m && m.from);
     if (FX_KINDS.indexOf(k) < 0 || from < 0) return null;
     if (k === 'react') return typeof m.r === 'string' && FX_REACTS.indexOf(m.r) >= 0 ? { t: 'fx', k, from, r: m.r } : null;
     const to = platz(m.to);
-    return to >= 0 && to !== from ? { t: 'fx', k, from, to } : null;
+    if (to < 0 || to === from) return null;
+    if (k === CUSHION) return typeof m.reveal === 'boolean' ? { t: 'fx', k, from, to, reveal: m.reveal } : null;   // Bestätigung an den Leger
+    return { t: 'fx', k, from, to };
+  }
+  // 1.6.6 (wie NetProtocol._clean_cushion_pop): to und reveal Pflicht; from nur, wenn vorhanden (≠ to); „mit Namen“ ohne from verwerfen
+  function cleanKissenPop(m) {
+    const to = platz(m.to);
+    if (to < 0 || typeof m.reveal !== 'boolean') return null;
+    let from = -1;
+    if (Object.prototype.hasOwnProperty.call(m, 'from')) {
+      from = platz(m.from);
+      if (from < 0 || from === to) return null;
+    }
+    if (m.reveal && from < 0) return null;
+    const f = { t: 'fx', k: CUSHION_POP, to, reveal: m.reveal };
+    if (from >= 0) f.from = from;
+    return f;
   }
   function cleanFxNo(m) { return m && typeof m.why === 'string' && REFUSALS.indexOf(m.why) >= 0 ? m.why : ''; }
+  // 1.6.6 (wie NetProtocol.clean_fx_no_kind): Art einer Ablehnung, 'kissen' oder '' (Arten aus 1.6.3)
+  function cleanFxNoKind(m) { return m && m.k === CUSHION ? CUSHION : ''; }
   function cleanFxOffs(m) {
     const out = [];
     if (!m || !Array.isArray(m.seats) || m.seats.length > MAX_PLAYERS) return out;
@@ -161,7 +204,11 @@
   const SVG_MUETZE = '<svg viewBox="-30 -26 60 34" aria-hidden="true"><path class="nk-mf nk-s" d="M-24,4 C-20,-16 2,-24 22,-14 C14,-12 8,-6 6,0 Z"/><rect class="nk-f nk-s" x="-27" y="0" width="38" height="7" rx="3.5"/><circle class="nk-f nk-s" cx="24" cy="-14" r="5"/></svg>';
   const SVG_KARTEN = '<svg viewBox="-20 -20 40 40" aria-hidden="true"><rect class="nk-f nk-s" x="-15" y="-13" width="17" height="24" rx="3" transform="rotate(-14)"/><rect class="nk-f nk-s" x="-4" y="-13" width="17" height="24" rx="3" transform="rotate(12)"/></svg>';
   const SVG_ZZZ = '<svg viewBox="-20 -20 40 40" aria-hidden="true"><text x="-13" y="12" class="nk-z">Z</text><text x="3" y="0" class="nk-z k">z</text><text x="10" y="-10" class="nk-z kk">z</text></svg>';
-  const REAKT = { lachen: ['😂', 'Lachen'], schreck: ['😱', 'Schreck'], klatschen: ['👏', 'Klatschen'], daumen: ['👍', 'Daumen hoch'] };
+  // Beta 1.6.6: Furzkissen (rosa Gummikissen mit Mundstück rechts; Farben in style.css, gleich bei Tag und Nacht, nachts mit Schein)
+  const SVG_KISSEN = '<svg viewBox="-32 -24 64 48" aria-hidden="true"><path class="nk-kd nk-s" d="M20,-5 L28,-8 C31,-8 32,-6 31,-3 L30,4 C30,7 28,8 26,7 L20,4 Z"/>'
+    + '<path class="nk-kf nk-s" d="M-27,2 C-29,-14 -12,-20 2,-19 C16,-18 24,-10 23,1 C22,13 9,18 -4,18 C-18,18 -26,13 -27,2 Z"/>'
+    + '<path class="nk-kn" d="M-19,7 C-9,11 6,11 15,6"/><path class="nk-glanz" d="M-17,-9 C-11,-14 -3,-15 4,-14"/></svg>';
+  const REAKT = { lachen:['😂', 'Lachen'], schreck: ['😱', 'Schreck'], klatschen: ['👏', 'Klatschen'], daumen: ['👍', 'Daumen hoch'] };
   // Beta 1.6.5 (Nutzer 15.10.2026): Reihenfolge der Reaktionsknöpfe überall Lachen, Klatschen, Daumen hoch, Schreck
   // (FX_REACTS bleibt die Liste des Protokolls, Spiegel von TeaseRules)
   const REAKT_REIHE = ['lachen', 'klatschen', 'daumen', 'schreck'];
@@ -184,14 +231,18 @@
   const KNOEPFE = [['ball', SVG_KUGEL, 'Papierkugel'], ['snore', SVG_ZZZ, 'Schnarchen'], ['alarm', SVG_WECKER, 'Wecker'], ['ansehen', SVG_KARTEN, 'Karten ansehen']];
   const LEISE = 0.25;            // −12 dB (Absender, Zuschauer beim Plopp)
   const FLUG_MS = 700, LIEGT_MS = 3000, LIEGT_SK = 0.78, SCHNARCH_MS = 4200, TICK_MS = 3000, KLINGEL_MS = 1800, REAKT_AUF_MS = 1600, MENUE_ZU_MS = 5000;
+  // Beta 1.6.6 Furzkissen: Plattdrücken nach PLATT_MS (Ton und Vibration dazu), Kissen 1,5 s sichtbar, danach 2,6 s „Kim war's!“
+  // Nach fx_no rate bleibt der Kissen-Knopf noch KISSEN_GRAU_MS grau (die echte Restzeit kennt nur der Gastgeber, sie bleibt geheim)
+  const PLATT_MS = 120, KISSEN_MS = 1500, WER_MS = 2600, KISSEN_VIB = 150, KISSEN_GRAU_MS = 10000;
 
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   function el(tag, cls, html) { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; }
   const ueber = (a, b, rand) => a && b && a.width > 0 && b.width > 0 && a.left < b.right + rand && a.right + rand > b.left && a.top < b.bottom + rand && a.bottom + rand > b.top;
 
   const N = {
-    Regeln, cleanFx, cleanFxNo, cleanFxOffs, REAKT_BILD,
+    Regeln, cleanFx, cleanFxNo, cleanFxNoKind, cleanFxOffs, REAKT_BILD,
     FX_KINDS, FX_REACTS, FX_SLOW_MS, WAKE_BUSY_MS, REFUSALS,
+    CUSHION, CUSHION_POP, CUSHION_BLOCK_MIN_MS, CUSHION_BLOCK_MAX_MS, CUSHION_TRIGGERS,
     regeln: new Regeln(),
     offs: [],             // Plätze mit Necken aus (fx_offs des Gastgebers)
     aus: false,           // Einstellung „necken“ dieses Geräts aus
@@ -205,6 +256,7 @@
     _liegen: {},          // Platz → liegende Kugeln (Elemente)
     _effekte: new Set(),  // alle Effekt-Elemente (zum Abräumen)
     _rt: [], _rtName: {}, _grauBis: 0, _letzter: null, _zu: null,
+    _kissenT: [],         // 1.6.6: Zeitgeber des Furzkissens (Ton, Wer-Zeile)
 
     init(app) {
       this.app = app;
@@ -222,7 +274,11 @@
         this.leiste.appendChild(b);
       });
       this.menue = el('div', 'nk-menue', '<b class="nk-titel"></b><div class="nk-knoepfe">' + KNOEPFE.map(k => '<button type="button" class="nk-mk" data-k="' + k[0] + '"><i>' + k[1]
-        + '</i><span></span></button>').join('') + '</div><p class="nk-info"></p>');
+        + '</i><span></span></button>').join('') + '</div>'
+        // Beta 1.6.6: Furzkissen – eine Zeile mit zwei Knöpfen; der Leger entscheidet, ob sein Name verraten wird
+        + '<div class="nk-kissen"><span class="nk-kt"><i>' + SVG_KISSEN + '</i><span data-t>Furzkissen</span></span>'
+        + '<button type="button" class="nk-kb" data-kissen="name" data-t>Mit Namen</button><button type="button" class="nk-kb" data-kissen="geheim" data-t>Geheim</button></div>'
+        + '<p class="nk-info"></p>');
       KNOEPFE.forEach(k => this.menue.querySelector('button[data-k="' + k[0] + '"] span').setAttribute('data-t', k[2]));
       this.menue.id = 'nk-menue'; this.menue.hidden = true; this.menue.setAttribute('role', 'dialog');
       e.appendChild(this.leiste); e.appendChild(this.menue);   // Menü liegt über der Reaktionsleiste
@@ -242,6 +298,15 @@
         const b = ev.target.closest('button[data-k]');
         if (!this.offen) return;
         this.offen.bis = this.uhr() + MENUE_ZU_MS;
+        const kb = ev.target.closest('button[data-kissen]');
+        if (kb) {   // Beta 1.6.6: Furzkissen legen (mit Namen bzw. geheim)
+          ev.preventDefault();
+          if (kb.classList.contains('grau')) { this._wackel(kb); return; }
+          this._drueck(kb);
+          if (this.sende({ k: CUSHION, to: this.offen.seat, reveal: kb.dataset.kissen === 'name' })) this.zu();
+          return;
+        }
+        if (ev.target.closest('.nk-kt')) { this.menue.querySelectorAll('button[data-kissen]').forEach(x => this._wackel(x)); return; }   // Symbol: Knöpfe zeigen
         if (!b) return;
         ev.preventDefault();
         const seat = this.offen.seat, k = b.dataset.k;
@@ -297,6 +362,7 @@
       const v = this.app && this.app.view;
       const f = cleanFx(m);
       if (!f || !v || !(v.seat >= 0)) return false;
+      if (f.k === CUSHION && f.from !== v.seat) return false;   // 1.6.6: Bestätigung gilt nur für den eigenen Platz (wie ClientTable)
       this.regeln.verbuche(f, this.uhr());
       if (this.aus || !this.app.tisch || !this.app.tisch.v) return false;
       try { this.zeige(f); } catch (e) { if (M.meldeFehler) M.meldeFehler('Necken ' + f.k + ': ' + (e && e.stack || e)); }
@@ -306,6 +372,20 @@
       const why = cleanFxNo(m);
       if (!why || this.aus) return;
       const l = this._letzter, name = l && typeof l.to === 'number' ? this._name(l.to) : '';
+      if (cleanFxNoKind(m) === CUSHION) {
+        // 1.6.6: Furzkissen abgelehnt – ohne Restzeit und ohne Hinweis, von wem das liegende Kissen ist. Der Spiegel merkt sich beides,
+        // damit der Knopf grau bleibt (fremdes Kissen bis zum Pups bzw. Rundenende, eigene Sperre noch KISSEN_GRAU_MS)
+        const now = this.uhr(), v = this.app.view, R = this.regeln;
+        if (why === 'busy') {
+          if (l && l.k === CUSHION && typeof l.to === 'number' && R.cushions[l.to] === undefined) R.cushions[l.to] = { from: -1, reveal: false, at: now };
+          this.app.toast(M.t('Da liegt schon ein Kissen.'), 'leise', 2400);
+        } else if (why === 'rate') {
+          if (v && v.seat >= 0) R.cushionUntil[v.seat] = Math.max(R.cushionUntil[v.seat] || 0, now + KISSEN_GRAU_MS);
+          this.app.toast(M.t('Das Kissen muss sich erst wieder aufpusten.'), 'leise', 2400);
+        }
+        if (this.offen) this._menueStand();
+        return;
+      }
       if (why === 'late') this.app.toast(M.t('Zu spät – %s hat schon gespielt.', name), 'leise', 2400);
       else if (why === 'busy') this.app.toast(M.t('%s wird gerade schon geweckt.', name), 'leise', 2400);
       else {
@@ -320,6 +400,7 @@
     sende(req) {
       if (this.aus || this.pruefe(req)) return false;
       const m = req.k === 'react' ? { t: 'fx', k: 'react', r: req.r } : { t: 'fx', k: req.k, to: req.to };
+      if (req.k === CUSHION) m.reveal = req.reveal === true;   // 1.6.6: nur true verrät den Namen
       if (!this.app.sende(m)) return false;
       this._letzter = req;
       this.gesendet.push(m);
@@ -391,6 +472,16 @@
         } else b.style.removeProperty('--rest');
         if (!weg && k !== 'ball' && why === 'busy' && !info) info = M.t('%s wird gerade schon geweckt.', p.name);
       });
+      // Beta 1.6.6: Furzkissen (auch auf Computergegner und den Spieler am Zug; Abwesende/Vertretene: Zeile weg)
+      {
+        const why = this.pruefe({ k: CUSHION, to: o.seat });
+        const reihe = this.menue.querySelector('.nk-kissen');
+        reihe.hidden = ziel.aus || ['target', 'mode', 'kind', 'self', 'sender'].indexOf(why) >= 0;
+        reihe.querySelectorAll('button[data-kissen]').forEach(b => b.classList.toggle('grau', !!why || grau));
+        reihe.classList.toggle('grau', !!why || grau);
+        const ki = !reihe.hidden && why === 'rate' ? M.t('Das Kissen muss sich erst wieder aufpusten.') : (!reihe.hidden && why === 'busy' ? M.t('Da liegt schon ein Kissen.') : '');
+        if (ki) info = info ? info + '\n' + ki : ki;
+      }
       if (ziel.aus) info = M.t('%s möchte gerade nicht geneckt werden.', p.name);
       const z = this.menue.querySelector('.nk-info');
       z.textContent = info; z.hidden = !info;
@@ -654,9 +745,12 @@
     zeige(m) {
       const t = this.app.tisch, ich = t.v.seat;
       const rolle = m.to === ich ? 'ziel' : (m.from === ich ? 'absender' : 'zuschauer');
-      this.gezeigt.push({ k: m.k, from: m.from, to: m.to, r: m.r, rolle });
+      this.gezeigt.push({ k: m.k, from: m.from, to: m.to, r: m.r, reveal: m.reveal, rolle });
       if (this.gezeigt.length > 40) this.gezeigt.shift();
-      if (m.k === 'react') this._reaktion(m.from, m.r);
+      // Beta 1.6.6: Bestätigung nur beim Leger – leise Zeile, kein Bild am Ziel, kein Ton (sonst hörte es der Tisch)
+      if (m.k === CUSHION) this.app.toast(M.t('Kissen liegt bei %s.', this._name(m.to)), 'leise', 2400);
+      else if (m.k === CUSHION_POP) this._kissen(m, rolle);
+      else if (m.k === 'react') this._reaktion(m.from, m.r);
       else if (m.k === 'ball') this._kugel(m.from, m.to, rolle);
       else if (m.k === 'snore') this._schnarchen(m.from, m.to, rolle);
       else if (m.k === 'alarm') this._wecker(m.from, m.to, rolle);
@@ -770,6 +864,8 @@
       this._effekte.clear();
       this._wach.forEach(w => clearTimeout(w.timer));
       this._wach = [];
+      this._kissenT.forEach(clearTimeout);   // 1.6.6: ausstehender Pups-Ton, „Kim war's!“
+      this._kissenT = [];
       this._liegen = {};
       if (M.Ton.stoppe) { M.Ton.stoppe('schnarchen', 150); M.Ton.stoppe('wecker', 150); }
     },
@@ -924,6 +1020,44 @@
         if (rolle === 'ziel') this.zeile(M.t('Gerade noch geschafft!'), 2000);
       };
       this._wach.push(a);
+    },
+
+    // Beta 1.6.6 Furzkissen: Kissen am Platz des Ziels (beim Ziel groß über dem eigenen Namensschild), wird plattgedrückt, Wolke und
+    // „Pfffrt!“; Ton beim Ziel normal, bei allen anderen leise (auch beim Leger), Vibration nur beim Ziel; danach „Kim war's!“ bzw.
+    // „Wer war das?“ (geheim auch beim Leger, obwohl seine Kopie from enthält). Effekte reduziert: Kissen und Wolke blenden nur.
+    _kissen(m, rolle) {
+      const t = this.app.tisch, to = m.to, z = this.anker(to), kp = this._kopf(to), red = this.reduziert();
+      const ziel = rolle === 'ziel';
+      const W = ziel ? 170 : (t.gross ? 140 : 130), H = Math.round(W * 0.75);
+      const rel = { l: -W * 0.6, r: W * 0.6 + 40, t: -H * 0.5 - 48, b: H * 0.5 };   // plattgedrückt breiter, „Pfffrt!“ oben rechts
+      const kand = [];
+      if (t.gross) kand.push({ x: kp.zahlX - W * 0.6 - 44, y: z.y, rel });
+      if (ziel && !t.gross) kand.push({ x: z.x + 30, y: z.y - z.r - H * 0.5 - 14, rel });
+      kand.push({ x: z.x - W * 0.08, y: z.y + z.r * 1.15, rel });                    // auf dem Platz: unter dem Avatar (er sitzt darauf)
+      kand.push({ x: z.x - z.r - W * 0.6 - 6, y: z.y + z.r * 0.3, rel });
+      kand.push({ x: kp.rect.r + W * 0.6 + 6, y: z.y, rel });
+      kand.push({ x: z.x, y: z.y - z.r - H * 0.5 - 4, rel });
+      const hind = this._hindernisse(to);
+      const p = this._waehle(kand, { hart: hind.hart, weich: hind.weich.slice(0, -1) });   // der eigene Kopf darf darauf sitzen
+      const e = el('div', 'nk-furz' + (ziel ? ' ziel' : '') + (red ? ' still' : ''),
+        '<div class="nk-kk">' + SVG_KISSEN + '</div><div class="nk-wolke"><b></b><b></b><b></b><b></b></div><div class="nk-pf">' + esc(M.t('Pfffrt!')) + '</div>');
+      e.style.width = W + 'px'; e.style.height = H + 'px';
+      this._aufBuehne(e, p.x, p.y, KISSEN_MS, to);
+      const spaeter = (ms, f) => { const id = setTimeout(() => { this._kissenT = this._kissenT.filter(x => x !== id); f(); }, ms); this._kissenT.push(id); };
+      spaeter(PLATT_MS, () => {
+        if (!e.isConnected) return;
+        this._ton('furzkissen', ziel ? 1 : LEISE);
+        if (ziel) this.app.vibrieren(KISSEN_VIB);
+        this._stauchen(to);
+      });
+      const text = m.reveal === true && typeof m.from === 'number' && m.from >= 0 ? M.t("%s war's!", this._name(m.from)) : M.t('Wer war das?');
+      spaeter(KISSEN_MS - 250, () => {
+        if (!e.isConnected) return;
+        if (ziel) { this.zeile(text, WER_MS); return; }
+        const w = Math.min(340, 28 + text.length * 13), h = 42, rt = { l: -w / 2, r: w / 2, t: -h, b: 0 };
+        const q = this._waehle([{ x: p.x, y: p.y - H * 0.1, rel: rt }, { x: p.x, y: p.y + H * 0.5 + h, rel: rt }, { x: p.x, y: p.y - H * 0.5 - 6, rel: rt }], hind);
+        this._aufBuehne(el('div', 'nk-mpf nk-wer', esc(text)), q.x, q.y, WER_MS, to);
+      });
     },
 
     // Reaktion: Symbol steigt am Platz des Absenders auf (nebeneinander, wenn mehrere laufen); Ton für alle, gedeckelt

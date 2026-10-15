@@ -175,6 +175,9 @@ func _begin_round() -> void:
 # Aktion eines Platzes anwenden; „next_round“ immer über den Gastgeber-Platz (Rechte prüft der Aufrufer).
 func _apply(seat: int, action: Dictionary) -> Dictionary:
 	var r: Dictionary
+	# Beta 1.6.6 (Furzkissen): vor dem Anwenden merken – beendet genau dieser Zug die Runde, verwirft note_turn die Kissen schon in
+	# _changed, und das Kissen soll trotzdem noch auslösen (der Zug kam vor dem Rundenende).
+	var cushion := tease.cushion_at(seat) if TeaseRules.cushion_trigger(action) else {}
 	if str(action.get("a", "")) == "next_round" and game.phase() == "round_over":
 		r = game.apply(host_seat, {"a": "next_round"})
 		if not bool(r.ok) and host_seat != 0:
@@ -183,7 +186,22 @@ func _apply(seat: int, action: Dictionary) -> Dictionary:
 		r = game.apply(seat, action)
 	if bool(r.ok):
 		_changed(r.events)
+		if not cushion.is_empty():
+			tease.take_cushion(seat)
+			_cushion_pop(seat, cushion)     # nach dem Stand: erst sieht man den Zug, dann pupst es
 	return r
+
+
+# Beta 1.6.6 (Furzkissen, docs/module/eastereggs2.md Abschnitt 12): Das Kissen am Platz seat löst aus. Übung (LocalTable): Der Leger ist
+# immer dieses Gerät, deshalb mit from. HostTable verteilt selbst (geheim ohne from an die anderen). Necken aus (Ziel oder Leger): still.
+func _cushion_pop(seat: int, c: Dictionary) -> void:
+	var t := fx_table()
+	var seats_t: Array = t.get("seats", [])
+	var from := int(c.get("from", -1))
+	if seat < 0 or seat >= seats_t.size() or bool(seats_t[seat].get("off", false)) \
+			or (from >= 0 and from < seats_t.size() and bool(seats_t[from].get("off", false))):
+		return
+	_fx_deliver(NetProtocol.make_cushion_pop(seat, bool(c.get("reveal", false)), from))
 
 
 func _changed(events: Array) -> void:

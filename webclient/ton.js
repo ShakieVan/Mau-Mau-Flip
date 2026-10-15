@@ -17,7 +17,8 @@
   // Mau-Mau Flip (Beta 1.6.3, Easter Eggs Teil 2 „Necken“, necken.js): Neck-Töne (MOSS-SoundEffect v2.0, Apache 2.0, dieselben Dateien
   // wie in der App) gehören zu den Spieltönen (Stufe aus/leise/normal, Stummknopf); spiele(name, pegel) mit pegel 0,25 ≈ −12 dB für
   // „leise“ (Absender, Zuschauer), stoppe(name, ms) blendet laufende Töne aus (Schnarchen beim Wecker-Abstellen).
-  const NECK_TOENE = ['schnarchen', 'wecker', 'papier_wurf', 'papier_plopp', 'lachen', 'schreck', 'klatschen', 'daumen'];
+  // Beta 1.6.6: dazu das Furzkissen (furzkissen = audio/entwurf/ostereier/furzkissen_02, Nutzerwahl)
+  const NECK_TOENE = ['schnarchen', 'wecker', 'papier_wurf', 'papier_plopp', 'lachen', 'schreck', 'klatschen', 'daumen', 'furzkissen'];
   const JUBEL = ['jubel_1', 'jubel_2'];   // „sieg“ wählt zufällig eine der beiden Jubel-Aufnahmen (sonst synthetischer Ersatz)
   // Pegel je Stufe: Die Aufnahmen sind auf −1 dBTP ausgesteuert und verdichtet → „normal“ = volle Lautstärke (Handy-Lautsprecher)
   const STUFEN_MAU = { aus: 0, leise: 0.4, normal: 1.0 };

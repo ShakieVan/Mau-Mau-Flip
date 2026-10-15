@@ -966,11 +966,11 @@ msgstr "Go on, enrich yourself – with cards."
 msgid "Necken"
 msgstr "Tease"
 
-msgid "Necken (Papierkugel, Schnarchen, Wecker, Reaktionen)"
-msgstr "Teasing (paper ball, snoring, alarm clock, reactions)"
+msgid "Necken (Papierkugel, Furzkissen, Schnarchen, Wecker, Reaktionen)"
+msgstr "Teasing (paper ball, whoopee cushion, snoring, alarm clock, reactions)"
 
-msgid "Mitspieler können dir Schnarchen, einen Wecker oder eine Papierkugel schicken."
-msgstr "Other players can send you snoring, an alarm clock or a paper ball."
+msgid "Mitspieler können dir Schnarchen, einen Wecker, eine Papierkugel oder ein Furzkissen schicken."
+msgstr "Other players can send you snoring, an alarm clock, a paper ball or a whoopee cushion."
 
 msgid "Tippe auf einen Mitspieler, um ihn zu necken. Die Knöpfe neben deinem Namen schicken eine Reaktion an alle."
 msgstr "Tap another player to tease them. The buttons next to your name send a reaction to everyone."
@@ -1028,3 +1028,34 @@ msgstr "Applause"
 
 msgid "Daumen hoch"
 msgstr "Thumbs up"
+
+# --- Furzkissen (Beta 1.6.6, docs/module/eastereggs2.md 12.4; Glossar: Furzkissen → whoopee cushion)
+msgid "Furzkissen"
+msgstr "Whoopee cushion"
+
+msgid "Mit Namen"
+msgstr "With name"
+
+msgid "Geheim"
+msgstr "Secret"
+
+msgid "Kissen liegt bei %s."
+msgstr "Cushion placed on %s."
+
+msgid "Da liegt schon ein Kissen."
+msgstr "There's already a cushion there."
+
+msgid "Das Kissen muss sich erst wieder aufpusten."
+msgstr "The cushion needs to puff up again first."
+
+msgid "Pfffrt!"
+msgstr "Pffft!"
+
+msgid "%s war's!"
+msgstr "%s did it!"
+
+msgid "Wer war das?"
+msgstr "Who did that?"
+
+msgid "Das warst du!"
+msgstr "That was you!"

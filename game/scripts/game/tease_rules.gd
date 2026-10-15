@@ -20,8 +20,21 @@ extends RefCounted
 # Gründe von check() ("" = erlaubt): REFUSALS ("late", "busy", "rate") gehen als {t:"fx_no", why} an den Absender zurück; alle übrigen
 # ("kind", "mode", "sender", "off", "self", "target", "phase", "early", "once") verwirft der Gastgeber still – die Oberfläche zeigt
 # solche Knöpfe gar nicht erst bzw. ausgegraut.
+#
+# Furzkissen (Beta 1.6.6, docs/module/eastereggs2.md Abschnitt 12): Art "kissen" {to, reveal}. Je Zielplatz liegt höchstens ein Kissen
+# (cushions[Ziel] = {from, reveal, at}; zweites → "busy"), je Leger eine Zufallssperre von 1–3 min (cushion_until[Leger]; → "rate", die
+# Restzeit wird nie verraten). Ausgelöst wird es von der Spielsteuerung (GameTable._apply) bei der nächsten angenommenen Aktion des Ziels
+# aus CUSHION_TRIGGERS (Karte legen oder ziehen), dann geht "kissen_pop" an alle. Kissen gehen in keinen Eimer (weder Sender- noch
+# Tisch-Eimer): Das Legen ist geheim, die Spiegel der anderen könnten es nicht mitzählen. Rundenende (note_turn außerhalb der
+# Zugphasen), „seats“ und reset() lassen offene Kissen still verfallen. Der Spiegel des Legers kennt sein eigenes Kissen (Bestätigung)
+# und sperrt ihn nur die Mindestzeit CUSHION_BLOCK_MIN_MS; alle anderen Spiegel wissen nichts davon (der Gastgeber antwortet mit fx_no).
 
-const FX_KINDS := ["snore", "alarm", "ball", "react"]
+const FX_KINDS := ["snore", "alarm", "ball", "react", "kissen"]   # Wünsche der Spieler (Gast → Gastgeber)
+const CUSHION := "kissen"                       # Beta 1.6.6: Furzkissen legen {to, reveal}
+const CUSHION_POP := "kissen_pop"               # Beta 1.6.6: Furzkissen löst aus (nur Gastgeber → alle, nie ein Wunsch)
+const CUSHION_BLOCK_MIN_MS := 60000             # Sperre des Legers nach jedem Kissen: zufällig 1 …
+const CUSHION_BLOCK_MAX_MS := 180000            # … bis 3 min (beim Gastgeber ausgelost, Restzeit geheim)
+const CUSHION_TRIGGERS := ["play", "draw", "accept", "stake"]   # angenommene Aktionen des Ziels, die das Kissen auslösen
 const FX_REACTS := ["lachen", "schreck", "klatschen", "daumen"]
 const WAKE_KINDS := ["snore", "alarm"]
 const FX_SLOW_MS := 10000                       # Schnarchen/Wecker erst, wenn das Ziel so lange nichts getan hat
@@ -44,16 +57,18 @@ var sent := {}                    # Absender -> {kind: Zugnummer}
 var busy_until := {}              # Ziel -> ms (laufende Weckaktion)
 var last_ball := {}               # Ziel -> ms (letzte Papierkugel)
 var buckets := {}                 # "Absender:Art" bzw. "table" -> {level: float, t: int}
+var cushions := {}                # Beta 1.6.6: Ziel -> {from, reveal, at} (offenes Furzkissen; beim Gastgeber maßgeblich)
+var cushion_until := {}           # Beta 1.6.6: Leger -> ms (Sperre bis dahin; Spiegel des Legers: nur die Mindestzeit)
 
 
 # Was in dieser Spielart geht: kinds = erlaubte Arten, bots_only = nur Computergegner als Ziel (Übung).
-# host/client: alles; solo (Übung): nur die Papierkugel auf Computergegner; pass (Weitergeben) und sonst: nichts.
+# host/client: alles; solo (Übung): Papierkugel und (ab 1.6.6) Furzkissen auf Computergegner; pass (Weitergeben) und sonst: nichts.
 static func caps(mode: String) -> Dictionary:
 	match mode:
 		"host", "client":
 			return {"kinds": FX_KINDS.duplicate(), "bots_only": false}
 		"solo":
-			return {"kinds": ["ball"], "bots_only": true}
+			return {"kinds": ["ball", CUSHION], "bots_only": true}
 	return {"kinds": [], "bots_only": false}
 
 
@@ -81,6 +96,7 @@ func note_view(view: Dictionary, now: int) -> void:
 func note_turn(cur: int, phase: String, now: int) -> void:
 	if not phase in TURN_PHASES:
 		cur = -1
+		cushions.clear()          # Beta 1.6.6: Runde vorbei – offene Furzkissen verfallen still
 	if cur != turn:
 		turn = cur
 		turn_no += 1
@@ -117,6 +133,8 @@ func reset() -> void:
 	busy_until.clear()
 	last_ball.clear()
 	buckets.clear()
+	cushions.clear()              # Beta 1.6.6: offene Kissen verfallen, Sperren beginnen neu (Platznummern gelten nicht mehr)
+	cushion_until.clear()
 
 
 # Wie lange das Ziel noch überlegen muss, bis Schnarchen/Wecker gehen (ms); −1 = es ist nicht am Zug.
@@ -165,6 +183,15 @@ func check(sender: int, req: Dictionary, table: Dictionary, now: int) -> String:
 		return "target"
 	if bool(tgt.get("off", false)):
 		return "off"
+	if k == CUSHION:
+		# Beta 1.6.6: jeder andere Platz (Übung: nur Bots), nur während der Runde; erst die eigene Sperre, dann das Ziel
+		if not phase in TURN_PHASES:
+			return "phase"
+		if cushion_until.has(sender) and now < int(cushion_until[sender]):
+			return "rate"
+		if cushions.has(int(to)):
+			return "busy"
+		return ""
 	if k == "ball":
 		if not phase in TURN_PHASES:
 			return "phase"
@@ -192,6 +219,14 @@ func commit(msg: Dictionary, now: int) -> void:
 	var k := str(msg.get("k", ""))
 	var from := int(msg.get("from", -1)) if msg.get("from") is int else -1
 	var to := int(msg.get("to", -1)) if msg.get("to") is int else -1
+	if k == CUSHION:
+		# Spiegel des Legers (Bestätigung): Kissen merken, Sperre nur die Mindestzeit (die echte kennt nur der Gastgeber, place_cushion)
+		if from >= 0 and to >= 0:
+			place_cushion(from, to, (msg.get("reveal") is bool and bool(msg.reveal)), now, CUSHION_BLOCK_MIN_MS)
+		return
+	if k == CUSHION_POP:
+		cushions.erase(to)
+		return
 	_take("table", TABLE_BUCKET, TABLE_REFILL_MS, now)
 	match k:
 		"react":
@@ -206,6 +241,36 @@ func commit(msg: Dictionary, now: int) -> void:
 			(sent[from] as Dictionary)[k] = turn_no
 			if to >= 0:
 				busy_until[to] = now + int(WAKE_BUSY_MS[k])
+
+
+# --- Furzkissen (Beta 1.6.6) ---
+
+# Kissen auf den Platz to legen (nach check() == ""): block_ms = Sperre des Legers (Gastgeber: cushion_block_ms(Zufall), Spiegel: Minimum).
+func place_cushion(from: int, to: int, reveal: bool, now: int, block_ms: int) -> void:
+	cushions[to] = {"from": from, "reveal": reveal, "at": now}
+	cushion_until[from] = now + block_ms
+
+
+# Offenes Kissen am Platz seat ({} = keins), ohne es zu entfernen.
+func cushion_at(seat: int) -> Dictionary:
+	return (cushions[seat] as Dictionary).duplicate() if cushions.has(seat) else {}
+
+
+# Kissen am Platz seat herausnehmen (es löst aus); {} = keins.
+func take_cushion(seat: int) -> Dictionary:
+	var c := cushion_at(seat)
+	cushions.erase(seat)
+	return c
+
+
+# Sperre aus einer Zufallszahl u ∈ [0, 1]: gleichmäßig 1–3 min (ganze ms).
+static func cushion_block_ms(u: float) -> int:
+	return CUSHION_BLOCK_MIN_MS + int(roundf(clampf(u, 0.0, 1.0) * float(CUSHION_BLOCK_MAX_MS - CUSHION_BLOCK_MIN_MS)))
+
+
+# Löst diese Aktion (wenn angenommen) ein Kissen aus? Nur Karte legen oder ziehen – nicht Mau, Erwischt, Farbwahl, Behalten …
+static func cushion_trigger(action: Dictionary) -> bool:
+	return action.get("a") is String and str(action.a) in CUSHION_TRIGGERS
 
 
 func _table_ok(now: int) -> String:

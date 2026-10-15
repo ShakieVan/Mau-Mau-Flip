@@ -27,6 +27,11 @@ extends RefCounted
 #   Host → Client: fx {k, from, to?, r?} (an alle Sitzenden) · fx_no {why:"late"|"busy"|"rate"} (nur an den Absender, kein err) ·
 #                  fx_offs {seats:[int]} (Plätze mit Necken aus; bei Änderung, nach welcome)
 #   Ältere Geräte übergehen die Typen (ClientTable/NetClient ohne Standardzweig, Lite default, Gastgeber bis 1.6.2 nur act/handover_*).
+# Furzkissen (Beta 1.6.6, docs/module/eastereggs2.md Abschnitt 12; additiv, PROTO bleibt 1):
+#   Client → Host: fx {k:"kissen", to:int, reveal:bool}
+#   Host → nur Leger: fx {k:"kissen", from, to, reveal} (Bestätigung) · fx_no {why:"busy"|"rate", k:"kissen"}
+#   Host → alle Sitzenden: fx {k:"kissen_pop", to, reveal, from?} – from nur bei reveal:true; geheim bekommt nur der Leger eine Kopie
+#                  mit from. Geräte bis 1.6.5 verwerfen beide Arten (clean_fx/make_fx_request kennen sie nicht, Lite necken.js ebenso).
 # Zahlen: JSON kennt nur float; decode() wandelt ganzzahlige Werte in int (Kennungen, Plätze, Zeitstempel in ms).
 
 const PROTO := 1                          # Protokollversion: bei jeder inkompatiblen Änderung erhöhen
@@ -356,6 +361,8 @@ static func make_fx_request(req: Dictionary) -> Dictionary:
 		var r := str(req.get("r", "")) if req.get("r") is String else ""
 		return {"t": "fx", "k": k, "r": r} if r in TeaseRules.FX_REACTS else {}
 	var to := _fx_seat(req.get("to"))
+	if to >= 0 and k == TeaseRules.CUSHION:
+		return {"t": "fx", "k": k, "to": to, "reveal": req.get("reveal") is bool and bool(req.reveal)}   # Beta 1.6.6: nur true verrät den Namen
 	return {"t": "fx", "k": k, "to": to} if to >= 0 else {}
 
 static func make_fx(k: String, from: int, to := -1, r := "") -> Dictionary:
@@ -369,16 +376,60 @@ static func make_fx(k: String, from: int, to := -1, r := "") -> Dictionary:
 
 static func clean_fx(msg: Dictionary) -> Dictionary:
 	# Gast: fx des Gastgebers prüfen (Art, Plätze, Reaktion; nie an sich selbst). {} = verwerfen.
+	if msg.get("k") is String and str(msg.k) == TeaseRules.CUSHION_POP:
+		return _clean_cushion_pop(msg)
 	var m := make_fx_request(msg)
 	var from := _fx_seat(msg.get("from"))
 	if m.is_empty() or from < 0 or int(m.get("to", -1)) == from:
 		return {}
+	if str(m.k) == TeaseRules.CUSHION:
+		if not msg.get("reveal") is bool:
+			return {}
+		return make_cushion(from, int(m.to), bool(msg.reveal))
 	return make_fx(str(m.k), from, int(m.get("to", -1)), str(m.get("r", "")))
+
+# Beta 1.6.6 (Furzkissen, docs/module/eastereggs2.md Abschnitt 12):
+static func make_cushion(from: int, to: int, reveal: bool) -> Dictionary:
+	# Gastgeber → nur der Leger: Bestätigung „Kissen liegt bei …“ (geht nie an andere).
+	return {"t": "fx", "k": TeaseRules.CUSHION, "from": from, "to": to, "reveal": reveal}
+
+static func make_cushion_pop(to: int, reveal: bool, from := -1) -> Dictionary:
+	# Gastgeber → alle Sitzenden: Kissen am Platz to löst aus. from steht nur drin, wenn reveal (an alle) – geheim nur in der Kopie an
+	# den Leger selbst (from = −1 lässt es weg).
+	var m := {"t": "fx", "k": TeaseRules.CUSHION_POP, "to": to, "reveal": reveal}
+	if from >= 0:
+		m["from"] = from
+	return m
+
+static func _clean_cushion_pop(msg: Dictionary) -> Dictionary:
+	var to := _fx_seat(msg.get("to"))
+	if to < 0 or not msg.get("reveal") is bool:
+		return {}
+	var from := -1
+	if msg.has("from"):
+		from = _fx_seat(msg.get("from"))
+		if from < 0 or from == to:
+			return {}
+	if bool(msg.reveal) and from < 0:
+		return {}                       # „Kim war's!“ ohne Namen ergibt keinen Sinn
+	return make_cushion_pop(to, bool(msg.reveal), from)
 
 static func clean_fx_no(msg: Dictionary) -> String:
 	# Gast: Grund einer Ablehnung (late | busy | rate); "" = verwerfen.
 	var why = msg.get("why")
 	return str(why) if why is String and str(why) in TeaseRules.REFUSALS else ""
+
+static func make_fx_no(why: String, k := "") -> Dictionary:
+	# Gastgeber → nur der Absender. Beta 1.6.6: beim Furzkissen zusätzlich k:"kissen" (busy = „Da liegt schon ein Kissen.“, rate = „Das
+	# Kissen muss sich erst wieder aufpusten.“); die übrigen Arten bleiben wie in 1.6.3 ohne k.
+	var m := {"t": "fx_no", "why": why}
+	if k == TeaseRules.CUSHION:
+		m["k"] = k
+	return m
+
+static func clean_fx_no_kind(msg: Dictionary) -> String:
+	# Gast: Art einer Ablehnung ("kissen" oder "" = eine der Arten aus 1.6.3).
+	return TeaseRules.CUSHION if msg.get("k") is String and str(msg.k) == TeaseRules.CUSHION else ""
 
 static func make_fx_offs(seats: Array) -> Dictionary:
 	return {"t": "fx_offs", "seats": clean_fx_offs({"seats": seats})}

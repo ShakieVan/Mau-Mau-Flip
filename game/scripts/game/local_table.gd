@@ -117,6 +117,7 @@ func act(action: Dictionary) -> void:
 
 # Mau-Mau Flip (Beta 1.6.3, Necken): Übung – nur die Papierkugel auf Computergegner, ohne Netz direkt als Ereignis (TeaseRules.caps
 # "solo"); Weitergeben – nichts (alle sitzen am selben Handy). Ablehnungen wie beim Gastgeber (fx_refused nur late/busy/rate).
+# Beta 1.6.6: in der Übung auch das Furzkissen auf Computergegner.
 func send_fx(req: Dictionary) -> void:
 	if game == null or _mode != "solo" or _shown < 0:
 		return
@@ -127,7 +128,14 @@ func send_fx(req: Dictionary) -> void:
 	var why := tease.check(_shown, m, fx_table(), now)
 	if why != "":
 		if why in TeaseRules.REFUSALS:
-			fx_refused.emit(why)
+			_fx_refuse(why, str(m.k))
+		return
+	if str(m.k) == TeaseRules.CUSHION:
+		# Beta 1.6.6: Furzkissen auf einen Computergegner – Sperre ausgelost wie beim Gastgeber, Bestätigung an dieses Gerät, es pupst,
+		# sobald der Bot legt oder zieht (GameTable._apply → _cushion_pop).
+		var reveal := bool(m.reveal)
+		tease.place_cushion(_shown, int(m.to), reveal, now, _cushion_block_ms())
+		fx_event.emit(NetProtocol.make_cushion(_shown, int(m.to), reveal))
 		return
 	_fx_deliver(NetProtocol.make_fx(str(m.k), _shown, int(m.get("to", -1)), str(m.get("r", ""))))
 

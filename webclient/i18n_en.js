@@ -389,5 +389,17 @@ window.MMF_I18N_EN = {
   "Lachen": "Laugh",
   "Schreck": "Shock",
   "Klatschen": "Applause",
-  "Daumen hoch": "Thumbs up"
+  "Daumen hoch": "Thumbs up",
+
+  "Necken (Papierkugel, Furzkissen, Schnarchen, Wecker, Reaktionen)": "Teasing (paper ball, whoopee cushion, snoring, alarm clock, reactions)",
+  "Mitspieler können dir Schnarchen, einen Wecker, eine Papierkugel oder ein Furzkissen schicken.": "Other players can send you snoring, an alarm clock, a paper ball or a whoopee cushion.",
+  "Furzkissen": "Whoopee cushion",
+  "Mit Namen": "With name",
+  "Geheim": "Secret",
+  "Kissen liegt bei %s.": "Cushion placed on %s.",
+  "Da liegt schon ein Kissen.": "There's already a cushion there.",
+  "Das Kissen muss sich erst wieder aufpusten.": "The cushion needs to puff up again first.",
+  "Pfffrt!": "Pffft!",
+  "%s war's!": "%s did it!",
+  "Wer war das?": "Who did that?"
 };

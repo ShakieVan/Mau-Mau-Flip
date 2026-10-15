@@ -230,3 +230,7 @@ Farbnamen als Kartenfarbe groß („Play Blue or a 9“), im Fließtext als Adje
 | Wecker | alarm clock |
 | Reaktion (Lachen, Schreck, Klatschen, Daumen hoch) | reaction (Laugh, Shock, Applause, Thumbs up) |
 | Karten ansehen | View cards |
+| Furzkissen (Beta 1.6.6) | whoopee cushion |
+| Mit Namen / Geheim (Kissen legen) | With name / Secret |
+| Pfffrt! | Pffft! |
+| „%s war's!“ / „Wer war das?“ | “%s did it!” / “Who did that?” |

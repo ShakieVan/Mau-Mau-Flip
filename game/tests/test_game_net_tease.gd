@@ -122,7 +122,7 @@ func _practice() -> void:
 	root.add_child(solo)
 	var r := rec(solo)
 	solo.start()
-	check(solo.fx_caps() == {"kinds": ["ball"], "bots_only": true}, "0: caps Übung")
+	check(solo.fx_caps() == {"kinds": ["ball", "kissen"], "bots_only": true}, "0: caps Übung (Kugel, ab 1.6.6 Furzkissen)")
 	check(solo.fx_check({"k": "ball", "to": 1}) == "", "0: Kugel auf Minka erlaubt (lokal)")
 	solo.send_fx({"k": "ball", "to": 1})
 	check(r.fx.size() == 1 and r.fx[0] == {"t": "fx", "k": "ball", "from": 0, "to": 1}, "0: Kugel kommt direkt als Ereignis (%s)" % str(r.fx))

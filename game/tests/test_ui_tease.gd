@@ -11,6 +11,9 @@ extends SceneTree
 #   (Viewport-Eingabe) je Knopf sendet genau diese Reaktion, ≥ 44 px Trefferfläche, in der Sperrzeit grau ohne Senden, nichts verdeckt
 #   (Hand, Stapel, Mau, Erwischt, Sortieren/Rückseiten, Hinweisleiste, Fächer) bei 2–8 Spielern, Schrift normal bis sehr groß und
 #   im großen Modus (in der Zeile „Du“ vor der Kartenzahl).
+#   Beta 1.6.6: Furzkissen (cushion_checks; Menüzeile, Vorprüfung, Bestätigung, Ablehnung, Pups je Rolle, Lage, reduziert, Necken
+#   aus, Platzwechsel, großer Modus, Schrift „Sehr groß“) und in der Übung auf den Computergegner.
+#   Gerätetest 1.6.6 (F1): Menü- und Reaktionsknöpfe haben Vorrang vor Mau-Katze und Schmetterling (surprise_checks).
 
 const CleanExit := preload("res://tests/clean_exit.gd")
 
@@ -618,6 +621,9 @@ func run() -> void:
 				check(Rect2(Vector2.ZERO, t.size).grow(2.0).encloses(bb) and tf.reactions.r >= 22.0, "%s: ganz im Bild, ≥ 44 px (%s)" % [what, bb])
 	UiFonts.set_level("normal", root)
 
+	await cushion_checks()
+	await surprise_checks()
+
 	# --- Weitergeben: nichts (kein Knopf, Kopf wie früher)
 	await setup("pass")
 	check(not tf.reactions.visible and not tf.can_open(1), "Weitergeben: kein Necken, keine Reaktionsknöpfe")
@@ -648,6 +654,15 @@ func run() -> void:
 	check(keys[0] == "ball" and not keys.has("snore") and not keys.has("alarm"), "Übung: nur die Papierkugel (%s)" % str(keys))
 	tz._on_menu_chosen("ball")
 	check(tz.effects_of("ball").size() == 1, "Übung: Kugel kommt sofort als Ereignis an")
+	# Beta 1.6.6: Furzkissen auf den Computergegner (lokal): Zeile im Menü, Wahl → Bestätigung als leise Zeile, danach gesperrt
+	tz.open_menu(bot_seat)
+	check(not tz.menu.cushion.is_empty() and bool(tz.menu.cushion.on), "Übung: Kissen-Zeile am Computergegner")
+	tz._on_menu_chosen("kissen_geheim")
+	var toasts: Array = ts.table.hint_bar._toasts.map(func(e: Dictionary) -> String: return str(e.text))
+	check(toasts.has("Kissen liegt bei %s." % tz._name(bot_seat)), "Übung: Bestätigung „Kissen liegt bei …“ (%s)" % str(toasts))
+	tz.open_menu(bot_seat)
+	check(not bool(tz.menu.cushion.on) and tz.menu.note.contains("Das Kissen muss sich erst wieder aufpusten."), "Übung: danach gesperrt (%s)" % tz.menu.note)
+	tz.close_menu(false)
 	check(ts.bar_obstacles().size() >= 1, "TableScreen.bar_obstacles läuft mit")
 	tz.open_menu(bot_seat)
 	var with_menu := ts.bar_obstacles().size()
@@ -669,3 +684,267 @@ func run() -> void:
 
 	print("RESULT: %d ok%s" % [ok, ", FEHLER" if fails > 0 else ""])
 	await CleanExit.finish(self, 1 if fails > 0 else 0)
+
+
+# Beta 1.6.6: Furzkissen (docs/module/eastereggs2.md 12.4) – Menüzeile mit „Mit Namen“/„Geheim“ (echter Tipp), Vorprüfung nur mit dem
+# eigenen Kissen (rate/busy mit Hinweis), Bestätigung nur als leise Zeile beim Leger, Ablehnung mit Kissen-Texten (ohne Ausgrauen der
+# übrigen Knöpfe), Pups je Rolle (Ziel laut + 150 ms Vibration + groß, alle anderen leise, auch der Leger), Zeile „Kim war's!“ nur
+# mit reveal und from, sonst „Wer war das?“, Lage im Bild ohne harte Hindernisse, reduziert, Necken aus, Platzwechsel, großer Modus.
+func cushion_checks() -> void:
+	await setup("client", 1, 4)
+	var hb: Toast = t.hint_bar
+	var toasts := func() -> Array: return hb._toasts.map(func(e: Dictionary) -> String: return str(e.text))
+	# --- Menü: eigene Zeile unter den runden Knöpfen
+	tf.open_menu(1)
+	check(not tf.menu.cushion.is_empty() and bool(tf.menu.cushion.on), "Kissen-Zeile im Menü, aktiv")
+	check(tf.menu.cushion.label == "Furzkissen" and (tf.menu.cushion.opts as Array).map(func(o: Dictionary) -> String: return str(o.label)) == ["Mit Namen", "Geheim"],
+		"Kissen-Zeile: „Furzkissen“ mit „Mit Namen“ und „Geheim“")
+	var keys: Array = tf.menu.items.map(func(it: Dictionary) -> String: return str(it.key))
+	check(keys == ["ball", "snore", "alarm", "backs"], "runde Knöpfe unverändert (%s)" % str(keys))
+	var m := tf.menu
+	check(m.pill_rect(0).size.y >= 48.0 and m.pill_rect(0).end.x < m.pill_rect(1).position.x and Rect2(Vector2.ZERO, m.size).encloses(m.pill_rect(1)),
+		"Kissen-Knöpfe ≥ 48 px hoch, nebeneinander, in der Blase")
+	check(m.pill_rect(0).position.y > m.button_center(0).y + TeaseMenu.BTN_R, "Kissen-Zeile unter den runden Knöpfen")
+	check(Rect2(Vector2.ZERO, t.size).encloses(Rect2(m.position, m.size)), "Menü mit Kissen-Zeile ganz im Bild")
+	src.sent.clear()
+	tap_screen(m.get_global_transform_with_canvas() * m.pill_rect(0).get_center())
+	check(src.sent == [{"k": "kissen", "to": 1, "reveal": true}] and tf.menu == null, "Tipp „Mit Namen“ → Wunsch mit reveal, Menü zu (%s)" % str(src.sent))
+	tf.tick(0.45)
+	tf.open_menu(3)
+	src.sent.clear()
+	tap_screen(tf.menu.get_global_transform_with_canvas() * tf.menu.pill_rect(1).get_center())
+	check(src.sent == [{"k": "kissen", "to": 3, "reveal": false}], "Tipp „Geheim“ → Wunsch ohne reveal (%s)" % str(src.sent))
+	check(tf.effects().is_empty() and snd.log.is_empty(), "Legen allein: kein Bild, kein Ton")
+	# --- Bestätigung (nur beim Leger): leise Zeile, dann eigene Sperre bzw. „liegt schon“
+	var conf := NetProtocol.make_cushion(0, 1, true)
+	src.tease.commit(conf, clock)
+	src.fx_event.emit(conf)
+	check(toasts.call().has("Kissen liegt bei Lena.") and tf.effects().is_empty() and snd.log.is_empty(), "Bestätigung: Zeile „Kissen liegt bei Lena.“, kein Bild, kein Ton")
+	tf.tick(0.45)
+	tf.open_menu(3)
+	check(not bool(tf.menu.cushion.on) and tf.menu.note.contains("Das Kissen muss sich erst wieder aufpusten.") and bool(tf.menu.items[0].on),
+		"eigene Sperre: Kissen grau mit Hinweis, Kugel bleibt aktiv (%s)" % tf.menu.note)
+	src.sent.clear()
+	tap_screen(tf.menu.get_global_transform_with_canvas() * tf.menu.pill_rect(0).get_center())
+	check(src.sent.is_empty(), "gesperrt: Tipp sendet nichts")
+	tf.close_menu(false)
+	clock += TeaseRules.CUSHION_BLOCK_MIN_MS + 10
+	tf.tick(0.45)
+	tf.open_menu(1)
+	check(not bool(tf.menu.cushion.on) and tf.menu.note.contains("Da liegt schon ein Kissen."), "eigenes Kissen liegt beim Ziel: grau, „Da liegt schon ein Kissen.“ (%s)" % tf.menu.note)
+	tf.close_menu(false)
+	tf.tick(0.45)
+	tf.open_menu(3)
+	check(bool(tf.menu.cushion.on) and tf.menu.note == "", "anderes Ziel nach der Mindestzeit wieder frei")
+	tf.close_menu(false)
+	# fremde Bestätigung (sollte nie kommen): nichts
+	var n_t: int = toasts.call().size()
+	src.fx_event.emit(NetProtocol.make_cushion(2, 3, true))
+	check(toasts.call().size() == n_t, "Bestätigung eines anderen Legers: keine Zeile")
+	# --- Ablehnung (fx_no mit k "kissen"): Kissen-Texte, übrige Knöpfe nicht ausgegraut
+	src._fx_refuse("busy", "kissen")
+	check(toasts.call()[-1] == "Da liegt schon ein Kissen.", "fx_no busy (Kissen) → „Da liegt schon ein Kissen.“")
+	src._fx_refuse("rate", "kissen")
+	check(toasts.call()[-1] == "Das Kissen muss sich erst wieder aufpusten." and not tf.rate_limited() and not tf.reactions.gray,
+		"fx_no rate (Kissen) → Zeile, Reaktionen bleiben aktiv")
+	tf._last_target = 1
+	src._fx_refuse("busy")
+	check(toasts.call()[-1] == "Lena wird gerade schon geweckt.", "fx_no busy ohne k: wie bisher")
+	# --- Pups am Mitspieler (ich bin der geheime Leger: Kopie mit from) → leise, „Wer war das?“
+	snd.log.clear()
+	tf.vibrations.clear()
+	var pop := NetProtocol.make_cushion_pop(1, false, 0)
+	src.tease.commit(pop, clock)
+	src.fx_event.emit(pop)
+	var cf: Array = tf.effects_of("kissen")
+	check(cf.size() == 1 and sounds() == ["furzkissen leise"] and tf.vibrations.is_empty(), "Pups bei Lena: Bild, Ton leise beim Leger, keine Vibration (%s)" % str(sounds()))
+	check(src.tease.cushion_at(1).is_empty(), "Spiegel: Kissen nach dem Pups weg")
+	var c1: TeaseFx.CushionFx = cf[0]
+	check(is_equal_approx(c1.cw, TeaseFx.CUSHION_W) and c1.target == 1, "Kissen an Mitspielern: Größe CUSHION_W")
+	tf.tick(0.1)
+	check(c1.squash() < 0.05, "erst rund …")
+	tf.tick(0.25)
+	check(c1.squash() > 0.8, "… dann plattgedrückt (%.2f)" % c1.squash())
+	check(float(t.seat_node(1).get("_bump")) > 0.0, "Avatar staucht sich")
+	var texts: Array = tf.effects_of("text").map(func(e: TeaseFx.TextFx) -> String: return e.text)
+	check(texts.is_empty(), "Zeile noch nicht (erst „Pfffrt!“)")
+	tf.tick(0.9)
+	texts = tf.effects_of("text").map(func(e: TeaseFx.TextFx) -> String: return e.text)
+	check(texts == ["Wer war das?"], "geheim: „Wer war das?“, auch beim Leger (%s)" % str(texts))
+	tf.tick(1.4)
+	check(tf.effects_of("kissen").is_empty(), "Kissen räumt sich nach %.1f s auf" % TeaseFx.CUSHION_S)
+	tf.clear()
+	# Lage: ganz im Bild, keine harten Hindernisse (Mau, Erwischt, Stapel, Hand, Knöpfe), an jedem Platz
+	for s in [1, 2, 3, 0]:
+		src.fx_event.emit(NetProtocol.make_cushion_pop(s, true, 2 if s != 2 else 1))
+		var fx_s: TeaseFx.CushionFx = tf.effects_of("kissen")[-1]
+		var br := fx_s.area()
+		var rr := Rect2(fx_s.position + br.position, br.size)
+		var hits: Array = []
+		for b: Rect2 in tf._blockers(s).hard:
+			if rr.grow(-2.0).intersects(b):
+				hits.append(b)
+		check(Rect2(Vector2.ZERO, t.size).encloses(rr) and hits.is_empty(), "Platz %d: Kissen ganz im Bild, über keinem harten Hindernis (%s, %s)" % [s, rr, str(hits)])
+		tf.clear()
+	# --- Pups beim Ziel (ich), mit Namen: laut, Vibration 150 ms, groß, „Lena war's!“
+	snd.log.clear()
+	tf.vibrations.clear()
+	src.fx_event.emit(NetProtocol.make_cushion_pop(0, true, 1))
+	var mine: TeaseFx.CushionFx = tf.effects_of("kissen")[0]
+	check(sounds() == ["furzkissen"] and tf.vibrations == [150] and is_equal_approx(mine.cw, TeaseFx.CUSHION_W_ME), "Ziel: Ton laut, Vibration 150 ms, groß (%s %s)" % [str(sounds()), str(tf.vibrations)])
+	var mbr := mine.area()
+	var mb := Rect2(mine.position + mbr.position, mbr.size)
+	var rbx := tf.reactions.get_global_transform_with_canvas()
+	var rbg := Rect2(rbx * tf.reactions.bounds().position, tf.reactions.bounds().size)
+	var lx := tf.layer.get_global_transform_with_canvas()
+	check(mine.position.y < float(tf.anchor(0).pos.y) and not Rect2(lx * mb.position, mb.size).grow(-2.0).intersects(rbg),
+		"Ziel: Kissen über dem Namensschild, nicht über den Reaktionsknöpfen (%s / %s)" % [Rect2(lx * mb.position, mb.size), rbg])
+	tf.tick(1.3)
+	var lines: Array = tf.effects_of("text")
+	check(lines.size() == 1 and (lines[0] as TeaseFx.TextFx).text == "Lena war's!" and (lines[0] as TeaseFx.TextFx).size_px >= UiFonts.size("hinweisleiste"),
+		"Ziel: „Lena war's!“ in Bannergröße")
+	tf.clear()
+	# Zuschauer, mit Namen → leise, „Lena war's!“; reveal ohne from → „Wer war das?“
+	snd.log.clear()
+	src.fx_event.emit(NetProtocol.make_cushion_pop(2, true, 1))
+	tf.tick(1.3)
+	texts = tf.effects_of("text").map(func(e: TeaseFx.TextFx) -> String: return e.text)
+	check(sounds() == ["furzkissen leise"] and texts == ["Lena war's!"], "Zuschauer: leise, „Lena war's!“ (%s %s)" % [str(sounds()), str(texts)])
+	tf.clear()
+	src.fx_event.emit({"t": "fx", "k": "kissen_pop", "to": 2, "reveal": true})
+	tf.tick(1.3)
+	texts = tf.effects_of("text").map(func(e: TeaseFx.TextFx) -> String: return e.text)
+	check(texts == ["Wer war das?"], "reveal ohne from: „Wer war das?“")
+	tf.clear()
+	# Platzwechsel: Kissen weg, die Zeile kommt nicht mehr
+	src.fx_event.emit(NetProtocol.make_cushion_pop(3, true, 1))
+	t.play_event({"e": "seats", "map": [0, 1, 2, 3]}, 1.0)
+	tf.tick(1.5)
+	check(tf.effects().is_empty(), "Platzwechsel: Kissen und ausstehende Zeile weg")
+	# reduziert: liegt schon flach, kein Stauchen
+	t.reduced = true
+	t.seat_node(1).set("_bump", 0.0)
+	src.fx_event.emit(NetProtocol.make_cushion_pop(1, false))
+	var red: TeaseFx.CushionFx = tf.effects_of("kissen")[0]
+	tf.tick(0.05)
+	var sq0 := red.squash()
+	tf.tick(0.4)
+	check(red.reduced and is_equal_approx(sq0, red.squash()) and is_zero_approx(float(t.seat_node(1).get("_bump"))), "reduziert: kein Plattdrücken, kein Stauchen")
+	t.reduced = false
+	tf.clear()
+	# Necken aus: nichts
+	tf.set_enabled(false)
+	snd.log.clear()
+	src.fx_event.emit(NetProtocol.make_cushion_pop(0, true, 1))
+	src.fx_event.emit(NetProtocol.make_cushion(0, 2, true))
+	check(tf.effects().is_empty() and snd.log.is_empty(), "Necken aus: kein Pups, kein Ton")
+	tf.set_enabled(true)
+	# Ziel mit Necken aus: keine Kissen-Zeile
+	src._fx_offs = [3]
+	tf.open_menu(3)
+	check(tf.menu.cushion.is_empty(), "Ziel mit Necken aus: keine Kissen-Zeile")
+	tf.close_menu(false)
+	src._fx_offs = []
+	# großer Modus: Pups an der Listenzeile, ganz im Bild
+	t.set_big(true)
+	show(sample.view_for(0))
+	await create_timer(1.0).timeout
+	tf.tick(0.2)
+	for s in [1, 0]:
+		src.fx_event.emit(NetProtocol.make_cushion_pop(s, true, 2))
+		var fb: TeaseFx.CushionFx = tf.effects_of("kissen")[-1]
+		var bb := fb.area()
+		check(Rect2(Vector2.ZERO, t.size).encloses(Rect2(fb.position + bb.position, bb.size)) and fb.cw > TeaseFx.CUSHION_W and fb.text_side,
+			"großer Modus, Platz %d: Kissen größer, Text in der Zeile, ganz im Bild" % s)
+		tf.clear()
+	tf.tick(0.45)
+	tf.open_menu(1)
+	check(tf.menu != null and Rect2(Vector2.ZERO, t.size).encloses(Rect2(tf.menu.position, tf.menu.size)), "großer Modus: Menü mit Kissen-Zeile ganz im Bild")
+	tf.close_menu(false)
+	t.set_big(false)
+	# Schrift „Sehr groß“: Menü passt
+	UiFonts.set_level("sehr_gross", root)
+	t._layout()
+	show(sample.view_for(0))
+	tf.tick(0.45)
+	for s in [1, 2, 3]:
+		tf.open_menu(s)
+		check(Rect2(Vector2.ZERO, t.size).encloses(Rect2(tf.menu.position, tf.menu.size)), "Sehr groß: Menü an Platz %d ganz im Bild (%s)" % [s, Rect2(tf.menu.position, tf.menu.size)])
+		tf.close_menu(false)
+	UiFonts.set_level("normal", root)
+
+
+# Gerätetest 1.6.6 (F1): Menü- und Reaktionsknöpfe haben immer Vorrang vor den Überraschungen (FunFx: Mau-Katze auf dem Stapel,
+# Schmetterling). Die Katze liegt jeweils genau unter dem getippten Knopf, der Schmetterling fliegt. Ohne Menü schiebt der Tipp die Katze
+# weiter weg. Ursache des Befunds war das Selbstschließen nach 5 s (der Tipp kam am Gerät ~12 s nach dem Öffnen): Danach trifft der
+# Tipp den Tisch und sendet nichts – auch das ist hier festgehalten.
+func surprise_checks() -> void:
+	await setup("client", 1, 4)
+	var fun: FunFx = t.fun
+	fun.auto_process = false
+	fun.cat.arrive(t._draw_pos, t.pile_w, t.size.x, true)
+	for i in 80:
+		fun.tick(0.1)
+	fun.sky.launch(false, fun.rng, t.size)
+	check(fun.cat.st == "sleep" and fun.sky.active() and fun.sky.kind == "butterfly", "Überraschungen laufen: Katze schläft auf dem Stapel, Schmetterling fliegt")
+	clock += TeaseRules.FX_SLOW_MS + 1000          # Schnarchen/Wecker frei
+	tf.tick(0.2)
+	var cat_under := func(screen: Vector2) -> bool:
+		fun.cat.position = t._world.to_local(screen) + Vector2(0, 16.0 * fun.cat.k)
+		return fun.cat.hit(t._world.to_local(screen))
+	# Kissen „Mit Namen“ und „Geheim“
+	for j in 2:
+		tf.open_menu(1)
+		var m := tf.menu
+		var sp: Vector2 = m.get_global_transform_with_canvas() * m.pill_rect(j).get_center()
+		check(cat_under.call(sp), "Katze liegt unter „%s“" % ["Mit Namen", "Geheim"][j])
+		src.sent.clear()
+		tap_screen(sp)
+		check(src.sent == [{"k": "kissen", "to": 1, "reveal": j == 0}] and tf.menu == null and fun.cat.st == "sleep",
+			"Katze + Schmetterling: Tipp „%s“ sendet das Kissen, Katze bleibt (%s, %s)" % [["Mit Namen", "Geheim"][j], str(src.sent), fun.cat.st])
+		tf.tick(0.45)
+	# runde Knöpfe: Papierkugel, Schnarchen, Wecker, Karten ansehen
+	tf.open_menu(1)
+	var keys: Array = tf.menu.items.map(func(it: Dictionary) -> String: return str(it.key))
+	tf.close_menu(false)
+	check(keys == ["ball", "snore", "alarm", "backs"], "runde Knöpfe (%s)" % str(keys))
+	for i in keys.size():
+		clock += 10000
+		tf.tick(0.45)
+		tf.open_menu(1)
+		var m := tf.menu
+		var bp: Vector2 = m.get_global_transform_with_canvas() * m.button_center(i)
+		check(cat_under.call(bp) and m.key_on(str(keys[i])), "Katze liegt unter „%s“ (aktiv)" % keys[i])
+		src.sent.clear()
+		t.backs_viewer.visible = false
+		tap_screen(bp)
+		if keys[i] == "backs":
+			check(src.sent.is_empty() and t.backs_viewer.visible and tf.menu == null and fun.cat.st == "sleep", "Katze: Tipp „Karten ansehen“ öffnet die Großansicht")
+			t.backs_viewer.visible = false
+		else:
+			check(src.sent == [{"k": keys[i], "to": 1}] and tf.menu == null and fun.cat.st == "sleep", "Katze: Tipp „%s“ sendet (%s)" % [keys[i], str(src.sent)])
+	# die 4 Reaktionsknöpfe
+	var rb := tf.reactions
+	for i in 4:
+		clock += 10000
+		tf.tick(0.2)
+		var rp: Vector2 = rb.get_global_transform_with_canvas() * rb.centers[i]
+		check(cat_under.call(rp), "Katze liegt unter Reaktion %d" % (i + 1))
+		src.sent.clear()
+		tap_screen(rp)
+		check(src.sent == [{"k": "react", "r": TeaseMenu.REACT_ORDER[i]}] and fun.cat.st == "sleep", "Katze: Reaktion %d sendet (%s)" % [i + 1, str(src.sent)])
+	# Menü nach 5 s von selbst zu: ein später Tipp auf die alte Stelle sendet nichts (so am Gerät, F1)
+	clock += 10000
+	tf.tick(0.45)
+	tf.open_menu(1)
+	var late: Vector2 = tf.menu.get_global_transform_with_canvas() * tf.menu.pill_rect(0).get_center()
+	for i in 26:
+		tf.tick(0.2)
+	src.sent.clear()
+	tap_screen(late)
+	check(tf.menu == null and src.sent.is_empty(), "5 s ohne Tipp: Menü zu, später Tipp auf „Mit Namen“ sendet nichts")
+	# ohne Menü: Tipp auf die Katze schiebt sie weg (wie bisher)
+	var cp: Vector2 = t._world.get_global_transform_with_canvas() * t._draw_pos
+	check(cat_under.call(cp), "Katze auf dem Stapel antippbar")
+	tap_screen(cp)
+	check(fun.cat.angry and src.sent.is_empty(), "ohne Menü: Tipp auf die Katze schiebt sie weg (%s)" % fun.cat.st)

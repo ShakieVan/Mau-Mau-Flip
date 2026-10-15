@@ -165,7 +165,7 @@ func run() -> void:
 		"E: nach seats beginnt die Uhr neu, einmal je Zug wieder frei")
 	check(TeaseRules.caps("host").kinds == TeaseRules.FX_KINDS and TeaseRules.caps("client").kinds == TeaseRules.FX_KINDS,
 		"E: caps host/client: alles")
-	check(TeaseRules.caps("solo") == {"kinds": ["ball"], "bots_only": true}, "E: caps solo: nur Kugel auf Bots")
+	check(TeaseRules.caps("solo") == {"kinds": ["ball", "kissen"], "bots_only": true}, "E: caps solo: Kugel und Furzkissen (1.6.6) auf Bots")
 	check((TeaseRules.caps("pass").kinds as Array).is_empty() and (TeaseRules.caps("").kinds as Array).is_empty(), "E: caps pass: nichts")
 	r = fresh(0, 0)
 	var solo := tbl("turn", 0, "solo")

@@ -1,4 +1,4 @@
-# Modul „Easter Eggs Teil 2: Necken“ (Beta 1.6.3)
+# Modul „Easter Eggs Teil 2: Necken“ (Beta 1.6.3; Furzkissen Beta 1.6.6, Abschnitt 12)
 
 Stand 15.10.2026, Entwurf, überarbeitet nach der Gegenprüfung (15 Befunde, alle übernommen; gewählte Lösungen und nicht gewählte Alternativen in Abschnitt 11). Nutzerwunsch (10.10.2026): Braucht jemand zu lange, können die anderen bei ihm etwas auslösen, z. B. ein langes **Schnarchen** oder einen **Wecker**, der 3 s abläuft und dann klingelt. Dazu angenommen: **schnelle Reaktionen** an den ganzen Tisch (😂 😱 👏 👍) mit Sperrzeit und eine **Papierkugel**, die mit Flugbahn und Plopp auf einen Mitspieler fliegt. **Gähnen entfällt** (Nutzer 15.10.2026).
 
@@ -249,3 +249,162 @@ Ziele: `game/assets/sfx/<name>.ogg`, `webclient/sfx/<name>.ogg` und `<name>.m4a`
   - Verworfen wurde kein Befund.
 - **Laufzeit online:** 100–300 ms bis zum Effekt, auch beim Absender. Das ist gewollt (alle gleichzeitig), wirkt aber träger als lokal. Die Knöpfe geben deshalb sofort eine kleine Drückrückmeldung.
 - **iPhone (Lite):** m4a und Web Audio wie die übrigen Töne, Vibration gibt es dort nicht (`navigator.vibrate` fehlt). Ungetestet wie bisher.
+
+## 12. Furzkissen (Beta 1.6.6)
+
+Stand 15.10.2026. Nutzerwunsch nach der Familienrunde („Die Papierkugeln sind der Renner.“): ein **Furzkissen** als weiterer Eintrag im Necken-Menü am Mitspieler. Die Entscheidungen des Nutzers stehen in 12.1, die Detailentscheidungen dieser Umsetzung ab 12.2. Umgesetzt ist bisher die Stufe „Netz“ (12.8). Es gilt alles aus den Abschnitten 1–6, soweit hier nichts anderes steht. Der Spielstand bleibt unberührt: kein `rev`, kein `seq`, kein Speicherstand, keine Sicherung (`bk`).
+
+### 12.1 Festlegungen des Nutzers
+
+- **Legen:** Man legt das Kissen unbemerkt auf den Platz eines anderen Mitspielers, auch eines Computergegners. Es pupst erst bei dessen **nächstem Zug**, sobald er eine Karte legt oder zieht. Das ist seine nächste angenommene Aktion dieser Art, nicht der Mau-Ruf und nicht das Necken.
+- **Eins je Ziel:** Liegt schon ein Kissen bei ihm, geht kein zweites („Da liegt schon ein Kissen.“).
+- **Verfall:** Endet die Runde vorher, verfällt das Kissen still.
+- **Zeitsperre:** Nach jedem Einsatz ist das Kissen für den Leger **zufällig 1–3 min** gesperrt. Der Gastgeber lost die Sperre aus und prüft sie. Die Restzeit wird nie verraten („Das Kissen muss sich erst wieder aufpusten.“).
+- **Absender:** Der Leger entscheidet beim Legen, ob sein Name verraten wird. „Mit Namen“ führt zu „Kim war's!“, „Geheim“ zu „Wer war das?“. Im Menü gibt es dafür zwei Knöpfe.
+- **Vor dem Pups:** Niemand außer dem Leger sieht etwas. Der Leger bekommt eine kurze Bestätigung („Kissen liegt bei Kim.“). Geheim heißt: Auch der Gastgeber-Bildschirm zeigt nichts, nur die Logik weiß es.
+- **Beim Pups:**
+  - Animation am Platz des Ziels: Das Kissen wird plattgedrückt, dazu eine kleine Wolke und „Pfffrt!“.
+  - Ton für alle: laut beim Ziel, leiser bei den anderen (wie bei der Papierkugel).
+  - Kurze Vibration beim Ziel.
+  - Danach die Zeile „Kim war's!“ bzw. „Wer war das?“.
+- **Ton:** `audio/entwurf/ostereier/furzkissen_02.ogg` (vom Nutzer gewählt, mit MOSS erzeugt, Lautheit schon passend). Ziele: `game/assets/sfx/furzkissen.ogg`, `webclient/sfx/furzkissen.ogg` und `furzkissen.m4a` (ffmpeg wie bei den übrigen, Abschnitt 7).
+- **Gilt wie die übrigen Necken:**
+  - Nicht bei „Necken aus“, weder beim Ziel noch beim Leger.
+  - Übung: auf Computergegner (lokal).
+  - Weitergeben: nichts.
+  - Gastgeber-Übergabe: Offene Kissen dürfen verfallen.
+  - Ältere Clients übergehen die unbekannten fx-Arten.
+
+### 12.2 Regeln im Einzelnen (`TeaseRules`)
+
+| Frage | Festlegung |
+|---|---|
+| Art | `kissen` (Wunsch, steht in `FX_KINDS`), dazu `kissen_pop` (nur Gastgeber → alle, nie ein Wunsch; `CUSHION_POP`) |
+| Ziel | jeder andere Platz, auch Computergegner und der Spieler am Zug. Nicht sich selbst (`self`), nicht Abwesende/Getrennte/Vertretene (`target`), nicht mit Necken aus (`off`). Übung: nur Bots (`target`). Weitergeben: `mode` |
+| Absender | jeder sitzende Mensch wie bei der Kugel. Bots, Wartende und Vertretene legen nie (`sender`). Mit Necken aus legt man nicht (`off`) |
+| Wann legen | nur in den Zugphasen (`TURN_PHASES`), sonst `phase`. Am Rundenende geht es also nicht |
+| Sperre | `cushion_until[Leger]`; der Gastgeber lost sie je Einsatz gleichmäßig aus `[CUSHION_BLOCK_MIN_MS, CUSHION_BLOCK_MAX_MS]` = 60 000–180 000 ms aus (`cushion_block_ms(u)`, u aus `fx_rand` bzw. `randf()`). Die Prüfung kommt **vor** „liegt schon eins“, Grund `rate` |
+| Eins je Ziel | `cushions[Ziel] = {from, reveal, at}`; zweites Kissen → `busy`, egal von wem |
+| Auslöser | nächste **angenommene** Aktion des Ziels mit `a` ∈ `CUSHION_TRIGGERS` = `play`, `draw`, `accept` (Strafkarten nehmen = ziehen), `stake` (Glücksspiel-Einsatz = Karte legen). Nicht: `mau`, `catch`, `color`, `keep`, `challenge`, `press`, `stop`, `discard_pick`, `undo`, `next_round`, Necken. Abgelehnte Aktionen lösen nichts aus. Wer das Ziel spielt, ist egal: Mensch, Bot oder Vertretung (`_substitute`) |
+| Reihenfolge | `GameTable._apply` merkt sich das Kissen vor `game.apply`, verteilt erst den Stand (`_changed`) und dann den Pups. So sieht man zuerst den Zug, dann pupst es. Beendet genau dieser Zug die Runde, pupst es trotzdem, denn der Zug kam vor dem Rundenende |
+| Verfall (still) | `note_turn` außerhalb der Zugphasen (Rundenende, Partieende), Ereignis `seats` (Dazuholen/Entfernen), `reset()` (neue Partie, Lobby, `resume()`/Übernahme, `welcome` beim Gast). Hat beim Pups das Ziel **oder** der Leger Necken aus, verfällt es ebenfalls still, ohne Meldung |
+| Sperre und Verfall | Die Sperre überdauert das Rundenende (sie hängt an der Zeit, nicht an der Runde). `seats`/`reset()` leeren sie mit, weil die Platznummern dann nicht mehr gelten |
+| Eimer | Kissen gehen in **keinen** Eimer, auch nicht in den Tisch-Eimer. Das Legen ist geheim, die Spiegel der anderen könnten es nicht mitzählen und würden sonst anders ausgrauen als der Gastgeber. Die Last bleibt klein: höchstens 1 Kissen je Leger und Minute |
+| Spiegel | Nur der Spiegel des Legers kennt dessen Kissen (aus der Bestätigung). Er sperrt nur die Mindestzeit (60 s), die echte Sperre kennt nur der Gastgeber. Danach ist der Knopf beim Leger wieder aktiv, und der Gastgeber antwortet notfalls mit `fx_no rate`. Alle anderen Spiegel wissen nichts. Ein zweites Kissen auf dasselbe Ziel sieht dort erlaubt aus und wird mit `fx_no busy` beantwortet |
+
+**Gastgeber-Bildschirm:** `HostTable.tease` ist maßgeblich und kennt auch fremde Kissen. `HostTable.fx_check` verrät sie deshalb nicht. Liegt beim Ziel das Kissen eines anderen, meldet die Vorprüfung `""` (Knopf aktiv), genau wie bei einem Gast. Erst beim Drücken kommt `fx_refused("busy")`. Die Oberfläche darf `tease.cushions` nie lesen.
+
+### 12.3 Protokoll (additiv, `PROTO` bleibt 1)
+
+| Richtung | Nachricht |
+|---|---|
+| Gast → Gastgeber | `{t:"fx", k:"kissen", to:int, reveal:bool}` (nur `reveal:true` verrät den Namen; fehlt es oder ist es kein bool, gilt geheim) |
+| Gastgeber → **nur Leger** | `{t:"fx", k:"kissen", from, to, reveal}` (Bestätigung) |
+| Gastgeber → nur Absender | `{t:"fx_no", why:"busy"\|"rate", k:"kissen"}`: ohne Restzeit und ohne Hinweis auf den Leger des liegenden Kissens; die übrigen Arten bleiben ohne `k` |
+| Gastgeber → alle Sitzenden | `{t:"fx", k:"kissen_pop", to, reveal}`, bei `reveal:true` zusätzlich `from` an alle |
+| Gastgeber → nur Leger (geheim) | dieselbe Nachricht **mit** `from`, statt der Fassung ohne (nur er weiß es ohnehin) |
+
+- **Geheim bleibt geheim:**
+  - Vor dem Pups geht keine Nachricht über das Kissen an andere als den Leger.
+  - Bei `reveal:false` geht `from` auch danach nie an andere.
+  - Die Sicht (`state`) enthält nichts davon.
+  - Der Gastgeber-Bildschirm bekommt `fx_event` mit `kissen` nur, wenn der Gastgeber selbst gelegt hat. Den Pups ohne `from` bekommt er, wenn er nicht der Leger ist.
+- **Prüfung:**
+  - `NetProtocol.make_fx_request` (auch für `clean_client_message`): `kissen` mit `to` und `reveal`, fremde Felder (`from`) fallen weg.
+  - `kissen_pop` kann ein Gast nicht schicken (keine Wunsch-Art).
+  - `clean_fx` beim Gast: Bestätigung nur mit `from ≠ to` und `reveal` bool. `kissen_pop` mit `to`, `reveal` bool und `from` (nur, wenn vorhanden; `from ≠ to`). `reveal:true` ohne `from` wird verworfen.
+  - `ClientTable` nimmt eine Bestätigung nur an, wenn `from` der eigene Platz ist.
+- **Neue Hilfen:** `make_cushion`, `make_cushion_pop`, `make_fx_no(why, k)`, `clean_fx_no_kind`.
+- **Ältere Geräte (bis 1.6.5)**, geprüft am Code von 1.6.5:
+  - ClientTable `clean_fx` → `make_fx_request` kennt nur `snore/alarm/ball/react` → `{}` → kein Signal.
+  - `TeaseFx.on_fx` hat `match` ohne Standardzweig.
+  - Lite `necken.js` `_rein`: `FX_KINDS.indexOf(k) < 0` → `null`.
+  - Ein Gastgeber bis 1.6.5 verwirft den Wunsch still (`make_fx_request` → `{}`).
+  - Das zusätzliche Feld `k` in `fx_no` lesen alte Geräte nicht (`clean_fx_no` liest nur `why`).
+  - Gemischte Versionen sitzen ohnehin nie an einem Tisch (`check_hello`).
+- **Vermittler:** keine Änderung. Je Kissen höchstens 1 Gastrahmen, 1 Bestätigung und 1–2 Gastgeberrahmen beim Pups.
+
+### 12.4 Darstellung, Töne und Texte (für die Oberflächen-Stufen)
+
+- **Menü am Mitspieler:** Eintrag „Furzkissen“ (eigenes gezeichnetes Symbol, kein Emoji) mit zwei Knöpfen „Mit Namen“ und „Geheim“. Ein Tipp legt das Kissen. Die Vorprüfung ist `fx_check({k:"kissen", to, reveal})`:
+  - `rate` → beide Knöpfe grau, darunter „Das Kissen muss sich erst wieder aufpusten.“
+  - `busy` (nur das eigene Kissen bei diesem Ziel) → grau, „Da liegt schon ein Kissen.“
+  - `off` → wie bisher „%s möchte gerade nicht geneckt werden.“
+  - Gastgeber und Gäste sehen fremde Kissen nie (12.2).
+- **Bestätigung** (`fx_event` mit `k == "kissen"`, nur beim Leger): kurze, leise Zeile „Kissen liegt bei %s.“. Kein Bild am Ziel, kein Ton (sonst hörte es der Tisch).
+- **Ablehnung** (`fx_refused` mit `fx_refused_kind == "kissen"`): `busy` → „Da liegt schon ein Kissen.“, `rate` → „Das Kissen muss sich erst wieder aufpusten.“. Kein Fehlerton.
+- **Pups** (`fx_event` mit `k == "kissen_pop"`, alle):
+  - Am Platz `to` erscheint das Kissen, wird plattgedrückt, dazu eine kleine Wolke und „Pfffrt!“. Danach steht 2–3 s lang die Zeile „%s war's!“ (mit `reveal` und `from`) bzw. „Wer war das?“ (geheim, auch beim Leger: Er soll sich nicht verraten, wenn jemand auf sein Handy schaut).
+  - Beim Ziel ist das Kissen groß über dem eigenen Namensschild.
+  - „Effekte reduziert“: kein Plattdrücken, Kissen und Wolke blenden ein und aus.
+- **Ton `furzkissen`:** beim Ziel normal (0 dB), bei **allen anderen leise** (−12 dB, `QUIET_DB`), **auch beim Leger**: Ein lauteres Handy am WLAN-Tisch verriete den geheimen Leger. Vibration nur beim Ziel, einmal 150 ms (Einstellung „Vibration“). Necken aus: nichts sehen, nichts hören.
+- **Texte (msgid deutsch, Englisch in `en_fun.po`, Glossar):**
+  - „Furzkissen“ (whoopee cushion), „Mit Namen“ (With name), „Geheim“ (Secret)
+  - „Kissen liegt bei %s.“ (Cushion placed on %s.), „Da liegt schon ein Kissen.“ (There's already a cushion there.), „Das Kissen muss sich erst wieder aufpusten.“ (The cushion needs to puff up again first.)
+  - „Pfffrt!“ (Pffft!), „%s war's!“ (%s did it!), „Wer war das?“ (Who did that?)
+  - Einstellung neu: „Necken (Papierkugel, Furzkissen, Schnarchen, Wecker, Reaktionen)“ mit der Erklärzeile „Mitspieler können dir Schnarchen, einen Wecker, eine Papierkugel oder ein Furzkissen schicken.“ (neue msgids, die alten entfallen).
+- **Ton-Stufe:** `furzkissen_02.ogg` unverändert nach `game/assets/sfx/furzkissen.ogg`. Dazu `webclient/sfx/furzkissen.ogg` und `furzkissen.m4a` (`ffmpeg -c:a aac -b:a 160k -movflags +faststart`, mono 48 kHz wie `make_ostereier.py --spiel`), `sfx/index.json`, `AppSound.NAMES`/`TEASE_NAMES`, Lite `ton.js`, `audio/sfx_README.md`. `SfxPool.java` bleibt unverändert, die Stimmen bleiben 6.
+
+### 12.5 Zustände (Gastgeber)
+
+1. **Frei:** Kein Kissen beim Ziel, Leger nicht gesperrt.
+2. **Legen:** Ein Wunsch kommt an. `check` gibt `""` → `place_cushion(Leger, Ziel, reveal, jetzt, Zufallssperre)`. Danach die Bestätigung an den Leger (Gastgeber selbst: `fx_event`). Bei `busy`/`rate` geht `fx_no` mit `k` zurück, sonst still.
+3. **Liegt:** Unsichtbar für alle außer dem Leger. Ein Zugwechsel allein ändert nichts. Mau, Erwischt, Farbwahl usw. des Ziels lösen nichts aus.
+4. **Pups:** Das Ziel legt oder zieht (angenommen). Erst der Stand, dann `take_cushion` und `_cushion_pop`. Ziel oder Leger mit Necken aus, Gastgeber eingefroren oder in der Einschwingzeit: verfällt still. Sonst geht `kissen_pop` an alle Sitzenden (geheim: der Leger bekommt die Kopie mit `from`) und an den eigenen Tisch.
+5. **Verfall:** Rundenende, `seats`, Lobby, neue Partie, Übergabe/Übernahme (`resume()` → `reset()`): Das Kissen ist still weg. Der Leger erfährt nichts, sein Spiegel räumt mit derselben Sicht bzw. beim nächsten `welcome` ab. Offene Kissen stehen weder im Speicherstand noch in der Sicherung.
+
+**Übung (`LocalTable`, `solo`):** dieselben Regeln, Ziel nur Computergegner. Die Sperre lost die Übung selbst aus. Bestätigung und Pups kommen direkt als `fx_event`, der Pups mit `from`, weil dieses Gerät der Leger ist. **Weitergeben:** nichts (`caps` leer).
+
+### 12.6 Schnittstelle für die Oberfläche
+
+Ergänzt Abschnitt 6.1; alles Übrige bleibt.
+
+| Teil | Bedeutung |
+|---|---|
+| `send_fx({k:"kissen", to, reveal})` | Kissen legen. `reveal` true = „Mit Namen“, false = „Geheim“ |
+| `fx_check({k:"kissen", to})` | lokale Vorprüfung: `""`, `rate` (eigene Sperre; Gast: 60 s nach dem eigenen Kissen, Gastgeber/Übung: die echte), `busy` (nur das **eigene** Kissen bei diesem Ziel), `off`, `self`, `target`, `phase`, `mode`, `sender` |
+| `fx_caps().kinds` | enthält `"kissen"` bei host/client und solo (dort `bots_only`) |
+| `fx_event` `{t:"fx", k:"kissen", from, to, reveal}` | nur beim Leger: Bestätigung („Kissen liegt bei %s.“) |
+| `fx_event` `{t:"fx", k:"kissen_pop", to, reveal, from?}` | bei allen: Pups am Platz `to`; Zeile „%s war's!“ nur mit `reveal` und `from`, sonst „Wer war das?“. `from` bei `reveal:false` gibt es nur beim Leger, die Oberfläche zeigt dann trotzdem „Wer war das?“ |
+| `fx_refused(why)` + `fx_refused_kind` | `fx_refused_kind == "kissen"` → Kissen-Texte für `busy`/`rate`; `""` → wie bisher (Abschnitt 3). Der Wert gilt ab dem Signal bis zur nächsten Ablehnung |
+| `fx_rand` | Tests: `() -> float` in [0, 1] für die Sperre (Gastgeber und Übung) |
+| `TeaseRules.CUSHION`, `CUSHION_POP`, `CUSHION_BLOCK_MIN_MS`, `CUSHION_BLOCK_MAX_MS`, `CUSHION_TRIGGERS` | Konstanten (Lite spiegelt sie in `necken.js`, `test_web_contract` prüft den Gleichlauf) |
+
+Der Effekt kommt wie bei allen Necken erst mit dem Ereignis des Gastgebers. Die Bestätigung beim Leger ist die Rückmeldung auf seinen Tipp.
+
+### 12.7 Tests
+
+- **`game/tests/test_tease_cushion.gd`** (rein, Uhr und Zufall eingespritzt):
+  - Ziele, Absender, Phasen, Spielarten und `caps`.
+  - Eins je Ziel (`busy`), Zufallssperre (`cushion_block_ms` über den ganzen Bereich, `rate` vor `busy`, bis kurz vor dem Ende gesperrt).
+  - Spiegel des Legers (Mindestzeit, `kissen_pop` räumt ab, keine Eimer).
+  - Verfall bei Rundenende (Sperre bleibt), `seats`, `reset()`.
+  - Auslöser (`play/draw/accept/stake` ja, `mau/catch/color/keep/…` nein).
+  - Protokoll (Wunsch, Bestätigung, Pups mit/ohne `from`, `fx_no` mit `k`, Bereinigung).
+  - Ältere Geräte (beide Arten außerhalb der Liste von 1.6.5).
+- **`game/tests/test_game_net_cushion.gd`** (WLAN 24842–24844, Browser-Gast wie Lite):
+  - Übung (Bestätigung, `rate`/`busy` mit `fx_refused_kind`, Pups beim Zug des Bots mit `from`), Weitergeben (nichts).
+  - Geheim legen: nur der Leger bekommt die Bestätigung, die Vorprüfung des Gastgebers verrät nichts, Spielstand unberührt.
+  - Zweites Kissen: `busy` mit `k` nur an den Absender (Gastgeber per `fx_refused_kind`).
+  - Sperre 0,5 → 120 s beim Gastgeber, Spiegel 60 s, `fx_no` ohne Restzeit.
+  - Zugwechsel und Mau lösen nicht aus, Ziehen schon. Erst der Stand, dann der Pups. Geheim ohne `from` bei allen außer dem Leger, kein Leck in den Posteingängen von Ziel und Browser und am Gastgeber-Bildschirm, kein zweiter Pups.
+  - Mit Namen auf den Bot: alle bekommen `from`.
+  - Necken aus (Ziel aus → still verworfen; Ziel schaltet nach dem Legen aus → verfällt beim Ziehen).
+  - Lobby/neue Partie (verfallen, nichts pupst später).
+  - Fremde Bestätigung und unbekannte Arten am Gast ohne Signal.
+- Angepasst: `test_tease_rules.gd` und `test_game_net_tease.gd` (`caps("solo")` jetzt Kugel und Kissen).
+- **Offen für die Lite-Stufe:** `test_web_contract` meldet bis dahin genau einen Befund: `necken.js` hat noch die alte `FX_KINDS`-Zeile. Beim Nachziehen kommen dazu: Konstanten (`CUSHION_BLOCK_MIN_MS`/`MAX_MS`, `CUSHION_TRIGGERS`), Prüfzweig, `commit` (Kissen ohne Eimer), Bereinigung von `kissen`/`kissen_pop`, `fx_no.k` und der Eintrag in `sfx/index.json`.
+
+### 12.8 Stufen
+
+1. **Netz** (umgesetzt 15.10.2026): `tease_rules.gd`, `net_protocol.gd`, `table_source.gd`, `game_table.gd` (Auslöser in `_apply`, `_cushion_pop` der Übung), `host_table.gd` (`_cushion_place`, `_cushion_pop`, `fx_check` ohne Leck), `client_table.gd`, `local_table.gd`, Tests aus 12.7. Version 1.6.6 in `game/project.godot`, `webclient/app.js` und den festen Angaben in `webclient/test/lite_umzug.html`/`lite_necken.html`.
+2. **Töne:** `furzkissen_02.ogg` → `game/assets/sfx/furzkissen.ogg`, `webclient/sfx/furzkissen.ogg|m4a`, `sfx/index.json`, `sound.gd`, `audio/sfx_README.md`. App-Teil umgesetzt 15.10.2026 (`game/assets/sfx/furzkissen.ogg` unverändert samt Import, `AppSound.TEASE_NAMES`/`NAMES` mit 20 Tönen, `test_app_sound` mit Länge 0,78 s, `audio/sfx_README.md`: −20,9 LUFS, Spitze −4,9 dBTP). Die `webclient/sfx`-Dateien und `index.json` gehören zur Lite-Stufe; bis dahin meldet `test_web_contract` zusätzlich „sfx/index.json nennt furzkissen“.
+3. **App** (umgesetzt 15.10.2026):
+   - `tease_menu.gd`: eigene Zeile unter den runden Knöpfen mit gezeichnetem Kissen, Beschriftung „Furzkissen“ und den Knöpfen „Mit Namen“/„Geheim“ (Schlüssel `kissen_name`/`kissen_geheim`, ≥ 48 px hoch). Grau mit Hinweis bei `rate`/`busy`; der Hinweis darf zweizeilig sein (z. B. „Erst, wenn …“ und Kissen-Hinweis). Ziel mit Necken aus: keine Kissen-Zeile.
+   - `tease_fx.gd`: Bestätigung als leise Zeile über `show_notice`, Ablehnung mit `fx_refused_kind` (Kissen-Texte, ohne Ausgrauen der Reaktionen), `CushionFx` (rosa Gummikissen mit Ventil, erscheint, wird plattgedrückt mit Nachfedern, der Avatar staucht sich, Wolke aus dem Ventil, „Pfffrt!“; 2,6 s). Die Zeile kommt nach 1,15 s an der Stelle von „Pfffrt!“ und steht 2,8 s. Beim Ziel steht sie rechts neben dem Kissen in Bannergröße.
+   - Größe: halbe Kissenbreite 50 px (beim Ziel 62 px) × k, im großen Modus × 0,8 in der Listenzeile mit dem Text neben der Wolke. Lage nach `_choose`: links neben dem Avatar, darüber, rechts neben dem Kopf, darunter; beim Ziel über dem Namensschild. Hart gemieden wie bei den übrigen Effekten und beim Ziel die Reaktionsknöpfe, weich die Fächer der Mitspieler.
+   - Ton `furzkissen` laut beim Ziel, sonst `QUIET_DB`, Vibration 150 ms beim Ziel.
+   - Eigene Zusatzentscheidung: Hat der Leger mit Namen gelegt, sieht er selbst „Das warst du!“ statt „Du war's!“ (neue msgid, englisch „That was you!“). Die anderen sehen „Kim war's!“. Lite sollte das übernehmen.
+   - Einstellungstext neu, `en_fun.po` (10 msgids, die zwei alten Einstellungstexte ersetzt), Glossar. `webclient/i18n_po.js` muss mit `tools/build.ps1 -Target Web` neu erzeugt werden (sonst meldet `test_web_contract` „i18n_po.js veraltet“).
+   - Tests: `test_ui_tease.gd` (`cushion_checks`, Übung), Kontrollbilder `optik_166_{menue_tag, menue_nacht, menue_gesperrt, bestaetigung, pups_tag, pups_nacht, pups_oben_nacht, zeile_tag, zeile_geheim, ziel_tag, ziel_zeile, ziel_nacht, reduziert, gross_menue, gross_pups_tag, gross_pups_nacht, sehr_gross, en_menue, en_zeile}.png` (`test_tease_shot.gd` mit `SERIE=166`, ANGLE).
+4. **Lite:** `necken.js` (Spiegel, Menü, Effekt), `app.js` (ohne `VERSION`), `ton.js`, `style.css`, `i18n_en.js`, `test_web_contract.gd`, `webclient/test/lite_necken.html`.

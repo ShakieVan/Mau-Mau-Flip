@@ -49,6 +49,24 @@ $bilder = [ordered]@{
     hochkant_sehr_gross = @{ q = '&dran=1&schrift=sehr_gross'; w = 390; h = 844; ms = 900; pre = (Z 500 "$N.zeige({k:'react',from:0,r:'lachen'})") }
     gross_hochkant = @{ q = '&dran=1&gross=1'; w = 390; h = 844; ms = 900 ; pre = '' }
     desktop = @{ q = '&dran=1'; w = 1600; h = 900; ms = 3000; pre = (Z 0 "$N.zeige({k:'snore',from:1,to:3});$N.zeige({k:'ball',from:3,to:2})") + (Z 2300 "$N.zeige({k:'react',from:0,r:'daumen'})") + (Z 2600 "$N.oeffne(1)") }
+    # Beta 1.6.6 Furzkissen (-Stand 166 -Nur kissen_…): Menü mit „Mit Namen“/„Geheim“, gesperrt, Pups (plattgedrückt, Wolke, „Pfffrt!“),
+    # danach „Lena war's!“ bzw. „Wer war das?“, beim Ziel groß mit Zeile; großer Modus, hochkant, Englisch, Schrift sehr groß, reduziert
+    kissen_menue = @{ q = '&dran=1'; w = 844; h = 390; ms = 900; pre = (Z 500 "$N.oeffne(2)") }
+    kissen_menue_nacht = @{ q = '&dran=1&seite=dunkel'; w = 844; h = 390; ms = 900; pre = (Z 500 "$N.regeln.cushionUntil[0]=$N.uhr()+60000;$N.oeffne(1)") }
+    kissen_pop_tag = @{ q = '&dran=2'; w = 844; h = 390; ms = 520; pre = (Z 0 "$N.zeige({k:'kissen_pop',to:1,reveal:false})") }
+    kissen_pop_nacht = @{ q = '&dran=1&seite=dunkel'; w = 844; h = 390; ms = 520; pre = (Z 0 "$N.zeige({k:'kissen_pop',to:3,reveal:true,from:1})") }
+    kissen_wer_tag = @{ q = '&dran=3'; w = 844; h = 390; ms = 1900; pre = (Z 0 "$N.zeige({k:'kissen_pop',to:2,reveal:true,from:1})") + (Z 100 "$N.zeige({k:'kissen_pop',to:3,reveal:false})") }
+    kissen_ziel = @{ q = '&dran=0'; w = 844; h = 390; ms = 520; pre = (Z 0 "$N.zeige({k:'kissen_pop',to:0,reveal:true,from:1})") }
+    kissen_ziel_zeile = @{ q = '&dran=0&seite=dunkel'; w = 844; h = 390; ms = 1900; pre = (Z 0 "$N.zeige({k:'kissen_pop',to:0,reveal:false})") }
+    kissen_gross = @{ q = '&dran=1&gross=1'; w = 844; h = 390; ms = 520; pre = (Z 0 "$N.zeige({k:'kissen_pop',to:1,reveal:false})") }
+    kissen_gross_wer_nacht = @{ q = '&dran=1&gross=1&seite=dunkel'; w = 844; h = 390; ms = 1900; pre = (Z 0 "$N.zeige({k:'kissen_pop',to:3,reveal:true,from:1})") }
+    kissen_gross_menue = @{ q = '&dran=1&gross=1'; w = 844; h = 390; ms = 900; pre = (Z 500 "$N.oeffne(2)") }
+    kissen_hochkant = @{ q = '&dran=1'; w = 390; h = 844; ms = 900; pre = (Z 500 "$N.oeffne(1)") }
+    kissen_hochkant_pop = @{ q = '&dran=1&seite=dunkel'; w = 390; h = 844; ms = 520; pre = (Z 0 "$N.zeige({k:'kissen_pop',to:3,reveal:false})") }
+    kissen_en = @{ q = '&dran=1&lang=en'; w = 844; h = 390; ms = 1900; pre = (Z 0 "$N.zeige({k:'kissen_pop',to:3,reveal:true,from:1})") + (Z 1500 "$N.oeffne(2)") }
+    kissen_sehr_gross = @{ q = '&dran=1&schrift=sehr_gross'; w = 844; h = 390; ms = 900; pre = (Z 500 "$N.regeln.cushions[2]={from:0};$N.oeffne(2)") }
+    kissen_reduziert = @{ q = '&dran=1'; w = 844; h = 390; ms = 520; pre = (Z 0 "MMF.App.einstellungen.effekte='reduziert';document.body.classList.add('reduziert');$N.zeige({k:'kissen_pop',to:1,reveal:false})") }
+    kissen_desktop = @{ q = '&dran=1'; w = 1600; h = 900; ms = 1900; pre = (Z 0 "$N.zeige({k:'kissen_pop',to:2,reveal:true,from:3})") + (Z 1500 "$N.oeffne(1)") }
 }
 $auswahl = @($Nur.Split(',') | Where-Object { $_ })
 foreach ($name in $bilder.Keys) {
