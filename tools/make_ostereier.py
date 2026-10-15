@@ -15,6 +15,7 @@ Aufruf (PowerShell)
   & $py tools\\make_ostereier.py --seite                    # Auswahl, Ablage, messwerte.json, hoeren.html
   & $py tools\\make_ostereier.py --alles --nur gaehnen2 --gpu 0   # nur diese Töne; --ast/--seite mit --nur lassen alle
                                                             # anderen Einträge (ast.json, messwerte.json, Dateien) stehen
+  & $py tools\\make_ostereier.py --alles --nur furzkissen --gpu 0  # Furzkissen (15.10.2026)
   Vorhandene Rohdateien werden nicht neu erzeugt. Benötigt ffmpeg im PATH.
 
 Gähnen Runde 2 („gaehnen2“, 13.10.2026): Runde 1 klang nach tiefem, gepresstem Stöhnen (Nutzerbefund, AudioSet „Groan“
@@ -36,6 +37,27 @@ Mitte der Dauer) mit fallender Tonhöhe, gehauchtes Ende, kein neuer Atemzug dan
 Stille überblendet. Je Variante optional CFG und Daueransage (6. Feld des Prompt-Eintrags, optionen_von). Stand:
 297 erzeugt (25 Varianten), 6 bestanden (frau_zuerst 2/36, frau_followed_lang_cfg7 2/36, frau_followed_lang 1/12,
 frau_zuerst_5s 1/6); sonst Stimme zuerst, nur Hauchen ohne Stimme, zu kurzer Atem vorn oder stimmhaftes Ende.
+
+Furzkissen („furzkissen“, 15.10.2026, neues Easter Egg): Scherzkissen aus Gummi, das man einem Mitspieler unterschiebt.
+Komisches, gummiartiges „Pfrrrrt“, eher lustig als eklig; keine echten Körpergeräusche, nichts Feuchtes, keine Stimmen,
+kein Lachen. Vier Arten als Kategorie im 6. Feld des Prompt-Eintrags (je eigene Zieldauer, Daueransage, ggf. Pegel):
+kurz und knackig, lang und flatternd, zum Schluss steigend (quietschig), leiseres kleines „Pfft“. Alles Unerwünschte
+als CFG-Negativ-Prompt. Messung furz_messen (analyse-Umgebung): Stöße, Tonhöhe und ihr Verlauf zum Schluss, Knattern,
+Klangfarbe; die quietschige Art muss zum Schluss messbar steigen. Auswahl ausgewogen über die Arten (reihum die
+besten), nur Bestandene, Dubletten über alle Paare; Nummern nach Art geordnet. AudioSet kennt „Fart“, „Squeak“,
+„Squish“, „Boing“, aber weder „Raspberry“ noch „Rubber“. Stand: 110 erzeugt (14 Prompt-Varianten in zwei Runden),
+30 bestanden, 10 behalten (furzkissen_01–10). Tragend: „kurz“, „kurz2“, „lang“/„lang_14“/„lang2“, „quietschig“,
+„quietschig_langsam“, „pfft_furz“; „pfft“/„pfft_klein“ ohne „fart“ ergaben Glocken, „kurz_platt“ Schläge.
+Erzeugt im Sparmodus auf GPU 0 (LM Studio belegte beide GPUs), rund 30 s je Ton.
+
+Sparmodus (15.10.2026): Ist auf der GPU weniger als SPARSAM_AB_GIB frei (z. B. fremdes Sprachmodell geladen), lädt
+erzeugen das Modell in den Arbeitsspeicher und holt je Schritt nur den gerade nötigen Teil auf die GPU
+(Textkodierer, DiT, VAE; DiffSynth-VRAM-Verwaltung), ohne Autocast-Zwischenspeicher der bf16-Gewichte (requires_grad
+aus; gleiche Rechnung, gleicher Ton je Seed), Stapel 1; PyTorch darf höchstens den freien Speicher minus
+SPARSAM_RESERVE_GIB belegen, damit fremde Prozesse nicht verdrängt werden. Frei = laut nvidia-smi (unter WDDM zählt
+torch.cuda.mem_get_info den Speicher untätiger fremder Prozesse als frei und verdrängt ihn). Ist ein fremder Prozess
+schon ausgelagert (nvidia-smi zeigt dann zu viel frei), die Grenze mit --vram <GiB> von Hand setzen, z. B.
+  & $py tools\\make_ostereier.py --erzeugen --nur furzkissen --gpu 0 --vram 6.5
 
 Erzeugung: je Ton 3 Prompt-Varianten × 3 Seeds; nach der ersten Sichtung mehr Seeds bzw. eine vierte Variante bei
 Wecker (22), Gähnen (12), Schreck (11), Plopp (12); Klingeln 2 × 3. 100 Schritte, CFG 4, shift 5, Daueransage im
@@ -83,6 +105,8 @@ LEITPLANKE_DB = -30.0
 NO_WORDS = "no words"
 # Wecker: lauteste Ticks (50-ms-Pegel) gegenüber dem Klingeln. Leiser als TICK_MIN_DB -> auf TICK_ZIEL_DB anheben.
 TICK_MIN_DB, TICK_ZIEL_DB, TICK_MAX_DB = -20.0, -16.0, 30.0
+# Sparmodus der Erzeugung (siehe Kopf): darunter freier GPU-Speicher -> Modell im Arbeitsspeicher, Teile nach Bedarf
+SPARSAM_AB_GIB, SPARSAM_RESERVE_GIB = 16.0, 0.8
 
 # ---------------------------------------------------------------------------------------------------------------
 # Töne. Pegel (höchste Momentan-Lautheit der Datei): Bezug sind die Spieltöne (audio/sfx_README.md): dran −17,5,
@@ -420,6 +444,91 @@ TOENE["gaehnen3"] = {
          "jugendlich hell (Junge)", G3_SEEDS[:6] + list(range(5106, 5124)), NEG_PLUS),
     ],
 }
+# Furzkissen (15.10.2026, neues Easter Egg): ein Scherzkissen aus Gummi, das man einem Mitspieler unterschiebt.
+# Klassisches komisches, gummiartiges „Pfrrrrt“, wenn die Luft aus dem Kissen gedrückt wird, eher lustig als eklig: keine
+# echten Körpergeräusche, nichts Feuchtes, keine Stimmen, kein Lachen, keine Wörter. Vier Arten (Kategorie im 6. Feld,
+# je mit eigener Zieldauer „ziel“ und Daueransage, das „Pfft“ mit eigenem Pegel): kurz und knackig, lang und flatternd,
+# zum Schluss steigend (quietschig; „steigt_ht“: so viele Halbtöne muss die Tonhöhe zum Schluss messbar steigen),
+# leiseres kleines „Pfft“. Unerwünschtes nur als CFG-Negativ-Prompt (Gähnen Runde 2: Begriffe wie „no …“ im Prompt
+# ziehen das Modell eher hin). Pegel zwischen papierkugel_wurf (−21) und den Reaktionen (−19), das „Pfft“ 3 dB leiser.
+FURZ_NEGATIV = ("speech, words, voice, talking, whispering, laughter, laughing, giggling, crowd, cheering, screaming, "
+                "shouting, singing, music, wet, liquid, splash, squelch, squishy, mud, gurgling, dripping, toilet, "
+                "realistic human body, burp, groan, grunt, cat, meow, purr, hiss, animal, bird, mouse")
+FURZ_ARTEN = {"kurz": "kurz und knackig", "lang": "lang und flatternd", "quietschig": "zum Schluss steigend (quietschig)",
+              "pfft": "leises kleines „Pfft“"}
+F_KURZ = {"kategorie": "kurz", "ziel": (0.55, 0.95), "sekunden": 1.0}
+F_LANG = {"kategorie": "lang", "ziel": (1.15, 1.85), "sekunden": 1.8, "ausblenden": 0.2}
+F_QUIETSCH = {"kategorie": "quietschig", "ziel": (0.7, 2.2), "sekunden": 1.4, "steigt_ht": 3.0}   # bis 2,2 s: das Quietschen kommt am Ende
+F_PFFT = {"kategorie": "pfft", "ziel": (0.2, 0.6), "sekunden": 0.6, "lufs": -23.0, "ausblenden": 0.08}
+F_SEEDS = list(range(6101, 6107))
+TOENE["furzkissen"] = {
+    "titel": "Furzkissen", "zweck": "einem Mitspieler ein Furzkissen (Scherzkissen aus Gummi) unterschieben",
+    "ziel_text": "komisches, gummiartiges „Pfrrrrt“, eher lustig als eklig: kurz und knackig 0,6–0,9 s, lang und "
+                 "flatternd 1,2–1,8 s, zum Schluss steigend (quietschig), leiseres kleines „Pfft“ (−23 LUFS)",
+    "hinweis": "Neues Easter Egg. Unerwünschtes (Stimmen, Lachen, Feuchtes, echte Körpergeräusche, Katze, Zischen) steht "
+               "als Negativ-Prompt. Behalten wurde nur, was AudioSet als Furz oder Quietschen erkennt und nicht deutlich nach "
+               "Sprache, Schreien, Lachen, Flüssigkeit, Rülpsen, Katze, Vogel, Maus, Insekt oder Tier klingt, die Zieldauer der Art einhält "
+               "und (quietschige Art) zum Schluss messbar steigt; Dubletten über alle Paare aussortiert. Auswahl reihum "
+               "über die vier Arten, Nummern nach Art geordnet. Die Beschreibungen (Stöße, Tonhöhe, Knattern, Klangfarbe) "
+               "stammen aus Messungen, nicht vom Hören.",
+    "sekunden": 1.0, "ziel": (0.55, 0.95), "modus": "anfang", "vorlauf": 0.03, "einblenden": 0.004, "ausblenden": 0.12,
+    "lufs": -20.0, "begrenzer": 4.0, "hochpass": 60.0, "stimme": False, "behalten": 10,
+    "erwartet": ["Fart", "Squeak", "Boing"], "erwartet_mindestens": 0.05,
+    "furz": True, "ausgewogen": True, "nur_ok": True, "dubletten_alle": True, "streng": True, "puls_purr": True,
+    "sprache_grenze": (0.25, 0.12),
+    # Ausschluss ab der Grenze, Hinweis ab der Hälfte, Abzug in den Punkten (wie gaehnen2)
+    "meiden": {"Laughter": 0.1, "Giggle": 0.1, "Snicker": 0.1, "Belly laugh": 0.1, "Chuckle, chortle": 0.1,
+               "Baby laughter": 0.1, "Screaming": 0.1, "Shout": 0.1, "Yell": 0.1, "Children shouting": 0.1,
+               "Babbling": 0.15, "Singing": 0.15, "Whispering": 0.15,
+               "Liquid": 0.15, "Splash, splatter": 0.15, "Slosh": 0.15, "Drip": 0.15, "Gurgling": 0.15, "Pour": 0.15,
+               "Trickle, dribble": 0.15, "Toilet flush": 0.1, "Squish": 0.3,
+               "Burping, eructation": 0.25, "Groan": 0.15, "Grunt": 0.15, "Stomach rumble": 0.2,
+               "Hiss": 0.25, "Mouse": 0.1, "Bird": 0.2, "Chirp, tweet": 0.2,
+               # zweite Sichtung: teils Mücke/Fliege/Insekt (Beute für Katzen) oder Tier/Heulen
+               "Mosquito": 0.15, "Fly, housefly": 0.15, "Insect": 0.15, "Bee, wasp, etc.": 0.15,
+               "Animal": 0.15, "Domestic animals, pets": 0.15, "Dog": 0.15, "Howl": 0.15},
+    # nur zur Beschreibung in ast.json
+    "beobachten": ["Boing", "Vibration", "Buzz", "Rattle", "Trumpet", "Brass instrument", "Trombone", "Didgeridoo",
+                   "Duck", "Quack", "Goose", "Honk", "Frog", "Croak", "Motorboat, speedboat", "Engine", "Sound effect",
+                   "Whoosh, swoosh, swish", "Toot", "Vehicle horn, car horn, honking", "Rumble", "Harmonica", "Creak"],
+    "negativ": FURZ_NEGATIV,
+    "seeds": F_SEEDS,
+    "prompts": [
+        ("kurz", "a rubber whoopee cushion is sat on and lets out a short, punchy, comedic fart noise, a quick rubbery pfrrt of squeezed air, prank toy sound effect, close-up, dry room",
+         "kurz und knackig: Kissen wird kurz plattgesessen", list(range(6101, 6113)), None, F_KURZ),
+        ("kurz_platt", "someone sits down hard on a whoopee cushion, one quick loud raspy rubbery fart sound, short and snappy, cartoon prank, close-up",
+         "kurz und knackig: hart draufgesetzt, rau", F_SEEDS, None, F_KURZ),
+        ("lang", "a whoopee cushion slowly squeezed flat, a long drawn-out rubbery fart noise, fluttering and flapping pfrrrrrrt as the air squeezes out of the rubber, comedic prank sound effect, close-up, dry room",
+         "lang und flatternd: langsam ausgedrückt", F_SEEDS, None, F_LANG),
+        ("lang_flattern", "a long flappy whoopee cushion fart, the rubber opening vibrates and flutters loudly for over a second, brrrrrrt, funny prank toy, close-up",
+         "lang und flatternd: Gummi flattert über eine Sekunde", F_SEEDS, None, F_LANG),
+        ("quietschig", "a whoopee cushion fart noise that starts low and rubbery and rises in pitch at the end into a high squeaky toot as the last air escapes, comedic prank sound effect, close-up, dry room",
+         "steigend: tief und gummiartig, zum Schluss hoch und quietschig", list(range(6101, 6113)), None, F_QUIETSCH),
+        ("quietschig_langsam", "a rubber whoopee cushion squeezed slowly, a fluttering fart sound that gets higher and higher in pitch and ends with a squeaky rubbery peep, cartoon prank, close-up",
+         "steigend: wird immer höher, endet quietschig", list(range(6101, 6113)), None, F_QUIETSCH),
+        ("pfft", "a tiny whoopee cushion gives a small, soft, short pfft of air, a little rubbery puff, quiet and brief, comedic prank toy, close-up, dry room",
+         "kleines „Pfft“: winziges Kissen, kurzer Luftstoß", F_SEEDS, None, F_PFFT),
+        ("pfft_klein", "a small half-empty whoopee cushion pressed lightly, one short quiet rubbery pfft, very brief, close-up",
+         "kleines „Pfft“: halb leeres Kissen leicht gedrückt", F_SEEDS, None, F_PFFT),
+        # erste Sichtung (48, 15.10.2026): AudioSet hört „Fart“ deutlich nur bei „kurz“ (3/6), „lang“ (2/6) und „quietschig“
+        # bzw. „quietschig_langsam“ (je 1–2/6). „kurz_platt“ (hart draufsetzen) ergab Schläge/Türen/Gitarre, „lang_flattern“
+        # (Gummi vibriert, brrrt) Rasierer/Flöte/Mücke, „pfft“/„pfft_klein“ zwölfmal Glocke/„Ding“/Gitarre statt Luft. „lang“
+        # lief natürlich 2,0–2,7 s (gekürzt) -> Daueransage 1,4/1,5 s. Neu: mehr Seeds für die tragenden Prompts, „fart“
+        # ausdrücklich im „Pfft“ und einfache Formulierungen nach dem Muster von „kurz“.
+        ("kurz2", "a short comedic fart noise from a whoopee cushion, a quick rubbery pfrrt, prank sound effect, close-up, dry room",
+         "kurz und knackig: einfache Formulierung", F_SEEDS, None, F_KURZ),
+        ("lang_14", "a whoopee cushion slowly squeezed flat, a long drawn-out rubbery fart noise, fluttering and flapping pfrrrrrrt as the air squeezes out of the rubber, comedic prank sound effect, close-up, dry room",
+         "lang und flatternd: wie „lang“, Daueransage 1,4 s", list(range(6101, 6109)), None, dict(F_LANG, sekunden=1.4)),
+        ("lang2", "a long comedic fart noise from a whoopee cushion, a drawn-out rubbery pfrrrrrrt that flutters and sputters as the air is squeezed out, prank sound effect, close-up, dry room",
+         "lang und flatternd: knattert und stottert", list(range(6101, 6109)), None, dict(F_LANG, sekunden=1.5)),
+        ("quietschig2", "a comedic fart noise from a whoopee cushion that ends in a rising squeaky toot, a rubbery pfrrrt with the pitch going up at the end, prank sound effect, close-up, dry room",
+         "steigend: endet mit steigendem Quietschen", F_SEEDS, None, F_QUIETSCH),
+        ("pfft_furz", "a tiny, short, quiet fart noise from a small whoopee cushion, a quick little rubbery pfft, comedic prank sound effect, close-up, dry room",
+         "kleines „Pfft“: winziger, leiser Furz", list(range(6101, 6109)), None, F_PFFT),
+        ("pfft_furz2", "a small whoopee cushion lets out a very short, soft little fart, pfft, quiet comedic prank sound, close-up",
+         "kleines „Pfft“: sehr kurz und weich", list(range(6101, 6109)), None, F_PFFT),
+    ],
+}
 TOENE = {k: TOENE[k] for k in ["gaehnen", "gaehnen2", "gaehnen3"] + [k for k in TOENE if not k.startswith("gaehnen")]}
 # Einziger Versuch „gaehnen3_02umgestellt“: in gaehnen2_02 (Rohdatei gaehnen2_frau_4110) Einatmen und „aaah“ tauschen,
 # an der natürlichen Pause dazwischen und mit weicher Blende in der Stille (siehe umstellen). Nur, wenn die Pause klar ist
@@ -443,9 +552,11 @@ def candidates(nur=None):
             pname, prompt, notiz = pr[:3]
             opt = optionen_von(pr)
             for sd in seeds_von(t, pr):
-                out.append({"id": f"{ton}_{pname}_{sd}", "ton": ton, "variante": pname, "prompt": prompt,
-                            "prompt_notiz": notiz, "seed": sd, "sekunden": opt.get("sekunden", t["sekunden"]),
-                            "negativ": negativ_von(t, pr), "cfg": opt.get("cfg", m.CFG)})
+                out.append(dict({"id": f"{ton}_{pname}_{sd}", "ton": ton, "variante": pname, "prompt": prompt,
+                                 "prompt_notiz": notiz, "seed": sd, "sekunden": opt.get("sekunden", t["sekunden"]),
+                                 "negativ": negativ_von(t, pr), "cfg": opt.get("cfg", m.CFG)},
+                                # Abweichungen je Variante (Furzkissen): Zieldauer, Pegel, Ausblenden, Art, Anstieg
+                                **{k: opt[k] for k in VARIANTE_FELDER if k in opt}))
         if ton == "gaehnen3":
             # nicht erzeugt, sondern aus gaehnen2_02 umgestellt (umstellen); läuft außerhalb der Rangfolge
             q = json.load(open(os.path.join(ROH, UMGESTELLT["quelle"] + ".json"), encoding="utf-8"))
@@ -462,8 +573,19 @@ def negativ_von(t, pr):
 
 
 def optionen_von(pr):
-    """6. Feld eines Prompt-Eintrags: Abweichungen je Variante, {"cfg": …, "sekunden": …} (Daueransage)."""
+    """6. Feld eines Prompt-Eintrags: Abweichungen je Variante, {"cfg": …, "sekunden": …} (Daueransage), dazu
+    VARIANTE_FELDER: „ziel“ (Zieldauer), „lufs“, „ausblenden“, „kategorie“ (Art), „steigt_ht“ (Mindestanstieg zum Schluss)."""
     return pr[5] if len(pr) > 5 else {}
+
+
+VARIANTE_FELDER = ("ziel", "lufs", "ausblenden", "kategorie", "steigt_ht")
+
+
+def ton_fuer(c):
+    """Einstellungen des Tons mit den Abweichungen der Variante (nur Kandidaten aus candidates; in den Ergebnissen
+    heißen sie ziel/ziel_lufs/kategorie/steigt_min_ht, „lufs“ ist dort der gemessene Pegel)."""
+    t = TOENE[c["ton"]]
+    return dict(t, **{k: c[k] for k in ("ziel", "lufs", "ausblenden") if k in c}) if any(k in c for k in VARIANTE_FELDER) else t
 
 
 def seeds_von(t, pr):
@@ -484,7 +606,45 @@ class MitNegativ:
         return self.pipe(negative_prompt=self.negativ, **kw)
 
 
-def erzeugen(cs, gpu, stapel=3):
+def pipeline_sparsam(frei, gesamt):
+    """Sparmodus (siehe Kopf): Modell im Arbeitsspeicher laden; die DiffSynth-VRAM-Verwaltung holt je Schritt nur den
+    nötigen Teil auf die GPU (Textkodierer, dann DiT, dann VAE) und legt die übrigen in den Arbeitsspeicher. Ohne
+    requires_grad hält Autocast keine bf16-Kopie der fp32-DiT-Gewichte vor (rechnet sie je Schicht neu um: gleiches
+    Ergebnis). PyTorch darf höchstens frei − SPARSAM_RESERVE_GIB belegen (Fehler statt Verdrängen fremder Prozesse)."""
+    import torch
+    if "Draw2Race-AudioLab" not in os.environ.get("HF_HOME", ""):
+        sys.exit("HF_HOME zeigt nicht in die Werkstatt. Vorher: . E:\\Draw2Race-AudioLab\\env.ps1")
+    grenze = frei - int(SPARSAM_RESERVE_GIB * 2 ** 30)
+    torch.cuda.set_per_process_memory_fraction(max(0.05, grenze / gesamt), 0)
+    sys.path.insert(0, m.MOSS_REPO)
+    from moss_soundeffect_v2 import MossSoundEffectPipeline
+    t0 = time.time()
+    pipe = MossSoundEffectPipeline.from_pretrained(m.MODEL_ID, torch_dtype=torch.bfloat16, device="cpu",
+                                                   local_files_only=True)
+    eng = pipe.engine
+    for p in eng.parameters():
+        p.requires_grad_(False)
+    eng.device = "cuda"
+    eng.vram_management_enabled = True
+    return pipe, time.time() - t0
+
+
+def gpu_frei_nvsmi(gpu):
+    """Freier Speicher laut nvidia-smi (Bytes). Unter Windows (WDDM) meldet torch.cuda.mem_get_info das Budget des
+    Prozesses: Speicher eines untätigen fremden Prozesses zählt dort als frei und wird beim Belegen verdrängt
+    (15.10.2026: LM Studio, 17 GB auf GPU 0 ausgelagert)."""
+    try:
+        o = subprocess.run(["nvidia-smi", "--query-gpu=memory.used,memory.total", "--format=csv,noheader,nounits",
+                            "-i", str(gpu)], capture_output=True, text=True, check=True).stdout
+        used, total = (int(v) for v in o.strip().split(","))
+        return (total - used) * 2 ** 20
+    except Exception:
+        return None
+
+
+def erzeugen(cs, gpu, stapel=3, vram=None):
+    """vram: höchstens so viele GiB auf der GPU belegen (erzwingt den Sparmodus), z. B. wenn ein fremder Prozess
+    gerade ausgelagert ist und nvidia-smi deshalb zu viel freien Speicher zeigt."""
     os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu)
     import soundfile as sf
     import torch
@@ -493,8 +653,21 @@ def erzeugen(cs, gpu, stapel=3):
     print(f"Zu erzeugen: {len(todo)} von {len(cs)} (GPU {gpu})", flush=True)
     if not todo:
         return
-    pipe, t_load = m.load_pipeline()
+    smi = gpu_frei_nvsmi(gpu)
+    frei, gesamt = torch.cuda.mem_get_info(0)
+    if smi is not None:
+        frei = min(frei, smi)
+    if vram is not None:
+        frei = min(frei, int((vram + SPARSAM_RESERVE_GIB) * 2 ** 30))
+    if vram is not None or frei < SPARSAM_AB_GIB * 2 ** 30:
+        print(f"GPU {gpu}: {frei / 2 ** 30:.1f} von {gesamt / 2 ** 30:.1f} GiB nutzbar -> Sparmodus "
+              f"(höchstens {(frei / 2 ** 30) - SPARSAM_RESERVE_GIB:.1f} GiB, Stapel 1)", flush=True)
+        pipe, t_load = pipeline_sparsam(frei, gesamt)
+        stapel = 1
+    else:
+        pipe, t_load = m.load_pipeline()
     print(f"Modell geladen in {t_load:.0f} s", flush=True)
+    torch.cuda.reset_peak_memory_stats()
     groups = {}
     for c in todo:
         groups.setdefault((c["ton"], c.get("negativ", ""), c.get("cfg", m.CFG), c["sekunden"]), []).append(c)
@@ -511,7 +684,8 @@ def erzeugen(cs, gpu, stapel=3):
                 with open(os.path.join(ROH, c["id"] + ".json"), "w", encoding="utf-8") as f:
                     json.dump(meta, f, ensure_ascii=False, indent=1)
             n += len(b)
-            print(f"  {', '.join(c['id'] for c in b)}: {dt:.0f} s ({n}/{len(todo)}, {time.time() - t0:.0f} s)", flush=True)
+            print(f"  {', '.join(c['id'] for c in b)}: {dt:.0f} s ({n}/{len(todo)}, {time.time() - t0:.0f} s, "
+                  f"GPU-Spitze {torch.cuda.max_memory_allocated() / 2 ** 30:.1f} GiB)", flush=True)
     del pipe
     torch.cuda.empty_cache()
 
@@ -823,13 +997,19 @@ def bearbeiten(cs):
         if not os.path.exists(p):
             print("  fehlt:", c["id"], flush=True)
             continue
-        t = TOENE[c["ton"]]
+        t = ton_fuer(c)
         raw, sr = sf.read(p, dtype="float32")
         assert sr == FS
         mr = m.measure_raw(raw)
         r = {"roh": c["id"], "ton": c["ton"], "variante": c["variante"], "prompt": c["prompt"],
              "prompt_notiz": c["prompt_notiz"], "seed": c["seed"], "sekunden_prompt": c["sekunden"],
              "roh_spitze_dbfs": mr["spitze_dbfs"], "roh_leer": mr["leer"], "roh_leise": mr["leise"]}
+        if "ziel" in c:
+            r["ziel"] = list(c["ziel"])
+        if "kategorie" in c:
+            r["kategorie"] = c["kategorie"]
+        if "steigt_ht" in c:
+            r["steigt_min_ht"] = c["steigt_ht"]
         if c.get("negativ"):
             r["negativ"] = c["negativ"]
         if c.get("cfg", m.CFG) != m.CFG:
@@ -1094,6 +1274,128 @@ def reihenfolge_text(rf, stimme_txt=""):
     return ", ".join(t)
 
 
+FZ_PERIODE_R = 0.35     # Rahmen gilt als periodisch (Ton/Brummen), wenn die normierte Autokorrelation so hoch ist
+
+
+def furz_messen(y, sr=16000):
+    """Furzkissen: Ablauf und Klang (Messung, nicht gehört), Rahmen 10 ms. Hörbar = RMS (32 ms) höchstens 30 dB unter
+    dem Höchstwert. Stöße = hörbare Strecken (Lücken unter 60 ms überbrückt, Strecken unter 30 ms verworfen).
+    Tonhöhe: pyin erkennt im rauen Flattern fast nie Stimme (Stimmwahrscheinlichkeit um 0,01); daher normierte
+    Autokorrelation je Rahmen (128 ms, Hann, auf die Fensterüberlappung normiert, höchstens 25 dB unter dem Höchstwert),
+    stärkster Gipfel bei 40–1600 Hz, bei
+    fast gleich hohen Gipfeln (≥ 85 %) der kürzeste Abstand (gegen Oktavfehler); periodisch = Gipfel ≥ FZ_PERIODE_R.
+    Verlauf über die periodischen Rahmen (Median über 5): Anfang = Median des ersten Drittels, Schluss = Median des
+    letzten Viertels, „schluss_ht“ = Schluss gegen Anfang in Halbtönen (> 0 steigt). Dazu der spektrale Schwerpunkt im
+    ersten Drittel und im letzten Viertel der hörbaren Rahmen („hell_ht“, > 0 = wird heller). Knattern: stärkste Linie
+    10–60 Hz im Hüllkurvenspektrum des Bands 300 Hz–4 kHz (wie am Handy), Schärfe gegen den Median 4–150 Hz.
+    Klangfarbe: Schwerpunkt und Flachheit (Median über die hörbaren Rahmen; Flachheit hoch = Luft/Rauschen)."""
+    import librosa
+    import numpy as np
+    from scipy.signal import butter, hilbert, medfilt, resample_poly, sosfiltfilt
+    hop = 160
+    s = hop / sr
+    rms = librosa.feature.rms(y=y, frame_length=512, hop_length=hop)[0]
+    db = 20 * np.log10(rms + 1e-9)
+    db -= db.max()
+    akt = db > -30.0
+    ai = np.nonzero(akt)[0]
+    if not len(ai):
+        return {"fehler": "nichts hörbar"}
+    a0, a1 = int(ai[0]), int(ai[-1])
+    out = {"hoerbar_ab_s": round(a0 * s, 2), "hoerbar_s": round((a1 - a0 + 1) * s, 2)}
+    st = []
+    for a, b in m.quiet_runs(akt, 1):
+        if st and a - st[-1][1] < 6:
+            st[-1] = (st[-1][0], b)
+        else:
+            st.append((a, b))
+    st = [(a, b) for a, b in st if b - a >= 3]
+    out["stoesse"] = len(st)
+    out["stoesse_s"] = [(round(a * s, 2), round(b * s, 2)) for a, b in st][:12]
+    fl_n, lmin, lmax = 2048, int(sr / 1600), int(sr / 40)     # 128 ms: 40 Hz liegt bei 20 % der Fensterlänge
+    yp = np.pad(y, (fl_n // 2, fl_n // 2))
+    n = len(db)
+    f0 = np.full(n, np.nan)
+    rr = np.zeros(n)
+    win = np.hanning(fl_n)
+    wkorr = np.sum(win ** 2) / np.correlate(win, win, "full")[fl_n - 1:]
+    for i in range(n):
+        if db[i] <= -25.0:
+            continue
+        fr = yp[i * hop:i * hop + fl_n]
+        if len(fr) < fl_n:
+            break
+        fr = (fr - fr.mean()) * win
+        ac = np.fft.irfft(np.abs(np.fft.rfft(fr, 2 * fl_n)) ** 2)[:fl_n]
+        # Normierung auf die Überlappung (sonst fallen lange Abstände ab)
+        ac = ac / (ac[0] + 1e-12) * wkorr
+        seg = ac[lmin:lmax + 1]
+        j = int(np.argmax(seg))
+        if seg[j] <= 0:
+            continue
+        kand = np.nonzero((seg[1:-1] >= 0.85 * seg[j]) & (seg[1:-1] >= seg[:-2]) & (seg[1:-1] >= seg[2:]))[0] + 1
+        j = int(kand[0]) if len(kand) else j
+        rr[i], f0[i] = float(seg[j]), sr / (lmin + j)
+    per = np.isfinite(f0) & (rr >= FZ_PERIODE_R)
+    out["periodisch"] = round(float(per[a0:a1 + 1].sum() / max(1, akt[a0:a1 + 1].sum())), 2)
+    out["tonhaltig"] = out["periodisch"]
+    fv = f0[per]
+    if len(fv) >= 8:
+        k = medfilt(fv, 5)
+        fa, fe = float(np.median(k[:max(3, len(k) // 3)])), float(np.median(k[-max(3, len(k) // 4):]))
+        out.update({"f0_median_hz": round(float(np.median(k))), "f0_anfang_hz": round(fa), "f0_schluss_hz": round(fe),
+                    "f0_max_hz": round(float(np.percentile(k, 95))), "schluss_ht": round(float(12 * np.log2(fe / fa)), 1),
+                    "f0_schluss_zeit_s": round(float(np.nonzero(per)[0][-1] * s), 2)})
+    yb = sosfiltfilt(butter(4, [300, 4000], "bandpass", fs=sr, output="sos"), y)
+    h = np.abs(hilbert(yb))
+    h = sosfiltfilt(butter(4, 150, "low", fs=sr, output="sos"), h)
+    h = resample_poly(h, 1, sr // 1000)[int(a0 * s * 1000):int((a1 + 1) * s * 1000)]
+    if len(h) >= 150:
+        h = h - h.mean()
+        nf = 8192
+        sp = np.abs(np.fft.rfft(h * np.hanning(len(h)), n=nf))
+        fm = np.fft.rfftfreq(nf, 1 / 1000)
+        band, ref = (fm >= 10) & (fm <= 60), (fm >= 4) & (fm <= 150)     # darüber ist es die Tonhöhe des Brummens
+        i = int(np.argmax(np.where(band, sp, 0)))
+        out["knattern_hz"] = round(float(fm[i]))
+        out["knattern_schaerfe"] = round(float(sp[i] / (np.median(sp[ref]) + 1e-12)), 1)
+    cen = librosa.feature.spectral_centroid(y=y, sr=sr, n_fft=1024, hop_length=hop)[0]
+    fl = librosa.feature.spectral_flatness(y=y, n_fft=1024, hop_length=hop)[0]
+    k2 = min(len(cen), len(fl), len(akt))
+    ca = cen[:k2][akt[:k2]]
+    out["schwerpunkt_hz"] = round(float(np.median(ca)))
+    out["flachheit"] = round(float(np.median(fl[:k2][akt[:k2]])), 3)
+    if len(ca) >= 8:
+        out["hell_ht"] = round(float(12 * np.log2(np.median(ca[-max(2, len(ca) // 4):]) / np.median(ca[:max(2, len(ca) // 3)]))), 1)
+    return out
+
+
+def furz_text(fm, dauer):
+    """Kurzbeschreibung aus furz_messen (Messung, nicht gehört), z. B. „ein Stoß, 0,8 s, tief (110 Hz), knattert mit
+    35 Hz, Tonhöhe steigt zum Schluss um 9 Halbtöne, dumpf“."""
+    if fm.get("fehler"):
+        return fm["fehler"]
+    t = ["ein Stoß" if fm["stoesse"] <= 1 else f"{fm['stoesse']} Stöße", f"{z(dauer, 2)} s"]
+    per = fm.get("periodisch", fm.get("tonhaltig", 0.0))
+    t.append("rau, kaum fester Ton" if per < 0.3 else "rau mit etwas Ton" if per < 0.6 else "fester, brummender Ton")
+    f0 = fm.get("f0_median_hz")
+    if f0 is not None and per >= 0.25:
+        t.append(("tief" if f0 < 90 else "mittlere Lage" if f0 < 200 else "hoch") + f" (um {f0} Hz)")
+    sh = fm.get("schluss_ht")
+    if sh is not None:
+        t.append(f"Tonhöhe steigt zum Schluss um {z(sh, 0)} Halbtöne" if sh >= 3 else
+                 f"Tonhöhe fällt zum Schluss um {z(-sh, 0)} Halbtöne" if sh <= -3 else "Tonhöhe bleibt etwa gleich")
+    elif fm.get("hell_ht") is not None and fm["hell_ht"] >= 3:
+        t.append(f"wird zum Schluss heller ({z(fm['hell_ht'], 0)} Halbtöne)")
+    if fm.get("knattern_schaerfe", 0) >= 4:
+        t.append(f"knattert mit etwa {fm['knattern_hz']} Hz")
+    sp = fm["schwerpunkt_hz"]
+    t.append("dumpf" if sp < 900 else "mittelhell" if sp < 1800 else "schnarrend")
+    if fm["flachheit"] >= 0.15:
+        t.append("luftig")
+    return ", ".join(t)
+
+
 def ast_lauf(nur=None):
     os.environ["HF_HUB_OFFLINE"] = "1"
     import librosa
@@ -1107,7 +1409,7 @@ def ast_lauf(nur=None):
     watch = set(SPRACHE + KATZE + WARN)
     for t in TOENE.values():
         watch |= set(t["erwartet"]) | set(t.get("erwartet_ticken", [])) | set(t.get("erwartet_klingeln", []))
-        watch |= set(t.get("meiden", {}))
+        watch |= set(t.get("meiden", {})) | set(t.get("beobachten", []))
     keys = [k.strip() for k in nur.split(",")] if nur else None
 
     def tag(y):
@@ -1129,6 +1431,8 @@ def ast_lauf(nur=None):
             e["stimme"] = stimme_messen(y)
         if TOENE[r["ton"]].get("reihenfolge"):
             e["reihenfolge"] = reihenfolge_messen(y)
+        if TOENE[r["ton"]].get("furz"):
+            e["furz"] = furz_messen(y)
         wm = r.get("wecker")
         if wm:
             t0 = int(wm["klingeln_ab_s"] * 16000)
@@ -1176,7 +1480,7 @@ def bewerten(r, a):
             hinweise.append(f"etwas „{k}“ (AudioSet {z(v, 2)})")
     teile = [w] + [(a or {}).get(p, {}).get("werte", {}) for p in ("ticken", "klingeln")]
     for k in ("Squeal", "Squeak", "Whistle", "Beep, bleep", "Animal", "Frog", "Roar", "Growling", "Screaming"):
-        if k in meiden:
+        if k in meiden or k in t["erwartet"]:
             continue
         v = max(tw.get(k, 0.0) for tw in teile)
         if v > 0.15:
@@ -1195,7 +1499,7 @@ def bewerten(r, a):
     puls = bool(pu and pu["hz"] >= 17 and pu["schaerfe"] >= 10)
     if puls:
         msg = f"Hüllkurve pulsiert mit {z(pu['hz'], 0)} Hz (Schnurr-Bereich 15–50 Hz, Schärfe {z(pu['schaerfe'])})"
-        if r["ton"] == "schnarchen" and w.get("Purr", 0) > 0.03:
+        if (r["ton"] == "schnarchen" or t.get("puls_purr")) and w.get("Purr", 0) > 0.03:
             gruende.append(msg + " und AudioSet „Purr“ " + z(w["Purr"], 2))
         else:
             hinweise.append(msg)
@@ -1206,23 +1510,29 @@ def bewerten(r, a):
         else:
             hinweise.append(f"schmale Linie bei {hz} Hz (+{z(prom)} dB über der Umgebung): auf Piepen achten"
                             + (" (bei einer Glocke zu erwarten)" if t.get("glocke") else ""))
-    lo, hi = t["ziel"]
+    lo, hi = r.get("ziel") or t["ziel"]
     d = r["dauer_s"] - m.TAIL_S
     if d < 0.75 * lo:
         gruende.append(f"zu kurz ({z(d, 2)} s)")
+    elif d < lo and t.get("streng"):
+        gruende.append(f"kürzer als das Ziel ({z(d, 2)} s statt {z(lo, 2)}–{z(hi, 2)} s)")
     elif d < lo:
         hinweise.append(f"etwas kürzer als das Ziel ({z(d, 2)} s)")
     gekuerzt = bool(r.get("gekuerzt") and t["modus"] != "wecker" and (r.get("natuerliche_dauer_s") or 0) > d + 0.1)
     if gekuerzt:
         hinweise.append(f"natürlich {z(r['natuerliche_dauer_s'], 1)} s, auf {z(d, 2)} s gekürzt und ausgeblendet")
-    if a and erw < 0.05:
+    if a and t.get("erwartet_mindestens") and erw < t["erwartet_mindestens"]:
+        gruende.append(f"AudioSet erkennt keine der erwarteten Klassen ({', '.join(t['erwartet'])}; höchstens {z(erw, 2)})")
+    elif a and erw < 0.05:
         hinweise.append("AudioSet erkennt keine der erwarteten Klassen")
     if r["roh_leise"]:
         hinweise.append("Original sehr leise")
-    defizit = t["lufs"] - r["lufs"]
+    defizit = r.get("ziel_lufs", t["lufs"]) - r["lufs"]
     if defizit > 4:
-        hinweise.append(f"nur {z(r['lufs'])} LUFS statt {z(t['lufs'])}: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser")
-    punkte = 4.0 * erw - 2.0 * knall - 20.0 * kat - 1.5 * puls - 0.5 * bool(r["linien_2_6k"]) - 0.05 * abs(r["sim_pegelverlust_db"])
+        hinweise.append(f"nur {z(r['lufs'])} LUFS statt {z(r.get('ziel_lufs', t['lufs']))}: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser")
+    # Furzkissen: Flattern liegt von Natur aus im Puls-Bereich (nur Hinweis, Ausschluss nur mit AudioSet „Purr“)
+    punkte = (4.0 * erw - 2.0 * knall - 20.0 * kat - (0.0 if t.get("puls_purr") else 1.5) * puls
+              - 0.5 * bool(r["linien_2_6k"]) - 0.05 * abs(r["sim_pegelverlust_db"]))
     punkte -= 2.0 * max(0.0, spr - 0.2) if t["stimme"] else 3.0 * spr
     punkte -= 2.0 * (d < lo) + 1.0 * gekuerzt + 0.3 * max(0.0, defizit - 2.0)
     if t.get("atem_summe"):
@@ -1234,6 +1544,30 @@ def bewerten(r, a):
     if meiden:
         punkte -= 6.0 * meiden_summe
         r["ast_meiden"] = {k: round(w.get(k, 0.0), 3) for k in meiden}
+    if t.get("furz"):
+        punkte += 2.0 * w.get("Fart", 0.0)          # das eigentliche Ziel; Quietschen allein ist kein Furzkissen
+        r["ast_beobachtet"] = {k: round(w[k], 3) for k in t.get("beobachten", []) + t["erwartet"]
+                                 if k != erw_k and w.get(k, 0.0) >= 0.05}
+        fm = (a or {}).get("furz")
+        if fm is None:
+            gruende.append("ohne Furzkissen-Messung")
+        else:
+            r["furz"] = fm
+            sh = fm.get("schluss_ht")
+            if r.get("steigt_min_ht") is not None:
+                if sh is None and (fm.get("hell_ht") or 0.0) >= r["steigt_min_ht"]:
+                    hinweise.append(f"Tonhöhe nicht messbar, wird zum Schluss aber heller ({z(fm['hell_ht'])} Halbtöne)")
+                elif sh is None:
+                    gruende.append("Tonhöhe nicht messbar (soll zum Schluss steigen)")
+                elif sh < r["steigt_min_ht"]:
+                    gruende.append(f"Tonhöhe steigt zum Schluss nicht (Schluss gegen Anfang {z(sh)} Halbtöne)")
+                else:
+                    punkte += 0.1 * min(sh, 24.0)        # der Anstieg macht diese Art aus: deutlicher = besser
+            if r.get("kategorie") == "lang" and fm.get("stoesse", 1) > 2:
+                hinweise.append(f"{fm['stoesse']} getrennte Stöße statt eines langen Flatterns")
+                punkte -= 0.5
+            if fm.get("flachheit", 0.0) >= 0.15 and r.get("kategorie") != "pfft":
+                hinweise.append(f"viel Luft/Rauschen (Flachheit {z(fm['flachheit'], 2)})")
     st = (a or {}).get("stimme")
     if st is not None:
         r["stimme"] = st
@@ -1349,6 +1683,8 @@ def stimme_text(st, ende=True):
 def notiz(r):
     t = TOENE[r["ton"]]
     teile = [f"Prompt „{r['variante']}“: {r['prompt_notiz']}."]
+    if r.get("kategorie") and t.get("furz"):
+        teile.insert(0, f"Art: {FURZ_ARTEN.get(r['kategorie'], r['kategorie'])}.")
     if r.get("umgestellt"):
         u = r["umgestellt"]
         sc = u["schnitte_s"]
@@ -1360,6 +1696,8 @@ def notiz(r):
         teile.append(f"Ablauf gemessen: {reihenfolge_text(r['reihenfolge'])}.")
     if r.get("stimme"):
         teile.append(f"Gemessen: {stimme_text(r['stimme'], ende=not r.get('reihenfolge'))}.")
+    if r.get("furz"):
+        teile.append(f"Gemessen: {furz_text(r['furz'], r['dauer_s'] - m.TAIL_S)}.")
     wm = r.get("wecker")
     if wm:
         tz = wm["tick_zeiten_s"]
@@ -1368,7 +1706,13 @@ def notiz(r):
     if r["ast_top"]:
         e = r["ast_erwartet"]
         teile.append(f"AudioSet: „{e[0]}“ {z(e[1], 2)} (Spitze: „{r['ast_top'][0][0]}“ {z(r['ast_top'][0][1], 2)}).")
-        if r.get("ast_meiden"):
+        if r.get("ast_meiden") and t.get("furz"):
+            am = r["ast_meiden"]
+            teile.append("Kontrolle: " + ", ".join(f"„{k}“ {z(am[k], 2)}" for k in ("Laughter", "Squish", "Liquid", "Burping, eructation", "Hiss")
+                                                   if k in am) + ".")
+            if r.get("ast_beobachtet"):
+                teile.append("AudioSet hört außerdem: " + ", ".join(f"„{k}“ {z(v, 2)}" for k, v in sorted(r["ast_beobachtet"].items(), key=lambda kv: -kv[1])) + ".")
+        elif r.get("ast_meiden"):
             am = r["ast_meiden"]
             teile.append("Kontrolle Stöhnen: " + ", ".join(f"„{k}“ {z(am[k], 2)}" for k in ("Groan", "Grunt", "Wail, moan") if k in am)
                          + (f"; Atemklassen zusammen {z(r['ast_atem_summe'], 2)}" if "ast_atem_summe" in r else "") + ".")
@@ -1460,6 +1804,11 @@ def dubletten(rs, alle=False):
                 schwach.setdefault("aehnlich", []).append((stark["roh"], round(c, 2)))
 
 
+def arten(t):
+    """Arten (Kategorien) eines Tons in der Reihenfolge der Prompts; ohne Kategorie zählt die Variante."""
+    return list(dict.fromkeys(optionen_von(p).get("kategorie", p[0]) for p in t["prompts"]))
+
+
 def seite(nur=None):
     """Auswahl, Ablage, messwerte.json und hoeren.html. Mit nur (Töne, kommagetrennt) werden nur diese Töne neu
     ausgewählt und abgelegt; alle übrigen Einträge in messwerte.json und ihre Dateien bleiben unverändert, die Hörseite
@@ -1499,9 +1848,17 @@ def seite(nur=None):
             for r in spaeter:
                 r["vielfalt"] = True
             ok = erst + spaeter
+        kats = arten(t)
+        if t.get("ausgewogen"):
+            # Furzkissen: reihum der beste jeder Art, dann der zweitbeste … (Vielfalt über die Arten)
+            je = {k: [r for r in ok if r.get("kategorie", r["variante"]) == k] for k in kats}
+            ok = [je[k][i] for i in range(max([len(v) for v in je.values()] + [0])) for k in kats if i < len(je[k])]
         rest = sorted([r for r in rs if r["ausschluss"] and not any(g.startswith("fast gleich") for g in r["ausschluss"])],
                       key=lambda r: -r["punkte"])
         wahl = (ok if t.get("nur_ok") else ok + rest)[:t["behalten"]]
+        if t.get("ausgewogen"):
+            # Nummern nach Art geordnet (Reihenfolge der Prompts), innerhalb der Art nach Punkten
+            wahl.sort(key=lambda r: (kats.index(r.get("kategorie", r["variante"])), -r["punkte"]))
         for i, r in enumerate(wahl, 1):
             r["id"] = f"{ton}_{i:02d}"
         for r in umg:
@@ -1569,8 +1926,12 @@ nav{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px}nav a{color:var(--ink)
         rs = [r for r in rs if not r.get("umgestellt")] + [r for r in rs if r.get("umgestellt")]
         hw = '<p class="sub">' + html.escape(t["hinweis"]) + "</p>" if t.get("hinweis") else ""
         teile.append(f"""<section class="group" id="{ton}"><h2>{html.escape(t['titel'])}</h2>
-<p class="sub">{html.escape(t['zweck'])}; Ziel {html.escape(t['ziel_text'])}; {z(t['lufs'])} LUFS. {len(rs)} von {n_ges} erzeugten Kandidaten, Reihenfolge = Empfehlung nach Messwerten.</p>{hw}</section>""")
+<p class="sub">{html.escape(t['zweck'])}; Ziel {html.escape(t['ziel_text'])}; {z(t['lufs'])} LUFS. {len(rs)} von {n_ges} erzeugten Kandidaten, Reihenfolge = Empfehlung nach Messwerten{' (je Art)' if t.get('ausgewogen') else ''}.</p>{hw}</section>""")
+        art = None
         for r in rs:
+            if t.get("ausgewogen") and r.get("kategorie") != art:
+                art = r.get("kategorie")
+                teile.append(f'<h3 style="margin:18px 0 6px">{html.escape(FURZ_ARTEN.get(art, art or ""))}</h3>')
             wm = r.get("wecker")
             extra = ""
             if wm:
@@ -1601,13 +1962,13 @@ nav{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px}nav a{color:var(--ink)
 Handy-Modell: Pegelverlust {z(r['sim_pegelverlust_db'])} dB, Mitten {z(r['sim_mitten_500_4k_db'])} dB. AudioSet: {html.escape(top)}; Sprache {z(r['ast_sprache'][1], 2)}, Katze {z(r['ast_katze'][1], 2)}. Punkte {z(r['punkte'], 2)}.</p>
 <details><summary>Prompt</summary><p class="facts">{html.escape(r['prompt'])} duration: {r['sekunden_prompt']:.1f}s</p></details></section>""")
     verw = "".join(f"<li>{html.escape(v['roh'])}: {html.escape('; '.join(v['gruende']))}</li>" for v in verworfen)
-    page = f"""<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Ostereier Hörproben</title>
+    page = f"""<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Easter Eggs Hörproben</title>
 {css}</head><body><main>
-<h1>Ostereier Teil 2: Hörproben</h1><p class="lead">Töne zum Senden an Mitspieler (Gähnen, Schnarchen, Wecker, Papierkugel) und für Reaktionen. {len(behalten)} Kandidaten, erzeugt mit MOSS-SoundEffect v2.0 (Apache 2.0), mono, weich ein- und ausgeblendet. Offline, lokal. Entwurf, nichts davon ist im Spiel.</p>
+<h1>Easter Eggs: Hörproben</h1><p class="lead">Töne zum Senden an Mitspieler (Gähnen, Schnarchen, Wecker, Papierkugel, Furzkissen) und für Reaktionen. {len(behalten)} Kandidaten, erzeugt mit MOSS-SoundEffect v2.0 (Apache 2.0), mono, weich ein- und ausgeblendet. Offline, lokal. Entwurf, nichts davon ist im Spiel.</p>
 <nav>{nav}</nav>
 <div class="hint"><b>Wecker in einem Stück:</b> Ticken und Klingeln hat das Modell zusammen erzeugt; geschnitten wurden nur Anfang und Ende (weiche Blenden), nichts zusammengesetzt. Der Klingel-Einsatz ist gemessen (Sekunde ab Dateianfang, in messwerte.json als <code>klingeln_ab_s</code>) und steht bei jedem Wecker, damit die Animation darauf passt. War das Ticken mehr als 20 dB leiser als das Klingeln (am Handy unhörbar), ist es vor dem Klingeln mit einer weichen Pegelkurve angehoben (steht beim Kandidaten).<br>
-<b>Katzen-Leitplanke:</b> keine Katzenlaute in den Prompts; Tiefpass so, dass über 6 kHz höchstens −30 dB bleiben; geprüft auf Pulsfolge 15–50 Hz (Schnurr-Bereich) und schmale Linien 2–6 kHz (Piepen){', AudioSet-Klassifikator auf Katze/Miauen/Schnurren und Sprache' if mit_ast else ''}. Ein Wecker ist von Natur aus eine Glocke mit schnellem Klöppel: Linien und Puls sind dort zu erwarten und nur markiert.<br>
-<b>Pegel:</b> Wecker −17,5 LUFS (wie „Du bist dran“), Stimmen, Klatschen und Daumen −19 LUFS (wie der Jubel), Papier −21/−21,5 LUFS (wie Flip/Mischen); Mau-Ton −11,4 LUFS. Im Spiel kommt die Stufe der Spieltöne dazu (normal −4,5 dB).<br>
+<b>Katzen-Leitplanke:</b> keine Katzenlaute in den Prompts; Tiefpass so, dass über 6 kHz höchstens −30 dB bleiben; geprüft auf Pulsfolge 15–50 Hz (Schnurr-Bereich) und schmale Linien 2–6 kHz (Piepen){', AudioSet-Klassifikator auf Katze/Miauen/Schnurren und Sprache' if mit_ast else ''}. Ein Wecker ist von Natur aus eine Glocke mit schnellem Klöppel: Linien und Puls sind dort zu erwarten und nur markiert. Beim Furzkissen ist das Flattern des Gummis von Natur aus ein Puls in diesem Bereich: markiert, ausgeschlossen nur, wenn AudioSet zugleich Schnurren hört; Quietschen, das nach Maus oder Vogel klingt, fällt aus.<br>
+<b>Pegel:</b> Wecker −17,5 LUFS (wie „Du bist dran“), Stimmen, Klatschen und Daumen −19 LUFS (wie der Jubel), Papier −21/−21,5 LUFS (wie Flip/Mischen), Furzkissen −20 LUFS (dazwischen), sein kleines „Pfft“ −23 LUFS; Mau-Ton −11,4 LUFS. Im Spiel kommt die Stufe der Spieltöne dazu (normal −4,5 dB).<br>
 <b>Ehrlich:</b> Niemand hat gehört; Rangfolge und Notizen stützen sich auf Messwerte und den AudioSet-Klassifikator. Bitte besonders auf verständliche Wörter, katzenähnliche Laute und Klicks achten.</div>
 {''.join(teile)}
 <section class="group"><h2>Verworfen</h2><details><summary>{len(verworfen)} Kandidaten (Gründe)</summary><ul class="facts">{verw}</ul></details></section>
@@ -1626,13 +1987,14 @@ if __name__ == "__main__":
     ap.add_argument("--seite", action="store_true")
     ap.add_argument("--nur", help="Töne, kommagetrennt (gaehnen,wecker)")
     ap.add_argument("--gpu", type=int, default=0)
+    ap.add_argument("--vram", type=float, help="höchstens so viele GiB auf der GPU (Sparmodus erzwingen)")
     a = ap.parse_args()
     cs = candidates(a.nur)
     if (a.alles or a.bearbeiten) and any(c.get("umgestellt") for c in cs):
         ok, info = umstellen()
         print("Umgestellt:", "ja" if ok else "nein", json.dumps(info, ensure_ascii=False), flush=True)
     if a.alles or a.erzeugen:
-        erzeugen(cs, a.gpu)
+        erzeugen(cs, a.gpu, vram=a.vram)
     if a.alles or a.bearbeiten:
         bearbeiten(cs)
     if a.ast:

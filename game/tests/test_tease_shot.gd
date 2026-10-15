@@ -1,7 +1,16 @@
 extends SceneTree
-# Kontrollbilder Beta 1.6.3, Easter Eggs Teil 2 „Necken“ (mit Renderer; „_shot“: vom Testlauf ausgenommen):
-#   tools/godot_run.ps1 -Script res://tests/test_tease_shot.gd -Resolution 1600x720 [-EnvPairs "SHOT_DIR=…"]
-# Ohne SHOT_DIR nach docs/module/optik_163_*.png (docs/module/eastereggs2.md 9):
+# Kontrollbilder Easter Eggs Teil 2 „Necken“ (mit Renderer; „_shot“: vom Testlauf ausgenommen):
+#   tools/godot_run.ps1 -Script res://tests/test_tease_shot.gd -Resolution 1600x720 [-EnvPairs "SHOT_DIR=…","SERIE=163"]
+#   (15.10.2026: mit -Extra '--rendering-driver','opengl3_angle', siehe test_tease_icons_shot.gd)
+# Beta 1.6.5 (Standard, SERIE=165) nach docs/module/optik_165_*.png: die 4 Reaktionsknöpfe (Lachen, Klatschen, Daumen hoch, Schreck)
+#   tisch_tag / tisch_nacht      Knöpfe neben „Du“, verdecken weder Sortieren, Rückseiten, Mau, Hand, Stapel noch Hinweis
+#   reaktion_tag                 eigener Daumen hoch steigt auf (festes Bild, Fluent Emoji)
+#   gesperrt                     Sperrzeit (eigener Eimer leer): alle 4 ausgegraut
+#   gross_tag / gross_nacht      großer Modus: Knöpfe in der Zeile „Du“ vor der Kartenzahl
+#   sehr_gross / gross_sehr_gross_nacht   Schrift „Sehr groß“ (normal bzw. großer Modus)
+#   rundenende                   Rundenende: Knöpfe über der Tafel, eine Reaktion steigt auf
+#   en_tag                       Englisch (Hinweis englisch, Knöpfe ohne Text)
+# SERIE=163 nach docs/module/optik_163_*.png (docs/module/eastereggs2.md 9; Stand 1.6.3, Reaktionsknopf seit 1.6.5 wie oben):
 #   menue_tag / menue_nacht      Necken-Menü am Spieler am Zug (ab 10 s: Kugel, Schnarchen, Wecker, Karten ansehen)
 #   menue_ausgegraut             vor 10 s: Schnarchen/Wecker ausgegraut mit Ring und Hinweis
 #   schnarchen                   Z z z mit Schlafmütze am Gegner (Tag)
@@ -23,6 +32,7 @@ var clock := 500000
 var ts: TableScreen
 var tz: TeaseFx
 var fake: ShotSource
+var serie := "165"
 
 
 class ShotSource:
@@ -55,8 +65,8 @@ func now_ms() -> int:
 func shot(file: String) -> void:
 	for i in 3:
 		await process_frame
-	root.get_texture().get_image().save_png(out.path_join("optik_163_%s.png" % file))
-	print("Bild: optik_163_%s.png" % file)
+	root.get_texture().get_image().save_png(out.path_join("optik_%s_%s.png" % [serie, file]))
+	print("Bild: optik_%s_%s.png" % [serie, file])
 
 
 func show(turn: int, phase := "turn") -> void:
@@ -82,6 +92,8 @@ func run() -> void:
 	if out == "":
 		out = ProjectSettings.globalize_path("res://").path_join("../docs/module").simplify_path()
 	DirAccess.make_dir_recursive_absolute(out)
+	if OS.get_environment("SERIE") != "":
+		serie = OS.get_environment("SERIE")
 	var app := UiApp.app()
 	var keep := {"grosser_modus": false, "toene": "aus", "effekte": "voll", "necken": true, "schrift": "normal"}
 	var before := {}
@@ -116,6 +128,14 @@ func run() -> void:
 	var kim := 1 if me != 1 else 2
 	show(kim)
 	await create_timer(0.5).timeout
+	if serie == "165":
+		await run_165(me, kim)
+		I18n.set_language("de")
+		for key in before:
+			app.settings.set_value(key, before[key])
+		print("RESULT: 1 ok")
+		quit(0)
+		return
 
 	# --- Menü: ausgegraut (vor 10 s), dann Tag und Nacht
 	ts.table.set_night(0.0)
@@ -196,10 +216,8 @@ func run() -> void:
 	await create_timer(0.7).timeout
 	await shot("reaktionen_tag")
 	await create_timer(1.5).timeout
-	tz.picker.toggle()
 	await create_timer(0.4).timeout
 	await shot("reaktion_knopf")
-	tz.picker.open = false
 
 	# --- großer Modus
 	ts.table.set_big(true)
@@ -208,11 +226,9 @@ func run() -> void:
 	show(kim)
 	await create_timer(0.8).timeout
 	tz.open_menu(kim)
-	tz.picker.toggle()
 	await create_timer(0.4).timeout
 	await shot("gross_menue")
 	tz.close_menu(false)
-	tz.picker.open = false
 	# Beta 1.6.3: Effekte im großen Modus (Tag: Schnarchen, Reaktionen, Kugel; Nacht: Wecker klingelt, Kugel im Flug)
 	await create_timer(0.3).timeout
 	fx("snore", me, kim)
@@ -242,11 +258,9 @@ func run() -> void:
 	show(kim)
 	await create_timer(0.5).timeout
 	tz.open_menu(kim)
-	tz.picker.toggle()
 	await create_timer(0.4).timeout
 	await shot("sehr_gross")
 	tz.close_menu(false)
-	tz.picker.open = false
 	UiFonts.set_level("normal", root)
 	await process_frame
 	ts._layout()
@@ -258,11 +272,9 @@ func run() -> void:
 	fake.v["ranking"] = ranking
 	show(-1, "round_over")
 	await create_timer(0.8).timeout
-	tz.picker.toggle()
 	fx("react", me, -1, "klatschen")
 	await create_timer(0.5).timeout
 	await shot("rundenende_reaktion")
-	tz.picker.open = false
 
 	# --- Englisch
 	fake.v.erase("ranking")
@@ -279,3 +291,71 @@ func run() -> void:
 		app.settings.set_value(key, before[key])
 	print("RESULT: 1 ok")
 	quit(0)
+
+
+# Beta 1.6.5: die 4 Reaktionsknöpfe am Tisch (Kim am Zug, eigener Eimer voll bzw. leer)
+func run_165(me: int, kim: int) -> void:
+	for tm in ["tag", "nacht"]:
+		clock += 20000
+		ts.table.set_night(1.0 if tm == "nacht" else 0.0)
+		show(kim)
+		await create_timer(0.5).timeout
+		await shot("tisch_" + tm)
+	ts.table.set_night(0.0)
+	clock += 20000
+	fx("react", me, -1, "daumen")
+	await create_timer(0.55).timeout
+	await shot("reaktion_tag")
+	await create_timer(1.5).timeout
+	# Sperrzeit: eigener Eimer leer → alle 4 grau
+	clock += 20000
+	for i in TeaseRules.REACT_BUCKET:
+		fx("react", me, -1, "lachen")
+	await create_timer(2.0).timeout
+	await shot("gesperrt")
+	# großer Modus, Tag und Nacht
+	clock += 20000
+	ts.table.set_big(true)
+	await process_frame
+	ts._layout()
+	for tm in ["tag", "nacht"]:
+		ts.table.set_night(1.0 if tm == "nacht" else 0.0)
+		show(kim)
+		await create_timer(0.9).timeout
+		await shot("gross_" + tm)
+	# Schrift „Sehr groß“: großer Modus (nachts), dann normal (tags)
+	UiFonts.set_level("sehr_gross", root)
+	await process_frame
+	ts._layout()
+	show(kim)
+	await create_timer(0.8).timeout
+	await shot("gross_sehr_gross_nacht")
+	ts.table.set_night(0.0)
+	ts.table.set_big(false)
+	await process_frame
+	ts._layout()
+	show(kim)
+	await create_timer(0.8).timeout
+	await shot("sehr_gross")
+	UiFonts.set_level("normal", root)
+	await process_frame
+	ts._layout()
+	# Rundenende: Knöpfe über der Tafel, eine Reaktion steigt auf
+	var ranking: Array = []
+	for p in fake.v.players:
+		ranking.append(int(p.seat))
+	fake.v["ranking"] = ranking
+	show(-1, "round_over")
+	await create_timer(0.8).timeout
+	clock += 20000
+	fx("react", me, -1, "klatschen")
+	await create_timer(0.5).timeout
+	await shot("rundenende")
+	fake.v.erase("ranking")
+	# Englisch
+	show(kim)
+	await create_timer(1.6).timeout
+	I18n.set_language("en")
+	show(kim)
+	await create_timer(0.5).timeout
+	await shot("en_tag")

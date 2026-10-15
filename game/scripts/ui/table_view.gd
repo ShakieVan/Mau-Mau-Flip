@@ -1389,9 +1389,8 @@ func _tap(p: Vector2) -> bool:
 		if _pile.highlight and not input_locked:
 			_emit_action({"a": "draw"})
 			return true
-	# Mau-Mau Flip (Beta 1.6.3, Necken): Kopf → Necken-Menü (falls hier etwas geht), eigenes Namensschild → Reaktionsfächer
-	if me_badge.visible and me_badge.hit_head(g) and tease.tap_me():
-		return true
+	# Mau-Mau Flip (Beta 1.6.3, Necken): Kopf → Necken-Menü (falls hier etwas geht). Beta 1.6.5: Die Reaktionen sind eigene Knöpfe
+	# (TeaseMenu.ReactionBar), das eigene Namensschild öffnet nichts mehr.
 	for s in _seats:
 		var node: OpponentSeat = _seats[s]
 		if node.hit_head(g) and tease.tap_head(s):

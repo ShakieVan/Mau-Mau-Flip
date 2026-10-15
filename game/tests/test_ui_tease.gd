@@ -7,6 +7,10 @@ extends SceneTree
 #   Effekte und Töne je Rolle (Ziel normal, Absender −12 dB, Zuschauer still bzw. Plopp leise), Vibration, Wecker abstellen,
 #   Schnarchen ausblenden, Kugeln je Platz ≤ 3, „Mpf!“, Reaktionstöne ≤ 2 gleichzeitig und 600 ms je Name, fx_no-Zeilen/Ausgrauen,
 #   Necken aus, Weitergeben, reduziert, großer Modus, Hindernisse für die Sofort-Leiste, Übung über die echte LocalTable.
+#   Beta 1.6.5: 4 Reaktionsknöpfe statt Lachgesicht mit Fächer – Reihenfolge Lachen, Klatschen, Daumen hoch, Schreck, ein echter Tipp
+#   (Viewport-Eingabe) je Knopf sendet genau diese Reaktion, ≥ 44 px Trefferfläche, in der Sperrzeit grau ohne Senden, nichts verdeckt
+#   (Hand, Stapel, Mau, Erwischt, Sortieren/Rückseiten, Hinweisleiste, Fächer) bei 2–8 Spielern, Schrift normal bis sehr groß und
+#   im großen Modus (in der Zeile „Du“ vor der Kartenzahl).
 
 const CleanExit := preload("res://tests/clean_exit.gd")
 
@@ -83,11 +87,11 @@ func head_pos(seat: int) -> Vector2:
 	return t.get_global_transform().affine_inverse() * node.avatar_global()
 
 
-func setup(mode := "client", turn := 1) -> void:
+func setup(mode := "client", turn := 1, players := 4) -> void:
 	if t != null:
 		t.queue_free()
 		await process_frame
-	sample = TableSamples.create(4, 7)
+	sample = TableSamples.create(players, 7)
 	sample.turn = turn
 	src = FakeSource.new()
 	src.m = mode
@@ -117,35 +121,93 @@ func sounds() -> Array:
 	return snd.log.map(func(e: Array) -> String: return "%s%s" % [e[0], "" if float(e[1]) == 0.0 else " leise"])
 
 
+# Beta 1.6.5: echter Tipp über den Viewport (drücken, loslassen) – so zählt auch, ob ein anderes Steuerelement den Tipp abfängt
+func tap_screen(pos: Vector2) -> void:
+	for pressed in [true, false]:
+		var e := InputEventMouseButton.new()
+		e.button_index = MOUSE_BUTTON_LEFT
+		e.pressed = pressed
+		e.button_mask = MOUSE_BUTTON_MASK_LEFT if pressed else 0
+		e.position = pos
+		e.global_position = pos
+		root.push_input(e, true)
+
+
+# Beta 1.6.5: Was die Reaktionsknöpfe überdecken (Bildschirmkoordinaten): Hand, Ziehstapel, Ablage, Mau, Sortieren, Rückseiten,
+# Hinweisleiste, „Erwischt!“-Felder und Fächer der Mitspieler, Listenzeilen der anderen (großer Modus). Leer = nichts.
+func covered_by_reactions() -> Array:
+	var out: Array = []
+	var rb := tf.reactions
+	if not rb.visible:
+		return ["unsichtbar"]
+	var xf := rb.get_global_transform_with_canvas()
+	var bars: Array[Rect2] = []
+	for c in rb.centers:
+		bars.append(Rect2(xf * c - Vector2.ONE * rb.r, Vector2.ONE * rb.r * 2.0))
+	var tg := t.get_global_transform_with_canvas()
+	var hr := t.hand_rect(t.size)
+	var items := {"Hand": Rect2(tg * (hr.position + Vector2(0, 40)), hr.size - Vector2(0, 40)),
+		"Mau": t.mau_button.get_global_rect()}
+	for b in [["Sortieren", t.get("_sort_btn")], ["Rückseiten", t.get("_backs_btn")]]:
+		if (b[1] as Control).is_visible_in_tree():
+			items[b[0]] = (b[1] as Control).get_global_rect()
+	for c: CardView in [t.pile_top(), t.discard_top()]:
+		if c != null and is_instance_valid(c) and c.is_visible_in_tree():
+			var w := c.width * c.global_scale.x
+			items["Stapel %s" % c.get_instance_id()] = Rect2(c.get_global_transform_with_canvas().origin - Vector2(w * 0.5, w * 0.78), Vector2(w, w * 1.56))
+	var hb := t.hint_bar
+	if hb.hint != "":
+		var tw := UiFonts.text(700, 100.0).get_string_size(hb.hint, HORIZONTAL_ALIGNMENT_LEFT, -1, UiFonts.size("hinweisleiste")).x + 40.0
+		var cx := hb.get_global_rect().get_center().x
+		items["Hinweis"] = Rect2(cx - tw * 0.5, hb.global_position.y + hb.hint_y - hb.hint_h() * 0.5, tw, hb.hint_h())
+	for s in t.get("_seats"):
+		var node := t.seat_node(int(s))
+		if node == null or not node.is_visible_in_tree() or node.modulate.a < 0.5:
+			continue
+		var cr: Rect2 = tf.catch_rect_of(int(s), rb).grow(-18.0)
+		items["Erwischt %d" % s] = Rect2(xf * cr.position, cr.size)
+		if node.list_mode:
+			items["Zeile %d" % s] = Rect2(node.to_global(node.list_rect().position), node.list_rect().size)
+		for c: Dictionary in node.fan_cards():
+			var w := float(c.width)
+			items["Fächer %d" % s] = Rect2(Vector2(c.pos) - Vector2(w * 0.5, w * 0.78), Vector2(w, w * 1.56)).merge(items.get("Fächer %d" % s, Rect2(Vector2(c.pos), Vector2.ZERO)))
+	for key in items:
+		var r: Rect2 = items[key]
+		for b in bars:
+			if b.grow(-1.0).intersects(r):
+				out.append("%s %s↔%s" % [key, b, r])
+				break
+	return out
+
+
 func run() -> void:
 	await setup()
 	# --- Aufbau
 	check(tf.layer != null and tf.layer.get_parent() == t.get("_overlay"), "Effekt-Ebene liegt in den Overlays des Tisches")
-	check(tf.picker.get_index() > t.round_end.get_index() and tf.picker.get_index() < t.handover.get_index(), "Reaktionsknopf über dem Rundenende, unter dem Sichtschutz")
-	check(tf.picker.visible, "Reaktionsknopf am eigenen Platz sichtbar (Netz, Necken an)")
+	check(tf.reactions.get_index() > t.round_end.get_index() and tf.reactions.get_index() < t.handover.get_index(), "Reaktionsknöpfe über dem Rundenende, unter dem Sichtschutz")
+	check(tf.reactions.visible and tf.reactions.centers.size() == 4, "4 Reaktionsknöpfe am eigenen Platz sichtbar (Netz, Necken an)")
 	# Gerätetest 1.6.3: nicht über Farbrad, Rückseiten-Großansicht, Kartenhilfe und Rückfragen/Menüs (modal_cb, TableScreen)
-	tf.picker.toggle()
 	t.wish_picker.open_wheel("hell")
 	tf.tick(0.016)
-	check(not tf.picker.visible and not tf.picker.open and tf.covered(), "Farbrad offen: Reaktionsknopf weg, Fächer zu")
+	check(not tf.reactions.visible and tf.covered(), "Farbrad offen: Reaktionsknöpfe weg")
 	t.wish_picker.close()
 	tf.tick(0.016)
-	check(tf.picker.visible and not tf.picker.open, "Farbrad zu: Reaktionsknopf wieder da (Fächer bleibt zu)")
+	check(tf.reactions.visible, "Farbrad zu: Reaktionsknöpfe wieder da")
 	t.backs_viewer.visible = true
 	tf.tick(0.016)
-	check(not tf.picker.visible, "Rückseiten-Großansicht: Reaktionsknopf weg")
+	check(not tf.reactions.visible, "Rückseiten-Großansicht: Reaktionsknöpfe weg")
 	t.backs_viewer.visible = false
 	t.help_popup.visible = true
 	tf.tick(0.016)
-	check(not tf.picker.visible, "Kartenhilfe: Reaktionsknopf weg")
+	check(not tf.reactions.visible, "Kartenhilfe: Reaktionsknöpfe weg")
 	t.help_popup.visible = false
 	var modal := [true]
 	tf.modal_cb = func() -> bool: return modal[0]
 	tf.tick(0.016)
-	check(not tf.picker.visible, "Rückfrage/Menü (modal_cb): Reaktionsknopf weg")
+	check(not tf.reactions.visible, "Rückfrage/Menü (modal_cb): Reaktionsknöpfe weg")
 	modal[0] = false
 	tf.tick(0.016)
-	check(tf.picker.visible, "Rückfrage zu: Reaktionsknopf wieder da")
+	check(tf.reactions.visible, "Rückfrage zu: Reaktionsknöpfe wieder da")
 	tf.modal_cb = Callable()
 
 	# --- Kopf-Tipp → Menü mit Papierkugel, Schnarchen/Wecker (nur beim Spieler am Zug, vor 10 s ausgegraut), Karten ansehen
@@ -333,7 +395,7 @@ func run() -> void:
 	var n_toasts := hb._toasts.size()
 	tf.open_menu(1)
 	src.fx_refused.emit("rate")
-	check(hb._toasts.size() == n_toasts and not bool(tf.menu.items[0].on) and tf.picker.gray and tf.picker.dim and tf.picker._shake > 0.0, "fx_no rate → nur ausgegraut, Reaktionsknopf blass und wackelt")
+	check(hb._toasts.size() == n_toasts and not bool(tf.menu.items[0].on) and tf.reactions.gray and tf.reactions.dim and tf.reactions._shake > 0.0, "fx_no rate → nur ausgegraut, Reaktionsknöpfe blass und wackeln")
 	tf.tick(1.3)
 	check(bool(tf.menu.items[0].on), "nach kurzer Zeit wieder aktiv")
 
@@ -407,39 +469,72 @@ func run() -> void:
 	check(t.backs_viewer.visible and tf.menu == null, "Rückseiten sichtbar: Fächer öffnet wie bisher die Großansicht")
 	t.backs_viewer.visible = false
 
-	# --- Reaktionsknopf: Tipp aufs Namensschild fächert auf, Wahl → send_fx; Hindernisse für die Sofort-Leiste
+	# --- Beta 1.6.5: 4 Reaktionsknöpfe, ein echter Tipp je Knopf sendet genau diese Reaktion; Hindernisse für die Sofort-Leiste
 	clock += 10000                   # eigener Reaktions-Eimer wieder voll
+	tf.tick(0.2)
 	src.sent.clear()
+	check(TeaseMenu.REACT_ORDER == ["lachen", "klatschen", "daumen", "schreck"], "Reihenfolge Lachen, Klatschen, Daumen hoch, Schreck")
+	# Beta 1.6.5: Reaktionen als feste Bilder (Fluent Emoji, SVG, wie im Browser), scharf genug für groß: ≥ 384 px, mit Mipmaps
+	var tex_ok := TeaseFx.REACT_TEX.keys().size() == 4
+	for r_name in TeaseMenu.REACT_ORDER:
+		var tex: Texture2D = TeaseFx.REACT_TEX.get(r_name)
+		tex_ok = tex_ok and tex != null and tex.get_width() >= 384 and tex.get_height() == tex.get_width() \
+			and tex.get_image().has_mipmaps() and tex.resource_path == "res://assets/ui/reaktionen/%s.svg" % r_name
+	check(tex_ok, "4 Reaktionsbilder aus assets/ui/reaktionen (SVG, ≥ 384 px, Mipmaps)")
+	var img_d := (TeaseFx.REACT_TEX["daumen"] as Texture2D).get_image()
+	img_d.decompress()
+	var opaque := 0
+	var stp := img_d.get_width() / 32
+	for y in range(0, img_d.get_height(), stp):
+		for x in range(0, img_d.get_width(), stp):
+			if img_d.get_pixel(x, y).a > 0.5:
+				opaque += 1
+	check(opaque > 300, "Daumen-Bild ist gefüllt (%d von 1024 Stichproben deckend)" % opaque)
+	check(not TeaseFx.REACT_TEX.has("ball") and not TeaseFx.REACT_TEX.has("snore"), "andere Bilder bleiben gezeichnet")
+	var rb := tf.reactions
+	check(rb.r * 2.0 >= 44.0 and rb.hit_r() * 2.0 >= 48.0, "Knöpfe groß genug (Durchmesser %.0f, Treffer %.0f)" % [rb.r * 2.0, rb.hit_r() * 2.0])
+	var xs_b: Array = rb.centers.map(func(p: Vector2) -> float: return p.x)
+	check(xs_b[0] < xs_b[1] and xs_b[1] < xs_b[2] and xs_b[2] < xs_b[3], "Knöpfe von links nach rechts in dieser Reihenfolge (%s)" % str(xs_b))
+	var labels: Array = []
+	for i in 4:
+		labels.append(rb._get_tooltip(rb.centers[i]))
+	check(labels == ["Lachen", "Klatschen", "Daumen hoch", "Schreck"], "Hilfetexte je Knopf (%s)" % str(labels))
+	for i in 4:
+		clock += 10000
+		tf.tick(0.2)
+		src.sent.clear()
+		tap_screen(rb.get_global_transform_with_canvas() * rb.centers[i])
+		check(src.sent == [{"k": "react", "r": TeaseMenu.REACT_ORDER[i]}], "Tipp auf Knopf %d → %s (%s)" % [i + 1, TeaseMenu.REACT_ORDER[i], str(src.sent)])
+	# neben den Knöpfen (zwischen zweien, darüber) wird nichts gesendet; das eigene Namensschild öffnet nichts mehr
+	clock += 10000
+	tf.tick(0.2)
+	src.sent.clear()
+	tap_screen(rb.get_global_transform_with_canvas() * ((rb.centers[0] + rb.centers[1]) * 0.5 + Vector2(0, rb.r + 14.0)))
+	check(src.sent.is_empty(), "Tipp neben die Knöpfe sendet nichts")
 	var me_p := t.get_global_transform().affine_inverse() * t.me_badge.avatar_global()
-	check(t._tap(me_p) and tf.picker.open, "Tipp aufs eigene Namensschild öffnet den Reaktionsfächer")
-	# derselbe Tipp aufs Namensschild schließt (Tipp daneben) und öffnet nicht gleich wieder (Gegenprüfung 1.6.3)
-	var press2 := InputEventMouseButton.new()
-	press2.button_index = MOUSE_BUTTON_LEFT
-	press2.pressed = true
-	press2.position = t.me_badge.avatar_global()
-	tf.picker._input(press2)
-	check(not tf.picker.open, "Tipp aufs Namensschild schließt den offenen Fächer")
-	t._tap(me_p)
-	check(not tf.picker.open, "derselbe Tipp öffnet den Fächer nicht gleich wieder")
-	tf.tick(0.45)
-	check(t._tap(me_p) and tf.picker.open, "später öffnet der Tipp ihn wieder")
-	tf.tick(0.3)
-	tf._on_react_chosen("klatschen")
-	check(src.sent == [{"k": "react", "r": "klatschen"}], "Reaktion gewählt → send_fx")
+	check(not t._tap(me_p) and src.sent.is_empty(), "Tipp aufs eigene Namensschild: kein Fächer, nichts gesendet")
+	# Sperrzeit: eigener Eimer leer → alle grau, ein Tipp sendet nichts
+	for i in TeaseRules.REACT_BUCKET + 1:
+		src.tease.commit(NetProtocol.make_fx("react", 0, -1, "lachen"), clock)
+	tf.tick(0.2)
+	check(rb.gray, "Sperrzeit: alle Knöpfe ausgegraut")
+	src.sent.clear()
+	tap_screen(rb.get_global_transform_with_canvas() * rb.centers[2])
+	check(src.sent.is_empty(), "Sperrzeit: Tipp sendet nichts")
+	clock += 30000
+	tf.tick(0.2)
+	check(not rb.gray, "nach der Sperrzeit wieder aktiv")
 	var obs := tf.obstacles()
-	check(obs.size() >= 1 and obs[0].size.x > 40.0, "Hindernisse: Reaktionsknopf (%s)" % str(obs))
+	check(obs.size() >= 1 and obs[0].size.x > 200.0, "Hindernisse: Reaktionsknöpfe (%s)" % str(obs))
 	tf.open_menu(1)
 	check(tf.obstacles().size() == 2, "Hindernisse: dazu das offene Menü")
 	tf.close_menu(false)
-	var pr := tf.picker.bounds()
-	var hint_y: float = t.hint_bar.hint_y
-	check(pr.end.y < t.size.y - 190.0 + 1.0 or pr.position.x > 300.0, "Reaktionsknopf liegt nicht über dem Sortierknopf")
-	check(not Rect2(t.mau_button.position, t.mau_button.size).intersects(pr), "Reaktionsknopf nicht über dem Mau-Knopf")
-	check(absf(pr.get_center().y - hint_y) > 10.0 or pr.end.x < 600.0, "Reaktionsknopf nicht über der Hinweisleiste")
+	var cover := covered_by_reactions()
+	check(cover.is_empty(), "Knöpfe verdecken nichts (%s)" % str(cover))
 
 	# --- Necken aus: nichts sehen, hören oder schicken; Kopf-Tipp wie früher
 	tf.set_enabled(false)
-	check(src.fx_off() and not tf.picker.visible, "Necken aus: Steuerung erfährt es, Reaktionsknopf weg")
+	check(src.fx_off() and not tf.reactions.visible, "Necken aus: Steuerung erfährt es, Reaktionsknöpfe weg")
 	snd.log.clear()
 	fx("react", 1, -1, "lachen")
 	fx("ball", 1, 0)
@@ -448,7 +543,7 @@ func run() -> void:
 	check(tf.menu == null and t.backs_viewer.visible, "Necken aus: Kopf-Tipp öffnet wie früher die Rückseiten")
 	t.backs_viewer.visible = false
 	tf.set_enabled(true)
-	check(not src.fx_off() and tf.picker.visible, "Necken wieder an")
+	check(not src.fx_off() and tf.reactions.visible, "Necken wieder an")
 
 	# --- reduziert: Kugel ohne Flug, Reaktion steigt nicht
 	t.reduced = true
@@ -481,13 +576,51 @@ func run() -> void:
 	check(tf.menu == null and not t.backs_viewer.visible, "großer Modus: Tipp auf die Zeile neben dem Avatar öffnet kein Menü")
 	sample.backs_visible = true
 	show(sample.view_for(0))
-	var badge_left :=(t.get_global_transform().affine_inverse() * t.me_badge.to_global(t.me_badge.list_rect().position)).x
-	check(tf.picker.visible and tf.picker.center.x < badge_left, "großer Modus: Reaktionsknopf links der Zeile „Du“")
+	tf.tick(0.2)
+	await create_timer(1.0).timeout             # Liste fertig gerollt
+	tf.tick(0.2)
+	var badge := t.me_badge
+	var row_g := Rect2(badge.to_global(badge.list_rect().position), badge.list_rect().size)
+	var count_g := badge.to_global(badge.count_rect().position).x
+	var rbg := Rect2(tf.reactions.get_global_transform_with_canvas() * tf.reactions.bounds().position, tf.reactions.bounds().size)
+	check(tf.reactions.visible and row_g.grow(2.0).encloses(rbg.grow(-4.0)), "großer Modus: Knöpfe in der Zeile „Du“ (%s in %s)" % [rbg, row_g])
+	check(rbg.end.x - 4.0 <= count_g, "großer Modus: Knöpfe vor der großen Kartenzahl")
+	check(tf.reactions.r >= 22.0 and badge.row_reserve > tf.reactions.r * 8.0, "großer Modus: Knöpfe ≥ 44 px, Zeile kürzt den Namen (r %.0f, Platz %.0f)" % [tf.reactions.r, badge.row_reserve])
+	var name_room: float = rbg.position.x - badge.to_global(Vector2(-badge.row_size.x * 0.5 + 12.0 + badge.avatar_radius() * 2.0 + 14.0, 0)).x
+	var du_w := UiFonts.text(800, 100.0).get_string_size("Du", HORIZONTAL_ALIGNMENT_LEFT, -1, mini(UiFonts.px(36), int(badge.row_size.y * 0.46))).x
+	check(name_room >= du_w, "großer Modus: „Du“ passt noch vor die Knöpfe (%.0f ≥ %.0f)" % [name_room, du_w])
+	src.sent.clear()
+	clock += 10000
+	tf.tick(0.2)
+	tap_screen(tf.reactions.get_global_transform_with_canvas() * tf.reactions.centers[1])
+	check(src.sent == [{"k": "react", "r": "klatschen"}], "großer Modus: Tipp auf den zweiten Knopf → Klatschen")
+	var cover_b := covered_by_reactions()
+	check(cover_b.is_empty(), "großer Modus: Knöpfe verdecken nichts (%s)" % str(cover_b))
 	t.set_big(false)
+	tf.tick(0.2)
+	check(is_zero_approx(badge.row_reserve), "normaler Modus: Zeile ohne Reservierung")
+
+	# --- Lage bei 2–8 Spielern, Schrift normal bis sehr groß, normal und groß: nichts verdeckt, ganz im Bild, Knöpfe ≥ 44 px
+	for n in [2, 3, 4, 5, 6, 8]:
+		for level in ["normal", "gross", "sehr_gross"]:
+			for big_on in [false, true]:
+				await setup("client", 1, n)
+				UiFonts.set_level(level, root)
+				t.set_big(big_on)
+				t._layout()
+				show(sample.view_for(0))
+				await create_timer(1.0 if big_on else 0.1).timeout
+				tf.tick(0.2)
+				var what := "%d Spieler, %s%s" % [n, level, ", groß" if big_on else ""]
+				var cv := covered_by_reactions()
+				var bb := Rect2(tf.reactions.get_global_transform_with_canvas() * tf.reactions.bounds().position, tf.reactions.bounds().size)
+				check(tf.reactions.visible and cv.is_empty(), "%s: Knöpfe verdecken nichts (%s)" % [what, str(cv)])
+				check(Rect2(Vector2.ZERO, t.size).grow(2.0).encloses(bb) and tf.reactions.r >= 22.0, "%s: ganz im Bild, ≥ 44 px (%s)" % [what, bb])
+	UiFonts.set_level("normal", root)
 
 	# --- Weitergeben: nichts (kein Knopf, Kopf wie früher)
 	await setup("pass")
-	check(not tf.picker.visible and not tf.can_open(1), "Weitergeben: kein Necken")
+	check(not tf.reactions.visible and not tf.can_open(1), "Weitergeben: kein Necken, keine Reaktionsknöpfe")
 	t._tap(head_pos(1))
 	check(tf.menu == null and t.backs_viewer.visible, "Weitergeben: Kopf öffnet die Rückseiten")
 	t.queue_free()
@@ -508,7 +641,7 @@ func run() -> void:
 	var tz := ts.table.tease
 	tz.auto_process = false
 	tz.sound = FakeSound.new()
-	check(not tz.picker.visible, "Übung: kein Reaktionsknopf")
+	check(not tz.reactions.visible, "Übung: keine Reaktionsknöpfe")
 	var bot_seat := 0 if ts.table.my_seat != 0 else 2
 	check(tz.open_menu(bot_seat), "Übung: Menü am Computergegner")
 	keys = tz.menu.items.map(func(it: Dictionary) -> String: return str(it.key))

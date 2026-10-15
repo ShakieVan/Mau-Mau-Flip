@@ -24,6 +24,7 @@ var header_only := false                # eigener Platz (0.1.4): nur Kopfzeile m
 var list_mode := false: set = set_list_mode   # großer Modus (Beta 1.1.1): Zeile der Spielerliste rechts, Ursprung = Zeilenmitte
 var row_size := Vector2(360, 96): set = set_row_size
 var me_entry := false                   # Zeile des eigenen Platzes („Du“)
+var row_reserve := 0.0                  # Beta 1.6.5: Zeile „Du“ – so viel Platz vor der Kartenzahl belegen die Reaktionsknöpfe (TeaseFx)
 var flip_y := 1.0                       # Richtungswechsel: Zeile klappt kurz zusammen (1 = offen)
 var reduced := false: set = set_reduced
 const THINK_AFTER := 5.0                # Denkblase, wenn der Spieler am Zug so lange nichts tut
@@ -337,7 +338,7 @@ func hit_fan(global_pos: Vector2) -> bool:
 
 
 # Mau-Mau Flip (Beta 1.6.3, Necken): Kopf (Avatar, Name, Kartenzahl) – öffnet das Necken-Menü; als Listenzeile (großer Modus) nur der
-# Avatar-Kreis, der Rest der Zeile bleibt wie bisher. Beim eigenen Platz (me_badge) öffnet er den Reaktionsfächer.
+# Avatar-Kreis, der Rest der Zeile bleibt wie bisher. Beim eigenen Platz (me_badge) öffnet er nichts (Reaktionsknöpfe ab Beta 1.6.5 daneben, TeaseMenu.ReactionBar).
 func hit_head(global_pos: Vector2) -> bool:
 	if not is_visible_in_tree() or modulate.a < 0.5:
 		return false
@@ -595,7 +596,7 @@ func _draw_row() -> void:
 	var ink := UiPalette.ui_text(night)
 	var name_font := UiFonts.text(800, 100.0)
 	var nx := ac.x + ar + 14.0
-	var room := cr.position.x - 10.0 - nx
+	var room := cr.position.x - 10.0 - nx - row_reserve
 	var sub := row_status()
 	var name_fs := mini(UiFonts.px(36), int(row_size.y * (0.38 if sub != "" else 0.46)))
 	var sub_fs := mini(UiFonts.px(25), int(row_size.y * 0.25))

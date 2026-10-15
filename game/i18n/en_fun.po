@@ -972,8 +972,8 @@ msgstr "Teasing (paper ball, snoring, alarm clock, reactions)"
 msgid "Mitspieler können dir Schnarchen, einen Wecker oder eine Papierkugel schicken."
 msgstr "Other players can send you snoring, an alarm clock or a paper ball."
 
-msgid "Tippe auf einen Mitspieler, um ihn zu necken. Der Knopf am eigenen Platz schickt eine Reaktion an alle."
-msgstr "Tap another player to tease them. The button at your own place sends a reaction to everyone."
+msgid "Tippe auf einen Mitspieler, um ihn zu necken. Die Knöpfe neben deinem Namen schicken eine Reaktion an alle."
+msgstr "Tap another player to tease them. The buttons next to your name send a reaction to everyone."
 
 msgid "Papierkugel"
 msgstr "Paper ball"

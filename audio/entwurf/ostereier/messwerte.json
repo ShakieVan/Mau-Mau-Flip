@@ -1,5 +1,5 @@
 {
- "stand": "2026-10-13",
+ "stand": "2026-10-15",
  "modell": "OpenMOSS-Team/MOSS-SoundEffect-v2.0",
  "lizenz_modell": "Apache-2.0",
  "skript": "tools/make_ostereier.py",
@@ -1032,6 +1032,311 @@
     }
    },
    "behalten": 6
+  },
+  "furzkissen": {
+   "titel": "Furzkissen",
+   "ziel_s": [
+    0.55,
+    0.95
+   ],
+   "ziel_lufs": -20.0,
+   "daueransage_s": 1.0,
+   "prompts": {
+    "kurz": {
+     "prompt": "a rubber whoopee cushion is sat on and lets out a short, punchy, comedic fart noise, a quick rubbery pfrrt of squeezed air, prank toy sound effect, close-up, dry room",
+     "seeds": [
+      6101,
+      6102,
+      6103,
+      6104,
+      6105,
+      6106,
+      6107,
+      6108,
+      6109,
+      6110,
+      6111,
+      6112
+     ],
+     "negativ": "speech, words, voice, talking, whispering, laughter, laughing, giggling, crowd, cheering, screaming, shouting, singing, music, wet, liquid, splash, squelch, squishy, mud, gurgling, dripping, toilet, realistic human body, burp, groan, grunt, cat, meow, purr, hiss, animal, bird, mouse",
+     "kategorie": "kurz",
+     "ziel": [
+      0.55,
+      0.95
+     ],
+     "sekunden": 1.0
+    },
+    "kurz_platt": {
+     "prompt": "someone sits down hard on a whoopee cushion, one quick loud raspy rubbery fart sound, short and snappy, cartoon prank, close-up",
+     "seeds": [
+      6101,
+      6102,
+      6103,
+      6104,
+      6105,
+      6106
+     ],
+     "negativ": "speech, words, voice, talking, whispering, laughter, laughing, giggling, crowd, cheering, screaming, shouting, singing, music, wet, liquid, splash, squelch, squishy, mud, gurgling, dripping, toilet, realistic human body, burp, groan, grunt, cat, meow, purr, hiss, animal, bird, mouse",
+     "kategorie": "kurz",
+     "ziel": [
+      0.55,
+      0.95
+     ],
+     "sekunden": 1.0
+    },
+    "lang": {
+     "prompt": "a whoopee cushion slowly squeezed flat, a long drawn-out rubbery fart noise, fluttering and flapping pfrrrrrrt as the air squeezes out of the rubber, comedic prank sound effect, close-up, dry room",
+     "seeds": [
+      6101,
+      6102,
+      6103,
+      6104,
+      6105,
+      6106
+     ],
+     "negativ": "speech, words, voice, talking, whispering, laughter, laughing, giggling, crowd, cheering, screaming, shouting, singing, music, wet, liquid, splash, squelch, squishy, mud, gurgling, dripping, toilet, realistic human body, burp, groan, grunt, cat, meow, purr, hiss, animal, bird, mouse",
+     "kategorie": "lang",
+     "ziel": [
+      1.15,
+      1.85
+     ],
+     "sekunden": 1.8,
+     "ausblenden": 0.2
+    },
+    "lang_flattern": {
+     "prompt": "a long flappy whoopee cushion fart, the rubber opening vibrates and flutters loudly for over a second, brrrrrrt, funny prank toy, close-up",
+     "seeds": [
+      6101,
+      6102,
+      6103,
+      6104,
+      6105,
+      6106
+     ],
+     "negativ": "speech, words, voice, talking, whispering, laughter, laughing, giggling, crowd, cheering, screaming, shouting, singing, music, wet, liquid, splash, squelch, squishy, mud, gurgling, dripping, toilet, realistic human body, burp, groan, grunt, cat, meow, purr, hiss, animal, bird, mouse",
+     "kategorie": "lang",
+     "ziel": [
+      1.15,
+      1.85
+     ],
+     "sekunden": 1.8,
+     "ausblenden": 0.2
+    },
+    "quietschig": {
+     "prompt": "a whoopee cushion fart noise that starts low and rubbery and rises in pitch at the end into a high squeaky toot as the last air escapes, comedic prank sound effect, close-up, dry room",
+     "seeds": [
+      6101,
+      6102,
+      6103,
+      6104,
+      6105,
+      6106,
+      6107,
+      6108,
+      6109,
+      6110,
+      6111,
+      6112
+     ],
+     "negativ": "speech, words, voice, talking, whispering, laughter, laughing, giggling, crowd, cheering, screaming, shouting, singing, music, wet, liquid, splash, squelch, squishy, mud, gurgling, dripping, toilet, realistic human body, burp, groan, grunt, cat, meow, purr, hiss, animal, bird, mouse",
+     "kategorie": "quietschig",
+     "ziel": [
+      0.7,
+      2.2
+     ],
+     "sekunden": 1.4,
+     "steigt_ht": 3.0
+    },
+    "quietschig_langsam": {
+     "prompt": "a rubber whoopee cushion squeezed slowly, a fluttering fart sound that gets higher and higher in pitch and ends with a squeaky rubbery peep, cartoon prank, close-up",
+     "seeds": [
+      6101,
+      6102,
+      6103,
+      6104,
+      6105,
+      6106,
+      6107,
+      6108,
+      6109,
+      6110,
+      6111,
+      6112
+     ],
+     "negativ": "speech, words, voice, talking, whispering, laughter, laughing, giggling, crowd, cheering, screaming, shouting, singing, music, wet, liquid, splash, squelch, squishy, mud, gurgling, dripping, toilet, realistic human body, burp, groan, grunt, cat, meow, purr, hiss, animal, bird, mouse",
+     "kategorie": "quietschig",
+     "ziel": [
+      0.7,
+      2.2
+     ],
+     "sekunden": 1.4,
+     "steigt_ht": 3.0
+    },
+    "pfft": {
+     "prompt": "a tiny whoopee cushion gives a small, soft, short pfft of air, a little rubbery puff, quiet and brief, comedic prank toy, close-up, dry room",
+     "seeds": [
+      6101,
+      6102,
+      6103,
+      6104,
+      6105,
+      6106
+     ],
+     "negativ": "speech, words, voice, talking, whispering, laughter, laughing, giggling, crowd, cheering, screaming, shouting, singing, music, wet, liquid, splash, squelch, squishy, mud, gurgling, dripping, toilet, realistic human body, burp, groan, grunt, cat, meow, purr, hiss, animal, bird, mouse",
+     "kategorie": "pfft",
+     "ziel": [
+      0.2,
+      0.6
+     ],
+     "sekunden": 0.6,
+     "lufs": -23.0,
+     "ausblenden": 0.08
+    },
+    "pfft_klein": {
+     "prompt": "a small half-empty whoopee cushion pressed lightly, one short quiet rubbery pfft, very brief, close-up",
+     "seeds": [
+      6101,
+      6102,
+      6103,
+      6104,
+      6105,
+      6106
+     ],
+     "negativ": "speech, words, voice, talking, whispering, laughter, laughing, giggling, crowd, cheering, screaming, shouting, singing, music, wet, liquid, splash, squelch, squishy, mud, gurgling, dripping, toilet, realistic human body, burp, groan, grunt, cat, meow, purr, hiss, animal, bird, mouse",
+     "kategorie": "pfft",
+     "ziel": [
+      0.2,
+      0.6
+     ],
+     "sekunden": 0.6,
+     "lufs": -23.0,
+     "ausblenden": 0.08
+    },
+    "kurz2": {
+     "prompt": "a short comedic fart noise from a whoopee cushion, a quick rubbery pfrrt, prank sound effect, close-up, dry room",
+     "seeds": [
+      6101,
+      6102,
+      6103,
+      6104,
+      6105,
+      6106
+     ],
+     "negativ": "speech, words, voice, talking, whispering, laughter, laughing, giggling, crowd, cheering, screaming, shouting, singing, music, wet, liquid, splash, squelch, squishy, mud, gurgling, dripping, toilet, realistic human body, burp, groan, grunt, cat, meow, purr, hiss, animal, bird, mouse",
+     "kategorie": "kurz",
+     "ziel": [
+      0.55,
+      0.95
+     ],
+     "sekunden": 1.0
+    },
+    "lang_14": {
+     "prompt": "a whoopee cushion slowly squeezed flat, a long drawn-out rubbery fart noise, fluttering and flapping pfrrrrrrt as the air squeezes out of the rubber, comedic prank sound effect, close-up, dry room",
+     "seeds": [
+      6101,
+      6102,
+      6103,
+      6104,
+      6105,
+      6106,
+      6107,
+      6108
+     ],
+     "negativ": "speech, words, voice, talking, whispering, laughter, laughing, giggling, crowd, cheering, screaming, shouting, singing, music, wet, liquid, splash, squelch, squishy, mud, gurgling, dripping, toilet, realistic human body, burp, groan, grunt, cat, meow, purr, hiss, animal, bird, mouse",
+     "kategorie": "lang",
+     "ziel": [
+      1.15,
+      1.85
+     ],
+     "sekunden": 1.4,
+     "ausblenden": 0.2
+    },
+    "lang2": {
+     "prompt": "a long comedic fart noise from a whoopee cushion, a drawn-out rubbery pfrrrrrrt that flutters and sputters as the air is squeezed out, prank sound effect, close-up, dry room",
+     "seeds": [
+      6101,
+      6102,
+      6103,
+      6104,
+      6105,
+      6106,
+      6107,
+      6108
+     ],
+     "negativ": "speech, words, voice, talking, whispering, laughter, laughing, giggling, crowd, cheering, screaming, shouting, singing, music, wet, liquid, splash, squelch, squishy, mud, gurgling, dripping, toilet, realistic human body, burp, groan, grunt, cat, meow, purr, hiss, animal, bird, mouse",
+     "kategorie": "lang",
+     "ziel": [
+      1.15,
+      1.85
+     ],
+     "sekunden": 1.5,
+     "ausblenden": 0.2
+    },
+    "quietschig2": {
+     "prompt": "a comedic fart noise from a whoopee cushion that ends in a rising squeaky toot, a rubbery pfrrrt with the pitch going up at the end, prank sound effect, close-up, dry room",
+     "seeds": [
+      6101,
+      6102,
+      6103,
+      6104,
+      6105,
+      6106
+     ],
+     "negativ": "speech, words, voice, talking, whispering, laughter, laughing, giggling, crowd, cheering, screaming, shouting, singing, music, wet, liquid, splash, squelch, squishy, mud, gurgling, dripping, toilet, realistic human body, burp, groan, grunt, cat, meow, purr, hiss, animal, bird, mouse",
+     "kategorie": "quietschig",
+     "ziel": [
+      0.7,
+      2.2
+     ],
+     "sekunden": 1.4,
+     "steigt_ht": 3.0
+    },
+    "pfft_furz": {
+     "prompt": "a tiny, short, quiet fart noise from a small whoopee cushion, a quick little rubbery pfft, comedic prank sound effect, close-up, dry room",
+     "seeds": [
+      6101,
+      6102,
+      6103,
+      6104,
+      6105,
+      6106,
+      6107,
+      6108
+     ],
+     "negativ": "speech, words, voice, talking, whispering, laughter, laughing, giggling, crowd, cheering, screaming, shouting, singing, music, wet, liquid, splash, squelch, squishy, mud, gurgling, dripping, toilet, realistic human body, burp, groan, grunt, cat, meow, purr, hiss, animal, bird, mouse",
+     "kategorie": "pfft",
+     "ziel": [
+      0.2,
+      0.6
+     ],
+     "sekunden": 0.6,
+     "lufs": -23.0,
+     "ausblenden": 0.08
+    },
+    "pfft_furz2": {
+     "prompt": "a small whoopee cushion lets out a very short, soft little fart, pfft, quiet comedic prank sound, close-up",
+     "seeds": [
+      6101,
+      6102,
+      6103,
+      6104,
+      6105,
+      6106,
+      6107,
+      6108
+     ],
+     "negativ": "speech, words, voice, talking, whispering, laughter, laughing, giggling, crowd, cheering, screaming, shouting, singing, music, wet, liquid, splash, squelch, squishy, mud, gurgling, dripping, toilet, realistic human body, burp, groan, grunt, cat, meow, purr, hiss, animal, bird, mouse",
+     "kategorie": "pfft",
+     "ziel": [
+      0.2,
+      0.6
+     ],
+     "sekunden": 0.6,
+     "lufs": -23.0,
+     "ausblenden": 0.08
+    }
+   },
+   "behalten": 10
   }
  },
  "kandidaten": [
@@ -7715,6 +8020,1480 @@
    "punkte": -0.85,
    "id": "daumen_06",
    "notiz": "Prompt „pling“: weiches „Pling“, runder Schlägelton. AudioSet: „Ringtone“ 0,14 (Spitze: „Music“ 0,16). Hinweis: natürlich 1,1 s, auf 0,60 s gekürzt und ausgeblendet; ähnlich wie daumen_04 (gleicher Seed, Spektrogramm r = 0,88)."
+  },
+  {
+   "roh": "furzkissen_kurz_6102",
+   "ton": "furzkissen",
+   "variante": "kurz",
+   "prompt": "a rubber whoopee cushion is sat on and lets out a short, punchy, comedic fart noise, a quick rubbery pfrrt of squeezed air, prank toy sound effect, close-up, dry room",
+   "seed": 6102,
+   "sekunden_prompt": 1.0,
+   "roh_spitze_dbfs": -0.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "ziel": [
+    0.55,
+    0.95
+   ],
+   "kategorie": "kurz",
+   "negativ": "speech, words, voice, talking, whispering, laughter, laughing, giggling, crowd, cheering, screaming, shouting, singing, music, wet, liquid, splash, squelch, squishy, mud, gurgling, dripping, toilet, realistic human body, burp, groan, grunt, cat, meow, purr, hiss, animal, bird, mouse",
+   "dauer_s": 0.97,
+   "lufs": -20.0,
+   "ziel_lufs": -20.0,
+   "spitze_dbtp": -1.6,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 5550.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -12.3,
+   "ueber_6k_db": -30.7,
+   "ueber_10k_db": -76.1,
+   "ueber_12k_db": -92.2,
+   "mitten_500_4k_db": -1.5,
+   "unter_300_db": -12.7,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 39.6,
+    "schaerfe": 1.7
+   },
+   "natuerliche_dauer_s": 0.952,
+   "gekuerzt": true,
+   "einblenden_s": 0.004,
+   "ausblenden_s": 0.12,
+   "sim_lufs": -18.5,
+   "sim_mitten_500_4k_db": -0.6,
+   "sim_pegelverlust_db": 1.5,
+   "ast_meiden": {
+    "Laughter": 0.0,
+    "Giggle": 0.0,
+    "Snicker": 0.0,
+    "Belly laugh": 0.0,
+    "Chuckle, chortle": 0.0,
+    "Baby laughter": 0.0,
+    "Screaming": 0.0,
+    "Shout": 0.0,
+    "Yell": 0.0,
+    "Children shouting": 0.0,
+    "Babbling": 0.0,
+    "Singing": 0.0,
+    "Whispering": 0.0,
+    "Liquid": 0.0,
+    "Splash, splatter": 0.0,
+    "Slosh": 0.0,
+    "Drip": 0.0,
+    "Gurgling": 0.0,
+    "Pour": 0.0,
+    "Trickle, dribble": 0.0,
+    "Toilet flush": 0.0,
+    "Squish": 0.0,
+    "Burping, eructation": 0.0,
+    "Groan": 0.0,
+    "Grunt": 0.0,
+    "Stomach rumble": 0.001,
+    "Hiss": 0.0,
+    "Mouse": 0.0,
+    "Bird": 0.0,
+    "Chirp, tweet": 0.0,
+    "Mosquito": 0.0,
+    "Fly, housefly": 0.0,
+    "Insect": 0.0,
+    "Bee, wasp, etc.": 0.0,
+    "Animal": 0.001,
+    "Domestic animals, pets": 0.0,
+    "Dog": 0.0,
+    "Howl": 0.0
+   },
+   "ast_beobachtet": {},
+   "furz": {
+    "hoerbar_ab_s": 0.0,
+    "hoerbar_s": 0.9,
+    "stoesse": 1,
+    "stoesse_s": [
+     [
+      0.0,
+      0.9
+     ]
+    ],
+    "periodisch": 0.11,
+    "tonhaltig": 0.11,
+    "f0_median_hz": 55,
+    "f0_anfang_hz": 107,
+    "f0_schluss_hz": 52,
+    "f0_max_hz": 107,
+    "schluss_ht": -12.7,
+    "f0_schluss_zeit_s": 0.53,
+    "knattern_hz": 52,
+    "knattern_schaerfe": 3.4,
+    "schwerpunkt_hz": 2209,
+    "flachheit": 0.055,
+    "hell_ht": -0.8
+   },
+   "ast_erwartet": [
+    "Fart",
+    0.879
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.005
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Fart",
+     0.879
+    ],
+    [
+     "Zipper (clothing)",
+     0.037
+    ],
+    [
+     "Sound effect",
+     0.032
+    ],
+    [
+     "Inside, small room",
+     0.011
+    ],
+    [
+     "Speech",
+     0.005
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 5.17,
+   "id": "furzkissen_01",
+   "notiz": "Art: kurz und knackig. Prompt „kurz“: kurz und knackig: Kissen wird kurz plattgesessen. Gemessen: ein Stoß, 0,95 s, rau, kaum fester Ton, Tonhöhe fällt zum Schluss um 13 Halbtöne, schnarrend. AudioSet: „Fart“ 0,88 (Spitze: „Fart“ 0,88). Kontrolle: „Laughter“ 0,00, „Squish“ 0,00, „Liquid“ 0,00, „Burping, eructation“ 0,00, „Hiss“ 0,00. Tiefpass 5,55 kHz (Leitplanke)."
+  },
+  {
+   "roh": "furzkissen_kurz2_6102",
+   "ton": "furzkissen",
+   "variante": "kurz2",
+   "prompt": "a short comedic fart noise from a whoopee cushion, a quick rubbery pfrrt, prank sound effect, close-up, dry room",
+   "seed": 6102,
+   "sekunden_prompt": 1.0,
+   "roh_spitze_dbfs": -0.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "ziel": [
+    0.55,
+    0.95
+   ],
+   "kategorie": "kurz",
+   "negativ": "speech, words, voice, talking, whispering, laughter, laughing, giggling, crowd, cheering, screaming, shouting, singing, music, wet, liquid, splash, squelch, squishy, mud, gurgling, dripping, toilet, realistic human body, burp, groan, grunt, cat, meow, purr, hiss, animal, bird, mouse",
+   "dauer_s": 0.78,
+   "lufs": -20.0,
+   "ziel_lufs": -20.0,
+   "spitze_dbtp": -4.9,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -30.5,
+   "ueber_6k_db": -44.4,
+   "ueber_10k_db": -88.8,
+   "ueber_12k_db": -103.6,
+   "mitten_500_4k_db": -3.0,
+   "unter_300_db": -8.1,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 49.2,
+    "schaerfe": 1.1
+   },
+   "natuerliche_dauer_s": 0.757,
+   "gekuerzt": false,
+   "einblenden_s": 0.004,
+   "ausblenden_s": 0.12,
+   "sim_lufs": -20.1,
+   "sim_mitten_500_4k_db": -1.0,
+   "sim_pegelverlust_db": -0.1,
+   "ast_meiden": {
+    "Laughter": 0.0,
+    "Giggle": 0.0,
+    "Snicker": 0.0,
+    "Belly laugh": 0.0,
+    "Chuckle, chortle": 0.0,
+    "Baby laughter": 0.0,
+    "Screaming": 0.001,
+    "Shout": 0.0,
+    "Yell": 0.0,
+    "Children shouting": 0.0,
+    "Babbling": 0.0,
+    "Singing": 0.0,
+    "Whispering": 0.0,
+    "Liquid": 0.0,
+    "Splash, splatter": 0.0,
+    "Slosh": 0.0,
+    "Drip": 0.0,
+    "Gurgling": 0.0,
+    "Pour": 0.0,
+    "Trickle, dribble": 0.0,
+    "Toilet flush": 0.0,
+    "Squish": 0.0,
+    "Burping, eructation": 0.0,
+    "Groan": 0.0,
+    "Grunt": 0.001,
+    "Stomach rumble": 0.0,
+    "Hiss": 0.0,
+    "Mouse": 0.0,
+    "Bird": 0.0,
+    "Chirp, tweet": 0.0,
+    "Mosquito": 0.0,
+    "Fly, housefly": 0.0,
+    "Insect": 0.0,
+    "Bee, wasp, etc.": 0.0,
+    "Animal": 0.002,
+    "Domestic animals, pets": 0.001,
+    "Dog": 0.0,
+    "Howl": 0.0
+   },
+   "ast_beobachtet": {},
+   "furz": {
+    "hoerbar_ab_s": 0.0,
+    "hoerbar_s": 0.71,
+    "stoesse": 1,
+    "stoesse_s": [
+     [
+      0.0,
+      0.71
+     ]
+    ],
+    "periodisch": 0.51,
+    "tonhaltig": 0.51,
+    "f0_median_hz": 77,
+    "f0_anfang_hz": 85,
+    "f0_schluss_hz": 76,
+    "f0_max_hz": 129,
+    "schluss_ht": -2.0,
+    "f0_schluss_zeit_s": 0.64,
+    "knattern_hz": 57,
+    "knattern_schaerfe": 1.8,
+    "schwerpunkt_hz": 1225,
+    "flachheit": 0.005,
+    "hell_ht": 0.0
+   },
+   "ast_erwartet": [
+    "Fart",
+    0.853
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.005
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Fart",
+     0.853
+    ],
+    [
+     "Sound effect",
+     0.045
+    ],
+    [
+     "Music",
+     0.008
+    ],
+    [
+     "Inside, small room",
+     0.007
+    ],
+    [
+     "Speech",
+     0.005
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 5.06,
+   "id": "furzkissen_02",
+   "notiz": "Art: kurz und knackig. Prompt „kurz2“: kurz und knackig: einfache Formulierung. Gemessen: ein Stoß, 0,76 s, rau mit etwas Ton, tief (um 77 Hz), Tonhöhe bleibt etwa gleich, mittelhell. AudioSet: „Fart“ 0,85 (Spitze: „Fart“ 0,85). Kontrolle: „Laughter“ 0,00, „Squish“ 0,00, „Liquid“ 0,00, „Burping, eructation“ 0,00, „Hiss“ 0,00."
+  },
+  {
+   "roh": "furzkissen_kurz_6106",
+   "ton": "furzkissen",
+   "variante": "kurz",
+   "prompt": "a rubber whoopee cushion is sat on and lets out a short, punchy, comedic fart noise, a quick rubbery pfrrt of squeezed air, prank toy sound effect, close-up, dry room",
+   "seed": 6106,
+   "sekunden_prompt": 1.0,
+   "roh_spitze_dbfs": -0.1,
+   "roh_leer": false,
+   "roh_leise": false,
+   "ziel": [
+    0.55,
+    0.95
+   ],
+   "kategorie": "kurz",
+   "negativ": "speech, words, voice, talking, whispering, laughter, laughing, giggling, crowd, cheering, screaming, shouting, singing, music, wet, liquid, splash, squelch, squishy, mud, gurgling, dripping, toilet, realistic human body, burp, groan, grunt, cat, meow, purr, hiss, animal, bird, mouse",
+   "dauer_s": 0.6,
+   "lufs": -20.1,
+   "ziel_lufs": -20.0,
+   "spitze_dbtp": -6.2,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 5100.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -9.7,
+   "ueber_6k_db": -31.1,
+   "ueber_10k_db": -82.9,
+   "ueber_12k_db": -114.7,
+   "mitten_500_4k_db": -4.7,
+   "unter_300_db": -6.4,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 48.6,
+    "schaerfe": 1.6
+   },
+   "natuerliche_dauer_s": 0.582,
+   "gekuerzt": false,
+   "einblenden_s": 0.004,
+   "ausblenden_s": 0.12,
+   "sim_lufs": -21.5,
+   "sim_mitten_500_4k_db": -1.4,
+   "sim_pegelverlust_db": -1.4,
+   "ast_meiden": {
+    "Laughter": 0.001,
+    "Giggle": 0.0,
+    "Snicker": 0.001,
+    "Belly laugh": 0.0,
+    "Chuckle, chortle": 0.001,
+    "Baby laughter": 0.0,
+    "Screaming": 0.0,
+    "Shout": 0.0,
+    "Yell": 0.0,
+    "Children shouting": 0.0,
+    "Babbling": 0.0,
+    "Singing": 0.001,
+    "Whispering": 0.0,
+    "Liquid": 0.0,
+    "Splash, splatter": 0.0,
+    "Slosh": 0.0,
+    "Drip": 0.0,
+    "Gurgling": 0.0,
+    "Pour": 0.0,
+    "Trickle, dribble": 0.0,
+    "Toilet flush": 0.0,
+    "Squish": 0.0,
+    "Burping, eructation": 0.0,
+    "Groan": 0.001,
+    "Grunt": 0.003,
+    "Stomach rumble": 0.0,
+    "Hiss": 0.0,
+    "Mouse": 0.0,
+    "Bird": 0.0,
+    "Chirp, tweet": 0.0,
+    "Mosquito": 0.001,
+    "Fly, housefly": 0.001,
+    "Insect": 0.0,
+    "Bee, wasp, etc.": 0.0,
+    "Animal": 0.002,
+    "Domestic animals, pets": 0.001,
+    "Dog": 0.0,
+    "Howl": 0.0
+   },
+   "ast_beobachtet": {
+    "Sound effect": 0.181
+   },
+   "furz": {
+    "hoerbar_ab_s": 0.0,
+    "hoerbar_s": 0.5,
+    "stoesse": 1,
+    "stoesse_s": [
+     [
+      0.0,
+      0.5
+     ]
+    ],
+    "periodisch": 0.82,
+    "tonhaltig": 0.82,
+    "f0_median_hz": 154,
+    "f0_anfang_hz": 182,
+    "f0_schluss_hz": 110,
+    "f0_max_hz": 193,
+    "schluss_ht": -8.6,
+    "f0_schluss_zeit_s": 0.44,
+    "knattern_hz": 19,
+    "knattern_schaerfe": 2.1,
+    "schwerpunkt_hz": 2366,
+    "flachheit": 0.026,
+    "hell_ht": -3.5
+   },
+   "ast_erwartet": [
+    "Fart",
+    0.824
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.028
+   ],
+   "ast_katze": [
+    "Cat",
+    0.001
+   ],
+   "ast_top": [
+    [
+     "Fart",
+     0.824
+    ],
+    [
+     "Sound effect",
+     0.181
+    ],
+    [
+     "Music",
+     0.076
+    ],
+    [
+     "Reverberation",
+     0.029
+    ],
+    [
+     "Speech",
+     0.028
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 4.65,
+   "id": "furzkissen_03",
+   "notiz": "Art: kurz und knackig. Prompt „kurz“: kurz und knackig: Kissen wird kurz plattgesessen. Gemessen: ein Stoß, 0,58 s, fester, brummender Ton, mittlere Lage (um 154 Hz), Tonhöhe fällt zum Schluss um 9 Halbtöne, schnarrend. AudioSet: „Fart“ 0,82 (Spitze: „Fart“ 0,82). Kontrolle: „Laughter“ 0,00, „Squish“ 0,00, „Liquid“ 0,00, „Burping, eructation“ 0,00, „Hiss“ 0,00. AudioSet hört außerdem: „Sound effect“ 0,18. Tiefpass 5,10 kHz (Leitplanke)."
+  },
+  {
+   "roh": "furzkissen_lang_14_6102",
+   "ton": "furzkissen",
+   "variante": "lang_14",
+   "prompt": "a whoopee cushion slowly squeezed flat, a long drawn-out rubbery fart noise, fluttering and flapping pfrrrrrrt as the air squeezes out of the rubber, comedic prank sound effect, close-up, dry room",
+   "seed": 6102,
+   "sekunden_prompt": 1.4,
+   "roh_spitze_dbfs": -0.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "ziel": [
+    1.15,
+    1.85
+   ],
+   "kategorie": "lang",
+   "negativ": "speech, words, voice, talking, whispering, laughter, laughing, giggling, crowd, cheering, screaming, shouting, singing, music, wet, liquid, splash, squelch, squishy, mud, gurgling, dripping, toilet, realistic human body, burp, groan, grunt, cat, meow, purr, hiss, animal, bird, mouse",
+   "dauer_s": 1.87,
+   "lufs": -20.0,
+   "ziel_lufs": -20.0,
+   "spitze_dbtp": -2.3,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 5950.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -17.5,
+   "ueber_6k_db": -30.6,
+   "ueber_10k_db": -78.6,
+   "ueber_12k_db": -94.2,
+   "mitten_500_4k_db": -3.2,
+   "unter_300_db": -6.6,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 48.6,
+    "schaerfe": 1.6
+   },
+   "natuerliche_dauer_s": 1.925,
+   "gekuerzt": true,
+   "einblenden_s": 0.004,
+   "ausblenden_s": 0.2,
+   "sim_lufs": -19.8,
+   "sim_mitten_500_4k_db": -0.8,
+   "sim_pegelverlust_db": 0.2,
+   "ast_meiden": {
+    "Laughter": 0.0,
+    "Giggle": 0.0,
+    "Snicker": 0.0,
+    "Belly laugh": 0.0,
+    "Chuckle, chortle": 0.0,
+    "Baby laughter": 0.0,
+    "Screaming": 0.0,
+    "Shout": 0.0,
+    "Yell": 0.0,
+    "Children shouting": 0.0,
+    "Babbling": 0.0,
+    "Singing": 0.0,
+    "Whispering": 0.0,
+    "Liquid": 0.0,
+    "Splash, splatter": 0.0,
+    "Slosh": 0.0,
+    "Drip": 0.0,
+    "Gurgling": 0.0,
+    "Pour": 0.0,
+    "Trickle, dribble": 0.0,
+    "Toilet flush": 0.0,
+    "Squish": 0.0,
+    "Burping, eructation": 0.0,
+    "Groan": 0.0,
+    "Grunt": 0.001,
+    "Stomach rumble": 0.001,
+    "Hiss": 0.0,
+    "Mouse": 0.0,
+    "Bird": 0.0,
+    "Chirp, tweet": 0.0,
+    "Mosquito": 0.0,
+    "Fly, housefly": 0.0,
+    "Insect": 0.001,
+    "Bee, wasp, etc.": 0.0,
+    "Animal": 0.002,
+    "Domestic animals, pets": 0.001,
+    "Dog": 0.0,
+    "Howl": 0.0
+   },
+   "ast_beobachtet": {
+    "Sound effect": 0.07
+   },
+   "furz": {
+    "hoerbar_ab_s": 0.0,
+    "hoerbar_s": 1.81,
+    "stoesse": 1,
+    "stoesse_s": [
+     [
+      0.0,
+      1.81
+     ]
+    ],
+    "periodisch": 0.41,
+    "tonhaltig": 0.41,
+    "f0_median_hz": 80,
+    "f0_anfang_hz": 52,
+    "f0_schluss_hz": 82,
+    "f0_max_hz": 105,
+    "schluss_ht": 7.9,
+    "f0_schluss_zeit_s": 1.78,
+    "knattern_hz": 52,
+    "knattern_schaerfe": 3.3,
+    "schwerpunkt_hz": 1570,
+    "flachheit": 0.021,
+    "hell_ht": -2.2
+   },
+   "ast_erwartet": [
+    "Fart",
+    0.758
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.003
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Fart",
+     0.758
+    ],
+    [
+     "Sound effect",
+     0.07
+    ],
+    [
+     "Zipper (clothing)",
+     0.057
+    ],
+    [
+     "Buzz",
+     0.011
+    ],
+    [
+     "Bang",
+     0.008
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 4.48,
+   "id": "furzkissen_04",
+   "notiz": "Art: lang und flatternd. Prompt „lang_14“: lang und flatternd: wie „lang“, Daueransage 1,4 s. Gemessen: ein Stoß, 1,85 s, rau mit etwas Ton, tief (um 80 Hz), Tonhöhe steigt zum Schluss um 8 Halbtöne, mittelhell. AudioSet: „Fart“ 0,76 (Spitze: „Fart“ 0,76). Kontrolle: „Laughter“ 0,00, „Squish“ 0,00, „Liquid“ 0,00, „Burping, eructation“ 0,00, „Hiss“ 0,00. AudioSet hört außerdem: „Sound effect“ 0,07. Tiefpass 5,95 kHz (Leitplanke)."
+  },
+  {
+   "roh": "furzkissen_lang_6104",
+   "ton": "furzkissen",
+   "variante": "lang",
+   "prompt": "a whoopee cushion slowly squeezed flat, a long drawn-out rubbery fart noise, fluttering and flapping pfrrrrrrt as the air squeezes out of the rubber, comedic prank sound effect, close-up, dry room",
+   "seed": 6104,
+   "sekunden_prompt": 1.8,
+   "roh_spitze_dbfs": -0.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "ziel": [
+    1.15,
+    1.85
+   ],
+   "kategorie": "lang",
+   "negativ": "speech, words, voice, talking, whispering, laughter, laughing, giggling, crowd, cheering, screaming, shouting, singing, music, wet, liquid, splash, squelch, squishy, mud, gurgling, dripping, toilet, realistic human body, burp, groan, grunt, cat, meow, purr, hiss, animal, bird, mouse",
+   "dauer_s": 1.59,
+   "lufs": -20.0,
+   "ziel_lufs": -20.0,
+   "spitze_dbtp": -7.4,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -18.8,
+   "ueber_6k_db": -40.6,
+   "ueber_10k_db": -75.2,
+   "ueber_12k_db": -91.9,
+   "mitten_500_4k_db": -5.6,
+   "unter_300_db": -5.8,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 43.8,
+    "schaerfe": 9.2
+   },
+   "natuerliche_dauer_s": 1.572,
+   "gekuerzt": false,
+   "einblenden_s": 0.004,
+   "ausblenden_s": 0.2,
+   "sim_lufs": -22.8,
+   "sim_mitten_500_4k_db": -1.0,
+   "sim_pegelverlust_db": -2.8,
+   "ast_meiden": {
+    "Laughter": 0.0,
+    "Giggle": 0.0,
+    "Snicker": 0.0,
+    "Belly laugh": 0.0,
+    "Chuckle, chortle": 0.0,
+    "Baby laughter": 0.0,
+    "Screaming": 0.0,
+    "Shout": 0.0,
+    "Yell": 0.0,
+    "Children shouting": 0.0,
+    "Babbling": 0.0,
+    "Singing": 0.0,
+    "Whispering": 0.0,
+    "Liquid": 0.0,
+    "Splash, splatter": 0.0,
+    "Slosh": 0.0,
+    "Drip": 0.0,
+    "Gurgling": 0.0,
+    "Pour": 0.0,
+    "Trickle, dribble": 0.0,
+    "Toilet flush": 0.0,
+    "Squish": 0.0,
+    "Burping, eructation": 0.0,
+    "Groan": 0.001,
+    "Grunt": 0.001,
+    "Stomach rumble": 0.0,
+    "Hiss": 0.0,
+    "Mouse": 0.0,
+    "Bird": 0.0,
+    "Chirp, tweet": 0.0,
+    "Mosquito": 0.003,
+    "Fly, housefly": 0.009,
+    "Insect": 0.009,
+    "Bee, wasp, etc.": 0.007,
+    "Animal": 0.001,
+    "Domestic animals, pets": 0.0,
+    "Dog": 0.0,
+    "Howl": 0.0
+   },
+   "ast_beobachtet": {
+    "Sound effect": 0.098
+   },
+   "furz": {
+    "hoerbar_ab_s": 0.02,
+    "hoerbar_s": 1.5,
+    "stoesse": 1,
+    "stoesse_s": [
+     [
+      0.02,
+      1.52
+     ]
+    ],
+    "periodisch": 0.99,
+    "tonhaltig": 0.99,
+    "f0_median_hz": 170,
+    "f0_anfang_hz": 178,
+    "f0_schluss_hz": 142,
+    "f0_max_hz": 180,
+    "schluss_ht": -3.9,
+    "f0_schluss_zeit_s": 1.5,
+    "knattern_hz": 44,
+    "knattern_schaerfe": 9.4,
+    "schwerpunkt_hz": 1266,
+    "flachheit": 0.005,
+    "hell_ht": 4.1
+   },
+   "ast_erwartet": [
+    "Fart",
+    0.759
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.004
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Fart",
+     0.759
+    ],
+    [
+     "Sound effect",
+     0.098
+    ],
+    [
+     "Zipper (clothing)",
+     0.025
+    ],
+    [
+     "Buzz",
+     0.012
+    ],
+    [
+     "Insect",
+     0.009
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 4.21,
+   "id": "furzkissen_05",
+   "notiz": "Art: lang und flatternd. Prompt „lang“: lang und flatternd: langsam ausgedrückt. Gemessen: ein Stoß, 1,57 s, fester, brummender Ton, mittlere Lage (um 170 Hz), Tonhöhe fällt zum Schluss um 4 Halbtöne, knattert mit etwa 44 Hz, mittelhell. AudioSet: „Fart“ 0,76 (Spitze: „Fart“ 0,76). Kontrolle: „Laughter“ 0,00, „Squish“ 0,00, „Liquid“ 0,00, „Burping, eructation“ 0,00, „Hiss“ 0,00. AudioSet hört außerdem: „Sound effect“ 0,10."
+  },
+  {
+   "roh": "furzkissen_lang2_6107",
+   "ton": "furzkissen",
+   "variante": "lang2",
+   "prompt": "a long comedic fart noise from a whoopee cushion, a drawn-out rubbery pfrrrrrrt that flutters and sputters as the air is squeezed out, prank sound effect, close-up, dry room",
+   "seed": 6107,
+   "sekunden_prompt": 1.5,
+   "roh_spitze_dbfs": -0.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "ziel": [
+    1.15,
+    1.85
+   ],
+   "kategorie": "lang",
+   "negativ": "speech, words, voice, talking, whispering, laughter, laughing, giggling, crowd, cheering, screaming, shouting, singing, music, wet, liquid, splash, squelch, squishy, mud, gurgling, dripping, toilet, realistic human body, burp, groan, grunt, cat, meow, purr, hiss, animal, bird, mouse",
+   "dauer_s": 1.87,
+   "lufs": -20.2,
+   "ziel_lufs": -20.0,
+   "spitze_dbtp": -3.5,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 5400.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -11.4,
+   "ueber_6k_db": -30.8,
+   "ueber_10k_db": -78.3,
+   "ueber_12k_db": -94.7,
+   "mitten_500_4k_db": -1.1,
+   "unter_300_db": -12.8,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 19.0,
+    "schaerfe": 2.8
+   },
+   "natuerliche_dauer_s": 1.981,
+   "gekuerzt": true,
+   "einblenden_s": 0.004,
+   "ausblenden_s": 0.2,
+   "sim_lufs": -18.1,
+   "sim_mitten_500_4k_db": -0.3,
+   "sim_pegelverlust_db": 2.1,
+   "ast_meiden": {
+    "Laughter": 0.0,
+    "Giggle": 0.0,
+    "Snicker": 0.0,
+    "Belly laugh": 0.0,
+    "Chuckle, chortle": 0.0,
+    "Baby laughter": 0.0,
+    "Screaming": 0.0,
+    "Shout": 0.0,
+    "Yell": 0.0,
+    "Children shouting": 0.0,
+    "Babbling": 0.0,
+    "Singing": 0.0,
+    "Whispering": 0.0,
+    "Liquid": 0.0,
+    "Splash, splatter": 0.0,
+    "Slosh": 0.0,
+    "Drip": 0.0,
+    "Gurgling": 0.0,
+    "Pour": 0.0,
+    "Trickle, dribble": 0.0,
+    "Toilet flush": 0.0,
+    "Squish": 0.0,
+    "Burping, eructation": 0.0,
+    "Groan": 0.001,
+    "Grunt": 0.003,
+    "Stomach rumble": 0.0,
+    "Hiss": 0.0,
+    "Mouse": 0.0,
+    "Bird": 0.0,
+    "Chirp, tweet": 0.0,
+    "Mosquito": 0.001,
+    "Fly, housefly": 0.002,
+    "Insect": 0.002,
+    "Bee, wasp, etc.": 0.001,
+    "Animal": 0.002,
+    "Domestic animals, pets": 0.001,
+    "Dog": 0.0,
+    "Howl": 0.0
+   },
+   "ast_beobachtet": {
+    "Sound effect": 0.078
+   },
+   "furz": {
+    "hoerbar_ab_s": 0.0,
+    "hoerbar_s": 1.83,
+    "stoesse": 1,
+    "stoesse_s": [
+     [
+      0.0,
+      1.83
+     ]
+    ],
+    "periodisch": 0.85,
+    "tonhaltig": 0.85,
+    "f0_median_hz": 167,
+    "f0_anfang_hz": 213,
+    "f0_schluss_hz": 113,
+    "f0_max_hz": 213,
+    "schluss_ht": -11.1,
+    "f0_schluss_zeit_s": 1.81,
+    "knattern_hz": 46,
+    "knattern_schaerfe": 2.5,
+    "schwerpunkt_hz": 2243,
+    "flachheit": 0.036,
+    "hell_ht": -0.4
+   },
+   "ast_erwartet": [
+    "Fart",
+    0.828
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.01
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Fart",
+     0.828
+    ],
+    [
+     "Sound effect",
+     0.078
+    ],
+    [
+     "Zipper (clothing)",
+     0.052
+    ],
+    [
+     "Buzz",
+     0.018
+    ],
+    [
+     "Music",
+     0.012
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "natürlich 2,0 s, auf 1,85 s gekürzt und ausgeblendet"
+   ],
+   "punkte": 3.75,
+   "id": "furzkissen_06",
+   "notiz": "Art: lang und flatternd. Prompt „lang2“: lang und flatternd: knattert und stottert. Gemessen: ein Stoß, 1,85 s, fester, brummender Ton, mittlere Lage (um 167 Hz), Tonhöhe fällt zum Schluss um 11 Halbtöne, schnarrend. AudioSet: „Fart“ 0,83 (Spitze: „Fart“ 0,83). Kontrolle: „Laughter“ 0,00, „Squish“ 0,00, „Liquid“ 0,00, „Burping, eructation“ 0,00, „Hiss“ 0,00. AudioSet hört außerdem: „Sound effect“ 0,08. Tiefpass 5,40 kHz (Leitplanke). Hinweis: natürlich 2,0 s, auf 1,85 s gekürzt und ausgeblendet."
+  },
+  {
+   "roh": "furzkissen_quietschig_langsam_6102",
+   "ton": "furzkissen",
+   "variante": "quietschig_langsam",
+   "prompt": "a rubber whoopee cushion squeezed slowly, a fluttering fart sound that gets higher and higher in pitch and ends with a squeaky rubbery peep, cartoon prank, close-up",
+   "seed": 6102,
+   "sekunden_prompt": 1.4,
+   "roh_spitze_dbfs": -4.7,
+   "roh_leer": false,
+   "roh_leise": false,
+   "ziel": [
+    0.7,
+    2.2
+   ],
+   "kategorie": "quietschig",
+   "steigt_min_ht": 3.0,
+   "negativ": "speech, words, voice, talking, whispering, laughter, laughing, giggling, crowd, cheering, screaming, shouting, singing, music, wet, liquid, splash, squelch, squishy, mud, gurgling, dripping, toilet, realistic human body, burp, groan, grunt, cat, meow, purr, hiss, animal, bird, mouse",
+   "dauer_s": 2.07,
+   "lufs": -20.1,
+   "ziel_lufs": -20.0,
+   "spitze_dbtp": -2.1,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 4700.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -6.4,
+   "ueber_6k_db": -31.0,
+   "ueber_10k_db": -84.4,
+   "ueber_12k_db": -105.2,
+   "mitten_500_4k_db": -1.1,
+   "unter_300_db": -14.5,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 49.2,
+    "schaerfe": 1.9
+   },
+   "natuerliche_dauer_s": 2.047,
+   "gekuerzt": false,
+   "einblenden_s": 0.004,
+   "ausblenden_s": 0.12,
+   "sim_lufs": -18.9,
+   "sim_mitten_500_4k_db": -0.6,
+   "sim_pegelverlust_db": 1.2,
+   "ast_meiden": {
+    "Laughter": 0.001,
+    "Giggle": 0.001,
+    "Snicker": 0.001,
+    "Belly laugh": 0.0,
+    "Chuckle, chortle": 0.001,
+    "Baby laughter": 0.0,
+    "Screaming": 0.006,
+    "Shout": 0.0,
+    "Yell": 0.0,
+    "Children shouting": 0.0,
+    "Babbling": 0.001,
+    "Singing": 0.0,
+    "Whispering": 0.0,
+    "Liquid": 0.0,
+    "Splash, splatter": 0.0,
+    "Slosh": 0.0,
+    "Drip": 0.0,
+    "Gurgling": 0.0,
+    "Pour": 0.0,
+    "Trickle, dribble": 0.0,
+    "Toilet flush": 0.0,
+    "Squish": 0.0,
+    "Burping, eructation": 0.0,
+    "Groan": 0.01,
+    "Grunt": 0.012,
+    "Stomach rumble": 0.0,
+    "Hiss": 0.0,
+    "Mouse": 0.001,
+    "Bird": 0.001,
+    "Chirp, tweet": 0.0,
+    "Mosquito": 0.0,
+    "Fly, housefly": 0.0,
+    "Insect": 0.0,
+    "Bee, wasp, etc.": 0.0,
+    "Animal": 0.012,
+    "Domestic animals, pets": 0.006,
+    "Dog": 0.003,
+    "Howl": 0.0
+   },
+   "ast_beobachtet": {},
+   "furz": {
+    "hoerbar_ab_s": 0.0,
+    "hoerbar_s": 2.0,
+    "stoesse": 1,
+    "stoesse_s": [
+     [
+      0.0,
+      2.0
+     ]
+    ],
+    "periodisch": 0.48,
+    "tonhaltig": 0.48,
+    "f0_median_hz": 800,
+    "f0_anfang_hz": 187,
+    "f0_schluss_hz": 800,
+    "f0_max_hz": 889,
+    "schluss_ht": 25.1,
+    "f0_schluss_zeit_s": 1.99,
+    "knattern_hz": 13,
+    "knattern_schaerfe": 1.9,
+    "schwerpunkt_hz": 2749,
+    "flachheit": 0.04,
+    "hell_ht": 3.6
+   },
+   "ast_erwartet": [
+    "Fart",
+    0.441
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.02
+   ],
+   "ast_katze": [
+    "Cat",
+    0.001
+   ],
+   "ast_top": [
+    [
+     "Fart",
+     0.441
+    ],
+    [
+     "Sound effect",
+     0.033
+    ],
+    [
+     "Speech",
+     0.02
+    ],
+    [
+     "Whimper",
+     0.016
+    ],
+    [
+     "Grunt",
+     0.012
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 4.57,
+   "id": "furzkissen_07",
+   "notiz": "Art: zum Schluss steigend (quietschig). Prompt „quietschig_langsam“: steigend: wird immer höher, endet quietschig. Gemessen: ein Stoß, 2,05 s, rau mit etwas Ton, hoch (um 800 Hz), Tonhöhe steigt zum Schluss um 25 Halbtöne, schnarrend. AudioSet: „Fart“ 0,44 (Spitze: „Fart“ 0,44). Kontrolle: „Laughter“ 0,00, „Squish“ 0,00, „Liquid“ 0,00, „Burping, eructation“ 0,00, „Hiss“ 0,00. Tiefpass 4,70 kHz (Leitplanke)."
+  },
+  {
+   "roh": "furzkissen_quietschig_6102",
+   "ton": "furzkissen",
+   "variante": "quietschig",
+   "prompt": "a whoopee cushion fart noise that starts low and rubbery and rises in pitch at the end into a high squeaky toot as the last air escapes, comedic prank sound effect, close-up, dry room",
+   "seed": 6102,
+   "sekunden_prompt": 1.4,
+   "roh_spitze_dbfs": -1.6,
+   "roh_leer": false,
+   "roh_leise": false,
+   "ziel": [
+    0.7,
+    2.2
+   ],
+   "kategorie": "quietschig",
+   "steigt_min_ht": 3.0,
+   "negativ": "speech, words, voice, talking, whispering, laughter, laughing, giggling, crowd, cheering, screaming, shouting, singing, music, wet, liquid, splash, squelch, squishy, mud, gurgling, dripping, toilet, realistic human body, burp, groan, grunt, cat, meow, purr, hiss, animal, bird, mouse",
+   "dauer_s": 2.16,
+   "lufs": -20.1,
+   "ziel_lufs": -20.0,
+   "spitze_dbtp": -5.8,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 5950.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -17.9,
+   "ueber_6k_db": -30.9,
+   "ueber_10k_db": -82.2,
+   "ueber_12k_db": -101.5,
+   "mitten_500_4k_db": -2.1,
+   "unter_300_db": -9.3,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 40.3,
+    "schaerfe": 2.3
+   },
+   "natuerliche_dauer_s": 2.145,
+   "gekuerzt": false,
+   "einblenden_s": 0.004,
+   "ausblenden_s": 0.12,
+   "sim_lufs": -20.1,
+   "sim_mitten_500_4k_db": -0.5,
+   "sim_pegelverlust_db": 0.0,
+   "ast_meiden": {
+    "Laughter": 0.0,
+    "Giggle": 0.0,
+    "Snicker": 0.0,
+    "Belly laugh": 0.0,
+    "Chuckle, chortle": 0.0,
+    "Baby laughter": 0.0,
+    "Screaming": 0.001,
+    "Shout": 0.0,
+    "Yell": 0.0,
+    "Children shouting": 0.0,
+    "Babbling": 0.0,
+    "Singing": 0.0,
+    "Whispering": 0.0,
+    "Liquid": 0.0,
+    "Splash, splatter": 0.0,
+    "Slosh": 0.0,
+    "Drip": 0.0,
+    "Gurgling": 0.0,
+    "Pour": 0.0,
+    "Trickle, dribble": 0.0,
+    "Toilet flush": 0.0,
+    "Squish": 0.0,
+    "Burping, eructation": 0.0,
+    "Groan": 0.003,
+    "Grunt": 0.012,
+    "Stomach rumble": 0.001,
+    "Hiss": 0.0,
+    "Mouse": 0.001,
+    "Bird": 0.001,
+    "Chirp, tweet": 0.0,
+    "Mosquito": 0.0,
+    "Fly, housefly": 0.0,
+    "Insect": 0.001,
+    "Bee, wasp, etc.": 0.0,
+    "Animal": 0.004,
+    "Domestic animals, pets": 0.002,
+    "Dog": 0.001,
+    "Howl": 0.0
+   },
+   "ast_beobachtet": {},
+   "furz": {
+    "hoerbar_ab_s": 0.0,
+    "hoerbar_s": 2.14,
+    "stoesse": 1,
+    "stoesse_s": [
+     [
+      0.0,
+      2.14
+     ]
+    ],
+    "periodisch": 0.61,
+    "tonhaltig": 0.61,
+    "f0_median_hz": 158,
+    "f0_anfang_hz": 119,
+    "f0_schluss_hz": 161,
+    "f0_max_hz": 196,
+    "schluss_ht": 5.3,
+    "f0_schluss_zeit_s": 2.12,
+    "knattern_hz": 13,
+    "knattern_schaerfe": 1.8,
+    "schwerpunkt_hz": 2095,
+    "flachheit": 0.02,
+    "hell_ht": -0.5
+   },
+   "ast_erwartet": [
+    "Fart",
+    0.691
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.007
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Fart",
+     0.691
+    ],
+    [
+     "Sound effect",
+     0.048
+    ],
+    [
+     "Zipper (clothing)",
+     0.03
+    ],
+    [
+     "Grunt",
+     0.012
+    ],
+    [
+     "Squeak",
+     0.011
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 4.49,
+   "id": "furzkissen_08",
+   "notiz": "Art: zum Schluss steigend (quietschig). Prompt „quietschig“: steigend: tief und gummiartig, zum Schluss hoch und quietschig. Gemessen: ein Stoß, 2,14 s, fester, brummender Ton, mittlere Lage (um 158 Hz), Tonhöhe steigt zum Schluss um 5 Halbtöne, schnarrend. AudioSet: „Fart“ 0,69 (Spitze: „Fart“ 0,69). Kontrolle: „Laughter“ 0,00, „Squish“ 0,00, „Liquid“ 0,00, „Burping, eructation“ 0,00, „Hiss“ 0,00. Tiefpass 5,95 kHz (Leitplanke)."
+  },
+  {
+   "roh": "furzkissen_pfft_furz_6106",
+   "ton": "furzkissen",
+   "variante": "pfft_furz",
+   "prompt": "a tiny, short, quiet fart noise from a small whoopee cushion, a quick little rubbery pfft, comedic prank sound effect, close-up, dry room",
+   "seed": 6106,
+   "sekunden_prompt": 0.6,
+   "roh_spitze_dbfs": -0.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "ziel": [
+    0.2,
+    0.6
+   ],
+   "kategorie": "pfft",
+   "negativ": "speech, words, voice, talking, whispering, laughter, laughing, giggling, crowd, cheering, screaming, shouting, singing, music, wet, liquid, splash, squelch, squishy, mud, gurgling, dripping, toilet, realistic human body, burp, groan, grunt, cat, meow, purr, hiss, animal, bird, mouse",
+   "dauer_s": 0.4,
+   "lufs": -23.0,
+   "ziel_lufs": -23.0,
+   "spitze_dbtp": -5.7,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 5750.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -15.5,
+   "ueber_6k_db": -30.8,
+   "ueber_10k_db": -82.5,
+   "ueber_12k_db": -106.3,
+   "mitten_500_4k_db": -3.5,
+   "unter_300_db": -12.5,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 15.0,
+    "schaerfe": 1.9
+   },
+   "natuerliche_dauer_s": 0.362,
+   "gekuerzt": false,
+   "einblenden_s": 0.004,
+   "ausblenden_s": 0.08,
+   "sim_lufs": -23.9,
+   "sim_mitten_500_4k_db": -0.8,
+   "sim_pegelverlust_db": -0.9,
+   "ast_meiden": {
+    "Laughter": 0.0,
+    "Giggle": 0.0,
+    "Snicker": 0.001,
+    "Belly laugh": 0.0,
+    "Chuckle, chortle": 0.0,
+    "Baby laughter": 0.0,
+    "Screaming": 0.001,
+    "Shout": 0.0,
+    "Yell": 0.0,
+    "Children shouting": 0.0,
+    "Babbling": 0.0,
+    "Singing": 0.0,
+    "Whispering": 0.0,
+    "Liquid": 0.0,
+    "Splash, splatter": 0.0,
+    "Slosh": 0.0,
+    "Drip": 0.0,
+    "Gurgling": 0.0,
+    "Pour": 0.0,
+    "Trickle, dribble": 0.0,
+    "Toilet flush": 0.0,
+    "Squish": 0.0,
+    "Burping, eructation": 0.0,
+    "Groan": 0.002,
+    "Grunt": 0.021,
+    "Stomach rumble": 0.0,
+    "Hiss": 0.0,
+    "Mouse": 0.0,
+    "Bird": 0.001,
+    "Chirp, tweet": 0.0,
+    "Mosquito": 0.0,
+    "Fly, housefly": 0.001,
+    "Insect": 0.001,
+    "Bee, wasp, etc.": 0.001,
+    "Animal": 0.006,
+    "Domestic animals, pets": 0.002,
+    "Dog": 0.0,
+    "Howl": 0.0
+   },
+   "ast_beobachtet": {},
+   "furz": {
+    "hoerbar_ab_s": 0.0,
+    "hoerbar_s": 0.26,
+    "stoesse": 1,
+    "stoesse_s": [
+     [
+      0.0,
+      0.26
+     ]
+    ],
+    "periodisch": 0.73,
+    "tonhaltig": 0.73,
+    "f0_median_hz": 178,
+    "f0_anfang_hz": 182,
+    "f0_schluss_hz": 155,
+    "f0_max_hz": 182,
+    "schluss_ht": -2.8,
+    "f0_schluss_zeit_s": 0.23,
+    "knattern_hz": 10,
+    "knattern_schaerfe": 2.1,
+    "schwerpunkt_hz": 1922,
+    "flachheit": 0.02,
+    "hell_ht": -3.1
+   },
+   "ast_erwartet": [
+    "Fart",
+    0.958
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.024
+   ],
+   "ast_katze": [
+    "Cat",
+    0.001
+   ],
+   "ast_top": [
+    [
+     "Fart",
+     0.958
+    ],
+    [
+     "Zipper (clothing)",
+     0.043
+    ],
+    [
+     "Sound effect",
+     0.035
+    ],
+    [
+     "Speech",
+     0.024
+    ],
+    [
+     "Grunt",
+     0.021
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 5.38,
+   "id": "furzkissen_09",
+   "notiz": "Art: leises kleines „Pfft“. Prompt „pfft_furz“: kleines „Pfft“: winziger, leiser Furz. Gemessen: ein Stoß, 0,38 s, fester, brummender Ton, mittlere Lage (um 178 Hz), Tonhöhe bleibt etwa gleich, schnarrend. AudioSet: „Fart“ 0,96 (Spitze: „Fart“ 0,96). Kontrolle: „Laughter“ 0,00, „Squish“ 0,00, „Liquid“ 0,00, „Burping, eructation“ 0,00, „Hiss“ 0,00. Tiefpass 5,75 kHz (Leitplanke)."
+  },
+  {
+   "roh": "furzkissen_pfft_furz_6101",
+   "ton": "furzkissen",
+   "variante": "pfft_furz",
+   "prompt": "a tiny, short, quiet fart noise from a small whoopee cushion, a quick little rubbery pfft, comedic prank sound effect, close-up, dry room",
+   "seed": 6101,
+   "sekunden_prompt": 0.6,
+   "roh_spitze_dbfs": -0.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "ziel": [
+    0.2,
+    0.6
+   ],
+   "kategorie": "pfft",
+   "negativ": "speech, words, voice, talking, whispering, laughter, laughing, giggling, crowd, cheering, screaming, shouting, singing, music, wet, liquid, splash, squelch, squishy, mud, gurgling, dripping, toilet, realistic human body, burp, groan, grunt, cat, meow, purr, hiss, animal, bird, mouse",
+   "dauer_s": 0.48,
+   "lufs": -23.1,
+   "ziel_lufs": -23.0,
+   "spitze_dbtp": -10.5,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -20.5,
+   "ueber_6k_db": -31.3,
+   "ueber_10k_db": -98.2,
+   "ueber_12k_db": -133.9,
+   "mitten_500_4k_db": -2.5,
+   "unter_300_db": -6.9,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 31.2,
+    "schaerfe": 6.7
+   },
+   "natuerliche_dauer_s": 0.466,
+   "gekuerzt": false,
+   "einblenden_s": 0.004,
+   "ausblenden_s": 0.08,
+   "sim_lufs": -23.0,
+   "sim_mitten_500_4k_db": -0.7,
+   "sim_pegelverlust_db": 0.1,
+   "ast_meiden": {
+    "Laughter": 0.001,
+    "Giggle": 0.0,
+    "Snicker": 0.001,
+    "Belly laugh": 0.0,
+    "Chuckle, chortle": 0.001,
+    "Baby laughter": 0.0,
+    "Screaming": 0.0,
+    "Shout": 0.0,
+    "Yell": 0.0,
+    "Children shouting": 0.0,
+    "Babbling": 0.0,
+    "Singing": 0.0,
+    "Whispering": 0.0,
+    "Liquid": 0.0,
+    "Splash, splatter": 0.0,
+    "Slosh": 0.0,
+    "Drip": 0.0,
+    "Gurgling": 0.0,
+    "Pour": 0.0,
+    "Trickle, dribble": 0.0,
+    "Toilet flush": 0.0,
+    "Squish": 0.0,
+    "Burping, eructation": 0.0,
+    "Groan": 0.001,
+    "Grunt": 0.014,
+    "Stomach rumble": 0.0,
+    "Hiss": 0.0,
+    "Mouse": 0.0,
+    "Bird": 0.0,
+    "Chirp, tweet": 0.0,
+    "Mosquito": 0.002,
+    "Fly, housefly": 0.002,
+    "Insect": 0.002,
+    "Bee, wasp, etc.": 0.001,
+    "Animal": 0.003,
+    "Domestic animals, pets": 0.001,
+    "Dog": 0.0,
+    "Howl": 0.0
+   },
+   "ast_beobachtet": {
+    "Sound effect": 0.052
+   },
+   "furz": {
+    "hoerbar_ab_s": 0.0,
+    "hoerbar_s": 0.43,
+    "stoesse": 1,
+    "stoesse_s": [
+     [
+      0.0,
+      0.43
+     ]
+    ],
+    "periodisch": 0.91,
+    "tonhaltig": 0.91,
+    "f0_median_hz": 203,
+    "f0_anfang_hz": 271,
+    "f0_schluss_hz": 145,
+    "f0_max_hz": 276,
+    "schluss_ht": -10.8,
+    "f0_schluss_zeit_s": 0.41,
+    "knattern_hz": 10,
+    "knattern_schaerfe": 10.0,
+    "schwerpunkt_hz": 2176,
+    "flachheit": 0.024,
+    "hell_ht": 1.4
+   },
+   "ast_erwartet": [
+    "Fart",
+    0.933
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.018
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Fart",
+     0.933
+    ],
+    [
+     "Sound effect",
+     0.052
+    ],
+    [
+     "Speech",
+     0.018
+    ],
+    [
+     "Music",
+     0.017
+    ],
+    [
+     "Grunt",
+     0.014
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 5.36,
+   "id": "furzkissen_10",
+   "notiz": "Art: leises kleines „Pfft“. Prompt „pfft_furz“: kleines „Pfft“: winziger, leiser Furz. Gemessen: ein Stoß, 0,46 s, fester, brummender Ton, hoch (um 203 Hz), Tonhöhe fällt zum Schluss um 11 Halbtöne, knattert mit etwa 10 Hz, schnarrend. AudioSet: „Fart“ 0,93 (Spitze: „Fart“ 0,93). Kontrolle: „Laughter“ 0,00, „Squish“ 0,00, „Liquid“ 0,00, „Burping, eructation“ 0,00, „Hiss“ 0,00. AudioSet hört außerdem: „Sound effect“ 0,05."
   }
  ],
  "verworfen": [
@@ -13357,6 +15136,1098 @@
    "hinweise": [
     "natürlich 1,4 s, auf 0,60 s gekürzt und ausgeblendet"
    ]
+  },
+  {
+   "roh": "furzkissen_kurz_6101",
+   "ton": "furzkissen",
+   "punkte": 0.16,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_kurz_6103",
+   "ton": "furzkissen",
+   "punkte": -1.54,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,00)"
+   ],
+   "hinweise": [
+    "etwas „Screaming“ (AudioSet 0,05)",
+    "schmale Linie bei 5343 Hz (+12,7 dB über der Umgebung): auf Piepen achten"
+   ]
+  },
+  {
+   "roh": "furzkissen_kurz_6104",
+   "ton": "furzkissen",
+   "punkte": 0.79,
+   "gruende": [
+    "zu kurz (0,31 s)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_kurz_6105",
+   "ton": "furzkissen",
+   "punkte": -1.13,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,00)"
+   ],
+   "hinweise": [
+    "natürlich 1,1 s, auf 0,95 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_kurz_platt_6101",
+   "ton": "furzkissen",
+   "punkte": -1.78,
+   "gruende": [
+    "kürzer als das Ziel (0,54 s statt 0,55–0,95 s)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_kurz_platt_6102",
+   "ton": "furzkissen",
+   "punkte": -2.39,
+   "gruende": [
+    "kürzer als das Ziel (0,47 s statt 0,55–0,95 s)",
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,00)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_kurz_platt_6103",
+   "ton": "furzkissen",
+   "punkte": -0.19,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,00)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_kurz_platt_6104",
+   "ton": "furzkissen",
+   "punkte": -2.33,
+   "gruende": [
+    "zu kurz (0,29 s)",
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,00)",
+    "fast gleich wie furzkissen_pfft_furz_6104 (Spektrogramm r = 0,92)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_kurz_platt_6105",
+   "ton": "furzkissen",
+   "punkte": -0.11,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,00)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_kurz_platt_6106",
+   "ton": "furzkissen",
+   "punkte": -2.85,
+   "gruende": [
+    "zu kurz (0,34 s)",
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,00)",
+    "fast gleich wie furzkissen_kurz_platt_6104 (Spektrogramm r = 0,92)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 5994 Hz (+12,6 dB über der Umgebung): auf Piepen achten"
+   ]
+  },
+  {
+   "roh": "furzkissen_lang_6101",
+   "ton": "furzkissen",
+   "punkte": -0.5,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "natürlich 2,7 s, auf 1,85 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_lang_6102",
+   "ton": "furzkissen",
+   "punkte": 0.93,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "natürlich 2,0 s, auf 1,85 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_lang_6103",
+   "ton": "furzkissen",
+   "punkte": -0.94,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,03)"
+   ],
+   "hinweise": [
+    "natürlich 2,1 s, auf 1,85 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_lang_6105",
+   "ton": "furzkissen",
+   "punkte": -1.35,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,00)"
+   ],
+   "hinweise": [
+    "natürlich 2,4 s, auf 1,85 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_lang_6106",
+   "ton": "furzkissen",
+   "punkte": -2.34,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,00)",
+    "fast gleich wie furzkissen_lang_14_6106 (Spektrogramm r = 0,96)"
+   ],
+   "hinweise": [
+    "natürlich 2,0 s, auf 1,85 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_lang_flattern_6101",
+   "ton": "furzkissen",
+   "punkte": -1.66,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,00)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2150 Hz (+13,0 dB über der Umgebung): auf Piepen achten",
+    "natürlich 2,2 s, auf 1,85 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_lang_flattern_6102",
+   "ton": "furzkissen",
+   "punkte": -2.11,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,00)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 5367 Hz (+12,9 dB über der Umgebung): auf Piepen achten",
+    "natürlich 2,1 s, auf 1,85 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_lang_flattern_6103",
+   "ton": "furzkissen",
+   "punkte": -3.67,
+   "gruende": [
+    "klingt nach „Mosquito“ (AudioSet 0,26, Grenze 0,15)",
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,01)"
+   ],
+   "hinweise": [
+    "natürlich 2,2 s, auf 1,85 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_lang_flattern_6104",
+   "ton": "furzkissen",
+   "punkte": -1.64,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,00)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2390 Hz (+16,3 dB über der Umgebung): auf Piepen achten",
+    "natürlich 2,1 s, auf 1,85 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_lang_flattern_6105",
+   "ton": "furzkissen",
+   "punkte": -0.32,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,00)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_lang_flattern_6106",
+   "ton": "furzkissen",
+   "punkte": -1.28,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,00)"
+   ],
+   "hinweise": [
+    "Hüllkurve pulsiert mit 18 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 11,8)",
+    "natürlich 2,8 s, auf 1,85 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_quietschig_6101",
+   "ton": "furzkissen",
+   "punkte": 0.59,
+   "gruende": [
+    "Tonhöhe steigt zum Schluss nicht (Schluss gegen Anfang −1,8 Halbtöne)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_quietschig_6103",
+   "ton": "furzkissen",
+   "punkte": -6.36,
+   "gruende": [
+    "klingt nach „Animal“ (AudioSet 0,22, Grenze 0,15)",
+    "klingt nach „Domestic animals, pets“ (AudioSet 0,27, Grenze 0,15)",
+    "klingt nach „Dog“ (AudioSet 0,25, Grenze 0,15)",
+    "klingt nach „Howl“ (AudioSet 0,23, Grenze 0,15)",
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,01)",
+    "Tonhöhe steigt zum Schluss nicht (Schluss gegen Anfang 2,5 Halbtöne)"
+   ],
+   "hinweise": [
+    "etwas „Screaming“ (AudioSet 0,06)",
+    "Hüllkurve pulsiert mit 18 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 24,7)"
+   ]
+  },
+  {
+   "roh": "furzkissen_quietschig_6104",
+   "ton": "furzkissen",
+   "punkte": -1.39,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,00)",
+    "Tonhöhe steigt zum Schluss nicht (Schluss gegen Anfang 0,5 Halbtöne)"
+   ],
+   "hinweise": [
+    "natürlich 2,3 s, auf 2,20 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_quietschig_6105",
+   "ton": "furzkissen",
+   "punkte": 0.75,
+   "gruende": [
+    "Tonhöhe steigt zum Schluss nicht (Schluss gegen Anfang −5,3 Halbtöne)"
+   ],
+   "hinweise": [
+    "Hüllkurve pulsiert mit 21 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 10,7)"
+   ]
+  },
+  {
+   "roh": "furzkissen_quietschig_6106",
+   "ton": "furzkissen",
+   "punkte": -1.3,
+   "gruende": [
+    "Katzen-Leitplanke: schmale Linie bei 2132 Hz (+25,5 dB über der Umgebung), Piepen",
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,00)"
+   ],
+   "hinweise": [
+    "Hüllkurve pulsiert mit 19 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 10,8)"
+   ]
+  },
+  {
+   "roh": "furzkissen_quietschig_langsam_6101",
+   "ton": "furzkissen",
+   "punkte": -0.44,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,01)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 3462 Hz (+18,9 dB über der Umgebung): auf Piepen achten"
+   ]
+  },
+  {
+   "roh": "furzkissen_quietschig_langsam_6103",
+   "ton": "furzkissen",
+   "punkte": -0.26,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,04)",
+    "Tonhöhe steigt zum Schluss nicht (Schluss gegen Anfang 2,6 Halbtöne)"
+   ],
+   "hinweise": [
+    "AudioSet „Whistle“ 0,19: auf Quietschen/Piepen/Tierähnliches achten"
+   ]
+  },
+  {
+   "roh": "furzkissen_quietschig_langsam_6104",
+   "ton": "furzkissen",
+   "punkte": -0.43,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,00)",
+    "Tonhöhe nicht messbar (soll zum Schluss steigen)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_quietschig_langsam_6105",
+   "ton": "furzkissen",
+   "punkte": -3.92,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,01)",
+    "Tonhöhe steigt zum Schluss nicht (Schluss gegen Anfang −8,1 Halbtöne)"
+   ],
+   "hinweise": [
+    "leichter Katzen-Verdacht (AudioSet „Cat“ 0,09)",
+    "etwas „Animal“ (AudioSet 0,13)",
+    "etwas „Domestic animals, pets“ (AudioSet 0,15)"
+   ]
+  },
+  {
+   "roh": "furzkissen_quietschig_langsam_6106",
+   "ton": "furzkissen",
+   "punkte": -0.82,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,03)",
+    "Tonhöhe steigt zum Schluss nicht (Schluss gegen Anfang 2,9 Halbtöne)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2132 Hz (+13,1 dB über der Umgebung): auf Piepen achten"
+   ]
+  },
+  {
+   "roh": "furzkissen_pfft_6101",
+   "ton": "furzkissen",
+   "punkte": -0.6,
+   "gruende": [
+    "Katzen-Leitplanke: schmale Linie bei 2941 Hz (+23,9 dB über der Umgebung), Piepen",
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,01)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_pfft_6102",
+   "ton": "furzkissen",
+   "punkte": -1.64,
+   "gruende": [
+    "Katzen-Leitplanke: schmale Linie bei 2132 Hz (+40,4 dB über der Umgebung), Piepen",
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,00)"
+   ],
+   "hinweise": [
+    "natürlich 0,8 s, auf 0,60 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_pfft_6103",
+   "ton": "furzkissen",
+   "punkte": -1.49,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,00)",
+    "fast gleich wie furzkissen_pfft_6105 (Spektrogramm r = 0,93)"
+   ],
+   "hinweise": [
+    "AudioSet hört eher einen Knall (Explosion/Bang 0,40): zu hart?",
+    "schmale Linie bei 4494 Hz (+12,5 dB über der Umgebung): auf Piepen achten"
+   ]
+  },
+  {
+   "roh": "furzkissen_pfft_6104",
+   "ton": "furzkissen",
+   "punkte": -1.08,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,03)",
+    "fast gleich wie furzkissen_pfft_klein_6104 (Spektrogramm r = 0,96)"
+   ],
+   "hinweise": [
+    "natürlich 0,7 s, auf 0,60 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_pfft_6105",
+   "ton": "furzkissen",
+   "punkte": -0.89,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,00)"
+   ],
+   "hinweise": [
+    "AudioSet hört eher einen Knall (Explosion/Bang 0,19): zu hart?"
+   ]
+  },
+  {
+   "roh": "furzkissen_pfft_6106",
+   "ton": "furzkissen",
+   "punkte": -1.62,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,01)"
+   ],
+   "hinweise": [
+    "natürlich 1,6 s, auf 0,60 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_pfft_klein_6101",
+   "ton": "furzkissen",
+   "punkte": -1.45,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,04)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 4125 Hz (+18,2 dB über der Umgebung): auf Piepen achten",
+    "natürlich 1,4 s, auf 0,60 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_pfft_klein_6102",
+   "ton": "furzkissen",
+   "punkte": -1.5,
+   "gruende": [
+    "Katzen-Leitplanke: schmale Linie bei 2109 Hz (+31,3 dB über der Umgebung), Piepen",
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,04)"
+   ],
+   "hinweise": [
+    "natürlich 1,7 s, auf 0,60 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_pfft_klein_6103",
+   "ton": "furzkissen",
+   "punkte": -1.92,
+   "gruende": [
+    "Katzen-Leitplanke: schmale Linie bei 2812 Hz (+29,1 dB über der Umgebung), Piepen",
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,03)"
+   ],
+   "hinweise": [
+    "natürlich 1,4 s, auf 0,60 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_pfft_klein_6104",
+   "ton": "furzkissen",
+   "punkte": -0.21,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,03)",
+    "fast gleich wie furzkissen_pfft_furz2_6104 (Spektrogramm r = 0,90)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_pfft_klein_6105",
+   "ton": "furzkissen",
+   "punkte": -0.59,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,01)"
+   ],
+   "hinweise": [
+    "Hüllkurve pulsiert mit 26 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 12,3)",
+    "schmale Linie bei 5138 Hz (+18,7 dB über der Umgebung): auf Piepen achten"
+   ]
+  },
+  {
+   "roh": "furzkissen_pfft_klein_6106",
+   "ton": "furzkissen",
+   "punkte": -2.09,
+   "gruende": [
+    "Katzen-Leitplanke: schmale Linie bei 2419 Hz (+21,3 dB über der Umgebung), Piepen",
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,01)",
+    "fast gleich wie furzkissen_pfft_6106 (Spektrogramm r = 0,99)"
+   ],
+   "hinweise": [
+    "natürlich 2,0 s, auf 0,60 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_kurz_6107",
+   "ton": "furzkissen",
+   "punkte": -4.56,
+   "gruende": [
+    "klingt nach „Mosquito“ (AudioSet 0,30, Grenze 0,15)"
+   ],
+   "hinweise": [
+    "etwas „Fly, housefly“ (AudioSet 0,12)",
+    "etwas „Insect“ (AudioSet 0,10)",
+    "natürlich 1,1 s, auf 0,95 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_kurz_6108",
+   "ton": "furzkissen",
+   "punkte": -1.16,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,00)"
+   ],
+   "hinweise": [
+    "natürlich 1,8 s, auf 0,95 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_kurz_6109",
+   "ton": "furzkissen",
+   "punkte": -0.17,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,02)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_kurz_6110",
+   "ton": "furzkissen",
+   "punkte": 3.08,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "natürlich 1,2 s, auf 0,95 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_kurz_6111",
+   "ton": "furzkissen",
+   "punkte": 0.23,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "natürlich 1,5 s, auf 0,95 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_kurz_6112",
+   "ton": "furzkissen",
+   "punkte": -15.77,
+   "gruende": [
+    "klingt nach „Mosquito“ (AudioSet 0,91, Grenze 0,15)",
+    "klingt nach „Fly, housefly“ (AudioSet 0,80, Grenze 0,15)",
+    "klingt nach „Insect“ (AudioSet 0,72, Grenze 0,15)",
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,00)"
+   ],
+   "hinweise": [
+    "natürlich 1,3 s, auf 0,95 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_quietschig_6107",
+   "ton": "furzkissen",
+   "punkte": -0.63,
+   "gruende": [
+    "Tonhöhe steigt zum Schluss nicht (Schluss gegen Anfang −9,6 Halbtöne)"
+   ],
+   "hinweise": [
+    "natürlich 2,4 s, auf 2,20 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_quietschig_6108",
+   "ton": "furzkissen",
+   "punkte": 0.92,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,00)"
+   ],
+   "hinweise": [
+    "natürlich 2,4 s, auf 2,20 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_quietschig_6109",
+   "ton": "furzkissen",
+   "punkte": 0.3,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,00)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_quietschig_6110",
+   "ton": "furzkissen",
+   "punkte": 3.75,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_quietschig_6111",
+   "ton": "furzkissen",
+   "punkte": -1.06,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,00)",
+    "Tonhöhe steigt zum Schluss nicht (Schluss gegen Anfang 0,0 Halbtöne)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2027 Hz (+19,6 dB über der Umgebung): auf Piepen achten"
+   ]
+  },
+  {
+   "roh": "furzkissen_quietschig_6112",
+   "ton": "furzkissen",
+   "punkte": 0.75,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_quietschig_langsam_6107",
+   "ton": "furzkissen",
+   "punkte": 4.33,
+   "gruende": [
+    "Tonhöhe steigt zum Schluss nicht (Schluss gegen Anfang −8,6 Halbtöne)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_quietschig_langsam_6108",
+   "ton": "furzkissen",
+   "punkte": -0.95,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,01)",
+    "Tonhöhe steigt zum Schluss nicht (Schluss gegen Anfang −0,7 Halbtöne)"
+   ],
+   "hinweise": [
+    "etwas „Screaming“ (AudioSet 0,08)"
+   ]
+  },
+  {
+   "roh": "furzkissen_quietschig_langsam_6109",
+   "ton": "furzkissen",
+   "punkte": -2.33,
+   "gruende": [
+    "kürzer als das Ziel (0,67 s statt 0,70–2,20 s)",
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,03)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2097 Hz (+14,2 dB über der Umgebung): auf Piepen achten"
+   ]
+  },
+  {
+   "roh": "furzkissen_quietschig_langsam_6110",
+   "ton": "furzkissen",
+   "punkte": -0.2,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,00)"
+   ],
+   "hinweise": [
+    "Hüllkurve pulsiert mit 17 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 10,1)"
+   ]
+  },
+  {
+   "roh": "furzkissen_quietschig_langsam_6111",
+   "ton": "furzkissen",
+   "punkte": -12.09,
+   "gruende": [
+    "klingt nach „Mosquito“ (AudioSet 0,44, Grenze 0,15)",
+    "klingt nach „Fly, housefly“ (AudioSet 0,71, Grenze 0,15)",
+    "klingt nach „Insect“ (AudioSet 0,55, Grenze 0,15)",
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,00)",
+    "Tonhöhe steigt zum Schluss nicht (Schluss gegen Anfang −0,3 Halbtöne)"
+   ],
+   "hinweise": [
+    "etwas „Bee, wasp, etc.“ (AudioSet 0,10)",
+    "natürlich 2,3 s, auf 2,20 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_quietschig_langsam_6112",
+   "ton": "furzkissen",
+   "punkte": -0.01,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,04)",
+    "Tonhöhe steigt zum Schluss nicht (Schluss gegen Anfang −5,5 Halbtöne)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_kurz2_6101",
+   "ton": "furzkissen",
+   "punkte": 1.09,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_kurz2_6103",
+   "ton": "furzkissen",
+   "punkte": -3.54,
+   "gruende": [
+    "klingt nach „Howl“ (AudioSet 0,17, Grenze 0,15)",
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,01)",
+    "fast gleich wie furzkissen_kurz_6103 (Spektrogramm r = 0,93)"
+   ],
+   "hinweise": [
+    "etwas „Animal“ (AudioSet 0,10)",
+    "etwas „Domestic animals, pets“ (AudioSet 0,08)",
+    "schmale Linie bei 4892 Hz (+14,1 dB über der Umgebung): auf Piepen achten"
+   ]
+  },
+  {
+   "roh": "furzkissen_kurz2_6104",
+   "ton": "furzkissen",
+   "punkte": 3.54,
+   "gruende": [
+    "kürzer als das Ziel (0,53 s statt 0,55–0,95 s)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_kurz2_6105",
+   "ton": "furzkissen",
+   "punkte": 1.23,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "natürlich 1,1 s, auf 0,95 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_kurz2_6106",
+   "ton": "furzkissen",
+   "punkte": 3.11,
+   "gruende": [
+    "kürzer als das Ziel (0,53 s statt 0,55–0,95 s)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_lang_14_6101",
+   "ton": "furzkissen",
+   "punkte": 0.77,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_lang_14_6103",
+   "ton": "furzkissen",
+   "punkte": 0.22,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_lang_14_6104",
+   "ton": "furzkissen",
+   "punkte": -1.28,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,01)"
+   ],
+   "hinweise": [
+    "natürlich 2,0 s, auf 1,85 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_lang_14_6105",
+   "ton": "furzkissen",
+   "punkte": 0.03,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,04)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_lang_14_6106",
+   "ton": "furzkissen",
+   "punkte": -1.75,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,00)"
+   ],
+   "hinweise": [
+    "natürlich 2,0 s, auf 1,85 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_lang_14_6107",
+   "ton": "furzkissen",
+   "punkte": -3.55,
+   "gruende": [
+    "klingt nach „Mosquito“ (AudioSet 0,17, Grenze 0,15)",
+    "klingt nach „Fly, housefly“ (AudioSet 0,28, Grenze 0,15)",
+    "klingt nach „Insect“ (AudioSet 0,28, Grenze 0,15)"
+   ],
+   "hinweise": [
+    "natürlich 2,2 s, auf 1,85 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_lang_14_6108",
+   "ton": "furzkissen",
+   "punkte": -1.0,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,02)"
+   ],
+   "hinweise": [
+    "Hüllkurve pulsiert mit 46 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 13,1)",
+    "natürlich 2,2 s, auf 1,85 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_lang2_6101",
+   "ton": "furzkissen",
+   "punkte": 0.1,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "natürlich 2,4 s, auf 1,85 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_lang2_6102",
+   "ton": "furzkissen",
+   "punkte": 2.92,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "natürlich 2,1 s, auf 1,85 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_lang2_6103",
+   "ton": "furzkissen",
+   "punkte": -1.14,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,03)"
+   ],
+   "hinweise": [
+    "natürlich 2,2 s, auf 1,85 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_quietschig2_6101",
+   "ton": "furzkissen",
+   "punkte": 0.75,
+   "gruende": [
+    "Tonhöhe steigt zum Schluss nicht (Schluss gegen Anfang −11,8 Halbtöne)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_quietschig2_6102",
+   "ton": "furzkissen",
+   "punkte": -0.78,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "etwas „Groan“ (AudioSet 0,10)",
+    "etwas „Grunt“ (AudioSet 0,14)"
+   ]
+  },
+  {
+   "roh": "furzkissen_quietschig2_6103",
+   "ton": "furzkissen",
+   "punkte": -2.47,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,02)",
+    "Tonhöhe steigt zum Schluss nicht (Schluss gegen Anfang −4,5 Halbtöne)"
+   ],
+   "hinweise": [
+    "etwas „Screaming“ (AudioSet 0,07)"
+   ]
+  },
+  {
+   "roh": "furzkissen_quietschig2_6104",
+   "ton": "furzkissen",
+   "punkte": -1.94,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,00)",
+    "Tonhöhe steigt zum Schluss nicht (Schluss gegen Anfang 1,0 Halbtöne)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2824 Hz (+13,0 dB über der Umgebung): auf Piepen achten",
+    "natürlich 2,3 s, auf 2,20 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_quietschig2_6105",
+   "ton": "furzkissen",
+   "punkte": 3.01,
+   "gruende": [
+    "Tonhöhe steigt zum Schluss nicht (Schluss gegen Anfang −6,3 Halbtöne)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_quietschig2_6106",
+   "ton": "furzkissen",
+   "punkte": -0.67,
+   "gruende": [
+    "Tonhöhe steigt zum Schluss nicht (Schluss gegen Anfang 1,2 Halbtöne)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_lang2_6104",
+   "ton": "furzkissen",
+   "punkte": -1.23,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,00)"
+   ],
+   "hinweise": [
+    "natürlich 2,3 s, auf 1,85 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_lang2_6105",
+   "ton": "furzkissen",
+   "punkte": -1.24,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,00)"
+   ],
+   "hinweise": [
+    "natürlich 2,2 s, auf 1,85 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_lang2_6106",
+   "ton": "furzkissen",
+   "punkte": 1.45,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_lang2_6108",
+   "ton": "furzkissen",
+   "punkte": -1.15,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,00)"
+   ],
+   "hinweise": [
+    "natürlich 2,3 s, auf 1,85 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "furzkissen_pfft_furz_6102",
+   "ton": "furzkissen",
+   "punkte": -0.27,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "etwas „Grunt“ (AudioSet 0,09)"
+   ]
+  },
+  {
+   "roh": "furzkissen_pfft_furz_6103",
+   "ton": "furzkissen",
+   "punkte": -0.62,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,00)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_pfft_furz_6104",
+   "ton": "furzkissen",
+   "punkte": 2.92,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_pfft_furz_6105",
+   "ton": "furzkissen",
+   "punkte": 4.73,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_pfft_furz_6107",
+   "ton": "furzkissen",
+   "punkte": 5.36,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_pfft_furz_6108",
+   "ton": "furzkissen",
+   "punkte": -2.79,
+   "gruende": [
+    "kürzer als das Ziel (0,15 s statt 0,20–0,60 s)",
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,01)",
+    "fast gleich wie furzkissen_pfft_furz2_6108 (Spektrogramm r = 0,98)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_pfft_furz2_6101",
+   "ton": "furzkissen",
+   "punkte": -0.57,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,02)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_pfft_furz2_6102",
+   "ton": "furzkissen",
+   "punkte": -1.38,
+   "gruende": [
+    "klingt nach „Grunt“ (AudioSet 0,23, Grenze 0,15)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_pfft_furz2_6103",
+   "ton": "furzkissen",
+   "punkte": -0.79,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,00)"
+   ],
+   "hinweise": [
+    "AudioSet „Whistle“ 0,35: auf Quietschen/Piepen/Tierähnliches achten",
+    "schmale Linie bei 2203 Hz (+12,7 dB über der Umgebung): auf Piepen achten"
+   ]
+  },
+  {
+   "roh": "furzkissen_pfft_furz2_6104",
+   "ton": "furzkissen",
+   "punkte": -0.16,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,01)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_pfft_furz2_6105",
+   "ton": "furzkissen",
+   "punkte": -15.22,
+   "gruende": [
+    "katzenähnlich (AudioSet „Meow“ 0,53)",
+    "klingt nach „Animal“ (AudioSet 0,32, Grenze 0,15)",
+    "klingt nach „Domestic animals, pets“ (AudioSet 0,32, Grenze 0,15)",
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,02)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2068 Hz (+14,0 dB über der Umgebung): auf Piepen achten"
+   ]
+  },
+  {
+   "roh": "furzkissen_pfft_furz2_6106",
+   "ton": "furzkissen",
+   "punkte": 1.22,
+   "gruende": [
+    "klingt nach „Grunt“ (AudioSet 0,20, Grenze 0,15)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_pfft_furz2_6107",
+   "ton": "furzkissen",
+   "punkte": 4.76,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "furzkissen_pfft_furz2_6108",
+   "ton": "furzkissen",
+   "punkte": -2.53,
+   "gruende": [
+    "kürzer als das Ziel (0,15 s statt 0,20–0,60 s)",
+    "AudioSet erkennt keine der erwarteten Klassen (Fart, Squeak, Boing; höchstens 0,04)"
+   ],
+   "hinweise": []
   }
  ]
 }

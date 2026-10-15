@@ -9,13 +9,14 @@ extends Node
 #               („Gerade noch geschafft!“). Liegt die Mau-Katze auf dem Stapel, springt sie beim Klingeln davon.
 #   Papierkugel fliegt auf einer Parabel (0,7 s, dreht sich) vom Absender zum Ziel, Plopp, der Avatar staucht sich, die Kugel springt
 #               zurück und bleibt 3 s liegen (höchstens 3 je Platz). Bot: „Mpf!“.
-#   Reaktion    😂 😱 👏 👍 als gezeichnete Bilder (keine Emoji-Schrift in der App) steigen 1,6 s am Platz des Absenders auf; Ton
+#   Reaktion    😂 👏 👍 😱 (ab 1.6.5 feste Bilder aus Fluent Emoji, wie im Browser) steigen 1,6 s am Platz des Absenders auf; Ton
 #               auf allen Geräten, je Gerät höchstens 2 gleichzeitig und je Name 600 ms Sperre (Jubel und Mau behalten ihre Stimmen).
-# Bedienung: Kopf eines Gegners → Necken-Menü (TeaseMenu), Fächer ohne sichtbare Rückseiten ebenso; Reaktionsknopf am eigenen Platz
-# (TeaseMenu.ReactionPicker). Beide zeigen nur, was nach TeaseRules mit der lokalen Uhr gerade geht (source.fx_check).
+# Bedienung: Kopf eines Gegners → Necken-Menü (TeaseMenu), Fächer ohne sichtbare Rückseiten ebenso; die 4 Reaktionsknöpfe am eigenen
+# Platz (TeaseMenu.ReactionBar, Beta 1.6.5: ein Tipp sendet, kein Fächer mehr). Beide zeigen nur, was nach TeaseRules mit der
+# lokalen Uhr gerade geht (source.fx_check).
 # Effekte reduziert: keine Flugbahn (Kugel erscheint am Ziel), kein Wackeln/Stauchen, Z stehen still, Reaktionen blenden am Platz.
 # Spieltöne aus/leise gelten für alle Neck-Töne (AppSound), „Necken aus“ (Einstellung necken): nichts sehen, hören oder schicken.
-# Der Tisch ruft: mount, attach(source), on_view, on_event, on_fx, on_refused, tap_head/tap_fan/tap_me, set_enabled.
+# Der Tisch ruft: mount, attach(source), on_view, on_event, on_fx, on_refused, tap_head/tap_fan, set_enabled.
 # Die Uhr läuft über _process; Tests schalten auto_process aus und rufen tick(delta) (wie FunFx).
 
 signal send_requested(req: Dictionary)   # Menüwahl → source.send_fx (attach verbindet das selbst)
@@ -41,13 +42,14 @@ const SOUND_OF := {"lachen": "lachen", "schreck": "schreck", "klatschen": "klats
 const MENU_IDLE_S := 5.0
 const RATE_GRAY_S := 1.2                   # fx_no "rate": Knöpfe kurz ausgegraut
 const REOPEN_GAP_MS := 400                 # derselbe Kopf direkt nach dem Schließen: nicht gleich wieder öffnen
-const SYNC_S := 0.15                       # Beta 1.6.3: Abstand der Regelprüfung in tick (Reaktionsknopf, Menüeinträge)
+const SYNC_S := 0.15                       # Beta 1.6.3: Abstand der Regelprüfung in tick (Reaktionsknöpfe, Menüeinträge)
+const REACT_GAP := 10.0                    # Beta 1.6.5: Abstand zwischen den Reaktionsknöpfen
 
 var table: TableView
 var source: TableSource
 var layer: Node2D                          # Effekte (über Ablage und Fächern, unter Farbwahl-Rad, Hilfe und Sichtschutz)
 var menu: TeaseMenu                        # offenes Necken-Menü (oder null)
-var picker: TeaseMenu.ReactionPicker       # Reaktionsknopf am eigenen Platz
+var reactions: TeaseMenu.ReactionBar      # Beta 1.6.5: die 4 Reaktionsknöpfe am eigenen Platz
 var enabled := true                        # Einstellung „necken“ dieses Geräts
 var reduced := false
 var night := 0.0: set = set_night
@@ -71,18 +73,18 @@ var _last_target := -1                     # Ziel des letzten eigenen Wunschs (f
 var _turn := -1
 var _closed_seat := -1
 var _closed_ms := -100000
-var _picker_closed_ms := -100000         # Beta 1.6.3: Fächer per Tipp daneben geschlossen (Uhr now, ms)
-var _sync_left := 0.0                     # Beta 1.6.3: bis zur nächsten vollen Prüfung (Reaktionsknopf, Menü) in tick
+var _sync_left := 0.0                     # Beta 1.6.3: bis zur nächsten vollen Prüfung (Reaktionsknöpfe, Menü) in tick
 var _react_cap := false                  # Beta 1.6.3: Reaktionen in dieser Spielart (caps), zuletzt geprüft
 var _react_why := "mode"                  # Beta 1.6.3: zuletzt geprüfter Grund für Reaktionen (fx_check)
-var _picker_key := ""                     # Beta 1.6.3: zuletzt gezeichneter Stand des Reaktionsknopfs
+var _react_key := ""                      # zuletzt gezeichneter Stand der Reaktionsknöpfe
+var _react_rel: Array[Vector2] = []       # Beta 1.6.5: gewählte Knopfmitten relativ zum Avatar (normaler Modus)
 
 
 func _init() -> void:
 	name = "Necken"
 
 
-# Ebenen einhängen: Effekte direkt über fx_top, Menü unter der Rückseiten-Großansicht, Reaktionsknopf über dem Rundenende.
+# Ebenen einhängen: Effekte direkt über fx_top, Menü unter der Rückseiten-Großansicht, Reaktionsknöpfe über dem Rundenende.
 func mount(t: TableView) -> void:
 	table = t
 	t.add_child(self)
@@ -91,13 +93,12 @@ func mount(t: TableView) -> void:
 	layer.name = "NeckenEffekte"
 	ov.add_child(layer)
 	ov.move_child(layer, t.fx_top.get_index() + 1)
-	picker = TeaseMenu.ReactionPicker.new()
-	picker.name = "Reaktionsknopf"
-	picker.visible = false
-	picker.chosen.connect(_on_react_chosen)
-	picker.dismissed.connect(_on_picker_dismissed)
-	ov.add_child(picker)
-	ov.move_child(picker, t.round_end.get_index() + 1)
+	reactions = TeaseMenu.ReactionBar.new()
+	reactions.name = "Reaktionen"
+	reactions.visible = false
+	reactions.chosen.connect(_on_react_chosen)
+	ov.add_child(reactions)
+	ov.move_child(reactions, t.round_end.get_index() + 1)
 	enabled = HandView.truthy(UiApp.setting("necken", true))
 
 
@@ -113,7 +114,7 @@ func attach(src: TableSource) -> void:
 	if not send_requested.is_connected(src.send_fx):
 		send_requested.connect(src.send_fx)
 	src.set_fx_off(not enabled)
-	_sync_picker()
+	_sync_reactions()
 
 
 func set_enabled(on: bool) -> void:
@@ -123,7 +124,7 @@ func set_enabled(on: bool) -> void:
 	if not on:
 		close_menu()
 		clear()
-	_sync_picker()
+	_sync_reactions()
 
 
 func set_night(v: float) -> void:
@@ -131,9 +132,9 @@ func set_night(v: float) -> void:
 	if menu != null:
 		menu.night = v
 		menu.queue_redraw()
-	if picker != null:
-		picker.night = v
-		picker.queue_redraw()
+	if reactions != null:
+		reactions.night = v
+		reactions.queue_redraw()
 
 
 func k() -> float:
@@ -171,7 +172,7 @@ func tick(delta: float) -> void:
 			close_menu()
 		elif full:
 			_refresh_menu()
-	_sync_picker(full)
+	_sync_reactions(full)
 
 
 # ================================================================= Sicht und Ereignisse
@@ -190,7 +191,7 @@ func on_view(v: Dictionary) -> void:
 	for e in effects():
 		if (e is AlarmFx or e is SnoreFx) and e.target != turn:
 			_wake_up(e)
-	_sync_picker()
+	_sync_reactions()
 
 
 func on_event(ev: Dictionary) -> void:
@@ -291,10 +292,10 @@ func on_refused(why: String) -> void:
 		"rate":
 			_rate_until = now + RATE_GRAY_S
 			_refresh_menu()
-			_sync_picker()
-			# Menü bzw. Fächer sind nach dem Senden meist schon zu: der Reaktionsknopf wackelt und ist kurz blass (Beta 1.6.3)
-			if picker != null and picker.visible:
-				picker.nudge()
+			_sync_reactions()
+			# Das Menü ist nach dem Senden meist schon zu: die Reaktionsknöpfe wackeln und sind kurz blass (Beta 1.6.3)
+			if reactions != null and reactions.visible:
+				reactions.nudge()
 
 
 func rate_limited() -> bool:
@@ -303,7 +304,7 @@ func rate_limited() -> bool:
 
 func _on_offs(_seats: Array) -> void:
 	_refresh_menu()
-	_sync_picker()
+	_sync_reactions()
 
 
 func _me() -> int:
@@ -746,7 +747,7 @@ func _place_snore(fx: SnoreFx, seat: int) -> void:
 	fx.zdir = float(best.zdir)
 
 
-# ================================================================= Bedienung: Menü am Gegner, Reaktionsknopf
+# ================================================================= Bedienung: Menü am Gegner, Reaktionsknöpfe
 
 func caps() -> Dictionary:
 	if source == null or not enabled:
@@ -813,8 +814,6 @@ func open_menu(seat: int) -> bool:
 	if seat == _closed_seat and int(now * 1000.0) - _closed_ms < REOPEN_GAP_MS:
 		return true                           # der Tipp hat das offene Menü dieses Platzes gerade geschlossen
 	close_menu(false)
-	if picker != null:
-		picker.open = false
 	menu = TeaseMenu.new()
 	menu.name = "NeckenMenue"
 	menu.seat = seat
@@ -994,30 +993,17 @@ func tap_head(seat: int) -> bool:
 	return open_menu(seat)
 
 
-# Tipp auf den eigenen Platz: Reaktionsfächer auf/zu. true = verbraucht.
-func tap_me() -> bool:
-	if picker == null or not picker.visible:
-		return false
-	if not picker.open and int(now * 1000.0) - _picker_closed_ms < REOPEN_GAP_MS:
-		return true                           # Beta 1.6.3: derselbe Tipp hat den Fächer gerade geschlossen (ReactionPicker._input)
-	picker.toggle()
-	return true
-
-
-func _on_picker_dismissed() -> void:
-	_picker_closed_ms = int(now * 1000.0)
-
-
 func _on_react_chosen(r: String) -> void:
-	if picker.gray:
+	if reactions.gray:
 		return
 	send({"k": "react", "r": r})
 
 
-# Reaktionsknopf: nur mit Reaktionen in dieser Spielart, eigenem Platz und Necken an; Lage am Namensschild bzw. in der Zeile „Du“.
-# Beta 1.6.3: full = auch die Regeln neu prüfen (caps, fx_check); sonst nur Lage und Uhr (jedes Bild), gezeichnet nur bei Änderung.
-func _sync_picker(full := true) -> void:
-	if picker == null or table == null:
+# Beta 1.6.5: die 4 Reaktionsknöpfe – nur mit Reaktionen in dieser Spielart, eigenem Platz und Necken an. Lage: normal neben dem
+# eigenen Namen (Platzwahl _place_reactions), großer Modus in der Zeile „Du“ vor der Kartenzahl (_row_reactions).
+# full = auch die Regeln und die Platzwahl neu prüfen (alle SYNC_S); sonst nur Lage und Uhr (jedes Bild), gezeichnet nur bei Änderung.
+func _sync_reactions(full := true) -> void:
+	if reactions == null or table == null:
 		return
 	if full:
 		var kinds: Array = caps().get("kinds", [])
@@ -1026,34 +1012,145 @@ func _sync_picker(full := true) -> void:
 	var badge := table.me_badge
 	var show := enabled and _react_cap and _me() >= 0 and badge.visible and badge.modulate.a > 0.5 \
 		and not table.handover.visible and not covered()
-	if show != picker.visible:
-		picker.visible = show
-		_picker_key = ""
-		if not show:
-			picker.open = false
+	if show and badge.list_mode and _row_hidden(badge):
+		show = false
+	if show != reactions.visible:
+		reactions.visible = show
+		_react_key = ""
+		_react_rel.clear()
+	if not show or not badge.list_mode:
+		_set_row_reserve(badge, 0.0)
 	if not show:
 		return
-	picker.k = k()
-	picker.night = night
-	picker.big = big
-	picker.reduced = reduced
-	var inv := table.get_global_transform().affine_inverse()
-	var r := TeaseMenu.ReactionPicker.BTN_R * k()
-	var g: Vector2
+	reactions.night = night
+	reactions.reduced = reduced
 	if badge.list_mode:
-		g = badge.to_global(Vector2(-badge.row_size.x * 0.5 - 12.0 - r, 0.0))
+		_row_reactions(badge)
 	else:
-		g = badge.to_global(Vector2(badge.header_width() + 14.0 + r, 0.0))
-	picker.center = table._table_to(picker, inv * g)
-	picker.gray = _react_why != "" or rate_limited()
-	picker.dim = rate_limited()
-	var key := "%s|%s|%s|%s|%s|%s|%s" % [picker.center.round(), picker.gray, picker.dim, picker.open, picker.k, picker.night, picker.big]
-	if key != _picker_key:
-		_picker_key = key
-		picker.queue_redraw()
+		reactions.squash = 1.0
+		if full or _react_rel.size() != TeaseMenu.REACT_ORDER.size():
+			_place_reactions(badge)
+		var av := _g2r(anchor(_me()).pos)
+		var cs: Array[Vector2] = []
+		for p in _react_rel:
+			cs.append(av + p)
+		reactions.centers = cs
+	reactions.gray = _react_why != "" or rate_limited()
+	reactions.dim = rate_limited()
+	var key := "%s|%s|%s|%s|%s|%s" % [reactions.centers.map(func(p: Vector2) -> Vector2: return p.round()), reactions.r, reactions.gray,
+		reactions.dim, reactions.night, snappedf(reactions.squash, 0.01)]
+	if key != _react_key:
+		_react_key = key
+		reactions.queue_redraw()
 
 
-# Gerätetest 1.6.3: Liegt etwas Modales über dem Tisch, verschwindet der Reaktionsknopf samt Fächer. Er hängt hinter dem Rundenende
+# Effekt-Ebene → Koordinaten der Reaktionsknöpfe (beide liegen in den Overlays des Tisches)
+func _g2r(p: Vector2) -> Vector2:
+	if layer == null:
+		return p
+	return reactions.get_global_transform_with_canvas().affine_inverse() * (layer.get_global_transform_with_canvas() * p)
+
+
+func _set_row_reserve(badge: OpponentSeat, v: float) -> void:
+	if not is_equal_approx(badge.row_reserve, v):
+		badge.row_reserve = v
+		badge.queue_redraw()
+
+
+# Großer Modus: Knöpfe rechtsbündig in der Zeile „Du“ vor der großen Kartenzahl. Dem Wort „Du“ bleibt sein Platz, sonst werden die
+# Knöpfe kleiner (nie unter 22 px Radius). Die Zeile kürzt Namen und „dran“ um diesen Platz (OpponentSeat.row_reserve).
+func _row_reactions(badge: OpponentSeat) -> void:
+	var rh := badge.row_size.y
+	var cr := badge.count_rect()
+	var ar := badge.avatar_radius()
+	var nx := -badge.row_size.x * 0.5 + 12.0 + ar * 2.0 + 14.0
+	var x_end := cr.position.x - 12.0
+	var name_fs := mini(UiFonts.px(36), int(rh * 0.46))
+	var name_w := UiFonts.text(800, 100.0).get_string_size(I18n.t("Du"), HORIZONTAL_ALIGNMENT_LEFT, -1, name_fs).x + 10.0
+	var gap := REACT_GAP * k()
+	var n := TeaseMenu.REACT_ORDER.size()
+	var r := minf(TeaseMenu.REACT_BTN_R * k(), (rh - 14.0) * 0.5)
+	var room := x_end - nx - name_w
+	if 2.0 * r * n + gap * (n - 1) > room:
+		gap = 8.0
+		r = (room - gap * (n - 1)) / (2.0 * n)
+	r = maxf(r, 22.0)
+	var inv := table.get_global_transform().affine_inverse()
+	var cs: Array[Vector2] = []
+	for i in n:
+		var lx := x_end - r - float(n - 1 - i) * (2.0 * r + gap)
+		cs.append(table._table_to(reactions, inv * badge.to_global(Vector2(lx, 0.0))))
+	reactions.centers = cs
+	reactions.r = r
+	reactions.squash = badge.flip_y
+	_set_row_reserve(badge, 2.0 * r * n + gap * (n - 1) + 8.0)
+
+
+# Großer Modus: liegt gerade eine andere Zeile über „Du“ (erwischbarer Spieler außerhalb der sichtbaren Zeilen), weichen die Knöpfe.
+func _row_hidden(badge: OpponentSeat) -> bool:
+	var mine := Rect2(badge.to_global(badge.list_rect().position), badge.list_rect().size)
+	for s in table.get("_seats"):
+		var sn: OpponentSeat = table.seat_node(int(s))
+		if sn == null or not sn.is_visible_in_tree() or sn.modulate.a < 0.5 or sn.z_index <= badge.z_index:
+			continue
+		if Rect2(sn.to_global(sn.list_rect().position), sn.list_rect().size).grow(-4.0).intersects(mine):
+			return true
+	return false
+
+
+# Normaler Modus: Lage nach TeaseFx._choose (wie die größeren Effekte) – (1) als Reihe rechts neben Name und Kartenzahl, (2) darüber,
+# (3) 2 × 2 rechts daneben, (4) etwas weiter rechts. Hart gemieden: Hand, Ziehstapel, Ablage, Mau, Sortieren/Rückseiten, Knöpfe oben
+# links, „Erwischt!“-Felder aller Mitspieler (auch wenn gerade niemand erwischbar ist – sonst sprängen die Knöpfe), die Fächer der
+# Mitspieler, die Hinweisleiste (als Band über die ganze Breite, damit lange Hinweise nichts verschieben) und der Einsatzstapel im
+# Glücksspiel; weich die Köpfe. Ergebnis: Knopfmitten relativ zum eigenen Avatar (_react_rel).
+func _place_reactions(badge: OpponentSeat) -> void:
+	var r := TeaseMenu.REACT_BTN_R
+	var gap := REACT_GAP
+	var n := TeaseMenu.REACT_ORDER.size()
+	var a: Vector2 = anchor(_me()).pos
+	var ar := badge.avatar_radius()
+	var head: Rect2 = head_of(_me()).rect
+	var sz := _screen()
+	var blk := _blockers(_me())
+	var hard: Array[Rect2] = blk.hard
+	for st in table.get("_seats"):
+		var sn: OpponentSeat = table.seat_node(int(st))
+		if sn == null or not sn.is_visible_in_tree() or int(st) == _me():
+			continue
+		hard.append(catch_rect_of(int(st), layer))
+		var av := _g2l(sn.avatar_global())
+		var half := (OpponentSeat.BAR_W if sn.compact else sn.fan_max_w) * 0.5 + 10.0
+		var fan_h := sn.header_height() * 0.5 + 10.0 + (OpponentSeat.BAR_H + 24.0 if sn.compact else sn.card_w * 1.62)
+		hard.append(_rect_of(av + Vector2(-half, -sn.avatar_radius()), av + Vector2(half, fan_h)))
+	var hb := table.hint_bar
+	var hint_top := _g2l(hb.get_global_transform() * Vector2(0.0, hb.hint_y - hb.hint_h() * 0.5)).y - 6.0
+	hard.append(_rect_of(Vector2(0.0, hint_top), Vector2(sz.x, hint_top + hb.hint_h() + 12.0)))
+	var sp: Node2D = table.stake_pile
+	if sp != null and sp.visible:
+		var w := float(sp.get("card_w"))
+		var c := table._table_to(layer, (table.get("_world") as Node2D).transform * sp.position)
+		hard.append(Rect2(c - Vector2(w * 0.65, w * CardView.ASPECT * 0.65), Vector2(w * 1.3, w * CardView.ASPECT * 1.3)))
+	var row := Vector2(2.0 * r * n + gap * (n - 1), 2.0 * r)
+	var grid := Vector2(4.0 * r + gap, 4.0 * r + gap)
+	var y_max := hint_top - 4.0                        # Unterkante über der Hinweisleiste
+	var cands: Array = []
+	var add := func(top_left: Vector2, shape: Vector2, cols: int) -> void:
+		cands.append({"pos": Vector2(top_left.x, minf(top_left.y, y_max - shape.y)), "rel": Rect2(Vector2.ZERO, shape), "cols": cols})
+	add.call(Vector2(head.end.x + 14.0, a.y - r), row, n)
+	add.call(Vector2(a.x - ar, a.y - ar - 14.0 - row.y), row, n)
+	add.call(Vector2(head.end.x + 14.0, a.y - grid.y * 0.5), grid, 2)
+	add.call(Vector2(head.end.x + 14.0 + 2.0 * r, a.y - r), row, n)
+	var best := _choose(cands, {"hard": hard, "soft": blk.soft})
+	var tl: Vector2 = best.pos
+	var cols := int(best.cols)
+	var rel: Array[Vector2] = []
+	for i in n:
+		rel.append(tl + Vector2(r + float(i % cols) * (2.0 * r + gap), r + float(i / cols) * (2.0 * r + gap)) - a)
+	_react_rel = rel
+	reactions.r = r
+
+
+# Gerätetest 1.6.3: Liegt etwas Modales über dem Tisch, verschwinden die Reaktionsknöpfe. Sie hängen hinter dem Rundenende
 # in den Overlays, also über Farbrad, Rückseiten-Großansicht und Kartenhilfe; Rückfragen und Menüs von TableScreen über modal_cb.
 func covered() -> bool:
 	if table == null:
@@ -1063,11 +1160,11 @@ func covered() -> bool:
 	return modal_cb.is_valid() and bool(modal_cb.call())
 
 
-# Flächen für die Sofort-Leiste (TableScreen.bar_obstacles, Bildschirmkoordinaten): Reaktionsknopf (offen samt Fächer) und Menü
+# Flächen für die Sofort-Leiste (TableScreen.bar_obstacles, Bildschirmkoordinaten): Reaktionsknöpfe und Menü
 func obstacles() -> Array[Rect2]:
 	var out: Array[Rect2] = []
-	if picker != null and picker.visible:
-		out.append(Rect2(picker.get_global_transform_with_canvas() * picker.bounds().position, picker.bounds().size))
+	if reactions != null and reactions.visible:
+		out.append(Rect2(reactions.get_global_transform_with_canvas() * reactions.bounds().position, reactions.bounds().size))
 	if menu != null and is_instance_valid(menu):
 		out.append(Rect2(menu.get_global_transform_with_canvas() * Vector2.ZERO, menu.size))
 	return out
@@ -1099,32 +1196,19 @@ func _vibrate(ms: int) -> void:
 		UiApp.vibrate(ms, 0.6)
 
 
-# ================================================================= Gezeichnete Bilder (keine Emoji-Schrift in der App)
+# ================================================================= Bilder (Reaktionen ab Beta 1.6.5 als feste Emoji-Bilder, siehe draw_reaction)
 
 const INK := Color("#211B2C")
-const SKIN := Color("#F2C48D")
-const FACE := Color("#FFD65A")
-const TEAR := Color("#8FD3FF")
 const CLOCK := Color("#E5484D")
 const CAP := Color("#7B6BE0")
 
 
-static func _ellipse(ci: CanvasItem, c: Vector2, rx: float, ry: float, col: Color, rot := 0.0) -> void:
-	var pts := PackedVector2Array()
-	for i in 28:
-		var a := TAU * i / 28.0
-		pts.append(c + Vector2(cos(a) * rx, sin(a) * ry).rotated(rot))
-	ci.draw_colored_polygon(pts, col)
-
-
-static func _face(ci: CanvasItem, c: Vector2, s: float, fill: Color) -> void:
-	ci.draw_circle(c, s + maxf(2.0, s * 0.09), INK)
-	ci.draw_circle(c, s, fill)
-
-
-# Bild kind (ball, snore, alarm, backs, lachen, schreck, klatschen, daumen, smile) mit Mitte c und Größe s (≈ Radius).
-# t = Zeit für kleine Bewegungen (Zeiger, Klatschen).
+# Bild kind (ball, snore, alarm, backs, lachen, klatschen, daumen, schreck) mit Mitte c und Größe s (≈ Radius).
+# t = Zeit für kleine Bewegungen (Zeiger).
 static func draw_icon(ci: CanvasItem, kind: String, c: Vector2, s: float, t := 0.0, seed_v := 3) -> void:
+	if REACT_TEX.has(kind):
+		draw_reaction(ci, kind, c, s)             # Beta 1.6.5: Reaktionen als feste Emoji-Bilder
+		return
 	var lw := maxf(1.5, s * 0.09)
 	match kind:
 		"ball":
@@ -1171,81 +1255,31 @@ static func draw_icon(ci: CanvasItem, kind: String, c: Vector2, s: float, t := 0
 				sb.anti_aliasing = true
 				ci.draw_style_box(sb, rect)
 				ci.draw_circle(rect.get_center(), s * 0.16, UiPalette.RING)
-		"lachen", "smile":
-			_face(ci, c, s, FACE)
-			# lachende, zugekniffene Augen
-			for side in [-1.0, 1.0]:
-				var e := c + Vector2(side * s * 0.36, -s * 0.22)
-				ci.draw_polyline(PackedVector2Array([e + Vector2(-s * 0.17, s * 0.06), e + Vector2(0, -s * 0.1), e + Vector2(s * 0.17, s * 0.06)]), INK, lw * 1.3, true)
-			# offener Mund
-			var mouth := PackedVector2Array()
-			for i in 17:
-				var a := PI * i / 16.0
-				mouth.append(c + Vector2(cos(a) * s * 0.52, s * 0.08 + sin(a) * s * (0.5 if kind == "lachen" else 0.38)))
-			ci.draw_colored_polygon(mouth, INK)
-			if kind == "lachen":
-				_ellipse(ci, c + Vector2(0, s * 0.42), s * 0.22, s * 0.12, Color("#F27C8F"))
-				for side in [-1.0, 1.0]:
-					var tc := c + Vector2(side * s * 0.78, -s * 0.02 + fmod(t * 1.5, 1.0) * s * 0.25)
-					_ellipse(ci, tc, s * 0.13, s * 0.2, TEAR)
-					ci.draw_circle(tc + Vector2(0, -s * 0.15), s * 0.07, TEAR)
-		"schreck":
-			_face(ci, c, s, Color("#FFE7A3"))
-			_ellipse(ci, c + Vector2(0, -s * 0.55), s * 0.75, s * 0.32, Color("#A8C6FF", 0.75))
-			for side in [-1.0, 1.0]:
-				var e := c + Vector2(side * s * 0.33, -s * 0.18)
-				_ellipse(ci, e, s * 0.17, s * 0.22, Color.WHITE)
-				ci.draw_circle(e, s * 0.17 + lw * 0.4, Color(INK, 0.0))
-				ci.draw_arc(e, s * 0.2, 0, TAU, 20, INK, lw, true)
-				ci.draw_circle(e + Vector2(0, s * 0.03), s * 0.07, INK)
-			_ellipse(ci, c + Vector2(0, s * 0.38), s * 0.16, s * 0.24, INK)
-			for side in [-1.0, 1.0]:      # Hände an den Wangen
-				var hc := c + Vector2(side * s * 0.92, s * 0.32)
-				_ellipse(ci, hc, s * 0.25 + lw, s * 0.36 + lw, INK, side * 0.3)
-				_ellipse(ci, hc, s * 0.25, s * 0.36, SKIN, side * 0.3)
-		"klatschen":
-			var cyc := 0.5 + 0.5 * cos(t * 3.0 * TAU)
-			var d := s * (0.28 + 0.3 * cyc)
-			for side in [-1.0, 1.0]:
-				var hc := c + Vector2(side * d, s * 0.1)
-				_ellipse(ci, hc, s * 0.36 + lw, s * 0.55 + lw, INK, -side * 0.32)
-				_ellipse(ci, hc, s * 0.36, s * 0.55, SKIN, -side * 0.32)
-				for i in 3:
-					var x := (i - 1) * s * 0.17
-					var base := hc + Vector2(x, -s * 0.2).rotated(-side * 0.32)
-					var top := hc + Vector2(x * 1.1, -s * 0.78).rotated(-side * 0.32)
-					ci.draw_line(base, top, INK, s * 0.2, true)
-					ci.draw_line(base, top, SKIN, s * 0.12, true)
-			if cyc < 0.3:
-				for i in 5:
-					var a := -PI * 0.5 + (i - 2) * 0.45
-					var dir := Vector2(cos(a), sin(a))
-					ci.draw_line(c + dir * s * 0.95, c + dir * s * 1.25, UiPalette.TURN, lw * 1.2, true)
-		"daumen":
-			# Faust mit Daumen nach oben, Ärmel
-			var fist := Rect2(c + Vector2(-s * 0.72, -s * 0.12), Vector2(s * 1.22, s * 0.98))
-			var sb := StyleBoxFlat.new()
-			sb.bg_color = SKIN
-			sb.border_color = INK
-			sb.set_border_width_all(int(maxf(2.0, lw)))
-			sb.set_corner_radius_all(int(s * 0.3))
-			sb.anti_aliasing = true
-			ci.draw_style_box(sb, fist)
-			for i in 3:
-				var y := fist.position.y + s * (0.26 + i * 0.25)
-				ci.draw_line(Vector2(fist.position.x + s * 0.12, y), Vector2(fist.end.x - s * 0.2, y), Color(INK, 0.6), lw * 0.8, true)
-			var th0 := c + Vector2(-s * 0.36, -s * 0.02)
-			var th1 := c + Vector2(-s * 0.3, -s * 0.92)
-			ci.draw_line(th0, th1, INK, s * 0.62, true)
-			ci.draw_circle(th1, s * 0.31, INK)
-			ci.draw_line(th0, th1, SKIN, s * 0.46, true)
-			ci.draw_circle(th1, s * 0.23, SKIN)
-			ci.draw_line(th1 + Vector2(s * 0.08, -s * 0.05), th1 + Vector2(s * 0.08, s * 0.25), Color(INK, 0.45), lw * 0.7, true)
-			var cuff := Rect2(Vector2(fist.end.x - s * 0.1, fist.position.y + s * 0.04), Vector2(s * 0.42, s * 0.9))
-			sb = sb.duplicate()
-			sb.bg_color = Color("#3F74F2")
-			sb.set_corner_radius_all(int(s * 0.1))
-			ci.draw_style_box(sb, cuff)
+
+
+# ================================================================= Reaktionen als feste Bilder (Beta 1.6.5)
+
+# Nutzerwunsch nach der Familienrunde (15.10.2026): Das gezeichnete „Daumen hoch“ ließ sich anders deuten. System-Emoji sehen je Gerät
+# anders aus (Samsung, Google), deshalb zeigen App und Browser dieselben vier Bilder: Microsoft Fluent Emoji, Stil „Color“ (MIT-Lizenz,
+# assets/ui/reaktionen/LIZENZ.md), unverändert als SVG im Projekt. Godot rastert sie beim Import 12-fach (384 × 384 px, svg/scale in
+# der .import-Datei) mit Mipmaps; der Standard-Texturfilter des Projekts (linear mit Mipmaps) hält sie in Knopfgröße wie groß glatt.
+# Tag und Nacht unverändert.
+const REACT_TEX := {
+	"lachen": preload("res://assets/ui/reaktionen/lachen.svg"),
+	"klatschen": preload("res://assets/ui/reaktionen/klatschen.svg"),
+	"daumen": preload("res://assets/ui/reaktionen/daumen.svg"),
+	"schreck": preload("res://assets/ui/reaktionen/schreck.svg"),
+}
+const REACT_IMG := 2.2          # Bildkante relativ zu s (≈ Radius): das Motiv (gut 28 von 32 Einheiten) füllt dann etwa 2 s
+
+
+# Reaktion kind mit Mitte c und Größe s (≈ Radius wie bei den übrigen Bildern)
+static func draw_reaction(ci: CanvasItem, kind: String, c: Vector2, s: float, alpha := 1.0) -> void:
+	var tex: Texture2D = REACT_TEX.get(kind)
+	if tex == null:
+		return
+	var e := s * REACT_IMG
+	ci.draw_texture_rect(tex, Rect2(c - Vector2.ONE * e * 0.5, Vector2.ONE * e), false, Color(1, 1, 1, alpha))
 
 
 # Schlafmütze (Spitze nach rechts oben, Bommel)

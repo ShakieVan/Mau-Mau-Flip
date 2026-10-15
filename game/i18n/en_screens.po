@@ -75,8 +75,8 @@ msgstr "About"
 msgid "Ein Hobbyprojekt von ShakieVan."
 msgstr "A hobby project by ShakieVan."
 
-msgid "Lizenz: CC BY-NC 4.0 (nicht kommerziell). Schriften: Bricolage Grotesque und Fraunces unter der SIL Open Font License 1.1. Quellcode und Versionen auf GitHub: ShakieVan/Mau-Mau-Flip."
-msgstr "License: CC BY-NC 4.0 (non-commercial). Fonts: Bricolage Grotesque and Fraunces under the SIL Open Font License 1.1. Source code and versions on GitHub: ShakieVan/Mau-Mau-Flip."
+msgid "Lizenz: CC BY-NC 4.0 (nicht kommerziell). Schriften: Bricolage Grotesque und Fraunces unter der SIL Open Font License 1.1. Reaktions-Emoji: Microsoft Fluent Emoji (MIT-Lizenz, © Microsoft Corporation). Quellcode und Versionen auf GitHub: ShakieVan/Mau-Mau-Flip."
+msgstr "License: CC BY-NC 4.0 (non-commercial). Fonts: Bricolage Grotesque and Fraunces under the SIL Open Font License 1.1. Reaction emoji: Microsoft Fluent Emoji (MIT License, © Microsoft Corporation). Source code and versions on GitHub: ShakieVan/Mau-Mau-Flip."
 
 msgid "Zurück"
 msgstr "Back"

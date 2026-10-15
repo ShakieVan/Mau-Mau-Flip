@@ -419,7 +419,7 @@ static func controls(config: RuleConfig = null, tease := false) -> Array[Diction
 		out.append({"title": _t("Farbe ablegen"), "text": _t("Nach der Ablegen-Karte sind die passenden Karten schon ausgewählt. Tipp eine an, um sie zu behalten, und dann auf „Ablegen“.")})
 	# Mau-Mau Flip (Beta 1.6.3, Easter Eggs Teil 2): nur, wenn am Tisch geneckt werden kann (Netz bzw. Übung, Necken an)
 	if tease:
-		out.append({"title": _t("Necken"), "text": _t("Tippe auf einen Mitspieler, um ihn zu necken. Der Knopf am eigenen Platz schickt eine Reaktion an alle.")})
+		out.append({"title": _t("Necken"), "text": _t("Tippe auf einen Mitspieler, um ihn zu necken. Die Knöpfe neben deinem Namen schicken eine Reaktion an alle.")})
 	out.append({"title": _t("Spielmenü"), "text": _t("Der Zurück-Knopf oben links öffnet dieses Menü. Dort kannst du die Regeln ansehen oder die Partie verlassen.")})
 	return out
 

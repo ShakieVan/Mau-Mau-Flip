@@ -91,9 +91,10 @@ Android benötigt zusätzlich JDK 17, das Android-SDK und den Signaturschlüssel
 
 Mau-Mau Flip steht unter **[CC BY-NC 4.0](LICENSE)**: Teilen und Verändern mit Namensnennung erlaubt, kommerzielle Nutzung nicht.
 
-- **Spielprinzip:** Mau-Mau mit doppelseitigen Karten. Gestaltung, Karten, Symbole und Töne sind eigene Arbeiten.
+- **Spielprinzip:** Mau-Mau mit doppelseitigen Karten. Gestaltung, Karten, Symbole und Töne sind eigene Arbeiten (außer den unten genannten).
 - **Engine:** [Godot Engine](https://godotengine.org) (MIT).
 - **Schriften:** Bricolage Grotesque und Fraunces (SIL Open Font License 1.1), `game/assets/fonts/OFL.txt`.
+- **Reaktions-Emoji** (😂 👏 👍 😱 beim Necken, in App und Browser): [Microsoft Fluent Emoji](https://github.com/microsoft/fluentui-emoji), Stil „Color“ (MIT, © Microsoft Corporation), unverändert übernommen; Lizenztext in `game/assets/ui/reaktionen/LIZENZ.md` (Kopie für den Browser in `webclient/bilder/reaktionen/`).
 - **Katze in Logo und App-Symbol:** KI-Illustration, vom Autor erzeugt.
 - **„Mau!“ und „Mau-Mau!“:** Aufnahmen des Autors, aufbereitet mit `tools/make_mau_aufnahmen.sh`.
 - **Spieltöne:** KI-erzeugt mit [MOSS-SoundEffect v2.0](https://huggingface.co/OpenMOSS-Team/MOSS-SoundEffect-v2.0) (Apache 2.0), nachbearbeitet mit `tools/make_sfx_moss.py`; Einzelheiten in `audio/sfx_README.md`. Das Schnurren beim Aussetzen ist `schnurren3_03` derselben Quelle (Apache 2.0), unverändert übernommen (`audio/entwurf/schnurren3/`, `tools/make_schnurren.py --runde3`). Der Jubel am Rundenende (`jubel_1` = `jubel3_01`, `jubel_2` = `jubel3_06`, zufällig) stammt ebenfalls daher, unverändert übernommen (`audio/entwurf/jubel3/`, `tools/make_jubel.py --runde3`).

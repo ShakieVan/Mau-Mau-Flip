@@ -114,7 +114,7 @@ func build() -> void:
 	ver.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 	info.add_child(ver)
 	info.add_child(ScreenKit.text_block("Ein Hobbyprojekt von ShakieVan.", UiFonts.size("text")))
-	info.add_child(ScreenKit.hint("Lizenz: CC BY-NC 4.0 (nicht kommerziell). Schriften: Bricolage Grotesque und Fraunces unter der SIL Open Font License 1.1. Quellcode und Versionen auf GitHub: ShakieVan/Mau-Mau-Flip.", UiFonts.size("hinweis")))
+	info.add_child(ScreenKit.hint("Lizenz: CC BY-NC 4.0 (nicht kommerziell). Schriften: Bricolage Grotesque und Fraunces unter der SIL Open Font License 1.1. Reaktions-Emoji: Microsoft Fluent Emoji (MIT-Lizenz, © Microsoft Corporation). Quellcode und Versionen auf GitHub: ShakieVan/Mau-Mau-Flip.", UiFonts.size("hinweis")))
 	var app := UiApp.app()
 	for key in ["updater", "apk_share"]:
 		var obj: Variant = app.get(key) if app != null else null

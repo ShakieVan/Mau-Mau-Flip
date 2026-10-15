@@ -966,6 +966,8 @@ body.ruhig *, body.ruhig *::before, body.ruhig *::after { animation: none !impor
 #tisch.gross .gg.dran .zahl { background: var(--t-dran-fg); color: var(--t-dran); }
 #tisch.gross .gg.dran .ava { animation: none; box-shadow: none; }
 #tisch.gross .gg.ich:not(.dran) { border-style: dashed; }
+/* Beta 1.6.5: Reaktionsknöpfe in der Zeile „Du“ (necken.js setzt --nk-res = ihre Breite in Bühnen-px): Name und „dran“ machen Platz */
+#tisch.gross .gg.ich .name, #tisch.gross .gg.ich .zug { margin-right: var(--nk-res, 0px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #tisch.gross .gg .marken { position: absolute; right: 10px; top: -15px; }
 #tisch.gross .gg .erwischen { position: absolute; right: 100%; top: 10px; margin: 0 10px 0 0; font-size: 24px; }
 /* Kopf „Reihenfolge“: großer Kreispfeil (SVG, im Uhrzeigersinn gezeichnet; .gegen spiegelt ihn) in der Farbe des Richtungsrings
@@ -1069,7 +1071,7 @@ body.reduziert .gg.neu, body.reduziert .gg.abgang { animation-duration: .01s; }
 body[data-seite="dunkel"] .necken-ebene { --nk-grund: #170E36; --nk-tinte: #F4F0FF; --nk-rand: #9A86FF; --nk-schein: 0 0 0 2px rgba(154,134,255,.35), 0 0 22px rgba(154,134,255,.45); --nk-mf: #9A86FF; }
 body[data-screen="tisch"] .necken-ebene { display: block; }
 .necken-ebene.verdeckt { visibility: hidden; }
-.necken-ebene.farbwahl > .nk-rk, .necken-ebene.farbwahl > .nk-faecher { visibility: hidden; }   /* Gerätetest 1.6.3: nicht über dem Farbrad */
+.necken-ebene.farbwahl > .nk-leiste, .necken-ebene.farbwahl > .nk-leiste > .nk-rb { visibility: hidden; }   /* Gerätetest 1.6.3: nicht über dem Farbrad */
 .necken-ebene > * { position: absolute; pointer-events: auto; }
 .necken-ebene svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .nk-f { fill: var(--nk-grund, #FFF7E8); }
@@ -1085,19 +1087,29 @@ body[data-screen="tisch"] .necken-ebene { display: block; }
 .nk-z { font: italic 900 22px var(--f-brand); fill: var(--nk-tinte, #211B2C); }
 .nk-z.k { font-size: 15px; } .nk-z.kk { font-size: 11px; }
 
-/* Reaktionsknopf am eigenen Platz (gezeichnetes Lachgesicht) und Fächer mit 4 Reaktionen */
-.nk-rk { width: 48px; height: 48px; padding: 7px; border-radius: 50%; background: var(--nk-grund); border: 3px solid var(--nk-rand); box-shadow: var(--nk-schein); }
-.nk-rk.aktiv { background: #FFD65A; }
-.nk-rk:active { transform: scale(.92); }
-.nk-faecher { left: 0; top: 0; width: 0; height: 0; }
-.nk-rb { position: absolute; width: 48px; height: 48px; padding: 0; border-radius: 50%; display: grid; place-items: center; line-height: 1; background: var(--nk-grund); border: 3px solid var(--nk-rand); box-shadow: var(--nk-schein);
+/* Beta 1.6.5: Reaktionsleiste am eigenen Platz – 4 direkte Knöpfe (Lachen, Klatschen, Daumen hoch, Schreck), ein Tipp sendet.
+   Form (Reihe 4 × 1, Quadrat 2 × 2, Spalte 1 × 4), Lage und Knopfgröße (mindestens 44 px) setzt necken.js layout(). */
+.nk-leiste { display: grid; pointer-events: none !important; }
+.nk-leiste[hidden] { display: none; }
+.nk-leiste > .nk-rb { pointer-events: auto; }
+.nk-rb { position: relative; width: 48px; height: 48px; padding: 0; border-radius: 50%; display: grid; place-items: center; line-height: 1; background: var(--nk-grund); border: 3px solid var(--nk-rand); box-shadow: var(--nk-schein);
   animation: nkRbAuf .22s cubic-bezier(.3,1.5,.5,1) both; animation-delay: calc(var(--i, 0) * 40ms); }
-.nk-rb span { font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif; }
-.nk-rb.grau, .nk-mk.grau, .nk-rk.grau { opacity: .42; filter: grayscale(1); }
+.nk-rb::before { content: ''; position: absolute; inset: calc(-3px - var(--nk-ty, 0px)) calc(-3px - var(--nk-tx, 0px)); border-radius: 22px; }   /* Trefferfläche ≥ 44 px (necken.js) */
+.nk-rb span, .nk-re { font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif; }
+/* Beta 1.6.5: Fluent-Emoji-Bilder (bilder/reaktionen/); das Emoji der Schrift nur, wenn das Bild nicht lädt */
+.nk-ri { display: block; width: 74%; height: 74%; pointer-events: none; user-select: none; -webkit-user-drag: none; }
+.nk-ri + .nk-re { display: none; }
+.nk-emoji .nk-ri { width: 1em; height: 1em; }
+.nk-rb:active { transform: scale(.92); }
+.nk-rb.grau, .nk-mk.grau { opacity: .42; filter: grayscale(1); }
 .nk-rb.drueck, .nk-mk.drueck { animation: nkDrueck .25s ease-out; }
-.nk-rb.wackel, .nk-mk.wackel, .nk-rk.wackel { animation: nkWackel .3s ease-in-out; }
-body.reduziert .nk-rk.wackel { animation: none; }
+.nk-rb.wackel, .nk-mk.wackel { animation: nkWackel .3s ease-in-out; }
+.nk-leiste.huepf .nk-rb:not(.drueck):not(.wackel) { animation: nkHuepf .42s ease-out both; animation-delay: calc(var(--i, 0) * 60ms); }   /* Tipp auf „Du“ */
+body.reduziert .nk-rb.wackel { animation: none; }
+/* Hochkant (Rahmen): Leiste unter dem Tisch, der Hinweis „Quer halten“ rückt darunter */
+body.nk-unten.rahmen-hinweis[data-screen="tisch"] .quer { align-items: flex-end; padding-bottom: 4px; }
 @keyframes nkRbAuf { from { opacity: 0; transform: translateY(24px) scale(.5); } }
+@keyframes nkHuepf { 40% { transform: translateY(-10px) scale(1.08); } }
 @keyframes nkDrueck { 50% { transform: scale(.86); } }
 @keyframes nkWackel { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
 

@@ -714,6 +714,7 @@ func serve_check() -> void:
 			break
 	for pair in [["sfx/mau.m4a", "audio/mp4"], ["sfx/mau.ogg", "audio/ogg"], ["sfx/mau_mau.m4a", "audio/mp4"], ["sfx/mau_mau.ogg", "audio/ogg"],
 			["cards/hell_rot_7.webp", "image/webp"], ["cards/rueckseite.webp", "image/webp"], ["bilder/katze.webp", "image/webp"], ["bilder/logo.webp", "image/webp"],
+			["bilder/reaktionen/daumen.svg", "image/svg+xml"], ["bilder/reaktionen/schreck.svg", "image/svg+xml"],
 			["fonts/" + woff, "font/woff2"], ["wach.mp4", "video/mp4"]]:
 		var r := await http_get(server, "/" + str(pair[0]))
 		check(int(r.status) == 200 and str(r.type).contains(pair[1]) and (r.body as PackedByteArray).size() > 500,
@@ -1079,6 +1080,15 @@ func pruefe_necken(tisch: String, app: String, seite: String) -> void:
 			and seite.contains("data-set=\"necken\" data-wert=\"false\""), "Einstellung „necken“ im Lite-Menü (je Gerät, ab Werk an)")
 	check(tisch.contains("M.Necken.tippGegner(+g.dataset.seat, e.target)") and tisch.contains("M.Necken.tippEigen()") and tisch.contains("if (M.Necken) M.Necken.layout();")
 			and tisch.find("if (k) this.app.aktion({ a: 'catch'") < tisch.find("M.Necken.tippGegner("), "tisch.js: Erwischt geht vor, Kopf-Tipp → Necken-Menü, Reaktionsknopf nach jedem Abgleich")
+	# Beta 1.6.5 (Nutzer 15.10.2026): Reaktionen als Fluent-Emoji-Bilder, dieselben Dateien wie die App (game/assets/ui/reaktionen/),
+	# samt Lizenz; Reihenfolge der Knöpfe Lachen, Klatschen, Daumen hoch, Schreck; das Schrift-Emoji nur als Rückfall
+	check(nk.contains("const REAKT_REIHE = ['lachen', 'klatschen', 'daumen', 'schreck'];") and nk.contains("'bilder/reaktionen/' + r + '.svg'")
+			and nk.contains("img.addEventListener('error', () => img.remove());"), "necken.js: Reaktionsknöpfe in fester Reihenfolge mit Bildern, Emoji als Rückfall")
+	check(FileAccess.file_exists(web_dir.path_join("bilder/reaktionen/LIZENZ.md")), "webclient/bilder/reaktionen/LIZENZ.md (Fluent Emoji, MIT)")
+	for r in ["lachen", "klatschen", "daumen", "schreck"]:
+		var web_svg := FileAccess.get_file_as_bytes(web_dir.path_join("bilder/reaktionen/%s.svg" % r))
+		var app_svg := FileAccess.get_file_as_bytes("res://assets/ui/reaktionen/%s.svg" % r)
+		check(web_svg.size() > 1000 and web_svg == app_svg, "webclient/bilder/reaktionen/%s.svg gleich dem Bild der App" % r)
 	var ton := read_web("ton.js")
 	var toene := ["schnarchen", "wecker", "papier_wurf", "papier_plopp", "lachen", "schreck", "klatschen", "daumen"]
 	check(ton.contains(liste.call("NECK_TOENE", toene)) and ton.contains("function stoppe(name, ms)") and ton.contains("function spiele(name, pegel)"),

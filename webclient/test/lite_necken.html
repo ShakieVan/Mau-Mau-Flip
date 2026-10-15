@@ -9,6 +9,8 @@
  * vor 10 s, Hinweise), Senden von Kugel/Schnarchen/Reaktion, Empfang fx → Effekte und Töne je Rolle (Ziel laut, Absender leise,
  * Zuschauer still bzw. Plopp leise), Reaktionstöne gedeckelt, Wecker abstellen, fx_no (late/busy/rate), fx_offs, „seats“ räumt ab,
  * kaputte Nachrichten und fx in der Lobby schadlos, Necken aus, alter Gastgeber ohne fx (nichts passiert, kein Fehler).
+ * Beta 1.6.5: vier direkte Reaktionsknöpfe (Reihenfolge, ein Tipp sendet genau diese Reaktion, grau in der Sperrzeit, nicht in Phasen
+ * ohne Reaktionen, bei Necken aus und über Farbrad/Fenster), Lage quer, Schrift sehr groß, großer Modus und hochkant (unter dem Tisch).
  * Aufruf: chrome --headless=new --allow-file-access-from-files --virtual-time-budget=300000 --dump-dom file:///…/webclient/test/lite_necken.html
  *   → <pre id="autotest-result" data-ok="1|0">. Läuft im Bau (tools/build.ps1 Invoke-WebTeaseTest). */
 (function () {
@@ -69,12 +71,43 @@
   const kopf = seat => $('#tisch .gg[data-seat="' + seat + '"] .kopf');
   const sichtbar = e => !!e && !e.hidden && e.getBoundingClientRect().width > 0;
   const N = () => w.MMF.Necken;
+  // Beta 1.6.5: Reaktionsleiste
+  const REIHE = ['lachen', 'klatschen', 'daumen', 'schreck'];
+  const rb = r => $('#nk-leiste button[data-r="' + r + '"]');
+  const ueberR = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+  // Jeder Knopf mindestens 44 px, ganz im Fenster, über nichts Wichtigem (Hand nur, soweit sie im Tisch sichtbar ist)
+  function pruefeLage(name) {
+    const tisch = $('#tisch').getBoundingClientRect(), vw = w.innerWidth, vh = w.innerHeight;
+    const schnitt = r => { const l = Math.max(r.left, tisch.left), t = Math.max(r.top, tisch.top), rr = Math.min(r.right, tisch.right), bb = Math.min(r.bottom, tisch.bottom); return rr > l && bb > t ? { left: l, top: t, right: rr, bottom: bb } : null; };
+    const hind = [];
+    ['#sortieren', '#rueckseiten', '#mau', '#stapel', '#ablage', '#tisch .leiste .hinweis', '#ich-zahl', '#tisch .menue-knopf', '#ton-knopf'].forEach(sel => { const e = $(sel); if (e && !e.hidden && e.getBoundingClientRect().width) hind.push([sel, e.getBoundingClientRect()]); });
+    w.document.querySelectorAll('#tisch .hk').forEach((e, i) => { const r = schnitt(e.getBoundingClientRect()); if (r) hind.push(['Handkarte ' + i, r]); });
+    // Großer Modus: Liegt die Leiste in der eigenen Zeile (lage=zeile), zählen dort nur das Wort „Du“ und die Kartenzahl
+    const inZeile = App().tisch.gross && $('#nk-leiste').dataset.lage === 'zeile';
+    if (App().tisch.gross) w.document.querySelectorAll('#tisch .gg:not(.aus)').forEach(e => {
+      if (inZeile && e.classList.contains('ich')) {
+        const rg = w.document.createRange(); rg.selectNodeContents(e.querySelector('.name'));
+        hind.push(['„Du“', rg.getBoundingClientRect()], ['eigene Kartenzahl', e.querySelector('.zahl').getBoundingClientRect()]);
+      } else hind.push(['Zeile ' + e.dataset.seat, e.getBoundingClientRect()]);
+    });
+    const L0 = $('#nk-leiste'), tx = parseFloat(L0.style.getPropertyValue('--nk-tx')) || 0, ty = parseFloat(L0.style.getPropertyValue('--nk-ty')) || 0;
+    REIHE.forEach(r => {
+      const b = rb(r), L = $('#nk-leiste').getBoundingClientRect();   // ohne Transform (Einblenden läuft unter virtueller Zeit nicht ab)
+      const k = { left: L.left + b.offsetLeft, top: L.top + b.offsetTop, right: L.left + b.offsetLeft + b.offsetWidth, bottom: L.top + b.offsetTop + b.offsetHeight, width: b.offsetWidth, height: b.offsetHeight };
+      // Trefferfläche: Knopf plus unsichtbarer Rand (::before, --nk-tx/--nk-ty); sichtbar mindestens 36 px; waagerecht in der
+      // Zeile „Du“ (großer Modus, knapper Platz) reicht Knopf + Abstand ≥ 42 px (≈ 44, die Ränder links und rechts sind frei)
+      ok(k.width + 2 * tx >= (inZeile ? 42 : 44) && k.height + 2 * ty >= 44 && k.width >= 36, name + ': ' + r + ' Trefferfläche mindestens 44 px (' + k.width + ' + 2 × ' + tx + ')');
+      ok(k.left >= 0 && k.top >= 0 && k.right <= vw && k.bottom <= vh, name + ': ' + r + ' im Fenster');
+      hind.forEach(([sel, h]) => { if (sel === '#ich-zahl' && App().tisch.gross) return; ok(!ueberR(k, h), name + ': ' + r + ' verdeckt ' + sel + ' nicht'); });
+    });
+  }
+  const App = () => w.MMF.App;
 
   async function lauf() {
     leeren();
     await lade('');
     const App = w.MMF.App;
-    ok(App.version === '1.6.4', 'Version 1.6.4 (' + App.version + ')');
+    ok(App.version === '1.6.5', 'Version 1.6.5 (' + App.version + ')');
     ok(!!N() && App.einstellungen.necken === true, 'necken.js geladen, Necken ab Werk an');
     let s = await beitreten('Kim');
     ok(JSON.stringify(s.msgs('fx_pref')) === '[{"t":"fx_pref","off":false}]', 'fx_pref nach welcome (' + JSON.stringify(s.msgs('fx_pref')) + ')');
@@ -85,34 +118,39 @@
     s.rx({ t: 'start', seat: 0 });
     s.rx({ t: 'state', events: [], view: sicht(1) });
     await warte(400);
-    ok(App.screen === 'tisch' && sichtbar($('#nk-reaktion')), 'am Tisch: Reaktionsknopf sichtbar');
+    // Beta 1.6.5: vier Reaktionsknöpfe direkt sichtbar (kein Lachgesicht-Knopf, kein Fächer), Reihenfolge Lachen, Klatschen, Daumen, Schreck
+    ok(App.screen === 'tisch' && sichtbar($('#nk-leiste')) && REIHE.every(r => sichtbar(rb(r))), 'am Tisch: vier Reaktionsknöpfe sichtbar');
+    ok(!$('#nk-reaktion') && !$('#nk-faecher'), 'kein Lachgesicht-Knopf und kein Fächer mehr');
+    ok(JSON.stringify(Array.from(w.document.querySelectorAll('#nk-leiste button[data-r]')).map(b => b.dataset.r)) === JSON.stringify(REIHE), 'Reihenfolge Lachen, Klatschen, Daumen hoch, Schreck');
+    ok(JSON.stringify(Array.from(w.document.querySelectorAll('#nk-leiste button[data-r] span')).map(b => b.textContent)) === '["😂","👏","👍","😱"]', 'Symbole 😂 👏 👍 😱 (Rückfall ohne Bild)');
+    // Nutzer 15.10.2026: Fluent-Emoji-Bilder wie in der App (bilder/reaktionen/<name>.svg), geladen und sichtbar, das Schrift-Emoji dann verborgen
     {
-      const k = $('#nk-reaktion').getBoundingClientRect();
-      ok(k.width >= 44 && k.height >= 44, 'Reaktionsknopf mindestens 44 px (' + k.width + ')');
-      const ueber = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
-      ['#sortieren', '#mau', '#tisch .leiste .hinweis'].forEach(sel => { const e = $(sel); if (e && e.getBoundingClientRect().width) ok(!ueber(k, e.getBoundingClientRect()), 'Reaktionsknopf verdeckt ' + sel + ' nicht'); });
+      const bilder = REIHE.map(r => rb(r).querySelector('img.nk-ri'));
+      ok(bilder.every((b, i) => b && /bilder\/reaktionen\/(\w+)\.svg$/.test(b.src) && b.src.endsWith(REIHE[i] + '.svg')), 'Reaktionsknöpfe zeigen bilder/reaktionen/<name>.svg');
+      ok(bilder.every(b => b.complete && b.naturalWidth > 0 && b.offsetWidth >= 28), 'Reaktionsbilder geladen (' + bilder.map(b => b && b.naturalWidth + '/' + b.offsetWidth).join(', ') + ')');
+      ok(REIHE.every(r => w.getComputedStyle(rb(r).querySelector('span')).display === 'none'), 'mit Bild kein zusätzliches Schrift-Emoji');
     }
-    // Gerätetest 1.6.3: Reaktionsknopf und Fächer nicht über dem Farbrad bzw. einem Fenster (Menü)
+    await warte(500);   // Einblenden der Knöpfe (nkRbAuf) abwarten
+    pruefeLage('quer');
+    // Gerätetest 1.6.3: Reaktionsknöpfe nicht über dem Farbrad bzw. einem Fenster (Menü); dort ohne Wirkung
     {
       const unsichtbar = e => !sichtbar(e) || w.getComputedStyle(e).visibility === 'hidden';
-      N().reaktionen(true);
-      ok(!$('#nk-faecher').hidden && sichtbar($('#nk-faecher button[data-r="lachen"]')), 'Fächer geht auf');
       App.tisch.oeffneFarbwahl('hell', {}, () => {});
       N()._takt();
-      ok(unsichtbar($('#nk-reaktion')) && unsichtbar($('#nk-faecher')) && $('#nk-faecher').hidden, 'Farbrad offen: Reaktionsknopf weg, Fächer zu');
-      $('#nk-reaktion').click();
-      ok($('#nk-faecher').hidden, 'Farbrad offen: Knopf öffnet den Fächer nicht');
+      ok(REIHE.every(r => unsichtbar(rb(r))), 'Farbrad offen: Reaktionsknöpfe weg');
+      rb('lachen').click();
+      ok(s.msgs('fx').length === 0, 'Farbrad offen: Reaktionsknopf schickt nichts');
       App.tisch.schliesseFarbwahl();
       N()._takt();
-      ok(!unsichtbar($('#nk-reaktion')), 'Farbrad zu: Reaktionsknopf wieder da');
+      ok(!unsichtbar(rb('lachen')), 'Farbrad zu: Reaktionsknöpfe wieder da');
       App.oeffne('menue');
       N()._takt();
-      ok(unsichtbar($('#nk-reaktion')), 'Menü offen: Reaktionsknopf verdeckt');
-      $('#nk-reaktion').click();
-      ok($('#nk-faecher').hidden, 'Menü offen: Knopf öffnet den Fächer nicht');
+      ok(unsichtbar(rb('daumen')), 'Menü offen: Reaktionsknöpfe verdeckt');
+      rb('daumen').click();
+      ok(s.msgs('fx').length === 0, 'Menü offen: Reaktionsknopf schickt nichts');
       App.schliesse('menue');
       N()._takt();
-      ok(!unsichtbar($('#nk-reaktion')), 'Menü zu: Reaktionsknopf wieder da');
+      ok(!unsichtbar(rb('daumen')), 'Menü zu: Reaktionsknöpfe wieder da');
     }
     // Kopf-Tipp → Menü: Titel, Kugel aktiv, Schnarchen/Wecker vor 10 s ausgegraut mit Hinweis
     kopf(1).click();
@@ -197,24 +235,35 @@
     ok(!!$('#tisch .nk-wecker.klingelt') && toene.some(t => t[0] === 'wecker' && t[1] === 1) && vib.some(v => Array.isArray(v) && v.length === 5), 'nach 3 s: Klingeln normal und Vibration 3 × 250 ms');
     // Reaktionen: mehrere schnell hintereinander, Töne höchstens 2 gleichzeitig
     toene = [];
-    $('#nk-reaktion').click();
-    await warte(30);
-    ok(sichtbar($('#nk-faecher button[data-r="lachen"]')), 'Reaktionsknopf fächert die Reaktionen auf');
-    $('#nk-faecher button[data-r="lachen"]').click();
-    await warte(20);
-    ok(JSON.stringify(s.msgs('fx').slice(-1)) === '[{"t":"fx","k":"react","r":"lachen"}]' && $('#nk-faecher').hidden, 'Reaktion geschickt, Fächer zu');
+    {
+      // Beta 1.6.5: ein Tipp je Knopf schickt genau diese Reaktion, die Leiste bleibt stehen
+      const vor = s.msgs('fx').length;
+      REIHE.forEach(r => rb(r).click());
+      await warte(20);
+      const neu = s.msgs('fx').slice(vor);
+      ok(JSON.stringify(neu) === JSON.stringify(REIHE.map(r => ({ t: 'fx', k: 'react', r }))), 'ein Tipp je Knopf schickt genau diese Reaktion (' + JSON.stringify(neu) + ')');
+      ok(sichtbar($('#nk-leiste')) && REIHE.every(r => sichtbar(rb(r))), 'Reaktionsknöpfe bleiben nach dem Senden sichtbar');
+    }
     ['lachen', 'klatschen', 'daumen'].forEach(r => s.rx({ t: 'fx', k: 'react', from: 0, r }));
     s.rx({ t: 'fx', k: 'react', from: 2, r: 'schreck' });
     await warte(60);
     ok(w.document.querySelectorAll('#tisch .nk-emoji').length === 4, 'vier Reaktionen steigen auf (' + w.document.querySelectorAll('#tisch .nk-emoji').length + ')');
+    ok(JSON.stringify(Array.from(w.document.querySelectorAll('#tisch .nk-emoji img.nk-ri')).map(b => b.src.replace(/^.*\//, ''))) === '["lachen.svg","klatschen.svg","daumen.svg","schreck.svg"]', 'aufsteigende Reaktionen als Bilder wie die Knöpfe');
     ok(toene.filter(t => ['lachen', 'klatschen', 'daumen', 'schreck'].indexOf(t[0]) >= 0).length === 2, 'höchstens 2 Reaktionstöne gleichzeitig (' + JSON.stringify(toene) + ')');
     ok(N().pruefe({ k: 'react', r: 'lachen' }) === 'rate', 'Spiegel: eigener Reaktions-Eimer leer → rate');
+    N()._takt();
+    ok(REIHE.every(r => rb(r).classList.contains('grau')), 'Sperrzeit: alle Reaktionsknöpfe ausgegraut');
+    {
+      const n = s.msgs('fx').length;
+      rb('daumen').click();
+      await warte(20);
+      ok(s.msgs('fx').length === n && rb('daumen').classList.contains('wackel'), 'ausgegrauter Reaktionsknopf schickt nichts und wackelt');
+    }
     s.rx({ t: 'fx_no', why: 'rate' });
-    ok($('#nk-reaktion').classList.contains('grau'), 'rate → Reaktionsknopf kurz blass (auch bei geschlossenem Fächer)');
-    $('#nk-reaktion').click();
-    await warte(30);
-    ok($('#nk-faecher button[data-r="daumen"]').classList.contains('grau'), 'rate → Reaktionen kurz ausgegraut');
-    $('#nk-reaktion').click();
+    ok(N()._grauBis > N().uhr() && REIHE.every(r => rb(r).classList.contains('grau')), 'rate → Reaktionsknöpfe kurz ausgegraut');
+    await warte(3300);
+    N()._takt();
+    ok(!rb('lachen').classList.contains('grau') && N().pruefe({ k: 'react', r: 'lachen' }) === '', 'nach der Sperrzeit wieder frei');
     // fx_offs: Lena hat Necken aus
     s.rx({ t: 'fx_offs', seats: [1] });
     await warte(20);
@@ -227,16 +276,46 @@
     s.rx({ t: 'state', events: [], view: sicht(1) });
     await warte(300);
     ok(N().offs.length === 0, 'start: fx_offs der vorigen Partie vergessen (' + JSON.stringify(N().offs) + ')');
-    // Tipp daneben schließt den Fächer; derselbe Tipp (eigene Zeile, tippEigen) öffnet ihn nicht gleich wieder
-    N().reaktionen(true);
-    w.document.body.dispatchEvent(new w.PointerEvent('pointerdown', { bubbles: true }));
-    ok($('#nk-faecher').hidden && N().tippEigen() === true && $('#nk-faecher').hidden, 'Tipp daneben schließt den Fächer, derselbe Tipp öffnet nicht gleich wieder');
-    await warte(600);
-    ok(N().tippEigen() === true && !$('#nk-faecher').hidden, 'später öffnet die eigene Zeile den Fächer wieder');
-    N().reaktionen(false);
-    // hochkant: Menü nie über dem Mau-Knopf
+    // Tipp auf die eigene Zeile (tippEigen): Die Reaktionsknöpfe hüpfen nur, nichts wird geschickt; reaktionen() (app.js) ohne Wirkung
+    {
+      const n = s.msgs('fx').length;
+      N().reaktionen(true);
+      ok(N().tippEigen() === true && $('#nk-leiste').classList.contains('huepf') && sichtbar($('#nk-leiste')) && s.msgs('fx').length === n, 'eigene Zeile: Reaktionsknöpfe hüpfen, nichts geschickt');
+    }
+    // Phase ohne Reaktionen (z. B. Austeilen): keine Reaktionsknöpfe
+    s.rx({ t: 'state', events: [], view: sicht(1, { phase: 'deal' }) });
+    await warte(100);
+    ok(!sichtbar($('#nk-leiste')), 'Phase ohne Reaktionen: keine Reaktionsknöpfe');
+    s.rx({ t: 'state', events: [], view: sicht(1) });
+    await warte(100);
+    ok(sichtbar($('#nk-leiste')), 'wieder am Zug-Ablauf: Reaktionsknöpfe da');
+    // Schrift „Sehr groß“ und großer Modus (quer): Lage prüfen
+    App.einstellen('schrift', 'sehr_gross');
+    await warte(200);
+    pruefeLage('quer, Schrift sehr groß');
+    App.einstellen('schrift', 'normal');
+    App.einstellen('grosser_modus', 'true');
+    await warte(300);
+    ok(sichtbar($('#nk-leiste')), 'großer Modus: Reaktionsknöpfe sichtbar');
+    pruefeLage('großer Modus');
+    App.einstellen('grosser_modus', 'false');
+    App.schliesse('menue');
+    await warte(300);
+    // hochkant: Reaktionsknöpfe unter dem Tisch (Rahmen), Menü nie über dem Mau-Knopf
     frame.style.width = '390px'; frame.style.height = '844px';
+    await warte(50); App.groesse();   // rAF läuft im Kopflos-Chrome nicht verlässlich
     await warte(400);
+    pruefeLage('hochkant');
+    {
+      const l = $('#nk-leiste').getBoundingClientRect(), t = $('#tisch').getBoundingClientRect();
+      ok(l.top >= t.bottom && w.document.body.classList.contains('nk-unten'), 'hochkant: Reaktionsknöpfe unter dem Tisch (' + JSON.stringify([l.top, t.bottom]) + ')');
+    }
+    App.einstellen('grosser_modus', 'true');
+    await warte(300);
+    pruefeLage('hochkant, großer Modus');
+    App.einstellen('grosser_modus', 'false');
+    App.schliesse('menue');
+    await warte(300);
     kopf(1).click();
     await warte(60);
     {
@@ -246,6 +325,7 @@
     }
     N().zu();
     frame.style.width = '1000px'; frame.style.height = '600px';
+    await warte(50); App.groesse();
     await warte(300);
     // kaputte Nachrichten
     const vorher = N().gezeigt.length;
@@ -264,7 +344,8 @@
     App.schliesse('menue');
     await warte(30);
     ok(JSON.stringify(s.msgs('fx_pref').slice(-1)) === '[{"t":"fx_pref","off":true}]', 'Necken aus → fx_pref off');
-    ok(!sichtbar($('#nk-reaktion')), 'Necken aus: kein Reaktionsknopf');
+    ok(!sichtbar($('#nk-leiste')) && REIHE.every(r => !sichtbar(rb(r))), 'Necken aus: keine Reaktionsknöpfe');
+    { const n = s.msgs('fx').length; rb('lachen').click(); ok(s.msgs('fx').length === n, 'Necken aus: Reaktionsknopf schickt nichts'); }
     s.rx({ t: 'fx', k: 'react', from: 1, r: 'lachen' });
     await warte(30);
     ok(!$('#tisch .nk-emoji'), 'Necken aus: fremde Reaktion nicht gezeigt');
@@ -288,9 +369,8 @@
     kopf(1).click();
     await warte(30);
     $('#nk-menue button[data-k="ball"]').click();
-    $('#nk-reaktion').click();
     await warte(20);
-    $('#nk-faecher button[data-r="klatschen"]').click();
+    rb('klatschen').click();
     await warte(7000);
     ok(s.msgs('fx').length === 2 && !$('#tisch .nk-kugel') && !$('#tisch .nk-emoji'), 'alter Gastgeber: Wünsche gehen raus, ohne Antwort kein Effekt');
     ok(!w.document.querySelector('#toasts .toast.fehler') && w.MMF.App.fehler.length === 0 && !s.gesendet.some(x => /"t":"log"/.test(x)), 'alter Gastgeber: keine Fehlermeldung, kein Neuverbinden');

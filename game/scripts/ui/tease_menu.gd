@@ -6,7 +6,7 @@ extends Control
 # Schnarchen/Wecker füllen bis 10 s einen Ring. Ein Tipp daneben schließt das Menü und wirkt normal weiter (die Fläche außerhalb der
 # Blase gehört nicht zum Menü, _has_point). Die Lage setzt TeaseFx.place_menu; TeaseFx schließt es nach 5 s ohne Tipp, bei Zugwechsel,
 # erwischbaren Plätzen und Platzwechseln. Tag: Papier und Druckfarbe, Nacht: dunkle Blase mit hellem Rand und leichtem Neon-Schein.
-# Darunter (innere Klasse) ReactionPicker: runder Knopf mit Lachgesicht am eigenen Platz, ein Tipp fächert 4 Reaktionen auf.
+# Darunter (innere Klasse) ReactionBar: die 4 Reaktionen als runde Knöpfe am eigenen Platz (Beta 1.6.5; vorher ein Lachgesicht-Knopf mit Fächer).
 
 signal chosen(key: String)
 signal closed
@@ -192,28 +192,30 @@ func modulate_icon(icon: String, c: Vector2, s: float, mod: Color) -> void:
 		draw_circle(c, BTN_R * k, Color(UiPalette.NIGHT_HI if night > 0.5 else UiPalette.CREAM, 1.0 - mod.a))
 
 
-# ================================================================= Reaktionsknopf mit Fächer
+# ================================================================= Reaktionsknöpfe am eigenen Platz
 
-class ReactionPicker:
+# Beta 1.6.5 (Nutzerwunsch nach der Familienrunde): Reihenfolge der Knöpfe (TeaseRules.FX_REACTS bleibt die Liste des Protokolls)
+const REACT_ORDER := ["lachen", "klatschen", "daumen", "schreck"]
+const REACT_BTN_R := 24.0             # Knopfradius (Trefferfläche ≥ 48 px), großer Modus × k
+const REACT_ICON := 0.76              # Bildgröße relativ zum Knopfradius (Fluent-Emoji-Bild, TeaseFx.draw_reaction)
+
+
+# Beta 1.6.5: die 4 Reaktionen als eigene runde Knöpfe (ein Tipp = senden), statt hinter einem Lachgesicht-Knopf im Fächer. Lage
+# setzt TeaseFx._sync_reactions (centers, r): neben dem eigenen Namen, im großen Modus in der Zeile „Du“ vor der Kartenzahl.
+# Während der Sperrzeit (eigener Eimer leer, fx_no "rate") sind alle ausgegraut, nach fx_no "rate" wackeln sie kurz.
+class ReactionBar:
 	extends Control
 	signal chosen(r: String)
-	signal dismissed                   # Beta 1.6.3: Tipp daneben hat den Fächer geschlossen (TeaseFx: derselbe Tipp öffnet nicht gleich wieder)
 
-	const BTN_R := 26.0
-	const ITEM_R := 27.0
-	const FAN_R := 84.0
-
-	var center := Vector2.ZERO        # Mitte des Knopfs (lokale Koordinaten; Steuerelement deckt den ganzen Tisch)
-	var open := false
+	var centers: Array[Vector2] = []  # Mitte je Knopf (lokale Koordinaten; das Steuerelement deckt den ganzen Tisch)
+	var r := REACT_BTN_R
+	var squash := 1.0                 # großer Modus: Zeile klappt beim Richtungswechsel kurz zusammen (OpponentSeat.flip_y)
 	var gray := false
 	var night := 0.0
-	var k := 1.0
-	var big := false
 	var reduced := false
-	var dim := false                  # Beta 1.6.3: Tisch bzw. eigener Eimer gerade voll (fx_no "rate"): auch der Knopf selbst blass
-	var _shake := 0.0                 # Beta 1.6.3: Wackeln nach fx_no "rate" (Sekunden, läuft rückwärts)
-	var _open_t := 0.0
-	var _press := ""
+	var dim := false                  # fx_no "rate": kurz blasser
+	var _shake := 0.0                 # Wackeln nach fx_no "rate" (Sekunden, läuft rückwärts)
+	var _press := -1
 
 	func _init() -> void:
 		set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -222,8 +224,8 @@ class ReactionPicker:
 		tooltip_text = "Reaktion"
 
 	# Namen für Hilfetexte (Barrierefreiheit; die Bilder selbst haben keinen Text)
-	static func label_of(r: String) -> String:
-		match r:
+	static func label_of(name_r: String) -> String:
+		match name_r:
 			"lachen":
 				return I18n.t("Lachen")
 			"schreck":
@@ -236,49 +238,40 @@ class ReactionPicker:
 
 	func _get_tooltip(at_position: Vector2) -> String:
 		var i := item_at(at_position)
-		return label_of(TeaseRules.FX_REACTS[i]) if i >= 0 else I18n.t("Reaktion")
+		return label_of(REACT_ORDER[i]) if i >= 0 else I18n.t("Reaktion")
 
-	func toggle() -> void:
-		open = not open
-		_open_t = 0.0
-		queue_redraw()
-
-	# Lage der Reaktion i: nach oben aufgefächert, im großen Modus nach links (die Zeile „Du“ steht rechts in der Liste)
-	func item_center(i: int) -> Vector2:
-		var angles := [228.0, 264.0, 300.0, 336.0] if not big else [125.0, 158.0, 202.0, 235.0]
-		var a := deg_to_rad(float(angles[i]))
-		var u := 1.0 if reduced else clampf(_open_t / 0.18, 0.0, 1.0)
-		return center + Vector2(cos(a), sin(a)) * FAN_R * k * (0.4 + 0.6 * u)
+	# Trefferfläche: der Kreis plus etwas Rand (höchstens bis zur halben Lücke zum Nachbarn)
+	func hit_r() -> float:
+		var pad := 6.0
+		if centers.size() >= 2:
+			var gap := centers[0].distance_to(centers[1]) - 2.0 * r
+			pad = clampf(gap * 0.5, 0.0, 6.0)
+		return r + pad
 
 	func item_at(p: Vector2) -> int:
-		if not open:
+		if not visible:
 			return -1
-		for i in TeaseRules.FX_REACTS.size():
-			if p.distance_to(item_center(i)) <= ITEM_R * k + 6.0:
+		for i in centers.size():
+			if p.distance_to(centers[i]) <= hit_r():
 				return i
 		return -1
 
 	func bounds() -> Rect2:
-		var r := Rect2(center - Vector2.ONE * (BTN_R * k + 4.0), Vector2.ONE * (BTN_R * k + 4.0) * 2.0)
-		if open:
-			for i in TeaseRules.FX_REACTS.size():
-				r = r.merge(Rect2(item_center(i) - Vector2.ONE * ITEM_R * k, Vector2.ONE * ITEM_R * k * 2.0))
-		return r
+		if centers.is_empty():
+			return Rect2()
+		var out := Rect2(centers[0] - Vector2.ONE * (r + 4.0), Vector2.ONE * (r + 4.0) * 2.0)
+		for c in centers:
+			out = out.merge(Rect2(c - Vector2.ONE * (r + 4.0), Vector2.ONE * (r + 4.0) * 2.0))
+		return out
 
 	func _has_point(p: Vector2) -> bool:
-		if not visible:
-			return false
-		return p.distance_to(center) <= BTN_R * k + 8.0 or item_at(p) >= 0
+		return item_at(p) >= 0
 
-	# Beta 1.6.3: kurzes Wackeln (fx_no "rate"), damit eine Ablehnung auch bei schon geschlossenem Fächer bzw. Menü sichtbar wird
 	func nudge() -> void:
 		_shake = 0.0 if reduced else 0.32
 		queue_redraw()
 
 	func _process(delta: float) -> void:
-		if open and _open_t < 0.3:
-			_open_t += delta
-			queue_redraw()
 		if _shake > 0.0:
 			_shake = maxf(0.0, _shake - delta)
 			queue_redraw()
@@ -289,53 +282,30 @@ class ReactionPicker:
 			return
 		accept_event()
 		var i := item_at(mb.position)
-		var on_btn := mb.position.distance_to(center) <= BTN_R * k + 8.0
 		if mb.pressed:
-			_press = TeaseRules.FX_REACTS[i] if i >= 0 else ("btn" if on_btn else "")
+			_press = i
 			queue_redraw()
 			return
-		var key := _press
-		_press = ""
-		if key == "btn" and on_btn:
-			toggle()
-		elif i >= 0 and key == TeaseRules.FX_REACTS[i]:
-			if not gray:
-				chosen.emit(key)
-				open = false
+		var was := _press
+		_press = -1
 		queue_redraw()
-
-	# Tipp daneben: Fächer zu (nicht verbraucht)
-	func _input(event: InputEvent) -> void:
-		var mb := event as InputEventMouseButton
-		if mb == null or not mb.pressed or not open or not is_visible_in_tree():
-			return
-		var local := get_global_transform_with_canvas().affine_inverse() * mb.position
-		if not _has_point(local):
-			open = false
-			queue_redraw()
-			dismissed.emit()
+		if i >= 0 and i == was and not gray:
+			chosen.emit(REACT_ORDER[i])
 
 	func _draw() -> void:
 		var dark := night > 0.5
 		var edge := UiPalette.MOON if dark else UiPalette.INK
 		var fill := UiPalette.NIGHT_HI if dark else UiPalette.CREAM
-		var r := BTN_R * k * (0.92 if _press == "btn" else 1.0)
-		var bc := center + Vector2(sin(_shake * 60.0) * 5.0 * k * (_shake / 0.32), 0.0)
-		if dark:
-			draw_circle(bc, r + 9.0, Color(UiPalette.RING, 0.16))
-		draw_circle(bc, r + 3.0, edge)
-		draw_circle(bc, r, fill)
-		TeaseFx.draw_icon(self, "smile", bc, r * 0.66, 0.0)
-		if dim:
-			draw_circle(bc, r, Color(fill, 0.62))
-		if not open:
-			return
-		for i in TeaseRules.FX_REACTS.size():
-			var name_r: String = TeaseRules.FX_REACTS[i]
-			var c := item_center(i)
-			var ir := ITEM_R * k * (0.9 if _press == name_r else 1.0)
-			draw_circle(c, ir + 3.0, edge)
-			draw_circle(c, ir, fill)
-			TeaseFx.draw_icon(self, name_r, c, ir * 0.66, 0.0)
+		var dx := sin(_shake * 60.0) * 5.0 * (_shake / 0.32)
+		for i in centers.size():
+			var c := centers[i] + Vector2(dx, 0.0)
+			var rr := r * (0.9 if _press == i and not gray else 1.0)
+			draw_set_transform(c, 0.0, Vector2(1.0, maxf(squash, 0.02)))
+			if dark:
+				draw_circle(Vector2.ZERO, rr + 8.0, Color(UiPalette.RING, 0.16))
+			draw_circle(Vector2.ZERO, rr + 3.0, edge)
+			draw_circle(Vector2.ZERO, rr, fill)
+			TeaseFx.draw_icon(self, REACT_ORDER[i], Vector2.ZERO, rr * REACT_ICON, 0.0)
 			if gray:
-				draw_circle(c, ir, Color(fill, 0.62))
+				draw_circle(Vector2.ZERO, rr + 0.5, Color(fill, 0.66 if dim else 0.62))
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

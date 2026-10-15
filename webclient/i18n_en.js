@@ -372,7 +372,7 @@ window.MMF_I18N_EN = {
   "Necken": "Tease",
   "Necken (Papierkugel, Schnarchen, Wecker, Reaktionen)": "Teasing (paper ball, snoring, alarm clock, reactions)",
   "Mitspieler können dir Schnarchen, einen Wecker oder eine Papierkugel schicken.": "Other players can send you snoring, an alarm clock or a paper ball.",
-  "Tippe auf einen Mitspieler, um ihn zu necken. Der Knopf am eigenen Platz schickt eine Reaktion an alle.": "Tap another player to tease them. The button at your own place sends a reaction to everyone.",
+  "Tippe auf einen Mitspieler, um ihn zu necken. Die Knöpfe am eigenen Platz schicken eine Reaktion an alle.": "Tap another player to tease them. The buttons at your own place send a reaction to everyone.",
   "Papierkugel": "Paper ball",
   "Schnarchen": "Snore",
   "Wecker": "Alarm clock",

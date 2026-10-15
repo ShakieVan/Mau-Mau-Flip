@@ -1,15 +1,16 @@
 /* Mau-Mau Flip (Beta 1.6.3, Easter Eggs Teil 2): „Necken“ im Browser-Client „Lite“ (docs/module/eastereggs2.md).
  * Mitspieler können einander eine Papierkugel zuwerfen, den Spieler am Zug nach 10 s mit Schnarchen oder einem Wecker (3 s Ticken,
- * dann Klingeln) necken und schnelle Reaktionen (😂 😱 👏 👍) an den ganzen Tisch schicken. Es ändert nie den Spielstand.
+ * dann Klingeln) necken und schnelle Reaktionen (😂 👏 👍 😱, ab 1.6.5 als Fluent-Emoji-Bilder) an den ganzen Tisch schicken. Es ändert nie den Spielstand.
  *  - Regeln: Spiegel von game/scripts/game/tease_rules.gd (TeaseRules; gleiche Konstanten und Gründe, test_web_contract prüft den
  *    Gleichlauf). Der Gastgeber prüft maßgeblich; hier graut die Oberfläche aus, was er ablehnen würde (Abschnitt 2 „Lokal vorgeprüft“).
  *  - Netz (Abschnitt 4): Wunsch {t:"fx", k, to?|r?}; nach jedem welcome und bei Änderung {t:"fx_pref", off}. Vom Gastgeber kommen
  *    fx {k, from, to?, r?} (an alle Sitzenden, auch an den Absender – erst dann erscheint der Effekt), fx_no {why} (nur an den
  *    Absender: late | busy | rate) und fx_offs {seats} (Plätze mit Necken aus). app.js wertet sie nur am Tisch aus.
  *  - Bedienung (Abschnitt 2): Tipp auf den Kopf eines Mitspielers öffnet das Necken-Menü (Fächer ohne sichtbare Rückseiten auch;
- *    großer Modus: der Avatar), der Knopf am eigenen Platz fächert 4 Reaktionen auf. Menü, Knopf und Fächer liegen in einer eigenen
- *    Ebene über dem Viewport (#necken, außerhalb der skalierten .buehne, Knöpfe mindestens 44 CSS-px, Schrift nach --fs); ein Tipp
- *    daneben schließt das Menü und wirkt normal weiter.
+ *    großer Modus: der Avatar). Beta 1.6.5 (Nutzer nach einer Familienrunde, 15.10.2026): Die 4 Reaktionen liegen direkt als eigene
+ *    Knöpfe am eigenen Platz (Leiste #nk-leiste, ein Tipp = senden, Reihenfolge Lachen, Klatschen, Daumen hoch, Schreck); der
+ *    Lachgesicht-Knopf mit Fächer entfällt. Menü und Leiste liegen in einer eigenen Ebene über dem Viewport (#necken, außerhalb der
+ *    skalierten .buehne, Knöpfe mindestens 44 CSS-px, Schrift nach --fs); ein Tipp neben das Menü schließt es und wirkt normal weiter.
  *  - Darstellung und Töne (Abschnitt 3): Effekte auf der Bühne (tisch.flug), Zeilen für den Betroffenen in der Ebene. Ziel hört laut,
  *    Absender leise (Faktor 0,25 ≈ −12 dB), Zuschauer sehen nur (Papierkugel: Plopp leise); Reaktionen hören alle, höchstens 2 Töne
  *    gleichzeitig und je Name 600 ms Sperre. Wecker abstellen: Handelt das Ziel während der 3 s Ticken, fällt er um und klingelt nicht.
@@ -160,8 +161,25 @@
   const SVG_MUETZE = '<svg viewBox="-30 -26 60 34" aria-hidden="true"><path class="nk-mf nk-s" d="M-24,4 C-20,-16 2,-24 22,-14 C14,-12 8,-6 6,0 Z"/><rect class="nk-f nk-s" x="-27" y="0" width="38" height="7" rx="3.5"/><circle class="nk-f nk-s" cx="24" cy="-14" r="5"/></svg>';
   const SVG_KARTEN = '<svg viewBox="-20 -20 40 40" aria-hidden="true"><rect class="nk-f nk-s" x="-15" y="-13" width="17" height="24" rx="3" transform="rotate(-14)"/><rect class="nk-f nk-s" x="-4" y="-13" width="17" height="24" rx="3" transform="rotate(12)"/></svg>';
   const SVG_ZZZ = '<svg viewBox="-20 -20 40 40" aria-hidden="true"><text x="-13" y="12" class="nk-z">Z</text><text x="3" y="0" class="nk-z k">z</text><text x="10" y="-10" class="nk-z kk">z</text></svg>';
-  const SVG_LACH = '<svg viewBox="-20 -20 40 40" aria-hidden="true"><circle class="nk-gelb nk-s" r="16"/><path class="nk-s nk-dick" d="M-9,-5 Q-6,-9 -3,-5 M3,-5 Q6,-9 9,-5"/><path class="nk-mund nk-s" d="M-10,2 Q0,15 10,2 Z"/></svg>';
   const REAKT = { lachen: ['😂', 'Lachen'], schreck: ['😱', 'Schreck'], klatschen: ['👏', 'Klatschen'], daumen: ['👍', 'Daumen hoch'] };
+  // Beta 1.6.5 (Nutzer 15.10.2026): Reihenfolge der Reaktionsknöpfe überall Lachen, Klatschen, Daumen hoch, Schreck
+  // (FX_REACTS bleibt die Liste des Protokolls, Spiegel von TeaseRules)
+  const REAKT_REIHE = ['lachen', 'klatschen', 'daumen', 'schreck'];
+  const LEISTE_ABST = 6;   // Abstand zwischen den Reaktionsknöpfen (CSS-px)
+  // Beta 1.6.5 (Nutzer 15.10.2026: „Die sind doch viel schöner.“): Reaktionen als Bilder aus Microsoft Fluent Emoji (MIT,
+  // bilder/reaktionen/LIZENZ.md; dieselben Dateien wie game/assets/ui/reaktionen/ der App), damit sie auf jedem Gerät gleich aussehen.
+  // Lädt ein Bild nicht, bleibt das Emoji der Geräteschrift (span) sichtbar.
+  const REAKT_BILD = r => 'bilder/reaktionen/' + r + '.svg';
+  function reaktSymbol(r) {
+    const f = document.createDocumentFragment();
+    const img = el('img', 'nk-ri');
+    img.alt = ''; img.draggable = false; img.decoding = 'async';
+    img.addEventListener('error', () => img.remove());
+    img.src = REAKT_BILD(r);
+    f.appendChild(img);
+    f.appendChild(el('span', 'nk-re', REAKT[r][0]));
+    return f;
+  }
   const REAKT_MS = { lachen: 1920, schreck: 610, klatschen: 1920, daumen: 620 };   // Dauer der Töne (Deckel: höchstens 2 gleichzeitig)
   const KNOEPFE = [['ball', SVG_KUGEL, 'Papierkugel'], ['snore', SVG_ZZZ, 'Schnarchen'], ['alarm', SVG_WECKER, 'Wecker'], ['ansehen', SVG_KARTEN, 'Karten ansehen']];
   const LEISE = 0.25;            // −12 dB (Absender, Zuschauer beim Plopp)
@@ -172,7 +190,7 @@
   const ueber = (a, b, rand) => a && b && a.width > 0 && b.width > 0 && a.left < b.right + rand && a.right + rand > b.left && a.top < b.bottom + rand && a.bottom + rand > b.top;
 
   const N = {
-    Regeln, cleanFx, cleanFxNo, cleanFxOffs,
+    Regeln, cleanFx, cleanFxNo, cleanFxOffs, REAKT_BILD,
     FX_KINDS, FX_REACTS, FX_SLOW_MS, WAKE_BUSY_MS, REFUSALS,
     regeln: new Regeln(),
     offs: [],             // Plätze mit Necken aus (fx_offs des Gastgebers)
@@ -186,39 +204,39 @@
     _wach: [],            // laufende Weckaktionen {seat, k, abstellen()}
     _liegen: {},          // Platz → liegende Kugeln (Elemente)
     _effekte: new Set(),  // alle Effekt-Elemente (zum Abräumen)
-    _rt: [], _rtName: {}, _grauBis: 0, _letzter: null, _zu: null, _zuFaecher: -1e9,
+    _rt: [], _rtName: {}, _grauBis: 0, _letzter: null, _zu: null,
 
     init(app) {
       this.app = app;
       this.aus = app.einstellungen.necken === false;
       const e = this.ebene = el('div', 'necken-ebene');
       e.id = 'necken';
-      this.knopf = el('button', 'nk-rk', SVG_LACH);
-      this.knopf.id = 'nk-reaktion'; this.knopf.type = 'button'; this.knopf.hidden = true;
-      this.knopf.setAttribute('aria-label', 'Reaktion'); this.knopf.setAttribute('data-t-aria', 'Reaktion');
-      this.faecher = el('div', 'nk-faecher');
-      this.faecher.id = 'nk-faecher'; this.faecher.hidden = true;
-      FX_REACTS.forEach(r => {
-        const b = el('button', 'nk-rb', '<span>' + REAKT[r][0] + '</span>');
+      // Beta 1.6.5: Reaktionsleiste mit 4 direkten Knöpfen (vorher Lachgesicht-Knopf, der einen Fächer öffnete)
+      this.leiste = el('div', 'nk-leiste');
+      this.leiste.id = 'nk-leiste'; this.leiste.hidden = true; this.leiste.setAttribute('role', 'group');
+      this.leiste.setAttribute('aria-label', 'Reaktion'); this.leiste.setAttribute('data-t-aria', 'Reaktion');
+      REAKT_REIHE.forEach(r => {
+        const b = el('button', 'nk-rb');
+        b.appendChild(reaktSymbol(r));
         b.type = 'button'; b.dataset.r = r; b.setAttribute('aria-label', REAKT[r][1]); b.setAttribute('data-t-aria', REAKT[r][1]);
-        this.faecher.appendChild(b);
+        this.leiste.appendChild(b);
       });
       this.menue = el('div', 'nk-menue', '<b class="nk-titel"></b><div class="nk-knoepfe">' + KNOEPFE.map(k => '<button type="button" class="nk-mk" data-k="' + k[0] + '"><i>' + k[1]
         + '</i><span></span></button>').join('') + '</div><p class="nk-info"></p>');
       KNOEPFE.forEach(k => this.menue.querySelector('button[data-k="' + k[0] + '"] span').setAttribute('data-t', k[2]));
       this.menue.id = 'nk-menue'; this.menue.hidden = true; this.menue.setAttribute('role', 'dialog');
-      e.appendChild(this.knopf); e.appendChild(this.faecher); e.appendChild(this.menue);   // Menü liegt über dem Reaktionsknopf
+      e.appendChild(this.leiste); e.appendChild(this.menue);   // Menü liegt über der Reaktionsleiste
       document.body.appendChild(e);
       M.I18n.anwenden(e);
       M.I18n.beiWechsel(() => { M.I18n.anwenden(e); if (this.offen) this._menueStand(); });
-      this.knopf.addEventListener('click', ev => { ev.preventDefault(); this.reaktionen(this.faecher.hidden); });
-      this.faecher.addEventListener('click', ev => {
+      this.leiste.addEventListener('click', ev => {
         const b = ev.target.closest('button[data-r]');
         if (!b) return;
         ev.preventDefault();
+        if (this._ueberdeckt()) return;
         if (b.classList.contains('grau')) { this._wackel(b); return; }
         this._drueck(b);
-        if (this.sende({ k: 'react', r: b.dataset.r })) this.reaktionen(false);
+        if (this.sende({ k: 'react', r: b.dataset.r })) this._leisteStand();
       });
       this.menue.addEventListener('click', ev => {
         const b = ev.target.closest('button[data-k]');
@@ -232,10 +250,9 @@
         this._drueck(b);
         if (this.sende({ k, to: seat })) this.zu();
       });
-      // Tipp daneben schließt Menü bzw. Fächer, der Tipp selbst wirkt normal weiter
+      // Tipp daneben schließt das Menü, der Tipp selbst wirkt normal weiter
       document.addEventListener('pointerdown', ev => {
         if (this.offen && !this.menue.contains(ev.target)) { this._zu = { seat: this.offen.seat, zeit: this.uhr() }; this.zu(); }
-        if (!this.faecher.hidden && !this.faecher.contains(ev.target) && !this.knopf.contains(ev.target)) { this._zuFaecher = this.uhr(); this.reaktionen(false); }
       }, true);
       window.addEventListener('resize', () => this.layout());
       setInterval(() => this._takt(), 400);
@@ -244,7 +261,7 @@
     /* ---------- Netz ---------- */
     // Partie bzw. Lobby neu: Regeln, Liste und Effekte vergessen
     // (Beta 1.6.3: auch die Liste fx_offs – der Gastgeber schickt eine leere Liste nie, sonst gälte die der vorigen Partie weiter)
-    reset() { this.regeln.reset(); this.offs = []; this.abraeumen(); this.zu(); this.reaktionen(false); },
+    reset() { this.regeln.reset(); this.offs = []; this.abraeumen(); this.zu(); },
     // nach jedem welcome (auch beim neuen Gastgeber): Der kennt nur, was wir ihm jetzt sagen; seine Liste fx_offs kommt danach neu
     welcome() {
       this.regeln.reset();
@@ -257,7 +274,7 @@
       if (aus === this.aus) return;
       this.aus = aus;
       this._prefSenden();
-      if (aus) { this.abraeumen(); this.zu(); this.reaktionen(false); }
+      if (aus) { this.abraeumen(); this.zu(); }
       this.layout();
     },
     // jede Sicht mit ihren Ereignissen (vor der Regie): Spiegel der Regeln, Menü schließen, Wecker abstellen
@@ -266,7 +283,7 @@
       events = Array.isArray(events) ? events : [];
       this.regeln.notiereEreignisse(events, now);
       this.regeln.notiereSicht(view, now);
-      if (events.some(e => e && e.e === 'seats')) { this.abraeumen(); this.zu(); this.reaktionen(false); return; }
+      if (events.some(e => e && e.e === 'seats')) { this.abraeumen(); this.zu(); return; }
       this._wach.slice().forEach(w => {
         const gehandelt = events.some(e => e && e.seat === w.seat) || view.turn !== w.seat || TURN_PHASES.indexOf(view.phase) < 0;
         if (gehandelt) w.abstellen();
@@ -292,9 +309,10 @@
       if (why === 'late') this.app.toast(M.t('Zu spät – %s hat schon gespielt.', name), 'leise', 2400);
       else if (why === 'busy') this.app.toast(M.t('%s wird gerade schon geweckt.', name), 'leise', 2400);
       else {
-        this._grauBis = this.uhr() + 1500; this._menueStand(); this._faecherStand();
-        // Beta 1.6.3: Menü bzw. Fächer sind nach dem Senden meist schon zu – der Reaktionsknopf wackelt und ist kurz blass
-        if (this.knopf && !this.knopf.hidden) { this.knopf.classList.add('grau'); this._wackel(this.knopf); }
+        this._grauBis = this.uhr() + 1500; this._menueStand(); this._leisteStand();
+        // Beta 1.6.5: Die Reaktionsleiste ist kurz blass, der zuletzt gedrückte Reaktionsknopf wackelt
+        const b = l && l.k === 'react' && this.leiste && !this.leiste.hidden ? this.leiste.querySelector('button[data-r="' + l.r + '"]') : null;
+        if (b) this._wackel(b);
       }
     },
     fxOffs(m) { this.offs = cleanFxOffs(m); if (this.offen) this._menueStand(); },
@@ -342,7 +360,6 @@
     oeffne(seat) {
       const v = this.app.view;
       if (!v) return;
-      this.reaktionen(false);
       this.offen = { seat, turn: v.turn, bis: this.uhr() + MENUE_ZU_MS };
       this.menue.hidden = false;
       this.menue.classList.remove('auf'); void this.menue.offsetWidth; this.menue.classList.add('auf');
@@ -401,7 +418,7 @@
       // weich Ziehstapel, Ablage und der Kopf des Ziels; Reihenfolge der Lagen wie bisher. Passt keine, gewinnt die kleinste Überdeckung.
       const feld = sel => { const e = document.querySelector(sel); if (!e || e.hidden) return null; const r = e.getBoundingClientRect(); return r.width > 0 ? r : null; };
       const hart = fang.concat(['#mau'].map(feld).filter(Boolean));
-      const weich = ['#stapel', '#ablage'].map(feld).filter(Boolean);
+      const weich = ['#stapel', '#ablage', '#nk-leiste'].map(feld).filter(Boolean);   // 1.6.5: Reaktionsleiste weich
       const flaeche = (a, b, x) => ueber(a, b, x) ? Math.max(0, Math.min(a.right, b.right + x) - Math.max(a.left, b.left - x)) * Math.max(0, Math.min(a.bottom, b.bottom + x) - Math.max(a.top, b.top - x)) : 0;
       let wahl = null, beste = Infinity;
       kand.forEach((c, i) => {
@@ -418,93 +435,202 @@
       const zx = wahl.c.seite === 'unten' || wahl.c.seite === 'oben' ? kl(cx - wahl.left, 18, mw - 18) : kl(cy - wahl.top, 18, mh - 18);
       m.style.setProperty('--zz', Math.round(zx) + 'px');
     },
-    // Reaktionsfächer auf/zu
-    reaktionen(auf) {
-      if (!this.faecher) return;
-      auf = !!auf && this.verfuegbar() && !this.knopf.hidden && !this._ueberdeckt();
-      this.faecher.hidden = !auf;
-      this.knopf.classList.toggle('aktiv', auf);
-      if (auf) { this.zu(); this._faecherStand(); }
-    },
-    _faecherStand() {
-      if (!this.faecher || this.faecher.hidden) return;
+    // Beta 1.6.5: Den Reaktionsfächer gibt es nicht mehr (die Reaktionen liegen direkt in der Leiste); app.js (Zurück-Taste) ruft
+    // reaktionen(false) noch auf – absichtlich ohne Wirkung
+    reaktionen() {},
+    // Reaktionsknöpfe ausgrauen: während der Sperrzeit (lokaler Spiegel der Regeln) und kurz nach fx_no rate
+    _leisteStand() {
+      if (!this.leiste || this.leiste.hidden) return;
       const grau = this.uhr() < this._grauBis;
-      this.faecher.querySelectorAll('button[data-r]').forEach(b => b.classList.toggle('grau', grau || !!this.pruefe({ k: 'react', r: b.dataset.r })));
-      // Viertelbogen um den Knopf: nach oben rechts, sonst oben links, unten rechts, unten links (was ganz in den Viewport passt)
-      const k = this.knopf.getBoundingClientRect(), d = Math.max(44, Math.round(k.width * 0.95));
-      const knoepfe = Array.from(this.faecher.children);
-      const bx = k.left + k.width / 2, by = k.top + k.height / 2, R = d * 1.55 + 6, vw = window.innerWidth, vh = window.innerHeight;
-      const bogen = (a0, a1) => knoepfe.map((b, i) => {
-        const a = (a0 + (a1 - a0) * i / Math.max(1, knoepfe.length - 1)) * Math.PI / 180;
-        return { x: bx + R * Math.cos(a) - d / 2, y: by - R * Math.sin(a) - d / 2 };
-      });
-      const passt = p => p.every(q => q.x >= 4 && q.y >= 4 && q.x + d <= vw - 4 && q.y + d <= vh - 4);
-      const lagen = [bogen(95, -5), bogen(85, 185), bogen(-95, 5), bogen(-85, -185)];
-      if (this.app.tisch && this.app.tisch.gross) lagen.unshift(lagen.splice(1, 1)[0]);   // großer Modus: nach links, weg von der Liste
-      const lage = lagen.find(passt) || lagen[0];
-      knoepfe.forEach((b, i) => {
-        b.style.width = b.style.height = d + 'px';
-        b.style.fontSize = Math.round(d * 0.56) + 'px';
-        b.style.left = Math.round(Math.min(vw - d - 4, Math.max(4, lage[i].x))) + 'px';
-        b.style.top = Math.round(Math.min(vh - d - 4, Math.max(4, lage[i].y))) + 'px';
-        b.style.setProperty('--i', String(i));
-      });
+      this.leiste.querySelectorAll('button[data-r]').forEach(b => b.classList.toggle('grau', grau || !!this.pruefe({ k: 'react', r: b.dataset.r })));
     },
-    // Tipp auf den Reaktionsknopf bzw. das eigene Namensschild (großer Modus: eigene Zeile)
+    // Tipp auf das eigene Namensschild (großer Modus: eigene Zeile): Die Reaktionsknöpfe hüpfen kurz, damit man sie findet
     tippEigen() {
-      if (!this.verfuegbar() || this.knopf.hidden) return false;
-      if (this.faecher.hidden && this.uhr() - this._zuFaecher < 500) return true;   // derselbe Tipp hat den Fächer eben geschlossen (1.6.3)
-      this.reaktionen(this.faecher.hidden);
+      if (!this.verfuegbar() || this.leiste.hidden) return false;
+      const l = this.leiste;
+      if (!this.reduziert()) { l.classList.remove('huepf'); void l.offsetWidth; l.classList.add('huepf'); }
       return true;
     },
-    // Reaktionsknopf platzieren (nach jedem tisch.zeige und bei Größenänderung): neben „Du“ bzw. im großen Modus links an der eigenen
-    // Zeile; ein Platz, der nichts verdeckt (Sortieren, Rückseiten, Hinweisleiste, Aktionen, Mau-Knopf, Erwischt)
+    // Großer Modus: eigene Zeile „Du“ in CSS-px, und zwar dort, wo sie nach dem Gleiten steht (translateY aus tisch.js; die Zeilen
+    // gleiten 0,45 s, getBoundingClientRect liefert den Anfang). dy = Weg, der noch vor ihr liegt; nameEnde = Ende des Worts „Du“.
+    _eigeneZeile(t) {
+      const g = t.v && t.gegnerEls.get(t.v.seat);
+      if (!g || g.e.classList.contains('aus')) return null;
+      const e = g.e, r = e.getBoundingClientRect();
+      if (!r.width) return null;
+      const m = /translateY\((-?[\d.]+)px\)/.exec(e.style.transform || '');
+      let jetzt = null;
+      try { jetzt = new DOMMatrixReadOnly(getComputedStyle(e).transform).m42; } catch (x) { jetzt = null; }
+      const dy = m && jetzt !== null ? (parseFloat(m[1]) - jetzt) * (t.s || 1) : 0;
+      const ab = x => ({ left: x.left, right: x.right, top: x.top + dy, bottom: x.bottom + dy, width: x.width, height: x.height });
+      const name = e.querySelector('.name'), zahl = e.querySelector('.zahl');
+      if (!name || !zahl) return null;
+      const rg = document.createRange();
+      rg.selectNodeContents(name);
+      const nw = rg.getBoundingClientRect().width, nr = name.getBoundingClientRect();
+      const spalte = nr.right + (parseFloat(getComputedStyle(name).marginRight) || 0) * (t.s || 1);   // rechter Rand der Namensspalte (ohne Platzhalter)
+      return { e, rect: ab(r), nameEnde: nr.left + nw, spalte, zahl: ab(zahl.getBoundingClientRect()), dy };
+    },
+    // Reaktionsleiste platzieren (nach jedem tisch.zeige und bei Größenänderung). Formen: Reihe (4 × 1), Quadrat (2 × 2), Spalte
+    // (1 × 4). Lagen nach Vorrang: hochkant bzw. fast quadratisch (Rahmen) unter dem Tisch links (der Hinweis „Quer halten“ rückt
+    // nach unten), sonst darüber; großer Modus als Reihe in der Zeile „Du“ vor der Kartenzahl, sonst 2 × 2 links bündig daran; sonst rechts neben
+    // „Du“, darüber oder als Quadrat. Hart gemieden (nie verdecken): Hand, Stapel, Ablage, Mau, „Erwischt!“, Sortieren, Rückseiten,
+    // Hinweisleiste mit Aktionen, Menü-/Ton-Knopf, Spielerliste (großer Modus), Glücksspiel; weich die Mitspieler und die Farbe.
     layout() {
-      if (!this.knopf) return;
+      if (!this.leiste) return;
       const a = this.app, t = a && a.tisch, v = t && t.v;
       const phaseOk = v && REACT_PHASES.indexOf(v.phase) >= 0;
       const zeigen = this.verfuegbar() && !!v && phaseOk;
-      if (!zeigen) { this.knopf.hidden = true; this.reaktionen(false); return; }
-      const d = Math.max(44, Math.round(64 * t.s));
+      const L = this.leiste;
+      if (!zeigen) {
+        L.hidden = true; document.body.classList.remove('nk-unten');
+        document.querySelectorAll('#tisch .gg').forEach(e => {
+          e.style.removeProperty('--nk-res');
+          const zg = e.querySelector('.zug');
+          if (zg && v && +e.dataset.seat === v.seat && zg.textContent === M.t('dran')) zg.textContent = M.t('Du bist dran');
+        });
+        return;
+      }
+      const rahmen = document.body.classList.contains('rahmen');
+      const d = Math.max(rahmen ? 52 : 44, Math.round(58 * t.s)), gap = LEISTE_ABST;   // Rahmen: Platz genug für etwas größere Knöpfe
+      const FORM = { reihe: [4, 1], quadrat: [2, 2], spalte: [1, 4] };
+      const mass = f => ({ w: FORM[f][0] * d + (FORM[f][0] - 1) * gap, h: FORM[f][1] * d + (FORM[f][1] - 1) * gap });
       const rect = sel => { const e = typeof sel === 'string' ? document.querySelector(sel) : sel; if (!e || e.hidden) return null; const r = e.getBoundingClientRect(); return r.width > 0 ? r : null; };
-      const hind = ['#sortieren', '#rueckseiten', '#mau', '#tisch .leiste .hinweis', '#tisch .leiste .aktionen'].map(rect).filter(Boolean);
-      document.querySelectorAll('#tisch .gg.fangbar .erwischen').forEach(e => { const r = rect(e); if (r) hind.push(r); });
-      let ank = null;
+      // Stapel und Ablage sind Ankerpunkte ohne eigene Größe (Karten absolut darin): deren Fläche ist die Hülle der Kinder
+      const huelle = e => {
+        if (!e || e.hidden) return null;
+        const r0 = e.getBoundingClientRect();
+        if (r0.width > 0) return r0;
+        let l = 1e9, o = 1e9, r = -1e9, u = -1e9;
+        e.querySelectorAll('*').forEach(k => { const b = k.getBoundingClientRect(); if (b.width > 0) { l = Math.min(l, b.left); o = Math.min(o, b.top); r = Math.max(r, b.right); u = Math.max(u, b.bottom); } });
+        return r > l ? { left: l, top: o, right: r, bottom: u, width: r - l, height: u - o } : null;
+      };
+      const alle = (sel, arr) => document.querySelectorAll(sel).forEach(e => { const r = rect(e); if (r) arr.push(r); });
+      const hart = [t.knSort, t.knRueck, t.knMau, t.knMenue, t.knTon, t.stapelZahl, t.hinweis, t.aktionen,
+        '#automat', '#einsatz', '#liste-kopf'].map(rect).concat([t.stapel, t.ablage, document.getElementById('seitenstapel')].map(huelle)).filter(Boolean);
+      alle('#tisch .gg.fangbar .erwischen', hart);
+      alle('#tisch .hk', hart);
+      const weich = [t.farbe].map(rect).filter(Boolean);
+      if (!t.gross) { const du = rect(t.ichZahl); if (du) hart.push(du); }   // „Du“ mit Kartenzahl nicht zudecken
+      // großer Modus: Zeilen der Spielerliste hart; die eigene zählt erst unten (Lage nach dem Gleiten, für die Reihe darin nicht)
+      // (Die Reihe in der eigenen Zeile prüft die anderen Zeilen nicht: sie gleiten gerade, ihre Lage jetzt ist nicht die nach dem Gleiten.)
+      const zeilen = [];
+      alle(t.gross ? '#tisch .gg:not(.aus):not(.ich)' : '#tisch .gg', t.gross ? zeilen : weich);
+      const root = t.root.getBoundingClientRect();
+      // Was auf dem Tisch liegt, zählt nur innerhalb von #tisch (Hand und Fächer ragen im Rahmen über den Rand, sind dort aber abgeschnitten)
+      const schnitt = r => { const left = Math.max(r.left, root.left), top = Math.max(r.top, root.top), right = Math.min(r.right, root.right), bottom = Math.min(r.bottom, root.bottom);
+        return right > left && bottom > top ? { left, top, right, bottom, width: right - left, height: bottom - top } : null; };
+      [hart, weich, zeilen].forEach(arr => { const neu = arr.map(schnitt).filter(Boolean); arr.length = 0; neu.forEach(r => arr.push(r)); });
+      const runde = rect('#runde:not([hidden]) .runde-karte');   // Rundenende-Tafel (liegt unter der Ebene): nicht zudecken
+      if (runde) hart.push(runde);
       const kand = [];
-      if (t.gross) {
-        const g = t.gegnerEls.get(v.seat);
-        ank = g && !g.e.classList.contains('aus') ? rect(g.e) : null;
-        if (ank) kand.push({ left: ank.left - d - 10, top: ank.top + ank.height / 2 - d / 2 });
-        const s = rect('#sortieren');
-        if (s) kand.push({ left: s.left, top: s.top - d - 10 });
-      } else {
-        ank = rect(t.ichZahl);
-        if (ank) {
-          kand.push({ left: ank.right + 10, top: ank.top + ank.height / 2 - d / 2 });
-          kand.push({ left: ank.right + 10, top: ank.bottom - d });
-          kand.push({ left: ank.left, top: ank.top - d - 8 });
-          kand.push({ left: ank.right + 10, top: ank.top - d - 8 });
+      const dazu = (form, left, top, unten) => kand.push(Object.assign({ form, left, top, unten: !!unten }, mass(form)));
+      if (rahmen) {
+        const m = mass('reihe');
+        const rest = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--rahmen-rest')) || 0;
+        if (!document.body.classList.contains('rahmen-hinweis') || rest >= m.h + 10 + 64) dazu('reihe', root.left + 12, root.bottom + 10, true);
+        dazu('reihe', root.left + 12, root.top - m.h - 10);
+      }
+      // Großer Modus (Bildprüfung 1.6.5): wie in der App als Reihe IN der Zeile „Du“ rechtsbündig vor der Kartenzahl (dem Wort „Du“
+      // bleibt sein Platz); Ausweichlage 2 × 2 links bündig an der eigenen Zeile, kleinere Knöpfe (unter 36 px, sehr schmale Handys) erst
+      // danach, aber noch vor den Notlagen am Rand. Nie mehr als Spalte über alle Zeilen
+      // (las sich wie „Reaktion an diesen Spieler“). Trefferfläche: unsichtbarer Rand bis 44 px (--nk-tx/--nk-ty).
+      const zeile = t.gross ? this._eigeneZeile(t) : null;
+      if (zeile) {
+        const x1 = zeile.zahl.left - 5, x0 = zeile.nameEnde + 6;
+        const passt = gi => Math.min(d, Math.floor((x1 - x0 - 3 * gi) / 4), Math.max(36, Math.floor(zeile.rect.height - 2)));
+        // Abstand 6, 5 oder 4 px: am liebsten Trefferfläche (Knopf + Abstand, je halb links und rechts) ≥ 44 px, dann der größere Knopf
+        let gi = LEISTE_ABST, di = passt(gi);
+        [5, 4].forEach(g => { const x = passt(g); if (Math.min(44, x + g) * 100 + x > Math.min(44, di + gi) * 100 + di) { gi = g; di = x; } });
+        if (di >= 30) {   // unter 36 px (sehr schmale Handys): notfall, siehe Kosten
+          const w = 4 * di + 3 * gi;
+          kand.push({ form: 'reihe', left: x1 - w, top: zeile.rect.top + zeile.rect.height / 2 - di / 2, unten: false, w, h: di, d: di, gap: gi, inZeile: true, notfall: di < 36 });
         }
       }
-      if (!kand.length) { const r = t.root.getBoundingClientRect(); kand.push({ left: r.left + 12, top: r.top + r.height * 0.55 }); }
-      const vw = window.innerWidth, vh = window.innerHeight;
-      let wahl = kand[0];
-      for (const c of kand) {
-        const r = { left: c.left, top: c.top, right: c.left + d, bottom: c.top + d, width: d, height: d };
-        if (c.left < 2 || c.top < 2 || r.right > vw - 2 || r.bottom > vh - 2) continue;
-        if (hind.some(h => ueber(r, h, 4))) continue;
-        wahl = c; break;
+      if (t.gross) {
+        const liste = Array.from(t.gegnerEls.values()).map(x => x.e.classList.contains('aus') ? null : rect(x.e)).filter(Boolean);
+        const links = liste.length ? Math.min.apply(null, liste.map(r => r.left)) : (zeile ? zeile.rect.left : root.right - 12);
+        const ziel = zeile ? zeile.rect : (liste.length ? liste[liste.length - 1] : null);
+        if (ziel) {
+          const m = mass('quadrat');
+          dazu('quadrat', links - m.w - 10, ziel.bottom - m.h);
+          dazu('quadrat', links - m.w - 10, ziel.top + ziel.height / 2 - m.h / 2);
+          dazu('quadrat', links - m.w - 10, ziel.top);
+        }
+        const s = rect(t.knSort);
+        if (s) { dazu('reihe', s.left, s.top - mass('reihe').h - 10); dazu('quadrat', s.left, s.top - mass('quadrat').h - 10); }
+      } else {
+        const ank = rect(t.ichZahl);
+        if (ank) {
+          const r = mass('reihe'), q = mass('quadrat');
+          dazu('reihe', ank.right + 10, Math.min(ank.top + ank.height / 2 - r.h / 2, ank.bottom + 6 - r.h));   // etwas höher: Sortieren liegt knapp darunter
+          dazu('reihe', ank.left, ank.top - r.h - 8);
+          dazu('reihe', ank.right + 10, ank.top - r.h - 8);
+          dazu('quadrat', ank.right + 10, ank.bottom - q.h);
+          dazu('quadrat', ank.left, ank.top - q.h - 8);
+        }
       }
-      const k = this.knopf;
-      k.hidden = false;
-      k.style.width = k.style.height = d + 'px';
-      k.style.left = Math.round(Math.max(2, Math.min(vw - d - 2, wahl.left))) + 'px';
-      k.style.top = Math.round(Math.max(2, Math.min(vh - d - 2, wahl.top))) + 'px';
-      this._faecherStand();
+      // Notlagen (z. B. Rundenende-Tafel über der Mitte): Spalte am linken bzw. rechten Rand zwischen den Eckknöpfen
+      { const m = mass('spalte'), oben = (rect(t.knMenue) || { bottom: root.top }).bottom + 10;
+        const unten = Math.min((rect(t.knSort) || { top: root.bottom }).top - 10, t.gross ? 1e9 : (rect(t.ichZahl) || { top: 1e9 }).top - 8);
+        dazu('spalte', root.left + 6, Math.max(oben, unten - m.h));
+        dazu('spalte', root.right - m.w - 6, (rect(t.knTon) || { bottom: root.top }).bottom + 10); }
+      const vw = window.innerWidth, vh = window.innerHeight;
+      const flaeche = (a, b, x) => ueber(a, b, x) ? Math.max(0, Math.min(a.right, b.right + x) - Math.max(a.left, b.left - x)) * Math.max(0, Math.min(a.bottom, b.bottom + x) - Math.max(a.top, b.top - x)) : 0;
+      let wahl = null, beste = Infinity;
+      const eigen = zeile ? [zeile.rect] : [];   // eigene Zeile: hart für alle Lagen außer der Reihe darin
+      kand.forEach((c, i) => {
+        const left = Math.max(4, Math.min(vw - c.w - 4, c.left)), top = Math.max(4, Math.min(vh - c.h - 4, c.top));
+        const r = { left, top, right: left + c.w, bottom: top + c.h, width: c.w, height: c.h };
+        let kosten = i * 300 + (Math.abs(left - c.left) + Math.abs(top - c.top)) * 50;
+        (c.inZeile ? hart : hart.concat(zeilen, eigen)).forEach(h => { const f = flaeche(r, h, 4); if (f > 0) kosten += 1e6 + f * 40; });
+        if (c.notfall) kosten += 1200;   // kleine Knöpfe in der Zeile: schlechter als 2 × 2 daneben, besser als die Notlagen am Rand
+        weich.forEach(h => { kosten += flaeche(r, h, 0) * 2; });
+        c.kosten = kosten;
+        if (kosten < beste) { beste = kosten; wahl = Object.assign({}, c, { left, top }); }
+      });
+      this._lagen = kand; this._hart = hart;   // Selbsttest/Kontrollbilder: geprüfte Lagen mit Kosten, harte Hindernisse
+      const sp = FORM[wahl.form][0], dd = wahl.d || d, gg = wahl.gap || gap;
+      L.hidden = false;
+      L.dataset.form = wahl.form;
+      L.dataset.lage = wahl.inZeile ? 'zeile' : '';
+      L.style.left = Math.round(wahl.left) + 'px';
+      // In der Zeile „Du“ gleitet die Leiste mit der Zeile (0,45 s wie #tisch.gross .gg): erst an die Lage der Zeile jetzt, dann ans Ziel
+      if (wahl.inZeile && Math.abs(zeile.dy) > 0.5) {
+        L.style.transition = 'none';
+        L.style.top = Math.round(wahl.top - zeile.dy) + 'px';
+        void L.offsetWidth;
+        L.style.transition = 'top .45s cubic-bezier(.3,.8,.3,1)';
+      } else L.style.transition = 'none';
+      L.style.top = Math.round(wahl.top) + 'px';
+      L.style.gridTemplateColumns = 'repeat(' + sp + ', ' + dd + 'px)';
+      L.style.gap = gg + 'px';
+      const rand = Math.max(0, (44 - dd) / 2);   // Trefferfläche: unsichtbarer Rand bis 44 px, seitlich höchstens bis zur Mitte des Abstands
+      L.style.setProperty('--nk-tx', Math.min(gg / 2, rand) + 'px'); L.style.setProperty('--nk-ty', rand + 'px');
+      Array.from(L.children).forEach((b, i) => {
+        b.style.width = b.style.height = dd + 'px';
+        b.style.fontSize = Math.round(dd * 0.56) + 'px';
+        b.style.setProperty('--i', String(i));
+      });
+      // Zeile „Du“: Name und „dran“ machen der Reihe Platz (wie OpponentSeat.row_reserve der App); „Du bist dran“ wird dort „dran“
+      if (zeile) {
+        const zg = zeile.e.querySelector('.zug');
+        if (wahl.inZeile) {
+          zeile.e.style.setProperty('--nk-res', (Math.max(0, zeile.spalte - wahl.left + 3) / (t.s || 1)).toFixed(1) + 'px');
+          if (zg && zg.textContent === M.t('Du bist dran')) zg.textContent = M.t('dran');
+        } else {
+          zeile.e.style.removeProperty('--nk-res');
+          if (zg && zg.textContent === M.t('dran')) zg.textContent = M.t('Du bist dran');
+        }
+      }
+      document.querySelectorAll('#tisch .gg').forEach(e => { if (!zeile || e !== zeile.e) e.style.removeProperty('--nk-res'); });
+      document.body.classList.toggle('nk-unten', wahl.unten);
+      document.documentElement.style.setProperty('--nk-leiste-h', Math.round(wahl.h) + 'px');
+      this._leisteStand();
       if (this.offen) this._menuePlatz();
     },
     // alle 400 ms: Menü nach der Uhr auffrischen bzw. nach 5 s schließen; Ebene unter anderen Fenstern (Menü, Regeln …) verstecken
-    // Gerätetest 1.6.3: Fenster (Menü, Regeln …) verdecken die ganze Ebene; das Farbrad nur Reaktionsknopf und Fächer (Effektzeilen bleiben)
+    // Gerätetest 1.6.3: Fenster (Menü, Regeln …) verdecken die ganze Ebene; das Farbrad nur die Reaktionsleiste (Effektzeilen bleiben)
     _modal() { return !!document.querySelector('.modal:not([hidden]):not(#runde)'); },
     _farbwahl() { const t = this.app && this.app.tisch; return !!(t && t.farbwahl && t.farbwahlOffen); },
     _ueberdeckt() { return this._modal() || this._farbwahl(); },
@@ -513,12 +639,12 @@
       const modal = this._modal(), fw = this._farbwahl();
       this.ebene.classList.toggle('verdeckt', modal);
       this.ebene.classList.toggle('farbwahl', fw);
-      if ((modal || fw) && !this.faecher.hidden) this.reaktionen(false);
       if (modal && this.offen) this.zu();
       if (this.offen) { if (this.uhr() > this.offen.bis) this.zu(); else this._menueStand(); }
-      if (this.knopf.classList.contains('grau') && this.uhr() >= this._grauBis) this.knopf.classList.remove('grau');   // 1.6.3: nach fx_no rate
-      if (!this.faecher.hidden) this._faecherStand();
-      if (this.app && this.app.screen !== 'tisch' && !this.knopf.hidden) this.layout();
+      if (!this.leiste.hidden) this._leisteStand();   // Sperrzeit läuft ab bzw. nach fx_no rate wieder frei
+      const runde = !!document.querySelector('#runde:not([hidden])');
+      if (runde !== this._runde) { this._runde = runde; this.layout(); }   // Rundenende-Tafel auf/zu: Leiste neu legen
+      if (this.app && this.app.screen !== 'tisch' && !this.leiste.hidden) this.layout();
     },
     _drueck(b) { b.classList.remove('drueck'); void b.offsetWidth; b.classList.add('drueck'); },
     _wackel(b) { b.classList.remove('wackel'); void b.offsetWidth; b.classList.add('wackel'); },
@@ -598,7 +724,7 @@
       const eigen = Object.assign({}, this._kopf(seat).rect);
       if (t.gross) eigen.r = eigen.l + (eigen.r - eigen.l) * 0.35;
       weich.push(eigen);
-      [t.knMenue, t.knTon, t.knSort, t.knRueck, this.knopf].forEach(e => dazu(hart, e));   // Knöpfe: nicht zudecken
+      [t.knMenue, t.knTon, t.knSort, t.knRueck, this.leiste].forEach(e => dazu(hart, e));   // Knöpfe (auch die Reaktionsleiste): nicht zudecken
       return { hart, weich };
     },
     // Beste Lage aus kand [{x, y, rel:{l,t,r,b}}] (rel relativ zu x/y): jede auch auf die Bühne geschoben; Kosten nach Reihenfolge,
@@ -657,9 +783,12 @@
       const g = t.gross && t.v ? t.gegnerEls.get(t.v.seat) : null;
       const a = (g && !g.e.classList.contains('aus') ? g.e : t.ichZahl).getBoundingClientRect();
       const w = z.offsetWidth, h = z.offsetHeight, vw = window.innerWidth;
-      const top = a.width ? a.top - h - 12 : window.innerHeight * 0.6;
-      const left = a.width ? (t.gross ? a.left + a.width / 2 - w / 2 : a.left - 6) : (vw - w) / 2;
-      z.style.left = Math.round(Math.max(6, Math.min(vw - w - 6, left))) + 'px';
+      let top = a.width ? a.top - h - 12 : window.innerHeight * 0.6;
+      const left = Math.max(6, Math.min(vw - w - 6, a.width ? (t.gross ? a.left + a.width / 2 - w / 2 : a.left - 6) : (vw - w) / 2));
+      // Beta 1.6.5: nicht über den Reaktionsknöpfen – dann darüber
+      const l = this.leiste && !this.leiste.hidden ? this.leiste.getBoundingClientRect() : null;
+      if (l && l.width && ueber({ left, top, right: left + w, bottom: top + h, width: w, height: h }, l, 6) && l.top - h - 8 >= 6) top = l.top - h - 8;
+      z.style.left = Math.round(left) + 'px';
       z.style.top = Math.round(Math.max(6, top)) + 'px';
       setTimeout(() => { z.classList.add('aus'); setTimeout(() => z.remove(), 400); }, dauer || 2800);
       return z;
@@ -680,7 +809,10 @@
       const v = from === ich ? { x: t.g.cx, y: t.H - 236 } : this.anker(from);
       const k = el('div', 'nk-kugel', SVG_KUGEL);
       // Beta 1.6.3: im Flug 1,6-fach (64 px), liegend etwas kleiner (LIEGT_SK); großer Modus: in der Zeile vor der Kartenzahl
-      const liegt = t.gross ? { x: this._kopf(to).zahlX - 36 - Math.random() * 60, y: z.y + 6 }
+      // (Zeile „Du“ mit den Reaktionsknöpfen davor: am linken Rand der Zeile, die Knöpfe lägen sonst darüber)
+      const inZeile = t.gross && to === ich && this.leiste && !this.leiste.hidden && this.leiste.dataset.lage === 'zeile';
+      const liegt = inZeile ? { x: this._kopf(to).rect.l - 6 - Math.random() * 10, y: z.y + 6 }
+        : t.gross ? { x: this._kopf(to).zahlX - 36 - Math.random() * 60, y: z.y + 6 }
         : { x: z.x + (Math.random() - 0.5) * z.r * 1.4, y: z.y + z.r * 0.75 };
       if (rolle === 'absender') this._ton('papier_wurf');
       const treffer = () => {
@@ -808,7 +940,9 @@
       kand.push({ x: z.x - z.r - g * 0.6 - 8 + dx, y: z.y, rel });
       kand.push({ x: kp.rect.r + g * 0.6 + 8 + dx, y: z.y, rel });
       const p = this._waehle(kand, this._hindernisse(from));
-      this._aufBuehne(el('div', 'nk-emoji' + (this.reduziert() ? ' still' : ''), REAKT[r][0]), p.x, p.y, REAKT_AUF_MS, from);
+      const em = el('div', 'nk-emoji' + (this.reduziert() ? ' still' : ''));
+      em.appendChild(reaktSymbol(r));
+      this._aufBuehne(em, p.x, p.y, REAKT_AUF_MS, from);
       const now = this.uhr();
       this._rt = this._rt.filter(e => e > now);
       if (this._rt.length >= 2 || now - (this._rtName[r] === undefined ? -1e9 : this._rtName[r]) < 600) return;   // höchstens 2 gleichzeitig, je Name 600 ms
