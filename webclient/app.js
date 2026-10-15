@@ -5,7 +5,7 @@
 (function (M) {
   'use strict';
 
-  const VERSION = '1.6.2';
+  const VERSION = '1.6.3';
   const PROTO = 1;
   // wach.mp4 (32×32, 2 s, H.264 Baseline, ohne Ton; erzeugt mit ffmpeg) als data:-URI
   const WACH_VIDEO = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAMzbW9vdgAAAGxtdmhkAAAAAAAAAAAAAAAAAAAD6AAAB9AAAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAl50cmFrAAAAXHRraGQAAAADAAAAAAAAAAAAAAABAAAAAAAAB9AAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAACAAAAAgAAAAAAAkZWR0cwAAABxlbHN0AAAAAAAAAAEAAAfQAAAAAAABAAAAAAHWbWRpYQAAACBtZGhkAAAAAAAAAAAAAAAAAABAAAAAgABVxAAAAAAALWhkbHIAAAAAAAAAAHZpZGUAAAAAAAAAAAAAAABWaWRlb0hhbmRsZXIAAAABgW1pbmYAAAAUdm1oZAAAAAEAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAAUFzdGJsAAAAuXN0c2QAAAAAAAAAAQAAAKlhdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAACAAIABIAAAASAAAAAAAAAABFExhdmM2My4xLjEwMSBsaWJ4MjY0AAAAAAAAAAAAAAAAGP//AAAAL2F2Y0MBQsAe/+EAFmdCwB7ZCWwEQAAAAwBAAAADAQPFi5IBAAZoy4DkTIAAAAAQcGFzcAAAAAEAAAABAAAAFGJ0cnQAAAAAAAAKpAAAAAAAAAAYc3R0cwAAAAAAAAABAAAABAAAIAAAAAAUc3RzcwAAAAAAAAABAAAAAQAAABxzdHNjAAAAAAAAAAEAAAABAAAABAAAAAEAAAAkc3RzegAAAAAAAAAAAAAABAAAAogAAAALAAAACwAAAAsAAAAUc3RjbwAAAAAAAAABAAADYwAAAGF1ZHRhAAAAWW1ldGEAAAAAAAAAIWhkbHIAAAAAAAAAAG1kaXJhcHBsAAAAAAAAAAAAAAAALGlsc3QAAAAkqXRvbwAAABxkYXRhAAAAAQAAAABMYXZmNjMuMS4xMDEAAAAIZnJlZQAAArFtZGF0AAACcgYF//9u3EXpvebZSLeWLNgg2SPu73gyNjQgLSBjb3JlIDE2NSByMzIyMyAwNDgwY2IwIC0gSC4yNjQvTVBFRy00IEFWQyBjb2RlYyAtIENvcHlsZWZ0IDIwMDMtMjAyNSAtIGh0dHA6Ly93d3cudmlkZW9sYW4ub3JnL3gyNjQuaHRtbCAtIG9wdGlvbnM6IGNhYmFjPTAgcmVmPTMgZGVibG9jaz0xOi0zOi0zIGFuYWx5c2U9MHgxOjB4MTExIG1lPWhleCBzdWJtZT03IHBzeT0xIHBzeV9yZD0yLjAwOjAuNzAgbWl4ZWRfcmVmPTEgbWVfcmFuZ2U9MTYgY2hyb21hX21lPTEgdHJlbGxpcz0xIDh4OGRjdD0wIGNxbT0wIGRlYWR6b25lPTIxLDExIGZhc3RfcHNraXA9MSBjaHJvbWFfcXBfb2Zmc2V0PS00IHRocmVhZHM9MSBsb29rYWhlYWRfdGhyZWFkcz0xIHNsaWNlZF90aHJlYWRzPTAgbnI9MCBkZWNpbWF0ZT0xIGludGVybGFjZWQ9MCBibHVyYXlfY29tcGF0PTAgY29uc3RyYWluZWRfaW50cmE9MCBiZnJhbWVzPTAgd2VpZ2h0cD0wIGtleWludD0yNTAga2V5aW50X21pbj0yIHNjZW5lY3V0PTQwIGludHJhX3JlZnJlc2g9MCByY19sb29rYWhlYWQ9NDAgcmM9Y3JmIG1idHJlZT0xIGNyZj00MC4wIHFjb21wPTAuNjAgcXBtaW49MCBxcG1heD02OSBxcHN0ZXA9NCBpcF9yYXRpbz0xLjQwIGFxPTE6MS4yMACAAAAADmWIhAXznJigACX3J114AAAAB0GaOAvnOWAAAAAHQZpUAvnOWAAAAAdBmmAVznLA';
@@ -49,7 +49,7 @@
     // ton = Mau-Ton (Aufnahmen, Standard normal), toene = übrige Spieltöne (Dateien aus sfx/, sonst synthetisch; Standard aus), stumm = Ton-Knopf in der Ecke
     // hervorheben = spielbare Karten hervorheben (persönliche Einstellung je Gerät, AGENTS.md Nr. 24; Standard an)
     // grosser_modus = großer Modus (Standard aus), zug_vibration = „Bei deinem Zug: Vibration“ (Standard an seit 1.2.1); beide je Gerät, wie App.settings
-    einstellungen: { ton: 'normal', toene: 'normal', stumm: false, effekte: 'voll', sort: 'farbe', vibration: true, vollbild: true, hervorheben: true, schrift: 'normal', grosser_modus: false, zug_vibration: true, sprache: 'auto', sprueche: 'frech', sprueche_oft: 'oft' },
+    einstellungen: { ton: 'normal', toene: 'normal', stumm: false, effekte: 'voll', sort: 'farbe', vibration: true, vollbild: true, hervorheben: true, schrift: 'normal', grosser_modus: false, zug_vibration: true, sprache: 'auto', sprueche: 'frech', sprueche_oft: 'oft', necken: true },
     _mauZuletzt: {},       // „art:Platz“ → Zeitpunkt des letzten Mau-Tons (Entprellung)
     // Online-Spiel (docs/online/ENTWURF.md): ?r=CODE auf einer vom Vermittler ausgelieferten Seite. Vermittler = eigener Ursprung.
     online: false,         // ?r= vorhanden
@@ -98,6 +98,9 @@
       if (M.Spass) M.Spass.setzeStufe(e.sprueche);
       e.sprueche_oft = Speicher.get('sprueche_oft', 'oft');   // Häufigkeit der Sprüche (Beta 1.4.5): selten | normal | oft | immer, je Gerät
       if (M.Spass) M.Spass.setzeHaeufigkeit(e.sprueche_oft);
+      // Mau-Mau Flip (Beta 1.6.3, Easter Eggs Teil 2): „Necken“ je Gerät, ab Werk an (necken.js); ?necken=0 nur für Tests
+      e.necken = params.get('necken') === '0' ? false : Speicher.get('necken', true) !== false;
+      if (M.Necken) M.Necken.init(this);
       this._gross(e.grosser_modus);
       M.Ton.setzeStufe(e.ton);
       M.Ton.setzeToene(e.toene);
@@ -228,6 +231,7 @@
       // Escape (PC): Farbwahl bzw. Fenster schließen
       document.addEventListener('keydown', e => {
         if (e.key !== 'Escape') return;
+        if (M.Necken && (M.Necken.offen || (M.Necken.faecher && !M.Necken.faecher.hidden))) { M.Necken.zu(); M.Necken.reaktionen(false); return; }   // Beta 1.6.3
         if (this._vor && !this._vor.flip) { this.vorTipp(null); return; }
         if (this.tisch && this.tisch.farbwahlOffen) { this.tisch.abbrechenFarbwahl(); this.tisch.hand.waehle(null); return; }
         ['hilfe', 'ansicht', 'menue', 'runde', 'regeln', 'sogehts'].forEach(id => this.schliesse(id));
@@ -301,6 +305,7 @@
         this.groesse();
       }
       if (name !== 'tisch') ['hilfe', 'ansicht', 'runde', 'regeln', 'sogehts'].forEach(id => this.schliesse(id));
+      if (name !== 'tisch' && M.Necken) { M.Necken.zu(); M.Necken.layout(); }   // Beta 1.6.3: Necken nur am Tisch
       this.themaFarbe();
     },
     // Browserleiste (theme-color): am Tisch nach Tag/Nacht (Tisch.themaFarbe), sonst Nachtblau wie Start und Lobby
@@ -449,6 +454,7 @@
           this._umzugZu();
           $('#beitreten').disabled = false; this._startTexte();
           if (this.screen === 'start') { this.zeigeScreen('lobby'); this._lobbyLeer(); }
+          if (M.Necken) M.Necken.welcome();   // Beta 1.6.3: fx_pref nach jedem welcome (auch beim neuen Gastgeber)
           break;
         case 'reject': {
           const texte = { version: M.t('Die Version passt nicht zum Gastgeber. Bitte die Seite neu laden.'), full: M.t('Das Spiel ist voll.'), running: M.t('Die Partie läuft schon. Warte, bis die nächste beginnt.'), proto: M.t('Der Gastgeber spricht ein anderes Protokoll. Bitte die Seite neu laden.') };
@@ -470,6 +476,7 @@
             this.zeigeScreen('lobby');
             this.view = null;
             if (this.tisch) { this.tisch.ablageVerlauf = []; this.tisch.v = null; }
+            if (M.Necken) M.Necken.reset();
           }
           this.zeigeLobby(m);
           { const h = (m.players || []).find(p => p.id === m.host_id && p.away); this.hostApp(h ? h.name : ''); }
@@ -479,12 +486,14 @@
           if (typeof m.seat === 'number') this.seat = m.seat;
           this.view = null;
           if (this.tisch) { this.tisch.ablageVerlauf = []; this.tisch.v = null; }
+          if (M.Necken) M.Necken.reset();
           this.zeigeScreen('tisch');
           break;
         case 'state':
           if (!m.view) break;
           if (M.Spass) M.Spass.beobachte(m.events || [], this.view, m.view.seat);   // freche Sprüche: Anlässe aus den Ereignissen (1.4.4)
           this.view = m.view;
+          if (M.Necken) M.Necken.sicht(m.events || [], m.view);   // Beta 1.6.3: Spiegel der Necken-Regeln, Wecker abstellen
           { const h = (m.view.players || []).find(p => p.host && p.away); this.hostApp(h ? h.name : ''); }
           if (this.screen !== 'tisch') this.zeigeScreen('tisch');
           if (this.offen && (m.seq_ack === undefined || m.seq_ack >= this.offen.seq)) this.offen = null;
@@ -505,6 +514,16 @@
           break;
         case 'pong':
           if (m.ts) this.latenz = Date.now() - m.ts;
+          break;
+        // Mau-Mau Flip (Beta 1.6.3, Easter Eggs Teil 2 „Necken“, necken.js): nur am Tisch (nie in Lobby oder Warteliste)
+        case 'fx':       // angenommenes Necken {k, from, to?, r?} – an alle Sitzenden, auch an den Absender
+          if (this.screen === 'tisch' && M.Necken) M.Necken.fx(m);
+          break;
+        case 'fx_no':    // eigener Wunsch abgelehnt {why: late | busy | rate} – kein err, kein Fehlerton
+          if (this.screen === 'tisch' && M.Necken) M.Necken.fxNo(m);
+          break;
+        case 'fx_offs':  // Plätze mit Necken aus {seats}
+          if (M.Necken) M.Necken.fxOffs(m);
           break;
         case 'bye':
           this.verbindung.beenden();
@@ -1128,7 +1147,7 @@
     },
     einstellen(k, wert) {
       const e = this.einstellungen;
-      if (k === 'vibration' || k === 'vollbild' || k === 'hervorheben' || k === 'grosser_modus' || k === 'zug_vibration') wert = wert === 'true';
+      if (k === 'vibration' || k === 'vollbild' || k === 'hervorheben' || k === 'grosser_modus' || k === 'zug_vibration' || k === 'necken') wert = wert === 'true';
       if (k === 'vollbild') { this.vollbild(wert); if (wert) setTimeout(() => this._querSperren(), 300); }
       e[k] = wert;
       Speicher.set(k, wert);
@@ -1146,6 +1165,7 @@
       if (k === 'zug_vibration' && wert) this.zugVibration();   // zum Ausprobieren
       if (k === 'sprueche' && M.Spass) { M.Spass.setzeStufe(wert); if (this.tisch && this.view) this.tisch.zeige(this.view, true); }
       if (k === 'sprueche_oft' && M.Spass) { M.Spass.setzeHaeufigkeit(wert); if (this.tisch && this.view) this.tisch.zeige(this.view, true); }
+      if (k === 'necken' && M.Necken) M.Necken.setzeAus(!wert);   // Beta 1.6.3: geht als fx_pref an den Gastgeber
       if (k === 'sprache') M.I18n.setze(wert);   // Hörer unten bauen Dynamisches neu
       this.menue();
     },

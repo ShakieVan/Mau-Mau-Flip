@@ -14,13 +14,17 @@
 
   const MAU_TOENE = ['mau', 'mau_mau'];
   const SPIEL_TOENE = ['karte', 'ziehen', 'mischen', 'flip', 'dran', 'fehler', 'sieg', 'schnurren'];
+  // Mau-Mau Flip (Beta 1.6.3, Easter Eggs Teil 2 „Necken“, necken.js): Neck-Töne (MOSS-SoundEffect v2.0, Apache 2.0, dieselben Dateien
+  // wie in der App) gehören zu den Spieltönen (Stufe aus/leise/normal, Stummknopf); spiele(name, pegel) mit pegel 0,25 ≈ −12 dB für
+  // „leise“ (Absender, Zuschauer), stoppe(name, ms) blendet laufende Töne aus (Schnarchen beim Wecker-Abstellen).
+  const NECK_TOENE = ['schnarchen', 'wecker', 'papier_wurf', 'papier_plopp', 'lachen', 'schreck', 'klatschen', 'daumen'];
   const JUBEL = ['jubel_1', 'jubel_2'];   // „sieg“ wählt zufällig eine der beiden Jubel-Aufnahmen (sonst synthetischer Ersatz)
   // Pegel je Stufe: Die Aufnahmen sind auf −1 dBTP ausgesteuert und verdichtet → „normal“ = volle Lautstärke (Handy-Lautsprecher)
   const STUFEN_MAU = { aus: 0, leise: 0.4, normal: 1.0 };
   const STUFEN_SPIEL = { aus: 0, leise: 0.3, normal: 0.75 };      // −10,5 bzw. −2,5 dB unter dem Mau-Ton (wie in der App, sound.gd TON_DB)
   const SYNTH_PEGEL = 1.0;     // synthetischer Ersatz: bleibt so laut wie bisher (0,3 bzw. 0,75)
   const STANDARD_DATEIEN = {};  // falls sfx/index.json fehlt: alle Töne als m4a (Rückfall ogg)
-  MAU_TOENE.concat(SPIEL_TOENE.filter(n => n !== 'sieg'), JUBEL).forEach(n => { STANDARD_DATEIEN[n] = n + '.m4a'; });
+  MAU_TOENE.concat(SPIEL_TOENE.filter(n => n !== 'sieg'), JUBEL, NECK_TOENE).forEach(n => { STANDARD_DATEIEN[n] = n + '.m4a'; });
   let ctx = null, master = null, busMau = null, busSpiel = null, busSynth = null, rausch = null;
   let stufeMau = 'normal', stufeSpiel = 'normal', stumm = false;
   const dateien = {};      // Name → AudioBuffer aus sfx/
@@ -186,7 +190,9 @@
   };
 
   // Abspielen; true, wenn der Ton wirklich angestoßen wurde (nicht stumm, Stufe > 0, Klang vorhanden)
-  function spiele(name) {
+  // pegel (Beta 1.6.3): Faktor relativ zur Stufe (1 = normal, 0,25 ≈ −12 dB), nur für Dateien
+  const laufend = {};      // Name → [{s, g}] laufende Dateitöne (für stoppe)
+  function spiele(name, pegel) {
     if (!ctx || stumm) return false;
     const ereignis = name;
     if (name === 'sieg') { const js = JUBEL.filter(n => dateien[n]); if (js.length) name = js[Math.floor(Math.random() * js.length)]; }
@@ -197,7 +203,15 @@
       const t = ctx.currentTime + 0.01;
       const bus = mau ? busMau : busSpiel;
       if (dateien[name]) {
-        const s = ctx.createBufferSource(); s.buffer = dateien[name]; s.connect(bus); s.start(t);
+        const s = ctx.createBufferSource(); s.buffer = dateien[name];
+        const g = ctx.createGain(); g.gain.value = typeof pegel === 'number' && pegel >= 0 ? Math.min(1, pegel) : 1;
+        s.connect(g); g.connect(bus); s.start(t);
+        const l = laufend[name] = (laufend[name] || []).filter(x => !x.ende);
+        const eintrag = { s, g, ende: false };
+        l.push(eintrag);
+        s.onended = () => { eintrag.ende = true; };
+      } else if (NECK_TOENE.indexOf(name) >= 0) {
+        return false;   // Neck-Töne nur als Datei (kein synthetischer Ersatz)
       } else if (!mau && SYNTH[name]) {
         synthZiel = busSynth;
         SYNTH[name](t);
@@ -205,6 +219,26 @@
       zaehler[ereignis] = (zaehler[ereignis] || 0) + 1;
       return true;
     } catch (e) { return false; /* Ton ist Beiwerk */ }
+  }
+
+  // Laufende Töne dieses Namens in ms Millisekunden ausblenden und anhalten (Beta 1.6.3: Schnarchen beim Wecker-Abstellen)
+  function stoppe(name, ms) {
+    const l = laufend[name];
+    if (!ctx || !l) return 0;
+    const t = ctx.currentTime, d = Math.max(0.02, (ms || 300) / 1000);
+    let n = 0;
+    l.forEach(x => {
+      if (x.ende) return;
+      try {
+        x.g.gain.cancelScheduledValues(t);
+        x.g.gain.setValueAtTime(x.g.gain.value, t);
+        x.g.gain.linearRampToValueAtTime(0, t + d);
+        x.s.stop(t + d + 0.02);
+      } catch (e) { /* schon zu Ende */ }
+      x.ende = true; n++;
+    });
+    laufend[name] = [];
+    return n;
   }
 
   // Selbstprüfung (Autotest): jeden synthetischen Klang offline rendern und den Spitzenpegel messen, dazu die geladenen
@@ -239,10 +273,10 @@
   }
 
   M.Ton = {
-    freischalten, wecken, spiele, setzeStufe, setzeToene, setzeStumm, pruefe, istMau,
+    freischalten, wecken, spiele, stoppe, setzeStufe, setzeToene, setzeStumm, pruefe, istMau,
     geladen() { return ladeVersprechen || Promise.resolve([]); },
     get stufe() { return stufeMau; }, get toene() { return stufeSpiel; }, get stumm() { return stumm; },
     get bereit() { return !!ctx; }, get dateien() { return Object.keys(dateien); }, get zaehler() { return zaehler; },
-    MAU_TOENE, SPIEL_TOENE, STUFEN_SPIEL,
+    MAU_TOENE, SPIEL_TOENE, NECK_TOENE, STUFEN_SPIEL,
   };
 })(window.MMF = window.MMF || {});

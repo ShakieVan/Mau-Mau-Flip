@@ -26,9 +26,17 @@ extends Node
 # geladen, spielt Godot wie bisher. Am PC und in Tests bleibt es bei Godot (native = null; Tests setzen eine Attrappe).
 # Beta 1.5.1: Nach PAUSED → RESUMED wird der SoundPool frisch angelegt (Android schaltet nach einem Anruf im Hintergrund die alten
 # Abspieler dauerhaft stumm, siehe _notification und SfxPool.rebuild).
+# Mau-Mau Flip (Beta 1.6.3, Easter Eggs Teil 2 „Necken“, docs/module/eastereggs2.md Abschnitte 3 und 7): acht weitere Spieltöne
+# (TEASE_NAMES, unverändert kopiert aus audio/entwurf/ostereier/), play(name, extra_db) für „leise beim Absender“ (QUIET_DB unter der
+# eingestellten Stufe, „leise“ bleibt relativ) und fade_out(name, ms) zum Ausblenden von Schnarchen bzw. Wecker. SfxPool.java bleibt
+# unverändert (lädt, was NAMES als CSV übergibt; tools/build.ps1 kopiert jede assets/sfx/*.ogg nach res/raw). Stimmen bleiben 6
+# (VOICES und SfxPool.MAX_STREAMS sind gekoppelt).
 
 const DIR := "res://assets/sfx/"
-const NAMES := ["mau", "mau_mau", "karte", "ziehen", "mischen", "flip", "jubel_1", "jubel_2", "fehler", "dran", "schnurren"]
+const TEASE_NAMES := ["schnarchen", "wecker", "papier_wurf", "papier_plopp", "lachen", "schreck", "klatschen", "daumen"]   # Beta 1.6.3
+const NAMES := ["mau", "mau_mau", "karte", "ziehen", "mischen", "flip", "jubel_1", "jubel_2", "fehler", "dran", "schnurren",
+	"schnarchen", "wecker", "papier_wurf", "papier_plopp", "lachen", "schreck", "klatschen", "daumen"]
+const QUIET_DB := -12.0                    # Beta 1.6.3: „leise“ für Absender/Zuschauer beim Necken (relativ zur Stufe „Spieltöne“)
 const JUBEL := ["jubel_1", "jubel_2"]       # Ereignis "sieg" spielt zufällig eine der beiden Jubel-Dateien (Nutzerentscheidung 10.10.2026)
 const JUBEL_FADE_S := 0.6
 const MAU_NAMES := ["mau", "mau_mau"]
@@ -207,8 +215,9 @@ func now_ms() -> int:
 
 # --- Abspielen ---
 
-func play(sound_name: String) -> bool:
+func play(sound_name: String, extra_db := 0.0) -> bool:
 	# true = Ton gestartet. Stumm geschaltet, unbekannt oder ohne Datei: false, ohne Fehlermeldung.
+	# extra_db (Beta 1.6.3): zusätzlich leiser bzw. lauter als die eingestellte Stufe (z. B. QUIET_DB); „aus“ bleibt stumm.
 	if not enabled:
 		return false
 	if sound_name == "sieg":
@@ -216,6 +225,7 @@ func play(sound_name: String) -> bool:
 	var db := volume_db(sound_name)
 	if db <= -80.0:
 		return false
+	db = maxf(db + extra_db, -79.0)
 	if is_mau(sound_name):
 		return _start(sound_name, db)       # keine Sperre: Entprellung je Platz macht MauSound
 	var now := now_ms()
@@ -243,11 +253,43 @@ func _play_jubel() -> bool:
 	last_played = "sieg"
 	return true
 
-func _file_of(p: AudioStreamPlayer) -> String:
-	for n in JUBEL:
+func _file_of(p: AudioStreamPlayer, names: Array = JUBEL) -> String:
+	for n in names:
 		if _streams.get(n) != null and p.stream == _streams[n]:
 			return n
 	return ""
+
+
+# Mau-Mau Flip (Beta 1.6.3, Necken): einen laufenden Ton sanft ausblenden (Schnarchen, wenn das Ziel handelt; Wecker, der umfällt).
+# Godot-Abspieler über eine Lautstärke-Rampe, Android über SfxPool.fade (Eintrag in _native_playing über den Namen). true = gefunden.
+func fade_out(sound_name: String, ms := 300) -> bool:
+	var found := false
+	for p in _players:
+		if p.playing and _file_of(p, [sound_name]) == sound_name:
+			found = true
+			if is_inside_tree():
+				var tw := create_tween()
+				tw.tween_property(p, "volume_db", -60.0, maxf(float(ms), 1.0) / 1000.0)
+				tw.tween_callback(p.stop)
+			else:
+				p.stop()
+	for e in _native_active():
+		if str(e.file) == sound_name:
+			found = true
+			native.fade(int(e.id), float(e.vol), ms)
+			_native_playing.erase(e)
+	return found
+
+
+# Beta 1.6.3: Läuft dieser Ton gerade (Godot-Abspieler oder SoundPool nach seiner Länge)?
+func is_playing(sound_name: String) -> bool:
+	for p in _players:
+		if p.playing and _file_of(p, [sound_name]) == sound_name:
+			return true
+	for e in _native_active():
+		if str(e.file) == sound_name:
+			return true
+	return false
 
 func fade_out_jubel() -> void:
 	# Beim Verlassen des Tisches: Jubel sanft ausblenden statt abzuschneiden.

@@ -22,6 +22,12 @@ Bis 05.10.2026 stand hier: „synthetisch, eigenes Skript `tools/make_sfx.py`, k
 | Fehler | `fehler` | `fehler_09` | hohles, holziges „Tock“ | 0,25 s |
 | Sieg (Jubel) | `sieg` (Ereignis) → `jubel_1` oder `jubel_2` | `jubel3_01` bzw. `jubel3_06` (Runde 3, `tools/make_jubel.py --runde3`), unverändert kopiert | jubelnde Menge, bei jeder Feier wählt der Zufall eine der beiden (auf jedem Gerät für sich); ersetzt den Glockenspiel-Ton `sieg_03`. Lautheit −18,1 bzw. −18,6 LUFS (Entwurfsmessung), Spitze −5,6 bzw. −11,6 dBTP | 7,27 s bzw. 7,37 s |
 | Aussetzen | `schnurren` | `schnurren3_03` (Runde 3, `tools/make_schnurren.py --runde3`) | sanftes Katzenschnurren, spielt beim Legen von „Aussetzen“ und „Alle aussetzen“ auf allen Geräten | 1,64 s |
+| Necken: Schnarchen | `schnarchen` | `audio/entwurf/ostereier/schnarchen_01` | langes Schnarchen (Beta 1.6.3, Easter Eggs Teil 2); laut nur beim Ziel, leise beim Absender. −21,7 LUFS, Spitze −2,2 dBFS | 4,17 s |
+| Necken: Wecker | `wecker` | `klingeln_01` (nur Klingeln; das 3-s-Ticken zeigt nur die Animation) | Weckerklingeln. −19,1 LUFS, Spitze −6,2 dBFS | 1,82 s |
+| Necken: Papierkugel | `papier_wurf` / `papier_plopp` | `papierkugel_wurf_03` / `papierkugel_plopp_01` | Wurf beim Absender, Plopp beim Ziel (Zuschauer leise). −23,6 LUFS / Mittel −24,7 dB, Spitze je −1,2 dBFS | 1,32 s / 0,30 s |
+| Necken: Reaktionen | `lachen`, `schreck`, `klatschen`, `daumen` | `lachen_06`, `schreck_01`, `klatschen_05`, `daumen_04` | 😂 😱 👏 👍 an den ganzen Tisch, auf jedem Gerät höchstens 2 gleichzeitig. −23,8 / −19,4 / −21,5 / −20,0 LUFS | 1,92 / 0,61 / 1,92 / 0,62 s |
+
+Die acht Necken-Töne (Nutzerwahl 13.10.2026 über `audio/entwurf/ostereier/hoeren.html`, Generator `tools/make_ostereier.py`) sind wie das Schnurren **unverändert kopiert** (Herkunft MOSS-SoundEffect v2.0, Apache 2.0) und liegen unter der Einstellung „Spieltöne“; `TRIM_DB` bleibt leer. Die `*_handy.ogg` der Entwürfe sind nur Simulationen und kommen nicht ins Spiel.
 
 Ausgabe (alle mono, 48 kHz, 20 ms Stille am Ende):
 

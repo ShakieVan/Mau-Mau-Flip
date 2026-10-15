@@ -962,3 +962,69 @@ msgstr "You don't have enough cards yet!"
 msgid "Bereichere dich doch mal wieder."
 msgstr "Go on, enrich yourself – with cards."
 
+# --- Necken (Beta 1.6.3, Easter Eggs Teil 2; TeaseFx/TeaseMenu, docs/module/eastereggs2.md 8; Glossar: Necken → Tease)
+msgid "Necken"
+msgstr "Tease"
+
+msgid "Necken (Papierkugel, Schnarchen, Wecker, Reaktionen)"
+msgstr "Teasing (paper ball, snoring, alarm clock, reactions)"
+
+msgid "Mitspieler können dir Schnarchen, einen Wecker oder eine Papierkugel schicken."
+msgstr "Other players can send you snoring, an alarm clock or a paper ball."
+
+msgid "Tippe auf einen Mitspieler, um ihn zu necken. Der Knopf am eigenen Platz schickt eine Reaktion an alle."
+msgstr "Tap another player to tease them. The button at your own place sends a reaction to everyone."
+
+msgid "Papierkugel"
+msgstr "Paper ball"
+
+msgid "Schnarchen"
+msgstr "Snore"
+
+msgid "Wecker"
+msgstr "Alarm clock"
+
+msgid "Karten ansehen"
+msgstr "View cards"
+
+msgid "%s · %s"
+msgstr "%s · %s"
+
+msgid "Erst, wenn %s eine Weile überlegt."
+msgstr "Only once %s has been thinking for a while."
+
+msgid "%s möchte gerade nicht geneckt werden."
+msgstr "%s doesn't want to be teased right now."
+
+msgid "%s findet, du schläfst gleich ein."
+msgstr "%s thinks you're about to fall asleep."
+
+msgid "%s hat dir einen Wecker gestellt!"
+msgstr "%s set an alarm clock for you!"
+
+msgid "Gerade noch geschafft!"
+msgstr "Just in time!"
+
+msgid "Papierkugel von %s!"
+msgstr "Paper ball from %s!"
+
+msgid "Zu spät – %s hat schon gespielt."
+msgstr "Too late – %s has already played."
+
+msgid "%s wird gerade schon geweckt."
+msgstr "%s is already being woken up."
+
+msgid "Reaktion"
+msgstr "Reaction"
+
+msgid "Lachen"
+msgstr "Laugh"
+
+msgid "Schreck"
+msgstr "Shock"
+
+msgid "Klatschen"
+msgstr "Applause"
+
+msgid "Daumen hoch"
+msgstr "Thumbs up"

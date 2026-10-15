@@ -336,6 +336,18 @@ func hit_fan(global_pos: Vector2) -> bool:
 	return r.has_point(local)
 
 
+# Mau-Mau Flip (Beta 1.6.3, Necken): Kopf (Avatar, Name, Kartenzahl) – öffnet das Necken-Menü; als Listenzeile (großer Modus) nur der
+# Avatar-Kreis, der Rest der Zeile bleibt wie bisher. Beim eigenen Platz (me_badge) öffnet er den Reaktionsfächer.
+func hit_head(global_pos: Vector2) -> bool:
+	if not is_visible_in_tree() or modulate.a < 0.5:
+		return false
+	var local := to_local(global_pos)
+	if list_mode:
+		return local.distance_to(_avatar_center()) <= avatar_radius() + 10.0
+	var ar := avatar_radius()
+	return Rect2(_header_x0() - 6.0, -ar - 8.0, _header_w + 12.0, ar * 2.0 + 16.0).has_point(local)
+
+
 func hit_catch(global_pos: Vector2) -> bool:
 	return catchable and _catch_rect().grow(18.0).has_point(to_local(global_pos))
 

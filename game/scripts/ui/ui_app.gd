@@ -34,6 +34,22 @@ static func sound(name: String) -> void:
 		(s as Object).call("play", name)
 
 
+# Mau-Mau Flip (Beta 1.6.3, Necken): Ton mit zusätzlicher Dämpfung (AppSound.QUIET_DB = „leise beim Absender“) bzw. ausblenden
+static func sound_db(name: String, extra_db: float) -> bool:
+	var a := app()
+	var s: Variant = a.get("sound") if a != null else null
+	if s is Object and (s as Object).has_method("play"):
+		return bool((s as Object).call("play", name, extra_db))
+	return false
+
+
+static func fade_sound(name: String, ms := 300) -> void:
+	var a := app()
+	var s: Variant = a.get("sound") if a != null else null
+	if s is Object and (s as Object).has_method("fade_out"):
+		(s as Object).call("fade_out", name, ms)
+
+
 static func vibrate(ms: int, strength := 0.5) -> void:
 	var a := app()
 	if a != null and a.has_method("vibrate"):

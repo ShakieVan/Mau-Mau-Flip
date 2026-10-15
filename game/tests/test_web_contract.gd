@@ -436,6 +436,7 @@ func run() -> void:
 	pruefe_113(css, tisch, mock, autotest, app)
 	pruefe_i18n(seite)
 	pruefe_spass(tisch, app, seite)
+	pruefe_necken(tisch, app, seite)
 	# Pegel der Spieltöne relativ zum Mau-Ton (normal) wie in der App (AppSound.TON_DB gegen MAU_DB), auf 0,5 dB genau
 	var stufen := RegEx.create_from_string("STUFEN_SPIEL = \\{ aus: 0, leise: ([0-9.]+), normal: ([0-9.]+) \\}").search(ton)
 	var pegel := []
@@ -846,7 +847,7 @@ func pruefe_i18n(seite: String) -> void:
 			print("i18n_en.js und .po übersetzen verschieden: " + str(k).left(80))
 	check(clash == 0, "keine widersprüchlichen Übersetzungen zwischen i18n_en.js und .po (%d)" % clash)
 	var used := {}
-	for name in ["app.js", "tisch.js", "hand.js", "karten.js", "netz.js", "ton.js", "spass.js"]:
+	for name in ["app.js", "tisch.js", "hand.js", "karten.js", "netz.js", "ton.js", "spass.js", "necken.js"]:
 		var src := read_web(name)
 		# M.t('…') und die Kurzform tr('…') (karten.js)
 		for m in RegEx.create_from_string(r"\b(?:M\.t|tr)\(\s*'((?:[^'\\]|\\.)*)'").search_all(src):
@@ -1041,3 +1042,55 @@ func pruefe_spass(tisch: String, app: String, seite: String) -> void:
 		"Browser: Anlass nichts_passt ersetzt nur den reinen Hinweis (nie Strafe, Auswahl, Erwischen; Häufigkeit wie der Zug)")
 	check(tisch.contains("M.Spass.nichtsOk = !this.app.hervorheben || this.app.hervorheben();") and spass.contains("this.nichtsOk && this.stufe !== 'aus'"),
 		"Browser: ohne „Spielbare Karten hervorheben“ kein Nichts-passt-Spruch")
+
+
+
+# Mau-Mau Flip (Beta 1.6.3, Easter Eggs Teil 2 „Necken“, docs/module/eastereggs2.md): Gleichlauf webclient/necken.js ↔ TeaseRules und
+# NetProtocol (Arten, Reaktionen, Zeiten, Eimer, Phasen, Gründe), Einhängepunkte in app.js/tisch.js/ton.js/index.html, die 8 Töne als
+# .ogg und .m4a in sfx/index.json, Einstellung „necken“ und der Chrome-Test webclient/test/lite_necken.html.
+func pruefe_necken(tisch: String, app: String, seite: String) -> void:
+	var nk := read_web("necken.js")
+	check(nk != "" and nk.contains("M.Necken = N;"), "necken.js vorhanden")
+	var a := seite.find("src=\"necken.js\"")
+	check(a > seite.find("spass.js") and a < seite.find("tisch.js"), "index.html lädt necken.js zwischen spass.js und tisch.js")
+	var liste := func(name: String, werte: Array) -> String:
+		return "const %s = [%s];" % [name, ", ".join(PackedStringArray(werte.map(func(s): return "'%s'" % s)))]
+	for p in [["FX_KINDS", TeaseRules.FX_KINDS], ["FX_REACTS", TeaseRules.FX_REACTS], ["WAKE_KINDS", TeaseRules.WAKE_KINDS],
+			["TURN_PHASES", TeaseRules.TURN_PHASES], ["REACT_PHASES", TeaseRules.REACT_PHASES], ["REFUSALS", TeaseRules.REFUSALS]]:
+		var zeile: String = liste.call(p[0], p[1])
+		check(nk.contains(zeile), "necken.js wie TeaseRules: " + zeile)
+	for zeile in ["const FX_SLOW_MS = %d;" % TeaseRules.FX_SLOW_MS,
+			"const WAKE_BUSY_MS = { snore: %d, alarm: %d };" % [TeaseRules.WAKE_BUSY_MS["snore"], TeaseRules.WAKE_BUSY_MS["alarm"]],
+			"const BALL_BUCKET = %d, BALL_REFILL_MS = %d, BALL_GAP_MS = %d;" % [TeaseRules.BALL_BUCKET, TeaseRules.BALL_REFILL_MS, TeaseRules.BALL_GAP_MS],
+			"const REACT_BUCKET = %d, REACT_REFILL_MS = %d;" % [TeaseRules.REACT_BUCKET, TeaseRules.REACT_REFILL_MS],
+			"const TABLE_BUCKET = %d, TABLE_REFILL_MS = %d;" % [TeaseRules.TABLE_BUCKET, TeaseRules.TABLE_REFILL_MS],
+			"const MAX_PLAYERS = %d;" % NetProtocol.MAX_PLAYERS]:
+		check(nk.contains(zeile), "necken.js wie TeaseRules/NetProtocol: " + zeile)
+	for g in ["kind", "mode", "sender", "off", "self", "target", "phase", "early", "once", "late", "busy", "rate"]:
+		check(nk.contains("return '%s'" % g) or nk.contains("? '' : '%s'" % g), "necken.js kennt den Grund „%s“" % g)
+	check(nk.contains("{ t: 'fx', k: 'react', r: req.r } : { t: 'fx', k: req.k, to: req.to }") and nk.contains("{ t: 'fx_pref', off: !!this.aus }"),
+		"necken.js schickt fx {k, to|r} und fx_pref {off} wie NetProtocol.make_fx_request")
+	for c in ["case 'fx':", "case 'fx_no':", "case 'fx_offs':"]:
+		check(app.contains(c), "app.js wertet „%s“ aus" % c)
+	check(app.contains("if (this.screen === 'tisch' && M.Necken) M.Necken.fx(m);") and app.contains("if (M.Necken) M.Necken.welcome();")
+			and app.contains("if (M.Necken) M.Necken.sicht(m.events || [], m.view);") and app.contains("default: break;"),
+		"app.js: fx nur am Tisch, fx_pref nach welcome, Spiegel mit jeder Sicht, unbekannte Typen übergangen")
+	check(app.contains("Speicher.get('necken', true) !== false") and app.contains("k === 'necken' && M.Necken") and seite.contains("data-set=\"necken\" data-wert=\"true\"")
+			and seite.contains("data-set=\"necken\" data-wert=\"false\""), "Einstellung „necken“ im Lite-Menü (je Gerät, ab Werk an)")
+	check(tisch.contains("M.Necken.tippGegner(+g.dataset.seat, e.target)") and tisch.contains("M.Necken.tippEigen()") and tisch.contains("if (M.Necken) M.Necken.layout();")
+			and tisch.find("if (k) this.app.aktion({ a: 'catch'") < tisch.find("M.Necken.tippGegner("), "tisch.js: Erwischt geht vor, Kopf-Tipp → Necken-Menü, Reaktionsknopf nach jedem Abgleich")
+	var ton := read_web("ton.js")
+	var toene := ["schnarchen", "wecker", "papier_wurf", "papier_plopp", "lachen", "schreck", "klatschen", "daumen"]
+	check(ton.contains(liste.call("NECK_TOENE", toene)) and ton.contains("function stoppe(name, ms)") and ton.contains("function spiele(name, pegel)"),
+		"ton.js: Neck-Töne, spiele mit Pegel, stoppe mit Rampe")
+	check(nk.contains("const LEISE = 0.25;") and nk.contains("this._rt.length >= 2") and nk.contains("< 600"), "necken.js: leise −12 dB, Reaktionstöne höchstens 2 gleichzeitig, 600 ms je Name")
+	var idx: Variant = JSON.parse_string(read_web("sfx/index.json"))
+	for n in toene:
+		var datei := str((idx as Dictionary).get(n, "")) if idx is Dictionary else ""
+		check(datei == n + ".m4a" and FileAccess.file_exists(web_dir.path_join("sfx/%s.m4a" % n)) and FileAccess.file_exists(web_dir.path_join("sfx/%s.ogg" % n)),
+			"sfx/index.json: „%s“ als m4a mit ogg-Rückfall" % n)
+	var css := read_web("style.css")
+	check(css.contains("body[data-screen=\"tisch\"] .necken-ebene") and css.contains("body[data-seite=\"dunkel\"] .necken-ebene") and css.contains("#tisch[data-seite=\"dunkel\"] { --nk-grund")
+			and css.contains("body.reduziert .nk-zzz b") and css.contains("@media (prefers-reduced-motion: reduce) {\n  .nk-zzz b"), "style.css: Necken-Ebene nur am Tisch, Tag/Nacht, reduzierte Effekte")
+	var t := read_web("test/lite_necken.html")
+	check(t.contains("data-ok") and t.contains("Alter Gastgeber") and t.contains("fx_pref nach welcome"), "webclient/test/lite_necken.html: Chrome-Test des Neckens vorhanden")

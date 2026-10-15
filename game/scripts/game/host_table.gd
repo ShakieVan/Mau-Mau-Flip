@@ -47,6 +47,14 @@ extends GameTable
 #  - Gastgeber-Wächter (_on_rival): zwei Gastgeber derselben gid im Netz – mehr verbundene Menschen, dann gen, dann epoch gewinnt; der
 #    Verlierer tritt nach rival_confirm gleichen Scans ab (move lan an seine Gäste), der Gewinner hebt seine gen über die des anderen;
 #    der Verlierer wartet dafür (höchstens rival_gen_wait weitere Scans), sonst holte die Abstammungsregel seinen Zweig zurück.
+# Mau-Mau Flip (Beta 1.6.3, Easter Eggs Teil 2 „Necken“, docs/module/eastereggs2.md Abschnitte 1, 4 und 6):
+#  - {t:"fx"} eines Gasts bzw. send_fx() des Gastgebers prüft tease (TeaseRules, Uhr _now_ms) gegen den Tisch (_fx_table). Angenommen:
+#    {t:"fx", k, from, to?, r?} per send_many an alle sitzenden entfernten Menschen (nie an die Warteliste) und fx_event am eigenen Tisch;
+#    abgelehnt mit late/busy/rate: {t:"fx_no", why} nur an den Absender (Gastgeber: fx_refused), sonst still. Eingefroren, in der
+#    Einschwingzeit und während der Wächter-Prüfung nach der Rückkehr nimmt er nichts an.
+#  - fx_pref je Spieler-id (_fx_off_ids, nur im Speicher; nach einer Übernahme schicken die Gäste ihn mit dem nächsten welcome neu):
+#    Ändert sich die Liste der Plätze (auch durch Platzwechsel, _after_distribute), geht {t:"fx_offs"} an alle Sitzenden; ein
+#    zurückkehrender oder dazugeholter Gast bekommt sie einzeln. Kein _changed, kein _persist, kein bk, kein seq.
 
 signal stepped_down(new_host: String)         # Beta 1.6.1: ein anderes Gerät führt jetzt das Spiel ("" = Name unbekannt)
 signal online_check(info: Dictionary)         # Beta 1.6.1: /info meldet einen Gastgeber – Probe als Gast, dann probe_done()
@@ -121,6 +129,10 @@ var _join_restore := false        # … danach gilt wieder dieser Wert
 var _hosts_key := ""              # zuletzt verschickte hosts-Liste (JSON)
 var _scan_key := ""               # zuletzt gesetzte Unicast-Ziele des Wächters
 var _step_drain := false          # vor stepped_down erst session.drain()
+
+# --- Necken (Beta 1.6.3) ---
+var _fx_off_ids := {}             # Spieler-id -> true: Necken aus (fx_pref; nur im Speicher)
+var _fx_offs_key := ""            # zuletzt an die Sitzenden verschickte Liste fx_offs (JSON); "" = noch keine
 
 
 func _init() -> void:
@@ -267,6 +279,11 @@ func start(rng_seed := 0) -> bool:
 	_join_auto = false
 	_update_welcome()
 	_hosts_key = ""
+	tease.reset()                 # Beta 1.6.3
+	_fx_offs_key = ""
+	if not _fx_offs.is_empty():   # die Liste der neuen Partie berechnet _fx_sync_offs nach dem ersten Verteilen
+		_fx_offs = []
+		fx_offs_changed.emit([])
 	session.send_start()
 	game_started.emit(host_seat)
 	_begin_round()
@@ -396,6 +413,10 @@ func resume(data: Dictionary, my_seat := -1, port_first := NetProtocol.PORT, por
 		session.open_online_existing(str(o.relay), str(o.room), str(o.token), o.conns, int(o.max_c), int(o.created_unix))
 	_last_bk_ms = _now_ms()
 	_plan_dirty = true
+	tease.reset()                 # Beta 1.6.3: neue Sitzung, neue Spieler-ids – die Gäste melden fx_pref nach ihrem welcome neu
+	_fx_off_ids.clear()
+	_fx_offs = []
+	_fx_offs_key = ""
 	game_started.emit(host_seat)
 	_changed([])
 	_send_hosts()                 # Beta 1.6.2: geht nach jedem welcome an zurückkehrende Browser-Gäste (neue gen)
@@ -612,6 +633,8 @@ func _seat_insert(o: Dictionary) -> void:
 		session.send_to(id, {"t": "start", "seat": at})
 	_tell_all([I18n.part("%s spielt jetzt mit.", [str(p.name)])])
 	_changed(r.events)
+	if not bot:
+		_fx_offs_to(id)              # Beta 1.6.3: der Neue kennt die Liste noch nicht (sein welcome kam auf der Warteliste)
 
 
 func _seat_remove(s: int) -> void:
@@ -635,6 +658,7 @@ func _seat_remove(s: int) -> void:
 	_waiting_seat = -1
 	_plan_dirty = true
 	_seq.erase(id)
+	_fx_off_ids.erase(id)        # Beta 1.6.3
 	session.remove_player(id, "Der Gastgeber hat dich aus dem Spiel genommen.")
 	session.set_seat_order(_seat_ids)
 	_tell_all([I18n.part("%s ist nicht mehr dabei.", [gone])])
@@ -643,6 +667,7 @@ func _seat_remove(s: int) -> void:
 
 func _after_distribute() -> void:
 	_send_hosts()                 # Beta 1.6.2: Erben-Liste für Browser-Gäste, nur bei Änderung
+	_fx_sync_offs()               # Beta 1.6.3: fx_offs nach Platzwechseln (neue Nummern), nur bei Änderung
 	if not _seat_ops.is_empty():
 		_run_seat_ops()
 
@@ -670,6 +695,9 @@ func back_to_lobby() -> void:
 	gid = ""
 	_join_auto = false
 	_hosts_key = ""
+	tease.reset()                 # Beta 1.6.3
+	_fx_offs = []
+	_fx_offs_key = ""
 	if session != null:
 		session.set_game_mark("", 0, "")
 		session.send_hosts({})
@@ -1695,6 +1723,7 @@ func _on_rejoined(id: int) -> void:
 	_check_lineage(id)
 	if not _frozen:
 		_changed([])             # schickt allen (auch dem Zurückgekehrten) sofort den aktuellen Stand
+		_fx_offs_to(id)          # Beta 1.6.3: nach seinem welcome einmal die Liste fx_offs
 
 
 # „away“/„back“ (Gast oder Gastgeber selbst): Änderung → alle bekommen den neuen Stand; „back“ ohne Änderung → nur dieser Gast
@@ -1724,6 +1753,12 @@ func _on_message(id: int, msg: Dictionary) -> void:
 		if not _handover.is_empty() and int(_handover.id) == id:
 			_handover_failed()
 		return
+	if str(msg.get("t", "")) == "fx":
+		_on_fx(id, msg)              # Beta 1.6.3: Necken
+		return
+	if str(msg.get("t", "")) == "fx_pref":
+		_on_fx_pref(id, msg.get("off") == true)
+		return
 	if str(msg.get("t", "")) != "act":
 		return
 	if msg.get("seq") is int:
@@ -1749,6 +1784,104 @@ func _on_message(id: int, msg: Dictionary) -> void:
 	var r := _apply(s, a)
 	if not bool(r.ok):
 		_err(id, str(r.reason), r.get("reason_lt", []))
+
+
+# --- Necken (Beta 1.6.3, docs/module/eastereggs2.md) ---
+
+# Wunsch des Gastgebers selbst: dieselbe Prüfung wie für Gäste.
+func send_fx(req: Dictionary) -> void:
+	if session != null:
+		_on_fx(session.host_id, NetProtocol.make_fx_request(req))
+
+
+# Einstellung „necken“ des Gastgebers (er steht selbst in fx_offs).
+func set_fx_off(off: bool) -> void:
+	_fx_off_self = off
+	_fx_sync_offs()
+
+
+func _on_fx(id: int, msg: Dictionary) -> void:
+	if game == null or session == null or _frozen or _settling or is_waking() or msg.is_empty():
+		return                        # Übergabe, Einschwingzeit, Wächter-Prüfung: nichts annehmen (ohne fx_no)
+	var sender := _seat_ids.find(id)   # Warteliste: −1 → still verworfen
+	var now := _fx_now()
+	var why := tease.check(sender, msg, _fx_table(), now)
+	if why != "":
+		if why in TeaseRules.REFUSALS:
+			if id == session.host_id:
+				fx_refused.emit(why)
+			else:
+				session.send_to(id, {"t": "fx_no", "why": why})
+		return
+	var m := NetProtocol.make_fx(str(msg.k), sender, int(msg.get("to", -1)), str(msg.get("r", "")))
+	var ids: Array = []
+	for s in seats.size():
+		if _is_remote(s):
+			ids.append(int(_seat_ids[s]))   # sitzende entfernte Menschen; send_many übergeht nicht verbundene
+	session.send_many(ids, NetProtocol.encode(m))
+	_fx_deliver(m)                   # verbuchen und am eigenen Tisch zeigen
+
+
+func _on_fx_pref(id: int, off: bool) -> void:
+	if bool(_fx_off_ids.get(id, false)) == off:
+		return
+	if off:
+		_fx_off_ids[id] = true
+	else:
+		_fx_off_ids.erase(id)
+	_fx_sync_offs()
+
+
+# Tisch-Beschreibung für TeaseRules.check aus den eigenen Daten (bot = echter Computergegner; gone = getrennt, away oder vertreten).
+func _fx_table() -> Dictionary:
+	var list: Array = []
+	var offs := _fx_off_seats_now()
+	for s in seats.size():
+		var bot := str(seats[s].kind) == "bot"
+		var gone := false
+		if not bot:
+			gone = is_away(s) or _substitute.has(s) or (s != host_seat and not bool(game.connected[s]))
+		list.append({"bot": bot, "gone": gone, "off": offs.has(s)})
+	return {"mode": mode(), "phase": game.phase(), "turn": game.current_seat(), "seats": list}
+
+
+func _fx_off_seats_now() -> Array:
+	var out: Array = []
+	for s in _seat_ids.size():
+		var id := int(_seat_ids[s])
+		if (s == host_seat and _fx_off_self) or (s != host_seat and bool(_fx_off_ids.get(id, false))):
+			out.append(s)
+	return out
+
+
+# Liste fx_offs neu berechnen; bei Änderung an den eigenen Tisch (fx_offs_changed) und an alle Sitzenden.
+func _fx_sync_offs() -> void:
+	if game == null or session == null or _frozen:
+		return
+	var list := _fx_off_seats_now()
+	var key := JSON.stringify(list)
+	if key == _fx_offs_key or (_fx_offs_key == "" and list.is_empty()):
+		_fx_offs_key = key
+		return
+	_fx_offs_key = key
+	_fx_offs = list
+	fx_offs_changed.emit(list.duplicate())
+	var ids: Array = []
+	for s in seats.size():
+		if _is_remote(s):
+			ids.append(int(_seat_ids[s]))
+	session.send_many(ids, NetProtocol.encode(NetProtocol.make_fx_offs(list)))
+
+
+# Einem Gast nach seinem welcome bzw. beim Dazuholen die aktuelle Liste schicken (leer: nichts, er beginnt ohnehin leer).
+func _fx_offs_to(id: int) -> void:
+	if game == null or session == null or _frozen or _fx_offs.is_empty() or _seat_ids.find(id) < 0:
+		return
+	session.send_to(id, NetProtocol.make_fx_offs(_fx_offs))
+
+
+func _fx_now() -> int:
+	return int(fx_clock.call()) if fx_clock.is_valid() else _now_ms()
 
 
 func _err(id: int, text: String, lt: Array = []) -> void:

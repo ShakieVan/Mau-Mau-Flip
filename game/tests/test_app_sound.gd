@@ -36,7 +36,17 @@ func _run() -> void:
 		check(s != null and sound.is_loaded(sound_name), "Datei %s vorhanden und vorgeladen" % sound_name)
 		if s != null:
 			check(s.get_length() >= float(span[0]) and s.get_length() <= float(span[1]), "Länge %s: %.3f s" % [sound_name, s.get_length()])
-	check(AppSound.NAMES.size() == 11 and sound.preload_all() == 11, "preload_all zählt alle 11 Dateien")
+	# Mau-Mau Flip (Beta 1.6.3, Necken): die acht gewählten Töne, unverändert kopiert (Längen laut docs/module/eastereggs2.md 7);
+	# die Browser-Fassungen prüft test_web_contract (Lite-Stufe).
+	var tease_lengths := {"schnarchen": [4.0, 4.4], "wecker": [1.7, 1.95], "papier_wurf": [1.2, 1.45], "papier_plopp": [0.2, 0.4],
+		"lachen": [1.8, 2.05], "schreck": [0.5, 0.75], "klatschen": [1.8, 2.05], "daumen": [0.5, 0.75]}
+	for sound_name in tease_lengths:
+		var s: AudioStream = sound.stream(sound_name)
+		var span: Array = tease_lengths[sound_name]
+		check(s != null and sound.is_loaded(sound_name) and AppSound.TEASE_NAMES.has(sound_name), "Necken: Datei %s vorhanden und vorgeladen" % sound_name)
+		if s != null:
+			check(s.get_length() >= float(span[0]) and s.get_length() <= float(span[1]), "Necken: Länge %s: %.3f s" % [sound_name, s.get_length()])
+	check(AppSound.NAMES.size() == 19 and sound.preload_all() == 19, "preload_all zählt alle 19 Dateien")
 	for k in ["stimme", "gesungen", "blubb", "spieluhr", "kalimba"]:
 		check(AppSound.path_for("mau_" + k) == "", "synthetische Mau-Variante mau_%s entfernt" % k)
 	var web := ProjectSettings.globalize_path("res://").path_join("../webclient/sfx/")
@@ -261,6 +271,33 @@ func _run() -> void:
 	for i in range(8):
 		sound.play(["karte", "ziehen", "mischen", "flip", "fehler", "dran", "schnurren", "mau"][i])
 	check(sound.playing_count() <= AppSound.VOICES, "Android: höchstens %d Stimmen gezählt" % AppSound.VOICES)
+	sound.stop_all()
+	# Mau-Mau Flip (Beta 1.6.3, Necken): leise beim Absender (−12 dB unter der Stufe), Ausblenden über den Namen, auch bei 7 Tönen
+	sound.now_override = 310000
+	check(sound.play("schnarchen", AppSound.QUIET_DB) and is_equal_approx(float(fake.vols[-1]), db_to_linear(-4.5 - 12.0)), "Necken: leise = Stufe −12 dB")
+	check(sound.is_playing("schnarchen"), "Necken: Schnarchen läuft (nach Länge)")
+	for i in range(6):
+		sound.now_override = 310100 + i * 50
+		sound.play(["karte", "ziehen", "mischen", "flip", "fehler", "dran"][i])
+	check(not sound.is_playing("schnarchen"), "Necken: 7. Ton verdrängt den ältesten (Schnarchen), wie SoundPool")
+	sound.stop_all()
+	sound.now_override = 311000
+	sound.play("schnarchen")
+	sound.play("wecker")
+	sound.play("lachen")
+	sound.play("klatschen")
+	sound.play("daumen")
+	sound.play("schreck")
+	sound.now_override = 311100
+	check(sound.fade_out("schnarchen", 300) and fake.calls[-1].begins_with("fade ") and fake.calls[-1].ends_with(" 300") and not sound.is_playing("schnarchen"),
+		"Necken: fade_out findet den Eintrag bei 6 laufenden Tönen (%s)" % fake.calls[-1])
+	check(not sound.fade_out("schnarchen"), "Necken: fade_out ohne laufenden Ton → false")
+	settings.set_value("toene", "aus")
+	check(not sound.play("lachen") and not sound.play("lachen", AppSound.QUIET_DB), "Necken: Spieltöne aus → still")
+	settings.set_value("toene", "leise")
+	sound.now_override = 312000
+	check(sound.play("lachen", AppSound.QUIET_DB) and is_equal_approx(float(fake.vols[-1]), db_to_linear(-12.5 - 12.0)), "Necken: „leise“ bleibt relativ")
+	settings.set_value("toene", "normal")
 	sound.stop_all()
 	sound.native = null
 

@@ -79,6 +79,7 @@ func run() -> void:
 	burger.pressed.emit()
 	await frames(2)
 	check(ts.is_menu_open(), "Menü offen")
+	check(ts.is_modal_open(), "Menü offen: modal")
 	var menu: IngameMenu = ts.get("_ingame_menu")
 	var t: Array = []
 	_texts(menu, t)
@@ -91,6 +92,14 @@ func run() -> void:
 	check(ts.on_back(), "Zurück verbraucht")
 	await frames(2)
 	check(not ts.is_menu_open() and ts.get("_confirm") == null and not ts.leaving, "Menü zu, keine Rückfrage")
+	# Gerätetest 1.6.3: is_modal_open (TeaseFx.modal_cb, Reaktionsknopf; Verdrahtung in test_ui_tease) – „Partie verlassen?“ ist modal
+	check(not ts.is_modal_open(), "Menü zu: nichts Modales")
+	check(ts.on_back(), "Zurück öffnet die Rückfrage")
+	await frames(2)
+	check(ts.get("_confirm") != null and ts.is_modal_open(), "„Partie verlassen?“: modal")
+	check(ts.on_back(), "Zurück schließt die Rückfrage")
+	await frames(2)
+	check(ts.get("_confirm") == null and not ts.is_modal_open() and not ts.leaving, "Rückfrage zu, Tisch bleibt")
 	# Menü → Regeln
 	ts.open_menu()
 	await frames(1)

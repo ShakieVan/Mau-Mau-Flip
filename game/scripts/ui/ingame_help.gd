@@ -92,7 +92,11 @@ func show_tab(which: String) -> void:
 	if tab == "regeln":
 		_fill_rules()
 	else:
-		for sec in RulesText.controls(cfg):
+		# Beta 1.6.3: Absatz „Necken“, wenn der Tisch es anbietet (TeaseFx.caps)
+		var t: Node = get_tree().get_first_node_in_group(TableView.GROUP) if is_inside_tree() else null
+		var tease: bool = t is TableView and (t as TableView).tease != null and (t as TableView).tease.enabled \
+			and not ((t as TableView).tease.caps().get("kinds", []) as Array).is_empty()
+		for sec in RulesText.controls(cfg, tease):
 			_section(str(sec.title), str(sec.text))
 	_scroll.scroll_vertical = 0
 

@@ -22,6 +22,9 @@ extends TableSource
 #  - move_to(addr, port) / follow_room(relay, room): zum neuen Gastgeber umziehen – Socket ohne „bye“ zu, join mit dem eigenen
 #    Platz-Token; Sicherung, head/head_gid und Token bleiben. Signal moved (HostSwitch: zurück nach watch mit frischen Zählern).
 #  - send_and_drain(msg): senden und den Sendepuffer leeren (handover_ok vor suspend()).
+# Mau-Mau Flip (Beta 1.6.3, Easter Eggs Teil 2 „Necken“, docs/module/eastereggs2.md Abschnitte 4 und 6.1):
+#  - send_fx(req) → {t:"fx"}; set_fx_off(off) → {t:"fx_pref"} (auch nach jedem welcome). fx → fx_event (nur mit Platz und Sicht),
+#    fx_no → fx_refused, fx_offs → fx_offs_changed. Sichten und Ereignisse füttern den Spiegel tease (fx_check der Oberfläche).
 
 signal backup_changed                              # Beta 1.6.1: neue Sicherung (bk) liegt in backup
 signal handover_received(msg: Dictionary)          # Beta 1.6.1: geprüftes {t:"handover"} (z oder own:true) → HostSwitch
@@ -148,6 +151,27 @@ func act(action: Dictionary) -> void:
 	_seq += 1
 	if client.send({"t": "act", "seq": _seq, "a": action}) != OK:
 		notice.emit("Senden fehlgeschlagen – die Verbindung wird erneuert.")
+
+
+# Mau-Mau Flip (Beta 1.6.3, Necken): Wunsch an den Gastgeber; das Ergebnis kommt als fx (fx_event, auch für den Absender) oder fx_no.
+func send_fx(req: Dictionary) -> void:
+	var m := NetProtocol.make_fx_request(req)
+	if m.is_empty() or client == null or client.state != "open":
+		return
+	client.send(m)
+
+
+# Beta 1.6.3: Einstellung „necken“ – geht sofort (und nach jedem welcome) als fx_pref an den Gastgeber.
+func set_fx_off(off: bool) -> void:
+	var changed := off != _fx_off_self
+	_fx_off_self = off
+	if changed:
+		_send_fx_pref()
+
+
+func _send_fx_pref() -> void:
+	if client != null and client.state == "open":
+		client.send({"t": "fx_pref", "off": _fx_off_self})
 
 
 # Bereit-Meldung in der Lobby.
@@ -454,6 +478,19 @@ func _on_welcomed(id: int, _host_name: String) -> void:
 	token = client.token
 	if host_gid() != "":
 		_game_gid = host_gid()
+	# Beta 1.6.3 (Necken): Der Gastgeber kennt nach jeder Anmeldung (auch nach einer Übernahme) nur, was wir ihm jetzt sagen; seine
+	# Liste fx_offs kommt danach neu (bis dahin keine).
+	tease.reset()
+	_clear_fx_offs()
+	_send_fx_pref()
+
+
+# Mau-Mau Flip (Beta 1.6.3, Easter Eggs Teil 2): Liste fx_offs vergessen (nach welcome, in der Lobby, bei einer neuen Partie). Der
+# Gastgeber schickt eine leere Liste nie (HostTable._fx_sync_offs), sonst hielte ein Gast die Plätze der vorigen Partie fest.
+func _clear_fx_offs() -> void:
+	if not _fx_offs.is_empty():
+		_fx_offs = []
+		fx_offs_changed.emit([])
 
 
 func _on_message(msg: Dictionary) -> void:
@@ -469,6 +506,8 @@ func _on_message(msg: Dictionary) -> void:
 				_clear_backup()
 			_view = {}
 			_seat = -1
+			tease.reset()                # Beta 1.6.3
+			_clear_fx_offs()
 			lobby_changed.emit(msg)
 		"start":
 			_seat = int(msg.get("seat", -1))
@@ -476,6 +515,7 @@ func _on_message(msg: Dictionary) -> void:
 			# Beta 1.6.1: neue Partie (bzw. dazugeholt in eine andere als die gesicherte) – alte Sicherung weg
 			if not backup.is_empty() and str(backup.gid) != host_gid():
 				_clear_backup()
+			_clear_fx_offs()             # Beta 1.6.3: die Liste der neuen Partie kommt danach (leer: gar nicht)
 			game_started.emit(_seat)
 		"state":
 			if not msg.get("view") is Dictionary:
@@ -484,7 +524,24 @@ func _on_message(msg: Dictionary) -> void:
 			last_rev = int(msg.get("rev", -1))
 			_view = msg.view
 			_seat = int(_view.get("seat", _seat))
-			state_changed.emit(msg.get("events", []) if msg.get("events") is Array else [], _view)
+			var evs: Array = msg.get("events", []) if msg.get("events") is Array else []
+			var now := _fx_now()
+			tease.note_events(evs, now)  # Beta 1.6.3: Spiegel der Necken-Regeln (Uhr wie die Denkblase, Zugwechsel)
+			tease.note_view(_view, now)
+			state_changed.emit(evs, _view)
+		"fx":
+			var m := NetProtocol.clean_fx(msg)   # Beta 1.6.3: Necken (an alle Sitzenden, auch an den Absender)
+			if not m.is_empty() and _seat >= 0 and not _view.is_empty():
+				_fx_deliver(m)
+		"fx_no":
+			var why := NetProtocol.clean_fx_no(msg)   # Beta 1.6.3: eigener Wunsch abgelehnt
+			if why != "":
+				fx_refused.emit(why)
+		"fx_offs":
+			var offs := NetProtocol.clean_fx_offs(msg)   # Beta 1.6.3: Plätze mit Necken aus
+			if offs != _fx_offs:
+				_fx_offs = offs
+				fx_offs_changed.emit(offs.duplicate())
 		"err", "notice":
 			notice.emit(I18n.msg_text(msg, "Das geht gerade nicht."))   # eigene Sprache (I18n: lt oder msgid)
 		"bk", "alive":

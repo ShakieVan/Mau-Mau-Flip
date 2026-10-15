@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><title>Test Necken Lite</title></head>
+<body>
+<pre id="autotest-result">läuft …</pre>
+<iframe id="f" style="width:1000px;height:600px;border:0"></iframe>
+<script>
+/* Mau-Mau Flip (Beta 1.6.3, Easter Eggs Teil 2 „Necken“, docs/module/eastereggs2.md): der echte Lite-Ablauf (index.html im iframe) gegen
+ * einen Schein-WebSocket. Geprüft: fx_pref nach welcome und bei Änderung, Regeln (Spiegel von TeaseRules), Kopf-Tipp → Menü (ausgegraut
+ * vor 10 s, Hinweise), Senden von Kugel/Schnarchen/Reaktion, Empfang fx → Effekte und Töne je Rolle (Ziel laut, Absender leise,
+ * Zuschauer still bzw. Plopp leise), Reaktionstöne gedeckelt, Wecker abstellen, fx_no (late/busy/rate), fx_offs, „seats“ räumt ab,
+ * kaputte Nachrichten und fx in der Lobby schadlos, Necken aus, alter Gastgeber ohne fx (nichts passiert, kein Fehler).
+ * Aufruf: chrome --headless=new --allow-file-access-from-files --virtual-time-budget=300000 --dump-dom file:///…/webclient/test/lite_necken.html
+ *   → <pre id="autotest-result" data-ok="1|0">. Läuft im Bau (tools/build.ps1 Invoke-WebTeaseTest). */
+(function () {
+  const fehler = [];
+  const ok = (b, t) => { if (!b) fehler.push(t); };
+  const warte = ms => new Promise(r => setTimeout(r, ms));
+  const frame = document.getElementById('f');
+  let w = null;
+  const sockets = [];
+  class FakeWS {
+    constructor(url) { this.url = url; this.readyState = 0; this.gesendet = []; sockets.push(this); setTimeout(() => { this.readyState = 1; if (this.onopen) this.onopen(); }, 5); }
+    send(s) { this.gesendet.push(s); let m = null; try { m = JSON.parse(s); } catch (e) { /* Text */ } if (m && m.t === 'ping') setTimeout(() => this.rx({ t: 'pong', ts: m.ts }), 2); }
+    close() { this.readyState = 3; }
+    rx(obj) { if (this.readyState === 1 && this.onmessage) this.onmessage({ data: JSON.stringify(obj) }); }
+    msgs(t) { return this.gesendet.map(s => { try { return JSON.parse(s); } catch (e) { return {}; } }).filter(m => m.t === t); }
+  }
+  const letzter = () => sockets[sockets.length - 1];
+  const leeren = () => { localStorage.clear(); localStorage.setItem('mmf.sprache', '"de"'); };
+  const $ = s => w.document.querySelector(s);
+  const toasts = () => Array.from(w.document.querySelectorAll('#toasts .toast')).map(t => t.textContent);
+  let toene = [], vib = [];
+
+  function lade(zusatz) {
+    return new Promise(fertig => {
+      frame.onload = async () => {
+        w = frame.contentWindow;
+        for (let i = 0; i < 100 && !(w.MMF && w.MMF.App && w.MMF.App.hostBasis); i++) await warte(20);
+        w.WebSocket = FakeWS;
+        toene = []; vib = [];
+        w.MMF.Ton.spiele = (n, p) => { toene.push([n, p === undefined ? 1 : p]); return true; };   // Töne zählen (ohne Audio)
+        w.MMF.Ton.stoppe = n => { toene.push(['stopp:' + n, 0]); return 1; };
+        try { Object.defineProperty(w.navigator, 'vibrate', { configurable: true, value: m => { vib.push(m); return true; } }); } catch (e) { /* egal */ }
+        fertig();
+      };
+      frame.src = '../index.html' + (zusatz || '');
+    });
+  }
+  async function beitreten(name) {
+    sockets.length = 0;
+    w.MMF.App.beitreten(name);
+    await warte(50);
+    const s = letzter();
+    s.rx({ t: 'welcome', id: 3, token: 'tok123abc', host_name: 'Lena' });
+    await warte(20);
+    return s;
+  }
+  // Sicht: ich Platz 0 (web), Lena 1 (app), Tom 2 (Computer), Mia 3 (web); Rückseiten verdeckt
+  function sicht(turn, extra) {
+    const v = {
+      v: 1, seat: 0, side: 'hell', phase: 'turn', turn, dir: 1, color: 'rot',
+      players: [['Kim', 'web'], ['Lena', 'app'], ['Tom', 'bot'], ['Mia', 'web']].map(([name, kind], s) => ({ seat: s, name, kind, count: s === 1 ? 1 : 7, backs: [], place: 0, mau: false, connected: true, score: 0 })),
+      hand: [1, 2, 3, 4, 5, 6, 7].map(i => ({ id: i, face: 'hell_blau_' + i })), top: { id: 50, face: 'hell_rot_5' }, discard_log: [], draw_back: 'rueckseite', draw_count: 40,
+      pending: null, hints: { playable: [], text: turn === 0 ? 'Du bist dran.' : 'Lena ist dran.', catch: [] }, round: 1, ranking: [],
+      rules: { backs_visible: false, peek_own_backs: false, mau_call: 'catch' },
+    };
+    return Object.assign(v, extra || {});
+  }
+  const kopf = seat => $('#tisch .gg[data-seat="' + seat + '"] .kopf');
+  const sichtbar = e => !!e && !e.hidden && e.getBoundingClientRect().width > 0;
+  const N = () => w.MMF.Necken;
+
+  async function lauf() {
+    leeren();
+    await lade('');
+    const App = w.MMF.App;
+    ok(App.version === '1.6.3', 'Version 1.6.3 (' + App.version + ')');
+    ok(!!N() && App.einstellungen.necken === true, 'necken.js geladen, Necken ab Werk an');
+    let s = await beitreten('Kim');
+    ok(JSON.stringify(s.msgs('fx_pref')) === '[{"t":"fx_pref","off":false}]', 'fx_pref nach welcome (' + JSON.stringify(s.msgs('fx_pref')) + ')');
+    // fx in der Lobby: verworfen
+    s.rx({ t: 'fx', k: 'react', from: 1, r: 'lachen' });
+    await warte(20);
+    ok(N().gezeigt.length === 0, 'fx in der Lobby verworfen');
+    s.rx({ t: 'start', seat: 0 });
+    s.rx({ t: 'state', events: [], view: sicht(1) });
+    await warte(400);
+    ok(App.screen === 'tisch' && sichtbar($('#nk-reaktion')), 'am Tisch: Reaktionsknopf sichtbar');
+    {
+      const k = $('#nk-reaktion').getBoundingClientRect();
+      ok(k.width >= 44 && k.height >= 44, 'Reaktionsknopf mindestens 44 px (' + k.width + ')');
+      const ueber = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+      ['#sortieren', '#mau', '#tisch .leiste .hinweis'].forEach(sel => { const e = $(sel); if (e && e.getBoundingClientRect().width) ok(!ueber(k, e.getBoundingClientRect()), 'Reaktionsknopf verdeckt ' + sel + ' nicht'); });
+    }
+    // Gerätetest 1.6.3: Reaktionsknopf und Fächer nicht über dem Farbrad bzw. einem Fenster (Menü)
+    {
+      const unsichtbar = e => !sichtbar(e) || w.getComputedStyle(e).visibility === 'hidden';
+      N().reaktionen(true);
+      ok(!$('#nk-faecher').hidden && sichtbar($('#nk-faecher button[data-r="lachen"]')), 'Fächer geht auf');
+      App.tisch.oeffneFarbwahl('hell', {}, () => {});
+      N()._takt();
+      ok(unsichtbar($('#nk-reaktion')) && unsichtbar($('#nk-faecher')) && $('#nk-faecher').hidden, 'Farbrad offen: Reaktionsknopf weg, Fächer zu');
+      $('#nk-reaktion').click();
+      ok($('#nk-faecher').hidden, 'Farbrad offen: Knopf öffnet den Fächer nicht');
+      App.tisch.schliesseFarbwahl();
+      N()._takt();
+      ok(!unsichtbar($('#nk-reaktion')), 'Farbrad zu: Reaktionsknopf wieder da');
+      App.oeffne('menue');
+      N()._takt();
+      ok(unsichtbar($('#nk-reaktion')), 'Menü offen: Reaktionsknopf verdeckt');
+      $('#nk-reaktion').click();
+      ok($('#nk-faecher').hidden, 'Menü offen: Knopf öffnet den Fächer nicht');
+      App.schliesse('menue');
+      N()._takt();
+      ok(!unsichtbar($('#nk-reaktion')), 'Menü zu: Reaktionsknopf wieder da');
+    }
+    // Kopf-Tipp → Menü: Titel, Kugel aktiv, Schnarchen/Wecker vor 10 s ausgegraut mit Hinweis
+    kopf(1).click();
+    await warte(30);
+    const m = $('#nk-menue');
+    ok(sichtbar(m), 'Kopf-Tipp öffnet das Necken-Menü');
+    ok(m.querySelector('.nk-titel').textContent === 'Lena · 1 Karte', 'Titel „Lena · 1 Karte“ (' + m.querySelector('.nk-titel').textContent + ')');
+    const knopf = k => m.querySelector('button[data-k="' + k + '"]');
+    ok(!knopf('ball').hidden && !knopf('ball').classList.contains('grau'), 'Papierkugel aktiv');
+    ok(!knopf('snore').hidden && knopf('snore').classList.contains('grau') && !knopf('alarm').hidden && knopf('alarm').classList.contains('grau'), 'Schnarchen/Wecker vor 10 s ausgegraut');
+    ok(m.querySelector('.nk-info').textContent === 'Erst, wenn Lena eine Weile überlegt.', 'Hinweis „Erst, wenn …“ (' + m.querySelector('.nk-info').textContent + ')');
+    ok(knopf('ansehen').hidden, 'ohne sichtbare Rückseiten kein „Karten ansehen“');
+    knopf('snore').click();
+    await warte(20);
+    ok(s.msgs('fx').length === 0, 'ausgegrautes Schnarchen schickt nichts');
+    knopf('ball').click();
+    await warte(20);
+    ok(JSON.stringify(s.msgs('fx')) === '[{"t":"fx","k":"ball","to":1}]' && !sichtbar(m), 'Papierkugel geschickt, Menü zu (' + JSON.stringify(s.msgs('fx')) + ')');
+    ok(!$('#tisch .nk-kugel'), 'Effekt erst mit dem fx des Gastgebers');
+    s.rx({ t: 'fx', k: 'ball', from: 0, to: 1 });
+    await warte(60);
+    ok(!!$('#tisch .nk-kugel') && N().gezeigt.slice(-1)[0].rolle === 'absender', 'fx → Kugel fliegt (Absender)');
+    ok(toene.some(t => t[0] === 'papier_wurf' && t[1] === 1) && !toene.some(t => t[0] === 'papier_plopp'), 'Absender: Wurf normal, kein Plopp (' + JSON.stringify(toene) + ')');
+    await warte(900);
+    ok(w.document.querySelectorAll('#tisch .nk-kugel').length === 1, 'Kugel liegt am Ziel');
+    await warte(3600);
+    ok(!$('#tisch .nk-kugel'), 'Kugel nach 3 s weg');
+    // Zuschauer: Kugel von Mia an Tom (Computer) → Plopp leise, „Mpf!“
+    toene = [];
+    s.rx({ t: 'fx', k: 'ball', from: 3, to: 2 });
+    await warte(900);
+    ok(toene.some(t => t[0] === 'papier_plopp' && t[1] === 0.25) && !toene.some(t => t[0] === 'papier_wurf'), 'Zuschauer: Plopp leise (' + JSON.stringify(toene) + ')');
+    ok(!!$('#tisch .nk-mpf'), 'Computergegner: „Mpf!“');
+    // Ziel: Kugel an mich → Plopp normal, Vibration, Zeile
+    toene = []; vib = [];
+    s.rx({ t: 'fx', k: 'ball', from: 1, to: 0 });
+    await warte(900);
+    ok(toene.some(t => t[0] === 'papier_plopp' && t[1] === 1) && vib.some(v => v === 40), 'Ziel: Plopp normal und Vibration (' + JSON.stringify(toene) + ' ' + JSON.stringify(vib) + ')');
+    ok(($('.nk-zeile') || {}).textContent === 'Papierkugel von Lena!', 'Ziel: „Papierkugel von Lena!“');
+    // nach 10 s: Schnarchen geht, einmal je Zug
+    await warte(5200);
+    kopf(1).click();
+    await warte(30);
+    ok(!knopf('snore').classList.contains('grau') && $('#nk-menue .nk-info').hidden, 'nach 10 s: Schnarchen aktiv, kein Hinweis');
+    knopf('snore').click();
+    await warte(20);
+    ok(s.msgs('fx').slice(-1)[0].k === 'snore' && s.msgs('fx').slice(-1)[0].to === 1, 'Schnarchen geschickt');
+    toene = [];
+    s.rx({ t: 'fx', k: 'snore', from: 0, to: 1 });
+    await warte(40);
+    ok(!!$('#tisch .nk-zzz') && !!$('#tisch .nk-muetze'), 'Schnarchen: Z z z und Mütze');
+    ok(toene.some(t => t[0] === 'schnarchen' && t[1] === 0.25), 'Absender hört Schnarchen leise');
+    ok(N().pruefe({ k: 'snore', to: 1 }) === 'once' && N().pruefe({ k: 'alarm', to: 1 }) === 'busy', 'Spiegel: Schnarchen einmal je Zug, Wecker während der Weckaktion busy (' + N().pruefe({ k: 'alarm', to: 1 }) + ')');
+    s.rx({ t: 'fx_no', why: 'busy' });
+    await warte(20);
+    ok(toasts().indexOf('Lena wird gerade schon geweckt.') >= 0, 'fx_no busy → leise Zeile (' + toasts().join(' | ') + ')');
+    ok(!w.document.querySelector('#toasts .toast.fehler'), 'fx_no ist kein Fehler');
+    // Lena spielt: Schnarchen blendet aus
+    s.rx({ t: 'state', events: [{ e: 'draw', seat: 1, count: 1 }], view: sicht(1) });
+    await warte(600);
+    ok(toene.some(t => t[0] === 'stopp:schnarchen'), 'Ziel handelt: Schnarchen-Ton ausgeblendet');
+    s.rx({ t: 'fx_no', why: 'late' });
+    await warte(20);
+    ok(toasts().indexOf('Zu spät – Lena hat schon gespielt.') >= 0, 'fx_no late → „Zu spät – Lena hat schon gespielt.“');
+    // Zuschauer-Wecker an Lena, Lena handelt in den 3 s → fällt um, klingelt nicht
+    toene = [];
+    s.rx({ t: 'fx', k: 'alarm', from: 3, to: 1 });
+    await warte(300);
+    const wk = $('#tisch .nk-wecker');
+    ok(!!wk, 'Wecker erscheint beim Zuschauer');
+    s.rx({ t: 'state', events: [{ e: 'play', seat: 1, card: 60, face: 'hell_rot_7' }], view: sicht(2) });
+    await warte(3500);
+    ok(wk.classList.contains('faellt') && !wk.classList.contains('klingelt') && !toene.some(t => t[0] === 'wecker'), 'Wecker abgestellt: fällt um, kein Klingeln');
+    // Wecker an mich: ich bin dran, Zeile, nach 3 s Klingeln laut + Vibration
+    toene = []; vib = [];
+    s.rx({ t: 'state', events: [], view: sicht(0) });
+    await warte(300);
+    s.rx({ t: 'fx', k: 'alarm', from: 1, to: 0 });
+    await warte(100);
+    ok(($('.nk-zeile') || {}).textContent === 'Lena hat dir einen Wecker gestellt!' && !!$('#tisch .nk-wecker.ziel'), 'Ziel: großer Wecker und Zeile');
+    await warte(3100);
+    ok(!!$('#tisch .nk-wecker.klingelt') && toene.some(t => t[0] === 'wecker' && t[1] === 1) && vib.some(v => Array.isArray(v) && v.length === 5), 'nach 3 s: Klingeln normal und Vibration 3 × 250 ms');
+    // Reaktionen: mehrere schnell hintereinander, Töne höchstens 2 gleichzeitig
+    toene = [];
+    $('#nk-reaktion').click();
+    await warte(30);
+    ok(sichtbar($('#nk-faecher button[data-r="lachen"]')), 'Reaktionsknopf fächert die Reaktionen auf');
+    $('#nk-faecher button[data-r="lachen"]').click();
+    await warte(20);
+    ok(JSON.stringify(s.msgs('fx').slice(-1)) === '[{"t":"fx","k":"react","r":"lachen"}]' && $('#nk-faecher').hidden, 'Reaktion geschickt, Fächer zu');
+    ['lachen', 'klatschen', 'daumen'].forEach(r => s.rx({ t: 'fx', k: 'react', from: 0, r }));
+    s.rx({ t: 'fx', k: 'react', from: 2, r: 'schreck' });
+    await warte(60);
+    ok(w.document.querySelectorAll('#tisch .nk-emoji').length === 4, 'vier Reaktionen steigen auf (' + w.document.querySelectorAll('#tisch .nk-emoji').length + ')');
+    ok(toene.filter(t => ['lachen', 'klatschen', 'daumen', 'schreck'].indexOf(t[0]) >= 0).length === 2, 'höchstens 2 Reaktionstöne gleichzeitig (' + JSON.stringify(toene) + ')');
+    ok(N().pruefe({ k: 'react', r: 'lachen' }) === 'rate', 'Spiegel: eigener Reaktions-Eimer leer → rate');
+    s.rx({ t: 'fx_no', why: 'rate' });
+    ok($('#nk-reaktion').classList.contains('grau'), 'rate → Reaktionsknopf kurz blass (auch bei geschlossenem Fächer)');
+    $('#nk-reaktion').click();
+    await warte(30);
+    ok($('#nk-faecher button[data-r="daumen"]').classList.contains('grau'), 'rate → Reaktionen kurz ausgegraut');
+    $('#nk-reaktion').click();
+    // fx_offs: Lena hat Necken aus
+    s.rx({ t: 'fx_offs', seats: [1] });
+    await warte(20);
+    kopf(1).click();
+    await warte(30);
+    ok($('#nk-menue .nk-info').textContent === 'Lena möchte gerade nicht geneckt werden.' && knopf('ball').hidden, 'fx_offs → Hinweis, keine Knöpfe');
+    $('#nk-menue').hidden = true; N().zu();
+    // neue Partie: Die Liste der vorigen gilt nicht mehr (der Gastgeber schickt eine leere Liste nie)
+    s.rx({ t: 'start', seat: 0 });
+    s.rx({ t: 'state', events: [], view: sicht(1) });
+    await warte(300);
+    ok(N().offs.length === 0, 'start: fx_offs der vorigen Partie vergessen (' + JSON.stringify(N().offs) + ')');
+    // Tipp daneben schließt den Fächer; derselbe Tipp (eigene Zeile, tippEigen) öffnet ihn nicht gleich wieder
+    N().reaktionen(true);
+    w.document.body.dispatchEvent(new w.PointerEvent('pointerdown', { bubbles: true }));
+    ok($('#nk-faecher').hidden && N().tippEigen() === true && $('#nk-faecher').hidden, 'Tipp daneben schließt den Fächer, derselbe Tipp öffnet nicht gleich wieder');
+    await warte(600);
+    ok(N().tippEigen() === true && !$('#nk-faecher').hidden, 'später öffnet die eigene Zeile den Fächer wieder');
+    N().reaktionen(false);
+    // hochkant: Menü nie über dem Mau-Knopf
+    frame.style.width = '390px'; frame.style.height = '844px';
+    await warte(400);
+    kopf(1).click();
+    await warte(60);
+    {
+      const mr = $('#nk-menue').getBoundingClientRect(), mau = $('#mau').getBoundingClientRect();
+      const ueb = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+      ok(sichtbar($('#nk-menue')) && !(mau.width > 0 && ueb(mr, mau)), 'hochkant: Menü liegt nicht über dem Mau-Knopf (' + JSON.stringify([mr.left, mr.top, mr.right, mr.bottom]) + ' ' + JSON.stringify([mau.left, mau.top, mau.right, mau.bottom]) + ')');
+    }
+    N().zu();
+    frame.style.width = '1000px'; frame.style.height = '600px';
+    await warte(300);
+    // kaputte Nachrichten
+    const vorher = N().gezeigt.length;
+    [{ t: 'fx', k: 'boom', from: 1, to: 2 }, { t: 'fx', k: 'ball', from: 1, to: 1 }, { t: 'fx', k: 'ball', from: 12, to: 1 }, { t: 'fx', k: 'react', from: 2, r: 'x' },
+      { t: 'fx', k: 'ball', from: 1, to: '2' }, { t: 'fx_no', why: 'quatsch' }, { t: 'fx_offs', seats: 'a' }, { t: 'fx_neu', x: 1 }].forEach(x => s.rx(x));
+    await warte(40);
+    ok(N().gezeigt.length === vorher && N().offs.length === 0, 'kaputte und unbekannte Nachrichten verworfen');
+    // seats: Effekte abräumen
+    s.rx({ t: 'fx', k: 'react', from: 1, r: 'daumen' });
+    await warte(30);
+    s.rx({ t: 'state', events: [{ e: 'seats', map: [0, 1, 2, 3], join: -1 }], view: sicht(0) });
+    await warte(80);
+    ok(!$('#tisch .nk-emoji') && !$('#tisch .nk-wecker'), 'seats räumt alle Effekte ab');
+    // Necken aus: fx_pref, kein Knopf, nichts zeigen, Kopf-Tipp wie früher
+    App.einstellen('necken', 'false');
+    App.schliesse('menue');
+    await warte(30);
+    ok(JSON.stringify(s.msgs('fx_pref').slice(-1)) === '[{"t":"fx_pref","off":true}]', 'Necken aus → fx_pref off');
+    ok(!sichtbar($('#nk-reaktion')), 'Necken aus: kein Reaktionsknopf');
+    s.rx({ t: 'fx', k: 'react', from: 1, r: 'lachen' });
+    await warte(30);
+    ok(!$('#tisch .nk-emoji'), 'Necken aus: fremde Reaktion nicht gezeigt');
+    kopf(1).click();
+    await warte(30);
+    ok(!sichtbar($('#nk-menue')) && toasts().some(t => /^Lena: 1 Karte/.test(t)), 'Necken aus: Kopf-Tipp wie früher (' + toasts().join(' | ') + ')');
+    ok(JSON.parse(localStorage.getItem('mmf.necken')) === false, 'Einstellung gespeichert');
+    // neues welcome (z. B. neuer Gastgeber): fx_pref erneut
+    s.rx({ t: 'welcome', id: 3, token: 'tok123abc', host_name: 'Ben' });
+    await warte(20);
+    ok(JSON.stringify(s.msgs('fx_pref').slice(-1)) === '[{"t":"fx_pref","off":true}]' && s.msgs('fx_pref').length === 3, 'nach erneutem welcome fx_pref wieder');
+    ok(App.fehler.length === 0, 'keine Fehler im Lite (' + App.fehler.join(' | ') + ')');
+
+    // Alter Gastgeber (≤ 1.6.2): kennt fx nicht und antwortet nie → nichts passiert, kein Fehler
+    leeren();
+    await lade('');
+    s = await beitreten('Kim');
+    s.rx({ t: 'start', seat: 0 });
+    s.rx({ t: 'state', events: [], view: sicht(1) });
+    await warte(400);
+    kopf(1).click();
+    await warte(30);
+    $('#nk-menue button[data-k="ball"]').click();
+    $('#nk-reaktion').click();
+    await warte(20);
+    $('#nk-faecher button[data-r="klatschen"]').click();
+    await warte(7000);
+    ok(s.msgs('fx').length === 2 && !$('#tisch .nk-kugel') && !$('#tisch .nk-emoji'), 'alter Gastgeber: Wünsche gehen raus, ohne Antwort kein Effekt');
+    ok(!w.document.querySelector('#toasts .toast.fehler') && w.MMF.App.fehler.length === 0 && !s.gesendet.some(x => /"t":"log"/.test(x)), 'alter Gastgeber: keine Fehlermeldung, kein Neuverbinden');
+    ok(s.readyState === 1 && w.MMF.App.screen === 'tisch', 'alter Gastgeber: Verbindung und Tisch bleiben');
+
+    // Regeln (Spiegel von TeaseRules) direkt
+    const R = new w.MMF.Necken.Regeln();
+    const T = (turn, phase, offs) => w.MMF.Necken.Regeln.tischAusSicht(sicht(turn, { phase: phase || 'turn' }), offs || [], 'client');
+    R.notiereZug(1, 'turn', 0);
+    ok(R.pruefe(0, { k: 'snore', to: 1 }, T(1), 9999) === 'early' && R.pruefe(0, { k: 'snore', to: 1 }, T(1), 10000) === '', 'Regeln: Schnarchen ab 10 s');
+    ok(R.pruefe(0, { k: 'snore', to: 2 }, T(2), 20000) !== '' && R.pruefe(0, { k: 'snore', to: 0 }, T(0), 20000) === 'self', 'Regeln: nie Computergegner, nie man selbst');
+    R.verbuche({ k: 'alarm', from: 0, to: 1 }, 10000);
+    ok(R.pruefe(3, { k: 'alarm', to: 1 }, T(1), 12000) === 'busy' && R.pruefe(3, { k: 'alarm', to: 1 }, T(1), 15000) === '' && R.pruefe(0, { k: 'alarm', to: 1 }, T(1), 15000) === 'once', 'Regeln: busy 5 s, je Sender einmal');
+    R.notiereEreignisse([{ e: 'draw', seat: 1 }], 16000);
+    ok(R.pruefe(3, { k: 'snore', to: 1 }, T(1), 20000) === 'early', 'Regeln: Aktion des Ziels setzt die Uhr zurück');
+    R.notiereZug(2, 'turn', 21000);
+    ok(R.pruefe(3, { k: 'snore', to: 1 }, T(2), 40000) === 'late', 'Regeln: nicht mehr am Zug → late');
+    ok(R.pruefe(0, { k: 'ball', to: 1 }, T(1, 'round_over'), 40000) === 'phase' && R.pruefe(0, { k: 'react', r: 'daumen' }, T(1, 'round_over'), 40000) === '', 'Regeln: Rundenende nur Reaktionen');
+    R.verbuche({ k: 'ball', from: 0, to: 1 }, 50000);
+    ok(R.pruefe(0, { k: 'ball', to: 1 }, T(1), 51000) === 'rate' && R.pruefe(0, { k: 'ball', to: 3 }, T(1), 51000) === '', 'Regeln: Kugel-Abstand am Ziel');
+    R.verbuche({ k: 'ball', from: 0, to: 3 }, 51000);
+    ok(R.pruefe(0, { k: 'ball', to: 2 }, T(1), 52000) === 'rate' && R.pruefe(0, { k: 'ball', to: 2 }, T(1), 56000) === '', 'Regeln: Kugel-Eimer 2, +1 je 5 s');
+    ok(R.pruefe(0, { k: 'ball', to: 1 }, T(1, 'turn', [1]), 90000) === 'off' && R.pruefe(1, { k: 'ball', to: 0 }, T(1, 'turn', [1]), 90000) === 'off', 'Regeln: Necken aus (Ziel oder Absender)');
+    R.notiereEreignisse([{ e: 'seats', map: [0, 1] }], 91000);
+    ok(R.turn === -1 && Object.keys(R.buckets).length === 0, 'Regeln: seats leert den Zustand');
+    ok(JSON.stringify(w.MMF.Necken.Regeln.caps('pass').kinds) === '[]' && w.MMF.Necken.Regeln.caps('solo').bots_only === true, 'Regeln: caps');
+  }
+  lauf().then(() => {}, e => fehler.push('Ausnahme: ' + (e && e.stack || e))).then(() => {
+    const el = document.getElementById('autotest-result');
+    el.setAttribute('data-ok', fehler.length ? '0' : '1');
+    el.textContent = fehler.length ? 'FEHLER: ' + fehler.join(' | ') : 'ok';
+  });
+})();
+</script></body></html>

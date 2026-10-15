@@ -43,6 +43,7 @@ func setup(table_mode: String, players: Array, config: RuleConfig = null, rng_se
 		host_set = host_set or bool(d.host)
 		list.append(d)
 	_create_game(config if config != null else RuleConfig.new(), list, rng_seed)
+	tease.reset()                 # Beta 1.6.3 (Necken)
 	_shown = -1
 	_awaiting = -1
 	_handover_to = -1
@@ -112,6 +113,23 @@ func act(action: Dictionary) -> void:
 	var res := _apply(_shown, action)
 	if not bool(res.ok):
 		notice.emit(I18n.reason(res))
+
+
+# Mau-Mau Flip (Beta 1.6.3, Necken): Übung – nur die Papierkugel auf Computergegner, ohne Netz direkt als Ereignis (TeaseRules.caps
+# "solo"); Weitergeben – nichts (alle sitzen am selben Handy). Ablehnungen wie beim Gastgeber (fx_refused nur late/busy/rate).
+func send_fx(req: Dictionary) -> void:
+	if game == null or _mode != "solo" or _shown < 0:
+		return
+	var m := NetProtocol.make_fx_request(req)
+	if m.is_empty():
+		return
+	var now := _fx_now()
+	var why := tease.check(_shown, m, fx_table(), now)
+	if why != "":
+		if why in TeaseRules.REFUSALS:
+			fx_refused.emit(why)
+		return
+	_fx_deliver(NetProtocol.make_fx(str(m.k), _shown, int(m.get("to", -1)), str(m.get("r", ""))))
 
 
 func reveal() -> void:

@@ -193,6 +193,11 @@ func _changed(events: Array) -> void:
 	for e in events:
 		if str((e as Dictionary).get("e", "")) == "round_start":
 			_extra_pause = ROUND_PAUSE
+	# Mau-Mau Flip (Beta 1.6.3, Necken): nur angenommene Änderungen bewegen die Uhr (eigene Aktion des Platzes am Zug, Zugwechsel, seats)
+	if game != null:
+		var now := _fx_now()
+		tease.note_events(events, now)
+		tease.note_turn(game.current_seat(), game.phase(), now)
 	_after_change()
 	_persist()
 	_distribute(events)

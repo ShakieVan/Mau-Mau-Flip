@@ -22,6 +22,11 @@ extends RefCounted
 #   Host → Client: move {gid, gen, epoch, name, how:"lan"|"online"|"qr", addr, port, room, relay, url} (Umzug zum neuen Gastgeber) ·
 #                  hosts {gid, gen, list:[{name, url}], online, ap, ap_name} (nur Browser: mögliche Erben für die Reihum-Probe)
 #   /info und Suchantwort zusätzlich gid, gen, epoch und conn (verbundene entfernte Menschen) bei laufender Partie
+# Mau-Mau Flip (Beta 1.6.3, Easter Eggs Teil 2 „Necken“, docs/module/eastereggs2.md Abschnitt 4; nur additiv, PROTO bleibt 1):
+#   Client → Host: fx {k:"snore"|"alarm"|"ball"|"react", to?:int, r?:String} · fx_pref {off:bool} (nach jedem welcome und bei Änderung)
+#   Host → Client: fx {k, from, to?, r?} (an alle Sitzenden) · fx_no {why:"late"|"busy"|"rate"} (nur an den Absender, kein err) ·
+#                  fx_offs {seats:[int]} (Plätze mit Necken aus; bei Änderung, nach welcome)
+#   Ältere Geräte übergehen die Typen (ClientTable/NetClient ohne Standardzweig, Lite default, Gastgeber bis 1.6.2 nur act/handover_*).
 # Zahlen: JSON kennt nur float; decode() wandelt ganzzahlige Werte in int (Kennungen, Plätze, Zeitstempel in ms).
 
 const PROTO := 1                          # Protokollversion: bei jeder inkompatiblen Änderung erhöhen
@@ -326,9 +331,69 @@ static func clean_client_message(msg: Dictionary) -> Dictionary:
 			return {"t": "log", "text": strip_controls(str(msg.text), true).left(MAX_LOG_TEXT)}
 		"away", "back":
 			return {"t": t}             # kurz in einer anderen App / wieder da (Beta 1.3.3), ohne weitere Felder
+		"fx":
+			return make_fx_request(msg)  # Beta 1.6.3: Necken-Wunsch (nur bekannte Arten und Felder)
+		"fx_pref":
+			if not msg.get("off") is bool:
+				return {}
+			return {"t": "fx_pref", "off": bool(msg.off)}   # Beta 1.6.3: Necken an diesem Gerät aus
 		_:
 			# Unbekannte Typen (künftige Erweiterungen) gehen unverändert an die Spielsteuerung; sie prüft selbst.
 			return msg
+
+# ---------- Necken (Beta 1.6.3, docs/module/eastereggs2.md Abschnitt 4) ----------
+
+static func _fx_seat(v) -> int:
+	# Platznummer 0 … MAX_PLAYERS − 1, sonst −1
+	return int(v) if v is int and int(v) >= 0 and int(v) < MAX_PLAYERS else -1
+
+static func make_fx_request(req: Dictionary) -> Dictionary:
+	# Gast → Gastgeber (bzw. Bereinigung beim Gastgeber): {t:"fx", k, to} für snore/alarm/ball, {t:"fx", k:"react", r}. {} = ungültig.
+	var k := str(req.get("k", "")) if req.get("k") is String else ""
+	if not k in TeaseRules.FX_KINDS:
+		return {}
+	if k == "react":
+		var r := str(req.get("r", "")) if req.get("r") is String else ""
+		return {"t": "fx", "k": k, "r": r} if r in TeaseRules.FX_REACTS else {}
+	var to := _fx_seat(req.get("to"))
+	return {"t": "fx", "k": k, "to": to} if to >= 0 else {}
+
+static func make_fx(k: String, from: int, to := -1, r := "") -> Dictionary:
+	# Gastgeber → alle Sitzenden: angenommenes Necken (from = Absender-Platz).
+	var m := {"t": "fx", "k": k, "from": from}
+	if k == "react":
+		m["r"] = r
+	else:
+		m["to"] = to
+	return m
+
+static func clean_fx(msg: Dictionary) -> Dictionary:
+	# Gast: fx des Gastgebers prüfen (Art, Plätze, Reaktion; nie an sich selbst). {} = verwerfen.
+	var m := make_fx_request(msg)
+	var from := _fx_seat(msg.get("from"))
+	if m.is_empty() or from < 0 or int(m.get("to", -1)) == from:
+		return {}
+	return make_fx(str(m.k), from, int(m.get("to", -1)), str(m.get("r", "")))
+
+static func clean_fx_no(msg: Dictionary) -> String:
+	# Gast: Grund einer Ablehnung (late | busy | rate); "" = verwerfen.
+	var why = msg.get("why")
+	return str(why) if why is String and str(why) in TeaseRules.REFUSALS else ""
+
+static func make_fx_offs(seats: Array) -> Dictionary:
+	return {"t": "fx_offs", "seats": clean_fx_offs({"seats": seats})}
+
+static func clean_fx_offs(msg: Dictionary) -> Array:
+	# Plätze mit Necken aus: ganze Zahlen 0 … MAX_PLAYERS − 1, ohne Doppelte, aufsteigend. Kaputt: [].
+	var out: Array = []
+	if not msg.get("seats") is Array or (msg.seats as Array).size() > MAX_PLAYERS:
+		return out
+	for v in msg.seats:
+		var s := _fx_seat(v)
+		if s >= 0 and not out.has(s):
+			out.append(s)
+	out.sort()
+	return out
 
 static func clean_action(a: Dictionary) -> Dictionary:
 	# Spielaktion {a, card?, color?, target?}: nur bekannte Felder mit passendem Typ. {} = ungültig.

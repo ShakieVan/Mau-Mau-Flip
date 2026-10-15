@@ -132,6 +132,7 @@ var _list_dir := 0
 var _list_flip := -1.0                # Richtungswechsel: 0 … 1 (Zeilen klappen zu, Reihenfolge dreht, klappen auf); < 0 = aus
 var _was_my_turn := false
 var fun: FunFx                        # Ostereier (Beta 1.4.4): Mau-Katze, Himmel, Stempel, Applaus (fun_fx.gd)
+var tease: TeaseFx                    # Mau-Mau Flip (Beta 1.6.3, Easter Eggs Teil 2 „Necken“): Menü am Gegner, Reaktionen, Effekte (tease_fx.gd)
 
 
 # ================================================================= Aufbau
@@ -262,6 +263,8 @@ func _init() -> void:
 	_overlay.add_child(help_popup)
 	handover = HandoverScreen.new()
 	_overlay.add_child(handover)
+	tease = TeaseFx.new()
+	tease.mount(self)
 	wish_picker.color_chosen.connect(_on_wheel_color)
 	wish_picker.cancelled.connect(_on_wheel_cancelled)
 	resized.connect(_layout)
@@ -291,6 +294,8 @@ func _on_setting_changed(key: String, value: Variant) -> void:
 		set_big(HandView.truthy(value))
 	elif key == "effekte":
 		reduced = str(value) == "reduziert"
+	elif key == "necken":
+		tease.set_enabled(HandView.truthy(value))       # Beta 1.6.3
 	elif key == FunTexts.SETTING or key == FunTexts.FREQ_SETTING:
 		if key == FunTexts.SETTING:
 			sprueche.set_level(value)
@@ -325,6 +330,8 @@ func set_reduced(on: bool) -> void:
 		_bg.motion = not on
 	if fun:
 		fun.set_reduced(on)
+	if tease:
+		tease.reduced = on
 	if list_header:
 		list_header.reduced = on
 	if me_badge:
@@ -425,6 +432,8 @@ func set_big(on: bool) -> void:
 	var changed := on != big
 	big = on
 	fun.big = on
+	if tease:
+		tease.big = on
 	_bg.calm = on
 	_ring.visible = not on
 	for s in _seats:
@@ -644,6 +653,7 @@ func apply_view(v: Dictionary) -> void:
 		node.set_turn(s == turn and not str(v.get("phase", "")) in ["round_over", "game_over"], s == next)
 	_apply_me(v, turn, next)
 	fun.on_view(v)
+	tease.on_view(v)
 	if big:
 		_update_list(true)
 	_apply_hints(v.get("hints", {}), turn)
@@ -1239,6 +1249,7 @@ func set_night(v: float) -> void:
 		return
 	_bg.tageszeit = night
 	fun.set_night(night)
+	tease.night = night
 	_ring.color = UiPalette.ring_color(night)
 	gamble_machine.night = night
 	stake_pile.night = night
@@ -1378,13 +1389,24 @@ func _tap(p: Vector2) -> bool:
 		if _pile.highlight and not input_locked:
 			_emit_action({"a": "draw"})
 			return true
+	# Mau-Mau Flip (Beta 1.6.3, Necken): Kopf → Necken-Menü (falls hier etwas geht), eigenes Namensschild → Reaktionsfächer
+	if me_badge.visible and me_badge.hit_head(g) and tease.tap_me():
+		return true
+	for s in _seats:
+		var node: OpponentSeat = _seats[s]
+		if node.hit_head(g) and tease.tap_head(s):
+			seat_tapped.emit(s)
+			return true
 	for s in _seats:
 		var node: OpponentSeat = _seats[s]
 		if node.hit_fan(g):
 			seat_tapped.emit(s)
-			# Großansicht nur, wenn die Rückseiten sichtbar sind
+			# Großansicht nur, wenn die Rückseiten sichtbar sind; sonst öffnet der Fächer das Necken-Menü (Beta 1.6.3). Im großen
+			# Modus trifft hit_fan die ganze Listenzeile: dort öffnet nur der Avatar (hit_head oben) das Menü, der Rest bleibt wie bisher.
 			if node.backs_visible():
 				backs_viewer.show_backs(node.player_name(), node.keys)
+			elif not node.list_mode:
+				tease.tap_head(s)
 			return true
 	return false
 
@@ -1426,6 +1448,7 @@ func skip_event(ev: Dictionary) -> void:
 	fx.clear()
 	if str(ev.get("e", "")) == "seats":
 		_remap_seats(ev, false)        # Platznummern auch ohne Animation umstellen (folgende Ereignisse und Sicht sind neu nummeriert)
+		tease.on_event(ev)
 	if str(ev.get("e", "")) == "flip":
 		_flip_running = false
 	_house.skip(ev)
@@ -1437,6 +1460,7 @@ func play_event(ev: Dictionary, speed: float) -> float:
 	if ev.has("seat"):
 		_poke(int(ev.get("seat", -1)))
 	fun.on_event(ev, int(_player(int(ev.get("seat", -1))).get("count", -1)))
+	tease.on_event(ev)
 	match e:
 		"deal":
 			return _ev_deal(ev)

@@ -124,6 +124,7 @@
     <div class="zeile" id="zeile-hervorheben"><span><span data-t>Spielbare Karten hervorheben</span><small data-t>nur auf diesem Gerät</small></span><div class="seg"><button data-set="hervorheben" data-wert="true" data-t>An</button><button data-set="hervorheben" data-wert="false" data-t>Aus</button></div></div>
     <div class="zeile" id="zeile-sprueche"><span><span data-t>Sprüche</span><small data-t>nur auf diesem Gerät</small></span><div class="seg"><button data-set="sprueche" data-wert="aus" data-t>Aus</button><button data-set="sprueche" data-wert="nett" data-t>Nett</button><button data-set="sprueche" data-wert="frech" data-t>Frech</button></div></div>
     <div class="zeile" id="zeile-sprueche-oft"><span><span data-t>Häufigkeit</span><small data-t>Immer: jeder Zug bekommt einen Spruch, der bleibt stehen.</small></span><div class="seg"><button data-set="sprueche_oft" data-wert="selten" data-t>Selten</button><button data-set="sprueche_oft" data-wert="normal" data-t>Normal</button><button data-set="sprueche_oft" data-wert="oft" data-t>Oft</button><button data-set="sprueche_oft" data-wert="immer" data-t>Immer</button></div></div>
+    <div class="zeile" id="zeile-necken"><span><span data-t>Necken (Papierkugel, Schnarchen, Wecker, Reaktionen)</span><small data-t>Mitspieler können dir Schnarchen, einen Wecker oder eine Papierkugel schicken.</small></span><div class="seg"><button data-set="necken" data-wert="true" data-t>An</button><button data-set="necken" data-wert="false" data-t>Aus</button></div></div>
     <div class="zeile"><span><span data-t>Schriftgröße</span><small data-t>nur auf diesem Gerät</small></span><div class="seg"><button data-set="schrift" data-wert="normal" data-t>Normal</button><button data-set="schrift" data-wert="gross" data-t>Groß</button><button data-set="schrift" data-wert="sehr_gross" data-t>Sehr groß</button></div></div>
     <p id="menue-gross-tipp" class="klein" hidden data-t>Tipp: Der große Modus zeigt Stapel, Ablage und Hand noch größer.</p>
     <div class="zeile" id="zeile-gross"><span><span data-t>Großer Modus</span><small data-t>nur auf diesem Gerät</small></span><div class="seg"><button data-set="grosser_modus" data-wert="true" data-t>An</button><button data-set="grosser_modus" data-wert="false" data-t>Aus</button></div></div>
@@ -154,7 +155,8 @@
       <dt data-t>Ablage durchsehen</dt><dd data-t>Auf die Ablage tippen: Die oberste Karte rutscht zur Seite. Weiter tippen zeigt ältere Karten, ein Tipp auf den Stapel daneben geht zurück. Tippst du woanders hin, liegt alles wieder.</dd>
       <dt data-t>„Mau!“</dt><dd data-t>Bleibt dir nach dem Legen nur noch eine Karte, tipp auf „Mau!“. Alle hören und sehen es. Wer es vergisst, muss je nach Regeln Strafkarten ziehen.</dd>
       <dt data-t>Hand sortieren</dt><dd data-t>Der Knopf unten links wechselt zwischen Farbe, Wert und Punkte. Viele Karten? Wisch die Hand zur Seite.</dd>
-      <dt data-t>Mitspieler</dt><dd data-t>Tipp auf einen Mitspieler zeigt seine Rückseiten, wenn die Regeln das erlauben.</dd>
+      <dt data-t>Necken</dt><dd data-t>Tippe auf einen Mitspieler, um ihn zu necken. Der Knopf am eigenen Platz schickt eine Reaktion an alle.</dd>
+      <dt data-t>Mitspieler</dt><dd data-t>Tipp auf die Karten eines Mitspielers zeigt seine Rückseiten, wenn die Regeln das erlauben.</dd>
       <dt data-t>Ton</dt><dd data-t>Der Lautsprecher oben schaltet alles stumm. Lautstärke und Schrift stellst du im Menü ein.</dd>
     </dl>
     <button class="schliessen rund" aria-label="Schließen" data-t-aria="Schließen">✕</button>
@@ -185,6 +187,7 @@
 <script src="netz.js"></script>
 <script src="hand.js"></script>
 <script src="spass.js"></script>
+<script src="necken.js"></script>
 <script src="tisch.js"></script>
 <script src="app.js"></script>
 </body>

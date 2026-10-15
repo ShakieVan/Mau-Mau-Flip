@@ -11,6 +11,16 @@ signal handover(next_seat: int, name: String)              # nur Weitergeben: Si
 signal lobby_changed(lobby: Dictionary)                    # Netz: Lobby-Stand {t:"lobby", rev, players, rules, host_id}
 signal connection_changed(state: String)                   # Client: "connecting" | "open" | "closed" | "rejected"
 signal game_started(seat: int)                             # zusätzlich: Partie beginnt (Lobby → Tisch), eigener Platz
+# Mau-Mau Flip (Beta 1.6.3, Easter Eggs Teil 2 „Necken“, docs/module/eastereggs2.md Abschnitt 6.1 „Schnittstelle“):
+signal fx_event(msg: Dictionary)          # angenommenes Necken {t:"fx", k, from, to?, r?} – kommt auf allen Geräten (auch beim Absender)
+signal fx_refused(why: String)            # eigener Wunsch abgelehnt: "late" | "busy" | "rate" (kein Fehlerton, leise Zeile bzw. ausgrauen)
+signal fx_offs_changed(seats: Array)      # Plätze mit Necken aus (fx_offs) haben sich geändert
+
+# Necken (Beta 1.6.3): Gastgeber = maßgebliche Regeln, sonst lokaler Spiegel (gleiche Sichten, Ereignisse und fx) für fx_check().
+var tease := TeaseRules.new()
+var fx_clock := Callable()                # Tests: () -> Monotonuhr in ms fürs Necken (sonst Time.get_ticks_msec bzw. HostTable._now_ms)
+var _fx_offs: Array = []                  # Plätze mit Necken aus (vom Gastgeber; beim Gastgeber selbst berechnet)
+var _fx_off_self := setting_fx_off()      # Necken an diesem Gerät aus (Einstellung „necken“; set_fx_off ändert es)
 
 const SAVE_PATH := "user://laufende_partie.json"
 # Mau-Mau Flip (Beta 1.6.1, Gastgeber-Übergabe): Netzpartie in eigener Datei (MatchSnapshot, docs/module/uebergabe.md Abschnitt 2),
@@ -46,6 +56,73 @@ func reveal() -> void:
 # Tisch verlassen: Netz schließen, laufende Partie verwerfen (Speicherstand löschen).
 func leave() -> void:
 	pass
+
+
+# --- Necken (Beta 1.6.3, docs/module/eastereggs2.md Abschnitt 6.1) ---
+
+# Necken schicken: {k:"snore"|"alarm"|"ball", to} bzw. {k:"react", r}. Ergebnis kommt als fx_event (an alle) oder fx_refused.
+func send_fx(_req: Dictionary) -> void:
+	pass
+
+
+# Necken an diesem Gerät aus (true) bzw. an. Netz: der Gastgeber erfährt es (fx_pref), alle anderen über fx_offs.
+func set_fx_off(off: bool) -> void:
+	_fx_off_self = off
+
+
+func fx_off() -> bool:
+	return _fx_off_self
+
+
+# Plätze, die gerade nicht geneckt werden wollen (Menü-Hinweis „%s möchte gerade nicht geneckt werden.“).
+func fx_off_seats() -> Array:
+	return _fx_offs.duplicate()
+
+
+# Was in dieser Spielart geht: {kinds: [...], bots_only} (TeaseRules.caps).
+func fx_caps() -> Dictionary:
+	return TeaseRules.caps(mode())
+
+
+# Lokale Vorprüfung eines Wunschs für den eigenen Platz ("" = geht jetzt, sonst Grund wie TeaseRules.check) – zum Ausgrauen von Menü
+# und Reaktionen. Der Gastgeber prüft beim Absenden noch einmal (seine Uhr läuft nie kürzer).
+func fx_check(req: Dictionary) -> String:
+	return tease.check(local_seat(), req, fx_table(), _fx_now())
+
+
+# Wie lange das Ziel noch überlegen muss, bis Schnarchen/Wecker gehen (ms; 0 = jetzt; −1 = nicht am Zug).
+func fx_slow_left_ms(seat: int) -> int:
+	return tease.slow_left_ms(seat, _fx_now())
+
+
+# Tisch-Beschreibung für TeaseRules.check aus der aktuellen Sicht (eigener Platz mit der eigenen Einstellung).
+func fx_table() -> Dictionary:
+	var offs := _fx_offs.duplicate()
+	var me := local_seat()
+	if me >= 0:
+		offs.erase(me)
+		if _fx_off_self:
+			offs.append(me)
+	return TeaseRules.table_from_view(current_view(), offs, mode())
+
+
+func _fx_now() -> int:
+	return int(fx_clock.call()) if fx_clock.is_valid() else Time.get_ticks_msec()
+
+
+# Angenommenes fx verbuchen und melden (Spiegel und Gastgeber).
+func _fx_deliver(m: Dictionary) -> void:
+	tease.commit(m, _fx_now())
+	fx_event.emit(m)
+
+
+# Einstellung „necken“ dieses Geräts (App.settings; ohne App: an).
+static func setting_fx_off() -> bool:
+	var loop := Engine.get_main_loop()
+	var app: Node = (loop as SceneTree).root.get_node_or_null("App") if loop is SceneTree else null
+	if app != null and app.get("settings") is AppSettings:
+		return not bool((app.get("settings") as AppSettings).get_value("necken", true))
+	return false
 
 
 # --- Speicherstand (user://laufende_partie.json bzw. NET_SAVE_PATH), gemeinsam für alle Spielarten mit eigenem Regelwerk ---

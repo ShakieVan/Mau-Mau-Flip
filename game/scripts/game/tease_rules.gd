@@ -1,0 +1,224 @@
+class_name TeaseRules
+extends RefCounted
+# Mau-Mau Flip (Beta 1.6.3, Easter Eggs Teil 2): Regeln und Sperrzeiten fürs Necken (docs/module/eastereggs2.md Abschnitte 1, 4, 6).
+# Rein, ohne Szene und ohne eigene Uhr: Jede Funktion bekommt die Zeit now (ms, monoton) vom Aufrufer (einspritzbar in Tests).
+# Der Gastgeber (HostTable) hält die maßgebliche Instanz und prüft jeden Wunsch mit check(), bevor er ihn verteilt; jedes andere
+# Gerät hält einen Spiegel (TableSource.tease), den es mit denselben Sichten, Ereignissen und angenommenen fx-Ereignissen füttert –
+# so graut die Oberfläche lokal aus, was der Gastgeber ablehnen würde (Abschnitt 2 „Lokal vorgeprüft“). Der Spielstand bleibt
+# unberührt (kein rev, keine Sicherung).
+#
+# Zustand je Partie: Zug (turn, Zugnummer, Zugbeginn since), sent[sender][kind] = Zugnummer (Schnarchen/Wecker je Sender und Zug
+# einmal), busy_until[Ziel] (laufende Weckaktion), last_ball[Ziel], Eimer je Sender und Art sowie der Tisch-Eimer.
+# Zug: jede Phase aus TURN_PHASES, in der current_seat() handeln muss. Die Zugnummer steigt, wenn der Platz am Zug wechselt (auch über
+# −1 am Rundenende); die Uhr since beginnt außerdem neu, wenn der Platz am Zug selbst handelt (Ereignis mit seinem Platz, wie
+# TableView._poke). Abgelehnte Aktionen erzeugen keine Ereignisse und setzen die Uhr deshalb nicht zurück.
+#
+# Tisch-Beschreibung für check() (table): {mode, phase, turn, seats: [{bot, gone, off}]} – bot = Computergegner (kein vertretener
+# Mensch), gone = getrennt, „kurz in einer anderen App“ oder vom Computer vertreten, off = Necken aus. table_from_view() baut sie aus
+# einer Sicht (Gäste, Oberfläche), HostTable aus seinen eigenen Daten.
+#
+# Gründe von check() ("" = erlaubt): REFUSALS ("late", "busy", "rate") gehen als {t:"fx_no", why} an den Absender zurück; alle übrigen
+# ("kind", "mode", "sender", "off", "self", "target", "phase", "early", "once") verwirft der Gastgeber still – die Oberfläche zeigt
+# solche Knöpfe gar nicht erst bzw. ausgegraut.
+
+const FX_KINDS := ["snore", "alarm", "ball", "react"]
+const FX_REACTS := ["lachen", "schreck", "klatschen", "daumen"]
+const WAKE_KINDS := ["snore", "alarm"]
+const FX_SLOW_MS := 10000                       # Schnarchen/Wecker erst, wenn das Ziel so lange nichts getan hat
+const WAKE_BUSY_MS := {"snore": 4500, "alarm": 5000}   # so lange nimmt der Gastgeber für dieses Ziel keine zweite Weckaktion an
+const BALL_BUCKET := 2                          # Papierkugel: Eimer je Sender …
+const BALL_REFILL_MS := 5000                    # … +1 je 5 s
+const BALL_GAP_MS := 1500                       # am selben Ziel frühestens so lange nach der letzten Kugel
+const REACT_BUCKET := 3                         # Reaktion: Eimer je Sender …
+const REACT_REFILL_MS := 3000                   # … +1 je 3 s
+const TABLE_BUCKET := 8                         # alle Arten zusammen am Tisch …
+const TABLE_REFILL_MS := 250                    # … +4 je s (schützt den Vermittler)
+const TURN_PHASES := ["turn", "drawn", "color", "challenge", "gamble", "discard_pick"]   # = MauGame.PLAY_PHASES
+const REACT_PHASES := ["turn", "drawn", "color", "challenge", "gamble", "discard_pick", "round_over", "game_over"]
+const REFUSALS := ["late", "busy", "rate"]      # Gründe, die der Absender als fx_no erfährt
+
+var turn := -1                    # Platz am Zug (−1: keiner, z. B. Rundenende)
+var turn_no := 0                  # Zugnummer (steigt bei jedem Wechsel von turn)
+var since := 0                    # Zugbeginn bzw. letzte eigene Aktion des Platzes am Zug (ms)
+var sent := {}                    # Absender -> {kind: Zugnummer}
+var busy_until := {}              # Ziel -> ms (laufende Weckaktion)
+var last_ball := {}               # Ziel -> ms (letzte Papierkugel)
+var buckets := {}                 # "Absender:Art" bzw. "table" -> {level: float, t: int}
+
+
+# Was in dieser Spielart geht: kinds = erlaubte Arten, bots_only = nur Computergegner als Ziel (Übung).
+# host/client: alles; solo (Übung): nur die Papierkugel auf Computergegner; pass (Weitergeben) und sonst: nichts.
+static func caps(mode: String) -> Dictionary:
+	match mode:
+		"host", "client":
+			return {"kinds": FX_KINDS.duplicate(), "bots_only": false}
+		"solo":
+			return {"kinds": ["ball"], "bots_only": true}
+	return {"kinds": [], "bots_only": false}
+
+
+# Tisch-Beschreibung aus einer Sicht (view.players: kind, connected, away, substituted). offs = Plätze mit Necken aus (fx_offs).
+static func table_from_view(view: Dictionary, offs: Array, mode: String) -> Dictionary:
+	var list: Array = []
+	var players: Array = view.get("players", []) if view.get("players") is Array else []
+	for p in players:
+		var d: Dictionary = p if p is Dictionary else {}
+		var s := list.size()
+		list.append({"bot": str(d.get("kind", "")) == "bot",
+			"gone": d.get("connected") == false or d.get("away") == true or d.get("substituted") == true,
+			"off": offs.has(s)})
+	return {"mode": mode, "phase": str(view.get("phase", "")), "turn": int(view.get("turn", -1)) if view.get("turn") is int else -1,
+		"seats": list}
+
+
+# Zug aus einer Sicht übernehmen (Gäste, Oberfläche).
+func note_view(view: Dictionary, now: int) -> void:
+	var t: int = int(view.get("turn", -1)) if view.get("turn") is int else -1
+	note_turn(t, str(view.get("phase", "")), now)
+
+
+# Platz am Zug (current_seat(), −1 außerhalb der Spielphasen). Wechsel: neue Zugnummer, Uhr neu.
+func note_turn(cur: int, phase: String, now: int) -> void:
+	if not phase in TURN_PHASES:
+		cur = -1
+	if cur != turn:
+		turn = cur
+		turn_no += 1
+		since = now
+		busy_until.clear()        # eine Weckaktion gilt nur im Zug ihres Ziels
+
+
+# Angenommene Ereignisse: Ein Ereignis mit dem Platz am Zug setzt dessen Uhr zurück (wie TableView._poke); „seats“ (Dazuholen/Entfernen)
+# leert den ganzen Zustand, weil sich die Platznummern verschieben.
+func note_events(events: Array, now: int) -> void:
+	for e in events:
+		if not e is Dictionary:
+			continue
+		if str((e as Dictionary).get("e", "")) == "seats":
+			reset()
+			continue
+		var s = (e as Dictionary).get("seat")
+		if (s is int or s is float) and int(s) >= 0:
+			note_act(int(s), now)
+
+
+# Der Platz seat hat gehandelt (angenommene Aktion).
+func note_act(seat: int, now: int) -> void:
+	if seat == turn and turn >= 0:
+		since = now
+
+
+# Alles vergessen (Platzwechsel, neue Partie, neuer Gastgeber). Der Zug wird mit der nächsten Sicht neu gesetzt.
+func reset() -> void:
+	turn = -1
+	turn_no += 1
+	since = 0
+	sent.clear()
+	busy_until.clear()
+	last_ball.clear()
+	buckets.clear()
+
+
+# Wie lange das Ziel noch überlegen muss, bis Schnarchen/Wecker gehen (ms); −1 = es ist nicht am Zug.
+func slow_left_ms(seat: int, now: int) -> int:
+	if seat < 0 or seat != turn:
+		return -1
+	return maxi(0, FX_SLOW_MS - (now - since))
+
+
+# Wunsch req {k, to?, r?} des Platzes sender prüfen. "" = erlaubt, sonst der Grund (siehe Kopf).
+func check(sender: int, req: Dictionary, table: Dictionary, now: int) -> String:
+	var k := str(req.get("k", ""))
+	if not k in FX_KINDS:
+		return "kind"
+	var cap := caps(str(table.get("mode", "")))
+	if not k in (cap.kinds as Array):
+		return "mode"
+	var seats: Array = table.get("seats", []) if table.get("seats") is Array else []
+	if sender < 0 or sender >= seats.size():
+		return "sender"
+	var me: Dictionary = seats[sender]
+	if bool(me.get("bot", false)) or bool(me.get("gone", false)):
+		return "sender"
+	if bool(me.get("off", false)):
+		return "off"
+	var phase := str(table.get("phase", ""))
+	if k == "react":
+		if not req.get("r") is String or not str(req.r) in FX_REACTS:
+			return "kind"
+		if not phase in REACT_PHASES:
+			return "phase"
+		if _level("%d:react" % sender, REACT_BUCKET, REACT_REFILL_MS, now) < 1.0:
+			return "rate"
+		return _table_ok(now)
+	var to = req.get("to")
+	if not to is int:
+		return "target"
+	if int(to) == sender:
+		return "self"
+	if int(to) < 0 or int(to) >= seats.size():
+		return "target"
+	var tgt: Dictionary = seats[int(to)]
+	if bool(cap.bots_only) and not bool(tgt.get("bot", false)):
+		return "target"
+	if bool(tgt.get("gone", false)):
+		return "target"
+	if bool(tgt.get("off", false)):
+		return "off"
+	if k == "ball":
+		if not phase in TURN_PHASES:
+			return "phase"
+		if _level("%d:ball" % sender, BALL_BUCKET, BALL_REFILL_MS, now) < 1.0:
+			return "rate"
+		if last_ball.has(int(to)) and now - int(last_ball[int(to)]) < BALL_GAP_MS:
+			return "rate"
+		return _table_ok(now)
+	# snore / alarm: nur Menschen, nur am Zug, erst nach FX_SLOW_MS, je Sender und Zug einmal, je Ziel eine Weckaktion
+	if bool(tgt.get("bot", false)):
+		return "target"
+	if not phase in TURN_PHASES or int(to) != int(table.get("turn", -1)) or int(to) != turn:
+		return "late"
+	if now - since < FX_SLOW_MS:
+		return "early"
+	if int((sent.get(sender, {}) as Dictionary).get(k, -1)) == turn_no:
+		return "once"
+	if busy_until.has(int(to)) and now < int(busy_until[int(to)]):
+		return "busy"
+	return _table_ok(now)
+
+
+# Angenommenes Ereignis {k, from, to?, r?} verbuchen (Gastgeber nach check(), Spiegel beim Empfang). Ohne Prüfung.
+func commit(msg: Dictionary, now: int) -> void:
+	var k := str(msg.get("k", ""))
+	var from := int(msg.get("from", -1)) if msg.get("from") is int else -1
+	var to := int(msg.get("to", -1)) if msg.get("to") is int else -1
+	_take("table", TABLE_BUCKET, TABLE_REFILL_MS, now)
+	match k:
+		"react":
+			_take("%d:react" % from, REACT_BUCKET, REACT_REFILL_MS, now)
+		"ball":
+			_take("%d:ball" % from, BALL_BUCKET, BALL_REFILL_MS, now)
+			if to >= 0:
+				last_ball[to] = now
+		"snore", "alarm":
+			if not sent.has(from):
+				sent[from] = {}
+			(sent[from] as Dictionary)[k] = turn_no
+			if to >= 0:
+				busy_until[to] = now + int(WAKE_BUSY_MS[k])
+
+
+func _table_ok(now: int) -> String:
+	return "" if _level("table", TABLE_BUCKET, TABLE_REFILL_MS, now) >= 1.0 else "rate"
+
+
+# Füllstand eines Eimers jetzt (voll = cap), ohne ihn zu verändern.
+func _level(key: String, cap: int, refill_ms: int, now: int) -> float:
+	if not buckets.has(key):
+		return float(cap)
+	var b: Dictionary = buckets[key]
+	return minf(float(cap), float(b.level) + float(maxi(0, now - int(b.t))) / float(refill_ms))
+
+
+func _take(key: String, cap: int, refill_ms: int, now: int) -> void:
+	buckets[key] = {"level": maxf(0.0, _level(key, cap, refill_ms, now) - 1.0), "t": now}

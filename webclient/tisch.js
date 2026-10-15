@@ -220,8 +220,10 @@
         const g = e.target.closest('.gg');
         if (!g) return;
         e.preventDefault();
-        if (k) this.app.aktion({ a: 'catch', target: +g.dataset.seat });
-        else if (!this.v || +g.dataset.seat !== this.v.seat) this.app.gegnerAnsicht(+g.dataset.seat);   // eigene Zeile (großer Modus): nichts
+        if (k) this.app.aktion({ a: 'catch', target: +g.dataset.seat });   // „Erwischt!“ geht vor
+        else if (this.v && +g.dataset.seat === this.v.seat) { if (M.Necken) M.Necken.tippEigen(); }   // eigene Zeile (großer Modus): Reaktionen
+        // Beta 1.6.3 (Necken): Kopf (großer Modus: Avatar) bzw. Fächer ohne sichtbare Rückseiten öffnet das Necken-Menü
+        else if (!(M.Necken && M.Necken.tippGegner(+g.dataset.seat, e.target))) this.app.gegnerAnsicht(+g.dataset.seat);
       });
     }
     // langes Drücken auf Stapel/Ablage → Kartenhilfe
@@ -473,6 +475,7 @@
         M.Ton.spiele('dran');
         if (this.app.zugVibration) this.app.zugVibration();   // eigene Einstellung „Bei deinem Zug: Vibration“
       }
+      if (M.Necken) M.Necken.layout();   // Beta 1.6.3: Reaktionsknopf und offenes Necken-Menü an die neue Lage
     }
     // Hinweis des Gastgebers; ohne „Spielbare Karten hervorheben“ verrät er nicht, dass nichts passt (sonst wäre das die
     // Markierung) – wie in der App (table_view.gd hint_text).

@@ -56,7 +56,8 @@ static func defaults() -> Dictionary:
 	return {"name": "", "mau_ton": "normal", "toene": "normal", "vibration": true, "effekte": "voll", "beta": not app_version().ends_with(".0"),
 		"sortierung": "farbe", "hervorheben": true, "regeln": {}, "letzte_namen": [], "regelsaetze": [], "regeln_gastgeber": {},
 		"regelsatz_gewaehlt": "", "bot_tempo": 0.5, "schrift": "normal", "grosser_modus": false, "zug_vibration": true,
-		"sprache": "auto", "vermittler": NetProtocol.RELAY_DEFAULT, "sprueche": "frech", "sprueche_oft": "oft"}
+		"sprache": "auto", "vermittler": NetProtocol.RELAY_DEFAULT, "sprueche": "frech", "sprueche_oft": "oft",
+		"necken": true}
 
 static func app_version() -> String:
 	return str(ProjectSettings.get_setting("application/config/version", "0.0.0"))
@@ -90,7 +91,7 @@ static func sanitize(key: String, value: Variant) -> Variant:
 			return clean_last_room(value)
 		"sortierung":
 			return value if value is String and SORTIERUNG.has(value) else null
-		"vibration", "beta", "hervorheben", "grosser_modus", "zug_vibration":
+		"vibration", "beta", "hervorheben", "grosser_modus", "zug_vibration", "necken":   # necken: Beta 1.6.3 (Easter Eggs Teil 2), je Gerät, ab Werk an
 			return value if value is bool else null
 		"bot_tempo":                      # Tempo der Computergegner 0 (gemütlich) … 1 (flott), 0,5 = Standard
 			return clampf(float(value), 0.0, 1.0) if value is float or value is int else null

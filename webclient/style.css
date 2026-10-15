@@ -1057,3 +1057,140 @@ body.reduziert .gg.neu, body.reduziert .gg.abgang { animation-duration: .01s; }
 #lobby.wartet .lobby-status { font-weight: 800; }
 #lobby.wartet #bereit { display: none; }
 .lz .marke.wartet { background: var(--gold, #FFD65A); color: var(--ink, #211B2C); border-color: transparent; }
+
+/* ---------------- Mau-Mau Flip (Beta 1.6.3, Easter Eggs Teil 2): „Necken“ (necken.js, docs/module/eastereggs2.md) ----------------
+   Ebene #necken über dem Viewport (außerhalb der skalierten .buehne): Reaktionsknopf, Reaktionsfächer, Necken-Menü und Zeilen für den
+   Betroffenen, Knöpfe mindestens 44 CSS-px, Schrift nach --fs, Tag/Nacht über body[data-seite]. Über der Rundenend-Tafel (#runde, 1000),
+   unter Verbindungshinweisen (2000) und Meldungen (2500); andere Fenster verdecken sie (.verdeckt, necken.js _takt).
+   Effekte auf der Bühne (.flug): Papierkugel, Z z z mit Schlafmütze, Wecker, Reaktionen; Tag Tinte auf Papier, nachts Creme mit Neon.
+   „Effekte reduziert“ (body.reduziert) und prefers-reduced-motion: nichts fliegt, wackelt oder steigt auf, es blendet nur. */
+.necken-ebene { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 1050; pointer-events: none; display: none;
+  --nk-grund: #FFF7E8; --nk-tinte: #211B2C; --nk-rand: #211B2C; --nk-schein: 0 6px 18px rgba(33,27,44,.3); --nk-mf: #4C7DFF; }
+body[data-seite="dunkel"] .necken-ebene { --nk-grund: #170E36; --nk-tinte: #F4F0FF; --nk-rand: #9A86FF; --nk-schein: 0 0 0 2px rgba(154,134,255,.35), 0 0 22px rgba(154,134,255,.45); --nk-mf: #9A86FF; }
+body[data-screen="tisch"] .necken-ebene { display: block; }
+.necken-ebene.verdeckt { visibility: hidden; }
+.necken-ebene.farbwahl > .nk-rk, .necken-ebene.farbwahl > .nk-faecher { visibility: hidden; }   /* Gerätetest 1.6.3: nicht über dem Farbrad */
+.necken-ebene > * { position: absolute; pointer-events: auto; }
+.necken-ebene svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.nk-f { fill: var(--nk-grund, #FFF7E8); }
+.nk-s { stroke: var(--nk-tinte, #211B2C); stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; }
+.nk-dick { stroke-width: 3.4; fill: none; }
+.nk-dick.nk-f { fill: var(--nk-grund, #FFF7E8); }
+.nk-l { fill: none; stroke: var(--nk-tinte, #211B2C); stroke-width: 1.3; opacity: .55; stroke-linejoin: round; }
+.nk-gesicht { fill: none; }
+.nk-ziffern path { stroke: var(--nk-tinte, #211B2C); stroke-width: 2.6; stroke-linecap: round; }
+.nk-punkt, .nk-mund { fill: var(--nk-tinte, #211B2C); }
+.nk-gelb { fill: #FFD65A; }
+.nk-mf { fill: var(--nk-mf, #4C7DFF); }
+.nk-z { font: italic 900 22px var(--f-brand); fill: var(--nk-tinte, #211B2C); }
+.nk-z.k { font-size: 15px; } .nk-z.kk { font-size: 11px; }
+
+/* Reaktionsknopf am eigenen Platz (gezeichnetes Lachgesicht) und Fächer mit 4 Reaktionen */
+.nk-rk { width: 48px; height: 48px; padding: 7px; border-radius: 50%; background: var(--nk-grund); border: 3px solid var(--nk-rand); box-shadow: var(--nk-schein); }
+.nk-rk.aktiv { background: #FFD65A; }
+.nk-rk:active { transform: scale(.92); }
+.nk-faecher { left: 0; top: 0; width: 0; height: 0; }
+.nk-rb { position: absolute; width: 48px; height: 48px; padding: 0; border-radius: 50%; display: grid; place-items: center; line-height: 1; background: var(--nk-grund); border: 3px solid var(--nk-rand); box-shadow: var(--nk-schein);
+  animation: nkRbAuf .22s cubic-bezier(.3,1.5,.5,1) both; animation-delay: calc(var(--i, 0) * 40ms); }
+.nk-rb span { font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif; }
+.nk-rb.grau, .nk-mk.grau, .nk-rk.grau { opacity: .42; filter: grayscale(1); }
+.nk-rb.drueck, .nk-mk.drueck { animation: nkDrueck .25s ease-out; }
+.nk-rb.wackel, .nk-mk.wackel, .nk-rk.wackel { animation: nkWackel .3s ease-in-out; }
+body.reduziert .nk-rk.wackel { animation: none; }
+@keyframes nkRbAuf { from { opacity: 0; transform: translateY(24px) scale(.5); } }
+@keyframes nkDrueck { 50% { transform: scale(.86); } }
+@keyframes nkWackel { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+/* Necken-Menü: Sprechblase mit Zipfel zum Kopf des Mitspielers (data-seite = wo das Menü liegt, --zz = Lage des Zipfels) */
+.nk-menue { z-index: 2; max-width: calc(100vw - 16px); padding: 8px 10px; border-radius: 20px; background: var(--nk-grund); color: var(--nk-tinte); border: 3px solid var(--nk-rand); box-shadow: var(--nk-schein);
+  font: 700 calc(15px * var(--fs)) / 1.2 var(--f-ui); text-align: center; }
+.nk-menue.auf { animation: nkMenueAuf .2s cubic-bezier(.3,1.4,.5,1); }
+@keyframes nkMenueAuf { from { opacity: 0; transform: scale(.8); } }
+.nk-menue::before { content: ''; position: absolute; width: 16px; height: 16px; background: var(--nk-grund); border: 3px solid var(--nk-rand); border-width: 3px 0 0 3px; }
+.nk-menue[data-seite="unten"]::before { top: -10px; left: calc(var(--zz, 50%) - 8px); transform: rotate(45deg); }
+.nk-menue[data-seite="oben"]::before { bottom: -10px; left: calc(var(--zz, 50%) - 8px); transform: rotate(225deg); }
+.nk-menue[data-seite="links"]::before { right: -10px; top: calc(var(--zz, 50%) - 8px); transform: rotate(135deg); }
+.nk-menue[data-seite="rechts"]::before { left: -10px; top: calc(var(--zz, 50%) - 8px); transform: rotate(-45deg); }
+.nk-titel { display: block; margin: 0 4px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 800; }
+.nk-knoepfe { display: flex; gap: 4px; justify-content: center; }
+.nk-mk { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 56px; padding: 0 2px; background: none; border: 0; color: var(--nk-tinte); }
+.nk-mk i { display: block; width: 46px; height: 46px; padding: 8px; border-radius: 50%; background: var(--nk-grund); border: 3px solid var(--nk-rand); }
+.nk-mk span { font-size: calc(12px * var(--fs)); font-weight: 700; white-space: nowrap; }
+.nk-mk[style*="--rest"] i { background: conic-gradient(rgba(255,214,90,.8) calc(var(--rest) * 360deg), transparent 0), var(--nk-grund); }
+.nk-info { margin: 6px 4px 0; max-width: 280px; font-size: calc(13px * var(--fs)); font-weight: 600; opacity: .85; }
+
+/* Zeile für den Betroffenen über dem eigenen Namensschild */
+.nk-zeile { max-width: min(92vw, 520px); padding: 8px 16px; border-radius: 20px; background: var(--nk-grund); color: var(--nk-tinte); border: 2.5px solid var(--nk-rand); box-shadow: var(--nk-schein);
+  font: 800 calc(17px * var(--fs)) / 1.25 var(--f-ui); pointer-events: none !important; animation: nkMenueAuf .25s ease-out; transition: opacity .35s; }
+.nk-zeile.aus { opacity: 0; }
+
+/* Effekte auf der Bühne (Bühnenpixel; .gross = großer Modus). Beta 1.6.3: bei Mitspielern größer (Wecker, Z und Mütze etwa doppelt,
+   Reaktionen und fliegende Kugel 1,6-fach; liegend kleiner über scale in necken.js), Lage nach MMF.Necken._waehle */
+#tisch { --nk-grund: #FFF7E8; --nk-tinte: #211B2C; --nk-mf: #4C7DFF; --nk-glow: drop-shadow(0 0 0 transparent); }
+#tisch[data-seite="dunkel"] { --nk-grund: #FFF7E8; --nk-tinte: #170E36; --nk-mf: #9A86FF; --nk-glow: drop-shadow(0 0 8px rgba(154,134,255,.9)); }
+.flug .nk-kugel, .flug .nk-zzz, .flug .nk-muetze, .flug .nk-wecker, .flug .nk-emoji, .flug .nk-mpf { pointer-events: none; transition: opacity .35s; }
+.flug .nk-kugel.aus, .flug .nk-zzz.aus, .flug .nk-muetze.aus, .flug .nk-wecker.aus, .flug .nk-emoji.aus, .flug .nk-mpf.aus { opacity: 0 !important; }
+.nk-kugel { left: 0; top: 0; width: 64px; height: 64px; margin: -32px 0 0 -32px; filter: drop-shadow(0 3px 3px rgba(0,0,0,.35)) var(--nk-glow); }
+.nk-kugel.gross { width: 80px; height: 80px; margin: -40px 0 0 -40px; }
+.nk-kugel svg, .nk-muetze svg, .nk-wecker svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.nk-kugel.erscheint { animation: nkErscheint .3s ease-out; }
+@keyframes nkErscheint { from { opacity: 0; } }
+.nk-zzz { width: 240px; height: 240px; transform: translate(0, -100%); filter: var(--nk-glow); }
+.nk-zzz b { position: absolute; left: 0; bottom: 0; font: italic 900 68px var(--f-brand); color: var(--nk-tinte); -webkit-text-stroke: 2px var(--nk-grund); opacity: 0;
+  animation: nkZ 2.1s ease-out infinite; animation-delay: calc(var(--n) * .42s); }
+#tisch[data-seite="dunkel"] .nk-zzz b { color: #FFF7E8; -webkit-text-stroke: 0; text-shadow: 0 0 10px rgba(154,134,255,.95); }
+.nk-zzz b:nth-child(1) { --n: 0; } .nk-zzz b:nth-child(2) { --n: 1; font-size: 52px; } .nk-zzz b:nth-child(3) { --n: 2; font-size: 40px; } .nk-zzz b:nth-child(4) { --n: 3; } .nk-zzz b:nth-child(5) { --n: 4; font-size: 48px; }
+.nk-zzz.gross b { font-size: 70px; }
+@keyframes nkZ { 0% { opacity: 0; transform: translate(0, 0) scale(.5) rotate(-8deg); } 18% { opacity: 1; } 100% { opacity: 0; transform: translate(calc(var(--zx, 1) * 92px), -130px) scale(1.2) rotate(10deg); } }
+.nk-zzz.links { --zx: -1; }
+.nk-zzz.still b { animation: none; opacity: 1; }
+.nk-zzz.still b:nth-child(1) { transform: translate(0, -10px); } .nk-zzz.still b:nth-child(2) { transform: translate(calc(var(--zx, 1) * 40px), -64px); } .nk-zzz.still b:nth-child(3) { transform: translate(calc(var(--zx, 1) * 74px), -108px); }
+.nk-zzz.still b:nth-child(n+4) { display: none; }
+.nk-muetze { width: 120px; height: 68px; transform: translate(-46%, -85%) rotate(-10deg); filter: drop-shadow(0 2px 2px rgba(0,0,0,.3)) var(--nk-glow); animation: nkMuetze .35s cubic-bezier(.3,1.6,.5,1); }
+.nk-muetze.gross { width: 130px; height: 73px; }
+@keyframes nkMuetze { from { opacity: 0; transform: translate(-46%, -160%) rotate(-30deg); } to { transform: translate(-46%, -85%) rotate(-10deg); } }
+.nk-wecker { width: 144px; height: 166px; transform: translate(-50%, -50%); filter: drop-shadow(0 4px 4px rgba(0,0,0,.35)) var(--nk-glow); animation: nkHuepf .45s cubic-bezier(.3,1.7,.5,1); }
+.nk-wecker.gross { width: 140px; height: 161px; }
+.nk-wecker.ziel { width: 112px; height: 129px; }
+.nk-wecker svg { animation: nkTick 1s ease-out 3; transform-origin: 50% 60%; }
+.nk-wecker .nk-zeiger { transform-box: fill-box; transform-origin: 50% 100%; animation: nkZeiger 3s linear forwards; }
+@keyframes nkHuepf { 0% { opacity: 0; transform: translate(-50%, 10%) scale(.4); } 60% { opacity: 1; transform: translate(-50%, -70%) scale(1.05); } 100% { transform: translate(-50%, -50%); } }
+@keyframes nkTick { 0%, 30%, 100% { transform: rotate(0); } 8% { transform: rotate(-7deg); } 18% { transform: rotate(6deg); } }
+@keyframes nkZeiger { to { transform: rotate(360deg); } }
+.nk-wecker .sw { position: absolute; top: 18%; width: 22%; height: 40%; border: 4px solid var(--nk-tinte); border-radius: 50%; opacity: 0; }
+#tisch[data-seite="dunkel"] .nk-wecker .sw { border-color: #FFF7E8; }
+.nk-wecker .s1 { left: -24%; border-right-color: transparent; border-top-color: transparent; border-bottom-color: transparent; }
+.nk-wecker .s2 { right: -24%; border-left-color: transparent; border-top-color: transparent; border-bottom-color: transparent; }
+.nk-wecker.klingelt svg { animation: nkKlingel .09s linear infinite alternate; }
+.nk-wecker.klingelt .nk-glocken { animation: nkGlocke .09s linear infinite alternate; }
+.nk-wecker.klingelt .sw { opacity: 1; animation: nkSchwing .3s ease-out infinite; }
+@keyframes nkKlingel { from { transform: rotate(-11deg) translateX(-2px); } to { transform: rotate(11deg) translateX(2px); } }
+@keyframes nkGlocke { from { transform: translateY(0); } to { transform: translateY(-3px); } }
+@keyframes nkSchwing { from { transform: scale(.7); opacity: 1; } to { transform: scale(1.3); opacity: 0; } }
+.nk-wecker.faellt { animation: nkFaellt .8s ease-in forwards; }
+@keyframes nkFaellt { 0% { transform: translate(-50%, -50%) rotate(0); } 35% { transform: translate(-50%, -40%) rotate(95deg); opacity: 1; } 100% { transform: translate(-50%, 10%) rotate(95deg); opacity: 0; } }
+.nk-wecker.still, .nk-wecker.still svg, .nk-wecker.still.klingelt svg, .nk-wecker.still .nk-glocken { animation: none; }
+.nk-wecker.still.klingelt .sw { animation: none; }
+.nk-wecker.still.faellt { animation: nkAusblenden .3s ease-in forwards; }
+@keyframes nkAusblenden { to { opacity: 0; } }
+.nk-emoji { transform: translate(-50%, -50%); font: 84px/1 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif; animation: nkAuf 1.6s ease-out forwards; }
+.nk-emoji.gross { font-size: 100px; }
+@keyframes nkAuf { 0% { opacity: 0; transform: translate(-50%, -30%) scale(.5); } 15% { opacity: 1; transform: translate(-50%, -62%) scale(1.1) rotate(-6deg); } 40% { transform: translate(-50%, -95%) rotate(6deg); }
+  65% { transform: translate(-50%, -135%) rotate(-5deg); opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -200%) rotate(4deg); } }
+.nk-emoji.still { animation: nkBlende 1.6s ease-in-out forwards; }
+@keyframes nkBlende { 0%, 100% { opacity: 0; } 20%, 75% { opacity: 1; } }
+.nk-mpf { transform: translate(-10%, -100%); padding: 4px 12px; border-radius: 16px; background: var(--nk-grund); color: var(--nk-tinte); border: 2.5px solid var(--nk-tinte); font: italic 900 24px var(--f-brand); white-space: nowrap; animation: nkErscheint .25s ease-out; }
+.nk-mpf.links { transform: translate(-100%, -50%); }
+#tisch.wechselt .nk-zzz b, #tisch.wechselt .nk-wecker .sw, #tisch.wechselt .nk-mpf { transition: var(--tr); }   /* Flip: Farben wechseln mit der Schrift */
+#tisch[data-seite="dunkel"] .nk-mpf { background: #170E36; color: #FFF7E8; border-color: #9A86FF; }
+.nk-stauch { animation: nkStauch .42s ease-out !important; }
+@keyframes nkStauch { 0% { transform: scale(1); } 25% { transform: scale(1.18, .72); } 55% { transform: scale(.9, 1.12); } 100% { transform: scale(1); } }
+body.reduziert .nk-zzz b, body.reduziert .nk-wecker, body.reduziert .nk-wecker svg, body.reduziert .nk-wecker.klingelt svg, body.reduziert .nk-wecker .nk-glocken,
+body.reduziert .nk-wecker.klingelt .sw, body.reduziert .nk-muetze, body.reduziert .nk-stauch, body.reduziert .nk-rb, body.reduziert .nk-menue.auf { animation: none !important; }
+body.reduziert .nk-zzz b { opacity: 1; }
+body.reduziert .nk-emoji { animation: nkBlende 1.6s ease-in-out forwards; }
+@media (prefers-reduced-motion: reduce) {
+  .nk-zzz b, .nk-wecker, .nk-wecker svg, .nk-wecker.klingelt svg, .nk-wecker .nk-glocken, .nk-wecker.klingelt .sw, .nk-muetze, .nk-stauch, .nk-rb, .nk-menue.auf { animation: none !important; }
+  .nk-zzz b { opacity: 1; }
+  .nk-emoji { animation: nkBlende 1.6s ease-in-out forwards; }
+}

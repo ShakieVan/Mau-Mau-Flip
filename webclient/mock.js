@@ -134,7 +134,7 @@
       let t;
       do { t = this.stapel.pop(); this.ablage.push(t); } while (z(this.f(t)).art !== 'zahl');
       this.farbe = z(this.f(t)).farbe;
-      this.dran = ICH;
+      this.dran = P('dran') !== null && P('dran') !== '' ? Math.max(0, Math.min(this.n - 1, +P('dran'))) : ICH;   // dran=<Platz> (Necken-Bilder)
       return [{ e: 'shuffle' }, { e: 'deal' }];
     }
     passt(id) {
@@ -642,6 +642,9 @@
       this.timer = 0;
       this.logs = [];
       this.kaputt = this.szene === 'getrennt';
+      // Mau-Mau Flip (Beta 1.6.3, Necken): Regeln wie der echte Gastgeber (Spiegel aus necken.js), fx_pref → fx_offs
+      this.necken = M.Necken ? new M.Necken.Regeln() : null;
+      this.fxAus = false;
     }
     spieler() { return [this.ich].concat(this.andere).sort((a, b) => a.seat - b.seat); }
     an(msg) { if (this.client) this.client.liefere(msg); }
@@ -676,8 +679,26 @@
         case 'act': this.aktion(ICH, m.a || {}, m.seq); break;
         case 'ping': this.an({ t: 'pong', ts: m.ts }); break;
         case 'log': this.logs.push(m.text); if (window.console) console.log('[mock-log]', m.text); break;
+        case 'fx': this._fx(m); break;
+        case 'fx_pref':
+          if (typeof m.off !== 'boolean' || m.off === this.fxAus) break;
+          this.fxAus = m.off;
+          if (this.spiel) this.an({ t: 'fx_offs', seats: this.fxAus ? [ICH] : [] });
+          break;
         default: break;
       }
+    }
+    // Necken-Wunsch prüfen wie HostTable._on_fx: angenommen → fx an alle (hier: an mich), late/busy/rate → fx_no, sonst still
+    _fx(m) {
+      const N = this.necken, sp = this.spiel;
+      if (!N || !sp) return;
+      const req = m.k === 'react' ? { k: m.k, r: m.r } : { k: m.k, to: m.to };
+      const jetzt = M.Necken.uhr();
+      const why = N.pruefe(ICH, req, M.Necken.Regeln.tischAusSicht(sp.sicht(ICH), this.fxAus ? [ICH] : [], 'host'), jetzt);
+      if (why) { if (M.Necken.REFUSALS.indexOf(why) >= 0) this.an({ t: 'fx_no', why }); return; }
+      const f = req.k === 'react' ? { t: 'fx', k: 'react', from: ICH, r: req.r } : { t: 'fx', k: req.k, from: ICH, to: req.to };
+      N.verbuche(f, jetzt);
+      this.an(f);
     }
     _pruefeStart() {
       if (this.spiel || !this.spieler().every(p => p.ready || p.kind === 'bot')) return;
@@ -721,6 +742,7 @@
     sendeState(events, seqAck) {
       const m = { t: 'state', events, view: this.spiel.sicht(ICH) };
       if (seqAck !== undefined) m.seq_ack = seqAck;
+      if (this.necken) { const jetzt = M.Necken.uhr(); this.necken.notiereEreignisse(events, jetzt); this.necken.notiereSicht(m.view, jetzt); }
       this.an(m);
     }
     aktion(seat, a, seq) {
@@ -743,7 +765,7 @@
         }, 700 / this.tempo);
       }
       const amZug = sp.phase === 'challenge' ? sp.fordern.opfer : sp.dran;
-      if (amZug === ICH) return;
+      if (amZug === ICH || P('halt')) return;   // halt=1: Mitspieler überlegen ewig (Necken-Bilder)
       const warte = (900 + sp.rng() * 500) / this.tempo;
       this.timer = setTimeout(() => {
         const a = sp.botAktion(amZug);

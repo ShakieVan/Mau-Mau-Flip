@@ -219,3 +219,14 @@ Farbnamen als Kartenfarbe groß („Play Blue or a 9“), im Fließtext als Adje
 | Bluff! / Sauber! (Anzweifeln) | Bluff! / Honest! |
 | Nochmal du! | You go again! |
 | Wertungstabelle RUNDE / GESAMT | ROUND / TOTAL |
+
+## Necken (Beta 1.6.3, Easter Eggs Teil 2)
+
+| Deutsch | Englisch |
+|---|---|
+| Necken / necken | Teasing / tease |
+| Papierkugel | paper ball |
+| Schnarchen | snore |
+| Wecker | alarm clock |
+| Reaktion (Lachen, Schreck, Klatschen, Daumen hoch) | reaction (Laugh, Shock, Applause, Thumbs up) |
+| Karten ansehen | View cards |

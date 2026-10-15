@@ -354,9 +354,12 @@ func _planned_lan() -> void:
 	check(ht.handover_to(seats.Anna), "7: handover_to(Anna)")
 	check(wait_until(func(): return a.ht() != null and a.sw.takeovers == 1, 6000), "7: Anna führt (%s)" % a.sw.state)
 	check(a.ht().gen == gen0 + 1 and a.ht().port() == A_PORT, "7: Anna gen + 1 auf ihrem Port")
-	check(wait_until(func(): return h.ct() != null and h.ct().connection_state() == "open" and h.ct().host_name() == "Anna", 6000),
-		"7: Hanna tritt ab und spielt als Gast bei Anna (%s)" % h.sw.state)
-	check(h.ct().local_seat() == hanna_seat and h.ct().port == A_PORT, "7: Hanna auf ihrem Platz")
+	# Hannas Gast-Tisch ist neu: Den Platz kennt er erst aus der ersten Sicht (state), die nach dem welcome kommt – unter Last oft erst
+	# im nächsten poll. Deshalb auf die erste Sicht warten (vorher lag local_seat() noch bei −1, Bau 1.6.3 einmal rot).
+	check(wait_until(func(): return h.ct() != null and h.ct().connection_state() == "open" and h.ct().host_name() == "Anna" \
+		and h.ct().view_rev > 0, 6000), "7: Hanna tritt ab und spielt als Gast bei Anna (%s)" % h.sw.state)
+	check(h.ct().local_seat() == hanna_seat and h.ct().port == A_PORT, "7: Hanna auf ihrem Platz (Platz %d statt %d, Port %d, Sichten %d)"
+		% [h.ct().local_seat(), hanna_seat, h.ct().port, h.ct().view_rev])
 	check(str(h.swaps[-1][1]) == I18n.t("Du spielst jetzt als Gast weiter. Gastgeber ist %s.") % "Anna", "7: Hinweis an Hanna")
 	check(wait_until(func(): return b.ct() != null and b.ct().connection_state() == "open" and b.ct().host_name() == "Anna", 6000),
 		"7: Ben folgt dem move (%s)" % b.sw.state)
@@ -392,10 +395,12 @@ func _planned_qr() -> void:
 	check(int(stopped.get("Hanna", 0)) == 1, "8: Hanna schließt ihr Spiel-WLAN")
 	check(wait_until(func(): return (states.Ben as Array).has("scan"), 3000), "8: Ben bekommt move qr (%s)" % str(last_of(b.inbox, "move")))
 	check((states.Hanna as Array).has("scan") and (states.Ben as Array).has("scan"), "8: Hanna und Ben im Zustand scan (%s / %s)" % [str(states.Hanna), str(states.Ben)])
+	# Hanna: neuer Gast-Tisch, Platz erst mit der ersten Sicht (wie Fall 7)
 	check(wait_until(func(): return h.ct() != null and h.ct().connection_state() == "open" and h.ct().host_name() == "Anna" \
-		and b.ct() != null and b.ct().connection_state() == "open" and b.ct().host_name() == "Anna", 8000),
+		and h.ct().view_rev > 0 and b.ct() != null and b.ct().connection_state() == "open" and b.ct().host_name() == "Anna", 8000),
 		"8: beide finden Anna per Suche (%s / %s)" % [h.sw.state, b.sw.state])
-	check(h.ct().local_seat() == ht.host_seat and b.ct().local_seat() == seats.Ben, "8: gleiche Plätze")
+	check(h.ct().local_seat() == ht.host_seat and b.ct().local_seat() == seats.Ben, "8: gleiche Plätze (Hanna %d statt %d, Sichten %d)"
+		% [h.ct().local_seat(), ht.host_seat, h.ct().view_rev])
 	check(h.sw.takeovers == 0 and b.sw.takeovers == 0, "8: niemand sonst übernimmt")
 	_clear()
 

@@ -287,6 +287,36 @@ function Invoke-WebMoveTest {
     Write-Output ("Lite-Umzugstest: ok ({0:N1} s)" -f $watch.Elapsed.TotalSeconds)
 }
 
+function Invoke-WebTeaseTest {
+    # Mau-Mau Flip (Beta 1.6.3, Easter Eggs Teil 2 „Necken“): der echte Lite-Ablauf (webclient/test/lite_necken.html: index.html im iframe
+    # gegen Schein-WebSocket – fx_pref, Menü, Senden und Empfangen von fx/fx_no/fx_offs, Töne je Rolle, Wecker abstellen, Necken aus,
+    # alter Gastgeber ohne fx) in Chrome headless mit virtueller Zeit. Ergebnis: data-ok="1".
+    $page = Join-Path $projectRoot 'webclient/test/lite_necken.html'
+    if (-not (Test-Path -LiteralPath $page)) { Write-Output 'Lite-Necktest: webclient/test/lite_necken.html fehlt – übersprungen.'; return }
+    $chrome = 'C:\Program Files\Google\Chrome\Application\chrome.exe'
+    if (-not (Test-Path -LiteralPath $chrome)) { throw 'Lite-Necktest braucht Google Chrome.' }
+    $watch = [Diagnostics.Stopwatch]::StartNew()
+    $chromeDir = Join-Path ([IO.Path]::GetTempPath()) ("mmf_lite_necken_" + $PID)
+    $url = ([Uri](Resolve-Path -LiteralPath $page).Path).AbsoluteUri
+    try {
+        $domFile = $chromeDir + '.html'
+        $proc = Start-Process -FilePath $chrome -ArgumentList @('--headless=new', '--disable-gpu', '--no-first-run', "--user-data-dir=`"$chromeDir`"",
+            '--allow-file-access-from-files', '--virtual-time-budget=300000', '--dump-dom', $url) -RedirectStandardOutput $domFile `
+            -RedirectStandardError ($chromeDir + '.err') -PassThru -WindowStyle Hidden
+        if (-not $proc.WaitForExit(180000)) { Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue }
+        $dom = ''
+        for ($i = 0; $i -lt 100; $i++) {
+            try { $dom = [IO.File]::ReadAllText($domFile); break } catch { Start-Sleep -Milliseconds 200 }
+        }
+    }
+    finally { Remove-Item -LiteralPath $chromeDir, ($chromeDir + '.html'), ($chromeDir + '.err') -Recurse -Force -ErrorAction SilentlyContinue }
+    if ($dom -notmatch '<pre id="autotest-result" data-ok="1"') {
+        $m = [regex]::Match($dom, '<pre id="autotest-result"[^>]*>([\s\S]{0,800})')
+        throw ("Lite-Necktest fehlgeschlagen: " + $(if ($m.Success) { $m.Groups[1].Value } else { 'kein Ergebnis' }))
+    }
+    Write-Output ("Lite-Necktest: ok ({0:N1} s)" -f $watch.Elapsed.TotalSeconds)
+}
+
 function Invoke-WebTakeoverTest {
     # Mau-Mau Flip (Beta 1.6.1, Gastgeber-Übergabe): der echte Browser-Client „Lite“ (Chrome headless, Selbsttest) bei einer Übernahme
     # online (docs/module/uebergabe.md 7): (1) Lite meldet sich nach 4012 mit Token beim neuen Gastgeber an und spielt weiter;
@@ -581,6 +611,7 @@ try {
         Invoke-RelayTest
         Invoke-WebOnlineTest
         Invoke-WebMoveTest
+        Invoke-WebTeaseTest
         Invoke-WebTakeoverTest
         Invoke-Tests
         # Nur merken, wenn sich während der Tests nichts geändert hat (sonst wäre ein Mischstand getestet).

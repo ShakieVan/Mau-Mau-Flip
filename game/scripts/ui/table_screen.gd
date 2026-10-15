@@ -149,6 +149,9 @@ func build() -> void:
 	_top.theme = UiTheme.get_theme()
 	top_layer.add_child(_top)
 	_build_top()
+	# Beta 1.6.3 (Necken): das Menü am Gegner meidet Zurück- und ☰-Knopf (liegen eine Ebene darüber)
+	table.tease.avoid_cb = func() -> Array: return [_menu_btn.get_global_rect(), _burger.get_global_rect()]
+	table.tease.modal_cb = is_modal_open        # Gerätetest 1.6.3: Reaktionsknopf weg, solange eine Rückfrage/ein Menü offen ist
 	# Verdrahtung Tisch und Hand
 	table.action.connect(_on_table_action)
 	table.big_changed.connect(func(_on: bool) -> void: _layout())
@@ -186,6 +189,7 @@ func build() -> void:
 			source.lobby_changed.connect(_on_client_lobby)
 		if source is GameTable:
 			(source as GameTable).busy_check = _ui_busy
+		table.tease.attach(source)            # Beta 1.6.3 (Necken): fx_event/fx_refused → Tisch, Menüwahl → send_fx
 		# Mau-Mau Flip (Beta 1.6.1, Gastgeber-Übergabe): Wächter bzw. Abtreten; wechselt das Gerät die Rolle, kommt ein neuer Tisch
 		if source is ClientTable or source is HostTable:
 			_switch = HostSwitch.ensure(source)
@@ -488,6 +492,7 @@ func bar_obstacles() -> Array[Rect2]:
 		var tw := UiFonts.text(700, 100.0).get_string_size(hb.hint, HORIZONTAL_ALIGNMENT_LEFT, -1, UiFonts.size("hinweisleiste")).x + 40.0
 		var cx := hb.get_global_rect().get_center().x
 		out.append(Rect2(cx - tw * 0.5 - 6.0, hb.global_position.y + hb.hint_y - hb.hint_h() * 0.5 - 6.0, tw + 12.0, hb.hint_h() + 12.0))
+	out.append_array(table.tease.obstacles())   # Beta 1.6.3: Reaktionsknopf (samt Fächer) und offenes Necken-Menü
 	return out
 
 
@@ -1722,6 +1727,16 @@ func open_seat_manager(page := "dazuholen") -> void:
 
 func is_seat_manager_open() -> bool:
 	return _seat_mgr != null and is_instance_valid(_seat_mgr) and not _seat_mgr.is_queued_for_deletion()
+
+
+# Gerätetest 1.6.3: liegt eine Rückfrage, ein Menü, eine Überlagerung oder die Großansicht einer Handkarte über dem Tisch?
+# (TeaseFx.modal_cb: der Reaktionsknopf lag hell darüber und ließ sich öffnen)
+func is_modal_open() -> bool:
+	for n in [_confirm, _save_box]:
+		if is_instance_valid(n) and not (n as Node).is_queued_for_deletion():
+			return true
+	return is_menu_open() or is_settings_open() or is_help_open() or is_pick_open() or is_seat_manager_open() \
+		or (hand != null and hand.is_big_view_open())
 
 
 # Wartet jemand auf einen Platz, während das Feld „Mitspieler“ zu ist: einmal Bescheid sagen
