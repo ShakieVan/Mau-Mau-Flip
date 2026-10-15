@@ -12,7 +12,7 @@
 #            Client holt der Vermittler selbst vom Tag v<version> des Quell-Repos (relay/src/client.js; Tag setzt tools/release.ps1).
 #            Braucht kein Godot.
 #   Test     zuerst der Vermittler-Kerntest (relay/test/core_test.html in Chrome headless, Invoke-RelayTest), dann
-#            Import, dann Browser-Onlinetest und Lite-Übernahmetest (Invoke-WebOnlineTest, Invoke-WebTakeoverTest), dann alle game/tests/test_*.gd (außer *_lang*/*_shot*), reine Tests parallel, Netz-/Bildschirmtests in einer
+#            Import, dann Browser-Onlinetest, Lite-Umzugstest und Lite-Übernahmetest (Invoke-WebOnlineTest, Invoke-WebMoveTest, Invoke-WebTakeoverTest), dann alle game/tests/test_*.gd (außer *_lang*/*_shot*), reine Tests parallel, Netz-/Bildschirmtests in einer
 #            eigenen Spur nacheinander; Zusammenfassung, Abbruch bei Fehler. Testergebnis-Cache: War genau dieser Stand (Prüfsumme
 #            über game/, webclient/ und dieses Skript, siehe Get-TestStateHash) schon vollständig grün, entfallen die Tests
 #            (.tools/test_cache.json; -NoTestCache erzwingt sie).
@@ -256,11 +256,44 @@ function Invoke-WebOnlineTest {
     Write-Output ("Browser-Onlinetest: ok ({0:N1} s)" -f $watch.Elapsed.TotalSeconds)
 }
 
+function Invoke-WebMoveTest {
+    # Mau-Mau Flip (Beta 1.6.2, Gegenprüfung): Gastgeber-Wechsel im WLAN im echten Lite-Ablauf (webclient/test/lite_umzug.html: index.html
+    # im iframe gegen Schein-WebSocket und Schein-fetch – hosts merken, Reihum-Probe, move lan/online/qr, Spiel-WLAN-Kasten, #t=/#n=)
+    # in Chrome headless mit virtueller Zeit (Wartezeiten von 20/60 s ohne echtes Warten). Das iframe auf file:// braucht
+    # --allow-file-access-from-files. Ergebnis: data-ok="1".
+    $page = Join-Path $projectRoot 'webclient/test/lite_umzug.html'
+    if (-not (Test-Path -LiteralPath $page)) { Write-Output 'Lite-Umzugstest: webclient/test/lite_umzug.html fehlt – übersprungen.'; return }
+    $chrome = 'C:\Program Files\Google\Chrome\Application\chrome.exe'
+    if (-not (Test-Path -LiteralPath $chrome)) { throw 'Lite-Umzugstest braucht Google Chrome.' }
+    $watch = [Diagnostics.Stopwatch]::StartNew()
+    $chromeDir = Join-Path ([IO.Path]::GetTempPath()) ("mmf_lite_umzug_" + $PID)
+    $url = ([Uri](Resolve-Path -LiteralPath $page).Path).AbsoluteUri
+    try {
+        $domFile = $chromeDir + '.html'
+        $proc = Start-Process -FilePath $chrome -ArgumentList @('--headless=new', '--disable-gpu', '--no-first-run', "--user-data-dir=`"$chromeDir`"",
+            '--allow-file-access-from-files', '--virtual-time-budget=300000', '--dump-dom', $url) -RedirectStandardOutput $domFile `
+            -RedirectStandardError ($chromeDir + '.err') -PassThru -WindowStyle Hidden
+        if (-not $proc.WaitForExit(180000)) { Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue }
+        $dom = ''
+        for ($i = 0; $i -lt 100; $i++) {      # Chrome-Kindprozesse halten die Ausgabedatei noch kurz offen
+            try { $dom = [IO.File]::ReadAllText($domFile); break } catch { Start-Sleep -Milliseconds 200 }
+        }
+    }
+    finally { Remove-Item -LiteralPath $chromeDir, ($chromeDir + '.html'), ($chromeDir + '.err') -Recurse -Force -ErrorAction SilentlyContinue }
+    if ($dom -notmatch '<pre id="autotest-result" data-ok="1"') {
+        $m = [regex]::Match($dom, '<pre id="autotest-result"[^>]*>([\s\S]{0,800})')
+        throw ("Lite-Umzugstest fehlgeschlagen: " + $(if ($m.Success) { $m.Groups[1].Value } else { 'kein Ergebnis' }))
+    }
+    Write-Output ("Lite-Umzugstest: ok ({0:N1} s)" -f $watch.Elapsed.TotalSeconds)
+}
+
 function Invoke-WebTakeoverTest {
     # Mau-Mau Flip (Beta 1.6.1, Gastgeber-Übergabe): der echte Browser-Client „Lite“ (Chrome headless, Selbsttest) bei einer Übernahme
     # online (docs/module/uebergabe.md 7): (1) Lite meldet sich nach 4012 mit Token beim neuen Gastgeber an und spielt weiter;
     # (2) Lite mit neuer c während eines still toten Gastgebers wird durch den 4012-Rundumschlag zurückgeholt. Godot-Skript
     # game/tests/web_takeover.gd (kein test_*: braucht Chrome, läuft nur hier), Vermittler-Nachbau auf TCP 24961–24964.
+    # Beta 1.6.2: dazu der WLAN-Teil W1/W3/W4 über die eigene LAN-Adresse (TCP 24965–24966): Lite folgt einer Übernahme mit fremdem
+    # Ursprung über hosts und /info bzw. kommt per #t= auf dem neuen Ursprung zurück.
     # Läuft innerhalb der Godot-Sperre des Baus (nach dem Import).
     if (-not (Test-Path -LiteralPath (Join-Path $gamePath 'tests/web_takeover.gd'))) { Write-Output 'Lite-Übernahmetest: game/tests/web_takeover.gd fehlt – übersprungen.'; return }
     if (-not (Test-Path -LiteralPath 'C:\Program Files\Google\Chrome\Application\chrome.exe')) { throw 'Lite-Übernahmetest braucht Google Chrome.' }
@@ -269,7 +302,7 @@ function Invoke-WebTakeoverTest {
     $proc = Start-Process -FilePath $engine -ArgumentList @('--headless', '--path', ('"' + $gamePath + '"'), '--script', 'res://tests/web_takeover.gd') `
         -PassThru -NoNewWindow -RedirectStandardOutput $out -RedirectStandardError ($out + '.err')
     $null = $proc.Handle    # sonst liefert Windows PowerShell nach WaitForExit keinen Exitcode
-    $late = -not $proc.WaitForExit(240000)
+    $late = -not $proc.WaitForExit(360000)
     if ($late) {
         # Godot samt Kindern (Chrome) beenden
         Get-CimInstance Win32_Process -Filter "ParentProcessId=$($proc.Id)" -ErrorAction SilentlyContinue |
@@ -283,7 +316,7 @@ function Invoke-WebTakeoverTest {
     $bad = @($lines | Where-Object { $_ -match 'SCRIPT ERROR|^ERROR:|FAIL:' })
     if ($late -or $proc.ExitCode -ne 0 -or -not $result -or $bad.Count -gt 0) {
         $lines | Select-Object -Last 40 | Write-Output
-        throw ("Lite-Übernahmetest fehlgeschlagen" + $(if ($late) { ' (Zeitgrenze 240 s)' } else { ": $result" }))
+        throw ("Lite-Übernahmetest fehlgeschlagen" + $(if ($late) { ' (Zeitgrenze 360 s)' } else { ": $result" }))
     }
     Write-Output ("Lite-Übernahmetest: {0} ({1:N1} s)" -f $result, $watch.Elapsed.TotalSeconds)
 }
@@ -547,6 +580,7 @@ try {
         if ($stateHash) { $stateHash = Get-TestStateHash }
         Invoke-RelayTest
         Invoke-WebOnlineTest
+        Invoke-WebMoveTest
         Invoke-WebTakeoverTest
         Invoke-Tests
         # Nur merken, wenn sich während der Tests nichts geändert hat (sonst wäre ein Mischstand getestet).

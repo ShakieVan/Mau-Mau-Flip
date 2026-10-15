@@ -16,7 +16,8 @@ extends "res://tests/handover_kit.gd"
 #  6  Gastgeber in einer anderen App: keine Übernahme vor T_AWAY (still und mit 4503 danach).
 #  7  Abstammung: Der alte Gastgeber setzt seine eigene Datei fort (gen 1) und verdrängt Anna (gen 2); Anna meldet sich mit hello.bk
 #     und bekommt das Spiel per handover own:true zurück (gen 2, gleiche epoch). handover own:true mit fremder Marke → handover_no.
-#  8  WLAN-Mitspieler am Tisch: keine Erben, keine Automatik; „Spiel als Gastgeber fortsetzen“ mit Warnzeile möglich.
+#  8  WLAN-Mitspieler am Tisch: keine Online-Erben (Beta 1.6.2: WLAN-Erben schon), keine Automatik für den Online-Gast; „Spiel als
+#     Gastgeber fortsetzen“ mit Warnzeile möglich.
 #  9  Hauptmenü „Partie fortsetzen“, niemand antwortet: eigene Datei älter als 5 min → Rückfrage (confirm_needed), danach Fortsetzen
 #     als Gastgeber (gen bleibt); jünger → sofort. Gäste ohne Automatik warten und finden zurück.
 # 10  Einschwing-Regel: Der still tote Gastgeber hat nach dem letzten bk noch Stände gemacht (seq > parent.seq) und kehrt zurück, während
@@ -363,12 +364,15 @@ func _wlan_humans() -> void:
 	check(h.ht().start(77), "8: Start")
 	play(4)
 	check(wait_until(func(): return a.ct().backup_current()), "8: Anna hat eine aktuelle Sicherung")
-	check((a.ct().backup.heirs as Array).is_empty() and bool(a.ct().backup.wlan_humans), "8: keine Erben (WLAN-Mitspieler)")
-	kill_still(h)
+	# Beta 1.6.2 (10.3, Gegenprüfung): WLAN-Erben ja (Kim), Online-Erben nicht, solange WLAN-Mitspieler am Tisch sitzen – fällt bei
+	# Hanna nur das Internet aus, merkt Kim nichts (der Server-Thread antwortet); Anna eröffnete sonst ein zweites Spiel
+	var heirs: Array = a.ct().backup.heirs
+	check(heirs == [k.ct().client.token] and bool(a.ct().backup.wlan_humans), "8: Erben nur Kim (WLAN), Anna (online) nicht (%s)" % str(heirs))
+	kill_still(h)                            # nur das Vermittler-Socket hängt: Kim im WLAN merkt nichts (der Server-Thread antwortet)
 	check(wait_until(func(): return a.sw.state == "waiting", 6000), "8: Anna merkt das Fehlen")
-	check(a.sw.countdown_ms() < 0 and a.sw.can_continue(), "8: keine Automatik, Knopf möglich")
+	check(a.sw.rank() < 0 and a.sw.countdown_ms() < 0 and a.sw.can_continue(), "8: Anna ohne Automatik, Knopf möglich")
 	var warn := I18n.render(a.sw.continue_warnings())
-	check(warn.contains(I18n.t("WLAN-Mitspieler kommen dann nicht mit.")), "8: Warnzeile WLAN")
+	check(warn.contains(I18n.t("WLAN-Mitspieler brauchen dann Internet.")), "8: Warnzeile WLAN (1.6.2)")
 	pump(t_step + 500)
 	check(a.sw.takeovers == 0, "8: keine automatische Übernahme")
 	check(a.sw.continue_as_host(), "8: von Hand fortsetzen")

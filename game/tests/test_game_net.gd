@@ -381,10 +381,24 @@ func test_resume() -> void:
 	var a3 := new_client("Anna", PORT2, saved_anna_token)
 	check(wait_until(func(): return a3.connection_state() == "open" and received[a3] > 0), "Fortsetzen: Gast kommt mit Token zurück")
 	check(a3.local_seat() == anna_seat and bool(host.game.connected[anna_seat]), "Fortsetzen: gleicher Platz")
+	# Beta 1.6.2 (10.10): Fortsetzen auf einem anderen Port ist ein Umzug (Lite-Gäste verlieren ihr Token mit der alten Herkunft).
+	# Solange Ben getrennt ist, landen Neue auf der Warteliste statt bei „reject running“ – ohne Platz, bis der Gastgeber sie holt.
+	check(host.session.join_open and not bool(host._save_extra().join_open),
+		"Fortsetzen nach Umzug: Warteliste offen (gespeichert bleibt der vorige Wert)")
 	var stranger := new_client("Neu", PORT2)
 	var st := []
 	stranger.connection_changed.connect(func(s: String) -> void: st.append(s))
-	check(wait_until(func(): return st.has("rejected")), "Fortsetzen: Neue ohne Token abgelehnt (running)")
+	check(wait_until(func(): return stranger.connection_state() == "open" and stranger.waiting) and not st.has("rejected"),
+		"Fortsetzen nach Umzug: Neue warten statt „reject running“ (%s)" % str(st))
+	check(host.session.is_waiting(stranger.my_id) and host.session.seat_of(stranger.my_id) < 0, "Fortsetzen nach Umzug: Neue ohne Platz")
+	stranger.leave()             # bleibt in tables (wird am Ende freigegeben); play_step übergeht ihn, weil nicht mehr offen
+	# Gleiche Adresse (Port und eine der gespeicherten Adressen): kein Umzug – dort bleibt es bei „reject running“
+	var own: Array = NetAddresses.own_addresses().map(func(a): return str(a.address))
+	if not own.is_empty():
+		check(not host._moved_since({"wlan": {"port": PORT2, "addrs": [own[0]]}}), "Fortsetzen: gleiche Adresse ist kein Umzug")
+	check(not host._moved_since({"wlan": {"port": PORT2, "addrs": []}}), "Fortsetzen: ohne gespeicherte Adressen kein Umzug")
+	check(host._moved_since({"wlan": {"port": PORT2, "addrs": ["203.0.113.9"]}}), "Fortsetzen: fremde Adresse ist ein Umzug")
+	check(host._moved_since({"wlan": {"port": PORT, "addrs": []}}), "Fortsetzen: anderer Port ist ein Umzug")
 	check(HostTable.has_saved(SAVE) and LocalTable.load_saved(SAVE).get("mode") == "host", "Speicherstand über Unterklassen abrufbar")
 	# Ben kommt nicht zurück: mit auto_substitute_s übernimmt nach der Wartezeit ein Bot
 	var ben_seat := -1

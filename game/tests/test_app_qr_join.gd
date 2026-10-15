@@ -77,6 +77,24 @@ func parse_tests() -> void:
 	for far in ["http://8.8.8.8:24690/", "https://example.com/", "http://192.168.1/"]:
 		r = QrJoin.parse(far)
 		check(r.kind == "unknown" and str(r.error).contains("nicht zu einem Spiel"), "kein Spiel in der Nähe: " + far)
+	# Beta 1.6.2: Spiel-URL mit ?g=<gid> (Partie-Kennung; Lite ignoriert den Parameter)
+	r = QrJoin.parse("http://192.168.49.1:24690/?g=3fa9c01b77e2d4aa")
+	check(r.kind == "wlan" and r.address == "192.168.49.1" and r.port == 24690 and r.gid == "3fa9c01b77e2d4aa", "Spiel-URL mit ?g=")
+	r = QrJoin.parse("HTTP://192.168.49.1:24690/?G=3FA9C01B77E2D4AA")
+	check(r.kind == "wlan" and r.gid == "3fa9c01b77e2d4aa", "?g= groß (Alphanumerik-QR) → klein")
+	r = QrJoin.parse("http://10.0.0.7:24691/?lang=en&g=ab12#x")
+	check(r.kind == "wlan" and r.port == 24691 and r.gid == "ab12", "?g= nach anderem Parameter, Anker")
+	for odd in ["http://10.0.0.7:24691/?g=xyz", "http://10.0.0.7:24691/?g=", "http://10.0.0.7:24691/?g=-ab", "http://10.0.0.7:24691/?g=%s" % "a".repeat(33),
+			"http://10.0.0.7:24691/", "http://10.0.0.7:24691/#g=ab"]:
+		r = QrJoin.parse(odd)
+		check(r.kind == "wlan" and r.gid == "", "ungültiges/fehlendes ?g= → gid leer, Link gilt: " + odd)
+	var made_url := NetAndroid.game_url("192.168.49.1", 24690, "C0FFEE")
+	check(made_url == "http://192.168.49.1:24690/?g=c0ffee" and QrJoin.parse(made_url).gid == "c0ffee", "game_url mit gid hin und zurück")
+	check(NetAndroid.game_url("192.168.49.1", 24690) == "http://192.168.49.1:24690/" and NetAndroid.game_url("", 24690, "ab") == "", "game_url ohne gid wie bisher")
+	r = QrJoin.parse(NetAndroid.app_link_url("192.168.49.1", 24690, "beef01"))
+	check(r.kind == "wlan" and r.port == 24690 and r.gid == "beef01", "App-Link mit &g=")
+	r = QrJoin.parse("maumauflip://join?h=192.168.49.1&p=24690")
+	check(r.kind == "wlan" and r.gid == "", "App-Link ohne g")
 	# (b) Online-Link, auch eigener Vermittler
 	r = QrJoin.parse("https://mau-mau-flip-relay.shakie.workers.dev/?r=KATZE-42")
 	check(r.kind == "online" and r.room == "KATZE-42" and r.relay == "https://mau-mau-flip-relay.shakie.workers.dev", "Online-Link")
@@ -173,6 +191,61 @@ func binding_tests() -> void:
 	check(not QrJoin.wifi_supported() and QrJoin.wifi_connect("A", "geheim123", "wpa2") == "old_android" and not QrJoin.wifi_active(),
 		"Android 9: nicht möglich")
 	QrJoin.wifi_stub = null
+	release_tests()
+
+
+# Beta 1.6.2 (docs/module/uebergabe.md 10.8): wifi_release nach „lost“ setzt die Bindung zurück, gleich was bound_to meldet
+# (z. B. „host“ hat sich inzwischen als "wifi" eingetragen, obwohl der Prozess am toten Spiel-WLAN hing); ohne Anfrage bleibt eine
+# fremde Bindung unberührt; während eines Halts (Vermittler, Updater) gilt die Spiel-WLAN-Bindung danach nicht mehr.
+func release_tests() -> void:
+	QrJoin.wifi_stub = {"sdk": 34, "state": {"status": "connecting"}}
+	check(QrJoin.wifi_connect("Spiel", "geheim123", "wpa2") == "", "1.6.2: Anfrage läuft")
+	QrJoin.wifi_stub["state"] = {"status": "available", "gateway": "192.168.49.1"}
+	QrJoin.wifi_pin()
+	check(NetAddresses.bind_for("join", "192.168.49.1") == "qr_wifi", "1.6.2: ans Spiel-WLAN gebunden")
+	QrJoin.wifi_stub["state"] = {"status": "lost"}
+	NetAddresses.bound_to = "wifi"
+	check(QrJoin.wifi_release() and NetAddresses.bound_to == "" and NetAddresses.binding() == "" and not NetAddresses.pinned.is_valid(),
+		"1.6.2: wifi_release nach „lost“ setzt die Bindung immer zurück")
+	NetAddresses.bound_to = "wifi"
+	check(not QrJoin.wifi_release() and NetAddresses.bound_to == "wifi", "1.6.2: ohne Anfrage bleibt eine fremde Bindung")
+	NetAddresses.bound_to = ""
+	QrJoin.wifi_stub["state"] = {"status": "connecting"}
+	check(QrJoin.wifi_connect("Spiel", "geheim123", "wpa2") == "", "1.6.2: zweite Anfrage")
+	QrJoin.wifi_stub["state"] = {"status": "available"}
+	QrJoin.wifi_pin()
+	check(NetAddresses.bind_for("join", "192.168.49.1") == "qr_wifi", "1.6.2: wieder gebunden")
+	NetAddresses.hold_unbound("test_qr", 0)
+	check(NetAddresses.binding() == "qr_wifi", "1.6.2: Halt merkt sich die Spiel-WLAN-Bindung")
+	QrJoin.wifi_stub["state"] = {"status": "unavailable"}
+	QrJoin.wifi_release()
+	check(NetAddresses.binding() == "", "1.6.2: während eines Halts freigegeben: Bindung gilt nicht mehr")
+	NetAddresses.release_hold("test_qr")
+	check(NetAddresses.bound_to != "qr_wifi", "1.6.2: nach dem Halt keine Bindung ans Spiel-WLAN")
+	NetAddresses.release("join")
+	NetAddresses.release("search")
+	NetAddresses.bound_to = ""
+	QrJoin.wifi_stub = null
+	ap_info_tests()
+
+
+# Beta 1.6.2 (10.1): hello.ap = NetAndroid.game_wifi_ap_info() {ok, perm}
+func ap_info_tests() -> void:
+	NetAndroid.wifi_stub = {"sdk": 34, "granted": true}
+	var a := NetAndroid.game_wifi_ap_info()
+	check(bool(a.ok) and bool(a.perm), "ap: kann öffnen, Erlaubnis da")
+	NetAndroid.wifi_stub = {"sdk": 31, "granted": false}
+	a = NetAndroid.game_wifi_ap_info()
+	check(bool(a.ok) and not bool(a.perm), "ap: kann öffnen, Erlaubnis fehlt")
+	NetAndroid.wifi_stub = {"sdk": 25, "granted": true}
+	a = NetAndroid.game_wifi_ap_info()
+	check(not bool(a.ok) and not bool(a.perm), "ap: Android 7 kann kein Spiel-WLAN")
+	NetAndroid.wifi_stub = {"sdk": 34, "granted": true, "ap_ok": false}
+	a = NetAndroid.game_wifi_ap_info()
+	check(not bool(a.ok) and not bool(a.perm), "ap: Stub sperrt")
+	NetAndroid.wifi_stub = null
+	a = NetAndroid.game_wifi_ap_info()
+	check(a == {"ok": false, "perm": false}, "ap: am PC ohne Stub nichts")
 
 
 func screen_tests() -> void:

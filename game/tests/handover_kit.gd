@@ -5,6 +5,10 @@ extends SceneTree
 # selben Prozess, synchron gepumpt, Vermittler-Nachbau NetRelayDouble. Wanduhr der HostSwitches und NetClients ist einspritzbar
 # (wall_off verschiebt sie), kurze Fristen als Eigenschaften. Browser-Gäste (kind "web") sind nackte NetClients wie Lite: Sie melden
 # sich mit Token neu an (4012/4503) und kennen weder bk noch handover.
+# Beta 1.6.2 (WLAN und Spiel-WLAN, docs/module/uebergabe.md 10.16): host_dev(…, online = false) eröffnet nur im WLAN (127.0.0.1),
+# lan_guest() tritt dort bei (hello.hp = eigener Port, hello.ap aus Dev.ap), web_guest_lan() ist ein Browser-Gast im WLAN (bekommt
+# hosts und move). kill_lan_closed()/kill_lan_still(): WLAN-Gastgeber fällt aus (Verbindung verweigert bzw. still, mute_ws). Der
+# Vermittler-Nachbau ist optional (start_relay nur, wenn ein Test online braucht).
 
 const BASE_PATH := "user://test_uebergabe_%s.json"
 
@@ -26,6 +30,7 @@ var t_away := 4000
 var t_step := 1500
 var probe := 500
 var within := 3000
+var disc_ports: Array = []      # Beta 1.6.2: UDP-Ports aller Gastgeber-Suchen (Wächter-Scan fragt alle, 127.0.0.1)
 
 
 class Dev:
@@ -39,6 +44,8 @@ class Dev:
 	var dead := false
 	var last_src: TableSource
 	var bk := true
+	var ap := {"ok": false, "perm": false}   # Beta 1.6.2: hello.ap dieses Geräts (kann ein Spiel-WLAN öffnen / erlaubt)
+	var disc_port := 0         # Beta 1.6.2: eigener UDP-Port der Suche als Gastgeber (0 = keine Suche, Tests ohne UDP)
 
 	func src() -> TableSource:
 		return sw.source if sw != null and is_instance_valid(sw) and sw.source != null and is_instance_valid(sw.source) else null
@@ -90,8 +97,9 @@ func finish() -> void:
 			g.free()
 	garbage.clear()
 	devs.clear()
-	relay.stop()
-	relay.free()
+	if relay != null:
+		relay.stop()
+		relay.free()
 	print("RESULT: %d ok" % checks if failures == 0 else "RESULT: %d ok, %d FAIL" % [checks - failures, failures])
 	quit(1 if failures else 0)
 
@@ -137,9 +145,30 @@ func _config(d: Dev) -> void:
 	sw.save_path = d.path
 	sw.port_first = d.port
 	sw.port_last = d.port
-	sw.host_factory = make_host
-	sw.client_factory = make_client
+	sw.host_factory = func() -> HostTable: return _dev_host(d)
+	sw.client_factory = func() -> ClientTable: return _dev_client(d)
 	sw.swapped.connect(func(src: TableSource, note: String) -> void: _on_swap(d, src, note))
+
+
+# Gastgeber-Tisch dieses Geräts (Beta 1.6.2): mit disc_port antwortet er auf die Suche und fragt im Wächter-Scan alle disc_ports
+# (nur 127.0.0.1, kein Rundruf).
+func _dev_host(d: Dev) -> HostTable:
+	var h := make_host()
+	if d.disc_port > 0:
+		h.use_discovery = true
+		h.discovery_port = d.disc_port
+		h.scan_broadcast = false
+		h.scan_probe_local = true
+		h.scan_ports = disc_ports.filter(func(p): return int(p) != d.disc_port)
+	return h
+
+
+# Gast-Tisch dieses Geräts (auch nach einem Wechsel): hello.hp = eigener Port, hello.ap = Dev.ap (Beta 1.6.2)
+func _dev_client(d: Dev) -> ClientTable:
+	var c := make_client()
+	c.listen_port = d.port
+	c.ap_info = func() -> Dictionary: return d.ap
+	return c
 
 
 func _on_swap(d: Dev, src: TableSource, note: String) -> void:
@@ -155,37 +184,49 @@ func _listen(d: Dev, ct: ClientTable) -> void:
 	ct.host_message.connect(func(m: Dictionary) -> void: d.inbox.append(m))
 
 
-func host_dev(dev_name: String, port: int) -> Dev:
+# online = false (Beta 1.6.2): nur im WLAN (127.0.0.1:port), ohne Raum; disc_port > 0: Suche als Gastgeber auf diesem UDP-Port
+func host_dev(dev_name: String, port: int, online := true, disc_port := 0) -> Dev:
 	var d := Dev.new()
 	d.name = dev_name
 	d.path = BASE_PATH % dev_name
 	d.port = port
+	d.disc_port = disc_port
 	TableSource.clear_saved(d.path)
-	var h := make_host()
+	var h := _dev_host(d)
 	h.save_path = d.path
 	check(h.open(dev_name, port, port) == OK, "%s eröffnet (Port %d)" % [dev_name, port])
-	h.session.open_online(relay.base_url())
+	if online:
+		h.session.open_online(relay.base_url())
 	d.sw = HostSwitch.ensure(h)
 	d.last_src = h
 	_config(d)
 	devs.append(d)
-	check(wait_until(func(): return h.session.online_state() == "open"), "%s: Online-Raum offen" % dev_name)
+	if online:
+		check(wait_until(func(): return h.session.online_state() == "open"), "%s: Online-Raum offen" % dev_name)
 	return d
 
 
-func guest_dev(dev_name: String, link: String, port: int, with_bk := true, join_port := 0) -> Dev:
+# Beta 1.6.2: App-Gast im WLAN beim Gastgeber auf host_port (127.0.0.1); port = eigener Gastgeber-Port (hello.hp), ap = hello.ap.
+func lan_guest(dev_name: String, host_port: int, port: int, with_bk := true, ap := {}) -> Dev:
+	return guest_dev(dev_name, "127.0.0.1", port, with_bk, host_port, ap)
+
+
+func guest_dev(dev_name: String, link: String, port: int, with_bk := true, join_port := 0, ap := {}) -> Dev:
 	var d := Dev.new()
 	d.name = dev_name
 	d.path = BASE_PATH % dev_name
 	d.port = port
 	d.bk = with_bk
+	if not ap.is_empty():
+		d.ap = {"ok": ap.get("ok") == true, "perm": ap.get("perm") == true}
 	TableSource.clear_saved(d.path)
-	var ct := make_client()
+	var ct := _dev_client(d)
 	ct.backups = with_bk
 	ct.backup_path = d.path
 	d.sw = HostSwitch.ensure(ct)
 	d.last_src = ct
 	_config(d)
+	ct.listen_port = d.port          # HostSwitch.ensure setzte noch den Standard-port_first
 	_listen(d, ct)
 	devs.append(d)
 	ct.join(link, join_port, dev_name)
@@ -193,6 +234,19 @@ func guest_dev(dev_name: String, link: String, port: int, with_bk := true, join_
 
 
 func web_guest(web_name: String, relay_url: String, code: String) -> Dictionary:
+	var w := _web(web_name)
+	(w.c as NetClient).connect_relay(relay_url, code, web_name, "web")
+	return w
+
+
+# Beta 1.6.2: Browser-Gast im WLAN (wie Lite: kind "web", ohne bk; bekommt hosts und move).
+func web_guest_lan(web_name: String, host_port: int) -> Dictionary:
+	var w := _web(web_name)
+	(w.c as NetClient).connect_to("127.0.0.1", host_port, web_name, "web")
+	return w
+
+
+func _web(web_name: String) -> Dictionary:
 	var c := NetClient.new()
 	c.auto_poll = false
 	c.reuse_token = false
@@ -200,15 +254,22 @@ func web_guest(web_name: String, relay_url: String, code: String) -> Dictionary:
 	c.retry_ms = [100, 200, 400]
 	c.ping_ms = 300
 	c.host_away_ms = 300
-	var w := {"c": c, "inbox": [], "view": {}, "seq": 0, "closed": []}
+	var w := {"c": c, "name": web_name, "inbox": [], "view": {}, "seq": 0, "closed": []}
 	c.message.connect(func(m: Dictionary) -> void:
 		(w.inbox as Array).append(m)
 		if str(m.get("t", "")) == "state" and m.get("view") is Dictionary:
 			w.view = m.view)
 	c.closed.connect(func(t: String) -> void: (w.closed as Array).append(t))
-	c.connect_relay(relay_url, code, web_name, "web")
 	webs.append(w)
 	return w
+
+
+# Beta 1.6.2: letzte Nachricht vom Typ t ({} = keine).
+func last_of(list: Array, t: String) -> Dictionary:
+	for i in range(list.size() - 1, -1, -1):
+		if str((list[i] as Dictionary).get("t", "")) == t:
+			return list[i]
+	return {}
 
 
 func host_now() -> HostTable:
@@ -221,7 +282,7 @@ func host_now() -> HostTable:
 # --- Pumpen ---
 
 func step() -> void:
-	if not relay_paused:
+	if relay != null and not relay_paused:
 		relay.poll()
 	for d in devs.duplicate():
 		if d.dead:
@@ -345,6 +406,30 @@ func kill_closed(d: Dev) -> void:
 	h.autosave = false             # Datei bleibt, wie sie ist (Absturz)
 	h.session.relay.close(false)   # wie beim Beenden der App: Socket zu, Raum bleibt (Gäste bekommen 4503)
 	h.session.relay.poll()
+
+
+# Beta 1.6.2: WLAN-Gastgeber stirbt mit Schließen – Server zu, Neuversuche der Gäste werden verweigert. Ohne Raum.
+func kill_lan_closed(d: Dev) -> void:
+	var h := d.ht()
+	d.dead = true
+	h.autosave = false
+	if h.session.relay != null:
+		h.session.relay.close(false)
+		h.session.relay.poll()
+	h.session.server.stop()
+
+
+# Beta 1.6.2: WLAN-Gastgeber still tot – alle WLAN-Verbindungen stumm (der Server-Thread beantwortet auch kein ping mehr), nichts wird
+# geschlossen; die Hauptschleife läuft nicht mehr (dead).
+func kill_lan_still(d: Dev) -> void:
+	var h := d.ht()
+	d.dead = true
+	h.autosave = false
+	for p in h.session.players.values():
+		var conn := int(p.get("conn", -1))
+		if conn >= 0 and conn < NetProtocol.RELAY_CONN_BASE:
+			h.session.server.mute_ws(conn)
+	h.session.server.poll()
 
 
 # Zu dieser Sicht noch nicht gehandelt – oder es ist 400 ms her (abgelehnt, z. B. in der Einschwingzeit, ohne neuen Stand).

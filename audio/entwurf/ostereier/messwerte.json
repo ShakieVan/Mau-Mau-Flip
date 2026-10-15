@@ -228,6 +228,467 @@
    },
    "behalten": 8
   },
+  "gaehnen3": {
+   "titel": "Gähnen, Runde 3",
+   "ziel_s": [
+    2.6,
+    4.3
+   ],
+   "ziel_lufs": -19.0,
+   "daueransage_s": 3.5,
+   "prompts": {
+    "frau_zuerst": {
+     "prompt": "a young woman yawns lightly: first a long, deep, airy breath in through her wide-open mouth, then a long, soft, voiced aaaah while she breathes out, slowly falling in pitch, ending in a soft breathy sigh, effortless and gentle, close-up, quiet room, no words",
+     "seeds": [
+      4110,
+      5101,
+      5102,
+      5103,
+      5104,
+      5105,
+      5106,
+      5107,
+      5108,
+      5109,
+      5110,
+      5111,
+      5112,
+      5113,
+      5114,
+      5115,
+      5116,
+      5117,
+      5118,
+      5119,
+      5120,
+      5121,
+      5122,
+      5123,
+      5124,
+      5125,
+      5126,
+      5127,
+      5128,
+      5129,
+      5130,
+      5131,
+      5132,
+      5133,
+      5134,
+      5135
+     ],
+     "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow"
+    },
+    "frau_reihe": {
+     "prompt": "a young woman yawning, in this order: first a long deep inhale through the open mouth, then a long voiced descending aaaah while exhaling, ending in a soft breathy sigh, close-up, quiet room, no words",
+     "seeds": [
+      4110,
+      5101,
+      5102,
+      5103
+     ],
+     "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow"
+    },
+    "frau_zwei_teile": {
+     "prompt": "a woman's yawn in two parts: first she slowly breathes in deeply through her wide-open mouth for about one second, an audible airy inhale, then she lets it out with a long relaxed voiced aaaah sliding down in pitch that fades into a breathy whisper, close-up, quiet room, no words",
+     "seeds": [
+      4110,
+      5101,
+      5102,
+      5103,
+      5104,
+      5105,
+      5106,
+      5107
+     ],
+     "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow"
+    },
+    "frau_beginnt": {
+     "prompt": "a long yawn from a young woman that begins with a deep, airy, audible inhale and ends with a long, soft, voiced aaaah on the exhale, falling in pitch and trailing off into a gentle breathy sigh, close-up, quiet room, no words",
+     "seeds": [
+      4110,
+      5101,
+      5102,
+      5103
+     ],
+     "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow"
+    },
+    "frau_atem_zuerst": {
+     "prompt": "a young woman takes a slow, deep, audible breath in through her wide-open mouth, and directly after it she lets out a long, soft, voiced yawning aaaah that falls in pitch and fades into a breathy sigh, close-up, quiet room, no words",
+     "seeds": [
+      4110,
+      5101,
+      5102,
+      5103,
+      5104,
+      5105,
+      5106,
+      5107,
+      5108,
+      5109,
+      5110,
+      5111
+     ],
+     "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow"
+    },
+    "frau_luft_holen": {
+     "prompt": "a young woman yawning: she first sucks in a long deep breath of air with her mouth wide open, and then, without a pause, breathes out with a long voiced descending aaaah, ending in a soft breathy sigh, close-up, quiet room, no words",
+     "seeds": [
+      4110,
+      5101,
+      5102,
+      5103,
+      5104,
+      5105,
+      5106,
+      5107,
+      5108,
+      5109,
+      5110,
+      5111
+     ],
+     "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow"
+    },
+    "frau_followed": {
+     "prompt": "a woman inhales deeply through her open mouth, followed by a long voiced yawning aaaah that falls in pitch and gets softer and breathier until it fades out, close-up, quiet room, no words",
+     "seeds": [
+      5101,
+      5102,
+      5103,
+      5104,
+      5105,
+      5106,
+      5107,
+      5108,
+      5109,
+      5110,
+      5111,
+      5112,
+      5113,
+      5114,
+      5115,
+      5116
+     ],
+     "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow"
+    },
+    "atemzug_followed": {
+     "prompt": "a long airy gasp of breath in, followed by a young woman's long voiced descending yawn aaaah that turns breathy at the end, close-up, quiet room, no words",
+     "seeds": [
+      5101,
+      5102,
+      5103,
+      5104,
+      5105,
+      5106
+     ],
+     "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow"
+    },
+    "maedchen_followed": {
+     "prompt": "a teenage girl breathes in deeply through her open mouth, followed by a long voiced yawning aaaah in a bright young voice, falling in pitch and turning breathy at the end, close-up, quiet room, no words",
+     "seeds": [
+      5101,
+      5102,
+      5103,
+      5104,
+      5105,
+      5106
+     ],
+     "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow, whistle, slide whistle, theremin, trumpet, musical instrument, animal, dog, dog yawn, howl"
+    },
+    "frau_followed_lang": {
+     "prompt": "a woman slowly inhales a long deep breath through her wide-open mouth, followed by a long voiced yawning aaaah that falls in pitch and gets softer and breathier until it fades out, close-up, quiet room, no words",
+     "seeds": [
+      4110,
+      5101,
+      5102,
+      5103,
+      5104,
+      5105,
+      5106,
+      5107,
+      5108,
+      5109,
+      5110,
+      5111
+     ],
+     "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow"
+    },
+    "hell_followed": {
+     "prompt": "a young woman with a bright, high, girlish voice inhales deeply through her open mouth, followed by a long voiced yawning aaaah that falls in pitch and gets softer and breathier until it fades out, close-up, quiet room, no words",
+     "seeds": [
+      5101,
+      5102,
+      5103,
+      5104,
+      5105,
+      5106,
+      5107,
+      5108,
+      5109,
+      5110
+     ],
+     "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow"
+    },
+    "junge_followed": {
+     "prompt": "a teenage boy with a light young voice inhales deeply through his open mouth, followed by a long voiced yawning aaaah that falls in pitch and gets softer and breathier until it fades out, close-up, quiet room, no words",
+     "seeds": [
+      5101,
+      5102,
+      5103,
+      5104,
+      5105,
+      5106,
+      5107,
+      5108
+     ],
+     "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow, whistle, slide whistle, theremin, trumpet, musical instrument, animal, dog, dog yawn, howl"
+    },
+    "frau_zuerst_cfg7": {
+     "prompt": "a young woman yawns lightly: first a long, deep, airy breath in through her wide-open mouth, then a long, soft, voiced aaaah while she breathes out, slowly falling in pitch, ending in a soft breathy sigh, effortless and gentle, close-up, quiet room, no words",
+     "seeds": [
+      5101,
+      5102,
+      5103,
+      5104,
+      5105,
+      5106,
+      5107,
+      5108,
+      5109,
+      5110,
+      5111,
+      5112,
+      5113,
+      5114,
+      5115,
+      5116
+     ],
+     "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow",
+     "cfg": 7.0
+    },
+    "frau_followed_lang_cfg7": {
+     "prompt": "a woman slowly inhales a long deep breath through her wide-open mouth, followed by a long voiced yawning aaaah that falls in pitch and gets softer and breathier until it fades out, close-up, quiet room, no words",
+     "seeds": [
+      5101,
+      5102,
+      5103,
+      5104,
+      5105,
+      5106,
+      5107,
+      5108,
+      5109,
+      5110,
+      5111,
+      5112,
+      5113,
+      5114,
+      5115,
+      5116,
+      5117,
+      5118,
+      5119,
+      5120,
+      5121,
+      5122,
+      5123,
+      5124,
+      5125,
+      5126,
+      5127,
+      5128,
+      5129,
+      5130,
+      5131,
+      5132,
+      5133,
+      5134,
+      5135,
+      5136
+     ],
+     "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow",
+     "cfg": 7.0
+    },
+    "frau_zuerst_5s": {
+     "prompt": "a young woman yawns lightly: first a long, deep, airy breath in through her wide-open mouth, then a long, soft, voiced aaaah while she breathes out, slowly falling in pitch, ending in a soft breathy sigh, effortless and gentle, close-up, quiet room, no words",
+     "seeds": [
+      5101,
+      5102,
+      5103,
+      5104,
+      5105,
+      5106
+     ],
+     "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow",
+     "sekunden": 5.0
+    },
+    "frau_zwei_sek_cfg7": {
+     "prompt": "a woman slowly breathes in through her wide-open mouth for two full seconds, a long audible airy inhale, followed by a long voiced yawning aaaah that falls in pitch and gets breathier until it fades out, close-up, quiet room, no words",
+     "seeds": [
+      4110,
+      5101,
+      5102,
+      5103,
+      5104,
+      5105,
+      5106,
+      5107,
+      5108,
+      5109,
+      5110,
+      5111
+     ],
+     "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow",
+     "cfg": 7.0
+    },
+    "hell_followed_cfg7": {
+     "prompt": "a young woman with a bright, high, girlish voice slowly inhales a long deep breath through her wide-open mouth, followed by a long voiced yawning aaaah that falls in pitch and gets softer and breathier until it fades out, close-up, quiet room, no words",
+     "seeds": [
+      5101,
+      5102,
+      5103,
+      5104,
+      5105,
+      5106,
+      5107,
+      5108
+     ],
+     "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow",
+     "cfg": 7.0
+    },
+    "jugend_followed_cfg7": {
+     "prompt": "a teenage girl with a bright young voice slowly inhales a long deep breath through her open mouth, followed by a long voiced yawning aaaah that falls in pitch and gets breathier until it fades out, close-up, quiet room, no words",
+     "seeds": [
+      5101,
+      5102,
+      5103,
+      5104,
+      5105,
+      5106,
+      5107,
+      5108
+     ],
+     "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow, whistle, slide whistle, theremin, trumpet, musical instrument, animal, dog, dog yawn, howl",
+     "cfg": 7.0
+    },
+    "seufzer": {
+     "prompt": "a tired young woman takes a long, deep, audible breath in through her open mouth and then lets it all out in a long sleepy aaaah with her voice, falling in pitch and ending breathy, like a big yawn, close-up, quiet room, no words",
+     "seeds": [
+      5101,
+      5102,
+      5103,
+      5104,
+      5105,
+      5106,
+      5107,
+      5108,
+      5109,
+      5110,
+      5111,
+      5112,
+      5113,
+      5114,
+      5115,
+      5116,
+      5117,
+      5118,
+      5119,
+      5120,
+      5121,
+      5122,
+      5123,
+      5124,
+      5125,
+      5126
+     ],
+     "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow"
+    },
+    "seufzer_cfg7": {
+     "prompt": "a tired young woman takes a long, deep, audible breath in through her open mouth and then lets it all out in a long sleepy aaaah with her voice, falling in pitch and ending breathy, like a big yawn, close-up, quiet room, no words",
+     "seeds": [
+      5101,
+      5102,
+      5103,
+      5104,
+      5105,
+      5106
+     ],
+     "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow",
+     "cfg": 7.0
+    },
+    "seufzer_laut_cfg7": {
+     "prompt": "a woman inhales deeply and then exhales with a long, loud, voiced, sleepy sigh, aaaaah, falling in pitch, close-up, quiet room, no words",
+     "seeds": [
+      5101,
+      5102,
+      5103,
+      5104,
+      5105,
+      5106
+     ],
+     "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow",
+     "cfg": 7.0
+    },
+    "einatmen_seufzer_cfg7": {
+     "prompt": "a deep inhaling gasp of air followed by a long voiced sleepy sigh from a woman, like a yawn, close-up, quiet room, no words",
+     "seeds": [
+      5101,
+      5102,
+      5103,
+      5104,
+      5105,
+      5106
+     ],
+     "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow",
+     "cfg": 7.0
+    },
+    "maedchen_hell": {
+     "prompt": "a teenage girl with a bright, light young voice yawns: first a long deep breath in through her open mouth, then a long voiced aaaah falling in pitch as she breathes out, ending in a soft breathy sigh, close-up, quiet room, no words",
+     "seeds": [
+      4110,
+      5101,
+      5102,
+      5103,
+      5104,
+      5105,
+      5106,
+      5107
+     ],
+     "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow, whistle, slide whistle, theremin, trumpet, musical instrument, animal, dog, dog yawn, howl"
+    },
+    "junge_hell": {
+     "prompt": "a teenage boy with a light, clear young voice yawns: first a long deep breath in through his open mouth, then a long relaxed voiced aaaah falling in pitch as he breathes out, ending in a soft breathy sigh, close-up, quiet room, no words",
+     "seeds": [
+      4110,
+      5101,
+      5102,
+      5103,
+      5104,
+      5105,
+      5106,
+      5107,
+      5108,
+      5109,
+      5110,
+      5111,
+      5112,
+      5113,
+      5114,
+      5115,
+      5116,
+      5117,
+      5118,
+      5119,
+      5120,
+      5121,
+      5122,
+      5123
+     ],
+     "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow, whistle, slide whistle, theremin, trumpet, musical instrument, animal, dog, dog yawn, howl"
+    }
+   },
+   "behalten": 8
+  },
   "schnarchen": {
    "titel": "Schnarchen",
    "ziel_s": [
@@ -1959,6 +2420,1049 @@
    "punkte": 1.17,
    "id": "gaehnen2_08",
    "notiz": "Prompt „hoeflich2“: Frau, höflich hinter der Hand, sanft. Gemessen: mittlere Stimme (Grundton im Mittel 223 Hz), halb gehaucht, halb Stimme, Tonhöhe fast gleich, endet gehaucht. AudioSet: „Sigh“ 0,67 (Spitze: „Sigh“ 0,67). Kontrolle Stöhnen: „Groan“ 0,01, „Grunt“ 0,00, „Wail, moan“ 0,01; Atemklassen zusammen 0,94. Hinweis: etwas kürzer als das Ziel (1,87 s)."
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5s_5103",
+   "ton": "gaehnen3",
+   "variante": "frau_zuerst_5s",
+   "prompt": "a young woman yawns lightly: first a long, deep, airy breath in through her wide-open mouth, then a long, soft, voiced aaaah while she breathes out, slowly falling in pitch, ending in a soft breathy sigh, effortless and gentle, close-up, quiet room, no words",
+   "seed": 5103,
+   "sekunden_prompt": 5.0,
+   "roh_spitze_dbfs": -15.8,
+   "roh_leer": false,
+   "roh_leise": false,
+   "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow",
+   "dauer_s": 4.08,
+   "lufs": -18.9,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -9.6,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -36.7,
+   "ueber_6k_db": -49.1,
+   "ueber_10k_db": -94.3,
+   "ueber_12k_db": -142.0,
+   "mitten_500_4k_db": -2.3,
+   "unter_300_db": -4.3,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 15.5,
+    "schaerfe": 6.2
+   },
+   "natuerliche_dauer_s": 4.063,
+   "gekuerzt": false,
+   "einblenden_s": 0.04,
+   "ausblenden_s": 0.3,
+   "sim_lufs": -18.9,
+   "sim_mitten_500_4k_db": -0.0,
+   "sim_pegelverlust_db": 0.0,
+   "ast_atem_summe": 0.732,
+   "ast_meiden": {
+    "Groan": 0.014,
+    "Grunt": 0.001,
+    "Wail, moan": 0.009,
+    "Whimper": 0.001,
+    "Screaming": 0.0,
+    "Yell": 0.0,
+    "Shout": 0.0,
+    "Bellow": 0.0,
+    "Roar": 0.001,
+    "Growling": 0.0,
+    "Burping, eructation": 0.0,
+    "Fart": 0.0,
+    "Snoring": 0.001,
+    "Singing": 0.001,
+    "Music": 0.007,
+    "Babbling": 0.0,
+    "Whistle": 0.0,
+    "Whistling": 0.0,
+    "Musical instrument": 0.001,
+    "Theremin": 0.0,
+    "Animal": 0.001,
+    "Dog": 0.0,
+    "Howl": 0.0,
+    "Whale vocalization": 0.001,
+    "Humming": 0.0
+   },
+   "stimme": {
+    "stimmhaft_anteil": 0.23,
+    "schwerpunkt_hz": 1833.0,
+    "ende_stimmhaft": 0.0,
+    "ende_schwerpunkt_hz": 1873.0,
+    "f0_median_hz": 263.0,
+    "f0_p10_hz": 232.0,
+    "f0_p90_hz": 300.0,
+    "anstieg_ht": 0.0,
+    "abfall_ht": 4.7,
+    "gipfel_lage": 0.0
+   },
+   "reihenfolge": {
+    "dauer_hoerbar_s": 3.76,
+    "hoerbar_ab_s": 0.11,
+    "hoerbar_bis_s": 3.86,
+    "stimme_ab_s": 2.22,
+    "stimme_bis_s": 2.98,
+    "einatmen_s": 1.89,
+    "einatmen_stimme": 0.0,
+    "einatmen_pegel_db": -9.2,
+    "pause_vor_stimme_s": 0.22,
+    "unterbrechungen": 0,
+    "lage": 0.66,
+    "stimmhaft_anteil": 0.22,
+    "f0_anfang_hz": 304,
+    "f0_gipfel_hz": 304,
+    "f0_ende_hz": 232,
+    "steigt_ht": 0.0,
+    "faellt_ht": 4.7,
+    "netto_ht": 4.7,
+    "ende_stimme": 0.0,
+    "nachlauf_s": 0.88,
+    "nachlauf_stimme": 0.0,
+    "neuer_atem_am_ende": null
+   },
+   "reihenfolge_ok": true,
+   "ast_erwartet": [
+    "Sigh",
+    0.605
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.012
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Sigh",
+     0.605
+    ],
+    [
+     "Gasp",
+     0.081
+    ],
+    [
+     "Sound effect",
+     0.066
+    ],
+    [
+     "Breathing",
+     0.046
+    ],
+    [
+     "Snort",
+     0.027
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "kurzes „aaah“ (0,8 s stimmhaft)"
+   ],
+   "punkte": 7.02,
+   "id": "gaehnen3_01",
+   "notiz": "Prompt „frau_zuerst_5s“: wie „frau_zuerst“, Daueransage 5 s. Ablauf gemessen: 1,9 s Einatmen, 0,2 s Pause, dann 0,8 s „aaah“ (Tonhöhe fällt, 5 Halbtöne), endet gehaucht. Gemessen: hohe Stimme (Grundton im Mittel 263 Hz), überwiegend gehaucht, Tonhöhe fällt um 5 Halbtöne. AudioSet: „Sigh“ 0,60 (Spitze: „Sigh“ 0,60). Kontrolle Stöhnen: „Groan“ 0,01, „Grunt“ 0,00, „Wail, moan“ 0,01; Atemklassen zusammen 0,73. Hinweis: kurzes „aaah“ (0,8 s stimmhaft)."
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5132",
+   "ton": "gaehnen3",
+   "variante": "frau_zuerst",
+   "prompt": "a young woman yawns lightly: first a long, deep, airy breath in through her wide-open mouth, then a long, soft, voiced aaaah while she breathes out, slowly falling in pitch, ending in a soft breathy sigh, effortless and gentle, close-up, quiet room, no words",
+   "seed": 5132,
+   "sekunden_prompt": 3.5,
+   "roh_spitze_dbfs": -9.4,
+   "roh_leer": false,
+   "roh_leise": false,
+   "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow",
+   "dauer_s": 3.07,
+   "lufs": -18.9,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -12.2,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -33.2,
+   "ueber_6k_db": -53.1,
+   "ueber_10k_db": -90.1,
+   "ueber_12k_db": -142.2,
+   "mitten_500_4k_db": -13.9,
+   "unter_300_db": -2.8,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 15.0,
+    "schaerfe": 5.9
+   },
+   "natuerliche_dauer_s": 3.047,
+   "gekuerzt": false,
+   "einblenden_s": 0.04,
+   "ausblenden_s": 0.3,
+   "sim_lufs": -27.3,
+   "sim_mitten_500_4k_db": -1.1,
+   "sim_pegelverlust_db": -8.4,
+   "ast_atem_summe": 0.911,
+   "ast_meiden": {
+    "Groan": 0.013,
+    "Grunt": 0.0,
+    "Wail, moan": 0.007,
+    "Whimper": 0.003,
+    "Screaming": 0.0,
+    "Yell": 0.0,
+    "Shout": 0.0,
+    "Bellow": 0.0,
+    "Roar": 0.0,
+    "Growling": 0.0,
+    "Burping, eructation": 0.0,
+    "Fart": 0.0,
+    "Snoring": 0.0,
+    "Singing": 0.0,
+    "Music": 0.006,
+    "Babbling": 0.0,
+    "Whistle": 0.0,
+    "Whistling": 0.0,
+    "Musical instrument": 0.001,
+    "Theremin": 0.0,
+    "Animal": 0.0,
+    "Dog": 0.0,
+    "Howl": 0.0,
+    "Whale vocalization": 0.0,
+    "Humming": 0.0
+   },
+   "stimme": {
+    "stimmhaft_anteil": 0.44,
+    "schwerpunkt_hz": 1786.0,
+    "ende_stimmhaft": 0.43,
+    "ende_schwerpunkt_hz": 1557.0,
+    "f0_median_hz": 280.0,
+    "f0_p10_hz": 245.0,
+    "f0_p90_hz": 347.0,
+    "anstieg_ht": 0.0,
+    "abfall_ht": 6.7,
+    "gipfel_lage": 0.03
+   },
+   "reihenfolge": {
+    "dauer_hoerbar_s": 2.68,
+    "hoerbar_ab_s": 0.15,
+    "hoerbar_bis_s": 2.82,
+    "stimme_ab_s": 1.73,
+    "stimme_bis_s": 2.45,
+    "einatmen_s": 1.25,
+    "einatmen_stimme": 0.0,
+    "einatmen_pegel_db": -6.4,
+    "pause_vor_stimme_s": 0.33,
+    "unterbrechungen": 0,
+    "lage": 0.73,
+    "stimmhaft_anteil": 0.31,
+    "f0_anfang_hz": 349,
+    "f0_gipfel_hz": 349,
+    "f0_ende_hz": 238,
+    "steigt_ht": 0.0,
+    "faellt_ht": 6.6,
+    "netto_ht": 6.6,
+    "ende_stimme": 0.0,
+    "nachlauf_s": 0.37,
+    "nachlauf_stimme": 0.0,
+    "neuer_atem_am_ende": null
+   },
+   "reihenfolge_ok": true,
+   "ast_erwartet": [
+    "Sigh",
+    0.507
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.018
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Sigh",
+     0.507
+    ],
+    [
+     "Gasp",
+     0.381
+    ],
+    [
+     "Snort",
+     0.036
+    ],
+    [
+     "Breathing",
+     0.023
+    ],
+    [
+     "Speech",
+     0.018
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "kurzes „aaah“ (0,7 s stimmhaft)"
+   ],
+   "punkte": 6.92,
+   "id": "gaehnen3_02",
+   "notiz": "Prompt „frau_zuerst“: Frau wie gaehnen2_02, Reihenfolge ausdrücklich: erst Einatmen, dann „aaah“. Ablauf gemessen: 1,2 s Einatmen, 0,3 s Pause, dann 0,7 s „aaah“ (Tonhöhe fällt, 7 Halbtöne), endet gehaucht. Gemessen: hohe Stimme (Grundton im Mittel 280 Hz), halb gehaucht, halb Stimme, Tonhöhe fällt um 7 Halbtöne. AudioSet: „Sigh“ 0,51 (Spitze: „Sigh“ 0,51). Kontrolle Stöhnen: „Groan“ 0,01, „Grunt“ 0,00, „Wail, moan“ 0,01; Atemklassen zusammen 0,91. Hinweis: kurzes „aaah“ (0,7 s stimmhaft)."
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5131",
+   "ton": "gaehnen3",
+   "variante": "frau_zuerst",
+   "prompt": "a young woman yawns lightly: first a long, deep, airy breath in through her wide-open mouth, then a long, soft, voiced aaaah while she breathes out, slowly falling in pitch, ending in a soft breathy sigh, effortless and gentle, close-up, quiet room, no words",
+   "seed": 5131,
+   "sekunden_prompt": 3.5,
+   "roh_spitze_dbfs": -14.9,
+   "roh_leer": false,
+   "roh_leise": false,
+   "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow",
+   "dauer_s": 3.02,
+   "lufs": -18.9,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -11.7,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -25.7,
+   "ueber_6k_db": -36.4,
+   "ueber_10k_db": -82.4,
+   "ueber_12k_db": -116.9,
+   "mitten_500_4k_db": -12.3,
+   "unter_300_db": -1.3,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 22.3,
+    "schaerfe": 4.0
+   },
+   "natuerliche_dauer_s": 3.005,
+   "gekuerzt": false,
+   "einblenden_s": 0.04,
+   "ausblenden_s": 0.3,
+   "sim_lufs": -29.4,
+   "sim_mitten_500_4k_db": -0.6,
+   "sim_pegelverlust_db": -10.5,
+   "ast_atem_summe": 0.577,
+   "ast_meiden": {
+    "Groan": 0.006,
+    "Grunt": 0.0,
+    "Wail, moan": 0.002,
+    "Whimper": 0.001,
+    "Screaming": 0.0,
+    "Yell": 0.0,
+    "Shout": 0.0,
+    "Bellow": 0.0,
+    "Roar": 0.0,
+    "Growling": 0.0,
+    "Burping, eructation": 0.0,
+    "Fart": 0.0,
+    "Snoring": 0.001,
+    "Singing": 0.0,
+    "Music": 0.006,
+    "Babbling": 0.0,
+    "Whistle": 0.0,
+    "Whistling": 0.0,
+    "Musical instrument": 0.001,
+    "Theremin": 0.0,
+    "Animal": 0.001,
+    "Dog": 0.0,
+    "Howl": 0.0,
+    "Whale vocalization": 0.0,
+    "Humming": 0.0
+   },
+   "stimme": {
+    "stimmhaft_anteil": 0.32,
+    "schwerpunkt_hz": 2518.0,
+    "ende_stimmhaft": 0.67,
+    "ende_schwerpunkt_hz": 1670.0,
+    "f0_median_hz": 262.0,
+    "f0_p10_hz": 211.0,
+    "f0_p90_hz": 312.0,
+    "anstieg_ht": 0.0,
+    "abfall_ht": 7.5,
+    "gipfel_lage": 0.0
+   },
+   "reihenfolge": {
+    "dauer_hoerbar_s": 2.78,
+    "hoerbar_ab_s": 0.05,
+    "hoerbar_bis_s": 2.82,
+    "stimme_ab_s": 1.84,
+    "stimme_bis_s": 2.59,
+    "einatmen_s": 1.57,
+    "einatmen_stimme": 0.0,
+    "einatmen_pegel_db": -10.8,
+    "pause_vor_stimme_s": 0.22,
+    "unterbrechungen": 0,
+    "lage": 0.78,
+    "stimmhaft_anteil": 0.3,
+    "f0_anfang_hz": 320,
+    "f0_gipfel_hz": 320,
+    "f0_ende_hz": 209,
+    "steigt_ht": 0.0,
+    "faellt_ht": 7.4,
+    "netto_ht": 7.4,
+    "ende_stimme": 0.26,
+    "nachlauf_s": 0.23,
+    "nachlauf_stimme": 0.0,
+    "neuer_atem_am_ende": null
+   },
+   "reihenfolge_ok": true,
+   "ast_erwartet": [
+    "Sigh",
+    0.336
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.011
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Sigh",
+     0.336
+    ],
+    [
+     "Gasp",
+     0.155
+    ],
+    [
+     "Breathing",
+     0.086
+    ],
+    [
+     "Snort",
+     0.074
+    ],
+    [
+     "Sound effect",
+     0.022
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "kurzes „aaah“ (0,7 s stimmhaft)"
+   ],
+   "punkte": 5.41,
+   "id": "gaehnen3_03",
+   "notiz": "Prompt „frau_zuerst“: Frau wie gaehnen2_02, Reihenfolge ausdrücklich: erst Einatmen, dann „aaah“. Ablauf gemessen: 1,6 s Einatmen, 0,2 s Pause, dann 0,7 s „aaah“ (Tonhöhe fällt, 7 Halbtöne), endet gehaucht. Gemessen: hohe Stimme (Grundton im Mittel 262 Hz), halb gehaucht, halb Stimme, Tonhöhe fällt um 8 Halbtöne. AudioSet: „Sigh“ 0,34 (Spitze: „Sigh“ 0,34). Kontrolle Stöhnen: „Groan“ 0,01, „Grunt“ 0,00, „Wail, moan“ 0,00; Atemklassen zusammen 0,58. Hinweis: kurzes „aaah“ (0,7 s stimmhaft)."
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_cfg7_5126",
+   "ton": "gaehnen3",
+   "variante": "frau_followed_lang_cfg7",
+   "prompt": "a woman slowly inhales a long deep breath through her wide-open mouth, followed by a long voiced yawning aaaah that falls in pitch and gets softer and breathier until it fades out, close-up, quiet room, no words",
+   "seed": 5126,
+   "sekunden_prompt": 3.5,
+   "roh_spitze_dbfs": -4.1,
+   "roh_leer": false,
+   "roh_leise": false,
+   "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow",
+   "cfg": 7.0,
+   "dauer_s": 3.35,
+   "lufs": -18.9,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -12.1,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -25.6,
+   "ueber_6k_db": -44.6,
+   "ueber_10k_db": -92.0,
+   "ueber_12k_db": -112.0,
+   "mitten_500_4k_db": -0.4,
+   "unter_300_db": -30.2,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 22.5,
+    "schaerfe": 3.6
+   },
+   "natuerliche_dauer_s": 3.332,
+   "gekuerzt": false,
+   "einblenden_s": 0.04,
+   "ausblenden_s": 0.3,
+   "sim_lufs": -17.0,
+   "sim_mitten_500_4k_db": -0.2,
+   "sim_pegelverlust_db": 1.9,
+   "ast_atem_summe": 0.525,
+   "ast_meiden": {
+    "Groan": 0.07,
+    "Grunt": 0.002,
+    "Wail, moan": 0.014,
+    "Whimper": 0.008,
+    "Screaming": 0.003,
+    "Yell": 0.0,
+    "Shout": 0.0,
+    "Bellow": 0.0,
+    "Roar": 0.004,
+    "Growling": 0.0,
+    "Burping, eructation": 0.0,
+    "Fart": 0.0,
+    "Snoring": 0.003,
+    "Singing": 0.0,
+    "Music": 0.003,
+    "Babbling": 0.001,
+    "Whistle": 0.001,
+    "Whistling": 0.001,
+    "Musical instrument": 0.001,
+    "Theremin": 0.0,
+    "Animal": 0.009,
+    "Dog": 0.001,
+    "Howl": 0.0,
+    "Whale vocalization": 0.005,
+    "Humming": 0.0
+   },
+   "stimme": {
+    "stimmhaft_anteil": 0.15,
+    "schwerpunkt_hz": 1966.0,
+    "ende_stimmhaft": 0.0,
+    "ende_schwerpunkt_hz": 2088.0,
+    "f0_median_hz": 471.0,
+    "f0_p10_hz": 442.0,
+    "f0_p90_hz": 529.0,
+    "anstieg_ht": -0.1,
+    "abfall_ht": 3.3,
+    "gipfel_lage": 0.0
+   },
+   "reihenfolge": {
+    "dauer_hoerbar_s": 2.99,
+    "hoerbar_ab_s": 0.14,
+    "hoerbar_bis_s": 3.12,
+    "stimme_ab_s": 1.89,
+    "stimme_bis_s": 2.35,
+    "einatmen_s": 1.75,
+    "einatmen_stimme": 0.0,
+    "einatmen_pegel_db": -8.0,
+    "pause_vor_stimme_s": 0.0,
+    "unterbrechungen": 0,
+    "lage": 0.65,
+    "stimmhaft_anteil": 0.14,
+    "f0_anfang_hz": 532,
+    "f0_gipfel_hz": 532,
+    "f0_ende_hz": 440,
+    "steigt_ht": 0.0,
+    "faellt_ht": 3.3,
+    "netto_ht": 3.3,
+    "ende_stimme": 0.0,
+    "nachlauf_s": 0.77,
+    "nachlauf_stimme": 0.0,
+    "neuer_atem_am_ende": null
+   },
+   "reihenfolge_ok": true,
+   "ast_erwartet": [
+    "Sigh",
+    0.295
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.004
+   ],
+   "ast_katze": [
+    "Cat",
+    0.002
+   ],
+   "ast_top": [
+    [
+     "Sigh",
+     0.295
+    ],
+    [
+     "Gasp",
+     0.137
+    ],
+    [
+     "Sound effect",
+     0.096
+    ],
+    [
+     "Breathing",
+     0.093
+    ],
+    [
+     "Groan",
+     0.07
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "kurzes „aaah“ (0,5 s stimmhaft)"
+   ],
+   "punkte": 4.38,
+   "id": "gaehnen3_04",
+   "notiz": "Prompt „frau_followed_lang_cfg7“: wie „frau_followed_lang“, CFG 7. Ablauf gemessen: 1,8 s Einatmen, dann 0,5 s „aaah“ (Tonhöhe fällt, 3 Halbtöne), endet gehaucht. Gemessen: sehr hohe Stimme (Grundton im Mittel 471 Hz), überwiegend gehaucht, Tonhöhe fällt um 3 Halbtöne. AudioSet: „Sigh“ 0,29 (Spitze: „Sigh“ 0,29). Kontrolle Stöhnen: „Groan“ 0,07, „Grunt“ 0,00, „Wail, moan“ 0,01; Atemklassen zusammen 0,53. Hinweis: kurzes „aaah“ (0,5 s stimmhaft)."
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_cfg7_5135",
+   "ton": "gaehnen3",
+   "variante": "frau_followed_lang_cfg7",
+   "prompt": "a woman slowly inhales a long deep breath through her wide-open mouth, followed by a long voiced yawning aaaah that falls in pitch and gets softer and breathier until it fades out, close-up, quiet room, no words",
+   "seed": 5135,
+   "sekunden_prompt": 3.5,
+   "roh_spitze_dbfs": -16.3,
+   "roh_leer": false,
+   "roh_leise": false,
+   "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow",
+   "cfg": 7.0,
+   "dauer_s": 2.35,
+   "lufs": -18.9,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -11.5,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -31.9,
+   "ueber_6k_db": -60.1,
+   "ueber_10k_db": -90.8,
+   "ueber_12k_db": -120.3,
+   "mitten_500_4k_db": -11.9,
+   "unter_300_db": -0.3,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 15.0,
+    "schaerfe": 9.2
+   },
+   "natuerliche_dauer_s": 2.326,
+   "gekuerzt": false,
+   "einblenden_s": 0.04,
+   "ausblenden_s": 0.3,
+   "sim_lufs": -25.7,
+   "sim_mitten_500_4k_db": -0.1,
+   "sim_pegelverlust_db": -6.8,
+   "ast_atem_summe": 0.726,
+   "ast_meiden": {
+    "Groan": 0.02,
+    "Grunt": 0.001,
+    "Wail, moan": 0.001,
+    "Whimper": 0.002,
+    "Screaming": 0.0,
+    "Yell": 0.0,
+    "Shout": 0.0,
+    "Bellow": 0.0,
+    "Roar": 0.002,
+    "Growling": 0.0,
+    "Burping, eructation": 0.0,
+    "Fart": 0.0,
+    "Snoring": 0.002,
+    "Singing": 0.0,
+    "Music": 0.005,
+    "Babbling": 0.0,
+    "Whistle": 0.0,
+    "Whistling": 0.0,
+    "Musical instrument": 0.001,
+    "Theremin": 0.0,
+    "Animal": 0.001,
+    "Dog": 0.0,
+    "Howl": 0.0,
+    "Whale vocalization": 0.0,
+    "Humming": 0.001
+   },
+   "stimme": {
+    "stimmhaft_anteil": 0.47,
+    "schwerpunkt_hz": 1489.0,
+    "ende_stimmhaft": 0.18,
+    "ende_schwerpunkt_hz": 1702.0,
+    "f0_median_hz": 258.0,
+    "f0_p10_hz": 225.0,
+    "f0_p90_hz": 266.0,
+    "anstieg_ht": -0.1,
+    "abfall_ht": 3.1,
+    "gipfel_lage": 0.0
+   },
+   "reihenfolge": {
+    "dauer_hoerbar_s": 1.99,
+    "hoerbar_ab_s": 0.08,
+    "hoerbar_bis_s": 2.06,
+    "stimme_ab_s": 0.65,
+    "stimme_bis_s": 1.48,
+    "einatmen_s": 0.57,
+    "einatmen_stimme": 0.0,
+    "einatmen_pegel_db": -5.0,
+    "pause_vor_stimme_s": 0.0,
+    "unterbrechungen": 0,
+    "lage": 0.5,
+    "stimmhaft_anteil": 0.42,
+    "f0_anfang_hz": 268,
+    "f0_gipfel_hz": 268,
+    "f0_ende_hz": 224,
+    "steigt_ht": 0.0,
+    "faellt_ht": 3.1,
+    "netto_ht": 3.1,
+    "ende_stimme": 0.0,
+    "nachlauf_s": 0.58,
+    "nachlauf_stimme": 0.0,
+    "neuer_atem_am_ende": null
+   },
+   "reihenfolge_ok": true,
+   "ast_erwartet": [
+    "Sigh",
+    0.547
+   ],
+   "ast_sprache": [
+    "Male speech, man speaking",
+    0.012
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Sigh",
+     0.547
+    ],
+    [
+     "Gasp",
+     0.113
+    ],
+    [
+     "Breathing",
+     0.066
+    ],
+    [
+     "Sound effect",
+     0.056
+    ],
+    [
+     "Groan",
+     0.02
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,33 s)"
+   ],
+   "punkte": 4.13,
+   "id": "gaehnen3_05",
+   "notiz": "Prompt „frau_followed_lang_cfg7“: wie „frau_followed_lang“, CFG 7. Ablauf gemessen: 0,6 s Einatmen, dann 0,8 s „aaah“ (Tonhöhe fällt, 3 Halbtöne), endet gehaucht. Gemessen: hohe Stimme (Grundton im Mittel 258 Hz), halb gehaucht, halb Stimme, Tonhöhe fällt um 3 Halbtöne. AudioSet: „Sigh“ 0,55 (Spitze: „Sigh“ 0,55). Kontrolle Stöhnen: „Groan“ 0,02, „Grunt“ 0,00, „Wail, moan“ 0,00; Atemklassen zusammen 0,73. Hinweis: etwas kürzer als das Ziel (2,33 s)."
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_5101",
+   "ton": "gaehnen3",
+   "variante": "frau_followed_lang",
+   "prompt": "a woman slowly inhales a long deep breath through her wide-open mouth, followed by a long voiced yawning aaaah that falls in pitch and gets softer and breathier until it fades out, close-up, quiet room, no words",
+   "seed": 5101,
+   "sekunden_prompt": 3.5,
+   "roh_spitze_dbfs": -5.2,
+   "roh_leer": false,
+   "roh_leise": false,
+   "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow",
+   "dauer_s": 3.06,
+   "lufs": -18.9,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -10.1,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -26.1,
+   "ueber_6k_db": -45.3,
+   "ueber_10k_db": -81.3,
+   "ueber_12k_db": -107.6,
+   "mitten_500_4k_db": -0.8,
+   "unter_300_db": -42.0,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 15.5,
+    "schaerfe": 9.8
+   },
+   "natuerliche_dauer_s": 3.043,
+   "gekuerzt": false,
+   "einblenden_s": 0.04,
+   "ausblenden_s": 0.3,
+   "sim_lufs": -16.2,
+   "sim_mitten_500_4k_db": -0.3,
+   "sim_pegelverlust_db": 2.7,
+   "ast_atem_summe": 0.162,
+   "ast_meiden": {
+    "Groan": 0.005,
+    "Grunt": 0.0,
+    "Wail, moan": 0.002,
+    "Whimper": 0.005,
+    "Screaming": 0.001,
+    "Yell": 0.0,
+    "Shout": 0.0,
+    "Bellow": 0.0,
+    "Roar": 0.0,
+    "Growling": 0.0,
+    "Burping, eructation": 0.0,
+    "Fart": 0.0,
+    "Snoring": 0.002,
+    "Singing": 0.035,
+    "Music": 0.072,
+    "Babbling": 0.0,
+    "Whistle": 0.004,
+    "Whistling": 0.001,
+    "Musical instrument": 0.006,
+    "Theremin": 0.0,
+    "Animal": 0.001,
+    "Dog": 0.0,
+    "Howl": 0.0,
+    "Whale vocalization": 0.0,
+    "Humming": 0.04
+   },
+   "stimme": {
+    "stimmhaft_anteil": 0.61,
+    "schwerpunkt_hz": 1684.0,
+    "ende_stimmhaft": 0.68,
+    "ende_schwerpunkt_hz": 1575.0,
+    "f0_median_hz": 425.0,
+    "f0_p10_hz": 345.0,
+    "f0_p90_hz": 466.0,
+    "anstieg_ht": 1.3,
+    "abfall_ht": 5.3,
+    "gipfel_lage": 0.1
+   },
+   "reihenfolge": {
+    "dauer_hoerbar_s": 2.76,
+    "hoerbar_ab_s": 0.08,
+    "hoerbar_bis_s": 2.83,
+    "stimme_ab_s": 0.8,
+    "stimme_bis_s": 2.61,
+    "einatmen_s": 0.72,
+    "einatmen_stimme": 0.0,
+    "einatmen_pegel_db": -8.4,
+    "pause_vor_stimme_s": 0.0,
+    "unterbrechungen": 0,
+    "lage": 0.59,
+    "stimmhaft_anteil": 0.57,
+    "f0_anfang_hz": 435,
+    "f0_gipfel_hz": 469,
+    "f0_ende_hz": 337,
+    "steigt_ht": 1.3,
+    "faellt_ht": 5.7,
+    "netto_ht": 4.4,
+    "ende_stimme": 0.19,
+    "nachlauf_s": 0.22,
+    "nachlauf_stimme": 0.0,
+    "neuer_atem_am_ende": null
+   },
+   "reihenfolge_ok": true,
+   "ast_erwartet": [
+    "Sigh",
+    0.118
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.01
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Sigh",
+     0.118
+    ],
+    [
+     "Music",
+     0.072
+    ],
+    [
+     "Humming",
+     0.04
+    ],
+    [
+     "Yodeling",
+     0.036
+    ],
+    [
+     "Singing",
+     0.035
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 3.44,
+   "id": "gaehnen3_06",
+   "notiz": "Prompt „frau_followed_lang“: Frau, langsames langes Einatmen, „followed by …“. Ablauf gemessen: 0,7 s Einatmen, dann 1,8 s „aaah“ (Tonhöhe fällt, 6 Halbtöne), endet gehaucht. Gemessen: sehr hohe Stimme (Grundton im Mittel 425 Hz), überwiegend Stimme, Tonhöhe fällt um 5 Halbtöne. AudioSet: „Sigh“ 0,12 (Spitze: „Sigh“ 0,12). Kontrolle Stöhnen: „Groan“ 0,01, „Grunt“ 0,00, „Wail, moan“ 0,00; Atemklassen zusammen 0,16."
+  },
+  {
+   "roh": "gaehnen3_umgestellt_4110",
+   "ton": "gaehnen3",
+   "variante": "umgestellt",
+   "prompt": "a young woman yawns lightly, a long airy open-mouthed breath in, a soft breathy haaah that rises and then falls in pitch, then a short relaxed breath out, effortless and gentle, close-up, quiet room, no words",
+   "seed": 4110,
+   "sekunden_prompt": 3.0,
+   "roh_spitze_dbfs": -31.1,
+   "roh_leer": false,
+   "roh_leise": true,
+   "negativ": "groaning, moaning, grunting, straining, pushing, effort, deep pressed male voice, growling, roaring, screaming, speech, words, singing, music, cat, meow",
+   "umgestellt": {
+    "quelle": "gaehnen2_frau_4110",
+    "strecken_s": [
+     [
+      0.209,
+      1.531
+     ],
+     [
+      1.91,
+      2.766
+     ]
+    ],
+    "stimmhaft_erste": 0.77,
+    "stimmhaft_zweite": 0.0,
+    "pause_s": 0.379,
+    "pause_pegel_db": -53.5,
+    "naehte": [
+     {
+      "bei_s": 1.016,
+      "links_db": -51.5,
+      "rechts_db": -51.6
+     },
+     {
+      "bei_s": 2.598,
+      "links_db": -47.5,
+      "rechts_db": -49.2
+     }
+    ],
+    "schnitte_s": {
+     "atem_von": 1.81,
+     "atem_bis": 2.866,
+     "stimme_von": 0.109,
+     "stimme_bis": 1.731,
+     "stille_ab": 2.866
+    },
+    "neue_pause_s": 0.2,
+    "ok": true
+   },
+   "dauer_s": 2.44,
+   "lufs": -18.9,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -12.1,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -24.3,
+   "ueber_6k_db": -44.9,
+   "ueber_10k_db": -76.4,
+   "ueber_12k_db": -142.2,
+   "mitten_500_4k_db": -14.9,
+   "unter_300_db": -2.1,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 18.2,
+    "schaerfe": 6.7
+   },
+   "natuerliche_dauer_s": 2.421,
+   "gekuerzt": false,
+   "einblenden_s": 0.04,
+   "ausblenden_s": 0.3,
+   "sim_lufs": -28.3,
+   "sim_mitten_500_4k_db": -0.5,
+   "sim_pegelverlust_db": -9.4,
+   "ast_atem_summe": 1.045,
+   "ast_meiden": {
+    "Groan": 0.015,
+    "Grunt": 0.0,
+    "Wail, moan": 0.048,
+    "Whimper": 0.011,
+    "Screaming": 0.0,
+    "Yell": 0.0,
+    "Shout": 0.0,
+    "Bellow": 0.0,
+    "Roar": 0.0,
+    "Growling": 0.0,
+    "Burping, eructation": 0.0,
+    "Fart": 0.0,
+    "Snoring": 0.0,
+    "Singing": 0.001,
+    "Music": 0.009,
+    "Babbling": 0.0,
+    "Whistle": 0.0,
+    "Whistling": 0.0,
+    "Musical instrument": 0.001,
+    "Theremin": 0.0,
+    "Animal": 0.0,
+    "Dog": 0.0,
+    "Howl": 0.0,
+    "Whale vocalization": 0.0,
+    "Humming": 0.001
+   },
+   "stimme": {
+    "stimmhaft_anteil": 0.56,
+    "schwerpunkt_hz": 1254.0,
+    "ende_stimmhaft": 0.98,
+    "ende_schwerpunkt_hz": 695.0,
+    "f0_median_hz": 268.0,
+    "f0_p10_hz": 210.0,
+    "f0_p90_hz": 316.0,
+    "anstieg_ht": -0.1,
+    "abfall_ht": 7.7,
+    "gipfel_lage": 0.0
+   },
+   "reihenfolge": {
+    "dauer_hoerbar_s": 2.14,
+    "hoerbar_ab_s": 0.08,
+    "hoerbar_bis_s": 2.21,
+    "stimme_ab_s": 1.19,
+    "stimme_bis_s": 2.19,
+    "einatmen_s": 0.91,
+    "einatmen_stimme": 0.0,
+    "einatmen_pegel_db": -12.6,
+    "pause_vor_stimme_s": 0.2,
+    "unterbrechungen": 0,
+    "lage": 0.76,
+    "stimmhaft_anteil": 0.52,
+    "f0_anfang_hz": 323,
+    "f0_gipfel_hz": 328,
+    "f0_ende_hz": 209,
+    "steigt_ht": 0.2,
+    "faellt_ht": 7.8,
+    "netto_ht": 7.6,
+    "ende_stimme": 0.94,
+    "nachlauf_s": 0.02,
+    "nachlauf_stimme": 0.0,
+    "neuer_atem_am_ende": null
+   },
+   "reihenfolge_ok": false,
+   "ast_erwartet": [
+    "Sigh",
+    0.666
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.024
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Sigh",
+     0.666
+    ],
+    [
+     "Gasp",
+     0.371
+    ],
+    [
+     "Wail, moan",
+     0.048
+    ],
+    [
+     "Speech",
+     0.024
+    ],
+    [
+     "Groan",
+     0.015
+    ]
+   ],
+   "ausschluss": [
+    "Ende nicht gehaucht (94 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": [
+    "zusammengesetzt (Teile getauscht), außerhalb der Rangfolge",
+    "etwas kürzer als das Ziel (2,42 s)",
+    "Original sehr leise"
+   ],
+   "punkte": 2.27,
+   "id": "gaehnen3_02umgestellt",
+   "notiz": "Prompt „umgestellt“: gaehnen2_02 mit getauschten Teilen: erst der Atem, dann das „aaah“. Aus gaehnen2_02 (Seed 4110) umgestellt: Atem 1,81–2,87 s nach vorn, dann „aaah“ 0,11–1,73 s (Zeiten im Original); natürliche Pause im Original 0,38 s (−53,5 dB), neu 0,20 s; Nähte 40 ms überblendet in der Stille (−51,5/−51,6 dB, −47,5/−49,2 dB). Ablauf gemessen: 0,9 s Einatmen, 0,2 s Pause, dann 1,0 s „aaah“ (Tonhöhe fällt, 8 Halbtöne), endet mit Stimme. Gemessen: hohe Stimme (Grundton im Mittel 268 Hz), halb gehaucht, halb Stimme, Tonhöhe fällt um 8 Halbtöne. AudioSet: „Sigh“ 0,67 (Spitze: „Sigh“ 0,67). Kontrolle Stöhnen: „Groan“ 0,01, „Grunt“ 0,00, „Wail, moan“ 0,05; Atemklassen zusammen 1,04. Auffällig: Ende nicht gehaucht (94 % Stimme in den letzten 0,3 s). Hinweis: zusammengesetzt (Teile getauscht), außerhalb der Rangfolge; etwas kürzer als das Ziel (2,42 s); Original sehr leise."
   },
   {
    "roh": "schnarchen_ruhig_3203",
@@ -7117,6 +8621,4182 @@
    "hinweise": [
     "etwas „Wail, moan“ (AudioSet 0,10)",
     "etwas kürzer als das Ziel (1,62 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_4110",
+   "ton": "gaehnen3",
+   "punkte": 5.58,
+   "gruende": [
+    "Ende nicht gehaucht (71 % Stimme in den letzten 0,3 s)",
+    "lange Pause zwischen Einatmen und „aaah“ (1,09 s): zwei getrennte Laute"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5101",
+   "ton": "gaehnen3",
+   "punkte": 1.03,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,38 s Atem vor der Stimme ab 0,66 s)",
+    "Ende nicht gehaucht (97 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": [
+    "etwas „Groan“ (AudioSet 0,10)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5102",
+   "ton": "gaehnen3",
+   "punkte": 1.08,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,03 s Atem vor der Stimme ab 0,07 s)",
+    "Ende nicht gehaucht (97 % Stimme in den letzten 0,3 s)",
+    "fast gleich wie gaehnen3_frau_zwei_teile_5102 (Spektrogramm r = 0,92)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,57 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5103",
+   "ton": "gaehnen3",
+   "punkte": 1.41,
+   "gruende": [
+    "stimmhafter Teil liegt vorn (Mitte bei 21 % der Dauer)",
+    "Tonhöhe nicht messbar",
+    "Luftholen am Ende (ab 1,39 s, 1,23 s nach dem stimmhaften Teil)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_reihe_4110",
+   "ton": "gaehnen3",
+   "punkte": 0.32,
+   "gruende": [
+    "zu kurz (1,42 s)",
+    "kein hörbares Einatmen vorn (nur 0,05 s Atem vor der Stimme ab 0,11 s)",
+    "Ende nicht gehaucht (90 % Stimme in den letzten 0,3 s)",
+    "fast gleich wie gaehnen3_frau_luft_holen_4110 (Spektrogramm r = 0,90)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 3726 Hz (+12,3 dB über der Umgebung): auf Piepen achten"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_reihe_5101",
+   "ton": "gaehnen3",
+   "punkte": -3.23,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,01)",
+    "kein hörbares Einatmen vorn (nur 0,04 s Atem vor der Stimme ab 0,09 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 48 % der Dauer)",
+    "Ende nicht gehaucht (55 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": [
+    "etwas „Humming“ (AudioSet 0,31)",
+    "schmale Linie bei 2144 Hz (+12,9 dB über der Umgebung): auf Piepen achten",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_reihe_5102",
+   "ton": "gaehnen3",
+   "punkte": -7.62,
+   "gruende": [
+    "klingt nach „Humming“ (AudioSet 0,86, Grenze 0,40)",
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,01)",
+    "kein hörbares Einatmen vorn (nur 0,04 s Atem vor der Stimme ab 0,10 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 46 % der Dauer)",
+    "Tonhöhe fällt nicht (steigt 0,1, fällt 1,8 Halbtöne)",
+    "fast gleich wie gaehnen3_frau_beginnt_5102 (Spektrogramm r = 0,92)"
+   ],
+   "hinweise": [
+    "Hüllkurve pulsiert mit 18 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 18,3)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_reihe_5103",
+   "ton": "gaehnen3",
+   "punkte": -2.37,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,07)",
+    "kein hörbares Einatmen vorn (nur 0,03 s Atem vor der Stimme ab 0,09 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 45 % der Dauer)",
+    "Tonhöhe fällt nicht (steigt 1,2, fällt 0,5 Halbtöne)"
+   ],
+   "hinweise": [
+    "etwas „Humming“ (AudioSet 0,32)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zwei_teile_4110",
+   "ton": "gaehnen3",
+   "punkte": 1.94,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zwei_teile_5101",
+   "ton": "gaehnen3",
+   "punkte": 2.24,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,20 s Atem vor der Stimme ab 0,27 s)",
+    "„aaah“ stockend (2-mal unterbrochen)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_zwei_teile_5102",
+   "ton": "gaehnen3",
+   "punkte": 2.0,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,04 s Atem vor der Stimme ab 0,11 s)",
+    "Ende nicht gehaucht (87 % Stimme in den letzten 0,3 s)",
+    "fast gleich wie gaehnen3_maedchen_hell_5102 (Spektrogramm r = 0,95)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,54 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zwei_teile_5103",
+   "ton": "gaehnen3",
+   "punkte": -0.23,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_beginnt_4110",
+   "ton": "gaehnen3",
+   "punkte": -4.29,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,01)",
+    "kein hörbares Einatmen vorn (nur 0,01 s Atem vor der Stimme ab 0,06 s)",
+    "Ende nicht gehaucht (97 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": [
+    "Hüllkurve pulsiert mit 23 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 15,8)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_beginnt_5101",
+   "ton": "gaehnen3",
+   "punkte": -12.63,
+   "gruende": [
+    "klingt nach „Animal“ (AudioSet 0,54, Grenze 0,20)",
+    "klingt nach „Dog“ (AudioSet 0,48, Grenze 0,15)",
+    "klingt nach „Howl“ (AudioSet 0,59, Grenze 0,15)",
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,00)",
+    "kein hörbares Einatmen vorn (nur 0,02 s Atem vor der Stimme ab 0,08 s)",
+    "Ende nicht gehaucht (90 % Stimme in den letzten 0,3 s)",
+    "fast gleich wie gaehnen3_frau_reihe_5101 (Spektrogramm r = 0,92)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,57 s)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_beginnt_5102",
+   "ton": "gaehnen3",
+   "punkte": -4.14,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,07)",
+    "kein hörbares Einatmen vorn (nur 0,04 s Atem vor der Stimme ab 0,09 s)",
+    "Ende nicht gehaucht (81 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,59 s)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_beginnt_5103",
+   "ton": "gaehnen3",
+   "punkte": -6.11,
+   "gruende": [
+    "klingt nach „Humming“ (AudioSet 0,52, Grenze 0,40)",
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,03)",
+    "kein hörbares Einatmen vorn (nur 0,03 s Atem vor der Stimme ab 0,07 s)",
+    "Tonhöhe fällt nicht (steigt 1,6, fällt 0,2 Halbtöne)",
+    "Ende nicht gehaucht (94 % Stimme in den letzten 0,3 s)",
+    "fast gleich wie gaehnen3_atemzug_followed_5103 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_hell_followed_5103 (Spektrogramm r = 0,92)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2109 Hz (+16,8 dB über der Umgebung): auf Piepen achten",
+    "etwas kürzer als das Ziel (2,57 s)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen3_maedchen_hell_4110",
+   "ton": "gaehnen3",
+   "punkte": 0.45,
+   "gruende": [
+    "zu kurz (1,23 s)",
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_luft_holen_4110 (Spektrogramm r = 0,94)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_maedchen_hell_5101",
+   "ton": "gaehnen3",
+   "punkte": 1.86,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,08 s Atem vor der Stimme ab 1,59 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 32 % der Dauer)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2144 Hz (+13,3 dB über der Umgebung): auf Piepen achten"
+   ]
+  },
+  {
+   "roh": "gaehnen3_maedchen_hell_5102",
+   "ton": "gaehnen3",
+   "punkte": 2.35,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,04 s Atem vor der Stimme ab 0,11 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 45 % der Dauer)"
+   ],
+   "hinweise": [
+    "Hüllkurve pulsiert mit 18 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 10,7)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_junge_hell_4110",
+   "ton": "gaehnen3",
+   "punkte": 0.0,
+   "gruende": [
+    "zu kurz (1,32 s)",
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_junge_hell_5101",
+   "ton": "gaehnen3",
+   "punkte": 1.97,
+   "gruende": [
+    "stimmhafter Teil liegt vorn (Mitte bei 44 % der Dauer)",
+    "Tonhöhe fällt nicht (steigt 2,7, fällt 2,0 Halbtöne)"
+   ],
+   "hinweise": [
+    "etwas „Groan“ (AudioSet 0,09)",
+    "Hüllkurve pulsiert mit 18 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 10,2)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_junge_hell_5102",
+   "ton": "gaehnen3",
+   "punkte": 0.95,
+   "gruende": [
+    "zu kurz (0,81 s)",
+    "kein hörbares Einatmen vorn (nur 0,04 s Atem vor der Stimme ab 0,08 s)",
+    "Ende nicht gehaucht (87 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5104",
+   "ton": "gaehnen3",
+   "punkte": 0.77,
+   "gruende": [
+    "zu kurz (0,98 s)",
+    "kein hörbares Einatmen vorn (nur 0,03 s Atem vor der Stimme ab 0,07 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 47 % der Dauer)",
+    "Ende nicht gehaucht (74 % Stimme in den letzten 0,3 s)",
+    "fast gleich wie gaehnen3_frau_zuerst_5s_5104 (Spektrogramm r = 0,94)"
+   ],
+   "hinweise": [
+    "etwas „Groan“ (AudioSet 0,08)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5105",
+   "ton": "gaehnen3",
+   "punkte": -0.24,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,12 s Atem vor der Stimme ab 0,45 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 27 % der Dauer)",
+    "Luftholen am Ende (ab 2,11 s, 0,43 s nach dem stimmhaften Teil)",
+    "fast gleich wie gaehnen3_frau_zwei_teile_5105 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5105 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_luft_holen_5105 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_seufzer_5105 (Spektrogramm r = 0,93)"
+   ],
+   "hinweise": [
+    "etwas „Groan“ (AudioSet 0,11)",
+    "etwas „Wail, moan“ (AudioSet 0,09)",
+    "Hüllkurve pulsiert mit 18 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 11,1)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5106",
+   "ton": "gaehnen3",
+   "punkte": 1.24,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,06 s Atem vor der Stimme ab 0,22 s)",
+    "Tonhöhe fällt nicht (steigt 2,3, fällt 1,4 Halbtöne)",
+    "Ende nicht gehaucht (68 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5107",
+   "ton": "gaehnen3",
+   "punkte": 1.01,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5108",
+   "ton": "gaehnen3",
+   "punkte": 1.98,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_seufzer_5108 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_seufzer_5119 (Spektrogramm r = 0,91)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5109",
+   "ton": "gaehnen3",
+   "punkte": 1.78,
+   "gruende": [
+    "Ende nicht gehaucht (94 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5110",
+   "ton": "gaehnen3",
+   "punkte": 3.25,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,20 s Atem vor der Stimme ab 0,27 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 19 % der Dauer)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5111",
+   "ton": "gaehnen3",
+   "punkte": 1.02,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,43 s Atem vor der Stimme ab 0,97 s)",
+    "Ende nicht gehaucht (97 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_zwei_teile_5104",
+   "ton": "gaehnen3",
+   "punkte": 1.69,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zwei_teile_5105",
+   "ton": "gaehnen3",
+   "punkte": 1.68,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,44 s Atem vor der Stimme ab 0,54 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 35 % der Dauer)",
+    "Luftholen am Ende (ab 2,03 s, 0,47 s nach dem stimmhaften Teil)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5105 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_seufzer_5105 (Spektrogramm r = 0,90)"
+   ],
+   "hinweise": [
+    "Hüllkurve pulsiert mit 18 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 10,8)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zwei_teile_5106",
+   "ton": "gaehnen3",
+   "punkte": 1.77,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,22 s Atem vor der Stimme ab 0,28 s)",
+    "Tonhöhe fällt nicht (steigt 1,5, fällt 0,6 Halbtöne)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_zwei_teile_5107",
+   "ton": "gaehnen3",
+   "punkte": -0.56,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_zuerst_cfg7_5107 (Spektrogramm r = 0,90)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_atem_zuerst_4110",
+   "ton": "gaehnen3",
+   "punkte": 2.84,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_4110 (Spektrogramm r = 0,95)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2777 Hz (+13,0 dB über der Umgebung): auf Piepen achten",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_atem_zuerst_5101",
+   "ton": "gaehnen3",
+   "punkte": -1.19,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,10)",
+    "„aaah“ stockend (3-mal unterbrochen)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2144 Hz (+12,7 dB über der Umgebung): auf Piepen achten"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_atem_zuerst_5102",
+   "ton": "gaehnen3",
+   "punkte": 4.26,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,14 s Atem vor der Stimme ab 0,21 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 44 % der Dauer)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_atem_zuerst_5103",
+   "ton": "gaehnen3",
+   "punkte": 1.28,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5111 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5103 (Spektrogramm r = 0,90)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_atem_zuerst_5104",
+   "ton": "gaehnen3",
+   "punkte": -0.74,
+   "gruende": [
+    "zu kurz (1,33 s)",
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_atem_zuerst_5105",
+   "ton": "gaehnen3",
+   "punkte": 2.1,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,21 s Atem vor der Stimme ab 0,41 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 44 % der Dauer)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5105 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_junge_followed_5105 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_seufzer_5105 (Spektrogramm r = 0,97)",
+    "fast gleich wie gaehnen3_seufzer_laut_cfg7_5105 (Spektrogramm r = 0,91)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,45 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_atem_zuerst_5106",
+   "ton": "gaehnen3",
+   "punkte": 0.63,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_seufzer_5106 (Spektrogramm r = 0,99)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_atem_zuerst_5107",
+   "ton": "gaehnen3",
+   "punkte": 0.51,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_luft_holen_5107 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5103 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5107 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_junge_followed_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_zuerst_cfg7_5107 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5107 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5111 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5107 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5103 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_seufzer_5103 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5103 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5119 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_seufzer_5108 (Spektrogramm r = 0,90)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_atem_zuerst_5108",
+   "ton": "gaehnen3",
+   "punkte": 1.66,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_zuerst_5108 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_luft_holen_5108 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5108 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5122 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_seufzer_5108 (Spektrogramm r = 0,97)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_atem_zuerst_5109",
+   "ton": "gaehnen3",
+   "punkte": 2.96,
+   "gruende": [
+    "Tonhöhe fällt nicht (steigt 10,1, fällt 2,6 Halbtöne)",
+    "Ende nicht gehaucht (42 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_atem_zuerst_5110",
+   "ton": "gaehnen3",
+   "punkte": 0.68,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5108 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_luft_holen_5103 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_maedchen_followed_5103 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_junge_followed_5103 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5107 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5111 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5107 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5108 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5108 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_seufzer_5103 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5103 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5122 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_seufzer_5108 (Spektrogramm r = 0,94)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_atem_zuerst_5111",
+   "ton": "gaehnen3",
+   "punkte": -0.27,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_followed_lang_5111 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5111 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5111 (Spektrogramm r = 0,91)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 4189 Hz (+12,8 dB über der Umgebung): auf Piepen achten",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_luft_holen_4110",
+   "ton": "gaehnen3",
+   "punkte": 2.39,
+   "gruende": [
+    "zu kurz (1,39 s)",
+    "kein hörbares Einatmen vorn (nur 0,30 s Atem vor der Stimme ab 0,37 s)",
+    "Ende nicht gehaucht (90 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_luft_holen_5101",
+   "ton": "gaehnen3",
+   "punkte": -1.82,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,02)",
+    "kein hörbares Einatmen vorn (nur 0,43 s Atem vor der Stimme ab 0,84 s)",
+    "Tonhöhe fällt nicht (steigt 4,6, fällt 0,3 Halbtöne)",
+    "Ende nicht gehaucht (84 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2144 Hz (+13,8 dB über der Umgebung): auf Piepen achten",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_luft_holen_5102",
+   "ton": "gaehnen3",
+   "punkte": 2.94,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,04 s Atem vor der Stimme ab 0,11 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 45 % der Dauer)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_luft_holen_5103",
+   "ton": "gaehnen3",
+   "punkte": 1.45,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5107 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5103 (Spektrogramm r = 0,97)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_luft_holen_5104",
+   "ton": "gaehnen3",
+   "punkte": -0.22,
+   "gruende": [
+    "zu kurz (0,97 s)",
+    "kein hörbares Einatmen vorn (nur 0,06 s Atem vor der Stimme ab 0,12 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 30 % der Dauer)",
+    "Tonhöhe fällt nicht (steigt 0,8, fällt 0,1 Halbtöne)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_luft_holen_5105",
+   "ton": "gaehnen3",
+   "punkte": 1.08,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,24 s Atem vor der Stimme ab 0,43 s)",
+    "Ende nicht gehaucht (61 % Stimme in den letzten 0,3 s)",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5105 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5105 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_junge_followed_5105 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_seufzer_5105 (Spektrogramm r = 0,97)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,56 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_luft_holen_5106",
+   "ton": "gaehnen3",
+   "punkte": -0.77,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,08)",
+    "stimmhafter Teil liegt vorn (Mitte bei 29 % der Dauer)",
+    "Tonhöhe fällt nicht (steigt 1,0, fällt 1,2 Halbtöne)",
+    "„aaah“ stockend (2-mal unterbrochen)"
+   ],
+   "hinweise": [
+    "etwas „Whistle“ (AudioSet 0,14)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_luft_holen_5107",
+   "ton": "gaehnen3",
+   "punkte": 0.97,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_luft_holen_5108",
+   "ton": "gaehnen3",
+   "punkte": 1.93,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_zuerst_5108 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_seufzer_5108 (Spektrogramm r = 0,97)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_luft_holen_5109",
+   "ton": "gaehnen3",
+   "punkte": 1.39,
+   "gruende": [
+    "Ende nicht gehaucht (97 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": [
+    "Hüllkurve pulsiert mit 18 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 17,2)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_luft_holen_5110",
+   "ton": "gaehnen3",
+   "punkte": -0.5,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5110 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_luft_holen_5108 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5108 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_junge_followed_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5110 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5108 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_seufzer_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_seufzer_5108 (Spektrogramm r = 0,93)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,58 s)",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_luft_holen_5111",
+   "ton": "gaehnen3",
+   "punkte": -5.42,
+   "gruende": [
+    "klingt nach „Wail, moan“ (AudioSet 0,26, Grenze 0,15)",
+    "kein hörbares Einatmen vorn (nur 0,32 s Atem vor der Stimme ab 0,67 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 46 % der Dauer)"
+   ],
+   "hinweise": [
+    "etwas „Whimper“ (AudioSet 0,17)",
+    "Hüllkurve pulsiert mit 20 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 11,0)",
+    "schmale Linie bei 4980 Hz (+14,0 dB über der Umgebung): auf Piepen achten",
+    "etwas kürzer als das Ziel (2,32 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_maedchen_hell_5103",
+   "ton": "gaehnen3",
+   "punkte": 1.83,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_maedchen_hell_5104",
+   "ton": "gaehnen3",
+   "punkte": 3.16,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_maedchen_hell_5105",
+   "ton": "gaehnen3",
+   "punkte": -1.6,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,08)",
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_maedchen_hell_5106",
+   "ton": "gaehnen3",
+   "punkte": 0.94,
+   "gruende": [
+    "Tonhöhe fällt nicht (steigt 0,0, fällt 1,9 Halbtöne)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_maedchen_hell_5107",
+   "ton": "gaehnen3",
+   "punkte": 1.5,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_junge_hell_5103",
+   "ton": "gaehnen3",
+   "punkte": 1.1,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_junge_hell_5104",
+   "ton": "gaehnen3",
+   "punkte": 0.47,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_maedchen_hell_5104 (Spektrogramm r = 0,97)"
+   ],
+   "hinweise": [
+    "Hüllkurve pulsiert mit 17 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 14,3)",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_junge_hell_5105",
+   "ton": "gaehnen3",
+   "punkte": 0.28,
+   "gruende": [
+    "Ende nicht gehaucht (65 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": [
+    "Hüllkurve pulsiert mit 18 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 17,4)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_5101",
+   "ton": "gaehnen3",
+   "punkte": 0.19,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,05 s Atem vor der Stimme ab 0,41 s)",
+    "Ende nicht gehaucht (90 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_followed_5102",
+   "ton": "gaehnen3",
+   "punkte": 2.62,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,04 s Atem vor der Stimme ab 0,09 s)",
+    "Ende nicht gehaucht (65 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,33 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_5103",
+   "ton": "gaehnen3",
+   "punkte": -0.68,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_luft_holen_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_luft_holen_5110 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_hell_followed_5110 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_junge_followed_5103 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5108 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_seufzer_5103 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5103 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5123 (Spektrogramm r = 0,90)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,41 s)",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_5104",
+   "ton": "gaehnen3",
+   "punkte": -0.07,
+   "gruende": [
+    "zu kurz (1,01 s)",
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_5105",
+   "ton": "gaehnen3",
+   "punkte": -0.08,
+   "gruende": [
+    "zu kurz (1,68 s)",
+    "kein hörbares Einatmen vorn (nur 0,21 s Atem vor der Stimme ab 0,32 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 49 % der Dauer)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_followed_5106",
+   "ton": "gaehnen3",
+   "punkte": -2.9,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,04)",
+    "kein hörbares Einatmen vorn (nur 0,31 s Atem vor der Stimme ab 0,41 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 43 % der Dauer)",
+    "Tonhöhe fällt nicht (steigt 0,8, fällt 0,5 Halbtöne)"
+   ],
+   "hinweise": [
+    "etwas „Whistle“ (AudioSet 0,14)",
+    "Hüllkurve pulsiert mit 20 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 11,1)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_5107",
+   "ton": "gaehnen3",
+   "punkte": -1.66,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_followed_lang_5107 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_seufzer_5107 (Spektrogramm r = 0,95)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,40 s)",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_5108",
+   "ton": "gaehnen3",
+   "punkte": -4.58,
+   "gruende": [
+    "klingt nach „Screaming“ (AudioSet 0,16, Grenze 0,15)",
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,03)",
+    "kein hörbares Einatmen vorn (nur 0,15 s Atem vor der Stimme ab 0,19 s)",
+    "Tonhöhe fällt nicht (steigt 0,3, fällt 0,6 Halbtöne)",
+    "Ende nicht gehaucht (97 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": [
+    "etwas „Whistle“ (AudioSet 0,15)",
+    "schmale Linie bei 3199 Hz (+13,4 dB über der Umgebung): auf Piepen achten",
+    "etwas kürzer als das Ziel (2,38 s)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_5109",
+   "ton": "gaehnen3",
+   "punkte": -2.39,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,22 s Atem vor der Stimme ab 0,35 s)",
+    "Tonhöhe fällt nicht (steigt 0,4, fällt 1,0 Halbtöne)",
+    "Ende nicht gehaucht (45 % Stimme in den letzten 0,3 s)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5109 (Spektrogramm r = 0,92)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,48 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_5110",
+   "ton": "gaehnen3",
+   "punkte": 0.31,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_5111",
+   "ton": "gaehnen3",
+   "punkte": -1.13,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_seufzer_5107 (Spektrogramm r = 0,90)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,50 s)",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_5112",
+   "ton": "gaehnen3",
+   "punkte": 1.14,
+   "gruende": [
+    "zu kurz (1,39 s)",
+    "kein hörbares Einatmen vorn (nur 0,25 s Atem vor der Stimme ab 0,33 s)",
+    "Ende nicht gehaucht (42 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_followed_5113",
+   "ton": "gaehnen3",
+   "punkte": 0.91,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_seufzer_5113 (Spektrogramm r = 0,90)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_5114",
+   "ton": "gaehnen3",
+   "punkte": -1.9,
+   "gruende": [
+    "zu kurz (1,59 s)",
+    "kein hörbares Einatmen vorn (nur 0,19 s Atem vor der Stimme ab 0,27 s)",
+    "Tonhöhe fällt nicht (steigt 2,1, fällt 0,1 Halbtöne)",
+    "Ende nicht gehaucht (97 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_followed_5115",
+   "ton": "gaehnen3",
+   "punkte": -0.96,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5115 (Spektrogramm r = 0,91)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2783 Hz (+12,2 dB über der Umgebung): auf Piepen achten",
+    "etwas kürzer als das Ziel (2,38 s)",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_5116",
+   "ton": "gaehnen3",
+   "punkte": 0.84,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_seufzer_5116 (Spektrogramm r = 0,95)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,33 s)",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_atemzug_followed_5101",
+   "ton": "gaehnen3",
+   "punkte": -8.04,
+   "gruende": [
+    "klingt nach „Whimper“ (AudioSet 0,31, Grenze 0,25)",
+    "klingt nach „Animal“ (AudioSet 0,35, Grenze 0,20)",
+    "klingt nach „Dog“ (AudioSet 0,28, Grenze 0,15)",
+    "klingt nach „Howl“ (AudioSet 0,39, Grenze 0,15)",
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,00)",
+    "kein hörbares Einatmen vorn (nur 0,03 s Atem vor der Stimme ab 0,11 s)",
+    "Tonhöhe fällt nicht (steigt 3,8, fällt 1,4 Halbtöne)",
+    "Ende nicht gehaucht (84 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen3_atemzug_followed_5102",
+   "ton": "gaehnen3",
+   "punkte": -2.16,
+   "gruende": [
+    "klingt nach „Wail, moan“ (AudioSet 0,21, Grenze 0,15)",
+    "kein hörbares Einatmen vorn (nur 0,04 s Atem vor der Stimme ab 0,08 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 42 % der Dauer)"
+   ],
+   "hinweise": [
+    "etwas „Groan“ (AudioSet 0,11)",
+    "etwas Sprache-Verdacht (AudioSet „Speech“ 0,25), auf Wörter achten",
+    "etwas kürzer als das Ziel (2,46 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_atemzug_followed_5103",
+   "ton": "gaehnen3",
+   "punkte": -4.9,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,03)",
+    "kein hörbares Einatmen vorn (nur 0,03 s Atem vor der Stimme ab 0,07 s)",
+    "Tonhöhe fällt nicht (steigt 1,1, fällt 0,2 Halbtöne)",
+    "Ende nicht gehaucht (90 % Stimme in den letzten 0,3 s)",
+    "fast gleich wie gaehnen3_frau_reihe_5103 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_hell_followed_5103 (Spektrogramm r = 0,93)"
+   ],
+   "hinweise": [
+    "etwas „Humming“ (AudioSet 0,34)",
+    "schmale Linie bei 2109 Hz (+16,0 dB über der Umgebung): auf Piepen achten",
+    "etwas kürzer als das Ziel (2,56 s)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen3_atemzug_followed_5104",
+   "ton": "gaehnen3",
+   "punkte": -1.8,
+   "gruende": [
+    "zu kurz (1,30 s)",
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,11)",
+    "kein hörbares Einatmen vorn (nur 0,10 s Atem vor der Stimme ab 0,18 s)",
+    "Tonhöhe fällt nicht (steigt 3,0, fällt 0,2 Halbtöne)",
+    "Ende nicht gehaucht (65 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_atemzug_followed_5105",
+   "ton": "gaehnen3",
+   "punkte": -5.24,
+   "gruende": [
+    "klingt nach „Dog“ (AudioSet 0,21, Grenze 0,15)",
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,07)",
+    "kein hörbares Einatmen vorn (nur 0,04 s Atem vor der Stimme ab 0,08 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 33 % der Dauer)",
+    "„aaah“ stockend (2-mal unterbrochen)"
+   ],
+   "hinweise": [
+    "etwas „Animal“ (AudioSet 0,14)",
+    "etwas „Howl“ (AudioSet 0,13)",
+    "schmale Linie bei 2085 Hz (+12,5 dB über der Umgebung): auf Piepen achten",
+    "etwas kürzer als das Ziel (2,46 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_atemzug_followed_5106",
+   "ton": "gaehnen3",
+   "punkte": -1.2,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,08)",
+    "kein hörbares Einatmen vorn (nur 0,13 s Atem vor der Stimme ab 0,22 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 37 % der Dauer)",
+    "Tonhöhe fällt nicht (steigt 1,7, fällt 0,3 Halbtöne)"
+   ],
+   "hinweise": [
+    "etwas „Humming“ (AudioSet 0,25)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_maedchen_followed_5101",
+   "ton": "gaehnen3",
+   "punkte": 1.43,
+   "gruende": [
+    "Tonhöhe fällt nicht (steigt 0,3, fällt 1,9 Halbtöne)"
+   ],
+   "hinweise": [
+    "etwas „Groan“ (AudioSet 0,12)",
+    "schmale Linie bei 2144 Hz (+13,0 dB über der Umgebung): auf Piepen achten"
+   ]
+  },
+  {
+   "roh": "gaehnen3_maedchen_followed_5102",
+   "ton": "gaehnen3",
+   "punkte": 1.55,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_maedchen_followed_5103",
+   "ton": "gaehnen3",
+   "punkte": 0.9,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_luft_holen_5103 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_maedchen_hell_5107 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5111 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5106 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5107 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_seufzer_5103 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5103 (Spektrogramm r = 0,94)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_maedchen_followed_5104",
+   "ton": "gaehnen3",
+   "punkte": 1.26,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_maedchen_followed_5105",
+   "ton": "gaehnen3",
+   "punkte": 1.03,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_maedchen_followed_5102 (Spektrogramm r = 0,92)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_maedchen_followed_5106",
+   "ton": "gaehnen3",
+   "punkte": 0.32,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_4110",
+   "ton": "gaehnen3",
+   "punkte": 2.34,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_4110 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_4110 (Spektrogramm r = 0,96)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2777 Hz (+14,1 dB über der Umgebung): auf Piepen achten",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_5102",
+   "ton": "gaehnen3",
+   "punkte": 1.78,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_seufzer_5102 (Spektrogramm r = 0,92)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_5103",
+   "ton": "gaehnen3",
+   "punkte": 0.59,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5103 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5110 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_frau_luft_holen_5103 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_maedchen_followed_5103 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5111 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_junge_followed_5103 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5107 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5111 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5107 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5103 (Spektrogramm r = 0,97)",
+    "fast gleich wie gaehnen3_seufzer_5103 (Spektrogramm r = 0,97)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5103 (Spektrogramm r = 0,97)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_5104",
+   "ton": "gaehnen3",
+   "punkte": 1.49,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_5105",
+   "ton": "gaehnen3",
+   "punkte": 2.67,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,27 s Atem vor der Stimme ab 0,42 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 42 % der Dauer)",
+    "fast gleich wie gaehnen3_seufzer_5105 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_seufzer_laut_cfg7_5105 (Spektrogramm r = 0,94)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,29 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_5106",
+   "ton": "gaehnen3",
+   "punkte": 0.55,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_followed_lang_5111 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_junge_followed_5106 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5106 (Spektrogramm r = 0,97)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5106 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5106 (Spektrogramm r = 0,98)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_5107",
+   "ton": "gaehnen3",
+   "punkte": 0.98,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_zuerst_cfg7_5107 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5107 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5107 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5119 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_seufzer_5108 (Spektrogramm r = 0,90)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_5108",
+   "ton": "gaehnen3",
+   "punkte": 1.13,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_zuerst_5108 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5108 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_luft_holen_5108 (Spektrogramm r = 0,98)",
+    "fast gleich wie gaehnen3_seufzer_5108 (Spektrogramm r = 0,95)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_5109",
+   "ton": "gaehnen3",
+   "punkte": 0.06,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,34 s Atem vor der Stimme ab 0,43 s)",
+    "Tonhöhe fällt nicht (steigt 0,1, fällt 0,7 Halbtöne)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5109 (Spektrogramm r = 0,95)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_5110",
+   "ton": "gaehnen3",
+   "punkte": -0.45,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_5111",
+   "ton": "gaehnen3",
+   "punkte": 0.64,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_maedchen_followed_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_junge_followed_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5111 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5106 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5107 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_seufzer_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5103 (Spektrogramm r = 0,92)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_hell_followed_5101",
+   "ton": "gaehnen3",
+   "punkte": -6.22,
+   "gruende": [
+    "klingt nach „Whistle“ (AudioSet 0,55, Grenze 0,20)",
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,00)",
+    "kein hörbares Einatmen vorn (nur 0,04 s Atem vor der Stimme ab 0,17 s)",
+    "Ende nicht gehaucht (74 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,41 s)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen3_hell_followed_5102",
+   "ton": "gaehnen3",
+   "punkte": -1.97,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,04)",
+    "kein hörbares Einatmen vorn (nur 0,10 s Atem vor der Stimme ab 0,20 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 39 % der Dauer)",
+    "fast gleich wie gaehnen3_seufzer_laut_cfg7_5102 (Spektrogramm r = 0,94)"
+   ],
+   "hinweise": [
+    "etwas „Humming“ (AudioSet 0,29)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen3_hell_followed_5103",
+   "ton": "gaehnen3",
+   "punkte": -2.41,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,03)",
+    "kein hörbares Einatmen vorn (nur 0,03 s Atem vor der Stimme ab 0,15 s)",
+    "Tonhöhe fällt nicht (steigt 1,2, fällt 0,5 Halbtöne)",
+    "Ende nicht gehaucht (90 % Stimme in den letzten 0,3 s)",
+    "fast gleich wie gaehnen3_frau_reihe_5103 (Spektrogramm r = 0,94)"
+   ],
+   "hinweise": [
+    "etwas „Humming“ (AudioSet 0,31)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen3_hell_followed_5104",
+   "ton": "gaehnen3",
+   "punkte": -4.08,
+   "gruende": [
+    "klingt nach „Whistle“ (AudioSet 0,24, Grenze 0,20)",
+    "zu kurz (1,22 s)",
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,01)",
+    "kein hörbares Einatmen vorn (nur 0,13 s Atem vor der Stimme ab 0,20 s)",
+    "Tonhöhe fällt nicht (steigt 3,2, fällt 0,0 Halbtöne)",
+    "Ende nicht gehaucht (100 % Stimme in den letzten 0,3 s)",
+    "fast gleich wie gaehnen3_atemzug_followed_5104 (Spektrogramm r = 0,94)"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen3_hell_followed_5105",
+   "ton": "gaehnen3",
+   "punkte": -0.4,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,15)",
+    "kein hörbares Einatmen vorn (nur 0,25 s Atem vor der Stimme ab 0,32 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 38 % der Dauer)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_hell_followed_5106",
+   "ton": "gaehnen3",
+   "punkte": -3.0,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,08)",
+    "kein hörbares Einatmen vorn (nur 0,40 s Atem vor der Stimme ab 0,46 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 42 % der Dauer)",
+    "Tonhöhe fällt nicht (steigt 1,5, fällt 0,3 Halbtöne)",
+    "fast gleich wie gaehnen3_seufzer_laut_cfg7_5106 (Spektrogramm r = 0,97)"
+   ],
+   "hinweise": [
+    "etwas „Humming“ (AudioSet 0,28)",
+    "Hüllkurve pulsiert mit 17 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 15,1)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen3_hell_followed_5107",
+   "ton": "gaehnen3",
+   "punkte": -3.44,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,04)",
+    "Tonhöhe fällt nicht (steigt 9,0, fällt 0,4 Halbtöne)",
+    "Ende nicht gehaucht (84 % Stimme in den letzten 0,3 s)",
+    "„aaah“ stockend (2-mal unterbrochen)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2847 Hz (+12,2 dB über der Umgebung): auf Piepen achten",
+    "etwas kürzer als das Ziel (2,55 s)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen3_hell_followed_5108",
+   "ton": "gaehnen3",
+   "punkte": -7.73,
+   "gruende": [
+    "klingt nach „Screaming“ (AudioSet 0,25, Grenze 0,15)",
+    "klingt nach „Whistle“ (AudioSet 0,54, Grenze 0,20)",
+    "Katzen-Leitplanke: schmale Linie bei 2121 Hz (+22,6 dB über der Umgebung), Piepen",
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,00)",
+    "kein hörbares Einatmen vorn (nur 0,04 s Atem vor der Stimme ab 0,08 s)",
+    "Tonhöhe fällt nicht (steigt 0,5, fällt 0,9 Halbtöne)",
+    "Ende nicht gehaucht (97 % Stimme in den letzten 0,3 s)",
+    "fast gleich wie gaehnen3_frau_followed_5108 (Spektrogramm r = 0,94)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,38 s)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen3_hell_followed_5109",
+   "ton": "gaehnen3",
+   "punkte": -2.9,
+   "gruende": [
+    "klingt nach „Humming“ (AudioSet 0,41, Grenze 0,40)",
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,07)",
+    "kein hörbares Einatmen vorn (nur 0,05 s Atem vor der Stimme ab 0,20 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 49 % der Dauer)",
+    "Ende nicht gehaucht (94 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen3_hell_followed_5110",
+   "ton": "gaehnen3",
+   "punkte": -0.67,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5110 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_luft_holen_5108 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_luft_holen_5110 (Spektrogramm r = 0,98)",
+    "fast gleich wie gaehnen3_junge_followed_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5108 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_seufzer_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5103 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5123 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_seufzer_5108 (Spektrogramm r = 0,93)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_junge_followed_5101",
+   "ton": "gaehnen3",
+   "punkte": -1.15,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,08)",
+    "„aaah“ stockend (4-mal unterbrochen)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5101 (Spektrogramm r = 0,91)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2144 Hz (+12,3 dB über der Umgebung): auf Piepen achten",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen3_junge_followed_5102",
+   "ton": "gaehnen3",
+   "punkte": 2.55,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_junge_followed_5103",
+   "ton": "gaehnen3",
+   "punkte": 0.85,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_luft_holen_5103 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_maedchen_followed_5103 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5107 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5107 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5111 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5107 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5108 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_seufzer_5103 (Spektrogramm r = 0,97)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5103 (Spektrogramm r = 0,96)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_junge_followed_5104",
+   "ton": "gaehnen3",
+   "punkte": 0.81,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_junge_followed_5105",
+   "ton": "gaehnen3",
+   "punkte": 2.26,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,31 s Atem vor der Stimme ab 0,46 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 41 % der Dauer)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5105 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_seufzer_5105 (Spektrogramm r = 0,92)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,28 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_junge_followed_5106",
+   "ton": "gaehnen3",
+   "punkte": 1.23,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5106 (Spektrogramm r = 0,95)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_junge_followed_5107",
+   "ton": "gaehnen3",
+   "punkte": 0.5,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_maedchen_hell_5107 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5107 (Spektrogramm r = 0,93)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_junge_followed_5108",
+   "ton": "gaehnen3",
+   "punkte": -0.77,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_zuerst_5108 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5108 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_luft_holen_5108 (Spektrogramm r = 0,97)",
+    "fast gleich wie gaehnen3_frau_luft_holen_5110 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5108 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_hell_followed_5110 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5108 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_seufzer_5108 (Spektrogramm r = 0,94)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,53 s)",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_cfg7_5101",
+   "ton": "gaehnen3",
+   "punkte": -0.6,
+   "gruende": [
+    "klingt nach „Groan“ (AudioSet 0,17, Grenze 0,15)",
+    "kein hörbares Einatmen vorn (nur 0,26 s Atem vor der Stimme ab 0,67 s)",
+    "Ende nicht gehaucht (97 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_cfg7_5102",
+   "ton": "gaehnen3",
+   "punkte": -1.77,
+   "gruende": [
+    "zu kurz (0,77 s)",
+    "kein hörbares Einatmen vorn (nur 0,04 s Atem vor der Stimme ab 0,09 s)",
+    "Ende nicht gehaucht (97 % Stimme in den letzten 0,3 s)",
+    "fast gleich wie gaehnen3_frau_zuerst_5102 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_frau_zwei_teile_5102 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_zuerst_5s_5102 (Spektrogramm r = 0,93)"
+   ],
+   "hinweise": [
+    "etwas „Groan“ (AudioSet 0,12)",
+    "etwas „Grunt“ (AudioSet 0,11)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_cfg7_5103",
+   "ton": "gaehnen3",
+   "punkte": 2.22,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,19 s Atem vor der Stimme ab 0,32 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 47 % der Dauer)",
+    "Ende nicht gehaucht (61 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_cfg7_5104",
+   "ton": "gaehnen3",
+   "punkte": -1.42,
+   "gruende": [
+    "zu kurz (0,97 s)",
+    "kein hörbares Einatmen vorn (nur 0,03 s Atem vor der Stimme ab 0,07 s)",
+    "Ende nicht gehaucht (94 % Stimme in den letzten 0,3 s)",
+    "fast gleich wie gaehnen3_frau_zuerst_5104 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_frau_zuerst_5s_5104 (Spektrogramm r = 0,91)"
+   ],
+   "hinweise": [
+    "etwas „Groan“ (AudioSet 0,08)",
+    "etwas „Wail, moan“ (AudioSet 0,09)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_cfg7_5105",
+   "ton": "gaehnen3",
+   "punkte": 0.62,
+   "gruende": [
+    "zu kurz (1,77 s)",
+    "kein hörbares Einatmen vorn (nur 0,16 s Atem vor der Stimme ab 0,23 s)",
+    "Ende nicht gehaucht (87 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": [
+    "etwas „Groan“ (AudioSet 0,12)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_cfg7_5106",
+   "ton": "gaehnen3",
+   "punkte": 0.85,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,08 s Atem vor der Stimme ab 0,18 s)",
+    "Tonhöhe fällt nicht (steigt 1,2, fällt 0,5 Halbtöne)",
+    "Ende nicht gehaucht (94 % Stimme in den letzten 0,3 s)",
+    "fast gleich wie gaehnen3_frau_zuerst_5106 (Spektrogramm r = 0,93)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_cfg7_5107",
+   "ton": "gaehnen3",
+   "punkte": 1.08,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5107 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5111 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5107 (Spektrogramm r = 0,94)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_cfg7_5108",
+   "ton": "gaehnen3",
+   "punkte": 1.43,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,12 s Atem vor der Stimme ab 0,17 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 26 % der Dauer)"
+   ],
+   "hinweise": [
+    "etwas „Wail, moan“ (AudioSet 0,11)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_cfg7_5109",
+   "ton": "gaehnen3",
+   "punkte": -3.75,
+   "gruende": [
+    "klingt nach „Humming“ (AudioSet 0,42, Grenze 0,40)",
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,12)",
+    "kein hörbares Einatmen vorn (nur 0,35 s Atem vor der Stimme ab 0,53 s)",
+    "Ende nicht gehaucht (97 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 3298 Hz (+12,6 dB über der Umgebung): auf Piepen achten"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_cfg7_5110",
+   "ton": "gaehnen3",
+   "punkte": 0.62,
+   "gruende": [
+    "klingt nach „Groan“ (AudioSet 0,26, Grenze 0,15)",
+    "kein hörbares Einatmen vorn (nur 0,34 s Atem vor der Stimme ab 0,40 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 28 % der Dauer)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_cfg7_5111",
+   "ton": "gaehnen3",
+   "punkte": 0.55,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,20 s Atem vor der Stimme ab 0,94 s)",
+    "Ende nicht gehaucht (94 % Stimme in den letzten 0,3 s)",
+    "fast gleich wie gaehnen3_frau_zuerst_5111 (Spektrogramm r = 0,96)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_cfg7_5112",
+   "ton": "gaehnen3",
+   "punkte": -2.83,
+   "gruende": [
+    "klingt nach „Wail, moan“ (AudioSet 0,18, Grenze 0,15)",
+    "kein hörbares Einatmen vorn (nur 0,04 s Atem vor der Stimme ab 0,11 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 46 % der Dauer)"
+   ],
+   "hinweise": [
+    "etwas „Groan“ (AudioSet 0,09)",
+    "etwas kürzer als das Ziel (1,96 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_cfg7_5113",
+   "ton": "gaehnen3",
+   "punkte": 0.91,
+   "gruende": [
+    "Tonhöhe fällt nicht (steigt 0,0, fällt 0,6 Halbtöne)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_cfg7_5114",
+   "ton": "gaehnen3",
+   "punkte": 2.38,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,30 s Atem vor der Stimme ab 1,00 s)",
+    "Tonhöhe fällt nicht (steigt 2,3, fällt 0,2 Halbtöne)",
+    "Ende nicht gehaucht (94 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_cfg7_5115",
+   "ton": "gaehnen3",
+   "punkte": -6.38,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,43 s Atem vor der Stimme ab 0,79 s)",
+    "Ende nicht gehaucht (94 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": [
+    "etwas „Humming“ (AudioSet 0,35)",
+    "Hüllkurve pulsiert mit 18 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 14,9)",
+    "etwas kürzer als das Ziel (2,31 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_cfg7_5116",
+   "ton": "gaehnen3",
+   "punkte": 2.92,
+   "gruende": [
+    "zu kurz (1,70 s)",
+    "kein hörbares Einatmen vorn (nur 0,16 s Atem vor der Stimme ab 0,22 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 47 % der Dauer)",
+    "fast gleich wie gaehnen3_frau_zuerst_5116 (Spektrogramm r = 0,96)"
+   ],
+   "hinweise": [
+    "etwas „Groan“ (AudioSet 0,10)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_cfg7_5101",
+   "ton": "gaehnen3",
+   "punkte": -3.43,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,04)",
+    "kein hörbares Einatmen vorn (nur 0,37 s Atem vor der Stimme ab 0,46 s)",
+    "Tonhöhe fällt nicht (steigt 0,2, fällt 0,5 Halbtöne)",
+    "Ende nicht gehaucht (77 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": [
+    "Hüllkurve pulsiert mit 22 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 10,2)",
+    "schmale Linie bei 3410 Hz (+14,7 dB über der Umgebung): auf Piepen achten",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_cfg7_5102",
+   "ton": "gaehnen3",
+   "punkte": 1.95,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,34 s Atem vor der Stimme ab 0,43 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 36 % der Dauer)",
+    "Tonhöhe fällt nicht (steigt 0,1, fällt 1,4 Halbtöne)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_cfg7_5103",
+   "ton": "gaehnen3",
+   "punkte": -0.62,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5103 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5107 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5110 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_frau_luft_holen_5103 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_maedchen_followed_5103 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5103 (Spektrogramm r = 0,98)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5111 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_junge_followed_5103 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5106 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5107 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5110 (Spektrogramm r = 0,98)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5111 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5103 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5106 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5107 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5110 (Spektrogramm r = 0,98)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5111 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_hell_followed_cfg7_5104 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5103 (Spektrogramm r = 0,98)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5107 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5108 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_seufzer_5103 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5103 (Spektrogramm r = 0,97)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5106 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5123 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5125 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5131 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5132 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_seufzer_5125 (Spektrogramm r = 0,91)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 3363 Hz (+13,4 dB über der Umgebung): auf Piepen achten",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_cfg7_5104",
+   "ton": "gaehnen3",
+   "punkte": 1.12,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_cfg7_5105",
+   "ton": "gaehnen3",
+   "punkte": 1.89,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,42 s Atem vor der Stimme ab 0,53 s)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5105 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_seufzer_laut_cfg7_5105 (Spektrogramm r = 0,91)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,11 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_cfg7_5106",
+   "ton": "gaehnen3",
+   "punkte": 0.1,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_maedchen_followed_5103 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5103 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5106 (Spektrogramm r = 0,97)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5111 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_junge_followed_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5111 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5106 (Spektrogramm r = 0,97)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5107 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5111 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5103 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5106 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5106 (Spektrogramm r = 0,97)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5125 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5131 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5132 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_seufzer_5125 (Spektrogramm r = 0,92)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 4429 Hz (+13,6 dB über der Umgebung): auf Piepen achten",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_cfg7_5107",
+   "ton": "gaehnen3",
+   "punkte": 1.66,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5108 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_seufzer_5108 (Spektrogramm r = 0,92)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_cfg7_5108",
+   "ton": "gaehnen3",
+   "punkte": -8.36,
+   "gruende": [
+    "klingt nach „Whistle“ (AudioSet 0,78, Grenze 0,20)",
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,00)",
+    "kein hörbares Einatmen vorn (nur 0,10 s Atem vor der Stimme ab 0,18 s)",
+    "Tonhöhe fällt nicht (steigt 0,6, fällt 0,7 Halbtöne)",
+    "Ende nicht gehaucht (94 % Stimme in den letzten 0,3 s)",
+    "fast gleich wie gaehnen3_hell_followed_cfg7_5108 (Spektrogramm r = 0,92)"
+   ],
+   "hinweise": [
+    "etwas „Whistling“ (AudioSet 0,16)",
+    "schmale Linie bei 3240 Hz (+16,1 dB über der Umgebung): auf Piepen achten",
+    "etwas kürzer als das Ziel (2,56 s)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_cfg7_5109",
+   "ton": "gaehnen3",
+   "punkte": 0.89,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,37 s Atem vor der Stimme ab 0,44 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 47 % der Dauer)",
+    "Tonhöhe fällt nicht (steigt 0,2, fällt 0,8 Halbtöne)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_cfg7_5110",
+   "ton": "gaehnen3",
+   "punkte": 0.09,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5107 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5110 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_frau_luft_holen_5103 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_maedchen_followed_5103 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5103 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5111 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_junge_followed_5103 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5106 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5107 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5111 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5107 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5111 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5103 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5108 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_seufzer_5103 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5103 (Spektrogramm r = 0,97)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5106 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5119 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5125 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5131 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5132 (Spektrogramm r = 0,94)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_cfg7_5111",
+   "ton": "gaehnen3",
+   "punkte": 1.33,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_luft_holen_5103 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5107 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5103 (Spektrogramm r = 0,94)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_cfg7_5112",
+   "ton": "gaehnen3",
+   "punkte": 2.13,
+   "gruende": [
+    "klingt nach „Wail, moan“ (AudioSet 0,16, Grenze 0,15)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,50 s)",
+    "kurzes „aaah“ (0,6 s stimmhaft)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_cfg7_5113",
+   "ton": "gaehnen3",
+   "punkte": -0.45,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_followed_5113 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5107 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5107 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5107 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5119 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_seufzer_5113 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_seufzer_5119 (Spektrogramm r = 0,91)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 4453 Hz (+12,3 dB über der Umgebung): auf Piepen achten",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_cfg7_5114",
+   "ton": "gaehnen3",
+   "punkte": -2.08,
+   "gruende": [
+    "zu kurz (1,82 s)",
+    "kein hörbares Einatmen vorn (nur 0,26 s Atem vor der Stimme ab 0,35 s)",
+    "Tonhöhe fällt nicht (steigt 1,5, fällt 0,2 Halbtöne)",
+    "Ende nicht gehaucht (84 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_cfg7_5115",
+   "ton": "gaehnen3",
+   "punkte": 1.18,
+   "gruende": [
+    "Tonhöhe fällt nicht (steigt 0,1, fällt 1,3 Halbtöne)",
+    "Ende nicht gehaucht (42 % Stimme in den letzten 0,3 s)",
+    "„aaah“ stockend (4-mal unterbrochen)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,46 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_cfg7_5116",
+   "ton": "gaehnen3",
+   "punkte": 2.75,
+   "gruende": [
+    "Tonhöhe fällt nicht (steigt 0,0, fällt 1,5 Halbtöne)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,57 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5s_5101",
+   "ton": "gaehnen3",
+   "punkte": 4.17,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,04 s Atem vor der Stimme ab 0,11 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 33 % der Dauer)",
+    "„aaah“ stockend (3-mal unterbrochen)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5s_5102",
+   "ton": "gaehnen3",
+   "punkte": -0.6,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,03 s Atem vor der Stimme ab 0,07 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 40 % der Dauer)"
+   ],
+   "hinweise": [
+    "etwas „Wail, moan“ (AudioSet 0,11)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5s_5104",
+   "ton": "gaehnen3",
+   "punkte": 2.14,
+   "gruende": [
+    "zu kurz (1,38 s)",
+    "kein hörbares Einatmen vorn (nur 0,03 s Atem vor der Stimme ab 0,08 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 31 % der Dauer)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5s_5105",
+   "ton": "gaehnen3",
+   "punkte": 1.88,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,05 s Atem vor der Stimme ab 0,10 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 49 % der Dauer)",
+    "Ende nicht gehaucht (71 % Stimme in den letzten 0,3 s)",
+    "„aaah“ stockend (2-mal unterbrochen)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5s_5106",
+   "ton": "gaehnen3",
+   "punkte": -0.69,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,04 s Atem vor der Stimme ab 0,18 s)",
+    "Ende nicht gehaucht (65 % Stimme in den letzten 0,3 s)",
+    "„aaah“ stockend (2-mal unterbrochen)"
+   ],
+   "hinweise": [
+    "natürlich 4,8 s, auf 4,30 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zwei_sek_cfg7_4110",
+   "ton": "gaehnen3",
+   "punkte": 2.94,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2777 Hz (+12,3 dB über der Umgebung): auf Piepen achten",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zwei_sek_cfg7_5101",
+   "ton": "gaehnen3",
+   "punkte": -1.04,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5103 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_maedchen_followed_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5103 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5103 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5106 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5111 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_hell_followed_cfg7_5104 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5106 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5125 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5128 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5132 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5136 (Spektrogramm r = 0,92)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 3398 Hz (+13,3 dB über der Umgebung): auf Piepen achten",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zwei_sek_cfg7_5102",
+   "ton": "gaehnen3",
+   "punkte": 3.43,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,30 s Atem vor der Stimme ab 0,37 s)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_zwei_sek_cfg7_5103",
+   "ton": "gaehnen3",
+   "punkte": -0.22,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5103 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_maedchen_followed_5103 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5103 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5111 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5111 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5103 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5106 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5125 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5132 (Spektrogramm r = 0,93)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 3375 Hz (+12,2 dB über der Umgebung): auf Piepen achten",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zwei_sek_cfg7_5104",
+   "ton": "gaehnen3",
+   "punkte": 0.31,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zwei_sek_cfg7_5105",
+   "ton": "gaehnen3",
+   "punkte": 1.58,
+   "gruende": [
+    "zu kurz (1,77 s)",
+    "kein hörbares Einatmen vorn (nur 0,11 s Atem vor der Stimme ab 0,53 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 45 % der Dauer)",
+    "fast gleich wie gaehnen3_frau_zwei_teile_5105 (Spektrogramm r = 0,92)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_zwei_sek_cfg7_5106",
+   "ton": "gaehnen3",
+   "punkte": 1.02,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_junge_followed_5106 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5106 (Spektrogramm r = 0,97)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 4429 Hz (+14,9 dB über der Umgebung): auf Piepen achten",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zwei_sek_cfg7_5107",
+   "ton": "gaehnen3",
+   "punkte": 1.11,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5108 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_luft_holen_5103 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_maedchen_hell_5107 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5107 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5111 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5103 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_seufzer_5108 (Spektrogramm r = 0,90)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zwei_sek_cfg7_5108",
+   "ton": "gaehnen3",
+   "punkte": 1.86,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_seufzer_5108 (Spektrogramm r = 0,91)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zwei_sek_cfg7_5109",
+   "ton": "gaehnen3",
+   "punkte": 0.14,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zwei_sek_cfg7_5110",
+   "ton": "gaehnen3",
+   "punkte": -0.05,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5110 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_frau_luft_holen_5103 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_maedchen_followed_5103 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5103 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5111 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_junge_followed_5103 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5106 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5107 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5110 (Spektrogramm r = 0,99)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5111 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5106 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5107 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5111 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5103 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5108 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_seufzer_5103 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5103 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5106 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5119 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5125 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5131 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5132 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_seufzer_5108 (Spektrogramm r = 0,90)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zwei_sek_cfg7_5111",
+   "ton": "gaehnen3",
+   "punkte": 0.5,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5103 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5110 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_luft_holen_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_maedchen_followed_5103 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5103 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5111 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_junge_followed_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5111 (Spektrogramm r = 0,99)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5107 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5103 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_seufzer_5103 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5103 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5106 (Spektrogramm r = 0,91)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_hell_followed_cfg7_5101",
+   "ton": "gaehnen3",
+   "punkte": -2.8,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,00)",
+    "kein hörbares Einatmen vorn (nur 0,05 s Atem vor der Stimme ab 0,12 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 48 % der Dauer)",
+    "Tonhöhe fällt nicht (steigt 7,0, fällt 5,0 Halbtöne)",
+    "Ende nicht gehaucht (45 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,53 s)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen3_hell_followed_cfg7_5102",
+   "ton": "gaehnen3",
+   "punkte": -3.65,
+   "gruende": [
+    "klingt nach „Humming“ (AudioSet 0,42, Grenze 0,40)",
+    "kein hörbares Einatmen vorn (nur 0,35 s Atem vor der Stimme ab 0,44 s)"
+   ],
+   "hinweise": [
+    "Hüllkurve pulsiert mit 18 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 15,1)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_hell_followed_cfg7_5103",
+   "ton": "gaehnen3",
+   "punkte": -1.1,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,08)",
+    "kein hörbares Einatmen vorn (nur 0,33 s Atem vor der Stimme ab 0,45 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 49 % der Dauer)",
+    "Tonhöhe fällt nicht (steigt 0,5, fällt 0,7 Halbtöne)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2185 Hz (+16,6 dB über der Umgebung): auf Piepen achten",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen3_hell_followed_cfg7_5104",
+   "ton": "gaehnen3",
+   "punkte": -0.5,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5103 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5106 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5106 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5111 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5106 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5111 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5106 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_zuerst_5120 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5132 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_seufzer_5120 (Spektrogramm r = 0,91)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_hell_followed_cfg7_5105",
+   "ton": "gaehnen3",
+   "punkte": -3.72,
+   "gruende": [
+    "klingt nach „Wail, moan“ (AudioSet 0,38, Grenze 0,15)",
+    "kein hörbares Einatmen vorn (nur 0,24 s Atem vor der Stimme ab 0,29 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 46 % der Dauer)",
+    "fast gleich wie gaehnen3_hell_followed_5105 (Spektrogramm r = 0,93)"
+   ],
+   "hinweise": [
+    "Hüllkurve pulsiert mit 17 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 10,0)",
+    "schmale Linie bei 2179 Hz (+12,4 dB über der Umgebung): auf Piepen achten"
+   ]
+  },
+  {
+   "roh": "gaehnen3_hell_followed_cfg7_5106",
+   "ton": "gaehnen3",
+   "punkte": -2.36,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,42 s Atem vor der Stimme ab 0,47 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 38 % der Dauer)",
+    "Tonhöhe fällt nicht (steigt 1,2, fällt 0,4 Halbtöne)",
+    "Luftholen am Ende (ab 2,51 s, 0,73 s nach dem stimmhaften Teil)",
+    "fast gleich wie gaehnen3_seufzer_laut_cfg7_5106 (Spektrogramm r = 0,90)"
+   ],
+   "hinweise": [
+    "etwas „Humming“ (AudioSet 0,39)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_hell_followed_cfg7_5107",
+   "ton": "gaehnen3",
+   "punkte": -1.2,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,06)",
+    "kein hörbares Einatmen vorn (nur 0,21 s Atem vor der Stimme ab 0,34 s)",
+    "Tonhöhe fällt nicht (steigt 4,3, fällt 1,7 Halbtöne)",
+    "„aaah“ stockend (2-mal unterbrochen)"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen3_hell_followed_cfg7_5108",
+   "ton": "gaehnen3",
+   "punkte": -8.11,
+   "gruende": [
+    "klingt nach „Whistle“ (AudioSet 0,85, Grenze 0,20)",
+    "Katzen-Leitplanke: schmale Linie bei 2121 Hz (+21,1 dB über der Umgebung), Piepen",
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,00)",
+    "kein hörbares Einatmen vorn (nur 0,02 s Atem vor der Stimme ab 0,06 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 48 % der Dauer)",
+    "Tonhöhe fällt nicht (steigt 0,7, fällt 1,0 Halbtöne)",
+    "Ende nicht gehaucht (68 % Stimme in den letzten 0,3 s)",
+    "fast gleich wie gaehnen3_frau_followed_5108 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_hell_followed_5108 (Spektrogramm r = 0,97)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,57 s)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen3_jugend_followed_cfg7_5101",
+   "ton": "gaehnen3",
+   "punkte": 0.51,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,09 s Atem vor der Stimme ab 0,69 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 45 % der Dauer)",
+    "Tonhöhe fällt nicht (steigt 5,3, fällt 3,5 Halbtöne)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_jugend_followed_cfg7_5102",
+   "ton": "gaehnen3",
+   "punkte": 1.83,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_jugend_followed_cfg7_5103",
+   "ton": "gaehnen3",
+   "punkte": 0.6,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5103 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5110 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_luft_holen_5103 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_maedchen_followed_5103 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5111 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_junge_followed_5103 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5107 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5111 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5106 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5107 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5108 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_seufzer_5103 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5103 (Spektrogramm r = 0,96)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_jugend_followed_cfg7_5104",
+   "ton": "gaehnen3",
+   "punkte": 0.38,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_jugend_followed_cfg7_5105",
+   "ton": "gaehnen3",
+   "punkte": -0.8,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_luft_holen_5110 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_followed_5103 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_hell_followed_5110 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_junge_followed_5103 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5108 (Spektrogramm r = 0,94)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,49 s)",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_jugend_followed_cfg7_5106",
+   "ton": "gaehnen3",
+   "punkte": 1.58,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_jugend_followed_cfg7_5107",
+   "ton": "gaehnen3",
+   "punkte": -0.55,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5107 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_maedchen_hell_5107 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_maedchen_followed_5103 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5107 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_junge_followed_5103 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_junge_followed_5107 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5106 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5107 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5110 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5113 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5106 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5107 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5110 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5106 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5108 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_seufzer_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5103 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5123 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5125 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5129 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5132 (Spektrogramm r = 0,91)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_jugend_followed_cfg7_5108",
+   "ton": "gaehnen3",
+   "punkte": 0.88,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_maedchen_followed_5103 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5107 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5107 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5107 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_seufzer_5103 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5103 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5119 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_seufzer_5108 (Spektrogramm r = 0,92)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_seufzer_5101",
+   "ton": "gaehnen3",
+   "punkte": -1.67,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,06)",
+    "„aaah“ stockend (2-mal unterbrochen)",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5101 (Spektrogramm r = 0,95)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2144 Hz (+12,6 dB über der Umgebung): auf Piepen achten",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen3_seufzer_5102",
+   "ton": "gaehnen3",
+   "punkte": 2.41,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,13 s Atem vor der Stimme ab 0,20 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 8 % der Dauer)",
+    "Tonhöhe fällt nicht (steigt 0,0, fällt 0,8 Halbtöne)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_seufzer_5103",
+   "ton": "gaehnen3",
+   "punkte": 1.05,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_luft_holen_5103 (Spektrogramm r = 0,97)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5107 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5111 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5107 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5103 (Spektrogramm r = 0,99)",
+    "fast gleich wie gaehnen3_seufzer_5108 (Spektrogramm r = 0,91)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_seufzer_5104",
+   "ton": "gaehnen3",
+   "punkte": -0.78,
+   "gruende": [
+    "zu kurz (1,37 s)",
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_seufzer_5105",
+   "ton": "gaehnen3",
+   "punkte": 3.6,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,28 s Atem vor der Stimme ab 0,44 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 35 % der Dauer)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_seufzer_5106",
+   "ton": "gaehnen3",
+   "punkte": 0.8,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_seufzer_cfg7_5101",
+   "ton": "gaehnen3",
+   "punkte": -3.3,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,04)",
+    "kein hörbares Einatmen vorn (nur 0,06 s Atem vor der Stimme ab 0,82 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 47 % der Dauer)",
+    "Ende nicht gehaucht (45 % Stimme in den letzten 0,3 s)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5101 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_seufzer_5101 (Spektrogramm r = 0,91)"
+   ],
+   "hinweise": [
+    "Hüllkurve pulsiert mit 21 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 11,0)",
+    "schmale Linie bei 4195 Hz (+12,3 dB über der Umgebung): auf Piepen achten",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen3_seufzer_cfg7_5102",
+   "ton": "gaehnen3",
+   "punkte": 3.46,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,30 s Atem vor der Stimme ab 0,41 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 30 % der Dauer)",
+    "Tonhöhe fällt nicht (steigt 0,0, fällt 1,6 Halbtöne)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_seufzer_cfg7_5103",
+   "ton": "gaehnen3",
+   "punkte": 1.6,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5107 (Spektrogramm r = 0,94)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_seufzer_cfg7_5104",
+   "ton": "gaehnen3",
+   "punkte": 2.75,
+   "gruende": [
+    "zu kurz (1,43 s)",
+    "kein hörbares Einatmen vorn (nur 0,36 s Atem vor der Stimme ab 0,41 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 44 % der Dauer)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5102 (Spektrogramm r = 0,91)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_seufzer_cfg7_5105",
+   "ton": "gaehnen3",
+   "punkte": 2.96,
+   "gruende": [
+    "stimmhafter Teil liegt vorn (Mitte bei 48 % der Dauer)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,22 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_seufzer_cfg7_5106",
+   "ton": "gaehnen3",
+   "punkte": 0.59,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_maedchen_followed_5102 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_maedchen_followed_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5111 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5111 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5106 (Spektrogramm r = 0,97)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5103 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5106 (Spektrogramm r = 0,95)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_seufzer_laut_cfg7_5101",
+   "ton": "gaehnen3",
+   "punkte": -4.92,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,02)",
+    "kein hörbares Einatmen vorn (nur 0,08 s Atem vor der Stimme ab 0,35 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 49 % der Dauer)",
+    "Ende nicht gehaucht (77 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": [
+    "etwas „Humming“ (AudioSet 0,40)",
+    "Hüllkurve pulsiert mit 21 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 14,1)",
+    "schmale Linie bei 2156 Hz (+15,5 dB über der Umgebung): auf Piepen achten",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen3_seufzer_laut_cfg7_5102",
+   "ton": "gaehnen3",
+   "punkte": -0.01,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,17 s Atem vor der Stimme ab 0,22 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 36 % der Dauer)",
+    "Tonhöhe fällt nicht (steigt 0,2, fällt 1,8 Halbtöne)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_seufzer_laut_cfg7_5103",
+   "ton": "gaehnen3",
+   "punkte": -2.55,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,11)",
+    "kein hörbares Einatmen vorn (nur 0,05 s Atem vor der Stimme ab 0,18 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 44 % der Dauer)",
+    "Tonhöhe fällt nicht (steigt 1,7, fällt 0,5 Halbtöne)",
+    "fast gleich wie gaehnen3_frau_reihe_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_hell_followed_5103 (Spektrogramm r = 0,95)"
+   ],
+   "hinweise": [
+    "etwas „Humming“ (AudioSet 0,38)",
+    "schmale Linie bei 2150 Hz (+15,1 dB über der Umgebung): auf Piepen achten"
+   ]
+  },
+  {
+   "roh": "gaehnen3_seufzer_laut_cfg7_5104",
+   "ton": "gaehnen3",
+   "punkte": -1.15,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,08 s)",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_seufzer_laut_cfg7_5105",
+   "ton": "gaehnen3",
+   "punkte": 2.76,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,40 s Atem vor der Stimme ab 0,47 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 35 % der Dauer)",
+    "fast gleich wie gaehnen3_seufzer_5105 (Spektrogramm r = 0,92)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_seufzer_laut_cfg7_5106",
+   "ton": "gaehnen3",
+   "punkte": -0.47,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,14)",
+    "kein hörbares Einatmen vorn (nur 0,36 s Atem vor der Stimme ab 0,44 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 40 % der Dauer)",
+    "Tonhöhe fällt nicht (steigt 1,4, fällt 0,3 Halbtöne)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_einatmen_seufzer_cfg7_5101",
+   "ton": "gaehnen3",
+   "punkte": -0.8,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,09)",
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_einatmen_seufzer_cfg7_5102",
+   "ton": "gaehnen3",
+   "punkte": -2.57,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,14)",
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,44 s)",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_einatmen_seufzer_cfg7_5103",
+   "ton": "gaehnen3",
+   "punkte": -0.39,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (1,98 s)",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_einatmen_seufzer_cfg7_5104",
+   "ton": "gaehnen3",
+   "punkte": -1.04,
+   "gruende": [
+    "zu kurz (1,01 s)",
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_einatmen_seufzer_cfg7_5105",
+   "ton": "gaehnen3",
+   "punkte": -2.69,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,11)",
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,36 s)",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_einatmen_seufzer_cfg7_5106",
+   "ton": "gaehnen3",
+   "punkte": -3.0,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,14)",
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "schmale Linie bei 4464 Hz (+16,5 dB über der Umgebung): auf Piepen achten",
+    "etwas kürzer als das Ziel (2,27 s)",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5112",
+   "ton": "gaehnen3",
+   "punkte": -0.86,
+   "gruende": [
+    "klingt nach „Wail, moan“ (AudioSet 0,18, Grenze 0,15)",
+    "kein hörbares Einatmen vorn (nur 0,04 s Atem vor der Stimme ab 0,08 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 33 % der Dauer)",
+    "Tonhöhe fällt nicht (steigt 7,6, fällt 5,9 Halbtöne)"
+   ],
+   "hinweise": [
+    "etwas „Groan“ (AudioSet 0,08)",
+    "etwas kürzer als das Ziel (2,05 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5113",
+   "ton": "gaehnen3",
+   "punkte": 1.85,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5114",
+   "ton": "gaehnen3",
+   "punkte": -0.43,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,27 s Atem vor der Stimme ab 1,10 s)",
+    "Tonhöhe fällt nicht (steigt 1,5, fällt 0,2 Halbtöne)",
+    "Ende nicht gehaucht (97 % Stimme in den letzten 0,3 s)",
+    "fast gleich wie gaehnen3_frau_zuerst_cfg7_5114 (Spektrogramm r = 0,95)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,38 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5115",
+   "ton": "gaehnen3",
+   "punkte": -1.27,
+   "gruende": [
+    "Tonhöhe fällt nicht (steigt 4,3, fällt 0,0 Halbtöne)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,15 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5116",
+   "ton": "gaehnen3",
+   "punkte": 3.58,
+   "gruende": [
+    "zu kurz (1,67 s)",
+    "kein hörbares Einatmen vorn (nur 0,17 s Atem vor der Stimme ab 0,22 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 45 % der Dauer)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5117",
+   "ton": "gaehnen3",
+   "punkte": 0.35,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5118",
+   "ton": "gaehnen3",
+   "punkte": -2.13,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,11 s Atem vor der Stimme ab 0,19 s)",
+    "Tonhöhe fällt nicht (steigt 0,4, fällt 0,2 Halbtöne)",
+    "Ende nicht gehaucht (97 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": [
+    "Hüllkurve pulsiert mit 17 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 16,3)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5119",
+   "ton": "gaehnen3",
+   "punkte": 4.58,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,14 s Atem vor der Stimme ab 0,19 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 15 % der Dauer)",
+    "Tonhöhe fällt nicht (steigt 0,0, fällt 1,2 Halbtöne)",
+    "Luftholen am Ende (ab 1,49 s, 1,02 s nach dem stimmhaften Teil)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5120",
+   "ton": "gaehnen3",
+   "punkte": 0.46,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5134 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_junge_hell_5120 (Spektrogramm r = 0,96)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5121",
+   "ton": "gaehnen3",
+   "punkte": 0.42,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5122",
+   "ton": "gaehnen3",
+   "punkte": 0.5,
+   "gruende": [
+    "stimmhafter Teil liegt vorn (Mitte bei 34 % der Dauer)",
+    "Luftholen am Ende (ab 1,89 s, 0,48 s nach dem stimmhaften Teil)"
+   ],
+   "hinweise": [
+    "etwas „Wail, moan“ (AudioSet 0,09)",
+    "etwas kürzer als das Ziel (2,58 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5123",
+   "ton": "gaehnen3",
+   "punkte": 1.35,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,15 s Atem vor der Stimme ab 0,20 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 15 % der Dauer)",
+    "Tonhöhe fällt nicht (steigt 0,0, fällt 1,9 Halbtöne)",
+    "Luftholen am Ende (ab 1,10 s, 1,45 s nach dem stimmhaften Teil)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5124",
+   "ton": "gaehnen3",
+   "punkte": -1.42,
+   "gruende": [
+    "zu kurz (1,71 s)",
+    "kein hörbares Einatmen vorn (nur 0,11 s Atem vor der Stimme ab 0,22 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 36 % der Dauer)",
+    "Tonhöhe fällt nicht (steigt 3,9, fällt 0,3 Halbtöne)",
+    "fast gleich wie gaehnen3_seufzer_5124 (Spektrogramm r = 0,93)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5125",
+   "ton": "gaehnen3",
+   "punkte": 0.9,
+   "gruende": [
+    "Tonhöhe fällt nicht (steigt 0,0, fällt 1,1 Halbtöne)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5126",
+   "ton": "gaehnen3",
+   "punkte": 4.42,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,05 s Atem vor der Stimme ab 0,11 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 43 % der Dauer)",
+    "Tonhöhe fällt nicht (steigt 11,4, fällt 2,1 Halbtöne)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5127",
+   "ton": "gaehnen3",
+   "punkte": 3.66,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,03 s Atem vor der Stimme ab 0,07 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 38 % der Dauer)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5128",
+   "ton": "gaehnen3",
+   "punkte": 1.16,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5129",
+   "ton": "gaehnen3",
+   "punkte": 2.71,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,16 s Atem vor der Stimme ab 0,22 s)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5130",
+   "ton": "gaehnen3",
+   "punkte": -5.09,
+   "gruende": [
+    "klingt nach „Humming“ (AudioSet 0,44, Grenze 0,40)",
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,01)",
+    "kein hörbares Einatmen vorn (nur 0,03 s Atem vor der Stimme ab 0,07 s)",
+    "Ende nicht gehaucht (97 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,22 s)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5133",
+   "ton": "gaehnen3",
+   "punkte": -1.7,
+   "gruende": [
+    "klingt nach „Wail, moan“ (AudioSet 0,15, Grenze 0,15)",
+    "kein hörbares Einatmen vorn (nur 0,04 s Atem vor der Stimme ab 0,08 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 37 % der Dauer)",
+    "„aaah“ stockend (2-mal unterbrochen)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,33 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5134",
+   "ton": "gaehnen3",
+   "punkte": 3.49,
+   "gruende": [
+    "stimmhafter Teil liegt vorn (Mitte bei 37 % der Dauer)",
+    "Tonhöhe fällt nicht (steigt 0,6, fällt 0,4 Halbtöne)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_zuerst_5135",
+   "ton": "gaehnen3",
+   "punkte": -1.31,
+   "gruende": [
+    "Ende nicht gehaucht (97 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": [
+    "etwas „Wail, moan“ (AudioSet 0,12)",
+    "etwas kürzer als das Ziel (2,19 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_cfg7_5117",
+   "ton": "gaehnen3",
+   "punkte": -1.9,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,56 s)",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_cfg7_5118",
+   "ton": "gaehnen3",
+   "punkte": -2.61,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,09)",
+    "kein hörbares Einatmen vorn (nur 0,37 s Atem vor der Stimme ab 0,54 s)",
+    "Ende nicht gehaucht (90 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": [
+    "etwas „Humming“ (AudioSet 0,36)",
+    "schmale Linie bei 5378 Hz (+15,7 dB über der Umgebung): auf Piepen achten",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_cfg7_5119",
+   "ton": "gaehnen3",
+   "punkte": 1.06,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5108 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5107 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5107 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_seufzer_5108 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_seufzer_5113 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_seufzer_5119 (Spektrogramm r = 0,95)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_cfg7_5120",
+   "ton": "gaehnen3",
+   "punkte": -1.4,
+   "gruende": [
+    "AudioSet hört kaum Atmen/Seufzen (Atemklassen zusammen 0,08)",
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5110 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_luft_holen_5103 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_luft_holen_5110 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_maedchen_hell_5107 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_maedchen_followed_5103 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5103 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5106 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5111 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_junge_followed_5103 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5103 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5106 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5107 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5110 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5111 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5113 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5106 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5107 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5110 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5111 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5103 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5106 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5107 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5108 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_seufzer_5103 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5103 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5106 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5119 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5123 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5125 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5128 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5129 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5131 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5132 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5134 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5136 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_seufzer_5113 (Spektrogramm r = 0,92)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 3386 Hz (+15,0 dB über der Umgebung): auf Piepen achten",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_cfg7_5121",
+   "ton": "gaehnen3",
+   "punkte": -0.74,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5107 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5108 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5110 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5103 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_zuerst_cfg7_5107 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5107 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5110 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5111 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5107 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5108 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5110 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_seufzer_5103 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5103 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5122 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5123 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_seufzer_5108 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_seufzer_5121 (Spektrogramm r = 0,92)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 4505 Hz (+16,3 dB über der Umgebung): auf Piepen achten",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_cfg7_5122",
+   "ton": "gaehnen3",
+   "punkte": 1.67,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5108 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_seufzer_5122 (Spektrogramm r = 0,91)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_cfg7_5123",
+   "ton": "gaehnen3",
+   "punkte": -0.54,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5107 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5110 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_luft_holen_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_luft_holen_5110 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_maedchen_followed_5103 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5103 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5107 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5111 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_junge_followed_5103 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5107 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5110 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5111 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5107 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5110 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5111 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5103 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5108 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_seufzer_5103 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5103 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5119 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5131 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5132 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_seufzer_5108 (Spektrogramm r = 0,91)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 4535 Hz (+16,2 dB über der Umgebung): auf Piepen achten",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_cfg7_5124",
+   "ton": "gaehnen3",
+   "punkte": -0.78,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,21 s Atem vor der Stimme ab 0,41 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 38 % der Dauer)",
+    "Tonhöhe fällt nicht (steigt 1,7, fällt 0,0 Halbtöne)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,03 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_cfg7_5125",
+   "ton": "gaehnen3",
+   "punkte": 0.49,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_maedchen_hell_5107 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_maedchen_followed_5103 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5103 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5106 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5111 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5111 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5106 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5107 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5111 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5103 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5106 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5106 (Spektrogramm r = 0,94)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_cfg7_5127",
+   "ton": "gaehnen3",
+   "punkte": 2.73,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,21 s Atem vor der Stimme ab 0,40 s)",
+    "Ende nicht gehaucht (61 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_cfg7_5128",
+   "ton": "gaehnen3",
+   "punkte": -0.95,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_maedchen_followed_5102 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_maedchen_followed_5103 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5103 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5106 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5111 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_junge_followed_5103 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5103 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5106 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5110 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5111 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5103 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5106 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5110 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5111 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_hell_followed_cfg7_5104 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5103 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5106 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5107 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_seufzer_5103 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5106 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5125 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5131 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5132 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5136 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_seufzer_5120 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_seufzer_5125 (Spektrogramm r = 0,90)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 4458 Hz (+12,7 dB über der Umgebung): auf Piepen achten",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_cfg7_5129",
+   "ton": "gaehnen3",
+   "punkte": 0.61,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_maedchen_hell_5107 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5107 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5107 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5119 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5134 (Spektrogramm r = 0,92)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_cfg7_5130",
+   "ton": "gaehnen3",
+   "punkte": -0.06,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,29 s Atem vor der Stimme ab 0,65 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 48 % der Dauer)",
+    "Tonhöhe fällt nicht (steigt 0,5, fällt 0,8 Halbtöne)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_cfg7_5131",
+   "ton": "gaehnen3",
+   "punkte": 0.28,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5110 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_luft_holen_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_maedchen_followed_5103 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5103 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5111 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_junge_followed_5103 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5107 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5111 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5106 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5107 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5111 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5103 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_seufzer_5103 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5103 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5106 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5119 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5125 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5129 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_seufzer_5108 (Spektrogramm r = 0,91)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_cfg7_5132",
+   "ton": "gaehnen3",
+   "punkte": 0.12,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5103 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_luft_holen_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_maedchen_followed_5103 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5103 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5106 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5111 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_junge_followed_5103 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5111 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5106 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5107 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5111 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5103 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5106 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_seufzer_5103 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5103 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5106 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5125 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5131 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_seufzer_5125 (Spektrogramm r = 0,93)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 4347 Hz (+12,1 dB über der Umgebung): auf Piepen achten",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_cfg7_5133",
+   "ton": "gaehnen3",
+   "punkte": 1.25,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_cfg7_5134",
+   "ton": "gaehnen3",
+   "punkte": 0.89,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5107 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5107 (Spektrogramm r = 0,92)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_frau_followed_lang_cfg7_5136",
+   "ton": "gaehnen3",
+   "punkte": -0.67,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5103 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5110 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5111 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_luft_holen_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_maedchen_followed_5103 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5103 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5106 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5111 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_junge_followed_5103 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5103 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5106 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5110 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5111 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5103 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5106 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5107 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5110 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5111 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_hell_followed_cfg7_5104 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5103 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5106 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_seufzer_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5103 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5106 (Spektrogramm r = 0,96)",
+    "fast gleich wie gaehnen3_frau_zuerst_5120 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5123 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5125 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5131 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5132 (Spektrogramm r = 0,95)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5134 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_seufzer_5120 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_seufzer_5125 (Spektrogramm r = 0,92)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 3427 Hz (+14,2 dB über der Umgebung): auf Piepen achten",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_seufzer_5107",
+   "ton": "gaehnen3",
+   "punkte": -0.47,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5107 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_luft_holen_5107 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5107 (Spektrogramm r = 0,93)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,49 s)",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_seufzer_5108",
+   "ton": "gaehnen3",
+   "punkte": 2.33,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_seufzer_5109",
+   "ton": "gaehnen3",
+   "punkte": 4.03,
+   "gruende": [
+    "Ende nicht gehaucht (55 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_seufzer_5110",
+   "ton": "gaehnen3",
+   "punkte": -0.95,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_zuerst_5108 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5108 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5110 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_luft_holen_5108 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_luft_holen_5110 (Spektrogramm r = 0,99)",
+    "fast gleich wie gaehnen3_frau_followed_5103 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5108 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_hell_followed_5110 (Spektrogramm r = 0,98)",
+    "fast gleich wie gaehnen3_junge_followed_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_junge_followed_5108 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5110 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5108 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_seufzer_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5103 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5121 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5123 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_seufzer_5108 (Spektrogramm r = 0,94)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,59 s)",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_seufzer_5111",
+   "ton": "gaehnen3",
+   "punkte": 1.84,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_seufzer_5112",
+   "ton": "gaehnen3",
+   "punkte": 2.32,
+   "gruende": [
+    "zu kurz (1,89 s)",
+    "kein hörbares Einatmen vorn (nur 0,24 s Atem vor der Stimme ab 0,31 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 40 % der Dauer)"
+   ],
+   "hinweise": [
+    "etwas „Groan“ (AudioSet 0,09)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_seufzer_5113",
+   "ton": "gaehnen3",
+   "punkte": 1.31,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_seufzer_5114",
+   "ton": "gaehnen3",
+   "punkte": 1.36,
+   "gruende": [
+    "zu kurz (1,63 s)",
+    "kein hörbares Einatmen vorn (nur 0,31 s Atem vor der Stimme ab 0,37 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 46 % der Dauer)",
+    "Tonhöhe fällt nicht (steigt 1,5, fällt 0,4 Halbtöne)",
+    "fast gleich wie gaehnen3_frau_zuerst_cfg7_5103 (Spektrogramm r = 0,91)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_seufzer_5115",
+   "ton": "gaehnen3",
+   "punkte": 2.27,
+   "gruende": [
+    "Tonhöhe fällt nicht (steigt 1,4, fällt 0,0 Halbtöne)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,07 s)"
+   ]
+  },
+  {
+   "roh": "gaehnen3_seufzer_5116",
+   "ton": "gaehnen3",
+   "punkte": 2.32,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,44 s)",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_seufzer_5117",
+   "ton": "gaehnen3",
+   "punkte": -1.54,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_hell_followed_5110 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_zuerst_5117 (Spektrogramm r = 0,92)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,09 s)",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_seufzer_5118",
+   "ton": "gaehnen3",
+   "punkte": 2.39,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,30 s Atem vor der Stimme ab 0,52 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 25 % der Dauer)",
+    "Tonhöhe fällt nicht (steigt 0,4, fällt 0,0 Halbtöne)",
+    "Luftholen am Ende (ab 1,50 s, 1,18 s nach dem stimmhaften Teil)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_seufzer_5119",
+   "ton": "gaehnen3",
+   "punkte": 2.45,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_seufzer_5120",
+   "ton": "gaehnen3",
+   "punkte": -0.48,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5106 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5111 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5106 (Spektrogramm r = 0,94)",
+    "fast gleich wie gaehnen3_frau_zuerst_5120 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5132 (Spektrogramm r = 0,90)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_seufzer_5121",
+   "ton": "gaehnen3",
+   "punkte": 0.06,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_seufzer_5122",
+   "ton": "gaehnen3",
+   "punkte": 2.25,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_seufzer_5123",
+   "ton": "gaehnen3",
+   "punkte": -1.38,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5110 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_followed_5103 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_junge_followed_5103 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5110 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5110 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_seufzer_5103 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5103 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5123 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_seufzer_5110 (Spektrogramm r = 0,91)"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,44 s)",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_seufzer_5124",
+   "ton": "gaehnen3",
+   "punkte": -1.07,
+   "gruende": [
+    "zu kurz (1,66 s)",
+    "kein hörbares Einatmen vorn (nur 0,16 s Atem vor der Stimme ab 0,23 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 33 % der Dauer)",
+    "Tonhöhe fällt nicht (steigt 1,6, fällt 0,0 Halbtöne)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_seufzer_5125",
+   "ton": "gaehnen3",
+   "punkte": 0.25,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_atem_zuerst_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_maedchen_followed_5103 (Spektrogramm r = 0,90)",
+    "fast gleich wie gaehnen3_frau_followed_lang_5111 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5111 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_frau_zwei_sek_cfg7_5111 (Spektrogramm r = 0,93)",
+    "fast gleich wie gaehnen3_jugend_followed_cfg7_5103 (Spektrogramm r = 0,91)",
+    "fast gleich wie gaehnen3_seufzer_cfg7_5106 (Spektrogramm r = 0,92)",
+    "fast gleich wie gaehnen3_frau_followed_lang_cfg7_5125 (Spektrogramm r = 0,97)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_seufzer_5126",
+   "ton": "gaehnen3",
+   "punkte": 0.86,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_junge_hell_5106",
+   "ton": "gaehnen3",
+   "punkte": 2.19,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,11 s Atem vor der Stimme ab 0,19 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 5 % der Dauer)",
+    "Tonhöhe nicht messbar",
+    "Luftholen am Ende (ab 1,34 s, 1,60 s nach dem stimmhaften Teil)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_junge_hell_5107",
+   "ton": "gaehnen3",
+   "punkte": -0.04,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_junge_hell_5108",
+   "ton": "gaehnen3",
+   "punkte": 1.67,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil",
+    "fast gleich wie gaehnen3_frau_zuerst_5108 (Spektrogramm r = 0,91)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_junge_hell_5109",
+   "ton": "gaehnen3",
+   "punkte": 0.72,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_junge_hell_5110",
+   "ton": "gaehnen3",
+   "punkte": 1.18,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_junge_hell_5111",
+   "ton": "gaehnen3",
+   "punkte": 0.6,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_junge_hell_5112",
+   "ton": "gaehnen3",
+   "punkte": 0.77,
+   "gruende": [
+    "stimmhafter Teil liegt vorn (Mitte bei 46 % der Dauer)"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_junge_hell_5113",
+   "ton": "gaehnen3",
+   "punkte": 2.04,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_junge_hell_5114",
+   "ton": "gaehnen3",
+   "punkte": 0.85,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_junge_hell_5115",
+   "ton": "gaehnen3",
+   "punkte": 0.82,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,20 s Atem vor der Stimme ab 0,36 s)",
+    "stimmhafter Teil liegt vorn (Mitte bei 43 % der Dauer)",
+    "Tonhöhe fällt nicht (steigt 4,5, fällt 0,0 Halbtöne)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_junge_hell_5116",
+   "ton": "gaehnen3",
+   "punkte": -0.95,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "etwas kürzer als das Ziel (2,31 s)",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_junge_hell_5117",
+   "ton": "gaehnen3",
+   "punkte": 1.31,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "Original sehr leise",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_junge_hell_5118",
+   "ton": "gaehnen3",
+   "punkte": 0.84,
+   "gruende": [
+    "kein hörbares Einatmen vorn (nur 0,05 s Atem vor der Stimme ab 0,11 s)",
+    "Ende nicht gehaucht (97 % Stimme in den letzten 0,3 s)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "gaehnen3_junge_hell_5119",
+   "ton": "gaehnen3",
+   "punkte": 1.02,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_junge_hell_5120",
+   "ton": "gaehnen3",
+   "punkte": 0.93,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_junge_hell_5121",
+   "ton": "gaehnen3",
+   "punkte": 0.39,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_junge_hell_5122",
+   "ton": "gaehnen3",
+   "punkte": 1.28,
+   "gruende": [
+    "Reihenfolge: kein stimmhafter Teil"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "gaehnen3_junge_hell_5123",
+   "ton": "gaehnen3",
+   "punkte": 2.67,
+   "gruende": [
+    "stimmhafter Teil liegt vorn (Mitte bei 22 % der Dauer)",
+    "Tonhöhe nicht messbar",
+    "Luftholen am Ende (ab 1,36 s, 1,27 s nach dem stimmhaften Teil)"
+   ],
+   "hinweise": [
+    "Original sehr leise",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
    ]
   },
   {

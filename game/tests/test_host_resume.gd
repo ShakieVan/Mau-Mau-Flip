@@ -8,7 +8,7 @@ extends SceneTree
 #     resume() aus der Datei: gleicher Raumcode, gleicher WLAN-Port, gen/epoch bleiben, Einschwingzeit bis der Sicherungsempfänger
 #     zurück ist, Gäste per Token auf ihren Plätzen. leave(): Datei weg, Raum beendet.
 #  2  WLAN mit Warteliste: Fortsetzen auf demselben Port, App-Gast und Wartender finden von selbst zurück (Wartender bleibt auf der
-#     Warteliste statt „reject running“), join_open bleibt; WLAN-Mitspieler → keine Erben.
+#     Warteliste statt „reject running“), join_open bleibt; WLAN-Mitspieler sind Erben (Beta 1.6.2, keine Sperre mehr).
 #  3  Geplante Übergabe ohne Antwort des Ziels: handover an das Ziel, Meldung an alle, eingefroren (Aktionen abgelehnt, keine Datei),
 #     nach der Frist check_now → aufgetaut, gen unverändert. Abstammung: Gast mit jüngerem hello.bk bekommt handover own:true,
 #     handover_no taut auf, kein zweiter Versuch. Übernahme durch einen anderen Gastgeber (4000): stepped_down, keine Meldung
@@ -134,6 +134,14 @@ func _online_resume() -> void:
 	check(wait_until(back, 8000), "1: Gäste per Token zurück")
 	check(_seat_of_token(h2, anna.token) == seats_before.Anna and _seat_of_token(h2, ben.token) == seats_before.Ben, "1: auf denselben Plätzen")
 	check(wait_until(func(): return not h2.is_settling(), 2000), "1: Einschwingzeit endet, sobald Anna zurück ist")
+	# Beta 1.6.2 (10.10): Fortsetzen an derselben Adresse ist kein Umzug – die Warteliste bleibt wie gespeichert (zu), Neue werden
+	# mit „reject running“ abgewiesen
+	check(not h2.session.join_open, "1: Warteliste bleibt zu (kein Umzug)")
+	var neu := new_client("Neu", "127.0.0.1", HOST_PORT)
+	var neu_st := []
+	neu.connection_changed.connect(func(s: String) -> void: neu_st.append(s))
+	check(wait_until(func(): return neu_st.has("rejected"), 4000), "1: Neue ohne Token abgelehnt (running) (%s)" % str(neu_st))
+	neu.leave()
 	var rev2 := h2.rev
 	_play([h2], h2, 6)
 	check(h2.rev > rev2, "1: Partie läuft nach dem Fortsetzen weiter")
@@ -160,11 +168,11 @@ func _wlan_resume() -> void:
 	var dora := new_client("Dora", "127.0.0.1", WLAN_PORT, "", false)
 	check(wait_until(func(): return dora.waiting and w.waiting_ids().size() == 1), "2: Dora wartet")
 	_play([w], w, 4)
-	check(w.wlan_humans() and w.heirs().is_empty(), "2: WLAN-Mitspieler am Tisch → keine Erben")
+	check(w.wlan_humans() and w.heirs() == [cara.token], "2: WLAN-Mitspieler am Tisch erben (Beta 1.6.2)")
 	var d := MatchSnapshot.read(PATH)
 	check((d.waiting as Array).size() == 1 and str(d.waiting[0].name) == "Dora" and str(d.waiting[0].token) == dora.token and bool(d.join_open),
 		"2: Warteliste und join_open im Stand")
-	check(bool(d.wlan_humans) and (d.heirs as Array).is_empty(), "2: Stand ohne Erben (wlan_humans)")
+	check(bool(d.wlan_humans) and d.heirs == [cara.token], "2: Stand mit Erben trotz wlan_humans (Beta 1.6.2)")
 	var cara_seat := w.session.seat_of(cara.my_id)
 	drop(w)
 	pump(200)

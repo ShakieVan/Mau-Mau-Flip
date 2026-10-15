@@ -11,11 +11,20 @@ extends "res://tests/handover_kit.gd"
 #     an (das hello hängt beim toten Gastgeber, „pong“ kommt vom Vermittler – Lite merkt nichts). Ben übernimmt; die neue c steht in
 #     keinem Schnappschuss, erst der 4012-Rundumschlag holt Lite zurück. Lite sitzt auf seinem Platz und spielt weiter.
 # Lite-Code bleibt unverändert; geprüft wird über den Gastgeber (Token, Platz, verbunden, eigene Aktionen, Zug geht weiter).
+# Beta 1.6.2 (WLAN, docs/module/uebergabe.md 10.9/10.16, Gegenprüfung) – über die eigene LAN-Adresse des PCs (privat→privat wie im
+# echten WLAN; ohne private Adresse übersprungen), Lite vom Server der Gastgeberin (web.zip aus webclient/):
+#  W4 Lite tritt in der Lobby bei (welcome ohne gid), die Partie startet; Lite kennt gid/gen und die Erben nur aus hosts.
+#  W1 Hanna fällt aus (Server zu), Anna übernimmt auf einem anderen Port; Lite findet sie über hosts und /info (fetch über Ursprünge),
+#     verbindet sich mit fremdem Ursprung (Herkunftsliste wlan.past) und dem eigenen Token, sitzt auf seinem Platz und spielt weiter.
+#  W3 Ziel von „Seite neu laden“ (#t=Token&n=Name auf dem neuen Ursprung, frisches Profil ohne gespeichertes Token): Lite sitzt
+#     wieder auf seinem Platz.
 
 const RELAY_PORT := 24961
 const H_PORT := 24962
 const A_PORT := 24963
 const B_PORT := 24964
+const LH_PORT := 24965          # Beta 1.6.2: WLAN-Teil (Hanna, Anna)
+const LA_PORT := 24966
 const CHROME := "C:/Program Files/Google/Chrome/Application/chrome.exe"
 
 var chrome_pid := -1
@@ -43,12 +52,146 @@ func _initialize() -> void:
 		relay.public_dir = pub
 	check(relay.web_zip_path != "" and relay.public_dir != "", "webclient und relay/public vorhanden")
 	check(relay.start(RELAY_PORT, RELAY_PORT) == OK, "Vermittler-Nachbau auf %d" % RELAY_PORT)
-	_run()
+	if OS.get_environment("NUR") != "lan":
+		_run()
+	_stop_chrome()
+	if OS.get_environment("NUR") != "online":
+		_clear_devs()
+		var t1 := Time.get_ticks_msec()
+		_run_lan()
+		_stop_chrome()
+		print("  WLAN-Teil %d ms" % (Time.get_ticks_msec() - t1))
+	print("  Dauer %d ms" % (Time.get_ticks_msec() - t0))
+	finish()
+
+
+# Gastgeber-Tische liefern Lite aus dem gepackten webclient/ aus (WLAN-Teil: die Seite kommt vom Gastgeber).
+func make_host() -> HostTable:
+	var h := super()
+	if relay != null and relay.web_zip_path != "":
+		h.web_zip_path = relay.web_zip_path
+	return h
+
+
+func _stop_chrome() -> void:
 	if chrome_pid > 0:
 		OS.kill(chrome_pid)
 		chrome_pid = -1
-	print("  Dauer %d ms" % (Time.get_ticks_msec() - t0))
-	finish()
+		pump(300)
+
+
+func _start_chrome(url: String, profile_name: String) -> void:
+	var profile := ProjectSettings.globalize_path("user://web_takeover_test/" + profile_name)
+	_wipe(profile)
+	DirAccess.make_dir_recursive_absolute(profile)
+	chrome_pid = OS.create_process(CHROME, ["--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check",
+		"--mute-audio", "--user-data-dir=" + profile, "--window-size=844,390", url])
+	check(chrome_pid > 0, "Chrome gestartet (%s)" % profile_name)
+
+
+# Alle Geräte des Online-Teils abbauen (ohne bye, Dateien weg), Lite-Zähler zurück.
+func _clear_devs() -> void:
+	for d in devs:
+		var s: TableSource = d.src()
+		if s is HostTable:
+			(s as HostTable).autosave = false
+			if (s as HostTable).session != null:
+				(s as HostTable).leave()
+		elif s is ClientTable:
+			(s as ClientTable).leave()
+		if s != null:
+			garbage.append(s)
+		TableSource.clear_saved(d.path)
+	for g in garbage:
+		if is_instance_valid(g):
+			if g is HostTable:
+				(g as HostTable).autosave = false
+			if g.get_parent() != null:
+				g.get_parent().remove_child(g)
+			g.free()
+	garbage.clear()
+	devs.clear()
+	_listening.clear()
+	lite_token = ""
+	lite_seat = -1
+	lite_acts = 0
+	pump(200)
+
+
+# Eigene private IPv4 des PCs (WLAN/LAN), "" = keine.
+func _lan_ip() -> String:
+	for a in NetAddresses.own_addresses():
+		var ip := str(a.address)
+		if NetProtocol.is_private_ipv4(ip) and not ip.begins_with("127.") and str(a.kind) != "virtual":
+			return ip
+	return ""
+
+
+# ---------- Beta 1.6.2: WLAN (W4, W1, W3) ----------
+
+func _run_lan() -> void:
+	var ip := _lan_ip()
+	if ip == "":
+		print("HINWEIS: keine private LAN-Adresse – WLAN-Teil (W1, W3, W4) übersprungen")
+		return
+	var h := host_dev("Hanna", LH_PORT, false)
+	var a := guest_dev("Anna", ip, LA_PORT, true, LH_PORT)
+	a.sw.net_check = func(_targets: Array) -> bool: return true     # LAN da (die Prüfung selbst testen test_takeover_wlan)
+	a.sw.discovery_setup = func(n: NetDiscovery) -> void:
+		n.use_broadcast = false                                       # keine fremden Partien im echten Netz
+		n.probe_local = false
+		n.ports = []
+	check(wait_until(func(): return a.ct().my_id > 0), "W: Anna (App) im WLAN bei Hanna (%s:%d)" % [ip, LH_PORT])
+	var ht := h.ht()
+	ht.add_bot("Minka")
+	# W4: Lite in der Lobby (welcome ohne gid), Seite vom Server der Gastgeberin, Suche nach 3 s „getrennt“
+	_start_chrome("http://%s:%d/?autotest=1&runden=9&suche_ab=3000" % [ip, LH_PORT], "chrome_lan")
+	check(wait_until(func(): return not _lite_player(ht).is_empty() and bool(_lite_player(ht).ready), 40000), "W4: Lite in der Lobby beigetreten und bereit")
+	var lp := _lite_player(ht)
+	if lp.is_empty():
+		return
+	lite_token = str(lp.token)
+	var cfg := RuleConfig.preset("offiziell")
+	cfg.hand_size = 10
+	ht.set_rules(cfg)
+	check(ht.start(rng.randi_range(1, 9999)), "W4: Start")
+	lite_seat = _seat_of_token(ht, lite_token)
+	check(lite_seat >= 0, "W4: Lite hat einen Platz (%d)" % lite_seat)
+	_listen_host(ht)
+	check(_lite_plays(30000), "W4: Lite spielt bei Hanna (%d Aktionen)" % lite_acts)
+	var anna_url := "http://%s:%d/" % [ip, LA_PORT]
+	var hm := ht.hosts_message()
+	check(str(hm.get("gid", "")) == ht.gid and (hm.get("list", []) as Array).any(func(e): return str(e.get("url", "")) == anna_url),
+		"W4: hosts an Lite mit gid und Annas Adresse (%s)" % str(hm.get("list", [])))
+	check(wait_until(func(): return a.ct().backup_current(), 3000) and a.sw.rank() == 0, "W1: Anna mit aktueller Sicherung, Rang 0")
+	# W1: Hanna fällt aus, Anna übernimmt auf ihrem eigenen Port; Lite sucht reihum und zieht mit fremdem Ursprung um
+	var hanna_seat := ht.host_seat
+	_wait_not_lite_turn(ht)
+	kill_lan_closed(h)
+	check(wait_until(func(): return a.sw.takeovers == 1, 15000), "W1: Anna übernimmt (Zustand %s)" % a.sw.state)
+	var at := a.ht()
+	if at == null:
+		return
+	check(at.port() == LA_PORT, "W1: Anna führt auf Port %d (%d)" % [LA_PORT, at.port()])
+	check(at.session.extra_origins().has("http://%s:%d" % [ip, LH_PORT]), "W1: Hannas Ursprung erlaubt (%s)" % str(at.session.extra_origins()))
+	if OS.get_environment("OHNE_HERKUNFT") != "":
+		at.session.set_extra_origins([])     # Gegenprobe von Hand: ohne Herkunftsliste muss W1 scheitern (fremder Ursprung abgelehnt)
+	_listen_host(at)
+	at.substitute_bot(hanna_seat)
+	check(wait_until(func(): return _lite_back_lan(at), 40000), "W1: Lite findet Anna über hosts und /info, sitzt mit Token auf seinem Platz")
+	check(_lite_plays(45000), "W1: Lite spielt bei Anna weiter (%d Aktionen)" % lite_acts)
+	# W3: Ziel von „Seite neu laden“ – neuer Ursprung mit #t=Token&n=Name, frisches Profil (kein Token gespeichert)
+	_wait_not_lite_turn(at)
+	_stop_chrome()
+	check(wait_until(func(): return not bool(_lite_player(at).get("connected", true)), 15000), "W3: alte Lite-Seite weg")
+	_start_chrome("http://%s:%d/?autotest=1&runden=9#t=%s&n=Lite" % [ip, LA_PORT, lite_token], "chrome_lan_neu")
+	check(wait_until(func(): return _lite_back_lan(at), 40000), "W3: Lite mit #t= auf dem neuen Ursprung wieder auf seinem Platz")
+
+
+func _lite_back_lan(h: HostTable) -> bool:
+	var p := _lite_player(h)
+	return not p.is_empty() and bool(p.connected) and int(p.conn) >= 0 and int(p.conn) < NetProtocol.RELAY_CONN_BASE \
+		and _seat_of_token(h, lite_token) == lite_seat and h.game != null and bool(h.game.connected[lite_seat])
 
 
 func _run() -> void:

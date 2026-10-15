@@ -12,6 +12,9 @@ var easter_count := 0                # Tests: so oft wurde der Katzen-Geheimtipp
 # „Lena, Ben · Runde 2 · vor 3 min“) und „Partie verwerfen“, nur wenn HostSwitch.saved_offer etwas anbietet. Der Ablauf läuft in einem
 # HostSwitch unter diesem Bildschirm (resume_saved): Warten mit „Abbrechen“, Rückfrage (confirm_needed), Raum abgelaufen (expired) mit
 # „Partie verwerfen“; der fertige Tisch kommt über swapped.
+# Beta 1.6.2 (docs/module/uebergabe.md 10.8, 10.13, 10.14): WLAN-Dateien (auch Gast) mit vorgeschalteter Suche („Verbinde …“ auch in
+# searching), eigene Partie im Spiel-WLAN mit der Rückfrage „Spiel-WLAN neu öffnen“ · „Beim neuen Gastgeber scannen“
+# (JoinScreen.rejoin), Raum abgelaufen zusätzlich „In neuem Raum fortsetzen“ (HostSwitch.resume_new_room) und „Mit neuem Code beitreten“.
 var save_path := TableSource.NET_SAVE_PATH
 var now_unix := -1                   # Tests: Wanduhr in s (−1 = echte Uhr)
 var resume_row: VBoxContainer
@@ -263,8 +266,13 @@ func resume_saved() -> void:
 
 
 func _on_resume_state(state: String) -> void:
+	if _resume_sw != null and is_instance_valid(_resume_sw) and _resume_sw.get_parent() != self and state != "off":
+		return                              # zieht gerade mit dem neuen Tisch um (swapped folgt)
 	match state:
-		"resuming":
+		"resuming", "searching", "search":
+			# Beta 1.6.2 (10.14): bei einer WLAN-Datei sucht der HostSwitch zuerst die gid im Netz – ebenfalls „Verbinde …“
+			if _resume_box != null and is_instance_valid(_resume_box) and _resume_box.name == "FortsetzenWarten":
+				return
 			_close_resume_box()
 			_resume_box = ConfirmBox.ask(self, "Partie fortsetzen", "Verbinde mit den anderen …", "", "Abbrechen")
 			_resume_box.name = "FortsetzenWarten"
@@ -277,12 +285,37 @@ func _on_resume_state(state: String) -> void:
 					_resume_sw.cancel())
 		"expired":
 			_close_resume_box()
-			var why := _resume_sw.last_error if _resume_sw != null and _resume_sw.last_error != "" else "Der Online-Raum ist abgelaufen. Die Partie lässt sich nicht mehr fortsetzen."
-			_end_resume()
+			var sw := _resume_sw
+			var why := sw.last_error if sw != null and sw.last_error != "" else "Der Online-Raum ist abgelaufen. Die Partie lässt sich nicht mehr fortsetzen."
+			# Beta 1.6.2 (10.13): „In neuem Raum fortsetzen“ (der HostSwitch bleibt dafür bis zur Antwort) und „Mit neuem Code beitreten“
+			var new_room := sw != null and is_instance_valid(sw) and sw.can_new_room()
+			if not new_room:
+				_end_resume()
 			_resume_box = ConfirmBox.ask(self, "Partie fortsetzen", I18n.t(why), "Partie verwerfen", "Zurück")
 			_resume_box.name = "FortsetzenAbgelaufen"
+			var box := _resume_box
+			if new_room:
+				var nr := _resume_box.add_option("In neuem Raum fortsetzen", "start")
+				nr.name = "NeuerRaum"
+				nr.pressed.connect(func() -> void:
+					_close_box(box)
+					if _resume_sw == null or not is_instance_valid(_resume_sw) or _resume_sw.resume_new_room() or _resume_box != null:
+						return                          # läuft (swapped bringt den Tisch) bzw. die Meldung steht schon wieder da
+					toast(I18n.t("Das geht gerade nicht."))
+					if _resume_sw.state == "expired":
+						_on_resume_state("expired")
+					else:
+						_end_resume())
+			var nc := _resume_box.add_option("Mit neuem Code beitreten", "qr")
+			nc.name = "NeuerCode"
+			nc.pressed.connect(func() -> void:
+				_close_box(box)
+				_end_resume()
+				join_with_new_code())
 			_resume_box.answered.connect(func(yes: bool) -> void:
-				_resume_box = null
+				if _resume_box == box:
+					_resume_box = null
+				_end_resume()
 				if yes:
 					discard_saved())
 		"off":
@@ -299,14 +332,70 @@ func _on_resume_confirm(info: Dictionary) -> void:
 	_close_resume_box()
 	var title := I18n.t("Spiel als Gastgeber fortsetzen?") if str(info.get("role", "")) == "guest" \
 		else I18n.t("Deine Partie von vor %d min fortsetzen?") % maxi(int(info.get("age_min", 0)), 1)
-	_resume_box = ConfirmBox.ask(self, title, "Dein Handy führt das Spiel ab jetzt. Die anderen kommen von selbst wieder dazu.", "Fortsetzen", "Abbrechen")
+	var ap := resume_in_game_wifi(info)
+	# Beta 1.6.2 (10.8): eigene Partie im Spiel-WLAN – immer fragen, ob das Netz neu geöffnet oder beim neuen Gastgeber gescannt wird
+	_resume_box = ConfirmBox.ask(self, title, "Dein Handy führt das Spiel ab jetzt. Die anderen kommen von selbst wieder dazu.",
+		"Spiel-WLAN neu öffnen" if ap else "Fortsetzen", "Abbrechen")
 	_resume_box.name = "FortsetzenRueckfrage"
 	for w in info.get("warnings", []):
 		_resume_box.add_note(I18n.render([w]))
+	var box := _resume_box
+	if ap:
+		var scan := _resume_box.add_option("Beim neuen Gastgeber scannen", "qr")
+		scan.name = "BeimNeuenScannen"
+		scan.pressed.connect(func() -> void:
+			_close_box(box)
+			var d := _resume_data()
+			_end_resume()
+			rejoin_scan(d))
 	_resume_box.answered.connect(func(yes: bool) -> void:
-		_resume_box = null
+		if _resume_box == box:
+			_resume_box = null
 		if _resume_sw != null and is_instance_valid(_resume_sw):
 			_resume_sw.confirm_resume(yes))
+
+
+# Beta 1.6.2: Rückfrage zum Spiel-WLAN? (info.ap vom HostSwitch, sonst eigene Gastgeber-Datei mit wlan.ap)
+func resume_in_game_wifi(info: Dictionary) -> bool:
+	if info.has("ap"):
+		return bool(info.ap)
+	var d := _resume_data()
+	var wlan: Dictionary = d.get("wlan", {}) if d.get("wlan") is Dictionary else {}
+	return str(d.get("role", "")) == "host" and bool(wlan.get("ap", false)) and (d.get("online", {}) as Dictionary).is_empty()
+
+
+# Stand des laufenden Ablaufs (bzw. die Datei)
+func _resume_data() -> Dictionary:
+	if _resume_sw != null and is_instance_valid(_resume_sw) and not _resume_sw._saved.is_empty():
+		return _resume_sw._saved
+	return _offer()
+
+
+# „Beim neuen Gastgeber scannen“: Scanner auf der Beitrittsseite; mit bk_token landet man auf dem eigenen Platz (Datei bleibt)
+func rejoin_scan(d: Dictionary) -> void:
+	if nav == null:
+		return
+	var mine := int(d.get("host_seat", -1)) if str(d.get("role", "")) == "host" else int(d.get("my_seat", -1))
+	var seats: Array = d.get("seats", []) if d.get("seats") is Array else []
+	var who := str((seats[mine] as Dictionary).get("name", "")) if mine >= 0 and mine < seats.size() else ""
+	nav.push(WlanScreen.new(), false)
+	nav.push(JoinScreen.rejoin(str(d.get("gid", "")), who))
+
+
+# „Mit neuem Code beitreten“ (Raum abgelaufen): Beitrittsseite (Raumcode, QR oder Link); die Datei bleibt für bk_token
+func join_with_new_code() -> void:
+	if nav == null:
+		return
+	nav.push(WlanScreen.new(), false)
+	nav.push(JoinScreen.new())
+
+
+# Rückfrage schließen, ohne zu antworten (der Ablauf entscheidet selbst weiter)
+func _close_box(box: ConfirmBox) -> void:
+	if _resume_box == box:
+		_resume_box = null
+	if box != null and is_instance_valid(box):
+		box.queue_free()
 
 
 # Fertig: Der HostSwitch hängt schon an der neuen Quelle (Gastgeber oder Gast); der Tisch kommt obenauf.

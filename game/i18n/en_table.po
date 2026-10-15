@@ -998,6 +998,9 @@ msgstr "Players on Wi-Fi won't come along."
 msgid "Der Online-Raum ist abgelaufen. Die Partie lässt sich nicht mehr fortsetzen."
 msgstr "The online room has expired. This game can no longer be continued."
 
+msgid "Das Spiel ließ sich gerade nicht eröffnen. Bitte noch einmal versuchen."
+msgstr "The game couldn't be opened just now. Please try again."
+
 # --- Gastgeber-Übergabe (Beta 1.6.1, Tisch: Verbindungsstreifen, Rückfrage)
 msgid "Gastgeber antwortet nicht – warte …"
 msgstr "The host isn't answering – waiting …"
@@ -1019,3 +1022,57 @@ msgstr "Continue"
 
 msgid "Weiter warten"
 msgstr "Keep waiting"
+
+# --- Gastgeber-Übergabe im WLAN und Spiel-WLAN (Beta 1.6.2, Tisch: Streifen, Rückfrage, Meldungen; Abschnitt 10.15)
+msgid "Suche den neuen Gastgeber …"
+msgstr "Looking for the new host …"
+
+msgid "Spiel-WLAN von %s ist weg."
+msgstr "%s's game Wi-Fi is gone."
+
+msgid "Neues Spiel-WLAN bei %s – QR-Code scannen"
+msgstr "New game Wi-Fi at %s – scan QR code"
+
+msgid "Nur wenn %s nicht übernimmt – sonst gibt es zwei Spiele."
+msgstr "Only if %s doesn't take over – otherwise there will be two games."
+
+msgid "WLAN-Mitspieler brauchen dann Internet."
+msgstr "Players on Wi-Fi will then need internet."
+
+msgid "Du bist jetzt Gastgeber. Öffne das Spiel-WLAN und lass die anderen den QR-Code scannen."
+msgstr "You are the host now. Open the game Wi-Fi and let the others scan the QR code."
+
+msgid "%s führt dieses Spiel schon – ihr spielt dort weiter."
+msgstr "%s is already running this game – you'll all continue there."
+
+msgid "%s möchte mitspielen – ☰ → Mitspieler dazuholen."
+msgstr "%s wants to join – ☰ → Add players."
+
+msgid "Neuer Raum %s. Schick den anderen den Link – sie kommen damit auf ihre Plätze."
+msgstr "New room %s. Send the others the link – it takes them back to their seats."
+
+msgid "Dein Spiel-WLAN geht dann zu – alle müssen einen neuen QR-Code scannen."
+msgstr "Your game Wi-Fi will then close – everyone has to scan a new QR code."
+
+# --- Gastgeber-Übergabe im WLAN (Beta 1.6.2, Browser-Client Lite über M.t)
+msgid "Gastgeber fehlt – suche den neuen Gastgeber …"
+msgstr "Host is missing – looking for the new host …"
+
+msgid "Das Spiel läuft jetzt über das Internet weiter."
+msgstr "The game now continues over the internet."
+
+msgid "Neues Spiel-WLAN bei %s. Verbinde dich mit dem WLAN-Code auf diesem Handy und scanne dann den Spiel-Code."
+msgstr "New game Wi-Fi at %s. Connect with the Wi-Fi code on that phone, then scan the game code."
+
+msgid "Über das Internet weiterspielen"
+msgstr "Continue over the internet"
+
+# --- Gerätetest 1.6.2 (F2): App-Gast hängt beim Laden des Tisches
+msgid "Der Gastgeber antwortet nicht."
+msgstr "The host isn't responding."
+
+msgid "Die Partie bleibt gemerkt – im Hauptmenü kannst du sie fortsetzen."
+msgstr "The game is kept – you can continue it from the main menu."
+
+msgid "Zum Hauptmenü"
+msgstr "To the main menu"

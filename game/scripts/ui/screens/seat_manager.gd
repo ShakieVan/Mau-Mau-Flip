@@ -12,6 +12,10 @@ extends Control
 #                lassen sich zurücknehmen.
 # Solange das Feld offen ist, dürfen Neue auf die Warteliste (HostTable.set_join_open). Kommt jemand neu dazu, springt die Ansicht
 # auf „Am Tisch“. Nichts passiert ohne Tippen und Rückfrage. Keine Karten (Regel 15).
+# Mau-Mau Flip (Beta 1.6.2, Gastgeber-Übergabe im WLAN, docs/module/uebergabe.md 10.10): Unter einem Wartenden steht je getrenntem
+# Menschenplatz „Auf den Platz von %s setzen“ (assign_seats; mehrere Plätze = mehrere Knöpfe als Auswahl). Rückfrage „%s spielt dann
+# mit den Karten von %s weiter.“ · „Hinsetzen · Abbrechen“ → HostTable.seat_assign(id, seat). So kommen Browser-Gäste nach einer
+# Übernahme (neue Seite ohne Token, Spiel-QR → Warteliste) wieder auf ihren alten Platz.
 
 signal closed
 
@@ -38,6 +42,7 @@ var _next_bot := -100
 var _sig := ""
 var _seen_waiting: Array = []
 var _check_ms := 0
+var _assign_sig := ""             # Beta 1.6.2: Wartende und freie Plätze bei der letzten Platzwahl (einmal ins Bild rücken)
 
 const BOT_ID := -100
 
@@ -315,7 +320,7 @@ func refresh(force := false) -> void:
 		return
 	_rebuild_order()
 	var seated := _seat_ids()
-	var parts: Array = [night, _order, host.pending_seat_ops(), _room_left(), I18n.language()]
+	var parts: Array = [night, _order, host.pending_seat_ops(), _room_left(), I18n.language(), assign_seats()]
 	for id in _order:
 		var s := seated.find(id)
 		if s >= 0:
@@ -341,6 +346,12 @@ func refresh(force := false) -> void:
 	for o in pending:
 		if str(o.op) == "bot":
 			_list.add_child(_pending_bot_row(o))
+	# Beta 1.6.2: Neue Platzwahl („Auf den Platz von …“) einmal ins Bild rücken – sie steht unter der Zeile des Wartenden
+	var assign_sig := JSON.stringify([host.waiting_ids(), assign_seats()])
+	if assign_sig != _assign_sig:
+		_assign_sig = assign_sig
+		if not _list.find_children("AufDenPlatz", "HFlowContainer", true, false).is_empty():
+			_reveal()
 	_count.text = I18n.t("%d von %d Spielern") % [seated.size(), MauGame.MAX_PLAYERS]
 	_bot_btn.disabled = not room
 	_bot_btn2.disabled = not room
@@ -353,6 +364,19 @@ func refresh(force := false) -> void:
 	var tab := _tabs.get_child(1) as Button
 	if tab != null:
 		tab.text = I18n.t("Am Tisch") + ("  (%d)" % waiting if waiting > 0 else "")
+
+
+# Erste Platzwahl ins Bild rücken (nach dem Layout; die Zeilen können inzwischen neu gebaut sein)
+func _reveal() -> void:
+	if not is_inside_tree():
+		return
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if not is_inside_tree() or _list == null or not is_instance_valid(_scroll):
+		return
+	var flows := _list.find_children("AufDenPlatz", "HFlowContainer", true, false)
+	if not flows.is_empty() and not (flows[0] as Control).is_queued_for_deletion():
+		_scroll.ensure_control_visible(flows[0] as Control)
 
 
 func _connected(s: int) -> bool:
@@ -456,6 +480,28 @@ func _row(id: int, i: int, seated: Array) -> Control:
 		no_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		no_btn.pressed.connect(ask_reject.bind(id))
 		row.add_child(no_btn)
+		var free_seats := assign_seats() if not bot_slot else []
+		if not free_seats.is_empty():
+			# Beta 1.6.2: unter der Zeile, damit sie auch bei großer Schrift nicht breiter wird (umbrechend)
+			var col := ScreenKit.vbox(4)
+			col.name = "Wartender%d" % id
+			outer.remove_child(row)
+			outer.add_child(col)
+			col.add_child(row)
+			var flow := HFlowContainer.new()
+			flow.name = "AufDenPlatz"
+			flow.add_theme_constant_override("h_separation", 10)
+			flow.add_theme_constant_override("v_separation", 6)
+			col.add_child(flow)
+			var pad := Control.new()
+			pad.custom_minimum_size = Vector2(30.0 + 10.0 + 48.0, 0)    # bündig unter dem Namen
+			flow.add_child(pad)
+			for fs: int in free_seats:
+				var ab := ScreenKit.button(I18n.t("Auf den Platz von %s setzen") % host.seat_name(fs), "GhostButton", "spieler")
+				ab.name = "AufPlatz%d" % fs
+				ab.add_theme_font_size_override("font_size", UiFonts.size("hinweis"))
+				ab.pressed.connect(ask_assign.bind(id, fs))
+				flow.add_child(ab)
 	elif op != "":
 		var undo := ScreenKit.button("Zurücknehmen", "GhostButton")
 		undo.name = "Zuruecknehmen"
@@ -553,6 +599,39 @@ func ask_seat(id: int) -> void:
 		if not ok:
 			_toast(I18n.t("Am Tisch ist kein Platz mehr."))
 		refresh(true))
+
+
+# Beta 1.6.2 (10.10): Plätze, auf die sich ein Wartender setzen kann – entfernte Menschen (nicht der Gastgeber, kein Computer; eine
+# Vertretung durch den Computer endet dabei), deren Spieler nicht verbunden ist und die nicht gerade gehen. Nur, wenn der Tisch
+# seat_assign kennt, die Partie läuft und er nicht eingefroren ist.
+func assign_seats() -> Array:
+	var out: Array = []
+	if host == null or host.game == null or host.session == null or host.is_frozen():
+		return out
+	if not host.game.phase() in HostSwitch.WATCH_PHASES:
+		return out
+	var sid: Array = _seat_ids()
+	for s in host.free_human_seats():
+		if int(s) < sid.size() and host.seat_op_of(int(sid[int(s)])) == "out":
+			continue
+		out.append(int(s))
+	return out
+
+
+# „Auf den Platz von %s setzen“: Rückfrage, dann HostTable.seat_assign(id, seat) (Beta 1.6.2)
+func ask_assign(id: int, seat: int) -> void:
+	if host == null or host.session == null:
+		return
+	var who := str(host.session.player(id).get("name", "?"))
+	var whose := host.seat_name(seat)
+	_ask(I18n.t("Auf den Platz von %s setzen") % whose, I18n.t("%s spielt dann mit den Karten von %s weiter.") % [who, whose], "Hinsetzen",
+		func() -> void:
+			var ok := false
+			if is_instance_valid(host) and seat < host.seats.size() and host.seat_name(seat) == whose:
+				ok = host.seat_assign(id, seat)
+			if not ok:
+				_toast(I18n.t("Das geht gerade nicht."))
+			refresh(true))
 
 
 func ask_reject(id: int) -> void:

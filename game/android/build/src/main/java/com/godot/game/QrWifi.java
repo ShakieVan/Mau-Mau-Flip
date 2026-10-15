@@ -30,12 +30,17 @@ import java.net.InetAddress;
  * - bind(activity): Prozess an dieses Netz binden. "" = gebunden, sonst Grund.
  * - release(activity): Anfrage zurückziehen (Android trennt das Spiel-WLAN, das Handy kommt wieder normal ins Internet); eine
  *   Bindung an dieses Netz wird gelöst. true = es gab eine Anfrage.
+ * Mau-Mau Flip (Beta 1.6.2, Übernahme im Spiel-WLAN): Nach onLost ist network schon null; release() löste die Prozessbindung deshalb
+ * nie, und Server, Suche und Vermittler legten ihre Sockets weiter im toten Netz an. Jetzt merkt sich bind() das gebundene Netz
+ * (boundNetwork, onLost lässt es stehen), und release() löst die Bindung, wenn sie auf dieses Netz zeigt oder auf ein Netz, das
+ * Android nicht mehr kennt (getNetworkCapabilities == null).
  */
 public final class QrWifi {
     private static final Object LOCK = new Object();
     private static final int TIMEOUT_MS = 120000;
     private static ConnectivityManager.NetworkCallback callback;
     private static Network network;
+    private static Network boundNetwork;    // Beta 1.6.2: per bind() gebundenes Netz, bleibt nach onLost stehen
     private static String status = "idle";
     private static String ssid = "";
 
@@ -167,7 +172,13 @@ public final class QrWifi {
             return "Das Spiel-WLAN ist nicht verbunden.";
         }
         try {
-            return connectivity(activity).bindProcessToNetwork(n) ? "" : "Android hat die Bindung abgelehnt.";
+            if (!connectivity(activity).bindProcessToNetwork(n)) {
+                return "Android hat die Bindung abgelehnt.";
+            }
+            synchronized (LOCK) {
+                boundNetwork = n;
+            }
+            return "";
         } catch (Throwable e) {
             return "Bindung fehlgeschlagen: " + e.getMessage();
         }
@@ -176,23 +187,34 @@ public final class QrWifi {
     public static boolean release(Activity activity) {
         ConnectivityManager.NetworkCallback cb;
         Network n;
+        Network mine;
         synchronized (LOCK) {
             cb = callback;
             n = network;
+            mine = boundNetwork;
             callback = null;
             network = null;
+            boundNetwork = null;
             status = "idle";
             ssid = "";
+        }
+        if (cb == null && mine == null) {
+            return false;
+        }
+        try {
+            // Beta 1.6.2: auch nach onLost (network schon null) lösen; ebenso eine Bindung an ein Netz, das Android nicht mehr kennt.
+            ConnectivityManager cm = connectivity(activity);
+            Network bound = cm.getBoundNetworkForProcess();
+            if (bound != null && (bound.equals(mine) || bound.equals(n) || cm.getNetworkCapabilities(bound) == null)) {
+                cm.bindProcessToNetwork(null);
+            }
+        } catch (Throwable ignored) {
         }
         if (cb == null) {
             return false;
         }
         try {
-            ConnectivityManager cm = connectivity(activity);
-            if (n != null && n.equals(cm.getBoundNetworkForProcess())) {
-                cm.bindProcessToNetwork(null);
-            }
-            cm.unregisterNetworkCallback(cb);
+            connectivity(activity).unregisterNetworkCallback(cb);
         } catch (Throwable ignored) {
         }
         return true;

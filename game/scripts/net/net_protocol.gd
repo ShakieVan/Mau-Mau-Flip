@@ -16,6 +16,12 @@ extends RefCounted
 #   Host → Client: welcome zusätzlich gid, gen, epoch · bk {gid, gen, epoch, seq, z} (Sicherung: z = base64(gzip(JSON))) ·
 #                  alive {gid, gen, epoch, seq} (Lebenszeichen nach BACKUP_ALIVE_MS Stille) ·
 #                  handover {gid, gen, epoch, seq, within_ms, z} bzw. {own:true, gid, gen, epoch, seq, within_ms} ohne z
+# WLAN und Spiel-WLAN (Beta 1.6.2, docs/module/uebergabe.md Abschnitt 10.1; nur additiv, ältere Geräte ignorieren alles):
+#   Client → Host: hello zusätzlich hp (Port, auf dem dieses Gerät als Gastgeber lauschen würde), bk_gid (gid der Sicherung) und
+#                  ap {ok, perm} (kann ein Spiel-WLAN öffnen / Erlaubnis schon erteilt) · handover_ok {port, qr} (Ziel führt jetzt)
+#   Host → Client: move {gid, gen, epoch, name, how:"lan"|"online"|"qr", addr, port, room, relay, url} (Umzug zum neuen Gastgeber) ·
+#                  hosts {gid, gen, list:[{name, url}], online, ap, ap_name} (nur Browser: mögliche Erben für die Reihum-Probe)
+#   /info und Suchantwort zusätzlich gid, gen, epoch und conn (verbundene entfernte Menschen) bei laufender Partie
 # Zahlen: JSON kennt nur float; decode() wandelt ganzzahlige Werte in int (Kennungen, Plätze, Zeitstempel in ms).
 
 const PROTO := 1                          # Protokollversion: bei jeder inkompatiblen Änderung erhöhen
@@ -84,6 +90,16 @@ const SWEEP_BUDGET := 100                 # … auf einmal höchstens so viele (
                                           #   zählt mit und hat Vorrang), dann
 const SWEEP_REFILL_PER_S := 100           # … so viele je Sekunde (host_rate 200/s, Platz für den übrigen Verkehr)
 const BK_NONE := [0, "", 0]               # hello.bk einer App ohne Sicherung
+
+# --- WLAN und Spiel-WLAN (Beta 1.6.2, docs/module/uebergabe.md Abschnitt 10) ---
+const HOST_SCAN_MS := 5000                # Gastgeber-Wächter: so oft nach Gastgebern derselben Partie fragen (10.11)
+const LAN_SEARCH_MS := 2000               # Gast: so lange im WLAN suchen, bevor er übernimmt (10.4, checking)
+const PAST_MAX := 16                      # höchstens so viele frühere Gastgeber-Adressen (wlan.past, 10.2)
+const WAKE_PAUSE_MS := 20000              # Gerätetest 1.6.2 (B1): Gastgeber so lange im Hintergrund → beim Zurückkommen erst der Wächter
+const WAKE_CHECK_MS := 3000               # … so lange halten Aktionen und Bots an (Antwort auf den sofortigen Scan)
+const MOVE_HOWS := ["lan", "online", "qr"]
+const MAX_CONN := 16                      # Suchantwort: conn (verbundene entfernte Menschen) höchstens
+const MAX_URL := 300                      # Zeichen je Adresse in move/hosts
 
 const APK_RELEASE_URL := "https://github.com/ShakieVan/Mau-Mau-Flip/releases/latest"
 const APK_BETA_URL := "https://github.com/ShakieVan/Mau-Mau-Flip-Beta/releases/latest"
@@ -268,9 +284,25 @@ static func clean_client_message(msg: Dictionary) -> Dictionary:
 				out["bk"] = bk
 			if msg.get("bk_token") is String and str(msg.bk_token) != "" and str(msg.bk_token).length() <= 64:
 				out["bk_token"] = str(msg.bk_token)
+			# Beta 1.6.2 (WLAN): eigener Gastgeber-Port, gid der Sicherung, Spiel-WLAN-Fähigkeit
+			var hp := clean_port(msg.get("hp"))
+			if hp > 0:
+				out["hp"] = hp
+			var bk_gid := clean_gid(msg.get("bk_gid"))
+			if bk_gid != "":
+				out["bk_gid"] = bk_gid
+			if msg.get("ap") is Dictionary:
+				out["ap"] = clean_ap(msg.ap)
 			return out
 		"handover_no":
 			return {"t": "handover_no"}  # Beta 1.6.1: handover own:true abgelehnt (ohne weitere Felder)
+		"handover_ok":
+			# Beta 1.6.2: Das Ziel führt jetzt (port = sein Server; qr = es öffnet ein eigenes Spiel-WLAN). Ohne Port nur mit qr.
+			var p := clean_port(msg.get("port"))
+			var qr: bool = msg.get("qr") is bool and bool(msg.qr)
+			if p == 0 and not qr:
+				return {}
+			return {"t": "handover_ok", "port": p, "qr": qr}
 		"act":
 			var a = msg.get("a")
 			if not a is Dictionary:
@@ -392,9 +424,10 @@ static func unique_name(wanted: String, taken: Array) -> String:
 
 # --- Begrüßung ---
 
-static func make_hello(player_name: String, kind := "app", token := "", game := "", bk: Array = [], bk_token := "") -> Dictionary:
+static func make_hello(player_name: String, kind := "app", token := "", game := "", bk: Array = [], bk_token := "", extra := {}) -> Dictionary:
 	# bk (Beta 1.6.1): [gen, epoch, seq] der eigenen Sicherung bzw. BK_NONE – nur Apps, die Sicherungen halten können; bk_token: Token
 	# des eigenen Platzes aus der Sicherung (nur wenn eine Sicherung derselben Partie vorliegt).
+	# extra (Beta 1.6.2): {hp, bk_gid, ap:{ok, perm}} – nur gültige Werte gehen hinaus (dieselbe Prüfung wie clean_client_message).
 	var msg := {"t": "hello", "proto": PROTO, "game": game if game != "" else game_version(), "name": clean_name(player_name),
 		"kind": kind if KINDS.has(kind) else "app"}
 	if token != "":
@@ -404,6 +437,14 @@ static func make_hello(player_name: String, kind := "app", token := "", game := 
 		msg["bk"] = mark
 	if bk_token != "":
 		msg["bk_token"] = bk_token.left(64)
+	var hp := clean_port(extra.get("hp"))
+	if hp > 0:
+		msg["hp"] = hp
+	var bk_gid := clean_gid(extra.get("bk_gid"))
+	if bk_gid != "":
+		msg["bk_gid"] = bk_gid
+	if extra.get("ap") is Dictionary:
+		msg["ap"] = clean_ap(extra.ap)
 	return msg
 
 # ---------- Gastgeber-Übergabe (Beta 1.6.1, docs/module/uebergabe.md Abschnitte 1–3) ----------
@@ -511,6 +552,10 @@ static func clean_backup_message(msg: Dictionary) -> Dictionary:
 		out["z"] = str(z)
 		return out
 	out["within_ms"] = clampi(int(msg.within_ms), 1000, 60000) if msg.get("within_ms") is int else HANDOVER_WITHIN_MS
+	# Beta 1.6.2 (10.7, Gegenprüfung): Art der Übergabe mitnehmen – auch ein Ziel ohne beobachteten Gast-Tisch (Zustände joining/
+	# resuming) liest sie hier; ohne bzw. unbekannt fehlt sie (ältere Gastgeber, das Ziel schätzt dann selbst)
+	if msg.get("how") is String and str(msg.how) in MOVE_HOWS:
+		out["how"] = str(msg.how)
 	if msg.get("own") == true:
 		out["own"] = true
 		if msg.get("host_gen") is int and int(msg.host_gen) >= 1 and int(msg.host_gen) < 1000000:
@@ -520,6 +565,120 @@ static func clean_backup_message(msg: Dictionary) -> Dictionary:
 	else:
 		return {}
 	return out
+
+# ---------- WLAN und Spiel-WLAN (Beta 1.6.2, docs/module/uebergabe.md Abschnitt 10.1) ----------
+
+static func is_hex(text: String) -> bool:
+	# nur 0-9, a-f, A-F (ohne Vorzeichen und Präfix; "" = false)
+	if text == "":
+		return false
+	for ch in text.to_lower():
+		if not ((ch >= "0" and ch <= "9") or (ch >= "a" and ch <= "f")):
+			return false
+	return true
+
+static func clean_gid(v) -> String:
+	# Partie-Kennung: Hex-Text, höchstens 32 Zeichen. "" = ungültig/fehlt.
+	return str(v) if v is String and str(v).length() <= 32 and is_hex(str(v)) else ""
+
+static func clean_epoch(v) -> String:
+	# Zweig-Kennung: Hex-Text, höchstens 16 Zeichen. "" = ungültig/fehlt.
+	return str(v) if v is String and str(v).length() <= 16 and is_hex(str(v)) else ""
+
+static func clean_port(v) -> int:
+	# Gastgeber-Port (hello.hp, handover_ok.port, move.port): 1024–65535, sonst 0
+	return int(v) if v is int and int(v) >= 1024 and int(v) <= 65535 else 0
+
+static func clean_ap(v) -> Dictionary:
+	# Spiel-WLAN-Fähigkeit {ok, perm}: nur echte bool zählen; ohne Feld (ältere Apps) beides false
+	var d: Dictionary = v if v is Dictionary else {}
+	return {"ok": d.get("ok") is bool and bool(d.ok), "perm": d.get("perm") is bool and bool(d.perm)}
+
+static func make_handover_ok(port: int, qr := false) -> Dictionary:
+	# Ziel → Gastgeber: „ich führe jetzt“ (port = eigener Server; qr = öffnet ein eigenes Spiel-WLAN)
+	return {"t": "handover_ok", "port": port, "qr": qr}
+
+static func make_move(gid: String, gen: int, epoch: String, how: String, host_name: String, addr := "", port := 0, room := "",
+		relay := "") -> Dictionary:
+	# Gastgeber → Gäste: Die Partie läuft beim neuen Gastgeber host_name weiter. how "lan": addr/port seines Servers (url = Seite für
+	# Browser), "online": room/relay (url = Raum-Link), "qr": eigenes Spiel-WLAN (Gäste scannen den neuen QR-Code). Felder, die zu how
+	# nicht passen, bleiben leer; die Rechnung ist dieselbe wie in clean_move.
+	var m := {"t": "move", "gid": gid, "gen": gen, "epoch": epoch, "name": clean_name(host_name, "Gastgeber"), "how": how,
+		"addr": "", "port": 0, "room": "", "relay": "", "url": ""}
+	match how:
+		"lan":
+			m.addr = addr
+			m.port = port
+			m.url = "http://%s:%d/" % [addr, port]
+		"online":
+			m.room = normalize_room_code(room)
+			m.relay = normalize_relay_url(relay)
+			m.url = room_link(relay, room)
+	return m
+
+static func clean_move(msg: Dictionary, expect_gid := "") -> Dictionary:
+	# Gast: move prüfen (Kopf wie clean_backup_message, Ziel passend zu how). expect_gid != "": nur für diese Partie. {} = verwerfen.
+	if str(msg.get("t", "")) != "move":
+		return {}
+	var gid := clean_gid(msg.get("gid"))
+	if gid == "" or (expect_gid != "" and gid != expect_gid):
+		return {}
+	var gen = msg.get("gen")
+	if not gen is int or int(gen) < 1:
+		return {}
+	var epoch = msg.get("epoch", "")
+	if not epoch is String or (str(epoch) != "" and clean_epoch(epoch) == ""):
+		return {}
+	var how := str(msg.get("how", ""))
+	if not how in MOVE_HOWS:
+		return {}
+	var host_name := str(msg.name) if msg.get("name") is String else ""
+	var addr := ""
+	var port := 0
+	var room := ""
+	var relay := ""
+	match how:
+		"lan":
+			addr = str(msg.addr) if msg.get("addr") is String else ""
+			port = clean_port(msg.get("port"))
+			if ipv4_to_int(addr) <= 0 or port == 0:
+				return {}
+		"online":
+			room = normalize_room_code(str(msg.room)) if msg.get("room") is String else ""
+			relay = normalize_relay_url(str(msg.relay)) if msg.get("relay") is String else ""
+			if room == "" or relay == "":
+				return {}
+	return make_move(gid, int(gen), str(epoch), how, host_name, addr, port, room, relay)
+
+static func make_hosts(gid: String, gen: int, list: Array, online := "", ap := false, ap_name := "") -> Dictionary:
+	# Gastgeber → Browser-Gäste: mögliche Erben in Rangfolge [{name, url}] (url = http://<addr>:<hp>/), Raum-Link oder "", Spiel-WLAN
+	# (ap) und wer bei dessen Verlust ein neues öffnet (ap_name). Ungültige Einträge fallen weg, höchstens MAX_PLAYERS.
+	var out := []
+	for e in list:
+		if out.size() >= MAX_PLAYERS:
+			break
+		if not e is Dictionary or not e.get("url") is String:
+			continue
+		var url := str(e.url)
+		if not _web_url(url):
+			continue
+		out.append({"name": clean_name(str(e.get("name", ""))), "url": url})
+	return {"t": "hosts", "gid": gid, "gen": gen, "list": out, "online": online if _web_url(online) else "", "ap": ap,
+		"ap_name": clean_name(ap_name, "") if ap_name != "" else ""}
+
+static func _web_url(url: String) -> bool:
+	var low := url.to_lower()
+	return url.length() <= MAX_URL and (low.begins_with("http://") or low.begins_with("https://")) and not url.contains(" ") \
+		and not url.contains("\"") and not url.contains("<")
+
+static func same_net(a: String, b: String, prefix: int) -> bool:
+	# Liegen zwei IPv4-Adressen im selben Netz (prefix = Länge der Netzmaske 1–32)? Ungültige Eingaben: false.
+	var x := ipv4_to_int(a)
+	var y := ipv4_to_int(b)
+	if x < 0 or y < 0 or prefix < 1 or prefix > 32:
+		return false
+	var mask := (0xFFFFFFFF << (32 - prefix)) & 0xFFFFFFFF
+	return (x & mask) == (y & mask)
 
 static func compare_versions(a: String, b: String) -> int:
 	# "0.1.10" > "0.1.9": -1, 0, 1. Nicht-Zahlen zählen als 0.
@@ -576,7 +735,8 @@ static func make_reply(info: Dictionary) -> PackedByteArray:
 	return bytes
 
 static func parse_reply(bytes: PackedByteArray) -> Dictionary:
-	# Antwort auf „MMF?“ → {name, version, proto, players, max, port, running, sid, addresses, compatible}; {} = fremdes Paket.
+	# Antwort auf „MMF?“ → {name, version, proto, players, max, port, running, sid, addresses, compatible, gid, gen, epoch, conn};
+	# {} = fremdes Paket.
 	if bytes.size() < 2 or bytes.size() > MAX_DISCOVERY_BYTES or bytes[0] != 0x7B:
 		return {}
 	for b in bytes:
@@ -601,6 +761,15 @@ static func parse_reply(bytes: PackedByteArray) -> Dictionary:
 		"max": clampi(int(d.max) if d.get("max") is int else MAX_PLAYERS, 1, 99), "port": port,
 		"running": d.get("running") is bool and bool(d.running), "sid": str(d.get("sid", "")).left(32), "addresses": addresses}
 	info["compatible"] = info.proto == PROTO and info.version == game_version()
+	# Beta 1.6.2: Partie-Kennung für Suche und Gastgeber-Wächter (10.1). Kaputte Felder gelten als fehlend: gid "", gen 0, epoch "",
+	# conn 0; ohne gid gibt es auch keinen Stand (gen/epoch).
+	var gid := clean_gid(d.get("gid"))
+	var gen = d.get("gen")
+	var conn = d.get("conn")
+	info["gid"] = gid
+	info["gen"] = int(gen) if gid != "" and gen is int and int(gen) >= 0 else 0
+	info["epoch"] = clean_epoch(d.get("epoch")) if gid != "" else ""
+	info["conn"] = int(conn) if conn is int and int(conn) >= 0 and int(conn) <= MAX_CONN else 0
 	return info
 
 # --- Adressen ---

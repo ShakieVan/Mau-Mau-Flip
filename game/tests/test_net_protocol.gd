@@ -129,6 +129,19 @@ func test_handover() -> void:
 	check(NetProtocol.clean_backup_message({"t": "handover", "gid": gid, "gen": 1, "epoch": epoch, "seq": 1}).is_empty(), "handover ohne z und ohne own verworfen")
 	check(NetProtocol.clean_backup_message({"t": "handover", "gid": gid, "gen": 1, "epoch": epoch, "seq": 1, "own": true, "within_ms": 999999}).within_ms == 60000,
 		"handover: within_ms begrenzt")
+	# Beta 1.6.2 (Gegenprüfung): how überlebt die Prüfung (Ziel ohne beobachteten Tisch); unbekannt bzw. kein Text fällt weg
+	for hw in ["lan", "qr", "online"]:
+		var hm := NetProtocol.make_handover(gid, mark)
+		hm["how"] = hw
+		check(str(NetProtocol.clean_backup_message(NetProtocol.decode(NetProtocol.encode(hm), NetProtocol.MAX_HOST_MESSAGE)).get("how", "")) == hw,
+			"handover: how %s bleibt" % hw)
+	for bad_how in ["fliegen", 3, ""]:
+		var hb := NetProtocol.make_handover(gid, mark, z)
+		hb["how"] = bad_how
+		check(not NetProtocol.clean_backup_message(hb).has("how"), "handover: how %s fällt weg" % str(bad_how))
+	var bk_how := NetProtocol.make_bk(gid, mark, z)
+	bk_how["how"] = "qr"
+	check(not NetProtocol.clean_backup_message(bk_how).has("how"), "bk trägt kein how")
 	check(NetProtocol.clean_backup_message({"t": "state", "gid": gid}).is_empty(), "andere Typen nicht")
 	check(NetProtocol.HANDOVER_WITHIN_MS == 8000 and NetProtocol.PROBE_MS == 8000 and NetProtocol.T_STEP_MS == 12000
 		and NetProtocol.TAKEOVER_SETTLE_MAX_MS == 15000 and NetProtocol.SNAPSHOT_MAX == 131072 and NetProtocol.HANDOVER_TIMEOUT_MS == 25000,

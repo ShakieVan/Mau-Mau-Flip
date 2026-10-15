@@ -400,7 +400,7 @@ Ablauf auf jedem App-Gast mit aktueller Sicherung:
 - Fortsetzen durch den **Gastgeber selbst auch im WLAN**. Das ist fast gratis, weil Adresse und Port gleich bleiben.
 - Keine Änderung an Vermittler und Lite. Die Version ist schon auf 1.6.1 gesetzt, der Testschalter liegt in `GodotApp.java`.
 
-**Beta 1.6.2: WLAN und Spiel-WLAN.**
+**Beta 1.6.2: WLAN und Spiel-WLAN.** Ausgearbeitet in Abschnitt 10 (13.10.2026); wo 10 von den Stichpunkten hier abweicht, gilt 10.
 - **Suche:** `info()`/Suchantwort mit `gid`, `gen` (`net_session.gd:460`, `NetProtocol.parse_reply`).
   - App-Gäste suchen nach dem Ausfall mit eigener `NetDiscovery` nach `gid`.
   - Geplant: `{t:"move", addr, port, gid, gen}`.
@@ -436,3 +436,483 @@ Ablauf auf jedem App-Gast mit aktueller Sicherung:
 - Rundumschlag „an alle `c` in 1 … max + 256 in einem Frame“: angepasst auf höchstens 150 je Frame, weil Übernahme und erster Stand in denselben Frame fallen und `host_burst` 400 sonst knapp wird.
 - „`role:"host"` im Hauptmenü erst nach `T_AWAY`“: nicht übernommen. Stattdessen `/info` + frische Probe, ohne Rückfrage nur bei einer Datei < 5 min. Ein Irrtum heilt sich über die Abstammungsregel (der eigene Zweig behält `gen`, ein Ersatz mit höherer `gen` wird per `handover own` zurückgeholt); 3 min Wartezeit für den häufigen Fall „App versehentlich geschlossen“ wären zu lang.
 - `alive`-Abstand: 15 s übernommen, `T_SILENT` auf 40 s; die Rang-0-Variante verworfen (Begründung oben).
+
+## 10. Stufe 2: WLAN und Spiel-WLAN (Beta 1.6.2)
+
+Stand 13.10.2026, Entwurf gegen den Code von Beta 1.6.1. Nutzerwunsch vom 13.10.: Bei einer Übernahme im Spiel-WLAN öffnet der neue Gastgeber ein eigenes Spiel-WLAN und gibt es per QR-Code weiter. Die anderen kommen über den vorhandenen Weg: QR-Scanner der App, im Browser WLAN-QR + Spiel-QR. Jeder App-Gast hält den Spielstand (wie 1.6.1).
+
+**Grundsatz:** Im WLAN gibt es keinen Schiedsrichter wie den Vermittler (4000, `/info`). Ersatz:
+1. **Suche mit Partie-Kennung:** `/info` und die Suchantwort tragen `gid`, `gen` und `epoch`. Wer den Gastgeber vermisst, sucht die Partie, nicht die Adresse.
+2. **Bestätigte Übergabe:** Das Ziel meldet `handover_ok`. Erst dann schickt der alte Gastgeber `move` an alle und tritt ab.
+3. **Gastgeber-Wächter:** Jeder WLAN-Gastgeber fragt alle 5 s nach Gastgebern derselben `gid`; der ältere Zweig tritt ab (10.11).
+
+**Der Vermittler bleibt unverändert.** Lite ändert sich (10.9):
+- Im WLAN liefert jeder Gastgeber seine eigene Lite-Fassung aus.
+- Online liefert der Vermittler die Fassung des Raums (Tag `v1.6.2`, also erst ab dem Release). Lite online braucht die neuen Teile nicht.
+
+### 10.1 Protokoll (nur additiv)
+
+| Nachricht | Richtung | Inhalt | Ältere Geräte |
+|---|---|---|---|
+| `/info`, Suchantwort | Gastgeber → alle | zusätzlich `gid`, `gen`, `epoch` und `conn` (Zahl der verbundenen entfernten Menschen, für den Wächter 10.11); nur mit laufender Partie, aus `welcome_extra` | ignorieren |
+| `hello` (App) | Gast → Gastgeber | zusätzlich `hp`, `bk_gid` (gid der Sicherung) und `ap:{ok, perm}`. `hp` ist der Port, auf dem dieses Gerät als Gastgeber lauschen würde (`HostSwitch.port_first`, Standard 24690). `ap.ok`: Das Gerät kann ein Spiel-WLAN öffnen (LocalOnlyHotspot vorhanden); `ap.perm`: Die Erlaubnis dafür ist schon erteilt | – |
+| `welcome` (aus `assign_seat`) | Gastgeber → Gast | zusätzlich `assigned:true` (10.10) | ignorieren (Lite alt: unschädlich, siehe 10.10) |
+| `handover_ok` | Ziel → Gastgeber | `{port, qr}`: Das Ziel führt. `port` ist sein Server; `qr:true` heißt, es öffnet ein eigenes Spiel-WLAN (keine LAN-Adresse) | – |
+| `move` | Gastgeber → Gäste | `{gid, gen, epoch, name, how:"lan"\|"online"\|"qr", addr, port, room, relay, url}` | ignorieren |
+| `hosts` | Gastgeber → Browser | `{gid, gen, list:[{name, url}], online, ap, ap_name}`. `url` ist `http://<addr>:<hp>/` je Erbe mit Link „wlan“, in Rangfolge; `online` ist der Raum-Link oder ""; `ap` wie `wlan.ap`, `ap_name` ist der Name dessen, der bei Verlust des Spiel-WLANs ein neues öffnet (10.8). Geht bei `start` und `resume` **immer** hinaus (auch mit leerer Liste), nach jeder Übernahme mit der neuen `gen` und bei jeder Änderung | ignorieren |
+
+- **`/info` und Suche:** `make_info` bleibt. `NetHostSession.info()` (`net_session.gd:535`) ergänzt `gid`, `gen` und `epoch` aus `welcome_extra`. Danach muss `HostTable._update_welcome()` (`host_table.gd:741`) `/info` und die Suche auffrischen. Das geht über `session._changed()` oder ein neues `session.set_game_mark(gid, gen, epoch)`, das beides erledigt.
+- **Suchantwort lesen:** `parse_reply` (`net_protocol.gd:578`) übernimmt `gid` (hex, ≤ 32), `gen` (int ≥ 0), `epoch` (hex, ≤ 16) und `conn` (int 0–16). `NetDiscovery.games` führt sie je Eintrag.
+- **Uhr der Suche:** `NetDiscovery` zählt heute mit `Time.get_ticks_msec` (Abfrageabstand, Verfall). Neu ist `now_ms: Callable` (Standard `Time.get_ticks_msec`), auch für `scan_ms`; die Tests spritzen die Uhr ein.
+- **Nachrichten der Gäste:** `clean_client_message` übernimmt `hp` (1024–65535), `bk_gid` (hex, ≤ 32), `ap` (`ok`/`perm` bool) und den neuen Typ `handover_ok` (`port` int, `qr` bool). Neu sind `make_move`, `clean_move` und `make_hosts`. `clean_move` prüft auf dem Gast die `gid` wie `clean_backup_message`.
+- **`bk_token` nur bei passender `gid`:** `_hello` (`net_session.gd:631`) nimmt `bk_token` nur noch, wenn `bk_gid == welcome_extra.gid`. Grund: Der Gast schickt `bk_token` künftig an jede Adresse (10.6). Ein fremder Gastgeber lernt so höchstens ein Token, das bei ihm nichts gilt.
+- **Abstammung nur für dieselbe Partie:** `_check_lineage` überspringt Gäste mit anderem `bk_gid`. Das ersetzt das `handover_no` für fremde Partien aus 4.7.
+- **Neue Konstanten** in `NetProtocol`:
+  - `HOST_SCAN_MS` = 5000 (Gastgeber-Wächter)
+  - `LAN_SEARCH_MS` = 2000 (Suche vor der Übernahme)
+  - `PAST_MAX` = 16 (frühere Gastgeber-Adressen)
+
+### 10.2 Schnappschuss-Ergänzungen (`format` bleibt 2)
+
+- **`seats[*].addr`:** die IPv4, unter der der Gastgeber diesen Platz zuletzt im WLAN sah (`players[id].address`, nur bei Link „wlan“).
+- **`seats[*].hp`:** der Port aus `hello.hp`. `addr` und `hp` setzt `_note_link`.
+- **`seats[*].ap`:** `{ok, perm}` aus `hello.ap` (10.1), nur im Speicher des Gastgebers und im Schnappschuss; ältere Apps ohne Feld gelten als `{ok:false, perm:false}`.
+- **`wlan: {port, addrs, ap, ap_seat, past}`:**
+  - `ap`: Die Partie läuft in einem Spiel-WLAN (`NetAddresses.binding() == "hotspot"` beim Gastgeber, oder der Gastgeber sitzt selbst im Spiel-WLAN eines Mitspielers, siehe `ap_seat`). Die Gäste wissen damit: Fällt das Spiel-WLAN weg, ist ihr Netz weg (10.8).
+  - `ap_seat`: der Platz, dessen Handy das Spiel-WLAN führt (−1 ohne Spiel-WLAN). Normalerweise der Gastgeber. Nach einer Übernahme innerhalb des noch bestehenden Spiel-WLANs (alter Gastgeber nur abwesend oder eingefroren) bleibt es der alte Platz (10.8, „Übernahme im fremden Spiel-WLAN“).
+  - `past`: frühere Gastgeber-Adressen dieser Partie als `"ip:port"`. Die Liste wächst über die ganze Kette (A → B → C), höchstens `PAST_MAX` Einträge. Sie ist die Grundlage der Herkunftsprüfung (10.9).
+- **Eigene Adressen auffrischen und Neu-Binden** (Gegenprüfung): Heute hängen `rebind` und die Zustandsabfrage am `_process` von `GameWifiPanel`; am Tisch lebt das Panel nur im SeatManager-Overlay. Schließt der neue Gastgeber das Overlay zu früh, bleibt der Server ans alte Netz gebunden. Neu ist deshalb **`GameWifiWatch`** (`game/scripts/app/game_wifi_watch.gd`, Node, Zustandsquelle einspritzbar, Standard `NetAndroid.game_wifi_state`):
+  - Der `TableScreen` des Gastgebers legt ihn an, solange eine Netzpartie läuft (auch ohne geöffnetes Overlay).
+  - Alle 1,5 s: Zustand lesen; ändert sich Spiel-WLAN (auf/zu, Adresse da) oder die Bindung, dann `session.rebind(…)` wie heute im Panel, danach `HostTable.refresh_addrs()` (neu: `_note_addrs`, `wlan.ap`/`ap_seat` fortschreiben, `hosts` neu verteilen, `bk` neu).
+  - `GameWifiPanel` liest nur noch `GameWifiWatch.state` und zeigt an; im Lobby-Ablauf (ohne Tisch) bleibt sein eigenes Neu-Binden wie bisher.
+- **`resume()` und `link` des alten Gastgebers** (`host_table.gd:251-252`): `seats[old_hs].link` wird nur dann `"online"`, wenn der Schnappschuss einen Raum hat; sonst `"wlan"`. Sonst stimmen Rangfolge (10.3) und `how` einer Übergabe an ihn (10.7) nicht.
+- **`wlan_humans`** bleibt als Feld in `MatchSnapshot.clean`, sperrt aber nichts mehr.
+
+### 10.3 Ersatz-Rangfolge (ersetzt die Stufe-1-Sperre aus 4.2)
+
+- **`heirs()`** (`host_table.gd:629`): App-Gäste im `bk`-Verteiler, die verbunden und nicht `away` sind, im Uhrzeigersinn ab dem Gastgeber.
+  - In gemischten Partien kommen zuerst alle mit Link „wlan“, dann die mit Link „online“. Grund: Ein WLAN-Erbe erreicht beide Gruppen (LAN und Raum), ein Online-Erbe nur die Online-Gäste direkt.
+  - Online-Erben gibt es nur, wenn die Partie einen Raum hat **und keine WLAN-Mitspieler am Tisch sitzen** (`wlan_humans()`, Gegenprüfung der Umsetzung): Fällt beim Gastgeber nur das Internet aus, merken die WLAN-Gäste nichts (der Server-Thread antwortet), und ein Online-Erbe eröffnete ein zweites Spiel. Von Hand („Spiel als Gastgeber fortsetzen“ mit Warnzeile) bleibt es möglich.
+  - WLAN-Erben sperrt `wlan_humans()` nicht mehr.
+- **Spiel-WLAN (`wlan.ap`):** Innerhalb jeder Gruppe kommen Geräte mit `ap.ok` zuerst (die mit `ap.perm` vor denen ohne), danach die übrigen im Uhrzeigersinn. So erbt nach Möglichkeit ein Handy, das sofort ein eigenes Spiel-WLAN öffnen kann. Nur Rang 0 übernimmt automatisch (10.8).
+
+### 10.4 Erkennung ohne Vermittler (Gast-Wächter, `HostSwitch`)
+
+- **Scharf auch im WLAN:** `_armed` (`host_switch.gd:398`) verlangt nicht mehr `client.is_online()`. Nötig sind wie bisher eine Sicherung derselben `gid`, dazu WLAN oder Raum.
+- **Lebenszeichen:** Im WLAN zählt jede Nachricht des Gastgebers als `last_host_wall`, auch das `pong`.
+  - Der Netz-Thread des Servers beantwortet `ping` selbst bei angehaltener Hauptschleife (`net_server.gd:12`). Solange der Prozess lebt, erkennt also niemand einen Ausfall.
+  - Ist der Gastgeber nur in einer anderen App, kommt zusätzlich `away`; dann gilt T_AWAY wie online.
+- **Gegenstück zu 4503:** `NetClient.host_lost_wall` ist der erste gescheiterte Neuversuch seit der letzten Annahme (Verbindung verweigert, Frist abgelaufen oder Schließen ohne Code). `deadline_for(last, lost, away_since, …)` bleibt unverändert; `lost` tritt an die Stelle von `gone`.
+- **Gegenstück zu `reached` („eigenes Netz weg“):** `HostSwitch.lan_ok()` ist wahr, wenn eine eigene Adresse im Netz des alten Gastgebers liegt.
+  - Grundlage ist `NetAddresses.interfaces()` (liefert `address` und `prefix`; `own_addresses()` hat kein Präfix) und der Vergleich über das neue `NetProtocol.same_net(a, b, prefix)`. In Tests ist die Prüfung einspritzbar (`net_check: Callable`).
+  - Ohne `lan_ok` wird **nie** automatisch übernommen. Ausnahme: Spiel-WLAN, Rang 0 (10.8).
+- **Abläufe:**
+  1. *watch*: Ist die Frist überschritten, geht es nach *missing*. Der Gast verbindet neu an die alte Adresse (`reconnect_now()`) und startet eine eigene `NetDiscovery`-Suche. Sie geht als Rundruf und zusätzlich per Unicast (`manual`) an die `wlan.addrs` des alten Gastgebers und die `addr` aller Erben; Unicast hilft, wenn der Router Rundrufe filtert.
+  2. *missing*, nach `probe_ms` (8 s):
+     - Kommt ein `welcome`, geht es zurück nach *watch*.
+     - Findet die Suche die `gid` mit `gen ≥ Sicherung.gen`, **folgt** der Gast (10.5).
+     - Sonst geht es nach *waiting* mit der Wartezeit Rang × `T_STEP`, nur mit `lan_ok` und aktueller Sicherung. Die Suche läuft weiter; ein Fund beendet das Warten, und der Gast folgt.
+  3. *checking* (statt `/info` und frischer Probe): `LAN_SEARCH_MS` lang suchen, dazu eine frische Verbindung zur alten Adresse. Bei einem Fund folgt der Gast, bei einem `welcome` geht es zurück nach *watch*.
+     - **Gemischt** kommt die Prüfung von 1.6.1 beim Vermittler dazu: `/info` und eine Probe mit eigenem Token über einen eigenen `NetClient.connect_probe`.
+     - Antwortet dort ein Gastgeber, folgt der Gast über den Raum (`_follow_room`) und übernimmt nicht.
+     - Ist der Vermittler nicht erreichbar, zählt nur das LAN.
+  4. *taking*: `_take_over` wie 1.6.1. Ohne Raum gilt die Übernahme sofort (`_finish_take`, `host_switch.gd:456`); gemischt mit Raum wartet sie wie online auf den `room`-Rahmen – außer bei einem WLAN-Erben ohne Vermittler (10.12).
+- **Fristen unverändert:** `T_SILENT` 40 s, `T_STEP` 12 s, `PROBE_MS` 8 s. Ein Ausfall im WLAN führt damit nach ≈ 40–50 s zur Übernahme durch Rang 0.
+
+### 10.5 Folgen nach Übernahme oder Umzug (App-Gast)
+
+- **`ClientTable.move_to(addr, port)`** (neu): Der Gast-Socket schließt ohne `bye`, dann folgt `join(addr, port, _name, eigener Platz-Token)`. Die Sicherung bleibt im Speicher; es ist wie `resume_guest`, nur mit neuer Adresse.
+  - Der Tisch bleibt derselbe, der `HostSwitch` braucht keinen Wechsel.
+  - Der `NetClient` speichert Tokens je `ip:port` (`net_client.gd:625`). Deshalb wird das Platz-Token ausdrücklich übergeben.
+  - `head` und `head_gid` bleiben wie die Sicherung erhalten (`join()` leert sie heute, `client_table.gd:87`); sonst ist `backup_current()` bis zum nächsten `bk` falsch und die Automatik gesperrt.
+  - `move_to` sendet das neue Signal `moved`. Der `HostSwitch` ruft darauf `_back_to_watch(now)` mit `_probe_welcomes = 0` und `_armed_at = now`: Der neue `NetClient` beginnt mit `welcomes = 0` und `last_host_wall = 0`; mit den alten Zählern ginge *watch* sofort nach *missing* bzw. *missing* nie zurück nach *watch* (`host_switch.gd:307-318`).
+- **`_follow_room(relay, room)`:** dasselbe mit dem Raum-Link.
+- **Auslöser:** Suche (10.4), `move` (10.7) und die Niederlage des eigenen Gastgebers gegen den Wächter (10.11).
+
+### 10.6 Sicherung beim Beitritt (Adresse egal)
+
+- **Laden:** `ClientTable._load_backup` (`client_table.gd:272`) lädt die Datei heute nur bei gleichem Raum. Neu lädt es sie bei jeder Adresse und jedem Raum, wenn sie `MatchSnapshot.resumable(d, now, true)` ist.
+- **`resumable(d, now, ignore_room := false)`:** Mit `ignore_room` prüft es das Raumalter (`ROOM_LIFE_S`, `match_snapshot.gd:113`) nicht. So genutzt beim Laden hier und für 10.13 (Raum nach 24 h beendet); ohne `ignore_room` nur, wenn der alte Raum benutzt werden soll (`saved_offer` für „Raum übernehmen“, 1.6.1).
+- **Mitschicken:** `hello.bk`, `bk_token` und `bk_gid`. Der Gastgeber nimmt `bk_token` nur bei passender `gid` (10.1).
+- **Folge:** App-Gäste landen über **jeden** Weg auf ihrem Platz: Suche, QR-Scanner im neuen Spiel-WLAN, neuer Raumcode oder eingetippte Adresse.
+- Die Löschregeln aus 2. bleiben, z. B. bei `start` mit fremder gid oder bei `lobby` ohne `waiting` derselben Partie.
+
+### 10.7 Geplante Übergabe im WLAN und gemischt
+
+**Wann sie geht:** `handover_block` (`host_table.gd:653`) erlaubt jetzt WLAN, Spiel-WLAN und gemischte Partien.
+- Ausgegraut bleiben Gäste ohne App oder ohne `bk`, nicht verbundene oder `away`, und der eingefrorene Tisch.
+- Gemischt mit Online-Ziel bleibt die Übergabe zusätzlich gesperrt, solange der Raum nicht `open` ist.
+- Bei `how:"qr"` sind Ziele ohne `ap.ok` ausgegraut (Grund „Kann kein Spiel-WLAN öffnen.“); Ziele ohne `ap.perm` bleiben wählbar, die Zeile sagt dann „Muss das Spiel-WLAN erlauben.“
+
+**Warnzeilen im Auswahldialog:**
+- Führt der Gastgeber ein Spiel-WLAN: „Alle müssen danach einen neuen QR-Code scannen.“
+- Ist das Ziel online und sitzen WLAN-Mitspieler am Tisch: „WLAN-Mitspieler brauchen dann Internet.“
+
+**Art der Übergabe (`how`):** `online`, wenn das Ziel online verbunden ist – auch wenn der Gastgeber ein Spiel-WLAN führt (Gegenprüfung der Umsetzung: sonst öffnete ein entferntes Ziel ein Spiel-WLAN, das keiner erreicht); sonst `qr`, wenn `wlan.ap` gilt und der Gastgeber das Spiel-WLAN selbst führt (`ap_seat == host_seat`); sonst `lan` (auch im Spiel-WLAN eines Dritten, das bestehen bleibt). Die Warnzeile „Alle müssen danach einen neuen QR-Code scannen.“ gilt nur für `qr`-Ziele.
+- `how` übersteht `clean_backup_message`, damit auch ein Ziel ohne beobachteten Gast-Tisch (Zustände *joining*, *resuming*; Abstammung) die richtige Art kennt.
+- Der alte Gastgeber folgt der Antwort des Ziels: `qr` nur bei `handover_ok.qr`, mit Port sonst `lan`.
+
+**Ablauf:**
+1. **Gastgeber:** schickt `{t:"handover", z, within_ms, how}` an das Ziel, friert ein und meldet allen „Gastgeber wechselt zu %s …“ (wie 4.1).
+2. **Ziel** (`HostSwitch._handle_handover`). Immer zuerst `adopt_backup`, dann je nach `how`:
+   - `lan`:
+     1. `HostTable.resume(d, seat)`: Der Server lauscht, der eigene Gast-Socket bleibt offen.
+     2. `handover_ok{port}` über diesen Socket. **Danach den Socket leeren:** `ClientTable.send_and_drain(msg, max_ms = 300)` (neu) bzw. `NetClient.drain(max_ms)` fragt den `WebSocketPeer` per `poll()` ab, bis `get_current_outbound_buffered_amount() == 0` oder die Frist um ist. Erst dann `ct.suspend()`. Grund: Godot schreibt erst in `poll()`, und `_drop_client` gibt den `NetClient` sofort frei (`client_table.gd:372-384`); ohne Leeren käme `handover_ok` womöglich nie an, der alte Gastgeber tauete nach `HANDOVER_TIMEOUT_MS` auf, und es gäbe zwei Gastgeber.
+     3. **Erst jetzt** bei Raum `open_online_existing`. So kommt `handover_ok` beim alten Gastgeber vor dem 4000 an.
+   - `qr`: `handover_ok{qr:true}` sofort und geleert wie oben, dann `ct.suspend()`, `QrJoin.wifi_release()`, `resume`, gegebenenfalls Raum, dann ein eigenes Spiel-WLAN (10.8, **automatisch mit Wiederholung**).
+   - `online`: wie 1.6.1 (4000). `handover_ok` geht zusätzlich hinaus und schadet nicht.
+   - Die Frist `within_ms` gilt wie 1.6.1. Ohne Raum zählt nur der Server-Start. Scheitert er, bricht das Ziel ab (`_take_failed`) und ist wieder Gast.
+3. **Alter Gastgeber** bei `handover_ok` vom Ziel (nur während der laufenden Übergabe):
+   - Er schickt `move` an alle anderen verbundenen Gäste:
+     - `lan`: `addr` ist die Adresse des Ziels aus Sicht des Gastgebers (`players[id].address`), `port` kommt aus `handover_ok`, `url = http://addr:port/`.
+     - `qr`: der Name des Ziels.
+     - `online`: an die WLAN-Gäste `room`, `relay` und als `url` den Raum-Link.
+   - Online-Gäste brauchen kein `move`; sie folgen über 4000/4012 wie in 1.6.1.
+   - Danach **`session.drain(500)`** und erst dann `stepped_down` mit Ziel `{how, addr, port | room, relay}` (neues Feld `HostTable.step_target`). `session.flush()` genügt nicht: Mit Server-Thread tut es nichts, und `handover_shutdown` → `_close_session("", false)` → `server.stop()` setzt `_quit`, leert `_cmds` und schreibt nur den Close-Rahmen (`net_server.gd:173-188`, `340-347`); noch nicht verarbeitete Befehle und volle `out`-Puffer gingen verloren.
+     - Neu `NetServer.drain(max_ms)`: Im Thread (bzw. bei `threaded = false` direkt) erst alle `_cmds` abarbeiten, dann schreiben, bis alle `out`-Puffer leer sind, höchstens `max_ms`. Ohne Thread genügt ein Schleifen-`poll()`. Rückgabe: true, wenn alles hinaus ist.
+     - `NetHostSession.drain(max_ms)` ruft `server.drain` und `relay.flush()`.
+   - **Gemischt:** Kommt das 4000 vor `handover_ok`, geht `move` mit `port = hp` des Ziels hinaus (Rückfall). Was zuerst kommt, löst das Abtreten aus; das Zweite wird verworfen.
+4. **Abtreten** (`_on_stepped_down`; heute steht dort „WLAN: Stufe 2“, `host_switch.gd:662`):
+   - `lan`: Gast-Tisch mit `join(addr, port, Name, Platz-Token)` und eigener Datei.
+   - `online`: wie 1.6.1.
+   - `qr`: Der alte Gastgeber schließt sein Spiel-WLAN (`NetAndroid.game_wifi_stop`) und geht in den Zustand *scan* (10.8). Er scannt wie alle den neuen QR-Code.
+     - Das Schließen wartet auf das `drain` aus Schritt 3; danach ist das Netz der anderen ohnehin weg, sie gehen nach *scan* bzw. folgen `move qr`.
+5. **Fehlschlag ohne Raum:** Bleibt `handover_ok` `HANDOVER_TIMEOUT_MS` lang aus, taut der Gastgeber auf wie in 4.1, nur ohne `check_now`. Hat das Ziel doch noch übernommen, entscheidet der Gastgeber-Wächter: Die `gen` des Ziels ist höher.
+6. **Abstammung** (`own:true`): derselbe Ablauf, `how` nach denselben Regeln.
+
+### 10.8 Spiel-WLAN
+
+**Ausfall** (der alte Gastgeber hatte `wlan.ap`):
+- **Auslöser:** Das Netz des Gastgebers ist weg (`lan_ok` falsch). Wer per QR beigetreten ist, sieht zusätzlich den `QrWifi`-Zustand „lost“ oder „unavailable“, und `QrJoin.check_lost` gibt die Anfrage frei.
+  - Die Frist ist `T_SILENT` ab `host_lost_wall`.
+  - Ist das Netz noch da (der Gastgeber ist nur angehalten), gilt der normale WLAN-Ablauf mit `away` – siehe „Übernahme im fremden Spiel-WLAN“ unten.
+- **Wer ein neues Spiel-WLAN öffnet:** Ist `ap_seat == host_seat` (der Gastgeber führte das Netz und ist mit ihm weg), ist es Rang 0. Ist `ap_seat != host_seat` (der Gastgeber saß im Spiel-WLAN eines anderen, siehe unten), ist es **der Gastgeber selbst**: Er lebt ja noch und hat den Stand; die Gäste übernehmen nicht, sondern gehen nach *scan* mit seinem Namen. `hosts.ap_name` (Lite) und der Name im Streifen folgen derselben Regel.
+- **Nur Rang 0 übernimmt automatisch.** Die übrigen sehen eine Übernahme nicht, weil sie in einem anderen Netz sind; ein Rang 1 eröffnete sonst ein zweites Spiel.
+  - Gegenprüfung der Umsetzung: nicht sofort, sondern nach weiteren `T_STEP` mit Countdown. „Netz weg“ kann auch ein Funkloch nur dieses Geräts sein; Neuverbinden und Suche laufen weiter, ein `welcome` beendet das Warten. Bleibt es länger weg, entstehen zwei Spiele (10.17).
+- **Reihenfolge bei Rang 0:**
+  1. Stand aus der Sicherung.
+  2. `QrJoin.wifi_release()` **vor** `resume`, damit `bind_for("host")` nicht am toten Netz hängt.
+  3. `HostTable.resume`.
+  4. Spiel-WLAN: Der Tisch öffnet `SeatManager` auf „Dazuholen“. Ist die Erlaubnis schon erteilt, öffnet `GameWifiWatch.auto_open()` das Spiel-WLAN ohne Tippen, unabhängig davon, ob das Overlay offen bleibt. **Wiederholung:** Meldet Android `incompatible_mode` oder hängt das Gerät noch im alten Netz (System-WLAN oder Kamera-QR, wo `wifi_release` nichts trennt), versucht es höchstens 3-mal im Abstand von 2 s erneut; erst dann erscheint „Neu öffnen“ mit dem vorhandenen Hinweis. Ohne Erlaubnis erscheint der Knopf „Spiel-WLAN öffnen“ mit dem Erlaubnisdialog.
+  5. `rebind` über `GameWifiWatch` (10.2), `wlan.ap_seat = host_seat`, Warteliste an (10.10).
+  - Der neue Gastgeber sieht: „Du bist jetzt Gastgeber. Öffne das Spiel-WLAN und lass die anderen den QR-Code scannen.“
+- **Übrige App-Gäste:** Zustand *scan*.
+  - Streifen „Spiel-WLAN von %s ist weg.“, dazu der Knopf „Neues Spiel-WLAN bei %s – QR-Code scannen“. `%s` ist Rang 0 laut Sicherung.
+  - Der Knopf ruft `ct.suspend()` auf (kein Verlassen, die Datei bleibt) und dann `nav.replace(JoinScreen.rejoin(gid))`. `rejoin` öffnet sofort den Scanner; danach läuft der vorhandene Weg: WLAN-QR → `QrWifi` → Suche bzw. Spiel-QR → `join`.
+  - `rejoin` tritt dem gefundenen Spiel mit passender `gid` ohne Namensfeld bei. Der Name kommt aus der Sicherung, der Platz über `bk_token` (10.6).
+  - Während *scan* sucht der `HostSwitch` weiter. Sind alle im selben Ersatz-WLAN gelandet, folgt der Gast ohne Scan.
+  - Von Hand bleibt „Spiel als Gastgeber fortsetzen“, mit der Warnzeile „Nur wenn %s nicht übernimmt – sonst gibt es zwei Spiele.“
+- **Browser-Gäste:**
+  1. WLAN-QR mit der Kamera, dann Spiel-QR. Das ergibt eine neue Seite mit neuem Ursprung und ohne Token.
+  2. Name eingeben, dann stehen sie auf der Warteliste.
+  3. Der Gastgeber tippt „Auf den Platz von %s setzen“ (10.10).
+- **Der alte Gastgeber kommt zurück** (Hauptmenü, `role:"host"`, `wlan.ap`): Es kommt eine Rückfrage mit zwei Knöpfen, auch bei einer Datei < 5 min, denn er kann nicht sehen, ob jemand übernommen hat:
+  - „Spiel-WLAN neu öffnen“: eigener Zweig, `gen` bleibt.
+  - „Beim neuen Gastgeber scannen“: `JoinScreen.rejoin`.
+
+**Übernahme im fremden Spiel-WLAN** (Gegenprüfung): Der alte Gastgeber ist nur abwesend oder eingefroren, sein Spiel-WLAN besteht weiter. Dann übernimmt Rang 0 nach dem normalen WLAN-Ablauf (`T_AWAY`) als Teilnehmer in diesem Netz.
+- Der neue Schnappschuss behält `ap:true` und `ap_seat` = Platz des alten Gastgebers.
+- Kommt der alte Gastgeber zurück, wird er Gast (Wächter 10.11 bzw. Abstammung); sein Handy führt das Netz weiter.
+- Fällt das Spiel-WLAN später weg (App des alten Gastgebers geschlossen, er verlässt den Tisch), sieht das der neue Gastgeber über `GameWifiWatch` bzw. `QrWifi` „lost“. Er verhält sich wie Rang 0 oben (eigenes Spiel-WLAN, `ap_seat = host_seat`), seine Gäste gehen nach *scan* mit seinem Namen. Verlässt der alte Gastgeber den Tisch regulär, warnt sein „Tisch verlassen“ zusätzlich: „Dein Spiel-WLAN geht dann zu – alle müssen einen neuen QR-Code scannen.“
+- Ohne `ap_seat` (Schnappschuss einer 1.6.1-App) gilt `ap_seat = host_seat`.
+
+**Geplant:** wie 10.7 mit `how:"qr"`. Das Ziel öffnet sein Spiel-WLAN automatisch mit Wiederholung (oben, Schritt 4).
+
+**Fehler in `QrWifi.release`** (`QrWifi.java:176-198`): Nach `onLost` ist `network` schon `null`. Deshalb löst `release()` die Prozessbindung nicht (`n != null && n.equals(bound)`). Der Prozess bleibt an ein verlorenes Netz gebunden, und neue Sockets für Server, Suche und Vermittler scheitern.
+
+Lösung:
+- `bind()` merkt sich das gebundene Netz (`boundNetwork`); `onLost` löscht es nicht.
+- `release()` löst die Bindung, wenn `getBoundNetworkForProcess()` gleich `boundNetwork` ist oder zu keinem Netz mit Fähigkeiten mehr gehört (`getNetworkCapabilities(bound) == null`).
+- `QrJoin.wifi_release()` setzt außerdem `NetAddresses.bound_to` zurück (heute nur bei `"qr_wifi"`), damit die nächste `bind_for` neu bewertet.
+
+**STA/AP-Gleichzeitigkeit:** Ein Gast im fremden Spiel-WLAN, der selbst eines öffnet, verlässt immer zuerst das alte (release).
+- Mit Gleichzeitigkeit (`GameWifi`-Feld `concurrency`) wäre das nicht nötig, schadet aber nicht.
+- Ohne Gleichzeitigkeit trennt Android beim Öffnen das WLAN oder meldet `incompatible_mode`. Dann erscheinen der vorhandene Hinweis und „Neu öffnen“.
+- Wer über die Systemeinstellungen beigetreten ist (Android < 10, `old_android_text`): `release` wirkt nicht. Android wechselt nach dem Verschwinden des Netzes von selbst.
+
+### 10.9 Lite im WLAN
+
+- **Merken:** Lite nimmt `gid` und `gen` **aus `hosts`**, nicht aus `welcome`: Beim Beitritt in der Lobby ist `welcome_extra` leer, und `start` trägt keine gid (`net_session.gd:492`). Der Gastgeber schickt `hosts` an Browser-Gäste nach jedem `welcome` während der Partie, bei `start` und `resume` immer (auch mit leerer Liste), nach jeder Übernahme mit der neuen `gen` und bei jeder Änderung der Liste. Lite merkt sich die letzte Liste samt `ap` und `ap_name`.
+- **Reihum-Probe** (`netz.js`, `Verbindung`):
+  - Sie beginnt, wenn der Status seit mindestens `LITE_SUCHE_AB` = 20 s „getrennt“ ist und eine Liste vorliegt.
+  - Alle 5 s fragt Lite je Eintrag `fetch(url + "info")` ab (Abbruch nach 2 s, `no-store`). `/info` hat `Access-Control-Allow-Origin: *` (`net_server.gd:673`).
+  - Treffer: gleiche `gid` und eine `gen` über der bekannten. Dann `verbindung.umziehen(ws-URL)` (neue URL, `versuche = 0`, sofort verbinden) und `hostBasis = url`.
+  - Das Token liegt weiter im Speicher des alten Ursprungs und geht im `hello` mit. Der neue Gastgeber kennt es aus `seats`.
+  - Overlay: „Gastgeber fehlt – suche den neuen Gastgeber …“.
+- **`move`:**
+  - `lan`: sofort umziehen, ohne `/info`.
+  - `online`: Kasten „Das Spiel läuft jetzt über das Internet weiter.“ mit Knopf „Weiter“; der Knopf führt `location.assign(url + "#t=" + Token + "&n=" + Name)` aus.
+  - `qr`: Kasten „Neues Spiel-WLAN bei %s. Verbinde dich mit dem WLAN-Code auf diesem Handy und scanne dann den Spiel-Code.“
+- **Online-Eintrag der Liste:** erst nach mindestens `LITE_ONLINE_AB` = 60 s erfolgloser LAN-Probe, als Knopf „Über das Internet weiterspielen“ (dieselbe Navigation wie bei `move online`).
+- **Ungeplanter Verlust des Spiel-WLANs** (`hosts.ap`): Nach 20 s „getrennt“ zeigt Lite den Kasten wie bei `move qr` mit `ap_name` („Neues Spiel-WLAN bei %s …“). Die Reihum-Probe läuft trotzdem weiter. „Seite neu laden“ ist dann ausgeblendet, solange `hostBasis` der eigene (tote) Ursprung ist – sonst zeigte der Browser nur eine Fehlerseite, und Lite wäre weg.
+- **„Seite neu laden“** (`#verbinde-laden`, `#ende-zurueck`, `app.js:223-224`): Weicht `hostBasis` vom eigenen Ursprung ab, folgt `location.assign(hostBasis + "#t=…&n=…")`; sonst wie bisher `reload()`.
+- **Start** (`init`):
+  1. `#t=` und `#n=` lesen.
+  2. Das Token unter dem passenden Schlüssel speichern (`token` bzw. `token:CODE`, `app.js:69`) und den Namen vorbelegen.
+  3. Den Hash mit `history.replaceState` entfernen.
+  - Der Knopf zeigt dann „Weiterspielen“. Automatisch beitreten gibt es nicht, weil Ton und Vollbild ohnehin einen Tipp brauchen.
+- **Herkunftsprüfung** (`net_server.gd:939`): Die Lite-Seite des alten Gastgebers verbindet sich mit `Origin: http://<alt>:<port>` zum neuen.
+  - Neu: `NetServer.set_extra_origins(list)`, unter `_mutex` gesetzt und im Netz-Thread gelesen, und `origin_allowed(origin, host, extra)`.
+  - Erlaubt sind nur exakte `http://<IPv4>:<Port>` aus `wlan.past` ∪ (`wlan.addrs` × `wlan.port`) des Schnappschusses.
+  - `HostTable.resume` setzt die Liste und schreibt `past` fort; `NetHostSession` reicht sie durch.
+- **Dateien vom alten Ursprung:** Töne lädt Lite beim Start (`ton.js`), Kartenbilder prüft `karten.js` vorab. Was noch nicht geladen war, fehlt bis „Seite neu laden“. Das ist niedrig; im Chrome-Test ansehen.
+- **Netzregeln von Chrome** (Private Network Access, Local Network Access): Anfragen von einer Seite mit privater Adresse an eine andere private Adresse sind erlaubt. Der Chrome-Test deckt `fetch /info` und den WebSocket über Ursprünge ab.
+- **Alte Lite-Fassungen:**
+  - Im WLAN gibt es keine. Die Seite kommt vom Gastgeber, und alle Apps einer Partie haben dieselbe Version (`check_hello`). Ein Tab aus einer früheren Sitzung bekommt „reject version“ → „Seite neu laden“.
+  - Lite 1.6.1 (online) ignoriert `hosts` und `move` und folgt online wie in 1.6.1.
+  - Bleibt doch ein altes Lite hängen, führt der Weg über Spiel-QR → Warteliste → „Auf den Platz von %s setzen“.
+
+### 10.10 „Auf den Platz von %s setzen“ (`seat_assign`) und Warteliste nach Übernahmen
+
+- **`HostTable.seat_assign(waiting_id, seat) -> bool`** geht nur, wenn:
+  - die Partie läuft und der Tisch nicht eingefroren ist,
+  - `waiting_id` auf der Warteliste steht,
+  - `seat` ein entfernter Menschenplatz ist (nicht der Gastgeber, kein Computer), dessen Spieler nicht verbunden ist.
+  - Eine Vertretung durch den Computer endet dabei.
+- **`NetHostSession.assign_seat(waiting_id, seat_id)`:**
+  - Verbindung, `kind`, `address`, `online` und `bk` des Wartenden gehen auf den Platz-Spieler über. Der Eintrag des Wartenden fällt weg.
+  - Auf derselben Verbindung folgt ein zweites `welcome` mit id und Token des Platzes, dann `player_rejoined(seat_id)`. Wie bei einer Rückkehr gehen danach `start{seat}` und der Stand hinaus.
+  - Das zweite `welcome` trägt `assigned:true`. `NetClient` (`net_client.gd:516-525`) setzt dann weder `readmitted` noch `removed` und übernimmt das neue Token als `_sent_token`. Nötig, weil ein App-Gast mit einem alten Token aus der Token-Datei für dieselbe `ip:port` ein nicht leeres `_sent_token` hat; die frühere Annahme „bei Neuen leer“ stimmt nur für Lite.
+  - Lite (`app.js:426`) kommt mit einem zweiten `welcome` zurecht (`_sent_token`-Logik gibt es dort nicht); alte Lite-Fassungen ebenso. Die Tests prüfen beides ausdrücklich.
+- **SeatManager:** In der Zeile eines Wartenden steht neben „An den Tisch holen“ und „Ablehnen“ je getrenntem Menschenplatz der Knopf „Auf den Platz von %s setzen“; bei mehreren Plätzen eine Auswahl.
+  - Rückfrage: „%s spielt dann mit den Karten von %s weiter.“
+  - Knöpfe: „Hinsetzen · Abbrechen“.
+- **Warteliste nach einer Übernahme:** `join_open` geht an, solange ein Menschenplatz getrennt ist; danach gilt wieder der vorige Wert. Neue landen so auf der Warteliste statt bei „reject running“. Kommt jemand dazu, sieht der Gastgeber: „%s möchte mitspielen – ☰ → Mitspieler dazuholen.“
+
+### 10.11 Gastgeber-Wächter (zwei Gastgeber im selben Netz)
+
+- **Suche im Gastgeber-Modus:** `NetDiscovery` bekommt `scan_ms` (Standard `HOST_SCAN_MS`).
+  - Sie schickt „MMF?“ an den Rundruf und per Unicast an `manual` (Erben-Adressen und `wlan.past`).
+  - Antworten wertet sie auf demselben Socket aus und übergeht die eigene `sid`. Heute verwirft `_poll_host` (`net_discovery.gd:130`) alles außer Anfragen.
+  - Bei gleicher `gid` kommt das Signal `rival(info)`.
+- **Für Tests:** `ports: Array` (Anfragen an mehrere UDP-Ports), weil mehrere Gastgeber auf 127.0.0.1 nicht denselben Port binden können.
+- **`HostTable._on_rival(info)`:** Beide Seiten rechnen dieselbe symmetrische Regel aus den Werten ihrer Suchantworten (`conn`, `gen`, `epoch`; die eigenen Werte so, wie die eigene Suchantwort sie gerade meldet). Der andere gewinnt, wenn
+  1. sein `conn` (verbundene entfernte Menschen) größer ist, oder
+  2. bei gleichem `conn` seine `gen` größer ist, oder
+  3. bei gleichem `conn` und gleicher `gen` seine `epoch` (Zeichenvergleich).
+  - Grund (Gegenprüfung): „Höhere `gen` gewinnt“ allein verwirft den Zweig, an dem die Mehrheit weitergespielt hat (z. B. Gast-Aussetzer: Rang 0 übernimmt allein, alle anderen spielen beim alten Gastgeber weiter). Verloren gingen alle Züge seit der Abspaltung.
+  - **Abtreten erst bei zwei gleichen Ergebnissen hintereinander** (zwei Scans, ≈ 10 s). So führen kurz schwankende `conn` (Gäste ziehen gerade um) nicht dazu, dass beide gleichzeitig abtreten.
+  - **Verlierer:**
+    1. einfrieren,
+    2. `move{how:"lan", addr, port}` des anderen an alle eigenen verbundenen Gäste,
+    3. `session.drain(500)`, dann `stepped_down` mit Ziel, Abtreten wie in 10.7, Schritt 4.
+  - **Gewinner:** Ist seine `gen` kleiner oder gleich der des Verlierers, setzt er `gen = rival.gen + 1` (neue `epoch`, `parent` = eigener Stand) und verteilt sofort `bk`. Sonst holte die Abstammungsregel (`_check_lineage`, `host_table.gd:854`) den Zweig des Verlierers zurück, sobald dessen Gäste mit ihrer Sicherung ankommen. Ist die eigene `gen` schon größer, holt die Abstammungsregel wie bisher nichts.
+    - Gegenprüfung der Umsetzung: Der Gewinner hebt nach der vollen Regel an, **auch mit offenem Raum** (`HostTable.rival_outcome`; Anheben geht vor Abtreten). Sonst trat ein Gewinner mit Raum gegen einen Verlierer ohne Vermittler mit höherer `gen` selbst ab.
+    - Der Verlierer tritt erst ab, wenn die `gen` des Gewinners über der eigenen liegt; höchstens `rival_gen_wait` (4) weitere Scans wartet er darauf (verpasste Scans, UDP-Verlust), dann tritt er trotzdem ab.
+  - Beide Seiten nehmen `rival.addresses` × `rival.port` in die zusätzlichen Ursprünge (10.9) und in `wlan.past` auf. Sonst lehnte der Gewinner die WebSockets der Lite-Gäste ab, die ihre Seite beim Verlierer geladen haben.
+- **Online** heißt es dagegen „nichts tun“ (4.3.6), weil dort der Vermittler schon per 4000 entschieden hat. Im WLAN entscheidet sonst niemand.
+- **Gemischt mit Raum:** Ist der eigene Raum `open`, tritt der Wächter nur bei **kleinerer** `gen` ab; bei gleicher `gen` entscheidet der Vermittler (4000). Sonst könnten Wächter und Vermittler verschiedene Sieger wählen. Ist der eigene Raum **nicht** `open` (Vermittler für diese Seite nicht erreichbar, 10.12), gilt die volle Regel oben; sonst liefen bei gleicher `gen` dauerhaft zwei Spiele im LAN.
+- **Grenze:** Zwei Gastgeber in verschiedenen Netzen, etwa zwei Spiel-WLANs, sehen sich nicht (10.17).
+
+### 10.12 Gemischte Partien (WLAN + online)
+
+- **Automatische Übernahme** ist jetzt erlaubt: Rangfolge nach 10.3, Prüfung nach 10.4. WLAN-Gäste prüfen LAN und Vermittler, Online-Gäste wie in 1.6.1.
+  - **Ein WLAN-Erbe übernimmt:**
+    - Er übernimmt auch den Raum (`open_online_existing`, 4012 an die Online-Gäste) und öffnet seinen Server.
+    - WLAN-App-Gäste finden ihn per Suche, Lite über `hosts`.
+    - **Ohne Vermittler** (Netzfehler, Zeitüberschreitung; nicht 4404 und nicht abgelehntes Token): Die Übernahme gilt fürs LAN sofort (`_finish_take`), statt in `_poll_taking` auf „open“ zu warten und bei „failed“ abzubrechen (`host_switch.gd:470-479`). `open_online_existing` wiederholt sich im Hintergrund (alle 15 s). Die WLAN-Gäste spielen so weiter; die Online-Gäste kommen, sobald der Raum erreichbar ist. 4404 bzw. abgelehntes Token: Raum weg, weiter nur im LAN, später 10.13.
+  - **Ein Online-Gast übernimmt** – nur von Hand, solange WLAN-Mitspieler am Tisch sitzen (Gegenprüfung der Umsetzung, 10.3; automatisch nur ohne WLAN-Mitspieler):
+    - WLAN-App-Gäste finden im LAN nichts. In *waiting*/*checking* proben sie den Raum (`connect_probe` mit eigenem Token). Antwortet dort ein Gastgeber, folgen sie über den Raum (`_follow_room`).
+    - Lite im WLAN bekommt nach 60 s den Knopf „Über das Internet weiterspielen“.
+    - Ohne Internet bleiben sie draußen. Die Rückfrage „Spiel als Gastgeber fortsetzen“ warnt: „WLAN-Mitspieler brauchen dann Internet.“
+- **Geplante Übergabe:** erlaubt (10.7, `how` `lan` oder `online`).
+- **Abstammung in der Einschwingzeit** (gleiche Vorgeneration, höheres `seq`, 4.3.5): nicht an einen Online-Gast, solange WLAN-Mitspieler am Tisch sitzen. Anlass (15.10.2026, `test_takeover_mixed` 0 wackelig, jetzt Fall 4): Der letzte Stand des alten Gastgebers ging nur noch über den Vermittler hinaus (`server.stop()` verwarf ihn für die WLAN-Gäste); der WLAN-Erbe übernahm mit dem älteren Stand, und `own:true` zog die Partie zum Online-Gast. Dieser eine Zug entfällt jetzt. Ein echter jüngerer Zweig (`g' > gen`) holt das Spiel weiterhin zurück.
+- **Abtreten des alten Gastgebers:** Auslöser ist das 4000, `handover_ok` oder der Wächter, je nachdem, was zuerst kommt. Vor dem Abtreten geht `move` an die WLAN-Gäste; bei einem 4000 ohne `handover_ok` mit `port = hp`.
+- Die Warnzeile „WLAN-Mitspieler kommen dann nicht mit.“ (4.4) entfällt.
+
+### 10.13 Abgelaufener Online-Raum
+
+- **Neuer Raum für die alte Partie:** `HostSwitch` bietet in den Zuständen *expired* (Hauptmenü) und *gone* (Tisch) den Knopf „In neuem Raum fortsetzen“. `saved_offer` und `resume_saved` prüfen dafür mit `resumable(d, now, true)` (10.6), sonst böten sie eine Datei mit einem Raum älter als 24 h gar nicht an.
+  1. `HostTable.resume(d, seat, …, new_room := true)` mit `online = {}`, denn der alte Raum gilt nicht mehr. Danach `session.open_online(o.relay)`.
+  2. `gen` folgt den Regeln aus 1.1: bei einem Gast `gen + 1`, im eigenen Zweig bleibt sie.
+  3. `join_open` geht an, der Tisch öffnet `SeatManager` „Dazuholen“ (Online-QR, „Link teilen“, Raumcode).
+- **App-Gäste:** Am Tisch (*gone*) bzw. im Hauptmenü erscheint der Knopf „Mit neuem Code beitreten“. Er führt zum `JoinScreen` (Raumcode, QR oder Link). Dank 10.6 landen sie mit `bk_token` auf ihrem Platz.
+- **Browser:** Der Link führt zur Seite beim Vermittler mit leerem `token:NEUCODE`, von dort auf die Warteliste und mit „Auf den Platz von %s setzen“ an den Tisch.
+- **Zwei öffnen gleichzeitig einen neuen Raum:** Dann gibt es zwei Räume und keine Automatik; das ist selten. Wer den Link des anderen nimmt, verlässt vorher seinen Tisch. „Tisch verlassen“ beendet den eigenen Raum und löscht die eigene Datei; über die Warteliste kommt er wieder an seinen Platz.
+
+### 10.14 Hauptmenü „Partie fortsetzen“ (Ergänzungen zu 4.4)
+
+- `saved_offer` bietet jetzt auch WLAN-Gast-Dateien an (`role:"guest"`, ohne Raum).
+- **WLAN-Datei:**
+  1. Zuerst 3 s nach der `gid` suchen: Rundruf, dazu Unicast an `wlan.addrs` und die `addr` der Erben.
+  2. Fund mit `gen ≥ Datei-gen`: weiter als Gast (`move_to`), Meldung wie in 4.9.
+  3. Kein Fund:
+     - `role:"host"`: eigener Zweig auf dem gespeicherten Port wie in 1.6.1; bei `wlan.ap` die Rückfrage aus 10.8.
+     - `role:"guest"`: Rückfrage „Spiel als Gastgeber fortsetzen?“ (`gen + 1`).
+  4. Scheitert das Eröffnen (Ports belegt), endet der Ablauf in *expired* mit „Das Spiel ließ sich gerade nicht eröffnen. Bitte noch einmal versuchen.“ (Gegenprüfung der Umsetzung; nicht die Meldung zum abgelaufenen Raum).
+- **Raum-Datei:** wie 1.6.1; ist der Raum abgelaufen, gilt 10.13.
+
+### 10.15 Oberflächentexte (Deutsch; Englisch über `en_screens.po`/`en_table.po`, Lite über `M.t`)
+
+| Ort | Text |
+|---|---|
+| Streifen (Gast) | Suche den neuen Gastgeber … |
+| Streifen (Spiel-WLAN weg) | Spiel-WLAN von %s ist weg. |
+| Knopf (Gast) | Neues Spiel-WLAN bei %s – QR-Code scannen |
+| Warnzeile Rückfrage | Nur wenn %s nicht übernimmt – sonst gibt es zwei Spiele. |
+| Warnzeile Rückfrage / Auswahldialog | WLAN-Mitspieler brauchen dann Internet. |
+| Warnzeile Auswahldialog | Alle müssen danach einen neuen QR-Code scannen. |
+| neuer Gastgeber (Spiel-WLAN) | Du bist jetzt Gastgeber. Öffne das Spiel-WLAN und lass die anderen den QR-Code scannen. |
+| SeatManager | Auf den Platz von %s setzen |
+| Rückfrage | %s spielt dann mit den Karten von %s weiter. |
+| Knöpfe | Hinsetzen · Abbrechen |
+| Gastgeber, Hinweis | %s möchte mitspielen – ☰ → Mitspieler dazuholen. |
+| an die eigenen Gäste (Wächter) | %s führt dieses Spiel schon – ihr spielt dort weiter. |
+| Hauptmenü, Rückfrage Spiel-WLAN | Spiel-WLAN neu öffnen · Beim neuen Gastgeber scannen |
+| Raum abgelaufen (Knöpfe) | In neuem Raum fortsetzen · Mit neuem Code beitreten |
+| neuer Raum, Gastgeber | Neuer Raum %s. Schick den anderen den Link – sie kommen damit auf ihre Plätze. |
+| Lite, Overlay | Gastgeber fehlt – suche den neuen Gastgeber … |
+| Lite, Kasten | Das Spiel läuft jetzt über das Internet weiter. · Weiter |
+| Lite, Kasten | Neues Spiel-WLAN bei %s. Verbinde dich mit dem WLAN-Code auf diesem Handy und scanne dann den Spiel-Code. |
+| Lite, Knopf | Über das Internet weiterspielen |
+| Auswahldialog, ausgegraut (qr) | Kann kein Spiel-WLAN öffnen. |
+| Auswahldialog, Zeile (qr) | Muss das Spiel-WLAN erlauben. |
+| „Tisch verlassen“, Warnzeile (fremdes Spiel-WLAN) | Dein Spiel-WLAN geht dann zu – alle müssen einen neuen QR-Code scannen. |
+
+Der Text „Geht in dieser Version nur, wenn alle online mitspielen.“ entfällt; er bleibt in der .po und schadet dort nicht.
+
+### 10.16 Testplan
+
+**Automatisch.** Die Tests folgen dem Muster von `test_takeover_online.gd`:
+- `speed = 0`, einspritzbare Uhr `wall_ms`, kurze Fristen als Eigenschaften.
+- Suche mit `use_broadcast = false` plus `probe_local`, `manual` bzw. `ports`.
+- Freie Ports laut Suche: 24901–24911, 24917–24929, 24987–24999.
+
+Neue und erweiterte Tests:
+- `test_discovery_gid.gd`:
+  - Die Suchantwort trägt `gid`, `gen`, `epoch` und `conn`; `parse_reply` lehnt kaputte Felder ab.
+  - Der Gastgeber-Scan meldet `rival` nur bei gleicher `gid` und nie für die eigene `sid`.
+  - `ports` fragt mehrere UDP-Ports ab; Abfrageabstand und Verfall laufen über die eingespritzte Uhr `now_ms`.
+- `test_origin_past.gd`:
+  - `origin_allowed` mit `extra` lässt nur exakte `http://ip:port` zu; `https`, Muster und fremde Ports werden abgelehnt.
+  - Die Liste wirkt auch im Netz-Thread (threaded).
+- `test_server_drain.gd` (neu, `threaded = true`):
+  - `send_to` + `drain(500)` + `stop()`: Die Nachricht (auch größer als ein Socket-Puffer, z. B. ein `bk`) kommt vor dem Close-Rahmen beim Gast an.
+  - Gegenprobe ohne `drain`: darf verloren gehen (dokumentiert das Verhalten, kein Fehlschlag erzwungen).
+- `test_session_assign.gd`:
+  - `assign_seat` schickt ein zweites `welcome` mit Platz-Token und `assigned:true`, dann `start` und den Stand.
+  - Ein App-Gast mit altem Token aus der Token-Datei für dieselbe `ip:port` wird danach **nicht** `removed`/`readmitted`.
+  - Abgelehnt wird bei verbundenem Platz, beim Gastgeber und bei Bots.
+  - `bk_token` gilt nur mit passendem `bk_gid`.
+- `test_client_move.gd`:
+  - `move_to` behält Sicherung, `head`/`head_gid` und Token; `backup_current()` bleibt wahr.
+  - Nach `move_to` geht der `HostSwitch` (Signal `moved`) nach *watch* mit frischen Zählern: kein sofortiges *missing*, und ein `welcome` des neuen Gastgebers beendet *missing*.
+  - `hello` trägt bei jeder Adresse `hp`, `bk`, `bk_token`, `bk_gid` und `ap`.
+  - `host_lost_wall` gilt ab dem ersten gescheiterten Neuversuch.
+  - `NetClient.drain`: `handover_ok` über einen **echten** Socket kommt an, obwohl direkt danach `suspend()` folgt.
+- `test_handover_wlan.gd` (Gastgeber, 2 App-Gäste, 1 Web-Gast, 1 Bot, alles im WLAN, Server mit Thread):
+  - Geplant `lan`: `handover_ok` kommt vor dem Abtreten, `move` geht an alle und kommt vor dem Schließen an (`drain`). Alle sitzen auf ihren Plätzen, es gibt kein `bye`, und die Partie läuft bis zum Rundenende.
+  - `qr` mit `QrJoin.wifi_stub`: Reihenfolge `handover_ok` → release → Server; `move how:"qr"`. Ziel ohne `ap.ok` ist bei `qr` ausgegraut. `auto_open` wiederholt bei `incompatible_mode` 3-mal (eingespritzte Zustandsquelle).
+  - Ohne `handover_ok` vom Ziel taut der Gastgeber nach der Frist auf; `gen` bleibt unverändert.
+  - `resume` ohne Raum setzt `link` des alten Gastgebers auf „wlan“.
+- `test_takeover_wlan.gd`:
+  - Ausfall zweimal: mit geschlossenem Server (Verbindung verweigert) und still (`NetServer.mute_ws` für alle Verbindungen).
+  - Rang 0 übernimmt nach `T_SILENT`; Rang 1 findet ihn per Suche und folgt.
+  - Keine Automatik, wenn die Sicherung nicht aktuell ist. Bei `away` passiert vor `T_AWAY` nichts. Ist `lan_ok` falsch (eingespritzt), übernimmt niemand.
+  - Spiel-WLAN (`wlan.ap`): Nur Rang 0 übernimmt, die anderen gehen in den Zustand *scan*. Rangfolge: Geräte mit `ap.ok` zuerst.
+  - Übernahme im fremden Spiel-WLAN: Der neue Schnappschuss behält `ap_seat` des alten Gastgebers; fällt dessen Netz weg (eingespritzt), öffnet der neue Gastgeber ein eigenes, seine Gäste gehen nach *scan* mit seinem Namen und übernehmen nicht.
+  - Der alte Gastgeber setzt seinen eigenen Zweig fort. Der Wächter lässt ihn abtreten, seine Gäste ziehen um.
+  - **Mehrheit gewinnt:** Rang 0 übernimmt allein (Gast-Aussetzer), die übrigen spielen beim alten Gastgeber weiter. Beim Wiedersehen tritt Rang 0 ab (kleineres `conn`), der alte Gastgeber hebt `gen` über die des Rang 0, und die Abstammungsregel holt den kleinen Zweig nicht zurück. Die Züge der Mehrheit bleiben erhalten.
+  - Gleiches `conn`, gleiche `gen`, verschiedene `epoch`: Genau einer tritt ab (nach zwei gleichen Scans), kein Hin und Her.
+  - Herkunft: Ein Lite-Gast, der seine Seite beim Verlierer geladen hat, verbindet sich danach beim Gewinner.
+- `test_takeover_mixed.gd` (`NetRelayDouble` + WLAN):
+  - Ein WLAN-Erbe übernimmt Raum und LAN. Der Online-Gast folgt per 4012, der WLAN-Gast per Suche.
+  - **WLAN-Erbe ohne Vermittler** (Nachbau antwortet nicht): Die Übernahme gilt fürs LAN, der WLAN-Gast folgt; nachdem der Nachbau wieder antwortet, ist der Raum übernommen und der Online-Gast folgt per 4012.
+  - Übernimmt ein Online-Gast (von Hand, solange WLAN-Mitspieler am Tisch sitzen – keine Online-Erben), folgt der WLAN-App-Gast über den Raum.
+  - Geplante Übergabe an ein Online-Ziel: `move how:"online"` geht an die WLAN-Gäste. Bei geschlossenem Raum ist das Online-Ziel ausgegraut.
+  - Bei gleicher `gen` und offenem Raum tritt der Wächter nicht ab; der Vermittler entscheidet. Ist der eigene Raum nicht `open`, gilt die volle Regel (genau einer tritt ab).
+- `test_resume_new_room.gd`:
+  - Raum abgelaufen (4404 vom Nachbau) → „In neuem Raum fortsetzen“; ebenso mit einer Datei, deren `created_unix` älter als 24 h ist (`resumable(…, true)`).
+  - Ein Gast tritt per neuem Code bei und landet mit `bk_token` auf seinem Platz.
+  - Das Hauptmenü sucht bei einer WLAN-Datei zuerst nach der `gid`.
+- `test_app_qr_join.gd` (Erweiterung):
+  - `wifi_release` nach „lost“ setzt die Bindung zurück.
+  - Eine Spiel-URL mit `?g=` wird angenommen (Lite ignoriert den Parameter).
+- `test_game_wifi_watch.gd` (neu, eingespritzte Zustandsquelle und Uhr, kein Server):
+  - Spiel-WLAN geht auf, während kein Overlay offen ist (bzw. das Overlay sofort geschlossen wurde): `rebind` und `refresh_addrs` laufen trotzdem, `wlan.addrs`/`past` und `hosts` sind aktuell.
+- `test_ui_handover_wlan.gd` und `_shot`: nur mit Doubles, **ohne** Server und ohne Suche auf UDP 24692, weil `^test_ui_` in die parallele Spur von `build.ps1` fällt (eigenes user://, keine festen Ports). Braucht ein Teil doch Netz, heißt er `test_screens_handover_wlan.gd`. Die Kontrollbilder in Tag/Nacht, im großen Modus und bei Schrift „Sehr groß“ zeigen:
+  - den Streifen *scan* mit Knopf,
+  - `SeatManager` mit „Auf den Platz von …“,
+  - den Auswahldialog mit Warnzeilen,
+  - die Rückfrage im Hauptmenü zum Spiel-WLAN,
+  - die Anzeige bei abgelaufenem Raum.
+- **Lite** (`web_takeover.gd`, Chrome headless, wie `Invoke-WebTakeoverTest`):
+  - W1: Hanna stirbt, Anna übernimmt auf einem anderen Port. Lite findet sie über `hosts` und `/info`, verbindet sich mit fremdem Ursprung (Herkunftsliste) und spielt weiter.
+  - W2: geplante Übergabe von Anna an Ben (`move lan`).
+  - W3: „Seite neu laden“ führt per Navigation mit `#t=` zum neuen Ursprung; Lite sitzt wieder auf seinem Platz.
+  - W4: Lite tritt in der Lobby bei (leeres `welcome_extra`), die Partie startet; Lite kennt `gid`/`gen` aus `hosts` und findet nach Hannas Ausfall Anna.
+  - W5: `hosts.ap` und Hanna stirbt: Nach 20 s erscheint der Kasten „Neues Spiel-WLAN bei %s …“, „Seite neu laden“ ist ausgeblendet.
+  - Gegenprobe ohne Herkunftsliste: W1 scheitert.
+- `test_i18n` bleibt streng grün.
+
+**Gerätetest S21/S10, gesperrt** (Testschalter `MauMauFlipTestLock`):
+
+*Grenzen:*
+- Gesperrt nicht bedienbar: der Systemdialog „Mit Gerät verbinden?“ (QrWifi), der Erlaubnisdialog des Spiel-WLANs, der QR-Scanner und Chrome/Lite.
+- Ein gesperrtes S10 holt in einem Netz ohne Internet den Sperrbildschirm nach vorn. Dann über `logcat` prüfen statt mit `screencap`.
+
+*Ersatz:*
+- Netzwechsel per `adb shell cmd wifi connect-network <ssid> wpa2 <passwort>`.
+- Die Erlaubnis für das Spiel-WLAN vorab per `adb shell pm grant de.maumauflip.game …` erteilen, nur nach Zustimmung (Nutzerfrage):
+  - S21 (Android 15): `android.permission.NEARBY_WIFI_DEVICES`
+  - S10 (Android 12): `ACCESS_FINE_LOCATION` und `ACCESS_COARSE_LOCATION`
+- SSID und Passwort des Spiel-WLANs per `screencap` vom Gastgeber ablesen.
+
+*Abläufe:*
+1. **Heim-WLAN:** S21 ist Gastgeber, S10 App-Gast, dazu ein Bot.
+   - `am force-stop` am S21: S10 übernimmt nach ≈ 40–55 s (`logcat`).
+   - S21 per `am start` → „Partie fortsetzen“: Die Suche findet S10, S21 wird Gast.
+   - Geplante Übergabe S10 → S21 per `input tap`.
+2. **Spiel-WLAN:** S21 öffnet ein Spiel-WLAN, S10 tritt per `cmd wifi connect-network` bei und meldet sich über die Suche an.
+   - `force-stop` am S21: S10 (Rang 0) übernimmt und öffnet sein eigenes Spiel-WLAN (`screencap`/`logcat`).
+   - S21 per `am start`: Es kommt die Rückfrage. „Beim neuen Gastgeber scannen“ ist gesperrt nicht bedienbar. Ersatz: S21 per `cmd wifi connect-network` ins Spiel-WLAN des S10; über die Suche (Zustand *scan* sucht weiter) landet S21 auf seinem Platz.
+   - Geplante Übergabe `qr` von S10 an S21 entsprechend.
+3. **Gemischt:** S21 ist Gastgeber online und im WLAN, S10 im WLAN. `force-stop` am S21: S10 übernimmt Raum und LAN.
+4. **Wiederherstellen:**
+   - Spiel-WLAN-Einträge mit `cmd wifi forget-network` entfernen.
+   - Beide Handys wieder ins normale WLAN.
+   - Testschalter auf `INFO`.
+
+*Erfolgskriterien:*
+- dieselben Hände wie vorher (Bildschirmfoto bzw. Log der Handgrößen),
+- kein doppelter Gastgeber im Log,
+- kein „Raum beendet“,
+- die `QrWifi`-Bindung ist nach „lost“ gelöst (`dumpsys connectivity` bzw. Log von `NetAddresses`).
+
+Lite im Browser prüft der Nutzer; das iPhone bleibt offen.
+
+### 10.17 Risiken und offene Punkte
+
+- **Kein Schiedsrichter im WLAN:** Hat ein Gast einen kurzen WLAN-Aussetzer, ist sein Netz noch da, aber der Gastgeber 40 s nicht erreichbar. Dann übernimmt Rang 0 womöglich, obwohl der Gastgeber lebt. Der Gastgeber-Wächter löst das, sobald sich beide wieder sehen: Es gewinnt der Zweig mit mehr verbundenen Menschen (dann `gen`, dann `epoch`, 10.11). Verloren gehen die Züge des kleineren Zweigs seit der Abspaltung – meist nur die des allein übernommenen Rang 0. Bei Gleichstand der Menschen verliert der Zweig mit kleinerer `gen` alle Züge seit der Abspaltung; das ist selten (beide Gruppen gleich groß und getrennt).
+- **Beide treten gleichzeitig ab** (Wächter sieht verschiedene `conn`): Durch „zwei gleiche Ergebnisse hintereinander“ unwahrscheinlich. Passiert es doch, sind alle Gast mit Sicherung, und Rang 0 übernimmt nach `T_SILENT` (≈ 40–50 s).
+- **`drain` mit Frist:** Ist der Socket eines Gastes voll (schwaches WLAN), reicht 500 ms nicht immer. Dieser Gast fällt auf die Suche zurück (App) bzw. auf die Reihum-Probe (Lite); das kostet ≈ 40 s, aber keinen Stand.
+- **Zwei Spiel-WLANs sehen sich nie:** Ist der Gastgeber außer Reichweite, während Rang 0 übernimmt, entstehen zwei Spiele. Die Menschen sehen das und scannen den richtigen QR-Code. Deshalb übernimmt im Spiel-WLAN nur Rang 0 automatisch.
+- **Router filtern Rundrufe** (Hotel, Geräte-Isolierung): Unicast an die bekannten Adressen hilft nur ohne Isolierung. Mit Isolierung geht ohnehin nur das Spiel-WLAN.
+- **Port des Erben weicht von `hp` ab** (24690 belegt): Lite findet ihn über `hosts` nicht. Dann bleibt der Weg Spiel-QR → Warteliste → „Auf den Platz …“.
+- **Lite vom toten Ursprung:** Noch nicht geladene Dateien fehlen bis „Seite neu laden“. Safari auf dem iPhone mit WebSocket zu einem fremden privaten Ursprung ist ungetestet.
+- **Netzregeln von Chrome** (Local Network Access) können sich ändern; der Chrome-Test im Bau zeigt es.
+- **`bk_token` an fremde Gastgeber** (10.6): Das Token geht auch an den Gastgeber einer anderen Partie hinaus. Es nützt nur beim echten Gastgeber dieser Partie, und alle App-Gäste halten ohnehin alle Tokens (5.).
+- **Datenmenge:** im WLAN unverändert (`bk` je Änderung), keine Kosten beim Vermittler.
+- **STA/AP:** Geräte ohne Gleichzeitigkeit trennen beim Öffnen des Spiel-WLANs das normale WLAN. Das ist im Ablauf gewollt, weil der neue Gastgeber das alte Netz ohnehin verlässt. Android kann aber `incompatible_mode` melden; der Gerätetest prüft S21 und S10.
+- **Erlaubnisdialog beim neuen Gastgeber:** Ohne vorher erteilte Erlaubnis braucht das Spiel-WLAN einen Tipp. Übernimmt ein Handy automatisch, das gerade niemand ansieht, öffnet es kein Spiel-WLAN, bis jemand tippt. Gemildert durch die Rangfolge (`ap.perm` zuerst, 10.3).
+- **Kein fähiges Gerät** (alle ohne `ap.ok`, z. B. nur 1.6.1-Apps oder sehr alte Android): Rang 0 übernimmt trotzdem, „Neu öffnen“ scheitert; dann bleibt nur „Spiel als Gastgeber fortsetzen“ im normalen WLAN bzw. online.
+- **Erbe im Hintergrund:** Ist die App nicht vorn, pausiert Android sie; Rang 0 übernimmt erst, wenn sie wieder vorn ist. Die anderen warten nach Rang (wie online).
+
+**Aus der Gegenprüfung (13.10.2026):** alle 15 Befunde übernommen. Abwägungen:
+- Spiel-WLAN mit nur abwesendem Gastgeber: Statt „keine automatische Übernahme bei `wlan.ap` und `lan_ok`“ gilt die Variante `ap_seat` (10.2, 10.8). Grund: Die Sperre allein hilft nicht bei der Übernahme von Hand (dieselbe Strandungsgefahr), und ein Gastgeber in einem langen Anruf hielte sonst alle fest.
+- Lite und `gid`: `hosts` geht immer hinaus, `start` bekommt keine `gid` (ein Weg genügt, `hosts` braucht Lite ohnehin).
+- `move_to` und Zähler: Signal `moved` statt Umbau des Zählmodells im `HostSwitch`.
+- Wächter: Regel „mehr verbundene Menschen“ übernommen, ergänzt um das Anheben der `gen` beim Gewinner (sonst kehrte die Abstammungsregel die Entscheidung um) und um „zwei gleiche Scans“.
+- Neu-Binden: eigener Node `GameWifiWatch` am `TableScreen` statt in `HostTable`, weil `HostTable` (game/) nicht von `NetAndroid` (app/) abhängen soll; einspritzbar für Tests.
+
+**Gegenprüfung der Umsetzung (13.10.2026):** 10 Befunde, 10 behoben (Tests in Klammern):
+- `hello.ap` kam in der App nie aus `NetAndroid` (`NetClient.ap_info_default` blieb leer); damit war jede geplante Übergabe im Spiel-WLAN ausgegraut. `App._init` ruft jetzt `NetAndroid.install_net_hooks()` (`test_client_move` 2).
+- Wächter: Gewinner hebt auch mit offenem Raum an; der Verlierer wartet auf die höhere `gen` des Gewinners, höchstens `rival_gen_wait` Scans (`test_handover_wlan` 5, `test_takeover_wlan` 9/10).
+- `how` übersteht `clean_backup_message`; der alte Gastgeber folgt `handover_ok` (`test_net_protocol`, `test_handover_wlan` 3c).
+- Online-Ziel bleibt `online`, auch bei eigenem Spiel-WLAN; QR-Warnzeile nur für `qr`-Ziele (`test_takeover_mixed` 3).
+- Keine Online-Erben, solange WLAN-Mitspieler am Tisch sitzen (`test_takeover_online` 8, `test_takeover_mixed` 2).
+- Hauptmenü, WLAN-Datei, Ports belegt: eigene Meldung in *expired* (`test_resume_new_room` 2b).
+- Nach einer Übernahme mit Spiel-WLAN nur ein `auto_open`: Anfrage vor `swapped`, `GameWifiWatch.auto_open` stößt während eines laufenden Versuchs nichts neu an (`test_game_wifi_watch`).
+- Spiel-WLAN weg: Rang 0 übernimmt erst nach weiteren `T_STEP` mit Countdown (`test_takeover_wlan` 5).
+- Lite: `webclient/test/lite_umzug.html` läuft im Bau (`Invoke-WebMoveTest`, Chrome headless, virtuelle Zeit); `web_takeover.gd` prüft W4, W1 (fremder Ursprung über `hosts` und `/info`, Herkunftsliste; Gegenprobe `OHNE_HERKUNFT=1` scheitert) und W3 (`#t=` auf dem neuen Ursprung) über die eigene LAN-Adresse des PCs. W2 (`move lan`) und W5 (Kasten bei `hosts.ap`) deckt `lite_umzug.html` mit Schein-Gastgeber ab.
+- Gerätetest 1.6.2, Runde 1 (`docs/geraetetest/1.6.2/BERICHT.md`, Abschnitt „Behebung“): `wlan.ap` kommt vom `GameWifiWatch` (`HostTable.hotspot_check`), nicht von `binding() == "hotspot"` – bis Android 15 bleibt die Bindung mit Spiel-WLAN und WLAN "" (F1, `test_wlan_fixes`). `lan_ok` bei Spiel-WLAN des Gastgebers über die eigene Adresse darin (`HostSwitch.lan_reach`); Beitritt zu Adressen in Spiel-WLAN und WLAN zugleich wechselt das Netz je Versuch, jeder Neuversuch bindet neu (F2, F3); Gast-Tisch ohne Stand nach 20 s mit „Zum Hauptmenü“ (`test_ui_wlan_stuck`); Wächter-Prüfung nach der Rückkehr des Gastgebers (B1); „Gastgeber kurz weg“ im WLAN (B2).

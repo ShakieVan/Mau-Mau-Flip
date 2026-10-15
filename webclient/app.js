@@ -5,7 +5,7 @@
 (function (M) {
   'use strict';
 
-  const VERSION = '1.6.1';
+  const VERSION = '1.6.2';
   const PROTO = 1;
   // wach.mp4 (32×32, 2 s, H.264 Baseline, ohne Ton; erzeugt mit ffmpeg) als data:-URI
   const WACH_VIDEO = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAMzbW9vdgAAAGxtdmhkAAAAAAAAAAAAAAAAAAAD6AAAB9AAAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAl50cmFrAAAAXHRraGQAAAADAAAAAAAAAAAAAAABAAAAAAAAB9AAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAACAAAAAgAAAAAAAkZWR0cwAAABxlbHN0AAAAAAAAAAEAAAfQAAAAAAABAAAAAAHWbWRpYQAAACBtZGhkAAAAAAAAAAAAAAAAAABAAAAAgABVxAAAAAAALWhkbHIAAAAAAAAAAHZpZGUAAAAAAAAAAAAAAABWaWRlb0hhbmRsZXIAAAABgW1pbmYAAAAUdm1oZAAAAAEAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAAUFzdGJsAAAAuXN0c2QAAAAAAAAAAQAAAKlhdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAACAAIABIAAAASAAAAAAAAAABFExhdmM2My4xLjEwMSBsaWJ4MjY0AAAAAAAAAAAAAAAAGP//AAAAL2F2Y0MBQsAe/+EAFmdCwB7ZCWwEQAAAAwBAAAADAQPFi5IBAAZoy4DkTIAAAAAQcGFzcAAAAAEAAAABAAAAFGJ0cnQAAAAAAAAKpAAAAAAAAAAYc3R0cwAAAAAAAAABAAAABAAAIAAAAAAUc3RzcwAAAAAAAAABAAAAAQAAABxzdHNjAAAAAAAAAAEAAAABAAAABAAAAAEAAAAkc3RzegAAAAAAAAAAAAAABAAAAogAAAALAAAACwAAAAsAAAAUc3RjbwAAAAAAAAABAAADYwAAAGF1ZHRhAAAAWW1ldGEAAAAAAAAAIWhkbHIAAAAAAAAAAG1kaXJhcHBsAAAAAAAAAAAAAAAALGlsc3QAAAAkqXRvbwAAABxkYXRhAAAAAQAAAABMYXZmNjMuMS4xMDEAAAAIZnJlZQAAArFtZGF0AAACcgYF//9u3EXpvebZSLeWLNgg2SPu73gyNjQgLSBjb3JlIDE2NSByMzIyMyAwNDgwY2IwIC0gSC4yNjQvTVBFRy00IEFWQyBjb2RlYyAtIENvcHlsZWZ0IDIwMDMtMjAyNSAtIGh0dHA6Ly93d3cudmlkZW9sYW4ub3JnL3gyNjQuaHRtbCAtIG9wdGlvbnM6IGNhYmFjPTAgcmVmPTMgZGVibG9jaz0xOi0zOi0zIGFuYWx5c2U9MHgxOjB4MTExIG1lPWhleCBzdWJtZT03IHBzeT0xIHBzeV9yZD0yLjAwOjAuNzAgbWl4ZWRfcmVmPTEgbWVfcmFuZ2U9MTYgY2hyb21hX21lPTEgdHJlbGxpcz0xIDh4OGRjdD0wIGNxbT0wIGRlYWR6b25lPTIxLDExIGZhc3RfcHNraXA9MSBjaHJvbWFfcXBfb2Zmc2V0PS00IHRocmVhZHM9MSBsb29rYWhlYWRfdGhyZWFkcz0xIHNsaWNlZF90aHJlYWRzPTAgbnI9MCBkZWNpbWF0ZT0xIGludGVybGFjZWQ9MCBibHVyYXlfY29tcGF0PTAgY29uc3RyYWluZWRfaW50cmE9MCBiZnJhbWVzPTAgd2VpZ2h0cD0wIGtleWludD0yNTAga2V5aW50X21pbj0yIHNjZW5lY3V0PTQwIGludHJhX3JlZnJlc2g9MCByY19sb29rYWhlYWQ9NDAgcmM9Y3JmIG1idHJlZT0xIGNyZj00MC4wIHFjb21wPTAuNjAgcXBtaW49MCBxcG1heD02OSBxcHN0ZXA9NCBpcF9yYXRpbz0xLjQwIGFxPTE6MS4yMACAAAAADmWIhAXznJigACX3J114AAAAB0GaOAvnOWAAAAAHQZpUAvnOWAAAAAdBmmAVznLA';
@@ -55,6 +55,14 @@
     online: false,         // ?r= vorhanden
     raum: '',              // normalisierter Raumcode „WORT-ZZ“ ('' = ungültig)
     _tokKey: 'token',      // Speicherschlüssel des Spieler-Tokens; online je Raumcode
+    // Gastgeber-Wechsel im WLAN (Beta 1.6.2, docs/module/uebergabe.md 10.9)
+    hosts: null,           // letzte Liste des Gastgebers {gid, gen, list:[{name, url}], online, ap, ap_name} (M.Netz.Umzug.hosts)
+    hostBasis: '',         // http://<IP>:<Port>/ des aktuellen Gastgebers; anfangs der eigene Ursprung
+    reihum: null,          // M.Netz.Reihum (Suche nach dem neuen Gastgeber)
+    _umzug: null,          // Kasten: {how:'online', url} | {how:'qr', name, auto}
+    _vStatus: 'neu',       // letzter Verbindungsstatus
+    _getrenntSeit: 0,      // seit wann „getrennt“ (0 = verbunden)
+    _sucheSeit: 0,         // seit wann die Reihum-Probe läuft (0 = nicht)
 
     /* ---------------- Start ---------------- */
     init() {
@@ -67,6 +75,12 @@
       this.online = !!roh && !params.get('mock');
       this.raum = this.online ? M.Netz.Online.code(roh) : '';
       this._tokKey = this.online ? 'token:' + (this.raum || '-') : 'token';
+      // Beta 1.6.2: Weiterspielen nach Umzug (#t=Token&n=Name vom alten Ursprung bzw. „Weiter“ ins Internet); Anker gleich wieder weg
+      this.hostBasis = this._eigeneBasis();
+      this._ankerLesen();
+      const ms = (n, d) => { const v = parseInt(params.get(n), 10); return v >= 500 ? v : d; };   // ?suche_ab=/online_ab= (ms) nur für Tests
+      this.sucheAb = ms('suche_ab', M.Netz.LITE_SUCHE_AB);
+      this.onlineAb = ms('online_ab', M.Netz.LITE_ONLINE_AB);
       e.ton = Speicher.get('ton', 'normal');
       e.toene = Speicher.get('toene', 'normal');
       e.stumm = Speicher.get('stumm', false) === true;
@@ -220,8 +234,11 @@
       });
       // Lobby
       $('#bereit').addEventListener('click', ev => { ev.preventDefault(); this.bereit(); });
-      $('#ende-zurueck').addEventListener('click', ev => { ev.preventDefault(); location.reload(); });
-      $('#verbinde-laden').addEventListener('click', ev => { ev.preventDefault(); location.reload(); });
+      $('#ende-zurueck').addEventListener('click', ev => { ev.preventDefault(); this.neuLaden(); });
+      $('#verbinde-laden').addEventListener('click', ev => { ev.preventDefault(); this.neuLaden(); });
+      // Gastgeber-Wechsel (Beta 1.6.2): weiter über das Internet (Kasten nach move online bzw. Online-Eintrag der Liste)
+      $('#umzug-weiter').addEventListener('click', ev => { ev.preventDefault(); if (this._umzug) this.weiterOnline(this._umzug.url); });
+      ['#umzug-online', '#verbinde-online'].forEach(id => $(id).addEventListener('click', ev => { ev.preventDefault(); if (this.hosts) this.weiterOnline(this.hosts.online); }));
       // Fenster schließen
       document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', ev => {
         if (ev.target === m || ev.target.closest('.schliessen')) { ev.preventDefault(); this.schliesse(m.id); }
@@ -312,7 +329,10 @@
       const Klasse = params.get('mock') && M.Mock ? M.Mock.Verbindung : M.Netz.Verbindung;
       if (this.online && !this.raum) { knopf.disabled = true; return; }
       const online = this.online && !params.get('mock');
-      const url = online ? M.Netz.Online.wsUrl(location, this.raum) : (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
+      // nach einem Umzug (Beta 1.6.2) geht auch ein neues Beitreten zum neuen Gastgeber, nicht zum toten eigenen Ursprung
+      const url = online ? M.Netz.Online.wsUrl(location, this.raum)
+        : (this.hostBasis !== this._eigeneBasis() && M.Netz.Umzug.basis(this.hostBasis)) ? M.Netz.Umzug.wsUrl(this.hostBasis)
+          : (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
       this.verbindung = new Klasse({
         url,
         online,
@@ -327,20 +347,17 @@
         beiStatus: s => this.status(s),
       });
       this.verbindung.start();
+      if (!this._suchTakter) this._suchTakter = setInterval(() => this._suchTakt(), 1000);
     },
     status(s) {
       if (s !== 'offen') this.hostApp('');
       const v = $('#verbinde');
       const weg = s === 'host_weg';   // online: Gastgeber kurz weg (Vermittler-Code 4503)
-      const zeigen = (s === 'getrennt' || weg) && this.beigetreten;
-      v.hidden = !zeigen;
-      ['verbinde-titel', 'verbinde-unter'].forEach(id => { $('#' + id).hidden = weg; });
-      ['verbinde-weg-titel', 'verbinde-weg'].forEach(id => { $('#' + id).hidden = !weg; });
-      if (zeigen) {
-        clearTimeout(this._ladeTimer);
-        $('#verbinde-laden').hidden = true;
-        this._ladeTimer = setTimeout(() => { $('#verbinde-laden').hidden = false; }, 15000);
-      } else clearTimeout(this._ladeTimer);
+      this._vStatus = s;
+      // Hinweis, „Seite neu laden“ nach 15 s und Suche nach dem neuen Gastgeber (Beta 1.6.2): _suchTakt/_verbindeAnzeige
+      if ((s === 'getrennt' || weg) && this.beigetreten) this._suchTakt();
+      else if (s === 'offen' || s === 'beendet' || s === 'ersetzt') this._sucheStop();
+      this._verbindeAnzeige();
       if (s === 'getrennt' && !this.beigetreten && this.screen === 'start') {
         this._startFehler(this.online ? M.t('Keine Verbindung zum Vermittler. Hast du Internet? Ich versuche es weiter …')
           : M.t('Keine Verbindung zum Gastgeber. Seid ihr im selben WLAN? Ich versuche es weiter …'));
@@ -428,6 +445,8 @@
           if (m.token) Speicher.set(this._tokKey, m.token);
           if (m.host_name) this.hostName = m.host_name;
           this.beigetreten = true;
+          this._sucheStop();          // angekommen (auch beim neuen Gastgeber, Beta 1.6.2): Suche und Kasten weg
+          this._umzugZu();
           $('#beitreten').disabled = false; this._startTexte();
           if (this.screen === 'start') { this.zeigeScreen('lobby'); this._lobbyLeer(); }
           break;
@@ -436,6 +455,7 @@
           if (this._tokenGesendet && (m.code === 'running' || m.code === 'token')) Speicher.set(this._tokKey, null);
           this.verbindung.beenden();
           this.beigetreten = false;
+          this._umzugZu();
           $('#verbinde').hidden = true;
           this.zeigeScreen('start');
           $('#beitreten').disabled = false; this._startTexte();
@@ -489,6 +509,7 @@
         case 'bye':
           this.verbindung.beenden();
           this.beigetreten = false;
+          this._umzugZu();
           Speicher.set(this._tokKey, null);
           $('#verbinde').hidden = true;
           $('#ende-text').textContent = M.I18n.msgText(m, M.t('Der Gastgeber hat das Spiel beendet.'));
@@ -496,8 +517,118 @@
           $('#ende-hinweis').hidden = !(m.text === 'Der Gastgeber hat dich aus dem Spiel genommen.' || m.text === 'Der Gastgeber hat dich nicht dazugeholt.');
           this.zeigeScreen('ende');
           break;
+        case 'hosts': {   // Beta 1.6.2: mögliche Nachfolger des Gastgebers (nur WLAN; online folgt Lite dem Vermittler)
+          if (this.online) break;
+          const h = M.Netz.Umzug.hosts(m);
+          if (!h || (this.hosts && h.gid === this.hosts.gid && h.gen < this.hosts.gen)) break;   // kaputt oder veraltet
+          this.hosts = h;
+          if (this.reihum) this.reihum.setze(h);
+          if (!h.ap && this._umzug && this._umzug.auto) this._umzugZu();
+          this._verbindeAnzeige();
+          break;
+        }
+        case 'move': {    // Beta 1.6.2: geplanter Gastgeber-Wechsel
+          if (this.online) break;
+          const mv = M.Netz.Umzug.move(m);
+          if (!mv || (mv.gid && this.hosts && mv.gid !== this.hosts.gid)) break;
+          if (mv.how === 'lan') this.umziehen(mv.basis);
+          else if (mv.how === 'online') this._umzugZeigen({ how: 'online', url: mv.url });
+          else this._umzugZeigen({ how: 'qr', name: mv.name || (this.hosts && this.hosts.ap_name) || '' });
+          break;
+        }
         default: break;
       }
+    },
+
+    /* ---------------- Gastgeber-Wechsel im WLAN (Beta 1.6.2, docs/module/uebergabe.md 10.9) ---------------- */
+    _eigeneBasis() { return location.protocol + '//' + location.host + '/'; },
+    // #t=Token&n=Name: Token unter dem passenden Schlüssel, Name vorbelegen, Anker entfernen (Knopf zeigt dann „Weiterspielen“)
+    _ankerLesen() {
+      const a = M.Netz.Umzug.leseHash(location.hash);
+      if (!a) return;
+      if (a.t) Speicher.set(this._tokKey, a.t);
+      if (a.n) Speicher.set('name', a.n);
+      try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* egal */ }
+    },
+    // zum neuen Gastgeber wechseln (gefunden über /info oder move lan); die Seite bleibt, nur die Verbindung zieht um
+    umziehen(basis) {
+      const b = M.Netz.Umzug.basis(basis);
+      if (!b || !this.verbindung || typeof this.verbindung.umziehen !== 'function') return false;
+      this.hostBasis = b;
+      if (this.reihum) this.reihum.stop();
+      this._sucheSeit = 0;
+      return this.verbindung.umziehen(M.Netz.Umzug.wsUrl(b));
+    },
+    // „Seite neu laden“/„Zur Startseite“: nach einem Umzug zum neuen Ursprung (Token und Name im Anker), sonst wie bisher
+    neuLaden() {
+      if (this.hostBasis && this.hostBasis !== this._eigeneBasis()) {
+        location.assign(M.Netz.Umzug.ziel(this.hostBasis, Speicher.get(this._tokKey, null), this.name || Speicher.get('name', '')));
+        return;
+      }
+      location.reload();
+    },
+    // Weiter über das Internet (move online bzw. Online-Eintrag der Liste): Raum-Link mit Token und Name im Anker
+    weiterOnline(url) {
+      const u = M.Netz.Umzug.netzLink(url);
+      if (u) location.assign(M.Netz.Umzug.ziel(u, Speicher.get(this._tokKey, null), this.name || Speicher.get('name', '')));
+    },
+    // jede Sekunde ab dem Beitreten: nach LITE_SUCHE_AB „getrennt“ Reihum-Probe starten, bei Spiel-WLAN den Kasten zeigen, Anzeige auffrischen
+    _suchTakt() {
+      const s = this._vStatus;
+      if (!this.beigetreten || (s !== 'getrennt' && s !== 'host_weg')) { if (this._getrenntSeit) this._sucheStop(); this._verbindeAnzeige(); return; }
+      const jetzt = Date.now(), h = this.hosts;
+      if (!this._getrenntSeit) this._getrenntSeit = jetzt;
+      if (!this.online && h && jetzt - this._getrenntSeit >= this.sucheAb) {
+        if (!this._sucheSeit) {
+          this._sucheSeit = jetzt;
+          if (!this.reihum) this.reihum = new M.Netz.Reihum({ beiTreffer: basis => this.umziehen(basis) });
+          this.reihum.setze(h);
+          this.reihum.start();
+        }
+        if (h.ap && !this._umzug) this._umzugZeigen({ how: 'qr', name: h.ap_name || this.hostName, auto: true });
+      }
+      this._verbindeAnzeige();
+    },
+    _sucheStop() {
+      this._getrenntSeit = 0;
+      this._sucheSeit = 0;
+      if (this.reihum) this.reihum.stop();
+    },
+    _umzugZeigen(u) { this._umzug = u; this._verbindeAnzeige(); },
+    _umzugZu() { if (this._umzug) { this._umzug = null; this._verbindeAnzeige(); } },
+    _onlineErlaubt(jetzt) { return !!(this.hosts && this.hosts.online && this._sucheSeit && jetzt - this._sucheSeit >= this.onlineAb); },
+    // Bei verlorenem Spiel-WLAN zeigte „Seite neu laden“ nur eine Fehlerseite des Browsers (eigener Ursprung tot) → ausblenden
+    _ladenErlaubt() {
+      const ap = (this.hosts && this.hosts.ap) || (this._umzug && this._umzug.how === 'qr');
+      return !(ap && this.hostBasis === this._eigeneBasis());
+    },
+    // Verbindungshinweis (#verbinde) und Kasten (#umzug) aus dem Zustand; der Kasten ersetzt den Hinweis
+    _verbindeAnzeige() {
+      const v = $('#verbinde');
+      if (!v) return;
+      const s = this._vStatus, weg = s === 'host_weg', jetzt = Date.now(), u = this._umzug;
+      const zeigen = (s === 'getrennt' || weg) && this.beigetreten && !u;
+      v.hidden = !zeigen;
+      const such = !weg && this._sucheSeit > 0;
+      const setze = (id, aus) => { const e = $('#' + id); if (e && e.hidden !== aus) e.hidden = aus; };
+      setze('verbinde-titel', weg || such);
+      setze('verbinde-such', !such);
+      setze('verbinde-unter', weg);
+      setze('verbinde-weg-titel', !weg);
+      setze('verbinde-weg', !weg);
+      setze('verbinde-laden', !(zeigen && this._getrenntSeit && jetzt - this._getrenntSeit >= 15000 && this._ladenErlaubt()));
+      setze('verbinde-online', !(zeigen && this._onlineErlaubt(jetzt)));
+      const k = $('#umzug');
+      if (!k) return;
+      if (k.hidden !== !u) k.hidden = !u;
+      if (!u) return;
+      const text = u.how === 'online' ? M.t('Das Spiel läuft jetzt über das Internet weiter.')
+        : M.t('Neues Spiel-WLAN bei %s. Verbinde dich mit dem WLAN-Code auf diesem Handy und scanne dann den Spiel-Code.', u.name || '?');
+      const t = $('#umzug-text');
+      if (t.textContent !== text) t.textContent = text;
+      setze('umzug-kreisel', u.how === 'online');
+      setze('umzug-weiter', u.how !== 'online');
+      setze('umzug-online', !(u.how !== 'online' && this._onlineErlaubt(jetzt)));
     },
     sende(obj) { return this.verbindung ? this.verbindung.sende(obj) : false; },
 
@@ -1073,6 +1204,7 @@
     if (!$('#regeln').hidden) App.regeln();
     if (!$('#hilfe').hidden || !$('#ansicht').hidden) { App.schliesse('hilfe'); App.schliesse('ansicht'); }
     if (!$('#menue').hidden) $('#menue-info').textContent = App._menueInfo();
+    App._verbindeAnzeige();
   });
 
   M.App = App;

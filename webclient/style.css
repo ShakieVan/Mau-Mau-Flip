@@ -794,6 +794,14 @@ body.reduziert #runde::before { animation: none; }
 .verbinde { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; background: rgba(5,6,15,.5); }
 .verbinde-karte { display: flex; flex-direction: column; align-items: center; gap: 8px; background: var(--cream); color: var(--ink); padding: 18px 26px; border-radius: 22px; box-shadow: 0 16px 40px rgba(0,0,0,.5); font-size: 19px; }
 .verbinde-karte .knopf { color: var(--ink); }
+/* Gastgeber-Wechsel (Beta 1.6.2): Suche, „Über das Internet weiterspielen“ und Kasten #umzug (über dem Hinweis, Schrift nach --fs) */
+.verbinde-karte { max-width: calc(100vw - 32px); text-align: center; }
+.verbinde-karte .knopf { white-space: normal; text-align: center; }
+.verbinde-karte .knopf.haupt { color: var(--cream); padding: 10px 18px; border-radius: 16px; }
+.umzug { z-index: 2100; }
+.umzug-karte { max-width: min(560px, calc(100vw - 32px)); gap: 12px; font-size: calc(19px * var(--fs)); line-height: 1.35; }
+.umzug-karte .knopf { font-size: calc(18px * var(--fs)); }
+html.gross .umzug-karte { font-size: calc(23px * var(--fs)); padding: 22px 30px; }
 .kreisel { width: 28px; height: 28px; border: 4px solid rgba(33,27,44,.18); border-top-color: var(--ink); border-radius: 50%; animation: drehen .8s linear infinite; }
 @keyframes drehen { to { transform: rotate(360deg); } }
 .quer { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 3000; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; background: var(--nachtgrund); padding: 24px; }

@@ -9,9 +9,16 @@ extends RefCounted
 #    wlan_humans, online: {relay, room, token, conns, max_c, created_unix} | {}, wlan: {port, addrs}, my_seat (nur Gast-Datei)}
 # Das Token des Gastgebers ist seats[host_seat].token (kein eigenes Feld). bk_to (Ergänzung zum Entwurf): Tokens der Gäste, die diesen
 # Stand als Sicherung bekamen – auf sie wartet die Einschwingzeit nach dem Fortsetzen (Abschnitt 1.4).
+# Mau-Mau Flip (Beta 1.6.2, WLAN und Spiel-WLAN, Abschnitt 10.2; format bleibt 2): je Platz zusätzlich addr (IPv4, unter der der
+# Gastgeber den Platz zuletzt im WLAN sah, "" = unbekannt), hp (Port, auf dem das Gerät als Gastgeber lauschen würde, 0 = unbekannt)
+# und ap: {ok, perm} (kann ein Spiel-WLAN öffnen / Erlaubnis erteilt; ältere Apps ohne Feld: beides false). wlan wird zu
+# {port, addrs, ap, ap_seat, past}: ap = die Partie läuft in einem Spiel-WLAN, ap_seat = Platz, dessen Handy es führt (−1 = keins;
+# Dateien von 1.6.1 ohne Feld: host_seat, 10.8), past = frühere Gastgeber-Adressen "ip:port" über die ganze Kette, höchstens
+# PAST_MAX, die neuesten zuletzt (Herkunftsprüfung 10.9).
 
 const FORMAT := 2
 const MODE := "host"
+const PAST_MAX := 16             # Beta 1.6.2: höchstens so viele frühere Gastgeber-Adressen in wlan.past (= NetProtocol.PAST_MAX)
 const EXTRA_KEYS := ["gid", "gen", "epoch", "parent", "seq", "substitute", "gone_names", "waiting", "join_open", "heirs", "bk_to",
 	"wlan_humans", "online", "wlan"]
 
@@ -45,6 +52,8 @@ static func clean(data: Dictionary) -> Dictionary:
 			return {}
 	var d := data.duplicate(true)
 	d.host_seat = hs
+	for p in d.seats:
+		_clean_seat_net(p)
 	d.format = _int(data.get("format"), 1)
 	d.role = "guest" if str(data.get("role", "")) == "guest" else "host"
 	d.gid = str(data.get("gid", "")) if data.get("gid") is String and str(data.gid).is_valid_hex_number() else ""
@@ -74,8 +83,64 @@ static func clean(data: Dictionary) -> Dictionary:
 			"conns": _ints(o.get("conns", [])), "max_c": maxi(_int(o.get("max_c"), 0), 0), "created_unix": maxi(_int(o.get("created_unix"), 0), 0)}
 	d.online = online
 	var wlan: Dictionary = data.wlan if data.get("wlan") is Dictionary else {}
-	d.wlan = {"port": _int(wlan.get("port"), 0), "addrs": (wlan.addrs as Array).map(func(a): return str(a)) if wlan.get("addrs") is Array else []}
+	# Beta 1.6.2: ap_seat fehlt in Dateien von 1.6.1 → host_seat (10.8); kaputt oder außerhalb der Plätze ebenso.
+	var ap_seat := _int(wlan.get("ap_seat"), -2)
+	if ap_seat < -1 or ap_seat >= seats.size():
+		ap_seat = hs
+	d.wlan = {"port": _int(wlan.get("port"), 0), "addrs": (wlan.addrs as Array).map(func(a): return str(a)) if wlan.get("addrs") is Array else [],
+		"ap": wlan.get("ap") is bool and bool(wlan.ap), "ap_seat": ap_seat, "past": with_past(wlan.get("past", []))}
 	return d
+
+
+# Beta 1.6.2: Liste früherer Gastgeber-Adressen (wlan.past) bereinigen und optional um entry ("ip:port") ergänzen. Nur gültige
+# IPv4:Port, ohne Doppelte (ein erneuter Eintrag rückt ans Ende), höchstens PAST_MAX – die ältesten fallen vorn heraus.
+static func with_past(past: Variant, entry := "") -> Array:
+	var items: Array = (past as Array).duplicate() if past is Array else []
+	if entry != "":
+		items.append(entry)
+	var out: Array = []
+	for x in items:
+		var e := host_port(x)
+		if e == "":
+			continue
+		out.erase(e)
+		out.append(e)
+	return out.slice(maxi(out.size() - PAST_MAX, 0))
+
+
+# Beta 1.6.2: "ip:port" einer IPv4 mit Port 1–65535 in Normalform (ohne Leerzeichen, Port ohne führende Nullen); "" = ungültig.
+static func host_port(v: Variant) -> String:
+	if not v is String:
+		return ""
+	var parts := (v as String).strip_edges().split(":")
+	if parts.size() != 2 or not is_ipv4(parts[0]) or not parts[1].is_valid_int():
+		return ""
+	var p := parts[1].to_int()
+	if p < 1 or p > 65535:
+		return ""
+	return "%s:%d" % [parts[0], p]
+
+
+# Beta 1.6.2: punktierte IPv4 ohne führende Nullen.
+static func is_ipv4(a: String) -> bool:
+	var parts := a.split(".")
+	if parts.size() != 4:
+		return false
+	for x in parts:
+		if x == "" or x.length() > 3 or not x.is_valid_int() or x.begins_with("+") or x.begins_with("-") or x.to_int() > 255 \
+				or (x.length() > 1 and x.begins_with("0")):
+			return false
+	return true
+
+
+# Beta 1.6.2: Netzfelder eines Platzes säubern (addr, hp, ap; 10.2). Fehlt ap (ältere App), gilt {ok:false, perm:false}.
+static func _clean_seat_net(p: Dictionary) -> void:
+	var addr := str(p.get("addr", "")).strip_edges() if p.get("addr") is String else ""
+	p["addr"] = addr if is_ipv4(addr) else ""
+	var hp := _int(p.get("hp"), 0)
+	p["hp"] = hp if hp >= 1024 and hp <= 65535 else 0
+	var ap: Dictionary = p.ap if p.get("ap") is Dictionary else {}
+	p["ap"] = {"ok": ap.get("ok") is bool and bool(ap.ok), "perm": ap.get("perm") is bool and bool(ap.perm)}
 
 
 # Stand [gen, epoch, seq] (Vergleich mit hello.bk, NetProtocol.compare_marks).
@@ -103,14 +168,16 @@ static func age_s(data: Dictionary, now_unix: int) -> int:
 
 # Für „Partie fortsetzen“ anbieten? Nicht nach dem Partie-Ende, höchstens RESUME_MAX_H alt, online höchstens ROOM_LIFE_S seit dem
 # Anlegen des Raums (Abschnitt 4.4/4.6).
-static func resumable(data: Dictionary, now_unix: int) -> bool:
+# Beta 1.6.2: ignore_room = true prüft das Raumalter nicht – Sicherung beim Beitritt über jede Adresse, Fortsetzen in neuem Raum
+# (10.6/10.13). Ohne nur dort, wo der alte Raum benutzt werden soll („Raum übernehmen“).
+static func resumable(data: Dictionary, now_unix: int, ignore_room := false) -> bool:
 	var d := clean(data)
 	if d.is_empty() or str((d.game as Dictionary).get("phase", "")) == "game_over":
 		return false
 	if int(d.saved_unix) <= 0 or age_s(d, now_unix) > NetProtocol.RESUME_MAX_H * 3600:
 		return false
 	var o: Dictionary = d.online
-	if not o.is_empty() and int(o.created_unix) > 0 and now_unix - int(o.created_unix) >= NetProtocol.ROOM_LIFE_S:
+	if not ignore_room and not o.is_empty() and int(o.created_unix) > 0 and now_unix - int(o.created_unix) >= NetProtocol.ROOM_LIFE_S:
 		return false
 	return true
 

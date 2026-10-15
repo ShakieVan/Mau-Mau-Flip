@@ -22,6 +22,10 @@ extends AppScreen
 #             Kommt am Tisch eine Lobby an, ist diese Partie vorbei: Der Gastgeber hat eine neue Runde eröffnet, und der Gast hat
 #             sich (z. B. nach einem Funkloch, ohne „bye“) dorthin neu verbunden. Dann geht es mit derselben Verbindung in die Lobby
 #             (JoinScreen.with_client) statt am alten Tisch stehen zu bleiben (Nachtest 1, Nachbesserung; wie der Browser-Client).
+# Beta 1.6.2 (Gastgeber-Übergabe im WLAN, docs/module/uebergabe.md 10): Gastgeber legen einen GameWifiWatch an (Neu-Binden ohne
+#             offenes Overlay); Streifen des Gasts bei verlorenem Spiel-WLAN mit „Neues Spiel-WLAN bei %s – QR-Code scannen“
+#             (JoinScreen.rejoin), bei abgelaufenem Raum „In neuem Raum fortsetzen“/„Mit neuem Code beitreten“; Auswahldialog mit
+#             Warnzeilen; „Partie verlassen?“ warnt, wenn dieses Handy als Gast das Spiel-WLAN der anderen führt.
 # Schichtung: Die Overlays der TableView (Farbwahl, Hilfe, Sichtschutz, Rundenende, Großansicht) liegen in einem CanvasLayer
 # über der Hand (layer 5), eigene Knöpfe und Rückfragen darüber (layer 6). So kann keine Karte der Hand sie überdecken.
 
@@ -85,6 +89,22 @@ var _switch: HostSwitch              # Beta 1.6.1: Gastgeber-Übergabe (Wächter
 var _switch_strip := false           # Beta 1.6.1: der Streifen oben zeigt gerade den HostSwitch („Gastgeber antwortet nicht …“)
 var _conn_take: Button               # … mit „Spiel als Gastgeber fortsetzen“ (App-Gast mit Sicherung, Rückfrage)
 var _pick: HostPickDialog            # ☰ → „Gastgeber übergeben …“ (Netz-Gastgeber)
+# Mau-Mau Flip (Beta 1.6.2, WLAN und Spiel-WLAN, docs/module/uebergabe.md 10.2, 10.8, 10.13, 10.15)
+const WIFI_WATCH_META := "game_wifi_watch"   # Meta am HostTable: GameWifiPanel liest den Zustand dort (zeigt nur an)
+static var wifi_watch_factory := Callable()   # Tests: (HostTable) -> Node statt GameWifiWatch (kein Android, kein Server)
+var open_wifi_on_start := false      # neuer Gastgeber nach Verlust des Spiel-WLANs: „Dazuholen“ + eigenes Spiel-WLAN öffnen
+var open_way_on_start := ""          # "online": neuer Raum für die alte Partie → „Dazuholen“ auf dem Online-Weg
+var _wifi_watch: Node                # GameWifiWatch des Gastgebers (Neu-Binden auch ohne offenes Overlay)
+var _conn_scan: Button               # Streifen scan: „Neues Spiel-WLAN bei %s – QR-Code scannen“
+var _conn_newroom: Button            # Raum abgelaufen: „In neuem Raum fortsetzen“
+var _conn_newcode: Button            # … „Mit neuem Code beitreten“
+# Gerätetest 1.6.2 (F2): App-Gast hängt bei „Der Tisch wird geladen …“ (z. B. alter Gastgeber nach dem Abtreten erreicht den neuen
+# nicht) – nach load_stuck_ms Streifen „Der Gastgeber antwortet nicht.“ mit „Zum Hauptmenü“ (Tisch ohne bye zu, die Partie bleibt im
+# Hauptmenü unter „Partie fortsetzen“).
+static var load_stuck_ms := 20000    # Tests kürzer
+var _built_ms := 0                   # Tisch angeschlossen (ms)
+var _stuck := false                  # Streifen „Der Gastgeber antwortet nicht.“ steht
+var _conn_later: Button              # … mit „Zum Hauptmenü“
 
 
 # starter: wird aufgerufen, sobald der Tisch an der Quelle hängt (z. B. LocalTable.start, HostTable.start)
@@ -170,11 +190,19 @@ func build() -> void:
 		if source is ClientTable or source is HostTable:
 			_switch = HostSwitch.ensure(source)
 			_switch.swapped.connect(_on_switch_swapped)
+			if source is HostTable and _switch.take_game_wifi_request():
+				open_wifi_on_start = true        # Beta 1.6.2: Übernahme mit Spiel-WLAN – eigenes öffnen (10.8 Schritt 4)
+		_ensure_wifi_watch()
 		var v := source.current_view()
 		if not v.is_empty():
 			_on_state([], v)
+		elif source is ClientTable and str(source.call("connection_state")) == "connecting":
+			_on_connection("connecting")         # Gerätetest 1.6.2 (F2): Das Signal kam schon vor diesem Tisch (Abtreten, join)
+	_built_ms = Time.get_ticks_msec()
 	if starter.is_valid():
 		starter.call()
+	if open_wifi_on_start or open_way_on_start != "":
+		_open_invite_after_switch.call_deferred()
 
 
 func _build_top() -> void:
@@ -259,10 +287,36 @@ func _build_top() -> void:
 	_conn_take.visible = false
 	_conn_take.pressed.connect(ask_continue_as_host)
 	row.add_child(_conn_take)
+	# Beta 1.6.2: Spiel-WLAN weg (scan) bzw. Online-Raum abgelaufen (gone)
+	_conn_scan = ScreenKit.button("", "PrimaryButton", "qr")
+	_conn_scan.name = "NeuesSpielWlanScannen"
+	_conn_scan.add_theme_font_size_override("font_size", UiFonts.size("text"))
+	_conn_scan.visible = false
+	_conn_scan.pressed.connect(scan_new_wifi)
+	row.add_child(_conn_scan)
+	_conn_newroom = ScreenKit.button("In neuem Raum fortsetzen", "PrimaryButton", "start")
+	_conn_newroom.name = "NeuerRaum"
+	_conn_newroom.add_theme_font_size_override("font_size", UiFonts.size("text"))
+	_conn_newroom.visible = false
+	_conn_newroom.pressed.connect(continue_in_new_room)
+	row.add_child(_conn_newroom)
+	_conn_newcode = ScreenKit.button("Mit neuem Code beitreten", "DarkButton")
+	_conn_newcode.name = "NeuerCode"
+	_conn_newcode.add_theme_font_size_override("font_size", UiFonts.size("text"))
+	_conn_newcode.visible = false
+	_conn_newcode.pressed.connect(join_with_new_code)
+	row.add_child(_conn_newcode)
 	_conn_menu = ScreenKit.button("Zum Menü", "DarkButton")
 	_conn_menu.visible = false
 	_conn_menu.pressed.connect(_leave_now)
 	row.add_child(_conn_menu)
+	_conn_later = ScreenKit.button("Zum Hauptmenü", "DarkButton", "zurueck")    # Gerätetest 1.6.2 (F2): Tisch lädt nicht
+	_conn_later.name = "ZumHauptmenue"
+	_conn_later.tooltip_text = "Die Partie bleibt gemerkt – im Hauptmenü kannst du sie fortsetzen."
+	_conn_later.add_theme_font_size_override("font_size", UiFonts.size("text"))
+	_conn_later.visible = false
+	_conn_later.pressed.connect(pause_to_menu)
+	row.add_child(_conn_later)
 	# Sofort-Leiste (Beta 1.4.2): „Kim ist getrennt“ + „Computer übernimmt“ + „Aus dem Spiel nehmen“ (beide mit Rückfrage)
 	_sub_hint = ScreenKit.card(12.0, false)
 	_sub_hint.name = "Abwesend"
@@ -313,6 +367,12 @@ func on_leave() -> void:
 	if overlay != null:
 		overlay.visible = false
 		top_layer.visible = false
+
+
+func _exit_tree() -> void:
+	# Beta 1.6.2: GameWifiWatch gehört diesem Tisch; die Meta am HostTable nicht stehen lassen
+	if source != null and is_instance_valid(source) and source.has_meta(WIFI_WATCH_META) and source.get_meta(WIFI_WATCH_META) == _wifi_watch:
+		source.remove_meta(WIFI_WATCH_META)
 
 
 static func _keep_screen(on: bool) -> void:
@@ -456,6 +516,10 @@ func _process(_delta: float) -> void:
 			_sub_next_ms = Time.get_ticks_msec() + 500     # Abwesenheit ohne neuen Stand nachführen
 			_refresh_substitute()
 			_check_waiting()
+			_ensure_wifi_watch()                            # Beta 1.6.2: Sitzung kann nach dem Bau des Tisches kommen
+			_sync_foreign_ap()
+			if is_net_host() and _switch_ok() and _switch.take_game_wifi_request():
+				open_own_wifi()                             # Übernahme bzw. geplante Übergabe qr: eigenes Spiel-WLAN
 			if _sub_hint.visible and not table.big:
 				_place_bar(size if size.x > 10.0 else Vector2(1600, 720))   # Hinweis oder Plätze haben sich geändert
 		_sub_hint.visible = _sub_seat >= 0 and not table.wish_picker.is_open() and not is_seat_manager_open()
@@ -551,6 +615,9 @@ func _on_revealed() -> void:
 
 
 func _on_connection(state: String) -> void:
+	if _conn_later != null:
+		_conn_later.visible = false          # Gerätetest 1.6.2: „Zum Hauptmenü“ nur im Streifen „Der Gastgeber antwortet nicht.“
+		_stuck = false
 	match state:
 		"open":
 			_conn.visible = false
@@ -562,9 +629,11 @@ func _on_connection(state: String) -> void:
 			_conn_sub.visible = false
 			_conn_rejoin.visible = false
 			_conn_take.visible = false
+			_hide_switch_buttons()
 			_conn.visible = true
 		"closed", "rejected", "ended":
 			_conn_take.visible = false
+			_hide_switch_buttons()
 			# Spielende und Gastgeber weg (N6) bzw. Wiederverbinden abgelehnt: klar „Spiel beendet“, Weg ins Menü
 			var over := state == "ended" or (state == "rejected" and not view.is_empty())
 			_conn_label.text = "Spiel beendet." if over else "Verbindung zum Gastgeber beendet."
@@ -625,7 +694,15 @@ func _on_switch_swapped(new_src: TableSource, note: String) -> void:
 	if _confirm != null and is_instance_valid(_confirm):
 		_confirm.queue_free()
 		_confirm = null
-	nav.replace(TableScreen.create(new_src))
+	var ts := TableScreen.create(new_src)
+	# Beta 1.6.2: neuer Gastgeber im Spiel-WLAN (10.8) bzw. im neuen Raum (10.13) – gleich „Dazuholen“ öffnen
+	# (die Anfrage nach einem eigenen Spiel-WLAN holt der neue Tisch selbst beim HostSwitch ab, take_game_wifi_request)
+	if new_src is HostTable:
+		if note_is(note, "Du bist jetzt Gastgeber. Öffne das Spiel-WLAN und lass die anderen den QR-Code scannen."):
+			ts.open_wifi_on_start = true
+		elif note_is(note, "Neuer Raum %s. Schick den anderen den Link – sie kommen damit auf ihre Plätze."):
+			ts.open_way_on_start = "online"
+	nav.replace(ts)
 	if note != "":
 		nav.toast(note)
 
@@ -836,11 +913,13 @@ func _sync_conn_hint() -> void:
 			return
 		_host_strip = text
 		_conn_label.text = text
-		for b: Control in [_conn_menu, _conn_save, _conn_host, _conn_sub, _conn_rejoin, _conn_take]:
+		for b: Control in [_conn_menu, _conn_save, _conn_host, _conn_sub, _conn_rejoin, _conn_take, _conn_scan, _conn_newroom, _conn_newcode, _conn_later]:
 			b.visible = false
 		_conn.visible = text != ""
 		_layout()
 	elif _sync_switch_strip():
+		return
+	elif _sync_loading_strip():
 		return
 	elif _conn.visible and _conn_label.text != _conn_hint() and source != null and source.has_method("connection_state") \
 			and str(source.call("connection_state")) == "connecting":
@@ -854,7 +933,7 @@ func _sync_conn_hint() -> void:
 			_host_app_away = true
 			if not _conn.visible or _conn_label.text != text:
 				_conn_label.text = text
-				for b: Control in [_conn_menu, _conn_save, _conn_host, _conn_sub, _conn_rejoin, _conn_take]:
+				for b: Control in [_conn_menu, _conn_save, _conn_host, _conn_sub, _conn_rejoin, _conn_take, _conn_scan, _conn_newroom, _conn_newcode, _conn_later]:
 					b.visible = false
 				_conn.visible = true
 				_layout()
@@ -895,8 +974,8 @@ func _host_strip_text() -> String:
 	var sess := ht.session
 	if sess != null and sess.online_state() in ["away", "check"]:
 		return I18n.t("Online-Verbindung unterbrochen – verbinde neu …")
-	if ht.is_settling():
-		return I18n.t("Einen Moment – gleich geht es weiter.")
+	if ht.is_settling() or ht.is_waking():
+		return I18n.t("Einen Moment – gleich geht es weiter.")       # Gerätetest 1.6.2 (B1): auch während der Wächter-Prüfung
 	return ""
 
 
@@ -909,16 +988,23 @@ func _switch_text() -> String:
 			var ms := _switch.countdown_ms()
 			if ms >= 0:
 				return I18n.t("Gastgeber antwortet nicht. Du übernimmst in %d s.") % ceili(ms / 1000.0)
+			if _guest_in_lan():
+				return I18n.t("Suche den neuen Gastgeber …")     # Beta 1.6.2: im WLAN sucht der Wächter die Partie (gid)
 			return I18n.t("Gastgeber antwortet nicht – warte …")
 		"taking", "joining":
 			return I18n.t("Einen Moment – der Gastgeber wechselt.")
 		"gone":
 			return I18n.t(_switch.last_error if _switch.last_error != "" else "Der Online-Raum ist abgelaufen. Die Partie lässt sich nicht mehr fortsetzen.")
+		"scan":
+			if _switch.handed_off():
+				return I18n.t("Einen Moment – der Gastgeber wechselt.")   # Nachtest 1.6.2: eben selbst mit qr abgegeben, kein Ausfall
+			return I18n.t("Spiel-WLAN von %s ist weg.") % str(scan_names()[0])        # Beta 1.6.2 (10.8)
 	return ""
 
 
 # true = der Streifen gehört gerade dem Wächter. Knopf „Spiel als Gastgeber fortsetzen“, sobald der Gastgeber fehlt (can_continue);
-# bei abgelaufenem Raum „Zum Menü“. Endet die Lage, gilt wieder der Verbindungsstand der Quelle.
+# bei abgelaufenem Raum „Zum Menü“ (Beta 1.6.2 dazu „In neuem Raum fortsetzen“ und „Mit neuem Code beitreten“), bei verlorenem
+# Spiel-WLAN „Neues Spiel-WLAN bei %s – QR-Code scannen“. Endet die Lage, gilt wieder der Verbindungsstand der Quelle.
 func _sync_switch_strip() -> bool:
 	var text := _switch_text()
 	if text == "":
@@ -926,6 +1012,7 @@ func _sync_switch_strip() -> bool:
 			_switch_strip = false
 			_conn_take.visible = false
 			_conn_menu.visible = false
+			_hide_switch_buttons()
 			var st := str(source.call("connection_state")) if source != null and source.has_method("connection_state") else "open"
 			if st == "open":
 				_conn.visible = false
@@ -934,17 +1021,146 @@ func _sync_switch_strip() -> bool:
 				_on_connection(st)
 		return false
 	var gone := _switch.state == "gone"
+	var scan := _switch.state == "scan"
 	var take := not gone and _switch.can_continue()
-	if not _switch_strip or not _conn.visible or _conn_label.text != text or _conn_take.visible != take or _conn_menu.visible != gone:
+	var scan_text := I18n.t("Neues Spiel-WLAN bei %s – QR-Code scannen") % str(scan_names()[1]) if scan else ""
+	var newroom := gone and _switch.can_new_room()
+	if not _switch_strip or not _conn.visible or _conn_label.text != text or _conn_take.visible != take or _conn_menu.visible != gone \
+			or _conn_scan.visible != scan or _conn_scan.text != scan_text or _conn_newroom.visible != newroom or _conn_newcode.visible != gone:
 		_switch_strip = true
+		_stuck = false                       # Gerätetest 1.6.2: die Lage des Wächters geht vor „Der Gastgeber antwortet nicht.“
 		_conn_label.text = text
-		for b: Control in [_conn_save, _conn_host, _conn_sub, _conn_rejoin]:
+		for b: Control in [_conn_save, _conn_host, _conn_sub, _conn_rejoin, _conn_later]:
 			b.visible = false
 		_conn_take.visible = take
 		_conn_menu.visible = gone
+		_conn_scan.text = scan_text
+		_conn_scan.visible = scan
+		_conn_newroom.visible = newroom
+		_conn_newcode.visible = gone
 		_conn.visible = true
 		_layout()
 	return true
+
+
+func _hide_switch_buttons() -> void:
+	for b: Control in [_conn_scan, _conn_newroom, _conn_newcode]:
+		if b != null:
+			b.visible = false
+
+
+# Gerätetest 1.6.2 (F2): App-Gast seit load_stuck_ms ohne ersten Stand („Der Tisch wird geladen …“) und ohne Lage des Wächters –
+# Streifen „Der Gastgeber antwortet nicht.“ mit „Zum Hauptmenü“. Der alte Gastgeber hing nach dem Abtreten über 2,5 min ohne Hinweis
+# und ohne Ausweg (☰ nur Einstellungen, Regeln, So geht's). true = der Streifen gehört gerade dieser Lage.
+func _sync_loading_strip() -> bool:
+	var ct := source as ClientTable
+	var stuck := ct != null and not leaving and _loading != null and _loading.visible \
+		and str(ct.connection_state()) in ["connecting", "open"] and Time.get_ticks_msec() - _built_ms >= load_stuck_ms
+	if not stuck:
+		if _stuck:
+			_stuck = false
+			_conn_later.visible = false
+			_conn_sub.visible = false
+			var st := str(source.call("connection_state")) if source != null and source.has_method("connection_state") else "open"
+			if st == "open":
+				_conn.visible = false
+				_layout()
+			else:
+				_on_connection(st)
+		return false
+	var text := I18n.t("Der Gastgeber antwortet nicht.")
+	if not _stuck or not _conn.visible or _conn_label.text != text:
+		_stuck = true
+		_conn_label.text = text
+		for b: Control in [_conn_menu, _conn_save, _conn_host, _conn_rejoin, _conn_take, _conn_scan, _conn_newroom, _conn_newcode]:
+			b.visible = false
+		var kept := not ct.backup.is_empty()
+		_conn_sub.text = I18n.t("Die Partie bleibt gemerkt – im Hauptmenü kannst du sie fortsetzen.") if kept else ""
+		_conn_sub.visible = kept
+		_conn_later.visible = true
+		_conn.visible = true
+		_layout()
+	return true
+
+
+# Knopf „Zum Hauptmenü“ (F2): Gast-Tisch ohne bye schließen, die Datei bleibt (Hauptmenü „Partie fortsetzen“ sucht die Partie neu).
+# Ohne Sicherung gibt es nichts fortzusetzen – dann wie „Zum Menü“.
+func pause_to_menu() -> void:
+	var ct := source as ClientTable
+	if leaving or ct == null or nav == null:
+		return
+	if ct.backup.is_empty():
+		_leave_now()
+		return
+	_drop_source()
+	ct.suspend()
+	nav.home()
+
+
+# Beta 1.6.2 (10.8): [Name dessen, dessen Spiel-WLAN weg ist, Name dessen, der das neue öffnet] (HostSwitch.scan_names)
+func scan_names() -> Array:
+	if _switch_ok():
+		return _switch.scan_names()
+	var ct := source as ClientTable
+	return HostSwitch.scan_names_of(ct.backup if ct != null else {})
+
+
+# App-Gast im WLAN (nicht über den Vermittler): Der Wächter sucht dort die Partie, statt nur zu warten.
+func _guest_in_lan() -> bool:
+	var ct := source as ClientTable
+	return ct != null and ct.client != null and not ct.client.is_online()
+
+
+# Knopf „Neues Spiel-WLAN bei %s – QR-Code scannen“: Gast-Tisch ohne Verlassen schließen (Datei bleibt, kein bye) und den Scanner
+# öffnen (JoinScreen.rejoin); der vorhandene Weg (WLAN-QR → QrWifi → Suche bzw. Spiel-QR) führt mit bk_token auf den eigenen Platz.
+func scan_new_wifi() -> void:
+	var ct := source as ClientTable
+	if leaving or ct == null or nav == null:
+		return
+	var gid := ct.game_gid() if ct.game_gid() != "" else str(ct.backup.get("gid", ""))
+	var seat := ct.backup_seat()
+	var who := ct.player_name()
+	if who == "" and seat >= 0:
+		who = str(((ct.backup.get("seats", []) as Array)[seat] as Dictionary).get("name", ""))
+	_drop_source()
+	ct.suspend()
+	nav.replace(JoinScreen.rejoin(gid, who))
+
+
+# Raum abgelaufen (gone, 10.13): dieses Handy führt die alte Partie in einem neuen Raum weiter (HostSwitch, swapped bringt den Tisch).
+func continue_in_new_room() -> void:
+	if leaving or not _switch_ok():
+		return
+	if not _switch.resume_new_room():
+		table.show_notice(I18n.t("Das geht gerade nicht."))
+
+
+# Raum abgelaufen: mit dem neuen Code eines anderen beitreten (JoinScreen; die Sicherung bleibt, bk_token führt auf den Platz).
+func join_with_new_code() -> void:
+	var ct := source as ClientTable
+	if leaving or nav == null:
+		return
+	_drop_source()
+	if ct != null:
+		ct.suspend()
+	nav.home(false)
+	nav.push(WlanScreen.new(), false)
+	nav.push(JoinScreen.new())
+
+
+# Tisch verlässt seine Quelle ohne sie zu beenden (Signale lösen, offene Rückfrage zu).
+func _drop_source() -> void:
+	leaving = true
+	if source != null:
+		for c in [[source.state_changed, _on_state], [source.notice, _on_notice], [source.handover, _on_handover],
+				[source.connection_changed, _on_connection], [source.lobby_changed, _on_client_lobby]]:
+			if (c[0] as Signal).is_connected(c[1]):
+				(c[0] as Signal).disconnect(c[1])
+	if _switch_ok() and _switch.swapped.is_connected(_on_switch_swapped):
+		_switch.swapped.disconnect(_on_switch_swapped)
+	if _confirm != null and is_instance_valid(_confirm):
+		_confirm.queue_free()
+		_confirm = null
 
 
 # Knopf im Streifen: Rückfrage mit Warnzeilen (Sicherung nicht aktuell, WLAN-Mitspieler), dann HostSwitch.continue_as_host()
@@ -1001,8 +1217,22 @@ func handover_candidates() -> Array:
 		var p: Dictionary = ht.seats[s]
 		if s == ht.host_seat or str(p.get("kind", "")) == "bot":
 			continue
-		out.append({"seat": s, "name": str(p.get("name", "?")), "kind": "human", "reason": I18n.render(ht.handover_block(s))})
+		var row := {"seat": s, "name": str(p.get("name", "?")), "kind": "human", "reason": I18n.render(ht.handover_block(s))}
+		# Beta 1.6.2 (10.7): bei how "qr" wählbar, aber ohne erteilte Erlaubnis mit „Muss das Spiel-WLAN erlauben.“
+		if str(row.reason) == "":
+			var note := I18n.render(ht.handover_notes(s))
+			if note != "":
+				row["note"] = note
+		out.append(row)
 	return out
+
+
+# Warnzeilen im Auswahldialog (Beta 1.6.2, 10.7): Spiel-WLAN des Gastgebers geht zu; Online-Ziel mit WLAN-Mitspielern am Tisch.
+func handover_warnings(seat: int) -> Array:
+	var ht := source as HostTable
+	if ht == null or ht.game == null:
+		return []
+	return ht.handover_warnings(seat).map(func(lt: Array) -> String: return I18n.render(lt))
 
 
 func open_host_pick() -> void:
@@ -1011,7 +1241,7 @@ func open_host_pick() -> void:
 	if _confirm != null and is_instance_valid(_confirm):
 		_confirm.queue_free()
 		_confirm = null
-	_pick = HostPickDialog.open(_top, handover_candidates)
+	_pick = HostPickDialog.open(_top, handover_candidates, handover_warnings)
 	_pick.chosen.connect(func(seat: int, who: String) -> void:
 		var ht := source as HostTable
 		if ht != null and not leaving and ht.seat_name(seat) == who:
@@ -1104,6 +1334,8 @@ func on_back() -> bool:
 		_confirm = null
 		if yes:
 			_leave_now())
+	if leads_guest_wifi():
+		_confirm.add_note(I18n.t("Dein Spiel-WLAN geht dann zu – alle müssen einen neuen QR-Code scannen."))   # Beta 1.6.2 (10.8)
 	var rules_opt := _confirm.add_option("Regeln ansehen", "regeln")
 	rules_opt.name = "RegelnAnsehen"
 	rules_opt.pressed.connect(open_help.bind("regeln"))
@@ -1379,6 +1611,99 @@ func ask_kick() -> void:
 # Gastgeber eines Netzwerkspiels (nicht Weitergeben/Solo): darf Mitspieler dazuholen und entfernen
 func is_net_host() -> bool:
 	return source is HostTable and (source as HostTable).session != null
+
+
+# Beta 1.6.2 (10.8, „Übernahme im fremden Spiel-WLAN“): Dieses Handy führt das Spiel-WLAN, spielt aber als Gast (der alte Gastgeber
+# nach einer Übernahme). Verlässt es den Tisch, geht das Netz der anderen zu.
+func leads_guest_wifi() -> bool:
+	var ct := source as ClientTable
+	if ct == null or ct.backup.is_empty():
+		return false
+	var wlan: Dictionary = ct.backup.get("wlan", {}) if ct.backup.get("wlan") is Dictionary else {}
+	var ap := int(wlan.get("ap_seat", -1))
+	return bool(wlan.get("ap", false)) and ap >= 0 and ap == ct.backup_seat() and ap != int(ct.backup.get("host_seat", -1))
+
+
+# Beta 1.6.2 (10.2): GameWifiWatch des Gastgebers anlegen, solange eine Netzpartie läuft – er bindet die Sitzung bei jedem Wechsel des
+# Spiel-WLANs neu (auch wenn das Feld „Mitspieler“ zu ist). Das Einladefeld (GameWifiPanel) liest ihn über die Meta am HostTable.
+func _ensure_wifi_watch() -> void:
+	if _wifi_watch != null and is_instance_valid(_wifi_watch):
+		return
+	if leaving or not is_net_host():
+		return
+	var ht := source as HostTable
+	var w: Node = wifi_watch_factory.call(ht) if wifi_watch_factory.is_valid() else GameWifiWatch.new().setup(ht)
+	if w == null:
+		return
+	if w.get_parent() == null:
+		add_child(w)
+	_wifi_watch = w
+	ht.set_meta(WIFI_WATCH_META, w)
+	_sync_foreign_ap()
+	if w.has_signal("lost"):
+		w.connect("lost", _on_wifi_lost)
+	if w.has_signal("auto_done"):
+		w.connect("auto_done", func(ok: bool, _e: String) -> void:
+			if not ok:
+				open_seat_manager("dazuholen"))            # nach den Versuchen: „Neu öffnen“ mit Hinweis im Feld
+
+
+func wifi_watch() -> Node:
+	return _wifi_watch if _wifi_watch != null and is_instance_valid(_wifi_watch) else null
+
+
+# Der Gastgeber sitzt im Spiel-WLAN eines Mitspielers (wlan.ap, ap_seat ≠ Gastgeber): Der Watch meldet dann dessen Verlust.
+func _sync_foreign_ap() -> void:
+	var w := wifi_watch()
+	if w == null or not "foreign_ap" in w or not source is HostTable:
+		return
+	var gw := (source as HostTable).game_wifi()
+	var foreign := bool(gw.get("ap", false)) and int(gw.get("ap_seat", -1)) >= 0 and int(gw.get("ap_seat", -1)) != (source as HostTable).host_seat
+	if bool(w.get("foreign_ap")) != foreign:
+		w.set("foreign_ap", foreign)
+
+
+# lost("foreign"): Das Spiel-WLAN, in dem dieser Gastgeber saß, ist weg – jetzt öffnet er ein eigenes (wie Rang 0, 10.8).
+# lost("own"): Android hat das eigene Spiel-WLAN geschlossen – „Dazuholen“ zeigen (dort „Neu öffnen“).
+func _on_wifi_lost(what: String) -> void:
+	if what == "foreign":
+		open_own_wifi()
+	else:
+		open_seat_manager("dazuholen")
+
+
+# Neuer Gastgeber nach dem Verlust des Spiel-WLANs (10.8, Schritt 4): „Dazuholen“ mit Spiel-WLAN; ist die Erlaubnis schon erteilt,
+# öffnet GameWifiWatch.auto_open() es ohne Tippen (mit Wiederholung), unabhängig davon, ob das Feld offen bleibt.
+func open_own_wifi() -> void:
+	if leaving or not is_net_host():
+		return
+	open_seat_manager("dazuholen")
+	if is_seat_manager_open() and _seat_mgr.invite != null:
+		_seat_mgr.invite.show_way("wlan")
+	var w := wifi_watch()
+	if w != null and w.has_method("auto_open"):
+		w.call("auto_open")
+
+
+func _open_invite_after_switch() -> void:
+	if open_wifi_on_start:
+		open_wifi_on_start = false
+		open_own_wifi()
+	if open_way_on_start != "":
+		var way := open_way_on_start
+		open_way_on_start = ""
+		open_seat_manager("dazuholen")
+		if is_seat_manager_open() and _seat_mgr.invite != null:
+			_seat_mgr.invite.show_way(way)
+
+
+# Meldung nach Muster (I18n-Vorlage mit %s/%d): gleicher Anfang und gleiches Ende
+static func note_is(note: String, msgid: String) -> bool:
+	var t := I18n.t(msgid)
+	var parts := t.replace("%d", "%s").split("%s")
+	if parts.size() == 1:
+		return note == t
+	return note.length() >= t.length() - 2 * (parts.size() - 1) and note.begins_with(parts[0]) and note.ends_with(parts[parts.size() - 1])
 
 
 # Feld „Mitspieler“: page "dazuholen" (Einladefeld) oder "tisch" (Sitzordnung, Entfernen)

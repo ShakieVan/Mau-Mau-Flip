@@ -133,6 +133,85 @@
     ok(sockets.length === 3 && s3.gesendet.length >= 2 && JSON.parse(s3.gesendet[0]).t === 'hello' && JSON.parse(s3.gesendet[1]).t === 'away',
       'App-Wechsel: neu angemeldet im Hintergrund → hello, dann away');
     t.v.beenden();
+
+    // 7. Mau-Mau Flip (Beta 1.6.2, Gastgeber-Wechsel im WLAN, docs/module/uebergabe.md 10.9): Umzug (reine Funktionen), umziehen(), Reihum
+    const U = M.Netz.Umzug;
+    ok(U.basis('http://192.168.1.5:24690/') === 'http://192.168.1.5:24690/' && U.basis('http://10.0.0.2:24691') === 'http://10.0.0.2:24691/', 'Umzug.basis');
+    ['https://192.168.1.5:24690/', 'http://beispiel.de:80/', 'http://192.168.1.256:1/', 'http://1.2.3.4:0/', 'http://1.2.3.4:70000/', 'http://1.2.3.4:5/x', '', null, 'javascript:1']
+      .forEach(x => ok(U.basis(x) === '', 'Umzug.basis lehnt ab: ' + x));
+    ok(U.vonAdresse('192.168.43.7', 24690) === 'http://192.168.43.7:24690/', 'Umzug.vonAdresse');
+    ok(U.wsUrl('http://192.168.1.5:24690/') === 'ws://192.168.1.5:24690/ws' && U.infoUrl('http://192.168.1.5:24690/') === 'http://192.168.1.5:24690/info', 'Umzug.wsUrl/infoUrl');
+    let hs = U.hosts({ t: 'hosts', gid: 'ab12', gen: 3, list: [{ name: '  Anna  ', url: 'http://192.168.1.7:24690/' }, { name: 'X', url: 'https://evil/' }, { name: 'Anna2', url: 'http://192.168.1.7:24690' }, { name: 'Ben', url: 'http://192.168.1.8:24690/' }],
+      online: 'https://relay.example.dev/c/1.6.2/?r=KATZE-42', ap: true, ap_name: 'Anna' });
+    ok(hs && hs.gid === 'ab12' && hs.gen === 3 && hs.list.length === 2 && hs.list[0].name === 'Anna' && hs.list[1].url === 'http://192.168.1.8:24690/'
+      && hs.online === 'https://relay.example.dev/c/1.6.2/?r=KATZE-42' && hs.ap === true && hs.ap_name === 'Anna', 'Umzug.hosts: ' + JSON.stringify(hs));
+    ok(U.hosts({ gid: 'zz', gen: 1, list: [] }) === null && U.hosts({ gid: 'ab', gen: -1 }) === null && U.hosts({ gid: 'ab', gen: 1.5 }) === null && U.hosts(null) === null, 'Umzug.hosts lehnt kaputte gid/gen ab');
+    hs = U.hosts({ gid: 'ab', gen: 0, online: 'javascript:alert(1)', ap: 'ja' });
+    ok(hs && hs.list.length === 0 && hs.online === '' && hs.ap === false, 'Umzug.hosts: leere Liste, kein Link, ap nur bei true');
+    let mv = U.move({ t: 'move', gid: 'ab', gen: 4, how: 'lan', addr: '192.168.1.7', port: 24690 });
+    ok(mv && mv.how === 'lan' && mv.basis === 'http://192.168.1.7:24690/', 'Umzug.move lan aus addr/port');
+    mv = U.move({ how: 'lan', url: 'http://192.168.1.9:24695/', addr: 'x', port: 1 });
+    ok(mv && mv.basis === 'http://192.168.1.9:24695/', 'Umzug.move lan aus url');
+    ok(U.move({ how: 'lan', addr: 'host', port: 1 }) === null && U.move({ how: 'online', url: '' }) === null && U.move({ how: 'quer' }) === null, 'Umzug.move lehnt ab');
+    mv = U.move({ how: 'online', url: 'https://relay.example.dev/c/1.6.2/?r=KATZE-42', room: 'KATZE-42' });
+    ok(mv && mv.url === 'https://relay.example.dev/c/1.6.2/?r=KATZE-42', 'Umzug.move online');
+    mv = U.move({ how: 'qr', name: 'Anna', gid: 'ab' });
+    ok(mv && mv.how === 'qr' && mv.name === 'Anna' && mv.gid === 'ab', 'Umzug.move qr');
+    ok(U.ziel('http://192.168.1.7:24690/', 'a1b2', 'Kim Lee') === 'http://192.168.1.7:24690/#t=a1b2&n=Kim%20Lee', 'Umzug.ziel: ' + U.ziel('http://192.168.1.7:24690/', 'a1b2', 'Kim Lee'));
+    ok(U.ziel('https://r.dev/c/1/?r=KATZE-42#alt', 'a1', '') === 'https://r.dev/c/1/?r=KATZE-42#t=a1' && U.ziel('http://1.2.3.4:5/', null, '') === 'http://1.2.3.4:5/', 'Umzug.ziel ohne Name/Token');
+    let a = U.leseHash('#t=a1b2&n=Kim%20Lee');
+    ok(a && a.t === 'a1b2' && a.n === 'Kim Lee', 'Umzug.leseHash');
+    a = U.leseHash('#t=<script>&n=' + encodeURIComponent('Ein sehr sehr langer Name'));
+    ok(a && a.t === '' && a.n === 'Ein sehr sehr ', 'Umzug.leseHash: Token geprüft, Name gekürzt (' + JSON.stringify(a) + ')');
+    ok(U.leseHash('') === null && U.leseHash('#abschnitt') === null && U.leseHash('#t=%E0%A4%A') === null, 'Umzug.leseHash: nichts → null');
+
+    // umziehen(): neue URL, sofort verbinden (versuche = 0), hello mit Token wie bisher
+    t = neu(false, { url: 'ws://192.168.1.5:24690/ws' });
+    t.v.start(); await warte(50);
+    sockets[0].schliesse(1006);
+    await warte(50);
+    ok(t.v.umziehen('ws://192.168.1.7:24690/ws') === true, 'umziehen() nimmt an');
+    await warte(50);
+    const su = sockets[sockets.length - 1];
+    ok(su.url === 'ws://192.168.1.7:24690/ws' && t.v.status === 'offen' && JSON.parse(su.gesendet[0]).t === 'hello' && t.v.versuche === 0, 'umziehen(): neuer Socket an die neue Adresse');
+    su.schliesse(1006);
+    await warte(1200);
+    ok(sockets[sockets.length - 1].url === 'ws://192.168.1.7:24690/ws', 'umziehen(): Neuversuche gehen an die neue Adresse');
+    t.v.beenden();
+    ok(t.v.umziehen('ws://192.168.1.8:24690/ws') === false, 'umziehen() nach beenden() nicht mehr');
+
+    // Reihum: Treffer nur bei gleicher gid und höherer gen; erster Treffer in Rangfolge; Abbruch nach frist; wiederholt alle abstand ms
+    const antworten = {};      // url → {gid, gen} | 'haengt' | 'fehler'
+    const abgefragt = [];
+    const fakeFetch = (url, o) => {
+      abgefragt.push(url);
+      ok(o && o.cache === 'no-store', 'Reihum: fetch mit cache no-store');
+      const x = antworten[url];
+      if (x === 'haengt') return new Promise((r, f) => { if (o && o.signal) o.signal.addEventListener('abort', () => f(new Error('abort'))); });
+      if (!x || x === 'fehler') return Promise.reject(new Error('weg'));
+      return Promise.resolve({ ok: true, json: () => Promise.resolve(x) });
+    };
+    const treffer = [];
+    const rh = new M.Netz.Reihum({ fetch: fakeFetch, abstand: 500, frist: 200, beiTreffer: (b, info) => treffer.push([b, info.gen]) });
+    rh.setze(U.hosts({ gid: 'ab', gen: 2, list: [{ name: 'Anna', url: 'http://10.0.0.1:24690/' }, { name: 'Ben', url: 'http://10.0.0.2:24690/' }, { name: 'Cem', url: 'http://10.0.0.3:24690/' }] }));
+    antworten['http://10.0.0.1:24690/info'] = 'haengt';
+    antworten['http://10.0.0.2:24690/info'] = { gid: 'ab', gen: 2 };     // gleiche gen: kein Treffer
+    antworten['http://10.0.0.3:24690/info'] = { gid: 'cd', gen: 9 };     // fremde Partie: kein Treffer
+    rh.start();
+    await warte(1300);
+    ok(treffer.length === 0 && rh.runden >= 2 && abgefragt.length >= 6, 'Reihum: ohne Treffer weiter (' + rh.runden + ' Runden, ' + abgefragt.length + ' Abfragen)');
+    antworten['http://10.0.0.3:24690/info'] = { gid: 'ab', gen: 3 };
+    antworten['http://10.0.0.2:24690/info'] = { gid: 'ab', gen: 3 };
+    await warte(800);
+    ok(treffer.length === 1 && treffer[0][0] === 'http://10.0.0.2:24690/' && treffer[0][1] === 3 && !rh.laeuft, 'Reihum: erster Treffer in Rangfolge (' + JSON.stringify(treffer) + ')');
+    const nach = abgefragt.length;
+    await warte(1200);
+    ok(abgefragt.length === nach, 'Reihum: nach dem Treffer keine Abfragen mehr');
+    rh.start(); rh.stop();
+    await warte(800);
+    ok(treffer.length === 1, 'Reihum: stop() verwirft eine laufende Runde');
+    const leer = new M.Netz.Reihum({ fetch: fakeFetch });
+    ok((await leer.pruefe()) === null, 'Reihum: ohne Liste nichts');
   }
   lauf().then(() => {}, e => fehler.push('Ausnahme: ' + (e && e.stack || e))).then(() => {
     const el = document.getElementById('autotest-result');

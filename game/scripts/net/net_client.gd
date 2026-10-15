@@ -28,6 +28,15 @@ extends Node
 #    oder reject – ein Gastgeber antwortet) | away (4503) | gone (Raum weg/voll) | silent (Socket offen, probe_ms ohne Antwort) |
 #    unreachable (Vermittler nicht erreicht); Signal probe_done.
 #  - query_info(): GET <vermittler>/info?room=CODE → info_result {ok, open, host}; Signal info_done.
+# Mau-Mau Flip (Beta 1.6.2, WLAN und Spiel-WLAN, docs/module/uebergabe.md Abschnitte 10.1, 10.4, 10.7, 10.10):
+#  - hello (App) zusätzlich hp (listen_port: Port, auf dem dieses Gerät als Gastgeber lauschen würde), bk_gid (gid der Sicherung,
+#    setzt ClientTable) und ap {ok, perm} (Spiel-WLAN möglich/erlaubt) aus ap_info bzw. ap_info_default – beides Callables, die app/
+#    einspritzt (kein NetAndroid in game/); ohne Quelle {ok:false, perm:false}.
+#  - host_lost_wall (nur WLAN): Wanduhr des ersten gescheiterten Neuversuchs seit der letzten Annahme (Verbindung verweigert, Frist
+#    abgelaufen, Schließen ohne Code); 0 = keiner. Gegenstück zu host_away_wall (4503) für den Wächter.
+#  - drain(max_ms): Sendepuffer leeren (poll, bis get_current_outbound_buffered_amount() == 0), bevor der NetClient freigegeben wird.
+#  - welcome mit assigned:true (seat_assign: Wartender auf einen Platz gesetzt): weder removed noch readmitted, das neue Token gilt
+#    als gesendetes.
 
 signal state_changed(state: String)
 signal welcomed(id: int, host_name: String)
@@ -113,6 +122,12 @@ var _http: HTTPClient
 var _http_sent := false
 var _http_body := PackedByteArray()
 var _http_deadline := -1
+# --- WLAN und Spiel-WLAN (Beta 1.6.2) ---
+static var ap_info_default := Callable()  # () -> {ok, perm}: Standardquelle für alle NetClients (setzt app/, z. B. aus NetAndroid)
+var ap_info := Callable()                 # Tests bzw. Aufrufer: eigene Quelle für hello.ap (hat Vorrang)
+var listen_port := NetProtocol.PORT       # hello.hp
+var bk_gid := ""                          # hello.bk_gid: gid der eigenen Sicherung ("" = keine)
+var host_lost_wall := 0                   # Wanduhr (ms): erster gescheiterter Neuversuch seit der letzten Annahme (nur WLAN)
 
 func connect_to(host_address: String, host_port := NetProtocol.PORT, name_of_player := "Gast", client_kind := "app") -> Error:
 	var link := NetProtocol.parse_room_link(host_address)
@@ -132,6 +147,7 @@ func connect_to(host_address: String, host_port := NetProtocol.PORT, name_of_pla
 	reject_code = ""
 	_reset_removed()
 	reached = false
+	host_lost_wall = 0
 	_set_state("connecting")
 	NetAddresses.bind_for("join", address)   # Android: Sockets ins richtige Netz (WLAN bzw. eigener Hotspot)
 	return _open()
@@ -156,6 +172,7 @@ func connect_relay(relay: String, code: String, name_of_player := "Gast", client
 		return ERR_INVALID_PARAMETER
 	token = _load_token(_key()) if reuse_token else ""
 	reached = false
+	host_lost_wall = 0
 	_set_state("connecting")
 	return _open()
 
@@ -373,8 +390,7 @@ func poll() -> void:
 		reached = true
 		_last_rx_ms = now
 		_sent_token = token
-		var app := kind == "app"
-		var hello := NetProtocol.make_hello(player_name, kind, token, "", bk if app else [], bk_token if app else "")
+		var hello := make_hello_msg()
 		hello.merge(hello_override, true)
 		_ws.send_text(NetProtocol.encode(hello))
 	# Auch nach dem Schließen abholen: „reject“ bzw. „bye“ kommen direkt vor dem Close-Rahmen.
@@ -429,7 +445,45 @@ func poll() -> void:
 			return
 		if is_online() and _relay_close(code):
 			return
-		_lost(I18n.t("Verbindung getrennt (%d).") % code if code > 0 else I18n.t("Verbindung getrennt."))
+		_lost(I18n.t("Verbindung getrennt (%d).") % code if code > 0 else I18n.t("Verbindung getrennt."), -1, code <= 0)
+
+# Begrüßung dieses Clients (ohne hello_override). Beta 1.6.2: Apps zusätzlich hp, bk_gid und ap (Abschnitt 10.1), an jede Adresse.
+func make_hello_msg() -> Dictionary:
+	if kind != "app":
+		return NetProtocol.make_hello(player_name, kind, token)
+	var extra := {"hp": listen_port, "ap": ap_state()}
+	if bk_gid != "":
+		extra["bk_gid"] = bk_gid
+	return NetProtocol.make_hello(player_name, kind, token, "", bk, bk_token, extra)
+
+
+# Beta 1.6.2: {ok, perm} aus der eingespritzten Quelle (ap_info, sonst ap_info_default); ohne Quelle beides false.
+func ap_state() -> Dictionary:
+	var source := ap_info if ap_info.is_valid() else ap_info_default
+	var r = source.call() if source.is_valid() else {}
+	if not r is Dictionary:
+		r = {}
+	return {"ok": r.get("ok") == true, "perm": r.get("perm") == true}
+
+
+# Beta 1.6.2 (Abschnitt 10.7): Sendepuffer leeren, bevor der NetClient freigegeben wird (Godot schreibt erst in poll()). Fragt den
+# Socket ab, bis nichts mehr in der Warteschlange liegt, höchstens max_ms. true = alles hinaus (bzw. nichts zu senden).
+func drain(max_ms := 300) -> bool:
+	if _ws == null:
+		return true
+	var end := Time.get_ticks_msec() + max_ms
+	while true:
+		_ws.poll()
+		if _ws.get_ready_state() != WebSocketPeer.STATE_OPEN:
+			return false
+		if _ws.get_current_outbound_buffered_amount() == 0:
+			_ws.poll()     # Rest eines schon begonnenen Rahmens (zählt in der Warteschlange nicht mehr mit)
+			return true
+		if Time.get_ticks_msec() >= end:
+			return false
+		OS.delay_msec(1)
+	return false
+
 
 func _ping_every() -> int:
 	return NetProtocol.RELAY_PING_MS if is_online() and ping_ms == PING_MS else ping_ms
@@ -504,6 +558,12 @@ func _open() -> Error:
 		if err != OK:
 			_lost(I18n.t("Vermittler nicht erreichbar."))
 		return err
+	if attempts > 1:
+		# Gerätetest 1.6.2 (F3): Neuversuch – Bindung neu bewerten. Verschwindet das Netz, an das der Prozess beim Beitritt gebunden wurde
+		# (Spiel-WLAN des Gastgebers, über die Systemeinstellungen beigetreten), lassen sich bis zum Neu-Binden keine Sockets anlegen
+		# (S10: 40 s lang „_sock == -1“, bis die Suche des Wächters neu band). bind_for erkennt die tote Bindung (bound_to_wifi) und
+		# bindet ans jetzige WLAN bzw. löst sie; bei Adressen in zwei Netzen wechselt es je Versuch das Netz (NetAddresses, F2).
+		NetAddresses.bind_for("join", address)
 	err = _ws.connect_to_url("ws://%s:%d%s" % [address, port, NetProtocol.WS_PATH])
 	if err != OK:
 		_lost(I18n.t("Verbindung zu %s:%d nicht möglich (%s).") % [address, port, error_string(err)])
@@ -518,9 +578,13 @@ func _handle(msg: Dictionary) -> void:
 			welcome_info = _clean_welcome(msg)     # Beta 1.6.1: gid/gen/epoch (ältere Gastgeber schicken sie nicht)
 			welcomes += 1
 			token = str(msg.get("token", "")).left(64)
-			# Altes Token nicht mehr bekannt (Gerätetest 1.4.2: herausgenommen, während die App im Hintergrund war; der Gastgeber
-			# nimmt ihn als Neuen auf die Warteliste): merken, damit der Tisch es sagen kann
-			if _admitted and _sent_token != "" and token != _sent_token:
+			host_lost_wall = 0          # Beta 1.6.2: wieder angenommen
+			if msg.get("assigned") == true:
+				# Beta 1.6.2 (Abschnitt 10.10): vom Gastgeber auf einen Platz gesetzt – neues Token, kein Herausnehmen
+				_sent_token = token
+			elif _admitted and _sent_token != "" and token != _sent_token:
+				# Altes Token nicht mehr bekannt (Gerätetest 1.4.2: herausgenommen, während die App im Hintergrund war; der Gastgeber
+				# nimmt ihn als Neuen auf die Warteliste): merken, damit der Tisch es sagen kann
 				readmitted = true
 				removed = true
 			_admitted = true
@@ -589,8 +653,9 @@ func hold_id() -> String:
 func _unhold() -> void:
 	NetAddresses.release_hold(hold_id())
 
-func _lost(reason: String, delay := -1) -> void:
+func _lost(reason: String, delay := -1, counts_lost := true) -> void:
 	# delay ≥ 0: so bald neu verbinden (0 = sofort, nach der Rückkehr in die App), sonst nach der Staffel retry_ms.
+	# counts_lost (Beta 1.6.2): ein gescheiterter Neuversuch zählt für host_lost_wall (nicht beim Schließen mit Code).
 	_unhold()
 	_resume_deadline = -1
 	if _ws != null:
@@ -598,6 +663,9 @@ func _lost(reason: String, delay := -1) -> void:
 		_ws = null
 	if state == "closed" or state == "idle":
 		return
+	# Beta 1.6.2: Neuversuch (schon einmal angenommen, in diesem Versuch noch nicht) gescheitert – erster seit der letzten Annahme
+	if counts_lost and _admitted and not _welcomed and not is_online() and not probe_mode and host_lost_wall == 0:
+		host_lost_wall = _wall()
 	if not auto_reconnect:
 		_final(reason)
 		return

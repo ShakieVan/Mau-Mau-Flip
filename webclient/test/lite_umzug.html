@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><title>Test Gastgeber-Wechsel Lite</title></head>
+<body>
+<pre id="autotest-result">läuft …</pre>
+<iframe id="f" style="width:1000px;height:600px;border:0"></iframe>
+<script>
+/* Mau-Mau Flip (Beta 1.6.2, Gastgeber-Wechsel im WLAN, docs/module/uebergabe.md 10.9): der echte Lite-Ablauf (index.html im iframe) gegen
+ * Schein-WebSocket und Schein-fetch. Geprüft: hosts merken, Reihum-Probe ab 20 s „getrennt“ → umziehen mit Token, move lan/online/qr,
+ * Kasten bei hosts.ap nach 20 s ohne „Seite neu laden“, „Über das Internet weiterspielen“ nach 60 s Suche, #t=/#n= beim Start.
+ * Aufruf (iframe auf file:// braucht den Schalter): chrome --headless=new --allow-file-access-from-files --virtual-time-budget=300000
+ *   --dump-dom file:///…/webclient/test/lite_umzug.html  → <pre id="autotest-result" data-ok="1|0">. Läuft nicht im Spiel. */
+(function () {
+  const fehler = [];
+  const ok = (b, t) => { if (!b) fehler.push(t); };
+  const warte = ms => new Promise(r => setTimeout(r, ms));
+  const frame = document.getElementById('f');
+  let w = null;              // Fenster des iframes
+  const sockets = [];
+  const lebt = new Set();    // ws-URLs, unter denen ein (Schein-)Gastgeber antwortet
+  const infos = {};          // http://…/info → Antwort
+  const abgefragt = [];
+
+  class FakeWS {
+    constructor(url) {
+      this.url = url; this.readyState = 0; this.gesendet = []; sockets.push(this);
+      setTimeout(() => { if (lebt.has(url)) { this.readyState = 1; if (this.onopen) this.onopen(); } else this.schliesse(1006); }, 5);
+    }
+    send(s) {
+      this.gesendet.push(s);
+      let m = null; try { m = JSON.parse(s); } catch (e) { /* Text */ }
+      if (m && m.t === 'ping') setTimeout(() => this.rx({ t: 'pong', ts: m.ts }), 2);
+    }
+    close() { this.readyState = 3; }
+    rx(obj) { if (this.readyState === 1 && this.onmessage) this.onmessage({ data: JSON.stringify(obj) }); }
+    schliesse(code) { if (this.readyState === 3) return; this.readyState = 3; if (this.onclose) this.onclose({ code }); }
+    hello() { for (const s of this.gesendet) { try { const m = JSON.parse(s); if (m.t === 'hello') return m; } catch (e) { /* weiter */ } } return null; }
+  }
+  const fakeFetch = (url, o) => {
+    abgefragt.push(url);
+    const x = infos[url];
+    if (!x) return Promise.reject(new Error('weg'));
+    return Promise.resolve({ ok: true, json: () => Promise.resolve(x) });
+  };
+  const letzter = () => sockets[sockets.length - 1];
+  const leeren = () => { localStorage.clear(); localStorage.setItem('mmf.sprache', '"de"'); };   // Deutsch, unabhängig von Chrome
+  const sichtbar = id => { const e = w.document.getElementById(id); return !!e && !e.hidden; };
+  const text = id => (w.document.getElementById(id) || {}).textContent || '';
+
+  function lade(zusatz) {
+    return new Promise(fertig => {
+      frame.onload = async () => {
+        w = frame.contentWindow;
+        for (let i = 0; i < 100 && !(w.MMF && w.MMF.App && w.MMF.App.hostBasis); i++) await warte(20);
+        w.WebSocket = FakeWS;
+        w.fetch = fakeFetch;
+        fertig();
+      };
+      frame.src = '../index.html' + (zusatz || '');
+    });
+  }
+  // beitreten beim Schein-Gastgeber unter dem eigenen Ursprung (file:// → ws:///ws), welcome mit Token
+  async function beitreten(name) {
+    sockets.length = 0;
+    lebt.clear(); lebt.add('ws:///ws');
+    w.MMF.App.beitreten(name);
+    await warte(50);
+    const s = letzter();
+    s.rx({ t: 'welcome', id: 3, token: 'tok123abc', host_name: 'Hanna' });
+    await warte(20);
+    return s;
+  }
+
+  async function lauf() {
+    leeren();
+    // A. hosts merken, Ausfall, Reihum-Probe nach 20 s, Umzug mit Token, dann move lan / online / qr
+    await lade('');
+    const App = w.MMF.App;
+    ok(App.version === '1.6.2', 'Version 1.6.2 (' + App.version + ')');
+    let s = await beitreten('Kim');
+    ok(App.beigetreten && App.hostBasis === 'file:///', 'beigetreten, hostBasis = eigener Ursprung (' + App.hostBasis + ')');
+    s.rx({ t: 'hosts', gid: 'ab12', gen: 2, list: [{ name: 'Anna', url: 'http://10.0.0.7:24690/' }, { name: 'Ben', url: 'http://10.0.0.8:24690/' }], online: '', ap: false, ap_name: '' });
+    await warte(20);
+    ok(App.hosts && App.hosts.gid === 'ab12' && App.hosts.list.length === 2, 'hosts gemerkt');
+    s.rx({ t: 'hosts', gid: 'ab12', gen: 1, list: [] });
+    await warte(20);
+    ok(App.hosts.gen === 2 && App.hosts.list.length === 2, 'veraltete hosts (kleinere gen) verworfen');
+    lebt.clear();                       // Hanna stirbt
+    s.schliesse(1006);
+    await warte(1500);
+    ok(sichtbar('verbinde') && sichtbar('verbinde-titel') && !sichtbar('verbinde-such'), 'getrennt: Hinweis ohne Suche');
+    ok(abgefragt.length === 0, 'vor 20 s keine Probe');
+    infos['http://10.0.0.8:24690/info'] = { gid: 'ab12', gen: 3, name: 'Ben' };   // Ben hat übernommen (Anna antwortet nicht)
+    lebt.add('ws://10.0.0.8:24690/ws');
+    await warte(16000);
+    ok(sichtbar('verbinde-laden'), '„Seite neu laden“ nach 15 s (ohne Spiel-WLAN)');
+    await warte(6000);
+    ok(abgefragt.indexOf('http://10.0.0.8:24690/info') >= 0 && abgefragt.indexOf('http://10.0.0.7:24690/info') >= 0, 'Reihum fragt alle Einträge (' + abgefragt.join() + ')');
+    s = letzter();
+    ok(s.url === 'ws://10.0.0.8:24690/ws' && s.readyState === 1, 'umgezogen zu Ben (' + s.url + ')');
+    const h = s.hello();
+    ok(h && h.token === 'tok123abc' && h.name === 'Kim' && h.kind === 'web', 'hello beim neuen Gastgeber mit Token (' + JSON.stringify(h) + ')');
+    ok(App.hostBasis === 'http://10.0.0.8:24690/', 'hostBasis = neuer Gastgeber');
+    s.rx({ t: 'welcome', id: 3, token: 'tok123abc', host_name: 'Ben' });
+    s.rx({ t: 'hosts', gid: 'ab12', gen: 3, list: [{ name: 'Anna', url: 'http://10.0.0.7:24690/' }], online: '', ap: false });
+    await warte(1100);
+    ok(!sichtbar('verbinde') && !App._sucheSeit && !App._getrenntSeit, 'beim neuen Gastgeber: kein Hinweis, Suche aus');
+    // move lan: sofort umziehen, ohne /info
+    lebt.add('ws://10.0.0.7:24695/ws');
+    const vorher = abgefragt.length;
+    s.rx({ t: 'move', gid: 'ab12', gen: 4, name: 'Anna', how: 'lan', addr: '10.0.0.7', port: 24695, url: 'http://10.0.0.7:24695/' });
+    await warte(100);
+    s = letzter();
+    ok(s.url === 'ws://10.0.0.7:24695/ws' && s.readyState === 1 && abgefragt.length === vorher, 'move lan: sofort umgezogen (' + s.url + ')');
+    s.rx({ t: 'welcome', id: 3, token: 'tok123abc', host_name: 'Anna' });
+    // move einer fremden Partie: verworfen
+    s.rx({ t: 'move', gid: 'ffff', gen: 9, how: 'lan', addr: '10.0.0.9', port: 24690 });
+    await warte(100);
+    ok(letzter() === s, 'move mit fremder gid verworfen');
+    // move online: Kasten mit „Weiter“
+    s.rx({ t: 'move', gid: 'ab12', gen: 5, name: 'Ben', how: 'online', room: 'KATZE-42', relay: 'r.dev', url: 'https://r.dev/c/1.6.2/?r=KATZE-42' });
+    await warte(50);
+    ok(sichtbar('umzug') && sichtbar('umzug-weiter') && !sichtbar('umzug-kreisel') && text('umzug-text') === 'Das Spiel läuft jetzt über das Internet weiter.', 'move online: Kasten mit Weiter');
+    ok(w.MMF.Netz.Umzug.ziel(App._umzug.url, 'tok123abc', 'Kim') === 'https://r.dev/c/1.6.2/?r=KATZE-42#t=tok123abc&n=Kim', 'move online: Ziel mit Token und Name im Anker');
+    s.rx({ t: 'welcome', id: 3, token: 'tok123abc', host_name: 'Anna' });
+    await warte(50);
+    ok(!sichtbar('umzug'), 'welcome schließt den Kasten');
+    // move qr: Kasten mit Namen, ohne Knopf
+    s.rx({ t: 'move', gid: 'ab12', gen: 5, name: 'Ben', how: 'qr' });
+    await warte(50);
+    ok(sichtbar('umzug') && !sichtbar('umzug-weiter') && /Ben/.test(text('umzug-text')) && /Spiel-WLAN/.test(text('umzug-text')), 'move qr: Kasten „Neues Spiel-WLAN bei Ben“');
+    lebt.clear(); s.schliesse(1006);
+    await warte(1500);
+    ok(sichtbar('umzug') && !sichtbar('verbinde'), 'move qr, getrennt: Kasten ersetzt den Hinweis');
+
+    // B. Spiel-WLAN verloren (hosts.ap), kurze Zeiten per ?suche_ab/online_ab: Kasten nach suche_ab, kein „Seite neu laden“, Online-Knopf
+    leeren();
+    await lade('?suche_ab=2000&online_ab=3000');
+    s = await beitreten('Lea');
+    s.rx({ t: 'hosts', gid: 'cd34', gen: 0, list: [], online: 'https://r.dev/c/1.6.2/?r=MAUS-11', ap: true, ap_name: 'Anna' });
+    await warte(20);
+    lebt.clear(); s.schliesse(1006);
+    await warte(1200);
+    ok(sichtbar('verbinde') && !sichtbar('umzug'), 'Spiel-WLAN: vor suche_ab nur der Hinweis');
+    await warte(2500);   // Takt 1 s: Kasten spätestens 1 s nach suche_ab
+    ok(sichtbar('umzug') && !sichtbar('verbinde') && /Anna/.test(text('umzug-text')) && !sichtbar('umzug-online'), 'Spiel-WLAN: Kasten „Neues Spiel-WLAN bei Anna“ (' + text('umzug-text') + ')');
+    ok(!w.MMF.App._ladenErlaubt(), 'Spiel-WLAN: „Seite neu laden“ gesperrt, solange der eigene Ursprung tot ist');
+    await warte(16000);
+    ok(!sichtbar('verbinde-laden') && sichtbar('umzug-online'), 'Spiel-WLAN: kein „Seite neu laden“, nach online_ab „Über das Internet weiterspielen“');
+    w.MMF.App.nachricht({ t: 'hosts', gid: 'cd34', gen: 0, list: [], online: 'https://r.dev/c/1.6.2/?r=MAUS-11', ap: false });   // ohne Spiel-WLAN: Kasten zu
+    await warte(1100);
+    ok(sichtbar('verbinde') && sichtbar('verbinde-such') && !sichtbar('verbinde-titel') && sichtbar('verbinde-online') && sichtbar('verbinde-laden') && !sichtbar('umzug'), 'ohne Spiel-WLAN: Hinweis mit Suche, Online-Knopf und „Seite neu laden“');
+
+    // C. Ohne Liste aus einer alten Partie: nichts suchen; hosts im Online-Modus ignoriert
+    leeren();
+    await lade('');
+    s = await beitreten('Max');
+    lebt.clear(); s.schliesse(1006);
+    await warte(22000);
+    ok(!w.MMF.App._sucheSeit && sichtbar('verbinde-titel'), 'ohne hosts keine Suche');
+    await lade('?r=KATZE-42');
+    w.MMF.App.nachricht({ t: 'hosts', gid: 'ab12', gen: 1, list: [{ name: 'Anna', url: 'http://10.0.0.7:24690/' }] });
+    w.MMF.App.nachricht({ t: 'move', gid: 'ab12', how: 'qr', name: 'Anna' });
+    ok(w.MMF.App.hosts === null && !w.MMF.App._umzug, 'online: hosts und move ignoriert');
+
+    // D. Start mit #t=…&n=…: Token gespeichert, Name vorbelegt, Anker entfernt, Knopf „Weiterspielen“
+    leeren();
+    await lade('#t=abc123def&n=Lea%20M');
+    ok(JSON.parse(localStorage.getItem('mmf.token')) === 'abc123def', 'Anker: Token gespeichert (' + localStorage.getItem('mmf.token') + ')');
+    ok(w.document.getElementById('name').value === 'Lea M' && w.location.hash === '' && text('beitreten') === 'Weiterspielen', 'Anker: Name, Anker weg, Weiterspielen');
+    leeren();
+    await lade('?r=KATZE-42#t=abc999&n=Kim');
+    ok(JSON.parse(localStorage.getItem('mmf.token:KATZE-42')) === 'abc999' && localStorage.getItem('mmf.token') === null, 'Anker online: Token unter token:CODE');
+  }
+  lauf().then(() => {}, e => fehler.push('Ausnahme: ' + (e && e.stack || e))).then(() => {
+    const el = document.getElementById('autotest-result');
+    el.setAttribute('data-ok', fehler.length ? '0' : '1');
+    el.textContent = fehler.length ? 'FEHLER: ' + fehler.join(' | ') : 'ok';
+  });
+})();
+</script></body></html>

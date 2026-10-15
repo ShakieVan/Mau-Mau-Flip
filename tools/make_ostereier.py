@@ -25,6 +25,18 @@ Atemklassen zählen mit ihrer Summe, Tonhöhe und Stimmanteil (librosa.pyin, sti
 Dubletten über alle Paare; höchstens 3 je Prompt-Variante. Stand: 78 erzeugt, 8 behalten (gaehnen2_01–08). Ergebnis
 A/B: Negativ-Prompt Groan im Median 0,01, „no groaning …“ im Prompt 0,10 (2 von 10 brauchbar).
 
+Gähnen Runde 3 („gaehnen3“, 13.10.2026): Nutzerbefund zu Runde 2: überall erst das „Gähnen“, danach das Luftholen;
+richtig ist erst tief Einatmen (offener Mund), dann ein langes stimmhaftes, fallendes „aaah“, gehaucht ausklingend.
+Reihenfolge ausdrücklich im Prompt („first … then …“), angelehnt an „frau“/Seed 4110 (gaehnen2_02), Negativ-Prompt wie
+Runde 2; eigener Schnitt (gaehnen_schnitt), der den leisen Atem vorn behält. Reihenfolge-Prüfung (reihenfolge_messen,
+analyse-Umgebung, Grenzen RF_*): vorn ≥ 0,5 s hörbarer, gehauchter Atem, danach der stimmhafte Teil (Mitte hinter der
+Mitte der Dauer) mit fallender Tonhöhe, gehauchtes Ende, kein neuer Atemzug danach; wer sie nicht besteht, fällt aus
+(„nur_ok“, kein Auffüllen). Gegenprobe: alle 8 Kandidaten der Runde 2 fallen durch. Dazu ein einziger Versuch
+„gaehnen3_02umgestellt“ (umstellen): in gaehnen2_02 Atem und „aaah“ an der natürlichen Pause getauscht, Nähte in der
+Stille überblendet. Je Variante optional CFG und Daueransage (6. Feld des Prompt-Eintrags, optionen_von). Stand:
+297 erzeugt (25 Varianten), 6 bestanden (frau_zuerst 2/36, frau_followed_lang_cfg7 2/36, frau_followed_lang 1/12,
+frau_zuerst_5s 1/6); sonst Stimme zuerst, nur Hauchen ohne Stimme, zu kurzer Atem vorn oder stimmhaftes Ende.
+
 Erzeugung: je Ton 3 Prompt-Varianten × 3 Seeds; nach der ersten Sichtung mehr Seeds bzw. eine vierte Variante bei
 Wecker (22), Gähnen (12), Schreck (11), Plopp (12); Klingeln 2 × 3. 100 Schritte, CFG 4, shift 5, Daueransage im
 Prompt wie in make_sfx_moss.py (Original 2 s länger gespeichert, danach geschnitten). Gleicher Seed bei ähnlichem
@@ -306,6 +318,113 @@ TOENE["gaehnen2"]["prompts"] += [
     ("hoeflich2", "a young woman gives a short polite yawn behind her hand, a soft airy open-mouthed breath in, a gentle breathy haaah rising and then falling in pitch, then a quick relaxed breath out, close-up, quiet room, " + NO_WORDS,
      "Frau, höflich hinter der Hand, sanft", [4131, 4132, 4133, 4134, 4135, 4136], NEG_PLUS),
 ]
+# Gähnen Runde 3 (13.10.2026). Nutzerbefund zu Runde 2: Bei allen Kandidaten kommt zuerst das „Gähnen“ (stimmhaft) und
+# danach das Luftholen; gaehnen2_02 (Frau, halb gehaucht, halb Stimme, fallend, luftiges Ende) war „schon ganz gut“.
+# Richtig: erst tief Luft holen (Einatmen durch den offenen Mund), dann ein langes stimmhaftes „aAaaaaahhh“ beim Ausatmen,
+# fallend, gehaucht ausklingend. Die Prompts der Runde 2 endeten selbst mit „then a short relaxed breath out“; jetzt
+# steht die Reihenfolge ausdrücklich im Prompt (first … then …), ohne Atemzug danach. Angelehnt an „frau“ mit Seed 4110
+# (gaehnen2_02), Negativ-Prompt wie dort; dazu zwei hellere, jugendliche Stimmen (Negativ-Prompt wie „jugend“).
+# Auswahl nur mit bestandener Reihenfolge-Prüfung (reihenfolge_messen; „nur_ok“: kein Auffüllen mit Ausgeschlossenen).
+# Eigener Schnitt („einatmen“, gaehnen_schnitt), weil find_event den leiseren Atem vorn abschnitte.
+G3_SEEDS = [4110] + list(range(5101, 5112))
+TOENE["gaehnen3"] = {
+    "titel": "Gähnen, Runde 3", "zweck": "an einen langsamen Spieler senden",
+    "ziel_text": "3–4 s: erst tief Luft holen (Einatmen durch den offenen Mund, gehaucht), dann ein langes stimmhaftes "
+                 "„aAaaaahhh“ beim Ausatmen, Tonhöhe fällt, klingt gehaucht aus",
+    "hinweis": "Neu nach dem Befund zu Runde 2 (erst das Gähnen, danach das Luftholen; gaehnen2_02 „schon ganz gut“): Die "
+               "Reihenfolge steht ausdrücklich im Prompt, angelehnt an den Prompt und Seed von gaehnen2_02, Negativ-Prompt "
+               "gegen Stöhnen und Ächzen wie in Runde 2. Behalten wurde nur, was die Reihenfolge-Prüfung besteht (Messung "
+               "von Pegel, Stimmhaftigkeit und Tonhöhe, kein Hören): vorn etwa 0,5 s (ab 0,45 s) hörbarer, gehauchter Atem, "
+               "danach der stimmhafte Teil (seine Mitte hinter der Mitte des Tons) mit fallender Tonhöhe, gehauchtes Ende "
+               "ohne neuen Atemzug, höchstens 0,8 s Stille zwischen Atem und „aaah“. Dazu die Ausschlüsse aus Runde 2 "
+               "(Stöhnen, Ächzen, Sprache, Katze). Das Modell setzt die Stimme meist an den Anfang oder haucht nur: von 297 "
+               "erzeugten Kandidaten bestanden 6 (alle mit Frauenstimme; die Varianten mit Mädchen-/Jungenstimme ergaben "
+               "meist nur Hauchen). Das „aaah“ ist bei den meisten kürzer als gewünscht (0,5–0,8 s), das Einatmen dafür lang. "
+               "gaehnen3_02umgestellt ist gaehnen2_02 mit getauschten Teilen (zusammengesetzt, außerhalb der Rangfolge).",
+    "sekunden": 3.5, "ziel": (2.6, 4.3), "modus": "einatmen", "vorlauf": 0.04, "einblenden": 0.04, "ausblenden": 0.3,
+    "lufs": -19.0, "begrenzer": 3.0, "hochpass": 90.0, "stimme": True, "behalten": 8, "nur_ok": True,
+    "erwartet": ["Breathing", "Sigh", "Gasp", "Pant"], "atem_summe": True, "tonhoehe": True, "dubletten_alle": True,
+    "reihenfolge": True,
+    "meiden": dict(TOENE["gaehnen2"]["meiden"]), "atem_mindestens": 0.15, "je_variante_max": 3, "sprache_grenze": (0.3, 0.15),
+    "negativ": TOENE["gaehnen2"]["negativ"],
+    "seeds": G3_SEEDS[:4],
+    "prompts": [
+        ("frau_zuerst", "a young woman yawns lightly: first a long, deep, airy breath in through her wide-open mouth, then a long, soft, voiced aaaah while she breathes out, slowly falling in pitch, ending in a soft breathy sigh, effortless and gentle, close-up, quiet room, " + NO_WORDS,
+         "Frau wie gaehnen2_02, Reihenfolge ausdrücklich: erst Einatmen, dann „aaah“", G3_SEEDS + list(range(5112, 5136))),
+        ("frau_reihe", "a young woman yawning, in this order: first a long deep inhale through the open mouth, then a long voiced descending aaaah while exhaling, ending in a soft breathy sigh, close-up, quiet room, " + NO_WORDS,
+         "Frau, „in this order: first … then …“", G3_SEEDS[:4]),
+        ("frau_zwei_teile", "a woman's yawn in two parts: first she slowly breathes in deeply through her wide-open mouth for about one second, an audible airy inhale, then she lets it out with a long relaxed voiced aaaah sliding down in pitch that fades into a breathy whisper, close-up, quiet room, " + NO_WORDS,
+         "Frau, Gähnen in zwei Teilen (1 s Einatmen, dann „aaah“)", G3_SEEDS[:8]),
+        ("frau_beginnt", "a long yawn from a young woman that begins with a deep, airy, audible inhale and ends with a long, soft, voiced aaaah on the exhale, falling in pitch and trailing off into a gentle breathy sigh, close-up, quiet room, " + NO_WORDS,
+         "Frau, „beginnt mit … endet mit …“", G3_SEEDS[:4]),
+        # erste Sichtung (22 Kandidaten): „beginnt“ und „reihe“ ergaben fast nur ein „aaah“ ohne Atem davor (teils Summen,
+        # Hund/Heulen); „zuerst“, „zwei_teile“ und „maedchen_hell“ je 1–2-mal Atem vor dem „aaah“. Diese mit mehr Seeds,
+        # dazu zwei Formulierungen, die mit dem Einatmen als Hauptverb beginnen („takes a breath … and directly after“).
+        ("frau_atem_zuerst", "a young woman takes a slow, deep, audible breath in through her wide-open mouth, and directly after it she lets out a long, soft, voiced yawning aaaah that falls in pitch and fades into a breathy sigh, close-up, quiet room, " + NO_WORDS,
+         "Frau, Einatmen als Hauptverb, „direkt danach“ das „aaah“", G3_SEEDS),
+        ("frau_luft_holen", "a young woman yawning: she first sucks in a long deep breath of air with her mouth wide open, and then, without a pause, breathes out with a long voiced descending aaaah, ending in a soft breathy sigh, close-up, quiet room, " + NO_WORDS,
+         "Frau, „saugt erst Luft ein, dann ohne Pause aaah“", G3_SEEDS),
+        # zweite Sichtung (66 Kandidaten, kein einziger bestanden): Atem vorn nur in 9 von 66; sonst „aaah“ zuerst (34) oder
+        # nur Atem ohne Stimme (26); das „aaah“ endete meist mit Stimme statt gehaucht. Neu im Stil der Trainings-
+        # beschreibungen (AudioCaps: „X followed by Y“), kurz, ohne eigenen Atemzug am Ende (Runde 2: „then a short relaxed
+        # breath out“ ergab den Atem hinten); das Ende als „wird hauchig und verklingt“.
+        ("frau_followed", "a woman inhales deeply through her open mouth, followed by a long voiced yawning aaaah that falls in pitch and gets softer and breathier until it fades out, close-up, quiet room, " + NO_WORDS,
+         "Frau, „inhales …, followed by …“, Ende wird hauchig", list(range(5101, 5117))),
+        ("atemzug_followed", "a long airy gasp of breath in, followed by a young woman's long voiced descending yawn aaaah that turns breathy at the end, close-up, quiet room, " + NO_WORDS,
+         "Frau, „gasp of breath in, followed by …“", G3_SEEDS[1:7]),
+        ("maedchen_followed", "a teenage girl breathes in deeply through her open mouth, followed by a long voiced yawning aaaah in a bright young voice, falling in pitch and turning breathy at the end, close-up, quiet room, " + NO_WORDS,
+         "jugendlich hell (Mädchen), „followed by …“", G3_SEEDS[1:7], NEG_PLUS),
+        # dritte Sichtung (18): „frau_followed“ am besten (3 von 6: Atem 0,3–0,45 s, dann „aaah“, hauchiges Ende),
+        # „maedchen_followed“ sechsmal nur Hauchen ohne Stimme, „atemzug_followed“ meist Stimme zuerst. Daher „frau_followed“
+        # mit 10 weiteren Seeds, dazu mit längerem, langsamem Einatmen und mit hellen Stimmen im selben Aufbau.
+        ("frau_followed_lang", "a woman slowly inhales a long deep breath through her wide-open mouth, followed by a long voiced yawning aaaah that falls in pitch and gets softer and breathier until it fades out, close-up, quiet room, " + NO_WORDS,
+         "Frau, langsames langes Einatmen, „followed by …“", G3_SEEDS),
+        ("hell_followed", "a young woman with a bright, high, girlish voice inhales deeply through her open mouth, followed by a long voiced yawning aaaah that falls in pitch and gets softer and breathier until it fades out, close-up, quiet room, " + NO_WORDS,
+         "junge Frau, helle Mädchenstimme, „followed by …“", list(range(5101, 5111))),
+        ("junge_followed", "a teenage boy with a light young voice inhales deeply through his open mouth, followed by a long voiced yawning aaaah that falls in pitch and gets softer and breathier until it fades out, close-up, quiet room, " + NO_WORDS,
+         "jugendlich hell (Junge), „followed by …“", list(range(5101, 5109)), NEG_PLUS),
+        # vierte Sichtung (124): Atem vorn nur in 14, bestanden 1 (frau_followed_lang_5101). Versuch mit stärkerer
+        # Prompt-Führung (CFG 7 statt 4) und längerer Daueransage (5 s statt 3,5 s), gleiche Prompts und Seeds.
+        ("frau_zuerst_cfg7", "a young woman yawns lightly: first a long, deep, airy breath in through her wide-open mouth, then a long, soft, voiced aaaah while she breathes out, slowly falling in pitch, ending in a soft breathy sigh, effortless and gentle, close-up, quiet room, " + NO_WORDS,
+         "wie „frau_zuerst“, CFG 7", list(range(5101, 5117)), None, {"cfg": 7.0}),
+        ("frau_followed_lang_cfg7", "a woman slowly inhales a long deep breath through her wide-open mouth, followed by a long voiced yawning aaaah that falls in pitch and gets softer and breathier until it fades out, close-up, quiet room, " + NO_WORDS,
+         "wie „frau_followed_lang“, CFG 7", list(range(5101, 5137)), None, {"cfg": 7.0}),
+        ("frau_zuerst_5s", "a young woman yawns lightly: first a long, deep, airy breath in through her wide-open mouth, then a long, soft, voiced aaaah while she breathes out, slowly falling in pitch, ending in a soft breathy sigh, effortless and gentle, close-up, quiet room, " + NO_WORDS,
+         "wie „frau_zuerst“, Daueransage 5 s", list(range(5101, 5107)), None, {"sekunden": 5.0}),
+        # fünfte Sichtung (Rohdaten): CFG 7 ergab in 5 von 12 Atem → „aaah“ → hauchiges Ende (Atem oft nur 0,35–0,45 s),
+        # 5 s Daueransage dagegen mehrere getrennte Laute. Weiter mit CFG 7, mehr Seeds, Einatmen „zwei Sekunden lang“
+        # und zwei hellere Stimmen.
+        ("frau_zwei_sek_cfg7", "a woman slowly breathes in through her wide-open mouth for two full seconds, a long audible airy inhale, followed by a long voiced yawning aaaah that falls in pitch and gets breathier until it fades out, close-up, quiet room, " + NO_WORDS,
+         "Frau, Einatmen „zwei Sekunden lang“, CFG 7", G3_SEEDS, None, {"cfg": 7.0}),
+        ("hell_followed_cfg7", "a young woman with a bright, high, girlish voice slowly inhales a long deep breath through her wide-open mouth, followed by a long voiced yawning aaaah that falls in pitch and gets softer and breathier until it fades out, close-up, quiet room, " + NO_WORDS,
+         "junge Frau, helle Mädchenstimme, CFG 7", list(range(5101, 5109)), None, {"cfg": 7.0}),
+        ("jugend_followed_cfg7", "a teenage girl with a bright young voice slowly inhales a long deep breath through her open mouth, followed by a long voiced yawning aaaah that falls in pitch and gets breathier until it fades out, close-up, quiet room, " + NO_WORDS,
+         "jugendlich hell (Mädchen), CFG 7", list(range(5101, 5109)), NEG_PLUS, {"cfg": 7.0}),
+        # sechste Sichtung (190): bestanden 2. Häufigster Fehler jetzt „nur Hauchen, keine Stimme“ (Wörter wie „airy“,
+        # „breath“ ziehen zum Flüstern) und ein zu kurzer Atem vorn (0,3–0,4 s). Ein großer Seufzer hat dieselbe Form
+        # wie das gewünschte Gähnen (tief einatmen, dann stimmhaftes, fallendes „aaah“) und beginnt von Natur aus mit dem
+        # Einatmen; daher Prompts als müder, gähnender Seufzer, „with her voice“.
+        # siebte Sichtung (214): Atem vorn am häufigsten bei „frau_zuerst“ (3/12), „junge_hell“ (2/6),
+        # „frau_followed_lang_cfg7“ (3/16), „seufzer“ (1/6, bestanden); diese vier mit vielen weiteren Seeds.
+        ("seufzer", "a tired young woman takes a long, deep, audible breath in through her open mouth and then lets it all out in a long sleepy aaaah with her voice, falling in pitch and ending breathy, like a big yawn, close-up, quiet room, " + NO_WORDS,
+         "Frau, müder Seufzer wie ein großes Gähnen, „with her voice“", list(range(5101, 5127))),
+        ("seufzer_cfg7", "a tired young woman takes a long, deep, audible breath in through her open mouth and then lets it all out in a long sleepy aaaah with her voice, falling in pitch and ending breathy, like a big yawn, close-up, quiet room, " + NO_WORDS,
+         "wie „seufzer“, CFG 7", list(range(5101, 5107)), None, {"cfg": 7.0}),
+        ("seufzer_laut_cfg7", "a woman inhales deeply and then exhales with a long, loud, voiced, sleepy sigh, aaaaah, falling in pitch, close-up, quiet room, " + NO_WORDS,
+         "Frau, tief einatmen, dann lauter stimmhafter Seufzer, CFG 7", list(range(5101, 5107)), None, {"cfg": 7.0}),
+        ("einatmen_seufzer_cfg7", "a deep inhaling gasp of air followed by a long voiced sleepy sigh from a woman, like a yawn, close-up, quiet room, " + NO_WORDS,
+         "Frau, „inhaling gasp followed by voiced sigh“, CFG 7", list(range(5101, 5107)), None, {"cfg": 7.0}),
+        ("maedchen_hell", "a teenage girl with a bright, light young voice yawns: first a long deep breath in through her open mouth, then a long voiced aaaah falling in pitch as she breathes out, ending in a soft breathy sigh, close-up, quiet room, " + NO_WORDS,
+         "jugendlich hell (Mädchen)", G3_SEEDS[:8], NEG_PLUS),
+        ("junge_hell", "a teenage boy with a light, clear young voice yawns: first a long deep breath in through his open mouth, then a long relaxed voiced aaaah falling in pitch as he breathes out, ending in a soft breathy sigh, close-up, quiet room, " + NO_WORDS,
+         "jugendlich hell (Junge)", G3_SEEDS[:6] + list(range(5106, 5124)), NEG_PLUS),
+    ],
+}
+TOENE = {k: TOENE[k] for k in ["gaehnen", "gaehnen2", "gaehnen3"] + [k for k in TOENE if not k.startswith("gaehnen")]}
+# Einziger Versuch „gaehnen3_02umgestellt“: in gaehnen2_02 (Rohdatei gaehnen2_frau_4110) Einatmen und „aaah“ tauschen,
+# an der natürlichen Pause dazwischen und mit weicher Blende in der Stille (siehe umstellen). Nur, wenn die Pause klar ist
+# und die Nähte in der Stille liegen; sonst entfällt er.
+UMGESTELLT = {"id": "gaehnen3_umgestellt_4110", "quelle": "gaehnen2_frau_4110", "datei": "gaehnen3_02umgestellt"}
 REIHE = list(TOENE)
 SPRACHE =["Speech", "Male speech, man speaking", "Female speech, woman speaking", "Child speech, kid speaking",
            "Conversation", "Narration, monologue", "Speech synthesizer"]
@@ -322,15 +441,29 @@ def candidates(nur=None):
             continue
         for pr in t["prompts"]:
             pname, prompt, notiz = pr[:3]
+            opt = optionen_von(pr)
             for sd in seeds_von(t, pr):
                 out.append({"id": f"{ton}_{pname}_{sd}", "ton": ton, "variante": pname, "prompt": prompt,
-                            "prompt_notiz": notiz, "seed": sd, "sekunden": t["sekunden"], "negativ": negativ_von(t, pr)})
+                            "prompt_notiz": notiz, "seed": sd, "sekunden": opt.get("sekunden", t["sekunden"]),
+                            "negativ": negativ_von(t, pr), "cfg": opt.get("cfg", m.CFG)})
+        if ton == "gaehnen3":
+            # nicht erzeugt, sondern aus gaehnen2_02 umgestellt (umstellen); läuft außerhalb der Rangfolge
+            q = json.load(open(os.path.join(ROH, UMGESTELLT["quelle"] + ".json"), encoding="utf-8"))
+            out.append({"id": UMGESTELLT["id"], "ton": ton, "variante": "umgestellt", "prompt": q["prompt"],
+                        "prompt_notiz": "gaehnen2_02 mit getauschten Teilen: erst der Atem, dann das „aaah“",
+                        "seed": q["seed"], "sekunden": q["sekunden"], "negativ": q.get("negativ", ""), "umgestellt": True})
     return out
 
 
 def negativ_von(t, pr):
-    """CFG-Negativ-Prompt eines Prompt-Eintrags: 5. Feld, sonst „negativ“ des Tons, sonst leer (wie die Pipeline)."""
-    return pr[4] if len(pr) > 4 else t.get("negativ", "")
+    """CFG-Negativ-Prompt eines Prompt-Eintrags: 5. Feld (None = wie der Ton), sonst „negativ“ des Tons, sonst leer
+    (wie die Pipeline)."""
+    return pr[4] if len(pr) > 4 and pr[4] is not None else t.get("negativ", "")
+
+
+def optionen_von(pr):
+    """6. Feld eines Prompt-Eintrags: Abweichungen je Variante, {"cfg": …, "sekunden": …} (Daueransage)."""
+    return pr[5] if len(pr) > 5 else {}
 
 
 def seeds_von(t, pr):
@@ -356,7 +489,7 @@ def erzeugen(cs, gpu, stapel=3):
     import soundfile as sf
     import torch
     os.makedirs(ROH, exist_ok=True)
-    todo = [c for c in cs if not os.path.exists(os.path.join(ROH, c["id"] + ".wav"))]
+    todo = [c for c in cs if not c.get("umgestellt") and not os.path.exists(os.path.join(ROH, c["id"] + ".wav"))]
     print(f"Zu erzeugen: {len(todo)} von {len(cs)} (GPU {gpu})", flush=True)
     if not todo:
         return
@@ -364,16 +497,16 @@ def erzeugen(cs, gpu, stapel=3):
     print(f"Modell geladen in {t_load:.0f} s", flush=True)
     groups = {}
     for c in todo:
-        groups.setdefault((c["ton"], c.get("negativ", "")), []).append(c)
+        groups.setdefault((c["ton"], c.get("negativ", ""), c.get("cfg", m.CFG), c["sekunden"]), []).append(c)
     t0 = time.time()
     n = 0
-    for (ton, negativ), items in groups.items():
+    for (ton, negativ, cfg, _sek), items in groups.items():
         for i in range(0, len(items), stapel):
             b = items[i:i + stapel]
-            waves, dt = m.generate_batch(MitNegativ(pipe, negativ) if negativ else pipe, b, m.STEPS, m.CFG, m.SHIFT)
+            waves, dt = m.generate_batch(MitNegativ(pipe, negativ) if negativ else pipe, b, m.STEPS, cfg, m.SHIFT)
             for c, w in zip(b, waves):
                 sf.write(os.path.join(ROH, c["id"] + ".wav"), w, FS, subtype="FLOAT")
-                meta = dict(c, schritte=m.STEPS, cfg=m.CFG, sigma_shift=m.SHIFT, modell=m.MODEL_ID, stapel=len(b),
+                meta = dict(c, schritte=m.STEPS, cfg=cfg, sigma_shift=m.SHIFT, modell=m.MODEL_ID, stapel=len(b),
                             laufzeit_je_ton_s=round(dt / len(b), 1), erzeugt=time.strftime("%Y-%m-%d %H:%M:%S"))
                 with open(os.path.join(ROH, c["id"] + ".json"), "w", encoding="utf-8") as f:
                     json.dump(meta, f, ensure_ascii=False, indent=1)
@@ -529,6 +662,125 @@ def ticken_anheben(x, info):
     return x * g, round(float(g_db), 1)
 
 
+def laute_strecken(env, grenze_db, min_s=0.03, luecke_s=0.0):
+    """Strecken (a, b) mit Hüllkurve über grenze_db (absolut), kürzer als min_s verworfen, Lücken unter luecke_s
+    überbrückt."""
+    runs = [(a, b) for a, b in m.quiet_runs(env > grenze_db, 1) if b - a >= int(min_s * FS)]
+    out = []
+    for a, b in runs:
+        if out and a - out[-1][1] < int(luecke_s * FS):
+            out[-1] = (out[-1][0], b)
+        else:
+            out.append((a, b))
+    return out
+
+
+def gaehnen_schnitt(xl, t):
+    """Gähnen Runde 3 (modus „einatmen“): Das Einatmen vorn ist leiser als das „aaah“; find_event setzte den Anfang an
+    den ersten Einsatz 20 dB unter dem Höchstwert und schnitte es ab. Hier: hörbar = 50-ms-Hüllkurve höchstens 40 dB
+    unter dem Höchstwert (eine 10-ms-Hüllkurve lag am spitzen Stimmeinsatz so hoch, dass der Atem darunter fiel),
+    Strecken unter 50 ms zählen nicht, Lücken unter 1,0 s werden überbrückt (die Pause zwischen Atem und „aaah“ bleibt,
+    wie sie ist; zu lange Pausen fallen in der Reihenfolge-Prüfung auf); genommen wird die zusammenhängende Strecke mit
+    dem Höchstwert, 40 ms davor, 60 ms danach, höchstens ziel[1] s (dann ausgeblendet)."""
+    import numpy as np
+    env = m.envelope_db(xl, 50.0)
+    top = float(env.max())
+    ipk = int(env.argmax())
+    st = laute_strecken(env, top - 40.0, 0.05, 1.0)
+    a, b = next(((a, b) for a, b in st if a <= ipk < b), (ipk, ipk + 1))
+    start = max(0, a - int(t["vorlauf"] * FS))
+    end = min(len(xl), b + int(0.06 * FS))
+    cap = int(t["ziel"][1] * FS)
+    natural = (end - start) / FS
+    end = min(end, start + cap)
+    return start, end, {"start_s": round(start / FS, 3), "hoechstwert_s": round(ipk / FS, 3),
+                        "natuerliche_dauer_s": round(natural, 3), "gekuerzt": bool(natural * FS > cap)}
+
+
+def umstellen(force=False):
+    """Einziger Versuch „gaehnen3_02umgestellt“: gaehnen2_02 (Rohdatei gaehnen2_frau_4110) besteht aus „aaah“ (stimmhaft),
+    einer Pause und einem gehauchten Atemzug, den der Nutzer als Luftholen hört. Getauscht wird nur, wenn genau zwei
+    Strecken (hörbar = 10-ms-Hüllkurve ≤ 42 dB unter dem Höchstwert, Lücken < 0,15 s überbrückt, je ≥ 0,3 s) mit einer
+    klaren Pause (≥ 0,15 s, leiser als −40 dB) dazwischen da sind, die erste stimmhaft (≥ 50 % der Rahmen), die zweite
+    gehaucht (≤ 10 %). Neu: [Pause vor dem Atem, Atem, 0,10 s Ausklang] + [0,10 s vor dem „aaah“, „aaah“, Ausklang bis in
+    die Pause] + [Stille vom Dateiende]. Jede Naht ist eine Überblendung gleicher Leistung (sin/cos, 40 ms) und muss
+    in der Stille liegen (beide Seiten ≤ −38 dB unter dem Höchstwert, 20-ms-Pegel); sonst entfällt der Versuch.
+    Gibt (ok, Info) zurück und schreibt <UMGESTELLT id>.wav/.json nach ROH."""
+    import librosa
+    import numpy as np
+    import soundfile as sf
+    from scipy import signal
+    ziel = os.path.join(ROH, UMGESTELLT["id"] + ".wav")
+    if os.path.exists(ziel) and not force:
+        return True, json.load(open(os.path.join(ROH, UMGESTELLT["id"] + ".json"), encoding="utf-8"))["umstellen"]
+    raw, sr = sf.read(os.path.join(ROH, UMGESTELLT["quelle"] + ".wav"), dtype="float32")
+    x = raw.astype(np.float64)
+    xl = signal.sosfilt(signal.butter(2, 90.0, "high", fs=FS, output="sos"), x - x.mean())
+    env = m.envelope_db(xl, 10.0)
+    top = float(env.max())
+    st = [(a, b) for a, b in laute_strecken(env, top - 42.0, 0.03, 0.15) if b - a >= int(0.3 * FS)]
+    info = {"quelle": UMGESTELLT["quelle"], "strecken_s": [(round(a / FS, 3), round(b / FS, 3)) for a, b in st]}
+
+    def stimmhaft(a, b):
+        y = librosa.resample(x[a:b].astype(np.float32), orig_sr=FS, target_sr=16000)
+        f0, _vf, vp = librosa.pyin(y, fmin=65, fmax=800, sr=16000, frame_length=1024, hop_length=160)
+        return float(np.mean((vp >= 0.4) & np.isfinite(f0)))
+
+    def nein(grund):
+        info["ok"], info["grund"] = False, grund
+        if os.path.exists(ziel):
+            os.remove(ziel)
+        return False, info
+    if len(st) != 2:
+        return nein(f"{len(st)} statt 2 Strecken (Stimme, Atem)")
+    (va, vb), (ba, bb) = st
+    info["stimmhaft_erste"], info["stimmhaft_zweite"] = round(stimmhaft(va, vb), 2), round(stimmhaft(ba, bb), 2)
+    pause = env[vb:ba]
+    info["pause_s"] = round((ba - vb) / FS, 3)
+    info["pause_pegel_db"] = round(float(np.median(pause) - top), 1) if len(pause) else None
+    if info["stimmhaft_erste"] < 0.5 or info["stimmhaft_zweite"] > 0.1:
+        return nein("erste Strecke nicht stimmhaft oder zweite nicht gehaucht")
+    if ba - vb < int(0.15 * FS) or info["pause_pegel_db"] > -40:
+        return nein("keine klare Pause zwischen „aaah“ und Atem")
+    halt = int(0.10 * FS)
+    blende = int(0.04 * FS)
+    p_vor_atem = max(vb + blende, ba - halt)                 # in der Pause, kurz vor dem Atem
+    atem_ende = min(len(x), bb + halt)                      # Atem mit 0,10 s Ausklang
+    stimme_an = max(0, va - halt)                           # 0,10 s vor dem „aaah“ (gehauchter Einsatz bleibt)
+    stimme_aus = min(ba - halt, vb + int(0.2 * FS))         # Ausklang bis in die Pause
+    ruhe = laute_strecken(env, top - 45.0, 0.0, 0.0)
+    ruhe_ab = max(atem_ende, ruhe[-1][1] + int(0.05 * FS)) if ruhe else atem_ende
+    teile = [x[p_vor_atem:atem_ende], x[stimme_an:stimme_aus], x[ruhe_ab:]]
+    u = np.linspace(0, np.pi / 2, blende)
+    aus_k, ein_k = np.cos(u), np.sin(u)
+    naehte = []
+
+    def pegel(seg):
+        return float(10 * np.log10(np.mean(np.square(seg)) + 1e-20) - top)
+    y = teile[0]
+    for nxt in teile[1:]:
+        if len(nxt) < blende:
+            break
+        links, rechts = y[-blende:], nxt[:blende]
+        naehte.append({"bei_s": round((len(y) - blende) / FS, 3), "links_db": round(pegel(links), 1),
+                      "rechts_db": round(pegel(rechts), 1)})
+        y = np.concatenate([y[:-blende], links * aus_k + rechts * ein_k, nxt[blende:]])
+    info.update({"naehte": naehte, "schnitte_s": {"atem_von": round(p_vor_atem / FS, 3), "atem_bis": round(atem_ende / FS, 3),
+                                                 "stimme_von": round(stimme_an / FS, 3), "stimme_bis": round(stimme_aus / FS, 3),
+                                                 "stille_ab": round(ruhe_ab / FS, 3)},
+                 "neue_pause_s": round(((atem_ende - bb) + (va - stimme_an)) / FS, 3)})
+    laut = [n for n in naehte if max(n["links_db"], n["rechts_db"]) > -38.0]
+    if laut:
+        return nein(f"Naht nicht in der Stille ({laut[0]['links_db']}/{laut[0]['rechts_db']} dB)")
+    info["ok"] = True
+    sf.write(ziel, y.astype(np.float32), FS, subtype="FLOAT")
+    q = json.load(open(os.path.join(ROH, UMGESTELLT["quelle"] + ".json"), encoding="utf-8"))
+    meta = dict(q, id=UMGESTELLT["id"], ton="gaehnen3", variante="umgestellt", umstellen=info,
+                erzeugt=time.strftime("%Y-%m-%d %H:%M:%S"))
+    json.dump(meta, open(os.path.join(ROH, UMGESTELLT["id"] + ".json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    return True, info
+
+
 # ---------------------------------------------------------------------------------------------------------------
 # Nachbearbeitung (moss-sfx-Umgebung, ohne GPU)
 # ---------------------------------------------------------------------------------------------------------------
@@ -580,6 +832,10 @@ def bearbeiten(cs):
              "roh_spitze_dbfs": mr["spitze_dbfs"], "roh_leer": mr["leer"], "roh_leise": mr["leise"]}
         if c.get("negativ"):
             r["negativ"] = c["negativ"]
+        if c.get("cfg", m.CFG) != m.CFG:
+            r["cfg"] = c["cfg"]
+        if c.get("umgestellt"):
+            r["umgestellt"] = json.load(open(os.path.join(ROH, c["id"] + ".json"), encoding="utf-8"))["umstellen"]
         if mr["leer"]:
             r["fehler"] = "Original leer"
             res.append(r)
@@ -599,6 +855,8 @@ def bearbeiten(cs):
             x, info["ticken_angehoben_db"] = ticken_anheben(x, info)
             info["natuerliche_dauer_s"] = round((end - start) / FS, 3)
             info["gekuerzt"] = bool(info.get("klingeln_ausgeblendet") or info.get("ticken_vorn_gekuerzt_s"))
+        elif t["modus"] == "einatmen":
+            start, end, info = gaehnen_schnitt(xl, t)
         else:
             start, end, info = m.find_event(xl, t)
         y, li = leitplanke(x, start, end, ein, aus, t["lufs"], t["begrenzer"])
@@ -686,6 +944,156 @@ def stimme_messen(y, sr=16000):
     return out
 
 
+# Reihenfolge-Prüfung Gähnen Runde 3 (Grenzen)
+RF_HOERBAR_DB = -35.0        # Rahmen gilt als hörbar: RMS (64 ms) höchstens 35 dB unter dem Höchstwert
+RF_STIMME_DB = -30.0         # stimmhafte Rahmen zählen nur, wenn höchstens 30 dB unter dem Höchstwert
+RF_EINATMEN_S = 0.45         # vorn mindestens so viel hörbarer Atem vor dem stimmhaften Teil (Vorgabe „mindestens ~0,5 s“)
+RF_EINATMEN_STIMME = 0.2     # höchstens so viel Stimme im Atem vorn
+RF_EINATMEN_PEGEL_DB = -32.0  # lautester Rahmen des Atems vorn mindestens so laut (sonst kaum hörbar)
+RF_LAGE = 0.5                # Mitte der stimmhaften Rahmen (Zeit) hinter der Mitte der hörbaren Strecke
+RF_FALL_HT = 2.0             # Tonhöhe fällt vom Gipfel zum Ende um mindestens so viele Halbtöne (und mehr als sie steigt)
+RF_ENDE_S = 0.3              # Ende = letzte 0,3 s der hörbaren Strecke
+RF_ENDE_STIMME = 0.4         # ... höchstens so viel Stimme (gehaucht)
+RF_NEUER_ATEM = (0.12, 0.25)  # nach dem stimmhaften Teil: Pause ≥ 0,12 s, danach ≥ 0,25 s hörbar = neuer Atemzug
+RF_PAUSE_S = (0.45, 0.8)     # Pause (still) zwischen Atem und „aaah“: ab 0,45 s Hinweis, ab 0,8 s zerfällt es in zwei Laute
+RF_LUECKE_S = 0.08           # Unterbrechung im „aaah“: so lange ohne Stimme; ab 2 Unterbrechungen stockend („a-ah-aaah“)
+
+
+def reihenfolge_messen(y, sr=16000):
+    """Reihenfolge eines Gähnens (Runde 3): erst Einatmen (gehaucht, hörbar), dann stimmhaftes „aaah“ mit fallender
+    Tonhöhe, gehauchtes Ende. Rahmen 10 ms (pyin 65–800 Hz, Fenster 64 ms; stimmhaft = Stimmwahrscheinlichkeit ≥ 0,4 wie
+    stimme_messen und höchstens RF_STIMME_DB unter dem Höchstwert). Stimmhafter Teil = von der ersten bis zur letzten
+    Stelle, an der 150 ms lang mindestens 60 % der Rahmen stimmhaft sind. Gemessen: Einatmen (hörbare Rahmen vor dem
+    stimmhaften Teil, deren Stimmanteil und lautester Rahmen), Beginn des stimmhaften Teils, Lage (Mitte der stimmhaften
+    Rahmen relativ zur hörbaren Strecke), Tonhöhe im stimmhaften Teil (Anfang/Gipfel/Ende, Halbtöne), Ende (letzte 0,3 s)
+    und ein neuer Atemzug nach dem stimmhaften Teil (Pause, dann wieder hörbar). Zeiten in s ab Dateianfang."""
+    import librosa
+    import numpy as np
+    from scipy.ndimage import uniform_filter1d
+    from scipy.signal import medfilt
+    hop, fl = 160, 1024
+    f0, _vf, vp = librosa.pyin(y, fmin=65, fmax=800, sr=sr, frame_length=fl, hop_length=hop)
+    rms = librosa.feature.rms(y=y, frame_length=fl, hop_length=hop)[0]
+    n = min(len(f0), len(rms))
+    f0, vp, rms = f0[:n], vp[:n], rms[:n]
+    db = 20 * np.log10(rms + 1e-9)
+    db -= db.max()
+    s = hop / sr
+    akt = db > RF_HOERBAR_DB
+    sth = (vp >= 0.4) & np.isfinite(f0) & (db > RF_STIMME_DB)
+    ai = np.nonzero(akt)[0]
+    out = {"dauer_hoerbar_s": round(float((ai[-1] - ai[0] + 1) * s), 2) if len(ai) else 0.0}
+    if not len(ai):
+        out["fehler"] = "nichts hörbar"
+        return out
+    a0, a1 = int(ai[0]), int(ai[-1])
+    out["hoerbar_ab_s"], out["hoerbar_bis_s"] = round(a0 * s, 2), round(a1 * s, 2)
+    sus = np.nonzero(uniform_filter1d(sth.astype(float), 15) >= 0.6)[0]
+    if not len(sus):
+        out["fehler"] = "kein stimmhafter Teil"
+        out["stimmhaft_anteil"] = round(float(sth[a0:a1 + 1].mean()), 2)
+        return out
+    vi = np.nonzero(sth)[0]
+    v0 = int(vi[vi >= sus[0] - 7][0])
+    v1 = int(vi[vi <= sus[-1] + 7][-1])
+    vor = np.arange(a0, v0)
+    out["stimme_ab_s"] = round(v0 * s, 2)
+    out["stimme_bis_s"] = round(v1 * s, 2)
+    out["einatmen_s"] = round(float(akt[vor].sum() * s), 2) if len(vor) else 0.0
+    out["einatmen_stimme"] = round(float(sth[vor][akt[vor]].mean()), 2) if akt[vor].any() else 0.0
+    out["einatmen_pegel_db"] = round(float(db[vor].max()), 1) if len(vor) else None
+    # längste Pause (nicht hörbar) zwischen Atem und Stimme
+    lue = [b - a for a, b in m.quiet_runs(~akt[vor], 1)] if len(vor) else []
+    out["pause_vor_stimme_s"] = round(max(lue) * s, 2) if lue else 0.0
+    st_t = vi[(vi >= v0) & (vi <= v1)]
+    lue_st = [b - a for a, b in m.quiet_runs(~sth[v0:v1 + 1], int(RF_LUECKE_S / s))]
+    out["unterbrechungen"] = len(lue_st)
+    out["lage"] = round(float((st_t.mean() - a0) / max(1, a1 - a0)), 2)
+    out["stimmhaft_anteil"] = round(float(sth[a0:a1 + 1].sum() / max(1, akt[a0:a1 + 1].sum())), 2)
+    fv = f0[st_t]
+    if len(fv) >= 15:
+        k = medfilt(fv, 7)
+        q = max(5, len(k) // 10)
+        fa, fe = float(np.median(k[:q])), float(np.median(k[-q:]))
+        g = int(np.argmax(k))
+        out.update({"f0_anfang_hz": round(fa), "f0_gipfel_hz": round(float(k[g])), "f0_ende_hz": round(fe),
+                    "steigt_ht": round(float(12 * np.log2(k[g] / fa)), 1), "faellt_ht": round(float(12 * np.log2(k[g] / fe)), 1),
+                    "netto_ht": round(float(12 * np.log2(fa / fe)), 1)})
+    e0 = max(a0, a1 - int(RF_ENDE_S / s))
+    out["ende_stimme"] = round(float(sth[e0:a1 + 1].mean()), 2)
+    nach = np.arange(v1 + 1, a1 + 1)
+    out["nachlauf_s"] = round(len(nach) * s, 2)
+    out["nachlauf_stimme"] = round(float(sth[nach].mean()), 2) if len(nach) else 0.0
+    neu = None
+    if len(nach):
+        pausen = m.quiet_runs(~akt[nach], int(RF_NEUER_ATEM[0] / s))
+        for pa, pb in pausen:
+            laut = akt[nach][pb:].sum() * s
+            if laut >= RF_NEUER_ATEM[1]:
+                neu = {"ab_s": round(float((v1 + 1 + pb) * s), 2), "dauer_s": round(float(laut), 2),
+                       "pegel_db": round(float(db[nach][pb:].max()), 1)}
+                break
+        if neu is None and len(nach) * s >= 0.5:
+            # ohne Pause, aber der Nachlauf schwillt wieder an (Luftholen direkt hinter dem „aaah“?)
+            d = db[nach]
+            ref = float(d[:min(len(d), 10)].max())
+            j = int(np.argmax(d))
+            if j * s >= 0.3 and d[j] > ref + 3.0 and d[j] > RF_HOERBAR_DB + 5:
+                neu = {"ab_s": round(float((v1 + 1 + j) * s), 2), "dauer_s": round(float(len(nach) * s - j * s), 2),
+                       "pegel_db": round(float(d[j]), 1), "anschwellen_db": round(float(d[j] - ref), 1)}
+    out["neuer_atem_am_ende"] = neu
+    return out
+
+
+def reihenfolge_pruefen(rf):
+    """Gründe (Ausschluss) aus reihenfolge_messen."""
+    if rf.get("fehler"):
+        return [f"Reihenfolge: {rf['fehler']}"]
+    g = []
+    if rf["einatmen_s"] < RF_EINATMEN_S:
+        g.append(f"kein hörbares Einatmen vorn (nur {z(rf['einatmen_s'], 2)} s Atem vor der Stimme ab {z(rf['stimme_ab_s'], 2)} s)")
+    if rf["einatmen_s"] > 0 and rf["einatmen_stimme"] > RF_EINATMEN_STIMME:
+        g.append(f"Anfang schon stimmhaft ({z(100 * rf['einatmen_stimme'], 0)} % Stimme im Atem vorn)")
+    if rf["einatmen_s"] >= RF_EINATMEN_S and (rf["einatmen_pegel_db"] if rf["einatmen_pegel_db"] is not None else -99.0) < RF_EINATMEN_PEGEL_DB:
+        g.append(f"Einatmen kaum hörbar ({z(rf['einatmen_pegel_db'])} dB unter dem lautesten Teil)")
+    if rf["lage"] < RF_LAGE:
+        g.append(f"stimmhafter Teil liegt vorn (Mitte bei {z(100 * rf['lage'], 0)} % der Dauer)")
+    if "faellt_ht" not in rf:
+        g.append("Tonhöhe nicht messbar")
+    elif rf["faellt_ht"] < RF_FALL_HT or rf["faellt_ht"] <= rf["steigt_ht"]:
+        g.append(f"Tonhöhe fällt nicht (steigt {z(rf['steigt_ht'])}, fällt {z(rf['faellt_ht'])} Halbtöne)")
+    if rf["ende_stimme"] > RF_ENDE_STIMME:
+        g.append(f"Ende nicht gehaucht ({z(100 * rf['ende_stimme'], 0)} % Stimme in den letzten {z(RF_ENDE_S, 1)} s)")
+    if rf.get("unterbrechungen", 0) >= 2:
+        g.append(f"„aaah“ stockend ({rf['unterbrechungen']}-mal unterbrochen)")
+    if rf["pause_vor_stimme_s"] >= RF_PAUSE_S[1]:
+        g.append(f"lange Pause zwischen Einatmen und „aaah“ ({z(rf['pause_vor_stimme_s'], 2)} s): zwei getrennte Laute")
+    if rf["neuer_atem_am_ende"]:
+        na = rf["neuer_atem_am_ende"]
+        g.append(f"Luftholen am Ende (ab {z(na['ab_s'], 2)} s, {z(na['dauer_s'], 2)} s nach dem stimmhaften Teil)")
+    return g
+
+
+def reihenfolge_text(rf, stimme_txt=""):
+    """Kurzbeschreibung, z. B. „Frau, 0,8 s Einatmen, dann fallendes aaah, endet gehaucht“."""
+    if rf.get("fehler"):
+        return rf["fehler"]
+    t = [stimme_txt] if stimme_txt else []
+    t.append(f"{z(rf['einatmen_s'], 1)} s Einatmen" + (" (sehr leise)" if (rf["einatmen_pegel_db"] if rf["einatmen_pegel_db"] is not None else -99.0) < RF_EINATMEN_PEGEL_DB else ""))
+    if rf["pause_vor_stimme_s"] >= 0.15:
+        t.append(f"{z(rf['pause_vor_stimme_s'], 1)} s Pause")
+    fa = rf.get("faellt_ht", 0.0)
+    st = rf.get("steigt_ht", 0.0)
+    form = ("steigt erst etwas und fällt dann" if st >= 1.5 and fa > st else "fällt" if fa >= RF_FALL_HT and fa > st
+            else "steigt" if st > fa else "bleibt fast gleich")
+    dauer = rf["stimme_bis_s"] - rf["stimme_ab_s"]
+    t.append(f"dann {z(dauer, 1)} s „aaah“ (Tonhöhe {form}" + (f", {z(fa, 0)} Halbtöne" if fa >= RF_FALL_HT else "") + ")")
+    t.append("endet gehaucht" if rf["ende_stimme"] <= RF_ENDE_STIMME else "endet mit Stimme")
+    if rf["neuer_atem_am_ende"]:
+        t.append("danach noch ein Atemzug")
+    return ", ".join(t)
+
+
 def ast_lauf(nur=None):
     os.environ["HF_HUB_OFFLINE"] = "1"
     import librosa
@@ -719,6 +1127,8 @@ def ast_lauf(nur=None):
         e = tag(y)
         if TOENE[r["ton"]].get("tonhoehe"):
             e["stimme"] = stimme_messen(y)
+        if TOENE[r["ton"]].get("reihenfolge"):
+            e["reihenfolge"] = reihenfolge_messen(y)
         wm = r.get("wecker")
         if wm:
             t0 = int(wm["klingeln_ab_s"] * 16000)
@@ -838,6 +1248,29 @@ def bewerten(r, a):
             punkte -= 1.0
         elif f0 is not None and sa <= 0.95 and max(st.get("anstieg_ht", 0.0), st.get("abfall_ht", 0.0)) >= 2:
             punkte += 0.5                 # Stimme mit Tonhöhenbewegung und etwas Hauch: typisch für Gähnen
+    if t.get("reihenfolge"):
+        rf = (a or {}).get("reihenfolge")
+        if rf is None:
+            gruende.append("ohne Reihenfolge-Prüfung")
+        else:
+            r["reihenfolge"] = rf
+            rg = reihenfolge_pruefen(rf)
+            r["reihenfolge_ok"] = not rg
+            gruende += rg
+            if not rg:
+                # Einatmen gut hörbar und nicht zu kurz, langes und deutlich fallendes „aaah“, keine lange Pause
+                aah = rf["stimme_bis_s"] - rf["stimme_ab_s"]
+                if aah < 0.8:
+                    hinweise.append(f"kurzes „aaah“ ({z(aah, 1)} s stimmhaft)")
+                punkte += (min(rf["einatmen_s"], 1.0) + 0.1 * min(rf["faellt_ht"], 8.0) + 0.8 * min(aah, 1.5)
+                           + 0.05 * max(0.0, rf["einatmen_pegel_db"] + 25.0) - 1.0 * (rf["pause_vor_stimme_s"] >= RF_PAUSE_S[0]))
+                if rf.get("unterbrechungen") == 1:
+                    hinweise.append("„aaah“ einmal kurz unterbrochen")
+                    punkte -= 0.5
+                if rf["einatmen_pegel_db"] > -1.0:
+                    hinweise.append("Einatmen so laut wie das „aaah“")
+                if rf["pause_vor_stimme_s"] >= RF_PAUSE_S[0]:
+                    hinweise.append(f"{z(rf['pause_vor_stimme_s'], 2)} s Stille zwischen Einatmen und „aaah“")
     wm = r.get("wecker")
     if wm:
         tk = (a or {}).get("ticken", {}).get("werte", {})
@@ -886,8 +1319,9 @@ def bewerten(r, a):
     return r
 
 
-def stimme_text(st):
-    """Kurzbeschreibung aus stimme_messen (Messung, nicht gehört)."""
+def stimme_text(st, ende=True):
+    """Kurzbeschreibung aus stimme_messen (Messung, nicht gehört). ende=False: ohne das Ende (Gähnen Runde 3: dort
+    beschreibt reihenfolge_text das Ende nach eigener Messung)."""
     teile = []
     f0, sa = st.get("f0_median_hz"), st["stimmhaft_anteil"]
     if f0 is None:
@@ -906,7 +1340,7 @@ def stimme_text(st):
         else:
             teile.append("Tonhöhe fast gleich")
     es, ec = st.get("ende_stimmhaft"), st.get("ende_schwerpunkt_hz")
-    if es is not None:
+    if es is not None and ende:
         teile.append("endet summend (kleines „mm“?)" if es >= 0.5 and ec < 900 else "endet gehaucht" if es < 0.25
                      else "endet mit Stimme")
     return ", ".join(teile)
@@ -915,8 +1349,17 @@ def stimme_text(st):
 def notiz(r):
     t = TOENE[r["ton"]]
     teile = [f"Prompt „{r['variante']}“: {r['prompt_notiz']}."]
+    if r.get("umgestellt"):
+        u = r["umgestellt"]
+        sc = u["schnitte_s"]
+        teile.append(f"Aus gaehnen2_02 (Seed {r['seed']}) umgestellt: Atem {z(sc['atem_von'], 2)}–{z(sc['atem_bis'], 2)} s nach vorn, "
+                     f"dann „aaah“ {z(sc['stimme_von'], 2)}–{z(sc['stimme_bis'], 2)} s (Zeiten im Original); natürliche Pause im "
+                     f"Original {z(u['pause_s'], 2)} s ({z(u['pause_pegel_db'])} dB), neu {z(u['neue_pause_s'], 2)} s; Nähte "
+                     "40 ms überblendet in der Stille (" + ", ".join(f"{z(n['links_db'])}/{z(n['rechts_db'])} dB" for n in u["naehte"]) + ").")
+    if r.get("reihenfolge"):
+        teile.append(f"Ablauf gemessen: {reihenfolge_text(r['reihenfolge'])}.")
     if r.get("stimme"):
-        teile.append(f"Gemessen: {stimme_text(r['stimme'])}.")
+        teile.append(f"Gemessen: {stimme_text(r['stimme'], ende=not r.get('reihenfolge'))}.")
     wm = r.get("wecker")
     if wm:
         tz = wm["tick_zeiten_s"]
@@ -967,6 +1410,27 @@ def svg_verlauf(zd, wm):
     return o + f'<polyline fill="none" stroke="#2471a3" stroke-width="1.5" points="{pts}"/></svg>'
 
 
+def svg_gaehnen(zd, rf):
+    """Pegelverlauf (25 ms) mit dem Atem vor der Stimme (grün) und dem stimmhaften Teil (rosa) aus reihenfolge_messen."""
+    import numpy as np
+    w = int(0.025 * FS)
+    k = len(zd) // w
+    r = 10 * np.log10(np.mean(np.square(zd[:k * w]).reshape(k, w), axis=1) + 1e-12)
+    px = 80
+    top = float(r.max())
+    pts = " ".join(f"{(i + 0.5) * 0.025 * px:.1f},{min(118, max(2, (top - r[i]) * 2.2 + 4)):.1f}" for i in range(k))
+    width = int(len(zd) / FS * px) + 10
+    o = f'<svg viewBox="0 0 {width} 130" width="100%" style="max-width:{width}px;background:#8881;border-radius:6px">'
+    for sec in range(int(len(zd) / FS) + 1):
+        o += f'<line x1="{sec * px}" y1="0" x2="{sec * px}" y2="130" stroke="#8884"/><text x="{sec * px + 2}" y="127" font-size="9" fill="#888">{sec} s</text>'
+    xa, xv, xe = rf["hoerbar_ab_s"] * px, rf["stimme_ab_s"] * px, rf["stimme_bis_s"] * px
+    o += f'<rect x="{xa:.1f}" y="0" width="{max(1.0, xv - xa):.1f}" height="110" fill="#2e8b5722"/>'
+    o += f'<rect x="{xv:.1f}" y="0" width="{max(1.0, xe - xv):.1f}" height="110" fill="#ff4fa322"/>'
+    o += f'<text x="{xa + 3:.1f}" y="10" font-size="10" fill="#2e8b57">Atem</text>'
+    o += f'<text x="{xv + 3:.1f}" y="10" font-size="10" fill="#ff4fa3">„aaah“ ab {z(rf["stimme_ab_s"], 2)} s</text>'
+    return o + f'<polyline fill="none" stroke="#2471a3" stroke-width="1.5" points="{pts}"/></svg>'
+
+
 def dubletten(rs, alle=False):
     """Gleicher Seed bei ähnlichem Prompt ergibt manchmal fast denselben Ton. Vergleich der Spektrogramme (Terzbänder
     100 Hz–6 kHz, Fenster 2048, dB): Korrelation r > 0,9 -> der schwächere gilt als Dublette und fällt aus der Auswahl.
@@ -1008,7 +1472,7 @@ def seite(nur=None):
     keys = [k.strip() for k in nur.split(",")] if nur else None
     neu = [t for t in REIHE if t in keys] if keys else REIHE
     alt = json.load(open(mw_pfad, encoding="utf-8")) if keys and os.path.exists(mw_pfad) else None
-    muster = re.compile(r"^(%s)_\d\d(_handy)?\.ogg$" % "|".join(re.escape(t) for t in neu))
+    muster = re.compile(r"^(%s)_\d\d(umgestellt)?(_handy)?\.ogg$" % "|".join(re.escape(t) for t in neu))
     for f in os.listdir(OUT):
         if f.endswith(".ogg") and (alt is None or muster.match(f)):
             os.remove(os.path.join(OUT, f))
@@ -1019,6 +1483,9 @@ def seite(nur=None):
             if r["ton"] == ton and r.get("fehler"):
                 verworfen.append({"roh": r["roh"], "ton": ton, "punkte": None, "gruende": [r["fehler"]], "hinweise": []})
         rs = [bewerten(dict(r), ast.get(r["roh"])) for r in kand if r["ton"] == ton and not r.get("fehler")]
+        # der umgestellte Versuch läuft außerhalb der Rangfolge (nur, wenn umstellen gelungen ist, Rohdatei vorhanden)
+        umg = [r for r in rs if r.get("umgestellt") and os.path.exists(os.path.join(ROH, r["roh"] + ".wav"))]
+        rs = [r for r in rs if not r.get("umgestellt")]
         dubletten(rs, t.get("dubletten_alle", False))
         ok = sorted([r for r in rs if not r["ausschluss"]], key=lambda r: -r["punkte"])
         cap = t.get("je_variante_max")
@@ -1034,9 +1501,13 @@ def seite(nur=None):
             ok = erst + spaeter
         rest = sorted([r for r in rs if r["ausschluss"] and not any(g.startswith("fast gleich") for g in r["ausschluss"])],
                       key=lambda r: -r["punkte"])
-        wahl = (ok + rest)[:t["behalten"]]
+        wahl = (ok if t.get("nur_ok") else ok + rest)[:t["behalten"]]
         for i, r in enumerate(wahl, 1):
             r["id"] = f"{ton}_{i:02d}"
+        for r in umg:
+            r["id"] = UMGESTELLT["datei"]
+            r["hinweise"].insert(0, "zusammengesetzt (Teile getauscht), außerhalb der Rangfolge")
+        wahl += umg
         idmap = {r["roh"]: r["id"] for r in wahl}
         for r in wahl:
             for roh, c in r.pop("aehnlich", []):
@@ -1068,7 +1539,8 @@ def seite(nur=None):
                              "ast": AST_MODEL if ast else None},
            "toene": {k: {"titel": v["titel"], "ziel_s": list(v["ziel"]), "ziel_lufs": v["lufs"], "daueransage_s": v["sekunden"],
                          "prompts": {p[0]: dict({"prompt": p[1], "seeds": seeds_von(v, p)},
-                                                **({"negativ": negativ_von(v, p)} if "negativ" in v else {})) for p in v["prompts"]},
+                                                **({"negativ": negativ_von(v, p)} if "negativ" in v else {}), **optionen_von(p))
+                                     for p in v["prompts"]},
                          "behalten": v["behalten"]}
                      for k, v in TOENE.items()},
            "kandidaten": [{k: v for k, v in r.items() if k not in ("prompt_notiz",)} for r in behalten],
@@ -1093,7 +1565,8 @@ nav{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px}nav a{color:var(--ink)
     for ton in REIHE:
         t = TOENE[ton]
         rs = [r for r in behalten if r["ton"] == ton]
-        n_ges = sum(1 for _ in candidates(ton))
+        n_ges = sum(1 for c in candidates(ton) if not c.get("umgestellt"))
+        rs = [r for r in rs if not r.get("umgestellt")] + [r for r in rs if r.get("umgestellt")]
         hw = '<p class="sub">' + html.escape(t["hinweis"]) + "</p>" if t.get("hinweis") else ""
         teile.append(f"""<section class="group" id="{ton}"><h2>{html.escape(t['titel'])}</h2>
 <p class="sub">{html.escape(t['zweck'])}; Ziel {html.escape(t['ziel_text'])}; {z(t['lufs'])} LUFS. {len(rs)} von {n_ges} erzeugten Kandidaten, Reihenfolge = Empfehlung nach Messwerten.</p>{hw}</section>""")
@@ -1106,6 +1579,16 @@ nav{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px}nav a{color:var(--ink)
                          f'<p class="facts"><b>Für die Animation:</b> Klingeln ab {z(wm["klingeln_ab_s"], 2)} s bis {z(wm["klingeln_bis_s"], 2)} s; '
                          f'{wm["ticks"]} Ticks ab {z(wm["erster_tick_s"] or 0, 2)} s, Abstand {z(wm["tick_abstand_s"] or 0, 2)} s; '
                          f'Ticken {tick_txt(wm["ticken_rel_db"])}. AudioSet Ticken-Teil {z(r["ast_ticken_bester"], 2)}, Klingel-Teil {z(r["ast_klingeln_bester"], 2)}.</p>')
+            rf = r.get("reihenfolge")
+            if rf and not rf.get("fehler"):
+                zd = m.decode(os.path.join(OUT, r["id"] + ".ogg"))
+                extra = (f'<p class="sub">Pegelverlauf (grün = Atem vor der Stimme, rosa = stimmhafter Teil)</p>{svg_gaehnen(zd, rf)}'
+                         f'<p class="facts"><b>Reihenfolge-Prüfung:</b> {"bestanden" if r.get("reihenfolge_ok") else "nicht bestanden"}; '
+                         f'Einatmen {z(rf["einatmen_s"], 2)} s (Stimme darin {z(100 * rf["einatmen_stimme"], 0)} %, lautester Teil '
+                         f'{z(rf["einatmen_pegel_db"] if rf["einatmen_pegel_db"] is not None else -99)} dB), stimmhaft ab {z(rf["stimme_ab_s"], 2)} s '
+                         f'bis {z(rf["stimme_bis_s"], 2)} s (Mitte bei {z(100 * rf["lage"], 0)} % der Dauer), Tonhöhe '
+                         f'{rf.get("f0_anfang_hz", "–")} → Gipfel {rf.get("f0_gipfel_hz", "–")} → {rf.get("f0_ende_hz", "–")} Hz, '
+                         f'Ende {z(100 * rf["ende_stimme"], 0)} % Stimme.</p>')
             warn = ' <span class="tag">auffällig</span>' if r["ausschluss"] else ""
             top = ", ".join(f"„{k}“ {z(v, 2)}" for k, v in r["ast_top"][:4]) if r["ast_top"] else "–"
             linie = (f"Linie {r['linien_2_6k'][0][0]} Hz (+{z(r['linien_2_6k'][0][1])} dB)" if r["linien_2_6k"] else "keine schmale Linie 2–6 kHz")
@@ -1145,6 +1628,9 @@ if __name__ == "__main__":
     ap.add_argument("--gpu", type=int, default=0)
     a = ap.parse_args()
     cs = candidates(a.nur)
+    if (a.alles or a.bearbeiten) and any(c.get("umgestellt") for c in cs):
+        ok, info = umstellen()
+        print("Umgestellt:", "ja" if ok else "nein", json.dumps(info, ensure_ascii=False), flush=True)
     if a.alles or a.erzeugen:
         erzeugen(cs, a.gpu)
     if a.alles or a.bearbeiten:

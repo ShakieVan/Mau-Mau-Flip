@@ -11,6 +11,10 @@ extends VBoxContainer
 # Schnittstellen → Server neu binden (NetHostSession.rebind). Das Spiel-WLAN bleibt offen, bis man es schließt oder die App endet.
 # Das Netz wird alle NET_POLL_S neu bewertet; changed meldet eine neue Netzart oder Adresse (InvitePanel baut dann ② neu).
 # Am PC und in Tests ersetzt NetAndroid.wifi_stub das Spiel-WLAN und net_stub das übrige Netz.
+# Mau-Mau Flip (Beta 1.6.2, docs/module/uebergabe.md 10.2): Am Tisch hat der Gastgeber einen GameWifiWatch (Meta „game_wifi_watch“ am
+# HostTable, TableScreen._ensure_wifi_watch). Dann zeigt das Feld nur an (address, hint, Fehlschlag von auto_open; Spiel-WLAN-Zustand);
+# das Neu-Binden der Sitzung macht allein der Watch – auch wenn das Feld „Mitspieler“ zu ist. Öffnen/Schließen bleiben Knöpfe hier
+# (der Watch sieht den Wechsel). In der Lobby (ohne Watch) bindet das Feld wie bisher selbst neu.
 
 signal changed
 
@@ -48,6 +52,8 @@ var _close_at := 0                       # Spiel-WLAN zu seit (ms); Rückbindung
 const REBIND_WAIT_MS := 5000
 var _started := false                   # ein Öffnen wurde angestoßen (Fehlschlag zählt dann als problem)
 var _waiting_permission := false
+var watch: Node                          # Beta 1.6.2: GameWifiWatch des Tisches (null = Lobby, eigenes Neu-Binden)
+var _auto_seen := ""                     # zuletzt gesehener Stand von watch.auto_open (ein Fehlschlag zählt einmal)
 
 
 func _init() -> void:
@@ -58,11 +64,54 @@ func _init() -> void:
 
 func setup(host_table: HostTable) -> void:
 	host = host_table
+	watch = find_watch(host_table)
 	_build()
-	if NetAndroid.game_wifi_available():
+	if _watched():
+		_read_watch()
+		_on_since = Time.get_ticks_msec()
+	elif NetAndroid.game_wifi_available():
 		wifi = NetAndroid.game_wifi_state()
 		_on_since = Time.get_ticks_msec()
 	refresh_net(true)
+
+
+# GameWifiWatch des Tisches (TableScreen setzt ihn als Meta am HostTable); null = keiner (Lobby)
+static func find_watch(host_table: Node) -> Node:
+	if host_table == null or not is_instance_valid(host_table) or not host_table.has_meta("game_wifi_watch"):
+		return null
+	var w: Variant = host_table.get_meta("game_wifi_watch")
+	return w as Node if w is Node and is_instance_valid(w) else null
+
+
+func _watched() -> bool:
+	return watch != null and is_instance_valid(watch)
+
+
+# Zustand des Watch übernehmen: address (eigene Adresse im Spiel-WLAN), Fehlschlag von auto_open, hint. Den Spiel-WLAN-Zustand
+# selbst liest das Feld weiter direkt (nur lesen, ohne Neu-Binden; sonst sähe es sein eigenes Öffnen erst mit dem nächsten Takt des
+# Watch); ohne Android (Tests) gilt watch.state.
+func _read_watch() -> void:
+	var st: Variant = watch.get("state")
+	if NetAndroid.game_wifi_available():
+		wifi = NetAndroid.game_wifi_state()
+	elif st is Dictionary and not (st as Dictionary).is_empty():
+		wifi = (st as Dictionary).duplicate()
+	var a: Variant = watch.get("address")
+	if a is String and a != "":
+		address = a
+	elif str(wifi.get("status", "")) == "on" and address == "":
+		address = _find_address()
+	elif str(wifi.get("status", "")) != "on":
+		address = ""
+	var auto_key := "%s/%s/%s" % [str(watch.get("auto_state")), str(watch.get("auto_error")), str(watch.get("auto_tries"))]
+	if auto_key != _auto_seen:
+		_auto_seen = auto_key
+		if str(watch.get("auto_state")) == "failed" and str(watch.get("auto_error")) != "" and str(wifi.get("status", "")) != "on":
+			problem = str(watch.get("auto_error"))   # nach den Versuchen von auto_open: „Neu öffnen“ mit dem vorhandenen Hinweis
+			_started = true
+	var h: Variant = watch.get("hint")
+	if h is String:
+		hint = h
 
 
 func _build() -> void:
@@ -152,7 +201,9 @@ func refresh_net(force := false) -> void:
 		urls = (net_stub.get("urls", []) as Array).duplicate()
 	else:
 		urls = Array(host.host_urls()) if host != null else []
-	if str(wifi.get("status", "")) == "on" and problem == "":
+	if _watched():
+		pass                                   # Beta 1.6.2: Adresse und Neu-Binden kommen vom GameWifiWatch
+	elif str(wifi.get("status", "")) == "on" and problem == "":
 		if address == "":
 			address = _find_address()
 		if address != "" and not _rebound:
@@ -218,7 +269,10 @@ func open_wifi() -> void:
 
 
 func close_wifi() -> void:
-	NetAndroid.game_wifi_stop()
+	if _watched() and watch.has_method("close"):
+		watch.call("close")                   # Beta 1.6.2: der Watch schließt (kein „verloren“) und bindet zurück
+	else:
+		NetAndroid.game_wifi_stop()
 	problem = ""
 	hint = ""
 	address = ""
@@ -283,6 +337,13 @@ func _process(delta: float) -> void:
 		return
 	_poll -= delta
 	_net_poll -= delta
+	if _watched():
+		# Beta 1.6.2: nur anzeigen, was der Watch sieht (er fragt Android selbst ab und bindet neu)
+		if _poll <= 0.0:
+			_poll = POLL_S
+			_read_watch()
+			refresh_net()
+		return
 	var st := str(wifi.get("status", ""))
 	var busy := problem == "" and (st == "starting" or (st == "on" and address == ""))
 	if busy and _poll <= 0.0:

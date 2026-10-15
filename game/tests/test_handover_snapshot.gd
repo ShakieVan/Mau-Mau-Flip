@@ -12,6 +12,10 @@ extends SceneTree
 #  C  Tokens A→B→C: Gastgeber A mit App-Gästen B, C und einem Bot; Übernahme durch B (resume mit my_seat), dann durch C. Alle Tokens
 #     bleiben an ihren Plätzen (keins doppelt, auch der Gastgeber-Platz hat eins), gen steigt genau bei Platzwechsel, parent stimmt,
 #     die Sichten sind bis auf host/connected gleich. A und B kommen mit ihren Tokens zurück und landen auf ihren eigenen Plätzen.
+#  D  (Beta 1.6.2, Abschnitt 10.2/10.6) Netzfelder: seats[*].addr/hp/ap und wlan{port, addrs, ap, ap_seat, past} werden gesäubert,
+#     Dateien von 1.6.1 bekommen Vorgaben (ap_seat = host_seat, ap {ok:false, perm:false}), past ist auf PAST_MAX begrenzt (neueste
+#     zuletzt, ohne Doppelte); die Felder überstehen JSON, pack/unpack und resume(). resumable(…, ignore_room) übergeht nur das
+#     Raumalter (created_unix älter als 24 h), nicht Partie-Ende oder RESUME_MAX_H.
 
 const P1 := 24966
 const P2 := 24967
@@ -44,6 +48,8 @@ func _initialize() -> void:
 	var t0 := Time.get_ticks_msec()
 	_roundtrips()
 	_resume_states()
+	_net_fields()
+	_resumable_room()
 	_tokens_abc()
 	print("  Dauer %d ms" % (Time.get_ticks_msec() - t0))
 	for c in clients:
@@ -213,6 +219,160 @@ func _resume_states() -> void:
 			check(int(t.game.gamble.get("q", 0)) == int((snap.game as Dictionary).gamble.q), "B: geheime Glücksspiel-Quote kommt mit")
 		t.leave()
 		drop_host(t)
+
+
+# ---------- D: Netzfelder (Beta 1.6.2) ----------
+
+func _base_snap() -> Dictionary:
+	for k in ["color", "pending", "swap"]:
+		if firsts.has(k):
+			return (firsts[k] as Dictionary).duplicate(true)
+	return (firsts.values()[0] as Dictionary).duplicate(true) if not firsts.is_empty() else {}
+
+
+func _net_fields() -> void:
+	var nps: Variant = (NetProtocol as Script).get_script_constant_map().get("PAST_MAX")
+	check(nps == null or int(nps) == MatchSnapshot.PAST_MAX, "D: PAST_MAX gleich NetProtocol.PAST_MAX (%s)" % str(nps))
+	check(MatchSnapshot.PAST_MAX == 16, "D: PAST_MAX = 16")
+	var base := _base_snap()
+	if base.is_empty():
+		check(false, "D: kein Schnappschuss aus A")
+		return
+	var hs := int(base.host_seat)
+	var n: int = (base.seats as Array).size()
+	# Gastgeber-Schnappschuss (HostTable._snapshot) bekommt die Vorgaben
+	var fresh := MatchSnapshot.clean(base)
+	var w: Dictionary = fresh.wlan
+	check(w.has("ap") and w.ap == false and w.has("past") and (w.past as Array).is_empty(), "D: wlan.ap/past vorhanden (%s)" % str(w))
+	# Datei von 1.6.1: wlan nur {port, addrs}, Plätze ohne addr/hp/ap
+	var old := base.duplicate(true)
+	old.wlan = {"port": 24690, "addrs": ["192.168.1.20"]}
+	for p in old.seats:
+		for k in ["addr", "hp", "ap"]:
+			(p as Dictionary).erase(k)
+	var c := MatchSnapshot.clean(old)
+	check(not c.is_empty(), "D: Datei von 1.6.1 bleibt brauchbar")
+	check(int(c.wlan.ap_seat) == hs and c.wlan.ap == false and (c.wlan.past as Array).is_empty(),
+		"D: 1.6.1 – ap_seat = host_seat, ap aus, past leer (%s)" % str(c.wlan))
+	check(int(c.wlan.port) == 24690 and c.wlan.addrs == ["192.168.1.20"], "D: 1.6.1 – port/addrs bleiben")
+	var all_default := true
+	for p in c.seats:
+		if str(p.addr) != "" or int(p.hp) != 0 or p.ap != {"ok": false, "perm": false}:
+			all_default = false
+	check(all_default, "D: 1.6.1 – Plätze ohne Felder gelten als addr \"\", hp 0, ap {ok:false, perm:false}")
+	# ohne wlan überhaupt (format 1)
+	var none := base.duplicate(true)
+	none.erase("wlan")
+	var cn := MatchSnapshot.clean(none)
+	check(int(cn.wlan.ap_seat) == hs and int(cn.wlan.port) == 0 and cn.wlan.addrs == [] and cn.wlan.past == [], "D: ohne wlan – Vorgaben")
+	# gültige Felder bleiben, auch nach JSON (Zahlen als float)
+	var good := base.duplicate(true)
+	var s1 := (hs + 1) % n
+	var s2 := (hs + 2) % n
+	good.seats[s1]["addr"] = "192.168.43.17"
+	good.seats[s1]["hp"] = 24691
+	good.seats[s1]["ap"] = {"ok": true, "perm": true}
+	good.seats[s2]["addr"] = " 10.0.0.5 "
+	good.seats[s2]["hp"] = 24690.0
+	good.seats[s2]["ap"] = {"ok": true, "perm": false}
+	good.wlan = {"port": 24690, "addrs": ["192.168.43.1"], "ap": true, "ap_seat": s1, "past": ["192.168.43.1:24690", "10.0.0.5:24691"]}
+	var g := MatchSnapshot.clean(JSON.parse_string(JSON.stringify(good)))
+	check(str(g.seats[s1].addr) == "192.168.43.17" and g.seats[s1].hp is int and int(g.seats[s1].hp) == 24691
+		and g.seats[s1].ap == {"ok": true, "perm": true}, "D: Platz %d – addr/hp/ap bleiben (%s)" % [s1, str(g.seats[s1])])
+	check(str(g.seats[s2].addr) == "10.0.0.5" and int(g.seats[s2].hp) == 24690 and g.seats[s2].ap == {"ok": true, "perm": false},
+		"D: Platz %d – Leerzeichen weg, float-Port wird int" % s2)
+	check(g.wlan.ap == true and g.wlan.ap_seat is int and int(g.wlan.ap_seat) == s1, "D: wlan.ap und ap_seat bleiben (auch als float)")
+	check(g.wlan.past == ["192.168.43.1:24690", "10.0.0.5:24691"], "D: past bleibt in Reihenfolge (%s)" % str(g.wlan.past))
+	var apoff := good.duplicate(true)
+	apoff.wlan.ap = false
+	apoff.wlan.ap_seat = -1
+	check(int(MatchSnapshot.clean(apoff).wlan.ap_seat) == -1, "D: ap_seat −1 (kein Spiel-WLAN) bleibt")
+	# kaputte Felder werden gesäubert
+	var bad := base.duplicate(true)
+	var addrs_bad := ["fe80::1", "10.0.0.256", "1.2.3", "01.2.3.4", "-1.2.3.4", "+1.2.3.4", "", "abc"]
+	for i in n:
+		var p: Dictionary = bad.seats[i]
+		p["addr"] = addrs_bad[i % addrs_bad.size()] if i != 0 else 1234
+		p["hp"] = [80, 70000, "24690", 24690.5, -1, null, 1023, 65536][i % 8]
+		p["ap"] = [{"ok": "yes", "perm": 1}, "on", {"ok": 1.0}, {}, null, [true], {"perm": "true"}, {"ok": false}][i % 8]
+	bad.wlan = {"port": "x", "addrs": "nein", "ap": "true", "ap_seat": n + 3, "past": "192.168.1.2:24690"}
+	var b := MatchSnapshot.clean(bad)
+	check(not b.is_empty(), "D: kaputte Netzfelder machen den Stand nicht unbrauchbar")
+	var all_clean := true
+	for p in b.seats:
+		if str(p.addr) != "" or int(p.hp) != 0 or p.ap != {"ok": false, "perm": false}:
+			all_clean = false
+			print("  kaputter Platz: ", p)
+	check(all_clean, "D: kaputte addr/hp/ap → \"\", 0, {ok:false, perm:false}")
+	check(b.wlan == {"port": 0, "addrs": [], "ap": false, "ap_seat": hs, "past": []}, "D: kaputtes wlan → Vorgaben (%s)" % str(b.wlan))
+	bad.wlan = {"ap_seat": -2}
+	check(int(MatchSnapshot.clean(bad).wlan.ap_seat) == hs, "D: ap_seat −2 → host_seat")
+	bad.wlan = {"ap_seat": "1"}
+	check(int(MatchSnapshot.clean(bad).wlan.ap_seat) == hs, "D: ap_seat als Text → host_seat")
+	# past: säubern, Doppelte, Grenze PAST_MAX (die neuesten bleiben)
+	var raw: Array = ["192.168.1.1:24690", "nix", "192.168.1.1:0", "192.168.1.1:65536", "[::1]:24690", "fe80::1:24690", 7,
+		"192.168.1.1:24690:1", " 192.168.1.2:024691 ", "192.168.1.1:24690"]
+	check(MatchSnapshot.with_past(raw) == ["192.168.1.2:24691", "192.168.1.1:24690"],
+		"D: past ohne Ungültige und Doppelte, erneuter Eintrag rückt ans Ende (%s)" % str(MatchSnapshot.with_past(raw)))
+	var long: Array = []
+	for i in 40:
+		long.append("10.0.1.%d:%d" % [i, 24690 + i % 3])
+	var cut := MatchSnapshot.with_past(long)
+	check(cut.size() == MatchSnapshot.PAST_MAX and cut[0] == long[40 - MatchSnapshot.PAST_MAX] and cut[-1] == long[39],
+		"D: past höchstens PAST_MAX, älteste fallen heraus (%d)" % cut.size())
+	var plus := MatchSnapshot.with_past(cut, "172.16.0.9:24690")
+	check(plus.size() == MatchSnapshot.PAST_MAX and plus[-1] == "172.16.0.9:24690" and plus[0] == cut[1], "D: with_past hängt an und kürzt vorn")
+	check(MatchSnapshot.with_past(cut, cut[0]).size() == MatchSnapshot.PAST_MAX and MatchSnapshot.with_past(cut, cut[0])[-1] == cut[0],
+		"D: bekannte Adresse rückt ans Ende, ohne zu wachsen")
+	check(MatchSnapshot.with_past(null, "x") == [] and MatchSnapshot.with_past([], "10.1.1.1:5") == ["10.1.1.1:5"], "D: with_past mit leerer Liste")
+	var lp := good.duplicate(true)
+	lp.wlan.past = long
+	check((MatchSnapshot.clean(lp).wlan.past as Array) == cut, "D: clean kürzt past auf PAST_MAX")
+	check(MatchSnapshot.host_port("192.168.1.2:24690") == "192.168.1.2:24690" and MatchSnapshot.host_port("192.168.1.2") == ""
+		and MatchSnapshot.host_port("192.168.1.2:") == "" and MatchSnapshot.host_port("http://1.2.3.4:5") == "", "D: host_port")
+	# pack/unpack und resume() behalten die Felder
+	var back := MatchSnapshot.unpack(MatchSnapshot.pack(good))
+	check(not back.is_empty() and back.wlan == g.wlan and back.seats[s1].ap == {"ok": true, "perm": true} and str(back.seats[s2].addr) == "10.0.0.5",
+		"D: pack/unpack behält die Netzfelder")
+	var t := new_host(P2)
+	var err := t.resume(good, -1, P2, P2)
+	check(err == OK, "D: resume() mit Netzfeldern")
+	if err == OK:
+		check(str(t.seats[s1].get("addr", "")) == "192.168.43.17" and int(t.seats[s1].get("hp", 0)) == 24691
+			and t.seats[s1].get("ap") == {"ok": true, "perm": true}, "D: resume() übernimmt addr/hp/ap der Plätze (%s)" % str(t.seats[s1]))
+		var again := MatchSnapshot.clean(t._snapshot())
+		check(str(again.seats[s1].addr) == "192.168.43.17" and again.seats[s1].ap == {"ok": true, "perm": true},
+			"D: neuer Schnappschuss nach resume() trägt die Platzfelder weiter")
+		t.leave()
+	drop_host(t)
+
+
+func _resumable_room() -> void:
+	var base := _base_snap()
+	if base.is_empty():
+		check(false, "D: kein Schnappschuss für resumable")
+		return
+	var now := 1_800_000_000
+	var d := base.duplicate(true)
+	d.saved_unix = now - 600
+	d.online = {"relay": "https://relay.example", "room": "KATZE-42", "token": "t", "conns": [], "max_c": 0,
+		"created_unix": now - NetProtocol.ROOM_LIFE_S - 3600}
+	check(not MatchSnapshot.resumable(d, now), "D: Raum älter als 24 h – ohne ignore_room nicht fortsetzbar")
+	check(MatchSnapshot.resumable(d, now, true), "D: Raum älter als 24 h – mit ignore_room fortsetzbar")
+	d.online.created_unix = now - 3600
+	check(MatchSnapshot.resumable(d, now) and MatchSnapshot.resumable(d, now, true), "D: junger Raum – beides fortsetzbar")
+	d.online.created_unix = now - NetProtocol.ROOM_LIFE_S
+	check(not MatchSnapshot.resumable(d, now) and MatchSnapshot.resumable(d, now, true), "D: genau 24 h – nur mit ignore_room")
+	var old := d.duplicate(true)
+	old.saved_unix = now - NetProtocol.RESUME_MAX_H * 3600 - 60
+	check(not MatchSnapshot.resumable(old, now, true), "D: ignore_room übergeht nicht RESUME_MAX_H")
+	var over := d.duplicate(true)
+	(over.game as Dictionary)["phase"] = "game_over"
+	check(not MatchSnapshot.resumable(over, now, true), "D: ignore_room übergeht nicht das Partie-Ende")
+	var lan := d.duplicate(true)
+	lan.online = {}
+	check(MatchSnapshot.resumable(lan, now) and MatchSnapshot.resumable(lan, now, true), "D: ohne Raum (WLAN) – beides fortsetzbar")
+	check(not MatchSnapshot.resumable({"mode": "x"}, now, true), "D: unbrauchbare Datei auch mit ignore_room nicht")
 
 
 # ---------- C: Tokens A→B→C ----------

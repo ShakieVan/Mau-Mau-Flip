@@ -30,6 +30,7 @@ const APK_WAIT_MS := 8000                # so lange auf die APK-Quelle warten (H
 const LINGER_MS := 2000                  # nach "Connection: close" auf das Schließen des Clients warten (kein RST vor dem Ende)
 const LINGER_APK_MS := 10000
 const LINGER_QUIET_MS := 150            # so lange nach der letzten Antwort nichts mehr kommt, wird geschlossen
+const SHUTDOWN_FLUSH_MS := 150          # Beta 1.6.2: stop() schreibt Close-Rahmen (und Reste) höchstens so lange
 const MAX_KEEPALIVE_REQUESTS := 200
 const COMPRESSIBLE := ["html", "css", "js", "mjs", "json", "svg", "txt", "webmanifest", "map"]
 const MIME := {
@@ -80,6 +81,10 @@ var _info := {}
 var _apk := {}                           # {state: "" | "ready" | "wait" | "none", path, size, name}
 var _apk_wanted := false
 var _stats := {}
+var _extra_origins: Array = []           # Beta 1.6.2: weitere erlaubte Herkunft (frühere Gastgeber-Adressen), normiert „http://IPv4:Port“
+var _drain_wait := false                 # Beta 1.6.2: drain() wartet – der Netz-Thread meldet nach jeder Runde den Rest
+var _drain_steps := 0                    # gemeldete Runden (nur während _drain_wait)
+var _drain_left := 0                     # Byte, die nach der letzten gemeldeten Runde noch in WebSocket-out-Puffern lagen
 
 # nur im Netz-Thread (bzw. in poll(), wenn nicht threaded)
 var _tcp: TCPServer
@@ -243,6 +248,62 @@ func set_apk(info: Dictionary) -> void:
 	_apk = _clean_apk(info) if not info.is_empty() else {}
 	_mutex.unlock()
 
+# Mau-Mau Flip (Beta 1.6.2, Gastgeber-Übergabe im WLAN, docs/module/uebergabe.md 10.7 Schritt 3): Vor dem Abtreten muss alles,
+# was schon mit send_text/send_text_many/close_ws bestellt ist, wirklich hinaus – stop() verwirft offene Befehle und volle
+# out-Puffer. drain() arbeitet erst alle Befehle ab und schreibt dann, bis kein WebSocket mehr etwas im out-Puffer hat, höchstens
+# max_ms (blockiert den Hauptthread so lange). true = alles an das Betriebssystem übergeben. Ohne Thread: poll-Schleife hier.
+func drain(max_ms := 500) -> bool:
+	if not running:
+		return true
+	var end := Time.get_ticks_msec() + maxi(0, max_ms)
+	if not threaded or _thread == null:
+		while true:
+			_step()
+			_mutex.lock()
+			var cmds_left := not _cmds.is_empty()
+			_mutex.unlock()
+			if not cmds_left and _ws_out_left() == 0:
+				return true
+			if Time.get_ticks_msec() >= end:
+				return false
+			OS.delay_msec(1)
+	_mutex.lock()
+	_drain_wait = true
+	var start_steps := _drain_steps
+	_mutex.unlock()
+	var done := false
+	while true:
+		_mutex.lock()
+		# Eine gemeldete Runde hat _drain_wait schon gesehen, also auch alle vorher bestellten Befehle übernommen.
+		done = _drain_steps > start_steps and _drain_left == 0 and _cmds.is_empty()
+		var stopped := _quit
+		_mutex.unlock()
+		if done or stopped or Time.get_ticks_msec() >= end:
+			break
+		OS.delay_msec(1)
+	_mutex.lock()
+	_drain_wait = false
+	_mutex.unlock()
+	return done
+
+func set_extra_origins(list: Array) -> void:
+	# Beta 1.6.2: Lite-Seiten früherer Gastgeber dieser Partie (Herkunft http://<alt>:<Port>) dürfen sich verbinden. Nur exakte
+	# „http://IPv4:Port“ bzw. „IPv4:Port“ (wie wlan.past); alles andere wird verworfen. Gilt ab dem nächsten Handshake (Netz-Thread).
+	var clean: Array = []
+	for item in list:
+		var o := extra_origin(str(item))
+		if o != "" and not clean.has(o):
+			clean.append(o)
+	_mutex.lock()
+	_extra_origins = clean
+	_mutex.unlock()
+
+func extra_origins() -> Array:
+	_mutex.lock()
+	var out := _extra_origins.duplicate()
+	_mutex.unlock()
+	return out
+
 func stats() -> Dictionary:
 	_mutex.lock()
 	var out := _stats.duplicate()
@@ -333,14 +394,58 @@ func _run() -> void:
 		_mutex.unlock()
 		if q:
 			break
-		if not _step():
+		_mutex.lock()
+		var report := _drain_wait
+		_mutex.unlock()
+		var moved := _step()
+		if report:
+			var left := _ws_out_left()
+			_mutex.lock()
+			_drain_steps += 1
+			_drain_left = left
+			_mutex.unlock()
+			if not moved:
+				OS.delay_msec(1)    # drain() wartet: nur kurz pausieren (voller Socket-Puffer beim Gast)
+		elif not moved:
 			OS.delay_msec(4 if not _conns.is_empty() else 10)   # Akku: kurz schlafen, wenn nichts zu tun ist (Übertragungen schlafen nicht)
 	_shutdown()
 
-func _shutdown() -> void:
+func _ws_out_left() -> int:
+	# Netz-Thread (bzw. drain ohne Thread): Byte, die WebSockets noch im out-Puffer haben (stumm geschaltete zählen nicht).
+	var left := 0
 	for c in _conns.values():
-		if c.kind == "ws" and not c.close_sent:
-			c.peer.put_partial_data(NetWs.close_frame(NetWs.CLOSE_GOING_AWAY, "Gastgeber beendet"))
+		if c.kind == "ws" and not c.muted and c.peer.get_status() == StreamPeerTCP.STATUS_CONNECTED:
+			left += c.out_bytes
+	return left
+
+func _shutdown() -> void:
+	# Beta 1.6.2: Der Close-Rahmen kommt hinten in den out-Puffer (nie mitten in einen halb geschriebenen Rahmen), dann wird kurz
+	# (höchstens SHUTDOWN_FLUSH_MS) weitergeschrieben – nach drain() liegt im Betriebssystem oft noch ein großes „bk“, und ein voller
+	# Socket nahm den Rahmen vorher gar nicht an. Was danach noch im Puffer liegt, ist verloren (der Gast merkt das Abreißen).
+	var pending := false
+	for c in _conns.values():
+		if c.kind == "ws" and not c.close_sent and not c.muted and c.peer.get_status() == StreamPeerTCP.STATUS_CONNECTED:
+			c.close_sent = true
+			_queue(c, NetWs.close_frame(NetWs.CLOSE_GOING_AWAY, "Gastgeber beendet"))
+			pending = pending or c.out_bytes > 0
+	var flush_end := Time.get_ticks_msec() + SHUTDOWN_FLUSH_MS
+	while pending:
+		pending = false
+		for c in _conns.values():
+			if c.kind == "ws" and c.out_bytes > 0 and c.peer.get_status() == StreamPeerTCP.STATUS_CONNECTED:
+				c.peer.poll()
+				_flush(c)
+				pending = pending or c.out_bytes > 0
+		if not pending or Time.get_ticks_msec() >= flush_end:
+			break
+		OS.delay_msec(1)
+	for c in _conns.values():
+		if c.kind == "ws" and c.peer.get_status() == StreamPeerTCP.STATUS_CONNECTED:
+			# Ungelesenen Eingang (Lebenszeichen) abholen: Schließen mit vollem Empfangspuffer wird zum RST, und der verwirft
+			# beim Gast womöglich, was drain() eben noch übergeben hat.
+			var n: int = c.peer.get_available_bytes()
+			if n > 0:
+				c.peer.get_partial_data(n)
 		if c.file != null:
 			c.file.close()
 		c.peer.disconnect_from_host()
@@ -910,7 +1015,10 @@ func _ws_handshake(c: Conn, req: Dictionary) -> void:
 		_respond(c, 400, "text/plain; charset=utf-8", "WebSocket-Anfrage unvollständig.".to_utf8_buffer(), {}, false)
 		return
 	var origin := str(h.get("origin", ""))
-	if check_origin and not origin_allowed(origin, str(h.host)):
+	_mutex.lock()
+	var extra := _extra_origins
+	_mutex.unlock()
+	if check_origin and not origin_allowed(origin, str(h.host), extra):
 		_count("origin_rejected")
 		_count("ws_rejected")
 		_log("WebSocket von %s abgelehnt: fremde Herkunft %s" % [c.address, origin.left(80)], "origin " + origin.left(80))
@@ -936,10 +1044,17 @@ func _ws_handshake(c: Conn, req: Dictionary) -> void:
 	_count("ws_active")
 	_event(["open", c.id, c.info.duplicate()])
 
-static func origin_allowed(origin: String, host: String) -> bool:
+static func origin_allowed(origin: String, host: String, extra: Array = []) -> bool:
 	# Erlaubt: keine Herkunft (App-Client) oder dieselbe Adresse samt Port wie im Host-Kopf (Seite vom Gastgeber selbst).
+	# Beta 1.6.2: oder genau eine der Adressen in extra (frühere Gastgeber, „http://IPv4:Port“) – ohne Muster, ohne https.
 	if origin == "":
 		return true
+	if not extra.is_empty():
+		var exact := extra_origin(origin, false)
+		if exact != "":
+			for e in extra:
+				if extra_origin(str(e)) == exact:
+					return true
 	var o := origin.strip_edges().to_lower()
 	var default_port := "80"
 	if o.begins_with("http://"):
@@ -957,6 +1072,36 @@ static func origin_allowed(origin: String, host: String) -> bool:
 	if not hh.contains(":"):
 		hh += ":80"
 	return o == hh
+
+static func extra_origin(text: String, bare_ok := true) -> String:
+	# Beta 1.6.2: „http://a.b.c.d:port“ (bare_ok: auch „a.b.c.d:port“) → klein „http://a.b.c.d:port“, sonst "".
+	# Nur IPv4 mit vier Dezimalteilen 0–255 ohne führende Nullen und ein Port 1–65535 ohne führende Nullen.
+	var t := text.strip_edges().to_lower()
+	if t.begins_with("http://"):
+		t = t.substr(7)
+	elif not bare_ok or t.contains("/"):
+		return ""
+	var colon := t.find(":")
+	if colon <= 0 or t.count(":") != 1:
+		return ""
+	var p := t.substr(colon + 1)
+	if not _plain_number(p, 5) or int(p) < 1 or int(p) > 65535:
+		return ""
+	var parts := t.left(colon).split(".")
+	if parts.size() != 4:
+		return ""
+	for part in parts:
+		if not _plain_number(part, 3) or int(part) > 255:
+			return ""
+	return "http://" + t
+
+static func _plain_number(s: String, max_len: int) -> bool:
+	if s == "" or s.length() > max_len or (s.length() > 1 and s.begins_with("0")):
+		return false
+	for ch in s:
+		if ch < "0" or ch > "9":
+			return false
+	return true
 
 func _ws_input(c: Conn, now: int) -> bool:
 	var busy := false

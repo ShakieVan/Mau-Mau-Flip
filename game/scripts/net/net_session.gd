@@ -28,6 +28,16 @@ extends Node
 #  - Vermittler: replaced (Code 4000) und online_needs_check (/info meldet einen Gastgeber) gehen an die Spielsteuerung. Hört niemand
 #    zu, gilt das Verhalten bis 1.6.0 (4000 → Online aufgeben, needs_check → sofort als Gastgeber anmelden).
 #  - app_resumed(): „wieder da“ erst, wenn der Vermittler wieder offen ist (ein 4000 aus dem Hintergrund wird so zuerst gelesen).
+# Mau-Mau Flip (Beta 1.6.2, WLAN und Spiel-WLAN, docs/module/uebergabe.md 10.1, 10.9 und 10.10):
+#  - info() trägt bei laufender Partie gid, gen, epoch (aus welcome_extra) und conn (verbundene entfernte Menschen, Gastgeber-Wächter);
+#    set_game_mark(gid, gen, epoch) setzt welcome_extra und frischt /info und die Suche sofort auf.
+#  - hello: bk_token gilt nur noch mit bk_gid == welcome_extra.gid (der Gast schickt es an jede Adresse); hp (Port, auf dem der Gast
+#    als Gastgeber lauschen würde), ap {ok, perm} (kann ein Spiel-WLAN öffnen) und bk_gid je Spieler (hello_port, ap_caps, backup_gid).
+#  - assign_seat(waiting_id, seat_id): Wartenden auf einen getrennten Menschenplatz setzen (zweites welcome mit assigned:true, start,
+#    hosts, dann player_rejoined).
+#  - drain(max_ms): Gesendetes vor dem Abtreten wirklich hinausschreiben (NetServer.drain, Vermittler flush).
+#  - send_hosts(msg): Liste der Erben an die Browser-Gäste im WLAN; die letzte Liste geht nach jedem welcome während der Partie mit.
+#  - set_extra_origins(list): zusätzliche erlaubte Ursprünge (frühere Gastgeber) an den Server durchreichen, auch nach Neustart.
 #
 # Nutzung: var s := NetHostSession.new(); add_child(s); s.start("Lena"); var me := s.host_id; s.message.connect(…)
 
@@ -80,6 +90,8 @@ var _finish_end := true                  # finish(): Online-Raum beenden
 var _unaway_pending := false             # Beta 1.6.1: „Gastgeber wieder da“ wartet, bis der Vermittler offen ist
 var _unaway_until := 0                   # … höchstens bis dahin (ms); danach „wieder da“ für die WLAN-Gäste, außer bei check/stepped_down
 var unaway_max_ms := NetProtocol.RELAY_INFO_TIMEOUT_MS + NetProtocol.RESUME_PROBE_MS
+var _extra_origins: Array = []           # Beta 1.6.2: zusätzliche erlaubte Ursprünge (http://ip:port früherer Gastgeber), bleibt über stop()
+var _hosts_msg := {}                     # Beta 1.6.2: letzte {t:"hosts"} (geht nach jedem welcome während der Partie an Browser-Gäste)
 
 # ---------- Lebenszyklus ----------
 
@@ -106,6 +118,7 @@ func start(name_of_host: String, port_first := NetProtocol.PORT, port_last := Ne
 		server = null
 		NetAddresses.release("host")
 		return err
+	server.set_extra_origins(_extra_origins)
 	if apk_provider.is_valid():
 		# Vorbereitung anstoßen (ApkShare kopiert die APK im Hintergrund); ist sie schon bereit, gilt sie sofort.
 		var apk = apk_provider.call()
@@ -164,6 +177,7 @@ func stop(text := "", end_room := false) -> void:
 	players.clear()
 	_conn_player.clear()
 	_pending.clear()
+	_hosts_msg = {}
 	host_id = 0
 	running = false
 
@@ -209,6 +223,8 @@ func _rebind_after(after_close: bool, before: String) -> String:
 		err = server.start(NetProtocol.PORT, NetProtocol.PORT_LAST)
 	if err != OK:
 		return I18n.t("Das Spiel ließ sich nicht neu öffnen. Bitte zurück und neu eröffnen.")
+	server.set_extra_origins(_extra_origins)
+	server.set_info(info())
 	if discovery != null:
 		discovery.start_host(info(), discovery_port)
 	_log("Neu gebunden (%s → %s) auf Port %d" % [before if before != "" else "ungebunden", now if now != "" else "ungebunden", server.port])
@@ -270,6 +286,54 @@ func flush() -> void:
 		server.poll()
 	if relay != null:
 		relay.flush()
+
+# Mau-Mau Flip (Beta 1.6.2, 10.7): Gesendetes wirklich hinausschreiben, bevor der Server schließt (Abtreten nach move). flush()
+# genügt dafür nicht (mit Server-Thread tut es nichts). Höchstens max_ms; true = alles hinaus (Vermittler: nur angestoßen).
+func drain(max_ms := 500) -> bool:
+	if relay != null:
+		relay.flush()
+	if server != null:
+		return server.drain(max_ms)
+	return true
+
+# Beta 1.6.2 (10.9): zusätzliche erlaubte Ursprünge für den WebSocket (Lite-Seiten früherer Gastgeber, exakt http://ip:port; die
+# Prüfung macht der Server). Gilt auch nach einem Neustart des Servers (start, rebind) und über stop() hinweg.
+func set_extra_origins(list: Array) -> void:
+	_extra_origins = []
+	for o in list:
+		if o is String and o != "" and not _extra_origins.has(o):
+			_extra_origins.append(o)
+	if server != null:
+		server.set_extra_origins(_extra_origins)
+
+func extra_origins() -> Array:
+	return _extra_origins.duplicate()
+
+# Beta 1.6.2 (10.9): {t:"hosts", gid, gen, list, online, ap, ap_name} an die Browser-Gäste im WLAN (online braucht Lite sie nicht,
+# die Liste nennt nur LAN-Adressen). Die Nachricht bleibt gemerkt und geht nach jedem welcome während der Partie an jeden
+# Browser-Gast im WLAN mit. {} = vergessen.
+func send_hosts(msg: Dictionary) -> void:
+	_hosts_msg = msg.duplicate(true)
+	if _hosts_msg.is_empty():
+		return
+	_hosts_msg["t"] = "hosts"
+	var ids := []
+	for id in players:
+		if _hosts_to(id):
+			ids.append(id)
+	send_many(ids, NetProtocol.encode(_hosts_msg))
+
+func hosts_message() -> Dictionary:
+	return _hosts_msg.duplicate(true)
+
+func _hosts_to(id: int) -> bool:
+	var p: Dictionary = players.get(id, {})
+	return not p.is_empty() and str(p.get("kind", "")) == "web" and int(p.get("conn", -1)) >= 0 \
+		and int(p.conn) < NetProtocol.RELAY_CONN_BASE
+
+func _send_hosts_after_welcome(id: int) -> void:
+	if running and not _hosts_msg.is_empty() and _hosts_to(id):
+		send_to(id, _hosts_msg)
 
 # Spieler kurz in einer anderen App (on) bzw. wieder da. Verteilt die Lobby; player_away meldet es der Spielsteuerung.
 func set_away(id: int, on: bool) -> void:
@@ -453,6 +517,63 @@ func backup_ids() -> Array:
 func backup_mark(id: int) -> Array:
 	return players[id].get("bk", []) if players.has(id) and players[id].get("bk") is Array else []
 
+# Beta 1.6.2: gid der Sicherung aus dem letzten hello ("" = keine/ältere App) – die Abstammungsregel gilt nur für dieselbe Partie.
+func backup_gid(id: int) -> String:
+	return str(players[id].get("bk_gid", "")) if players.has(id) else ""
+
+# Beta 1.6.2: Port, auf dem dieser App-Gast als Gastgeber lauschen würde (hello.hp); 0 = unbekannt.
+func hello_port(id: int) -> int:
+	return int(players[id].get("hp", 0)) if players.has(id) else 0
+
+# Beta 1.6.2: Kann dieser App-Gast ein Spiel-WLAN öffnen (hello.ap)? {ok, perm}; ohne Angabe (ältere App, Browser) beides false.
+func ap_caps(id: int) -> Dictionary:
+	var ap = players[id].get("ap") if players.has(id) else null
+	if ap is Dictionary:
+		return {"ok": bool(ap.get("ok", false)), "perm": bool(ap.get("perm", false))}
+	return {"ok": false, "perm": false}
+
+# Mau-Mau Flip (Beta 1.6.2, 10.10): Wartenden auf den Platz eines getrennten Mitspielers setzen. Verbindung, Art, Adresse, online
+# und die Sicherungsangaben des Wartenden gehen auf den Platz-Spieler über (Name und Token des Platzes bleiben), der Eintrag des
+# Wartenden fällt weg. Auf derselben Verbindung folgen ein zweites welcome mit id und Token des Platzes und assigned:true, bei
+# laufender Partie {t:"start", seat} (with_start), für Browser-Gäste im WLAN die Liste hosts, dann player_rejoined(seat_id) (die
+# Spielsteuerung schickt den Stand wie bei einer Rückkehr). false = abgelehnt: waiting_id wartet nicht verbunden, oder seat_id ist
+# der Gastgeber, ein Computer, ein Wartender, ein verbundener Spieler oder unbekannt.
+func assign_seat(waiting_id: int, seat_id: int, with_start := true) -> bool:
+	if waiting_id == seat_id or not is_waiting(waiting_id) or not players.has(seat_id) or seat_id == host_id:
+		return false
+	var w: Dictionary = players[waiting_id]
+	var p: Dictionary = players[seat_id]
+	var conn := int(w.get("conn", -1))
+	if conn < 0 or not bool(w.connected) or _link(conn) == null:
+		return false
+	if bool(p.local) or bool(p.get("waiting", false)) or bool(p.connected) or int(p.conn) >= 0 or int(p.seat) < 0:
+		return false
+	players.erase(waiting_id)
+	_conn_player[conn] = seat_id
+	p.conn = conn
+	p.connected = true
+	p.away = bool(w.get("away", false))
+	p.gone_since = int(w.get("gone_since", 0)) if bool(p.away) else 0
+	p.ready = true
+	p.kind = w.kind
+	p.address = w.address
+	p.online = bool(w.get("online", false))
+	for key in ["bk", "bk_gid", "hp", "ap"]:
+		if w.has(key):
+			p[key] = w[key]
+		else:
+			p.erase(key)
+	var welcome := _welcome(seat_id, str(p.token))
+	welcome["assigned"] = true
+	_send(conn, NetProtocol.encode(welcome))
+	if running and with_start:
+		_send(conn, NetProtocol.encode({"t": "start", "seat": int(p.seat)}))
+	_send_hosts_after_welcome(seat_id)
+	_log("Wartender %d „%s“ sitzt jetzt auf dem Platz von %d „%s“" % [waiting_id, w.name, seat_id, p.name])
+	player_rejoined.emit(seat_id)
+	_changed(true)
+	return true
+
 func seat_of(id: int) -> int:
 	return int(players[id].seat) if players.has(id) else -1
 
@@ -533,8 +654,35 @@ func waiting_message() -> Dictionary:
 	return m
 
 func info() -> Dictionary:
-	# Inhalt von /info und der Suchantwort.
-	return NetProtocol.make_info(host_name, players.size(), port(), {"running": running, "sid": sid, "addresses": NetAddresses.own_addresses().map(func(a): return a.address)})
+	# Inhalt von /info und der Suchantwort. Beta 1.6.2 (10.1): bei laufender Partie zusätzlich gid, gen, epoch und conn.
+	var extra := {"running": running, "sid": sid, "addresses": NetAddresses.own_addresses().map(func(a): return a.address)}
+	if running and str(welcome_extra.get("gid", "")) != "":
+		extra["gid"] = str(welcome_extra.gid)
+		extra["gen"] = int(welcome_extra.get("gen", 0))
+		extra["epoch"] = str(welcome_extra.get("epoch", ""))
+		extra["conn"] = connected_humans()
+	return NetProtocol.make_info(host_name, players.size(), port(), extra)
+
+# Beta 1.6.2: verbundene entfernte Menschen am Tisch (ohne Wartende) – für den Gastgeber-Wächter (10.11).
+func connected_humans() -> int:
+	var n := 0
+	for p in players.values():
+		if not bool(p.local) and bool(p.connected) and int(p.conn) >= 0 and not bool(p.get("waiting", false)):
+			n += 1
+	return n
+
+# Beta 1.6.2: Kennung der Partie (gid, gen, epoch) für welcome, /info und die Suche setzen und beides sofort auffrischen.
+# gid "" = keine Partie (welcome_extra leer).
+func set_game_mark(gid: String, gen: int, epoch: String) -> void:
+	welcome_extra = {} if gid == "" else {"gid": gid, "gen": gen, "epoch": epoch}
+	_refresh_info()
+
+func _refresh_info() -> void:
+	var i := info()
+	if server != null:
+		server.set_info(i)
+	if discovery != null:
+		discovery.set_info(i)
 
 func apk_url(host_header := "") -> String:
 	# Adresse der APK, wie der Mitspieler den Gastgeber erreicht (Host-Kopf seiner Verbindung), sonst die erste eigene Adresse.
@@ -628,8 +776,8 @@ func _hello(conn: int, msg: Dictionary, conn_info: Dictionary) -> void:
 	var known := -1
 	if problem.is_empty() and token != "":
 		known = _id_by_token(token)
-	if problem.is_empty() and known < 0 and str(msg.get("bk_token", "")) != "":
-		known = _id_by_token(str(msg.bk_token))     # Beta 1.6.1: Platz-Token aus der Sicherung (Rückfallebene)
+	if problem.is_empty() and known < 0 and str(msg.get("bk_token", "")) != "" and _bk_gid_matches(msg):
+		known = _id_by_token(str(msg.bk_token))     # Beta 1.6.1: Platz-Token aus der Sicherung (Rückfallebene; 1.6.2: nur dieselbe Partie)
 	if problem.is_empty() and known < 0:
 		if running and not accepts_late():
 			problem = {"code": "running", "text": "Die Partie läuft schon. Warte, bis der Gastgeber eine neue Runde eröffnet."}
@@ -659,6 +807,7 @@ func _hello(conn: int, msg: Dictionary, conn_info: Dictionary) -> void:
 		_set_bk(p, msg)
 		_conn_player[conn] = known
 		_send(conn, NetProtocol.encode(_welcome(known, str(p.token))))
+		_send_hosts_after_welcome(known)
 		_log("Spieler %d „%s“ wieder da (%s)" % [known, p.name, conn_info.get("address", "?")])
 		player_rejoined.emit(known)
 		_changed(true)
@@ -675,6 +824,7 @@ func _hello(conn: int, msg: Dictionary, conn_info: Dictionary) -> void:
 	_set_bk(players[id], msg)
 	_conn_player[conn] = id
 	_send(conn, NetProtocol.encode(_welcome(id, new_token)))
+	_send_hosts_after_welcome(id)
 	_log("Spieler %d „%s“ beigetreten (%s, %s)" % [id, players[id].name, msg.kind, conn_info.get("address", "?")])
 	if late:
 		_log("Spieler %d „%s“ wartet auf einen Platz" % [id, players[id].name])
@@ -689,10 +839,30 @@ func _id_by_token(t: String) -> int:
 
 func _set_bk(p: Dictionary, msg: Dictionary) -> void:
 	# Beta 1.6.1: hello.bk merken (bereinigt in clean_client_message); ohne bk bekommt der Spieler keine Sicherungen.
-	if msg.get("bk") is Array and str(msg.get("kind", "")) == "app":
+	# Beta 1.6.2: dazu bk_gid, hp und ap (nur Apps; fehlt ein Feld im neuen hello, fällt der alte Wert weg).
+	var app := str(msg.get("kind", "")) == "app"
+	if msg.get("bk") is Array and app:
 		p.bk = (msg.bk as Array).duplicate()
 	else:
 		p.erase("bk")
+	if app and msg.get("bk_gid") is String and str(msg.bk_gid) != "":
+		p.bk_gid = str(msg.bk_gid).left(32)
+	else:
+		p.erase("bk_gid")
+	if app and msg.get("hp") is int and int(msg.hp) >= 1024 and int(msg.hp) <= 65535:
+		p.hp = int(msg.hp)
+	else:
+		p.erase("hp")
+	var ap = msg.get("ap")
+	if app and ap is Dictionary:
+		p.ap = {"ok": ap.get("ok") is bool and bool(ap.ok), "perm": ap.get("perm") is bool and bool(ap.perm)}
+	else:
+		p.erase("ap")
+
+func _bk_gid_matches(msg: Dictionary) -> bool:
+	# Beta 1.6.2 (10.1): bk_token nur für die eigene Partie – ein fremder Gastgeber lernt so höchstens ein Token, das bei ihm nichts gilt.
+	var gid := str(welcome_extra.get("gid", ""))
+	return gid != "" and msg.get("bk_gid") is String and str(msg.bk_gid) == gid
 
 func _welcome(id: int, player_token: String) -> Dictionary:
 	var w := {"t": "welcome", "id": id, "token": player_token, "host_name": host_name, "proto": NetProtocol.PROTO, "game": game_version}

@@ -20,7 +20,8 @@ static var _active := false      # Anfrage ans Spiel-WLAN läuft
 # --- Auswertung -------------------------------------------------------------------------------------------------------------
 
 # Ergebnis: {kind, …}
-#   "wlan":    address, port                (http://<private IP>[:Port][/…], auch maumauflip://join?h=&p=)
+#   "wlan":    address, port, gid           (http://<private IP>[:Port][/…][?g=<gid>], auch maumauflip://join?h=&p=[&g=])
+#              gid (Beta 1.6.2): Partie-Kennung aus ?g= (hex, klein geschrieben), "" ohne bzw. bei ungültigem Wert; Lite ignoriert g
 #   "online":  room, relay ("" = Vermittler aus den Einstellungen)   (https://<vermittler>/?r=CODE, maumauflip://join?r=&v=)
 #   "wifi":    ssid, password, security (wpa2|wpa3|open), hidden   (WIFI:S:…;T:WPA;P:…;;)
 #   "invalid": error (erkannt, aber unbrauchbar)      "unknown": error (kein Code dieses Spiels)
@@ -37,7 +38,7 @@ static func parse(raw: String) -> Dictionary:
 			return {"kind": "invalid", "error": str(link.get("error", ""))}
 		if str(link.get("room", "")) != "":
 			return {"kind": "online", "room": str(link.room), "relay": str(link.get("relay", ""))}
-		return {"kind": "wlan", "address": str(link.address), "port": int(link.port)}
+		return {"kind": "wlan", "address": str(link.address), "port": int(link.port), "gid": str(link.get("gid", ""))}
 	if low.begins_with("http://") or low.begins_with("https://"):
 		var room := NetProtocol.parse_room_link(t)
 		if not room.is_empty():
@@ -67,7 +68,7 @@ static func _parse_game_url(t: String) -> Dictionary:
 			return {"kind": "invalid", "error": I18n.t("Der Link zum Spiel ist unvollständig. Scanne den QR-Code beim Gastgeber noch einmal.")}
 		port = int(p)
 	if NetAndroid.private_ipv4(host):
-		return {"kind": "wlan", "address": host, "port": port}
+		return {"kind": "wlan", "address": host, "port": port, "gid": NetAndroid.link_gid(t)}
 	return {"kind": "unknown", "error": I18n.t("Dieser Link führt nicht zu einem Spiel in deiner Nähe. Scanne den QR-Code auf dem Handy des Gastgebers.")}
 
 
@@ -254,20 +255,26 @@ static func wifi_active() -> bool:
 
 static func wifi_release() -> bool:
 	# Anfrage zurückziehen: Android trennt das Spiel-WLAN, das Handy kommt wieder normal ins Internet. true = es lief eine.
+	# Mau-Mau Flip (Beta 1.6.2, Übernahme im Spiel-WLAN): Lief eine Anfrage (auch eine schon „lost“), gilt die Bindung danach als
+	# offen, gleich welche NetAddresses.bound_to gerade meldet (vorher nur bei "qr_wifi"); so bewertet das nächste bind_for neu, z. B.
+	# „host“ beim neuen Gastgeber. QrWifi.release löst die Prozessbindung ans verlorene Netz jetzt selbst. Ohne Anfrage bleibt eine
+	# fremde Bindung (Suche im WLAN, eigenes Spiel-WLAN) unberührt.
 	var was := _active
 	_active = false
 	_owner_client = 0
 	NetAddresses.pinned = Callable()
-	if NetAddresses.bound_to == "qr_wifi":
-		NetAddresses.bound_to = ""
 	if wifi_stub is Dictionary:
 		if was:
 			wifi_stub["released"] = int(wifi_stub.get("released", 0)) + 1
 			wifi_stub["state"] = {"status": "idle"}
-		return was
-	var j := _java("QrWifi")
-	if not j.is_empty():
-		was = bool(j[0].release(j[1])) or was
+	else:
+		var j := _java("QrWifi")
+		if not j.is_empty():
+			was = bool(j[0].release(j[1])) or was
+	if was or NetAddresses.bound_to == "qr_wifi":
+		NetAddresses.bound_to = ""
+	if NetAddresses._held_bound == "qr_wifi":
+		NetAddresses._held_bound = ""
 	return was
 
 

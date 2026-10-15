@@ -1409,3 +1409,34 @@ msgstr "Dropout"
 
 msgid "Fällt der Gastgeber aus, führt ein Mitspieler mit der App das Spiel weiter. Dafür hat jede App eine Sicherung des ganzen Spielstands – die App zeigt fremde Karten nie, wer schummeln will, käme aber heran."
 msgstr "If the host drops out, another player with the app keeps the game going. For this, every app holds a backup of the whole game – the app never shows other players' cards, but someone set on cheating could get at them."
+
+# --- Gastgeber-Übergabe im WLAN und Spiel-WLAN (Beta 1.6.2: SeatManager, Auswahldialog, Hauptmenü, Abschnitt 10.15)
+msgid "Auf den Platz von %s setzen"
+msgstr "Seat in place of %s"
+
+msgid "%s spielt dann mit den Karten von %s weiter."
+msgstr "%s will then continue with %s's cards."
+
+msgid "Hinsetzen"
+msgstr "Seat"
+
+msgid "Alle müssen danach einen neuen QR-Code scannen."
+msgstr "Everyone will then have to scan a new QR code."
+
+msgid "Kann kein Spiel-WLAN öffnen."
+msgstr "Can't open a game Wi-Fi."
+
+msgid "Muss das Spiel-WLAN erlauben."
+msgstr "Has to allow the game Wi-Fi first."
+
+msgid "Spiel-WLAN neu öffnen"
+msgstr "Reopen game Wi-Fi"
+
+msgid "Beim neuen Gastgeber scannen"
+msgstr "Scan at the new host"
+
+msgid "In neuem Raum fortsetzen"
+msgstr "Continue in a new room"
+
+msgid "Mit neuem Code beitreten"
+msgstr "Join with a new code"

@@ -57,6 +57,13 @@ var _scan_btn: Button               # „QR-Code scannen“ (nur ohne Lobby sich
 var _scan_poll := 0.0
 var _wifi_wait := {}                # {ssid}: Spiel-WLAN aus dem QR-Code wird gerade verbunden
 const SCAN_POLL_S := 0.25
+# Mau-Mau Flip (Beta 1.6.2, docs/module/uebergabe.md 10.8): rejoin(gid) – zurück an den eigenen Platz nach dem Verlust des Spiel-WLANs.
+# Öffnet sofort den Scanner; danach der vorhandene Weg (WLAN-QR → QrWifi → Suche bzw. Spiel-QR → join). Ohne Namensfrage: Der Name
+# kommt aus der Sicherung, der Platz über bk_token (ClientTable lädt die Sicherung bei jeder Adresse). Findet die Suche ein Spiel mit
+# dieser gid, tritt die Seite ihm von selbst bei.
+var rejoin_gid := ""
+var rejoin_name := ""
+var _rejoin_tried := {}             # "addr:port" → schon versucht (Suche)
 
 
 # Lobby mit einer bestehenden Verbindung (vom Tisch zurück); zeigt sofort deren letzte Lobby.
@@ -79,6 +86,20 @@ static func direct_room(room: String, relay: String) -> JoinScreen:
 	var s := JoinScreen.new()
 	s.direct = {"room": room, "relay": relay}
 	return s
+
+
+# Beta 1.6.2: beim neuen Gastgeber der eigenen Partie scannen (Streifen „Neues Spiel-WLAN bei %s – QR-Code scannen“, Hauptmenü
+# „Beim neuen Gastgeber scannen“). player_name "" = Name aus den Einstellungen.
+static func rejoin(gid: String, player_name := "") -> JoinScreen:
+	var s := JoinScreen.new()
+	s.rejoin_gid = gid
+	s.rejoin_name = player_name
+	return s
+
+
+# Name für das Beitreten: beim Zurückkehren (rejoin) der aus der Sicherung, sonst der aus den Einstellungen
+func join_name() -> String:
+	return rejoin_name if rejoin_name != "" else str(UiApp.setting("name", ""))
 
 
 # Link aus App.take_pending_link() ({ok, address, port, error}, NetAndroid.parse_app_link) auf dem Bildschirmstapel ausführen.
@@ -268,6 +289,13 @@ func build() -> void:
 		return
 	_start_search()
 	_refresh_games()
+	if rejoin_gid != "":
+		_scan_on_enter.call_deferred()      # Beta 1.6.2: gleich den Scanner (die Suche läuft weiter)
+
+
+func _scan_on_enter() -> void:
+	if is_inside_tree() and client == null:
+		scan_qr()
 
 
 # App-Link: Adresse eintragen und ohne Suche verbinden; ohne gespeicherten Namen erst danach fragen
@@ -277,7 +305,7 @@ func _start_direct() -> void:
 		_room.text = str(direct.room)
 	else:
 		_address.text = "%s:%d" % [str(direct.address), int(direct.port)]
-	if AppSettings.clean_name(str(UiApp.setting("name", ""))) == "":
+	if AppSettings.clean_name(join_name()) == "":
 		_status.text = "Fast geschafft – wie heißt du?"
 		_show_name_box()
 		return
@@ -483,6 +511,22 @@ func _refresh_games() -> void:
 		_status.text = I18n.t("%d Spiele gefunden – antippen zum Beitreten.") % list.size()
 	for g in list:
 		_games.add_child(_game_button(g))
+	_rejoin_found(list)
+
+
+# Beta 1.6.2: Spiel der eigenen Partie gefunden (gleiche gid in der Suchantwort) → ohne Tippen beitreten, je Adresse einmal
+func _rejoin_found(list: Array) -> void:
+	if rejoin_gid == "" or client != null:
+		return
+	for g in list:
+		if not g is Dictionary or str((g as Dictionary).get("gid", "")) != rejoin_gid or not bool(g.get("compatible", true)):
+			continue
+		var key := "%s:%d" % [str(g.get("address", "")), int(g.get("port", NetProtocol.PORT))]
+		if _rejoin_tried.has(key):
+			continue
+		_rejoin_tried[key] = true
+		join(str(g.get("address", "")), int(g.get("port", NetProtocol.PORT)))
+		return
 
 
 func _game_button(g: Dictionary) -> Control:
@@ -555,7 +599,7 @@ func join(address: String, port: int) -> void:
 	_wire(client)
 	var target := NetProtocol.parse_room_link(address)
 	_status.text = I18n.t("Verbinde mit Raum %s …") % str(target.room) if not target.is_empty() else I18n.t("Verbinde mit %s …") % address
-	var who := str(UiApp.setting("name", ""))
+	var who := join_name()
 	if client.join(address, port, who) != OK:
 		_status.text = "Verbindung nicht möglich."
 		_back_to_search()

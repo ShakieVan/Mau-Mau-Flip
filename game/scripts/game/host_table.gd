@@ -34,6 +34,19 @@ extends GameTable
 #    handover_timeout_ms prüft das Socket (check_now) und taut auf.
 #  - Vorsichtiges Neuverbinden: online_check (Probe als Gast durch die Oberfläche), dann probe_done(). Ohne Empfänger: sofort anmelden.
 #  - Schließen der App beendet den Online-Raum nicht (Übernahme möglich); nur leave() („Tisch verlassen“) schickt {k:"end"}.
+# Mau-Mau Flip (Beta 1.6.2, WLAN und Spiel-WLAN, docs/module/uebergabe.md 10.2/10.3/10.7/10.9–10.11):
+#  - Ersatz-Rangfolge ohne WLAN-Sperre: erst Link „wlan“, dann „online“ (nur mit Raum); im Spiel-WLAN (wlan.ap) je Gruppe zuerst
+#    Geräte, die eines öffnen können (ap.perm vor ap.ok). Geplante Übergabe auch im WLAN, Spiel-WLAN und gemischt (how lan/qr/online).
+#  - Bestätigte Übergabe: Erst handover_ok des Ziels (bzw. 4000) löst move an die eigenen WLAN-Gäste aus, dann session.drain(500),
+#    dann stepped_down; step_target sagt der Oberfläche, wohin ({how, name, addr, port, room, relay}).
+#  - Stand: seats[*].addr/hp/ap, wlan {port, addrs, ap, ap_seat, past}; refresh_addrs() nach Neu-Binden/Spiel-WLAN (GameWifiWatch).
+#  - Browser-Gäste bekommen {t:"hosts"} (Erben mit Link „wlan“ als http://addr:hp/, Raum-Link, ap, ap_name); frühere Gastgeber-Adressen
+#    (wlan.past, Wächter-Funde) sind als Herkunft erlaubt (session.set_extra_origins).
+#  - seat_assign(): Wartenden auf den Platz eines getrennten Mitspielers setzen; nach resume() ist die Warteliste offen, solange ein
+#    Menschenplatz getrennt ist.
+#  - Gastgeber-Wächter (_on_rival): zwei Gastgeber derselben gid im Netz – mehr verbundene Menschen, dann gen, dann epoch gewinnt; der
+#    Verlierer tritt nach rival_confirm gleichen Scans ab (move lan an seine Gäste), der Gewinner hebt seine gen über die des anderen;
+#    der Verlierer wartet dafür (höchstens rival_gen_wait weitere Scans), sonst holte die Abstammungsregel seinen Zweig zurück.
 
 signal stepped_down(new_host: String)         # Beta 1.6.1: ein anderes Gerät führt jetzt das Spiel ("" = Name unbekannt)
 signal online_check(info: Dictionary)         # Beta 1.6.1: /info meldet einen Gastgeber – Probe als Gast, dann probe_done()
@@ -81,6 +94,34 @@ var _last_bk_ms := 0              # zuletzt bk/alive an die App-Gäste
 var _step_note := {}              # stepped_down wartet auf das Ende von session.poll() {name}
 var _addrs: Array = []            # eigene Adressen für wlan.addrs (einmal je start/resume, nicht je Änderung: JNI auf Android)
 
+# --- WLAN und Spiel-WLAN (Beta 1.6.2) ---
+var step_target := {}             # nach stepped_down: wohin es weitergeht {how:"lan"|"online"|"qr", name, addr, port, room, relay}
+var hotspot_check := Callable()   # () -> bool „eigenes Spiel-WLAN offen“: setzt der GameWifiWatch des Tisches (Gerätetest 1.6.2, F1), Tests
+                                  # spritzen es ein; ungültig: own_game_wifi_open()
+var wake_pause_ms := NetProtocol.WAKE_PAUSE_MS   # Gerätetest 1.6.2 (B1): so lange im Hintergrund, dann beim Zurückkommen erst der Wächter
+var wake_check_ms := NetProtocol.WAKE_CHECK_MS   # … und so lange Aktionen und Bots anhalten, bis seine Antworten da sind
+var _paused_at := -1              # App ging in den Hintergrund (ms), −1 = vorn
+var _wake_until := 0              # Wächter-Prüfung nach der Rückkehr läuft bis dahin (ms), 0 = keine
+var rival_confirm := 2            # Gastgeber-Wächter: so viele gleiche Scans hintereinander, bis der Verlierer abtritt
+var rival_gen_wait := 4           # … und höchstens so viele weitere, bis der Gewinner seine gen angehoben hat (Gegenprüfung 1.6.2)
+var drain_ms := 500               # vor dem Abtreten: so lange darf das Hinausschreiben dauern
+var step_grace_ms := 300          # … danach noch so lange (Frames laufen weiter, eingefroren), bis stepped_down den Server schließt
+var _step_at := 0                 # stepped_down frühestens dann (ms)
+var scan_ms := -1                 # Wächter-Scan der Suche (−1 = Standard NetProtocol.HOST_SCAN_MS, 0 = aus)
+var scan_ports: Array = []        # Tests: UDP-Ports der Wächter-Anfragen (mehrere Gastgeber auf 127.0.0.1)
+var scan_probe_local := false     # Tests: auch 127.0.0.1 fragen
+var scan_broadcast := true        # Tests: false = nur Unicast
+var _ap := false                  # die Partie läuft in einem Spiel-WLAN (wlan.ap)
+var _ap_seat := -1                # Platz, dessen Handy das Spiel-WLAN führt (−1 = keins)
+var _past: Array = []             # frühere Gastgeber-Adressen dieser Partie "ip:port" (wlan.past, höchstens PAST_MAX)
+var _addrs_port := 0              # Port zu _addrs (für past beim Neu-Binden)
+var _rival := {}                  # Wächter: {sid, lose, n} – Ergebnis der letzten Scans
+var _join_auto := false           # Warteliste nach resume() offen, solange ein Menschenplatz getrennt ist
+var _join_restore := false        # … danach gilt wieder dieser Wert
+var _hosts_key := ""              # zuletzt verschickte hosts-Liste (JSON)
+var _scan_key := ""               # zuletzt gesetzte Unicast-Ziele des Wächters
+var _step_drain := false          # vor stepped_down erst session.drain()
+
 
 func _init() -> void:
 	save_path = NET_SAVE_PATH       # Beta 1.6.1: eigene Datei der Netzpartie
@@ -115,6 +156,14 @@ func _open_session(host_name: String, port_first: int, port_last: int, quiet: bo
 			notice.emit(I18n.t("Das Spiel ließ sich nicht eröffnen (Port %d–%d belegt?).") % [port_first, port_last])
 		return err
 	session.set_rules(rules.to_dict())
+	if session.discovery != null:
+		session.discovery.rival.connect(_on_rival)     # Beta 1.6.2: Gastgeber-Wächter (10.11)
+		session.discovery.ports = scan_ports.duplicate()
+		session.discovery.probe_local = scan_probe_local
+		session.discovery.use_broadcast = scan_broadcast
+		if scan_ms >= 0:
+			session.discovery.scan_ms = scan_ms
+	_scan_key = ""
 	return OK
 
 
@@ -209,10 +258,19 @@ func start(rng_seed := 0) -> bool:
 	seq = 0
 	_last_bk_ms = _now_ms()
 	_note_addrs()
+	_past = []
+	_ap = false
+	_ap_seat = -1
+	_update_ap(false)
+	_apply_origins()
+	step_target = {}
+	_join_auto = false
 	_update_welcome()
+	_hosts_key = ""
 	session.send_start()
 	game_started.emit(host_seat)
 	_begin_round()
+	_send_hosts()                 # Beta 1.6.2: Browser-Gäste kennen gid/gen nur aus hosts (auch mit leerer Liste)
 	return true
 
 
@@ -245,11 +303,20 @@ func resume(data: Dictionary, my_seat := -1, port_first := NetProtocol.PORT, por
 	if err != OK:
 		return err
 	_restore_seats(snap)
+	var has_room := not (snap.online as Dictionary).is_empty()
+	var wx := _wlan_extra(snap, data)
 	if takeover:
 		for s in seats.size():
 			seats[s].host = s == hs
-		seats[old_hs].net = "app"            # der alte Gastgeber kommt mit der App zurück (online)
-		seats[old_hs].link = "online"
+		seats[old_hs].net = "app"            # der alte Gastgeber kommt mit der App zurück
+		# Beta 1.6.2 (10.2): „online“ nur, wenn die Partie einen Raum hat – sonst stimmen Rangfolge und how einer Übergabe an ihn nicht
+		seats[old_hs].link = "online" if has_room else "wlan"
+		if not has_room:
+			var olds: Array = (snap.wlan as Dictionary).get("addrs", [])
+			if not olds.is_empty() and NetProtocol.ipv4_to_int(str(olds[0])) > 0:
+				seats[old_hs].addr = str(olds[0])
+			if int(snap.wlan.port) > 0:
+				seats[old_hs].hp = int(snap.wlan.port)
 		host_seat = hs
 	var ids: Array = []
 	for s in seats.size():
@@ -267,7 +334,12 @@ func resume(data: Dictionary, my_seat := -1, port_first := NetProtocol.PORT, por
 	_seat_ids = ids
 	for w in snap.waiting:
 		session.restore_player(str(w.name), str(w.net), str(w.token), true)
-	session.join_open = bool(snap.join_open)
+	# Beta 1.6.2 (10.10): Nach einer Übernahme oder einem Umzug (anderer Port, keine der früheren Adressen) ist die Warteliste offen,
+	# solange ein Menschenplatz getrennt ist (Browser-Gäste kommen dann als Neue), danach wieder wie gespeichert (_poll_join_auto).
+	# Fortsetzen an derselben Adresse: wie gespeichert – alle Gäste finden mit ihrem Token zurück, Neue bekommen „reject running“.
+	_join_restore = bool(snap.join_open)
+	_join_auto = takeover or _moved_since(snap)
+	session.join_open = true if _join_auto else _join_restore
 	game = MauGame.from_dict(snap.game)
 	if game.seat_count() != seats.size():
 		_close_session("", false)
@@ -293,7 +365,23 @@ func resume(data: Dictionary, my_seat := -1, port_first := NetProtocol.PORT, por
 		parent = [gen, epoch, seq]
 		gen += 1
 		epoch = NetProtocol.new_epoch()
+	# Beta 1.6.2: Spiel-WLAN und frühere Gastgeber-Adressen (Herkunft der Lite-Seiten, 10.9)
+	_ap = bool(wx.ap)
+	_ap_seat = int(wx.ap_seat) if _ap else -1
+	if _ap and (_ap_seat < 0 or _ap_seat >= seats.size()):
+		_ap_seat = old_hs                    # Stand einer 1.6.1-App ohne ap_seat: der (alte) Gastgeber führte das Netz
+	_past = []
+	for p in wx.past:
+		_add_past_entry(str(p))
+	var wp_old := int(snap.wlan.port)
+	if wp_old > 0:
+		for a in (snap.wlan as Dictionary).get("addrs", []):
+			_add_past(str(a), wp_old)
 	_note_addrs()
+	_update_ap(false)
+	_apply_origins()
+	_hosts_key = ""
+	step_target = {}
 	_update_welcome()
 	# Einschwingzeit: auf die Erben und alle, die die letzte Sicherung hatten (außer dem eigenen Platz)
 	_settle_tokens = []
@@ -310,6 +398,7 @@ func resume(data: Dictionary, my_seat := -1, port_first := NetProtocol.PORT, por
 	_plan_dirty = true
 	game_started.emit(host_seat)
 	_changed([])
+	_send_hosts()                 # Beta 1.6.2: geht nach jedem welcome an zurückkehrende Browser-Gäste (neue gen)
 	return OK
 
 
@@ -362,6 +451,9 @@ func is_substituted(seat: int) -> bool:
 
 # Neue dürfen auf die Warteliste (solange beim Gastgeber das Feld „Mitspieler“ offen ist).
 func set_join_open(on: bool) -> void:
+	if _join_auto:
+		_join_restore = on        # Beta 1.6.2: nach einer Übernahme bleibt sie offen, solange ein Menschenplatz getrennt ist
+		on = true
 	if session != null:
 		session.join_open = on
 
@@ -508,6 +600,8 @@ func _seat_insert(o: Dictionary) -> void:
 	for s in _substitute:
 		sub[int(s) + 1 if int(s) >= at else int(s)] = true
 	_substitute = sub
+	if _ap_seat >= at:
+		_ap_seat += 1                # Beta 1.6.2: Platz, der das Spiel-WLAN führt, rückt mit
 	host_seat = game.host
 	_waiting_seat = -1
 	_plan_dirty = true
@@ -534,6 +628,10 @@ func _seat_remove(s: int) -> void:
 			sub[int(k) - 1 if int(k) > s else int(k)] = true
 	_substitute = sub
 	host_seat = game.host
+	if _ap_seat == s:
+		_ap_seat = host_seat if _ap else -1   # Beta 1.6.2: wer das Spiel-WLAN führte, ist weg – bei Verlust öffnet der Gastgeber neu
+	elif _ap_seat > s:
+		_ap_seat -= 1
 	_waiting_seat = -1
 	_plan_dirty = true
 	_seq.erase(id)
@@ -544,6 +642,7 @@ func _seat_remove(s: int) -> void:
 
 
 func _after_distribute() -> void:
+	_send_hosts()                 # Beta 1.6.2: Erben-Liste für Browser-Gäste, nur bei Änderung
 	if not _seat_ops.is_empty():
 		_run_seat_ops()
 
@@ -569,8 +668,11 @@ func back_to_lobby() -> void:
 	_substitute.clear()
 	_reset_handover_state()
 	gid = ""
+	_join_auto = false
+	_hosts_key = ""
 	if session != null:
-		session.welcome_extra = {}
+		session.set_game_mark("", 0, "")
+		session.send_hosts({})
 		session.set_running(false)
 	if autosave:
 		clear_saved(save_path)
@@ -614,6 +716,46 @@ func is_settling() -> bool:
 	return _settling
 
 
+# --- Rückkehr aus dem Hintergrund (Gerätetest 1.6.2, B1) ---
+# Nach der HOME-Übernahme war der zurückkehrende alte Gastgeber einige Sekunden lang selbst Gastgeber (Sofort-Leiste „Kim ist
+# getrennt“), parallel zum neuen, bis der Wächter nach zwei Scans (HOST_SCAN_MS) entschied – ein Zug in diesem Fenster ginge verloren.
+# Jetzt: War die App mindestens wake_pause_ms im Hintergrund (eine Übernahme braucht ≥ T_SILENT), fragt der Wächter beim Zurückkommen
+# sofort (NetDiscovery.scan_soon), und der Tisch hält Aktionen und Bots wake_check_ms lang an („Einen Moment – gleich geht es weiter.“).
+# Meldet sich in dieser Zeit ein Gastgeber derselben Partie mit höherer gen, der nach der Wächter-Regel gewinnt, tritt dieser Tisch
+# sofort ab (ohne zweiten Scan: Die höhere gen heißt, dass während der Abwesenheit übernommen wurde).
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_PAUSED:
+		if _paused_at < 0:
+			_paused_at = _now_ms()
+	elif what == NOTIFICATION_APPLICATION_RESUMED:
+		if _paused_at >= 0:
+			wake_check(_now_ms() - _paused_at)
+		_paused_at = -1
+
+
+# Nach paused_ms im Hintergrund: Wächter sofort fragen und kurz anhalten. true = Prüfung läuft.
+func wake_check(paused_ms: int) -> bool:
+	if paused_ms < wake_pause_ms or game == null or session == null or gid == "" or _frozen:
+		return false
+	var d := session.discovery
+	if d == null or d.scan_ms <= 0:
+		return false                 # ohne Wächter-Suche gibt es nichts abzuwarten
+	_wake_until = _now_ms() + wake_check_ms
+	d.scan_soon()
+	return true
+
+
+# Läuft gerade die Wächter-Prüfung nach der Rückkehr?
+func is_waking() -> bool:
+	return _wake_until > 0 and _now_ms() < _wake_until
+
+
+func _poll_wake(now: int) -> void:
+	if _wake_until > 0 and now >= _wake_until:
+		_wake_until = 0
+		_plan_dirty = true           # Bots planen wieder
+
+
 # Platz, an den gerade übergeben wird (−1 = keine Übergabe).
 func handover_seat() -> int:
 	return int(_handover.get("seat", -1)) if not _handover.is_empty() else -1
@@ -624,24 +766,46 @@ func host_token() -> String:
 	return str(seats[host_seat].get("token", "")) if host_seat >= 0 and host_seat < seats.size() else ""
 
 
-# Ersatz-Rangfolge (Abschnitt 4.2): Tokens der App-Gäste im bk-Verteiler, verbunden und nicht away, im Uhrzeigersinn ab dem Platz
-# nach dem Gastgeber. Mit WLAN-Mitspielern am Tisch leer (Stufe 1: keine automatische Übernahme).
+# Ersatz-Rangfolge (Abschnitt 4.2, Beta 1.6.2: 10.3): Tokens der App-Gäste im bk-Verteiler, verbunden und nicht away, im
+# Uhrzeigersinn ab dem Platz nach dem Gastgeber. Erst alle mit Link „wlan“ (ein WLAN-Erbe erreicht LAN und Raum), dann die mit Link
+# „online“ (nur mit Raum und ohne WLAN-Mitspieler am Tisch). Läuft die Partie in einem Spiel-WLAN (wlan.ap), kommen je Gruppe zuerst
+# Geräte, die selbst eines öffnen können (ap.perm vor ap.ok), danach die übrigen. WLAN-Erben sperrt nichts mehr.
 func heirs() -> Array:
 	var out: Array = []
-	if session == null or game == null or wlan_humans():
+	if session == null or game == null:
 		return out
 	var ok := {}
 	for id in session.backup_ids():
 		if not session.is_away(id):
 			ok[id] = true
+	# Gegenprüfung: Online-Erben nur ohne WLAN-Mitspieler am Tisch (wie 1.6.1). Fällt beim Gastgeber nur das Internet aus, merken die
+	# WLAN-Gäste nichts (der Server-Thread antwortet) – ein Online-Erbe eröffnete sonst ein zweites Spiel. Von Hand bleibt es möglich.
+	var online_heirs := not session.online_room().is_empty() and not wlan_humans()
+	var groups: Array = [[], []]           # wlan, online
 	for i in range(1, seats.size()):
 		var s := (host_seat + i) % seats.size()
-		if _is_remote(s) and ok.has(int(_seat_ids[s])):
-			out.append(str(seats[s].get("token", "")))
+		if not _is_remote(s) or not ok.has(int(_seat_ids[s])):
+			continue
+		var online := _seat_online(s)
+		if online and not online_heirs:
+			continue
+		(groups[1 if online else 0] as Array).append(s)
+	for g in groups:
+		var buckets: Array = [[], [], []] if _ap else [[]]
+		for s in g:
+			var b := 0
+			if _ap:
+				var caps := session.ap_caps(int(_seat_ids[s]))
+				b = 0 if bool(caps.ok) and bool(caps.perm) else (1 if bool(caps.ok) else 2)
+			(buckets[b] as Array).append(s)
+		for bucket in buckets:
+			for s in bucket:
+				out.append(str(seats[s].get("token", "")))
 	return out
 
 
-# Sitzt ein entfernter Mensch am Tisch, der (zuletzt) über das WLAN verbunden war?
+# Sitzt ein entfernter Mensch am Tisch, der (zuletzt) über das WLAN verbunden war? (Beta 1.6.2: sperrt nur noch Online-Erben in
+# heirs(); steht im Stand und für die Warnzeile „WLAN-Mitspieler brauchen dann Internet.“)
 func wlan_humans() -> bool:
 	for s in seats.size():
 		if _is_remote(s) and str(seats[s].get("link", "")) == "wlan":
@@ -650,6 +814,8 @@ func wlan_humans() -> bool:
 
 
 # Warum an diesen Platz nicht übergeben werden kann (Bausteine für den Dialog, ausgegraut); [] = möglich.
+# Beta 1.6.2 (10.7): auch im WLAN, Spiel-WLAN und gemischt; ein Online-Ziel nur bei offenem Raum, bei how "qr" nur Geräte, die ein
+# Spiel-WLAN öffnen können.
 func handover_block(seat: int) -> Array:
 	if game == null or session == null or _frozen or seat < 0 or seat >= seats.size() or seat == host_seat:
 		return [I18n.part("Das geht gerade nicht.")]
@@ -658,16 +824,65 @@ func handover_block(seat: int) -> Array:
 		return [I18n.part("Nur Mitspieler mit der App können Gastgeber werden.")]
 	if not session.backup_ids().has(id) or session.is_away(id):
 		return [I18n.part("%s ist gerade nicht verbunden.", [seat_name(seat)])]
-	if session.online_room().is_empty() or wlan_humans():
-		return [I18n.part("Geht in dieser Version nur, wenn alle online mitspielen.")]
-	if session.online_state() != "open":
+	var how := handover_how(seat)
+	if how == "online" and session.online_state() != "open":
 		return [I18n.part("Das geht gerade nicht.")]
+	if how == "qr" and not bool(session.ap_caps(id).ok):
+		return [I18n.part("Kann kein Spiel-WLAN öffnen.")]
 	return []
+
+
+# Beta 1.6.2 (10.7): Art einer Übergabe an diesen Platz – "qr", wenn die Partie im Spiel-WLAN dieses Gastgebers läuft (das Ziel
+# öffnet ein eigenes); sonst "lan", wenn das Ziel über das WLAN verbunden ist (auch im Spiel-WLAN eines Dritten); sonst "online".
+# Gegenprüfung: Ein online verbundenes Ziel ist immer "online" – auch bei eigenem Spiel-WLAN (gemischt); es öffnete sonst ein Spiel-WLAN
+# in einer anderen Stadt, und die WLAN-Gäste bekämen einen QR-Code, den sie nie erreichen.
+func handover_how(seat: int) -> String:
+	if seat >= 0 and seat < seats.size() and _seat_online(seat):
+		return "online"
+	if _ap and _ap_seat == host_seat:
+		return "qr"
+	if seat >= 0 and seat < seats.size():
+		return "lan"
+	return "online"
+
+
+# Beta 1.6.2: Zusatzzeile eines wählbaren Ziels im Auswahldialog (Bausteine); [] = keine.
+func handover_notes(seat: int) -> Array:
+	if game == null or session == null or seat < 0 or seat >= seats.size() or not _is_remote(seat):
+		return []
+	var caps := session.ap_caps(int(_seat_ids[seat]))
+	if handover_how(seat) == "qr" and bool(caps.ok) and not bool(caps.perm):
+		return [I18n.part("Muss das Spiel-WLAN erlauben.")]
+	return []
+
+
+# Beta 1.6.2: Warnzeilen des Auswahldialogs (Bausteine je Zeile); seat ≥ 0: für dieses Ziel.
+func handover_warnings(seat := -1) -> Array:
+	var out: Array = []
+	if game == null or session == null:
+		return out
+	if _ap and _ap_seat == host_seat and (seat < 0 or handover_how(seat) == "qr"):
+		out.append([I18n.part("Alle müssen danach einen neuen QR-Code scannen.")])
+	if seat >= 0 and seat < seats.size() and handover_how(seat) == "online" and wlan_humans():
+		out.append([I18n.part("WLAN-Mitspieler brauchen dann Internet.")])
+	return out
+
+
+# Beta 1.6.2: Spiel-WLAN der Partie (wlan.ap) und der Platz, dessen Handy es führt (−1 = keins).
+func game_wifi() -> Dictionary:
+	return {"ap": _ap, "ap_seat": _ap_seat}
+
+
+# Beta 1.6.2: frühere Gastgeber-Adressen dieser Partie ("ip:port").
+func past_hosts() -> Array:
+	return _past.duplicate()
 
 
 # Geplante Übergabe (Abschnitt 4.1): Das Ziel bekommt den vollständigen Stand ({t:"handover", z}), alle die Meldung, der Tisch friert
 # ein. Das Ziel übernimmt den Raum (der Vermittler schließt diesen Gastgeber mit 4000 → stepped_down). Kommt binnen
 # handover_timeout_ms kein 4000, prüft check_now() das Socket; lebt es, taut der Tisch auf. false = nicht möglich (notice).
+# Beta 1.6.2 (10.7): handover trägt how; meldet das Ziel handover_ok (bzw. kommt das 4000), gehen move an die eigenen WLAN-Gäste,
+# dann session.drain() und stepped_down (step_target). Ohne Raum taut der Tisch nach handover_timeout_ms ohne check_now auf.
 func handover_to(seat: int) -> bool:
 	var why := handover_block(seat)
 	if not why.is_empty():
@@ -683,14 +898,73 @@ func handover_to(seat: int) -> bool:
 
 func _begin_handover(seat: int, msg: Dictionary, own: bool) -> bool:
 	var id := int(_seat_ids[seat])
+	var how := handover_how(seat)
+	msg["how"] = how                         # Beta 1.6.2 (10.7): lan | qr | online
 	if not session.send_to(id, msg):
 		return false
 	if not own:
 		_tell_all([I18n.part("Gastgeber wechselt zu %s …", [seat_name(seat)])])
 	session.flush()
 	_frozen = true
-	_handover = {"seat": seat, "id": id, "name": seat_name(seat), "own": own, "until": _now_ms() + handover_timeout_ms, "checking": false}
+	# next_gen: gen des Ziels, sobald es führt (Übernahme gen + 1; own:true behält eine höhere gen des Ziels)
+	var next_gen := gen + 1 if not own else maxi(int(msg.get("gen", 0)), gen + 1)
+	_handover = {"seat": seat, "id": id, "name": seat_name(seat), "own": own, "until": _now_ms() + handover_timeout_ms, "checking": false,
+		"how": how, "addr": _address_of(id), "hp": session.hello_port(id), "next_gen": next_gen}
 	return true
+
+
+# Beta 1.6.2 (10.7 Schritt 3): Das Ziel der laufenden Übergabe führt jetzt (handover_ok). qr: Es öffnet ein eigenes Spiel-WLAN.
+# Gegenprüfung: Es zählt die Antwort des Ziels – qr nur, wenn es selbst ein Spiel-WLAN öffnet; meldet es einen Port, führt es im
+# bisherigen Netz (lan). Sonst hätte der alte Gastgeber sein Spiel-WLAN geschlossen, während das Ziel darin führt.
+func _on_handover_ok(port_: int, qr: bool) -> void:
+	var how := "qr" if qr else ("lan" if port_ > 0 else str(_handover.get("how", "lan")))
+	if how == "qr" and not qr:
+		how = "lan"
+	if how == "lan" and port_ <= 0:
+		port_ = int(_handover.get("hp", 0))
+	var name_ := str(_handover.get("name", "")) if not bool(_handover.get("own", false)) else ""
+	_step_away(_move_target(how, str(_handover.get("name", "")), str(_handover.get("addr", "")), port_), name_,
+		int(_handover.get("next_gen", gen + 1)), "", int(_handover.get("id", -1)))
+
+
+# Ziel eines Umzugs {how, name, addr, port, room, relay}: lan = Server des neuen Gastgebers, online = eigener Raum, qr = nur der Name.
+func _move_target(how: String, host_name: String, addr: String, port_: int) -> Dictionary:
+	var t := {"how": how, "name": host_name, "addr": "", "port": 0, "room": "", "relay": ""}
+	match how:
+		"lan":
+			t.addr = addr
+			t.port = port_ if port_ > 0 else NetProtocol.PORT
+		"online":
+			var o := session.online_room() if session != null else {}
+			t.room = str(o.get("room", ""))
+			t.relay = str(o.get("relay", ""))
+	return t
+
+
+# Abtreten mit Umzug (10.7 Schritt 3, 10.11): einfrieren, move an alle eigenen verbundenen WLAN-Gäste (Online-Gäste folgen über den
+# Raum per 4000/4012; except_id = das Ziel), danach in _poll_extra session.drain() und stepped_down mit step_target.
+func _step_away(target: Dictionary, note_name: String, next_gen: int, next_epoch: String, except_id := -1) -> void:
+	_frozen = true
+	var sent := 0
+	_handover = {}
+	step_target = target.duplicate()
+	if session != null and gid != "":
+		var how := str(target.how)
+		var send := not (how == "lan" and NetProtocol.ipv4_to_int(str(target.addr)) <= 0) \
+			and not (how == "online" and (str(target.room) == "" or str(target.relay) == ""))
+		if send:
+			var m := NetProtocol.make_move(gid, maxi(next_gen, 1), next_epoch, how, str(target.name), str(target.addr), int(target.port),
+				str(target.room), str(target.relay))
+			var ids: Array = []
+			for id in session.players:
+				var p: Dictionary = session.players[id]
+				if int(id) != except_id and not bool(p.get("local", false)) and bool(p.get("connected", false)) and not bool(p.get("online", false)):
+					ids.append(int(id))
+			session.send_many(ids, NetProtocol.encode(m))
+			sent = ids.size()
+	_step_note = {"name": note_name}
+	_step_drain = true
+	_step_at = _now_ms() + step_grace_ms if sent > 0 else 0
 
 
 # Probe als Gast (online_check) beendet: other = ein anderes Gerät führt den Raum (abtreten), sonst als Gastgeber anmelden.
@@ -701,9 +975,8 @@ func probe_done(other: bool, new_host := "") -> void:
 		session.relay.claim()
 		return
 	session.relay.step_down()
-	_frozen = true
-	_handover = {}
-	_step_note = {"name": new_host}
+	# Beta 1.6.2 (10.12): WLAN-Gäste ziehen über den Raum mit
+	_step_away(_move_target("online", new_host, "", 0), new_host, gen + 1, "")
 
 
 # Meldung an alle, sobald die Einschwingzeit vorbei ist (z. B. „%s ist jetzt Gastgeber.“); ohne Einschwingzeit sofort.
@@ -716,6 +989,7 @@ func announce_after_settle(lt: Array) -> void:
 
 # Abtreten (Abschnitt 4.5): Tisch ohne „bye“ und ohne end abbauen. Ergebnis: eigener Stand mit role "guest" und my_seat (liegt auch in
 # save_path), damit die Oberfläche als Gast zurückkehrt (Token seats[my_seat].token) und hello.bk schickt.
+# Beta 1.6.2: step_target bleibt danach lesbar (wohin die Oberfläche als Gast geht).
 func handover_shutdown() -> Dictionary:
 	var d := {}
 	if game != null:
@@ -723,8 +997,10 @@ func handover_shutdown() -> Dictionary:
 		d["my_seat"] = host_seat
 		if autosave:
 			write_saved(save_path, d)
+	var target := step_target
 	_close_session("", false)
 	_frozen = false
+	step_target = target
 	return d
 
 
@@ -736,27 +1012,38 @@ func _reset_handover_state() -> void:
 	_handover = {}
 	_own_tried.clear()
 	_step_note = {}
+	_step_drain = false
+	_rival = {}
 
 
 func _update_welcome() -> void:
 	if session != null:
-		session.welcome_extra = {"gid": gid, "gen": gen, "epoch": epoch}
+		session.set_game_mark(gid, gen, epoch)     # Beta 1.6.2: welcome, /info und Suchantwort (gid, gen, epoch)
 
 
 # Warum Aktionen gerade warten müssen (msgid; "" = keine): Übergabe/Abtreten bzw. Einschwingzeit.
 func _hold_reason() -> String:
 	if _frozen:
 		return "Einen Moment – der Gastgeber wechselt."
-	if _settling:
+	if _settling or is_waking():
 		return "Einen Moment – gleich geht es weiter."
 	return ""
 
 
 # Code 4000 (über NetHostSession.replaced): sofort einfrieren; stepped_down kommt nach session.poll() (_poll_extra).
+# Beta 1.6.2 (10.7, 10.12): Vor dem Abtreten move an die eigenen WLAN-Gäste – zum Ziel der laufenden Übergabe (Rückfall: Port aus
+# hello.hp, weil handover_ok noch fehlt), sonst über den Raum. Kam handover_ok schon, bleibt es dabei (das 4000 wird verworfen).
 func _on_replaced() -> void:
 	_frozen = true
-	_step_note = {"name": str(_handover.get("name", "")) if not bool(_handover.get("own", true)) else ""}
-	_handover = {}
+	if not step_target.is_empty():
+		return
+	if not _handover.is_empty():
+		var how := str(_handover.get("how", "online"))
+		var name_ := str(_handover.get("name", "")) if not bool(_handover.get("own", true)) else ""
+		_step_away(_move_target(how, str(_handover.get("name", "")), str(_handover.get("addr", "")), int(_handover.get("hp", 0))), name_,
+			int(_handover.get("next_gen", gen + 1)), "", int(_handover.get("id", -1)))
+		return
+	_step_away(_move_target("online", "", "", 0), "", gen + 1, "")
 
 
 func _on_needs_check(info: Dictionary) -> void:
@@ -774,6 +1061,7 @@ func _emit_stepped_down() -> void:
 		# Noch keine Oberfläche dafür: Online aufgeben wie bis 1.6.0 (Online-Gäste getrennt), mit WLAN-Gästen und Bots weiterspielen.
 		_frozen = false
 		_handover = {}
+		step_target = {}
 		if session != null and session.relay != null:
 			session.relay.give_up("Der Online-Raum wird jetzt von einem anderen Gerät geführt.")
 		if game != null:
@@ -857,12 +1145,19 @@ func _check_lineage(id: int) -> void:
 	var m := session.backup_mark(id)
 	if m.is_empty() or int(m[0]) < 1:
 		return
+	var bg := session.backup_gid(id)
+	if bg != "" and bg != gid:
+		return     # Beta 1.6.2 (10.1): Sicherung einer anderen Partie – keine Abstammung
 	var s := _seat_ids.find(id)
 	if s < 0 or not _is_remote(s):
 		return
 	var newer := int(m[0]) > gen
 	if not newer and _settling and int(m[0]) == int(parent[0]) and str(m[1]) == str(parent[1]) and int(m[2]) > int(parent[2]):
-		newer = true     # neuerer Stand derselben Vorgeneration, noch keine Aktion angenommen
+		# neuerer Stand derselben Vorgeneration, noch keine Aktion angenommen. Beta 1.6.2 (10.12): nicht an einen Online-Gast, solange
+		# WLAN-Mitspieler am Tisch sitzen – sonst zöge ein einzelner Zug, der vor dem Ausfall nur noch über den Vermittler hinausging
+		# (der Server des alten Gastgebers verwarf ihn beim Schließen), die ganze Partie ins Internet; Online-Gäste übernehmen dort nur
+		# von Hand. Dieser Zug geht verloren (wie ohne ihn). Ein echter jüngerer Zweig (gen höher) holt das Spiel weiterhin zurück.
+		newer = not (handover_how(s) == "online" and wlan_humans())
 	if not newer:
 		return
 	var key := "%s:%d" % [str(seats[s].get("token", "")), gen]
@@ -887,14 +1182,350 @@ func _id_of_token(t: String) -> int:
 func _note_link(s: int) -> void:
 	if not _is_remote(s) or session == null:
 		return
-	var p: Dictionary = session.player(int(_seat_ids[s]))
+	var id := int(_seat_ids[s])
+	var p: Dictionary = session.player(id)
 	if bool(p.get("connected", false)):
-		seats[s]["link"] = "online" if bool(p.get("online", false)) else "wlan"
+		var online := bool(p.get("online", false))
+		seats[s]["link"] = "online" if online else "wlan"
+		# Beta 1.6.2 (10.2): Adresse im WLAN, Gastgeber-Port und Spiel-WLAN-Fähigkeit (Suche, hosts, Rangfolge, Stand)
+		var a := _address_of(id)
+		if not online and NetProtocol.ipv4_to_int(a) > 0:
+			seats[s]["addr"] = a
+		var hp := session.hello_port(id)
+		if hp > 0:
+			seats[s]["hp"] = hp
+		if str(p.get("kind", "")) == "app":
+			seats[s]["ap"] = session.ap_caps(id)
+		else:
+			seats[s].erase("ap")
 
 
 # Eigene Adressen für wlan.addrs merken (Stufe 2 liest sie). NetAddresses fragt auf Android per JNI alle Netze ab – nicht je Änderung.
 func _note_addrs() -> void:
 	_addrs = NetAddresses.own_addresses().map(func(a): return str(a.address))
+	_addrs_port = port()
+
+
+# --- WLAN und Spiel-WLAN (Beta 1.6.2, docs/module/uebergabe.md Abschnitt 10) ---
+
+# Nach Neu-Binden bzw. Öffnen/Schließen des Spiel-WLANs (GameWifiWatch, 10.2): eigene Adressen neu ermitteln (die bisherigen kommen
+# nach wlan.past – Lite-Seiten von dort dürfen sich weiter verbinden), wlan.ap/ap_seat fortschreiben, dann hosts und Sicherung neu.
+func refresh_addrs() -> void:
+	if session == null:
+		return
+	var old: Array = _addrs.duplicate()
+	var old_port := _addrs_port
+	_note_addrs()
+	var kept := false
+	if old_port > 0:
+		for a in old:
+			if not _addrs.has(a) or old_port != _addrs_port:
+				_add_past(str(a), old_port)
+			else:
+				kept = true
+	if old_port > 0 and not old.is_empty() and not kept:      # keine frühere Adresse mehr erreichbar: umgezogen
+		_join_auto_after_move()
+	_update_ap(true)
+	_apply_origins()
+	_update_scan()
+	if game != null and not _frozen and gid != "":
+		_changed([])                 # neue Sicherung (wlan), hosts über _after_distribute
+
+
+# Beta 1.6.2 (10.10): Wartenden (waiting_id) auf den Platz eines getrennten Mitspielers setzen – er spielt mit dessen Karten weiter
+# (Browser-Gäste nach einem Umzug, alte Lite-Fassungen). Nur in der laufenden Partie, nicht eingefroren, nur entfernte Menschenplätze
+# ohne Verbindung. Eine Vertretung durch den Computer endet dabei (_on_rejoined). false = nicht möglich.
+func seat_assign(waiting_id: int, seat: int) -> bool:
+	if game == null or _frozen or session == null or not session.is_waiting(waiting_id) or _queued(waiting_id):
+		return false
+	if not _is_remote(seat):
+		return false
+	var id := int(_seat_ids[seat])
+	if bool(session.player(id).get("connected", false)):
+		return false
+	return session.assign_seat(waiting_id, id)
+
+
+# Menschenplätze ohne Verbindung (Auswahl „Auf den Platz von %s setzen“).
+func free_human_seats() -> Array:
+	var out: Array = []
+	if game == null or session == null:
+		return out
+	for s in seats.size():
+		if _is_remote(s) and not bool(session.player(int(_seat_ids[s])).get("connected", false)):
+			out.append(s)
+	return out
+
+
+# Gastgeber-Wächter (10.11): Ein anderer Gastgeber derselben Partie antwortet auf den eigenen Scan (NetDiscovery.rival). Beide rechnen
+# dieselbe Regel: Der andere gewinnt mit mehr verbundenen Menschen (conn), dann höherer gen, dann größerer epoch. Gemischt mit offenem
+# Raum tritt dieser Gastgeber nur bei kleinerer gen ab (sonst entscheidet der Vermittler). Der Verlierer tritt nach rival_confirm
+# gleichen Ergebnissen hintereinander ab; der Gewinner hebt seine gen sofort über die des anderen (sonst holte die Abstammungsregel den
+# Zweig des Verlierers zurück, sobald dessen Gäste ankommen). Die Adressen des anderen werden auf beiden Seiten erlaubte Herkunft.
+func _on_rival(info: Dictionary) -> void:
+	if game == null or session == null or _frozen or gid == "" or str(info.get("gid", "")) != gid:
+		return
+	var rport := int(info.get("port", 0))
+	var grew := false
+	var addrs: Array = (info.get("addresses", []) as Array).duplicate() if info.get("addresses") is Array else []
+	if str(info.get("address", "")) != "" and not addrs.has(str(info.address)):
+		addrs.push_front(str(info.address))
+	for a in addrs:
+		grew = _add_past(str(a), rport) or grew
+	if grew:
+		_apply_origins()
+	var mine := session.info()
+	var my_conn := int(mine.get("conn", session.connected_humans()))
+	var o_conn := int(info.get("conn", 0))
+	var o_gen := int(info.get("gen", 0))
+	var o_epoch := str(info.get("epoch", ""))
+	var room_open := not session.online_room().is_empty() and session.online_state() == "open"
+	var out := rival_outcome(room_open, my_conn, gen, epoch, o_conn, o_gen, o_epoch)
+	var lose := bool(out.lose)
+	var key := str(info.get("sid", "")) if str(info.get("sid", "")) != "" else "%s:%d" % [str(info.get("address", "")), rport]
+	if str(_rival.get("sid", "")) != key or bool(_rival.get("lose", false)) != lose:
+		_rival = {"sid": key, "lose": lose, "n": 0}
+	_rival.n = int(_rival.n) + 1
+	if bool(out.raise):
+		parent = mark()
+		gen = o_gen + 1
+		epoch = NetProtocol.new_epoch()
+		_update_welcome()
+		_changed([])                         # Sicherung mit der neuen gen sofort an die eigenen Gäste
+		return
+	# Gegenprüfung: Abtreten erst, wenn der Gewinner seine gen schon über die eigene gehoben hat – sonst gäbe die Abstammungsregel
+	# (_check_lineage) ihm das Spiel zurück an einen der eigenen Gäste, sobald sie mit ihrer Sicherung ankommen. Hat er nach
+	# rival_gen_wait weiteren Scans noch nicht angehoben (verpasste Scans, UDP-Verlust), trotzdem abtreten.
+	# Gerätetest 1.6.2 (B1): direkt nach der Rückkehr aus dem Hintergrund genügt ein Scan, wenn der andere schon eine höhere gen hat.
+	if lose and is_waking() and o_gen > gen:
+		_wake_until = 0
+		_lose_to_rival(info)
+	elif lose and int(_rival.n) >= rival_confirm and (o_gen > gen or int(_rival.n) >= rival_confirm + rival_gen_wait):
+		_lose_to_rival(info)
+	elif grew:
+		_changed([])                         # wlan.past in der Sicherung
+
+
+# Wächter-Entscheidung (10.11) aus Sicht dieses Gastgebers: lose = der andere gewinnt (tritt nach rival_confirm Scans ab), raise = dieser
+# gewinnt und hebt seine gen über die des anderen (raise geht vor lose). Mit offenem eigenem Raum tritt er nur bei kleinerer gen ab
+# (gleiche gen: der Vermittler entscheidet); angehoben wird nach der vollen Regel auch dann (Gegenprüfung: Ein Gewinner mit offenem
+# Raum gegen einen Verlierer ohne Vermittler träte sonst selbst ab bzw. verlöre per Abstammung die Züge der Mehrheit).
+static func rival_outcome(room_open: bool, my_conn: int, my_gen: int, my_epoch: String, o_conn: int, o_gen: int, o_epoch: String) -> Dictionary:
+	var win := rival_wins(my_conn, my_gen, my_epoch, o_conn, o_gen, o_epoch)
+	var lose := o_gen > my_gen if room_open else rival_wins(o_conn, o_gen, o_epoch, my_conn, my_gen, my_epoch)
+	var raise := win and my_gen <= o_gen
+	return {"lose": lose and not raise, "raise": raise}
+
+
+# Gewinnt der Gastgeber a gegen b? (Wächter-Regel 10.11; symmetrisch, beide Seiten rechnen dasselbe)
+static func rival_wins(a_conn: int, a_gen: int, a_epoch: String, b_conn: int, b_gen: int, b_epoch: String) -> bool:
+	if a_conn != b_conn:
+		return a_conn > b_conn
+	if a_gen != b_gen:
+		return a_gen > b_gen
+	return a_epoch > b_epoch
+
+
+func _lose_to_rival(info: Dictionary) -> void:
+	var addr := str(info.get("address", ""))
+	if NetProtocol.ipv4_to_int(addr) <= 0:
+		var list: Array = info.get("addresses", []) if info.get("addresses") is Array else []
+		addr = str(list[0]) if not list.is_empty() else ""
+	var host_name := str(info.get("name", ""))
+	_tell_all([I18n.part("%s führt dieses Spiel schon – ihr spielt dort weiter.", [host_name])])
+	_step_away(_move_target("lan", host_name, addr, int(info.get("port", 0))), host_name, maxi(int(info.get("gen", 0)), 1),
+		str(info.get("epoch", "")))
+
+
+# Erben-Liste für Browser-Gäste ({t:"hosts"}, 10.9): Erben mit Link „wlan“ in Rangfolge als http://addr:hp/, Raum-Link, Spiel-WLAN und
+# wer bei dessen Verlust ein neues öffnet. Geht nur bei Änderung hinaus (die Sitzung schickt die letzte nach jedem welcome mit).
+func hosts_message() -> Dictionary:
+	var list: Array = []
+	if session == null or game == null:
+		return {}
+	for t in heirs():
+		var s := _seat_of_token(str(t))
+		if s < 0 or _seat_online(s):
+			continue
+		var a := str(seats[s].get("addr", ""))
+		if NetProtocol.ipv4_to_int(a) <= 0:
+			continue
+		var hp := int(seats[s].get("hp", 0))
+		list.append({"name": seat_name(s), "url": "http://%s:%d/" % [a, hp if hp > 0 else NetProtocol.PORT]})
+	var o := session.online_room()
+	var online := NetProtocol.room_link(str(o.relay), str(o.room)) if not o.is_empty() else ""
+	return NetProtocol.make_hosts(gid, gen, list, online, _ap, _ap_name())
+
+
+func _send_hosts() -> void:
+	if session == null or game == null or gid == "" or _frozen:
+		return
+	var m := hosts_message()
+	var key := JSON.stringify(m)
+	_update_scan()
+	if key == _hosts_key:
+		return
+	_hosts_key = key
+	session.send_hosts(m)
+
+
+# Wer bei Verlust des Spiel-WLANs ein neues öffnet (10.8): Führte der Gastgeber es selbst, Rang 0; sitzt er im Spiel-WLAN eines
+# anderen, er selbst.
+func _ap_name() -> String:
+	if not _ap:
+		return ""
+	if _ap_seat >= 0 and _ap_seat != host_seat:
+		return seat_name(host_seat)
+	var h := heirs()
+	var s := _seat_of_token(str(h[0])) if not h.is_empty() else -1
+	return seat_name(s) if s >= 0 else ""
+
+
+# wlan.ap fortschreiben: eigenes Spiel-WLAN offen → ap, ap_seat = Gastgeber. closing: ist es zu und führte der Gastgeber es selbst,
+# läuft die Partie nicht mehr im Spiel-WLAN (das eines Mitspielers bleibt, bis sein Verlust gemeldet wird).
+# Gerätetest 1.6.2 (F1): Bis Android 15 ist ein offenes Spiel-WLAN neben dem WLAN nie an der Bindung zu erkennen (host_plan: „Hotspot
+# und WLAN → ungebunden“, binding() == ""); die Partie lief deshalb nie als wlan.ap. Darum fragt hotspot_check den Zustand des
+# Spiel-WLANs (GameWifiWatch bzw. own_game_wifi_open).
+func _update_ap(closing: bool) -> void:
+	var on: bool = bool(hotspot_check.call()) if hotspot_check.is_valid() else own_game_wifi_open()
+	if on:
+		_ap = true
+		_ap_seat = host_seat
+	elif closing and _ap and _ap_seat == host_seat:
+		_ap = false
+		_ap_seat = -1
+
+
+# Ist das eigene Spiel-WLAN offen? Ohne GameWifiWatch (z. B. direkt nach start/resume): an den Hotspot gebunden (Android 16+ ohne WLAN)
+# oder auf Android laut GameWifi.hotspotState „on“ (nie mit der PC-Simulation NetAndroid.wifi_stub – die gehört dem Watch).
+static func own_game_wifi_open() -> bool:
+	if NetAddresses.binding() == "hotspot":
+		return true
+	if OS.get_name() != "Android" or NetAndroid.wifi_stub is Dictionary or not NetAndroid.game_wifi_available():
+		return false
+	return str(NetAndroid.game_wifi_state().get("status", "")) == "on"
+
+
+# Erlaubte Herkunft: alle früheren Gastgeber-Adressen (10.9).
+func _apply_origins() -> void:
+	if session != null:
+		session.set_extra_origins(_past.map(func(p): return "http://" + str(p)))
+
+
+# Unicast-Ziele des Wächters: Adressen der Erben und früherer Gastgeber (Rundrufe filtern manche Router).
+func _update_scan() -> void:
+	if session == null or session.discovery == null:
+		return
+	var ips: Array = []
+	for s in seats.size():
+		var a := str(seats[s].get("addr", ""))
+		if _is_remote(s) and NetProtocol.ipv4_to_int(a) > 0 and not ips.has(a):
+			ips.append(a)
+	for p in _past:
+		var a := str(p).get_slice(":", 0)
+		if not ips.has(a) and not _addrs.has(a):
+			ips.append(a)
+	var key := ",".join(ips)
+	if key == _scan_key:
+		return
+	_scan_key = key
+	session.discovery.manual = ips
+
+
+func _add_past(ip: String, port_: int) -> bool:
+	ip = ip.trim_prefix("::ffff:")
+	if NetProtocol.ipv4_to_int(ip) <= 0 or port_ <= 0 or port_ > 65535:
+		return false
+	return _add_past_entry("%s:%d" % [ip, port_])
+
+
+func _add_past_entry(entry: String) -> bool:
+	var ip := entry.get_slice(":", 0)
+	var p := entry.get_slice(":", 1)
+	if entry.get_slice_count(":") != 2 or NetProtocol.ipv4_to_int(ip) <= 0 or not p.is_valid_int() or int(p) <= 0 or int(p) > 65535:
+		return false
+	if _past.has(entry):
+		return false
+	_past.append(entry)
+	while _past.size() > NetProtocol.PAST_MAX:
+		_past.pop_front()
+	return true
+
+
+# ap, ap_seat und past aus dem Stand (MatchSnapshot.clean; Rückfall auf die Rohdaten, falls clean die Felder nicht kennt).
+static func _wlan_extra(snap: Dictionary, data: Dictionary) -> Dictionary:
+	var w: Dictionary = snap.get("wlan", {}) if snap.get("wlan") is Dictionary else {}
+	if not w.has("past") and data.get("wlan") is Dictionary:
+		w = data.wlan
+	var ap_seat = w.get("ap_seat", -1)
+	var past: Array = []
+	if w.get("past") is Array:
+		for p in w.past:
+			if p is String:
+				past.append(p)
+	return {"ap": w.get("ap") == true, "ap_seat": int(ap_seat) if (ap_seat is int or ap_seat is float) else -1, "past": past}
+
+
+# Beta 1.6.2 (10.10): Ist dieser Gastgeber seit dem Stand umgezogen (anderer Port oder keine der gespeicherten Adressen mehr)? Ohne
+# gespeicherten Port bzw. Adressen (Stand einer älteren App) gilt er als nicht umgezogen.
+func _moved_since(snap: Dictionary) -> bool:
+	var wp := int(snap.wlan.port)
+	if wp <= 0:
+		return false
+	if session.port() != wp:
+		return true
+	var olds: Array = (snap.wlan as Dictionary).get("addrs", [])
+	if olds.is_empty():
+		return false
+	var own: Array = NetAddresses.own_addresses().map(func(a): return str(a.address))
+	for a in olds:
+		if own.has(str(a)):
+			return false
+	return true
+
+
+# Beta 1.6.2 (10.10): Umzug während der Partie (refresh_addrs, z. B. Spiel-WLAN nach dem Fortsetzen geöffnet): Warteliste wie nach
+# einer Übernahme offen halten, solange ein Menschenplatz getrennt ist.
+func _join_auto_after_move() -> void:
+	if _join_auto or session == null or game == null or not session.running or free_human_seats().is_empty():
+		return
+	_join_restore = session.join_open
+	_join_auto = true
+	session.join_open = true
+
+
+# Nach resume(): Warteliste wieder wie vorher, sobald kein Menschenplatz mehr getrennt ist (10.10).
+func _poll_join_auto() -> void:
+	if not _join_auto or session == null or game == null:
+		return
+	if free_human_seats().is_empty():
+		_join_auto = false
+		session.join_open = _join_restore
+
+
+# Ist der Platz über den Vermittler verbunden (bzw. war er es zuletzt)?
+func _seat_online(s: int) -> bool:
+	if session == null or s < 0 or s >= _seat_ids.size():
+		return false
+	var p: Dictionary = session.player(int(_seat_ids[s]))
+	if bool(p.get("connected", false)):
+		return bool(p.get("online", false))
+	return str(seats[s].get("link", "")) == "online"
+
+
+func _seat_of_token(t: String) -> int:
+	if t == "":
+		return -1
+	for s in seats.size():
+		if str(seats[s].get("token", "")) == t:
+			return s
+	return -1
+
+
+# IPv4 eines verbundenen Spielers aus Sicht des Gastgebers ("" = unbekannt, z. B. online).
+func _address_of(id: int) -> String:
+	var a := str(session.player(id).get("address", "")).trim_prefix("::ffff:") if session != null else ""
+	return a if NetProtocol.ipv4_to_int(a) > 0 else ""
 
 
 func _new_token() -> String:
@@ -946,22 +1577,29 @@ func _poll_extra() -> void:
 	if session != null:
 		session.poll()
 	if not _step_note.is_empty():
+		if _step_drain and session != null:
+			_step_drain = false
+			session.drain(drain_ms)  # Beta 1.6.2: move wirklich hinaus, bevor die Oberfläche den Server schließt
+		if _now_ms() < _step_at:
+			return               # … und den Gästen einen Augenblick zum Lesen lassen (Schließen mit ungelesenen Daten kann sie verwerfen)
 		_emit_stepped_down()     # nach session.poll(): die Oberfläche darf jetzt die Sitzung abbauen
 	if game == null or session == null:
 		return
 	var now := _now_ms()
 	_poll_settle(now)
+	_poll_wake(now)
 	_poll_handover(now)
+	_poll_join_auto()
 	if game != null and session != null:
 		_poll_alive(now)
 
 
 func _bots_paused() -> bool:
-	return session == null or _frozen or _settling
+	return session == null or _frozen or _settling or is_waking()
 
 
 func _pre_step() -> bool:
-	if _frozen or _settling:
+	if _frozen or _settling or is_waking():
 		return false
 	# nie für einen Gast, der nur kurz in einer anderen App ist
 	if auto_substitute_s > 0.0 and _waiting_seat >= 0 and not is_away(_waiting_seat) and Time.get_ticks_msec() - _wait_since > int(auto_substitute_s * 1000.0):
@@ -1074,6 +1712,13 @@ func _on_away(id: int, _on: bool, changed: bool) -> void:
 
 
 func _on_message(id: int, msg: Dictionary) -> void:
+	if str(msg.get("t", "")) == "handover_ok":
+		# Beta 1.6.2 (10.7): nur vom Ziel der laufenden Übergabe; danach (oder nach einem 4000) wird alles Weitere verworfen. Bei einem
+		# Online-Ziel entscheidet wie in 1.6.1 das 4000 des Vermittlers (handover_ok schadet dort nicht).
+		if not _handover.is_empty() and int(_handover.id) == id and step_target.is_empty() \
+				and (str(_handover.get("how", "")) != "online" or msg.get("qr") == true):
+			_on_handover_ok(int(msg.get("port", 0)) if msg.get("port") is int else 0, msg.get("qr") == true)
+		return
 	if str(msg.get("t", "")) == "handover_no":
 		# Beta 1.6.1: Ziel von handover own:true hat abgelehnt (Sicherung passt nicht mehr) → auftauen, weiter Gastgeber
 		if not _handover.is_empty() and int(_handover.id) == id:
@@ -1133,9 +1778,12 @@ func _save_extra() -> Dictionary:
 				bk_to.append(str(seats[s].get("token", "")))
 		online = session.online_room()
 		addrs = _addrs.duplicate()
+	# join_open: nach einer Übernahme offen gehalten (_join_auto) – gespeichert wird der Wert, der danach wieder gilt
+	var jo: bool = _join_restore if _join_auto else (session != null and session.join_open)
 	return {"gid": gid, "gen": gen, "epoch": epoch, "parent": parent.duplicate(), "seq": seq, "substitute": sub,
-		"gone_names": _gone_names.keys(), "waiting": waiting, "join_open": session != null and session.join_open, "heirs": heirs(),
-		"bk_to": bk_to, "wlan_humans": wlan_humans(), "online": online, "wlan": {"port": port(), "addrs": addrs}}
+		"gone_names": _gone_names.keys(), "waiting": waiting, "join_open": jo, "heirs": heirs(),
+		"bk_to": bk_to, "wlan_humans": wlan_humans(), "online": online,
+		"wlan": {"port": port(), "addrs": addrs, "ap": _ap, "ap_seat": _ap_seat if _ap else -1, "past": _past.duplicate()}}
 
 
 func _apk_info() -> Dictionary:

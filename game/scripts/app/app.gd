@@ -34,6 +34,8 @@ func _init() -> void:
 	# Testskripte (godot --script) zählen in eine eigene Datei, die echte Statistik am PC bleibt sauber.
 	var scripted := OS.get_cmdline_args().has("--script") or OS.get_cmdline_args().has("-s")
 	stats = AppStats.new("user://statistik_tests.json" if scripted else AppStats.PATH)
+	# Beta 1.6.2 (Gegenprüfung): hello.ap aus NetAndroid (sonst meldete jede App {ok:false, perm:false} – keine Übergabe im Spiel-WLAN)
+	NetAndroid.install_net_hooks()
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS

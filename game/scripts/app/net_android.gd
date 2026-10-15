@@ -274,6 +274,17 @@ static func in_hotspot(s: Dictionary, address: String) -> bool:
 	# Liegt die Adresse im Netz des eigenen Hotspots (z. B. ein Gastgeber, der mit diesem Handy verbunden ist)?
 	return hotspot_interfaces(s).any(func(i): return in_subnet(address, str(i.address), int(i.prefix)))
 
+static func in_wifi(s: Dictionary, address: String) -> bool:
+	# Liegt die Adresse im Netz eines verbundenen Gast-WLANs (Präfix aus der Netzliste)? Gerätetest 1.6.2 (F2): Das Spiel-WLAN kann
+	# im Bereich des WLANs liegen (S10: swlan0 192.168.178.254/24, Heim-WLAN 192.168.178.9/16) – dann gilt beides.
+	for n in wifi_networks(s):
+		for a in n.get("addresses", []):
+			var t := str(a)
+			var prefix := int(t.get_slice("/", 1)) if t.contains("/") else 24
+			if in_subnet(address, t.get_slice("/", 0), prefix):
+				return true
+	return false
+
 static func hotspot_handle(s: Dictionary) -> String:
 	# Android 16+: Handle des eigenen Hotspots als Netz (lokales Netz), sonst "" (bis Android 15 ist der Hotspot kein Netz; PC).
 	if not s.get("android", false):
@@ -453,8 +464,55 @@ static func wifi_qr_text(ssid: String, password: String, security := "wpa2") -> 
 		return "WIFI:T:nopass;S:%s;;" % wifi_qr_escape(ssid)
 	return "WIFI:T:WPA;S:%s;P:%s;;" % [wifi_qr_escape(ssid), wifi_qr_escape(password)]
 
-static func game_url(address: String, port := GAME_WIFI_PORT) -> String:
-	return "http://%s:%d/" % [address, port] if address != "" else ""
+static func game_url(address: String, port := GAME_WIFI_PORT, gid := "") -> String:
+	# Beta 1.6.2: gid ("" = ohne) hängt ?g=<gid> an; die App tritt damit gezielt dieser Partie bei, Lite ignoriert den Parameter.
+	if address == "":
+		return ""
+	var g := clean_gid(gid)
+	return "http://%s:%d/" % [address, port] + ("?g=" + g if g != "" else "")
+
+# --- Spiel-WLAN-Fähigkeit für hello.ap (Mau-Mau Flip, Beta 1.6.2, docs/module/uebergabe.md 10.1/10.3) ---
+# {ok, perm}: ok = dieses Gerät kann ein Spiel-WLAN öffnen (LocalOnlyHotspot, ab Android 8, nicht gesperrt); perm = die nötige
+# Erlaubnis ist schon erteilt (dann öffnet ein neuer Gastgeber es ohne Tippen). Aus hotspotState (GameWifi.java, schon vorhanden);
+# im Stub: sdk, granted und ap_ok (Standard true). Am PC ohne Stub: beides false.
+static func game_wifi_ap_info() -> Dictionary:
+	if not game_wifi_available():
+		return {"ok": false, "perm": false}
+	var st := game_wifi_state()
+	var ok := int(st.get("sdk", 0)) >= 26 and not str(st.get("error", "")) in ["unsupported", "tethering_disallowed"]
+	if wifi_stub is Dictionary and not bool(wifi_stub.get("ap_ok", true)):
+		ok = false
+	return {"ok": ok, "perm": ok and bool(st.get("granted", false))}
+
+# Mau-Mau Flip (Beta 1.6.2, Gegenprüfung): Quellen der net/-Schicht aus app/ setzen – hello.ap jedes NetClient kommt ohne eigene
+# Quelle (ap_info) aus game_wifi_ap_info. Ruft der Autoload App einmal beim Start auf (net/ hängt nicht von app/ ab).
+static func install_net_hooks() -> void:
+	NetClient.ap_info_default = game_wifi_ap_info
+
+# Partie-Kennung aus ?g= eines Spiel- oder App-Links (hex, höchstens 32 Zeichen, klein geschrieben; QR-Codes im Alphanumerik-Modus
+# kommen groß an). "" = keine bzw. ungültig.
+static func link_gid(link: String) -> String:
+	var t := link
+	var hash_at := t.find("#")
+	if hash_at >= 0:
+		t = t.left(hash_at)
+	var q := t.find("?")
+	if q < 0:
+		return ""
+	for pair in t.substr(q + 1).split("&", false):
+		var eq := pair.find("=")
+		if eq > 0 and pair.left(eq).to_lower() == "g":
+			return clean_gid(pair.substr(eq + 1).uri_decode())
+	return ""
+
+static func clean_gid(gid: String) -> String:
+	var g := gid.strip_edges().to_lower()
+	if g == "" or g.length() > 32:
+		return ""
+	for ch in g:
+		if not "0123456789abcdef".contains(ch):
+			return ""
+	return g
 
 static func game_wifi_address(s: Dictionary, before: Array = []) -> String:
 	# Eigene Adresse im Spiel-WLAN aus den Netzwerkschnittstellen (nie 192.168 annehmen): eine Hotspot-Schnittstelle, bevorzugt eine,
@@ -529,8 +587,9 @@ static func private_ipv4(ip: String) -> bool:
 	var b := int(parts[1])
 	return a == 10 or (a == 172 and b >= 16 and b <= 31) or (a == 192 and b == 168)
 
-static func app_link_url(address: String, port: int) -> String:
-	return "%s://join?h=%s&p=%d" % [APP_LINK_SCHEME, address, port]
+static func app_link_url(address: String, port: int, gid := "") -> String:
+	var g := clean_gid(gid)      # Beta 1.6.2: optional &g=<gid>
+	return "%s://join?h=%s&p=%d" % [APP_LINK_SCHEME, address, port] + ("&g=" + g if g != "" else "")
 
 static func app_link_room(room: String, relay_url: String) -> String:
 	# Online: maumauflip://join?r=KATZE-42&v=<vermittler-host> (http-Vermittler mit Schema, nur lokaler Nachbau)
@@ -585,4 +644,5 @@ static func parse_app_link(link: String) -> Dictionary:
 	if not private_ipv4(address):
 		return {"ok": false, "address": address, "port": port,
 			"error": I18n.t("Dieser Link führt nicht zu einem Spiel in deiner Nähe. Die App tritt nur Spielen im selben WLAN bei.")}
-	return {"ok": true, "address": address, "port": port, "error": ""}
+	# Beta 1.6.2: &g=<gid> (Partie-Kennung, wie ?g= im Spiel-Link), "" ohne
+	return {"ok": true, "address": address, "port": port, "gid": clean_gid(str(query.get("g", ""))), "error": ""}

@@ -168,6 +168,7 @@ static var _owners := {}
 static var _last_address := {}          # letzte Adresse je Zweck (für das Wiederherstellen nach einer Internet-Anfrage)
 static var pinned := Callable()       # Beta 1.4.3 (QrJoin): Spiel-WLAN aus einem WLAN-QR – „join“ und „search“ binden an dieses Netz;
                                       # liefert "" = gebunden, sonst Grund (dann gelten die üblichen Regeln)
+static var _join_flip := {}             # Gerätetest 1.6.2 (F2): Adresse in WLAN und eigenem Hotspot → Zahl der Versuche (Netz wechselt)
 
 static func _android_state() -> Dictionary:
 	if not use_binding or override_interfaces != null or not _has("state"):
@@ -200,6 +201,15 @@ static func bind_for(purpose: String, address := "") -> String:
 		target = str((_helper.callv("host_plan", [s]) as Dictionary).get("bind", ""))
 	elif purpose == "join" and bool(_helper.callv("in_hotspot", [s, address])):
 		target = str(_helper.callv("join_binding", [s, address]))
+		# Gerätetest 1.6.2 (F2): Das Spiel-WLAN (LocalOnlyHotspot) kann im Adressbereich des WLANs liegen (S10: swlan0 192.168.178.254/24
+		# im Heim-WLAN 192.168.178.9/16). Dann sagt die Adresse nicht, in welchem Netz der Gastgeber sitzt; ungebunden nimmt der Kernel
+		# die engere Route ins Spiel-WLAN, und ein Gastgeber im WLAN bleibt unerreichbar. Darum je Versuch abwechselnd: zuerst das WLAN,
+		# dann wie bisher (Hotspot bzw. ungebunden). NetClient ruft bind_for bei jedem Neuversuch.
+		if wifi != "" and _has("in_wifi") and bool(_helper.callv("in_wifi", [s, address])):
+			var n := int(_join_flip.get(address, 0))
+			_join_flip[address] = n + 1
+			if n % 2 == 0:
+				target = "wifi"
 	if target == "hotspot":
 		var problem := Updater.java_text(str(_helper.callv("bind_network", [_helper.callv("hotspot_handle", [s])])))
 		if problem == "":
@@ -314,6 +324,8 @@ static func release(purpose: String) -> void:
 	# Zweck beendet; ohne weitere Zwecke wird die Bindung gelöst.
 	_owners.erase(purpose)
 	_last_address.erase(purpose)
+	if purpose == "join":
+		_join_flip.clear()
 	if _owners.is_empty():
 		_rebind = false
 		_held_bound = ""
