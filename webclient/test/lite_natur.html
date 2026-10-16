@@ -729,6 +729,39 @@
       }
       await groesse(844, 390);
       notizen.push('angemeldete Arten: ' + arten.length);
+      // Gegenprüfung 1.6.12: keine doppelten @keyframes-Namen (die letzte Regel gewinnt; Fledermaus-Blinken überschrieb den Flügelschlag)
+      {
+        const namen = {};
+        Array.from(w.document.styleSheets).forEach(sh => { let rs = []; try { rs = Array.from(sh.cssRules); } catch (e) { }
+          rs.forEach(r => { if (r.type === 7) namen[r.name] = (namen[r.name] || 0) + 1; }); });
+        const natNamen = {}; { const st = w.document.getElementById('natur-stil'); Array.from((st && st.sheet && st.sheet.cssRules) || []).forEach(r => { if (r.type === 7) natNamen[r.name] = 1; }); }
+        const doppelt = Object.keys(namen).filter(k => namen[k] > 1 && natNamen[k]);   // nur Natur-Namen (style.css nkHuepf ist doppelt, eigene Baustelle)
+        ok(Object.keys(natNamen).length > 5, '#natur-stil hat Keyframes (' + Object.keys(natNamen).length + ')');
+        ok(!doppelt.length, 'keine doppelten @keyframes (' + doppelt.join(', ') + ')');
+      }
+      // Gegenprüfung 1.6.12: Glühwürmchen-Lichter sitzen mittig auf ihrer berechneten Lage (Hülle = Lichtmitten ± 13)
+      if (arten.indexOf('gluehwuermchen') >= 0) {
+        topId++;
+        S.rx({ t: 'state', events: [], view: sicht(1, { side: 'dunkel' }) });
+        await warte(1800);
+        n.tick(0.5);
+        n.zeige('gluehwuermchen', { seed: 7, t: 0, stehen: true });
+        const dd = n._dauer(n.current), h = n.huelle(dd * 0.5);
+        const ls = Array.from(w.document.querySelectorAll('.natur-ebene .nt-gw')).filter(e => +e.style.opacity > 0.04).map(e => mitte(buehneRect(e)));
+        let l = 1e9, o2 = 1e9, r = -1e9, u = -1e9;
+        ls.forEach(p => { l = Math.min(l, p.x); r = Math.max(r, p.x); o2 = Math.min(o2, p.y); u = Math.max(u, p.y); });
+        const pass = !!h && ls.length > 0 && Math.abs(l - 13 - h.x) < 2 && Math.abs(o2 - 13 - h.y) < 2 && Math.abs(r + 13 - (h.x + h.w)) < 2 && Math.abs(u + 13 - (h.y + h.h)) < 2;
+        ok(pass, 'Glühwürmchen: Lichter mittig auf ihrer Lage (Hülle ' + JSON.stringify(h && { x: Math.round(h.x), y: Math.round(h.y) }) + ', Lichter ab ' + Math.round(l) + ',' + Math.round(o2) + ')');
+        const e0 = w.document.querySelector('.natur-ebene .nt-gw');
+        ok(!!e0 && w.getComputedStyle(e0).left === '-32px', 'Glühwürmchen: left −32 px greift (' + (e0 && w.getComputedStyle(e0).left) + ')');
+        n._weg(n.current, 'test');
+      }
+      // Gegenprüfung 1.6.12: Marienkäfer- und Bienenflügel schlagen (Transform), nicht blinken
+      {
+        const anim = sel => { const e = w.document.createElement('i'); e.className = sel; w.document.body.appendChild(e); const nm = w.getComputedStyle(e).animationName; e.remove(); return nm; };
+        const kf = nm => { let k = null; Array.from(w.document.styleSheets).forEach(sh => { try { Array.from(sh.cssRules).forEach(r => { if (r.type === 7 && r.name === nm) k = r; }); } catch (e) { } }); return k; };
+        ['nt-mk-flap', 'nt-bi-flap'].forEach(c => { const k = kf(anim(c)); ok(!!k && /transform/.test(k.cssText) && !/opacity/.test(k.cssText), c + ': Flügelschlag per transform (' + String(k && k.cssText).slice(0, 80) + ')'); });
+      }
     }
 
     /* ---------- nichts nach außen ---------- */

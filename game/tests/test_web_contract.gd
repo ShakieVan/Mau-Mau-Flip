@@ -13,6 +13,8 @@ extends SceneTree
 #     Kartenbilder für alle 128 Gesichter; Kartenhilfe, Mock und die Einstellung „Spielbare Karten hervorheben“ im Client.
 #  5. Tag und Nacht am Tisch (pruefe_tag_nacht): Tag = Papier mit Sonne wie in der App, Plattform und Schrift je Seite,
 #     Schriftkontrast ≥ 4,5:1, weicher Wechsel beim Flip.
+#  6. Natur-Überraschungen (pruefe_natur, Beta 1.6.12): Tabelle in natur.js gleich NatureTable.DATA, Ladereihenfolge, jede id mit Tier
+#     in App und Lite, Haken, kein Ton/Netz in natur*.js und nature_*.gd.
 # Der Ende-zu-Ende-Test mit echtem Chrome ist tools/webtest/web_e2e.ps1 (Gastgeber game/tests/web_host.gd).
 
 const PORT := 24875
@@ -437,6 +439,7 @@ func run() -> void:
 	pruefe_i18n(seite)
 	pruefe_spass(tisch, app, seite)
 	pruefe_necken(tisch, app, seite)
+	pruefe_natur(app, seite)
 	# Pegel der Spieltöne relativ zum Mau-Ton (normal) wie in der App (AppSound.TON_DB gegen MAU_DB), auf 0,5 dB genau
 	var stufen := RegEx.create_from_string("STUFEN_SPIEL = \\{ aus: 0, leise: ([0-9.]+), normal: ([0-9.]+) \\}").search(ton)
 	var pegel := []
@@ -701,6 +704,8 @@ func serve_check() -> void:
 	for m in RegEx.create_from_string("<script src=\"([^\"]+)\"").search_all(html):
 		srcs.append(m.get_string(1))
 	check(srcs.size() >= 6, "index.html bindet die Skripte ein (%d)" % srcs.size())
+	for s in ["natur.js", "natur_tag.js", "natur_nacht.js"]:
+		check(srcs.has(s), "ausgeliefertes index.html bindet %s ein (Natur-Überraschungen)" % s)
 	srcs.append_array(["mock.js", "autotest.js", "style.css"])
 	for s in srcs:
 		var r := await http_get(server, "/" + s)
@@ -848,7 +853,7 @@ func pruefe_i18n(seite: String) -> void:
 			print("i18n_en.js und .po übersetzen verschieden: " + str(k).left(80))
 	check(clash == 0, "keine widersprüchlichen Übersetzungen zwischen i18n_en.js und .po (%d)" % clash)
 	var used := {}
-	for name in ["app.js", "tisch.js", "hand.js", "karten.js", "netz.js", "ton.js", "spass.js", "necken.js"]:
+	for name in ["app.js", "tisch.js", "hand.js", "karten.js", "netz.js", "ton.js", "spass.js", "necken.js", "natur.js", "natur_tag.js", "natur_nacht.js"]:
 		var src := read_web(name)
 		# M.t('…') und die Kurzform tr('…') (karten.js)
 		for m in RegEx.create_from_string(r"\b(?:M\.t|tr)\(\s*'((?:[^'\\]|\\.)*)'").search_all(src):
@@ -1136,3 +1141,99 @@ func pruefe_necken(tisch: String, app: String, seite: String) -> void:
 	check(lm != null and nk.contains("const REAKT_MS = { lachen: %s, schreck: %s, klatschen: %s, daumen: %s, baeh: %s };" % [lm.get_string(1), lm.get_string(2),
 			lm.get_string(3), lm.get_string(4), lm.get_string(5)]) and nk.contains("baeh: ['😝', 'Bäää']"),
 		"necken.js: Tondauern und Rückfall-Emoji der Reaktionen wie die App")
+
+
+# Beta 1.6.12 „Natur-Überraschungen“ (docs/module/natur.md 8.3): Gleichlauf webclient/natur.js ↔ NatureTable.DATA, Ladereihenfolge in
+# index.html, Vollständigkeit (jede id hat ein Tier in App und Lite), Haken in app.js/table_view.gd/fun_fx.gd, Verbote (kein Ton, keine
+# Vibration, kein Netz, keine Adressen) in natur*.js und scripts/ui/nature_*.gd.
+func pruefe_natur(app: String, seite: String) -> void:
+	var nt_script := preload("res://scripts/ui/nature_table.gd")
+	var fx_script := preload("res://scripts/ui/nature_fx.gd")
+	var nj := read_web("natur.js")
+	var a := nj.find("/*NATUR-DATEN*/")
+	var b := nj.find("/*ENDE*/")
+	check(a >= 0 and b > a and nj.contains("M.Natur = N;"), "natur.js vorhanden, Tabelle zwischen /*NATUR-DATEN*/ und /*ENDE*/")
+	var web_data: Variant = JSON.parse_string(nj.substr(a + 15, b - a - 15)) if a >= 0 and b > a else null
+	var app_data: Variant = JSON.parse_string(JSON.stringify(nt_script.DATA))
+	check(web_data is Dictionary and _sj(web_data) == _sj(app_data), "natur.js: Tabelle gleich NatureTable.DATA")
+	if web_data is Dictionary and app_data is Dictionary:
+		if _sj(web_data.get("zeiten")) != _sj(app_data.get("zeiten")):
+			print("erwartet zeiten: " + JSON.stringify(app_data["zeiten"]))
+		var we: Array = web_data.get("ereignisse", [])
+		var ae: Array = app_data.get("ereignisse", [])
+		for i in maxi(we.size(), ae.size()):
+			var x: Variant = we[i] if i < we.size() else null
+			var y: Variant = ae[i] if i < ae.size() else null
+			if _sj(x) != _sj(y):
+				print("erwartet Zeile %d: %s" % [i, JSON.stringify(y)])
+	# Ladereihenfolge: necken.js < natur.js < natur_tag.js < natur_nacht.js < tisch.js
+	var pos: Array = []
+	for s in ["necken.js", "natur.js", "natur_tag.js", "natur_nacht.js", "tisch.js"]:
+		pos.append(seite.find("<script src=\"%s\"></script>" % s))
+	var order_ok := not pos.has(-1)
+	for i in pos.size() - 1:
+		order_ok = order_ok and int(pos[i]) < int(pos[i + 1])
+	check(order_ok, "index.html lädt natur.js, natur_tag.js, natur_nacht.js nach necken.js und vor tisch.js (%s)" % str(pos))
+	# Vollständigkeit
+	var tag := read_web("natur_tag.js")
+	var nacht := read_web("natur_nacht.js")
+	check(tag.contains("const N = M.Natur;") and nacht.contains("const N = M.Natur;"), "natur_tag.js/natur_nacht.js melden ihre Arten bei M.Natur an")
+	var ids: Array = nt_script.ids()
+	check(ids.size() == 25, "NatureTable: 25 Ereignisse (%d)" % ids.size())
+	var ohne_app: Array = []
+	var ohne_lite: Array = []
+	for id in ids:
+		var e: Dictionary = nt_script.entry(id)
+		if not bool(e.get("bestand", false)):
+			var n: Node = fx_script.make(id)
+			if n == null:
+				ohne_app.append(id)
+			else:
+				n.free()
+		var reg := ["M.Natur.art('%s'" % id, "N.art('%s'" % id]
+		if not reg.any(func(r): return tag.contains(r) or nacht.contains(r)):
+			ohne_lite.append(id)
+	check(ohne_app.is_empty(), "jede Natur-id ohne Bestand hat ein Tier in der App (NatureFx.make; fehlend: %s)" % str(ohne_app))
+	check(ohne_lite.is_empty(), "jede Natur-id hat eine Art im Lite (M.Natur.art; fehlend: %s)" % str(ohne_lite))
+	# Haken
+	check(app.contains("if (M.Natur) M.Natur.init(this);") and app.find("if (M.Natur) M.Natur.init(this);") > app.find("if (M.Necken) M.Necken.init(this);")
+			and app.contains("if (M.Natur) M.Natur.sicht(m.events || [], m.view);")
+			and app.find("if (M.Natur) M.Natur.sicht(") > app.find("if (M.Necken) M.Necken.sicht(m.events || [], m.view);"),
+		"app.js: M.Natur.init nach M.Necken.init, M.Natur.sicht nach M.Necken.sicht")
+	var tv := FileAccess.get_file_as_string("res://scripts/ui/table_view.gd")
+	var haken := ["preload(\"res://scripts/ui/nature_fx.gd\")", "nature.mount(self, _bg, _world, _ring, hand_layer)", "nature.set_reduced(on)",
+		"nature.set_big(on)", "nature.set_night(night)", "nature.on_layout()", "nature.on_view(v)", "nature.on_event(ev)", "nature.notice_press(",
+		"if nature.tap(wp):"]
+	var fehlt: Array = haken.filter(func(h): return not tv.contains(h))
+	var mount_at := tv.find("nature.mount(")
+	check(fehlt.is_empty() and mount_at >= 0 and mount_at < tv.find("fx = TableEffects.new()"),
+		"table_view.gd: Haken der Natur-Überraschungen (fehlend: %s)" % str(fehlt))
+	var ff := FileAccess.get_file_as_string("res://scripts/ui/fun_fx.gd")
+	check(ff.contains("var sky_auto := true") and ff.contains("if not sky_auto:") and ff.contains("nature.call(\"make_room\")"),
+		"fun_fx.gd: Himmel im Takt der Natur (sky_auto), Mau-Katze hat Vorrang (make_room)")
+	# Verbote (Kommentare und SVG-Namensräume ausgenommen)
+	var quellen := {"natur.js": nj, "natur_tag.js": tag, "natur_nacht.js": nacht}
+	for f in DirAccess.get_files_at("res://scripts/ui"):
+		if f.begins_with("nature_") and f.ends_with(".gd"):
+			quellen[f] = FileAccess.get_file_as_string("res://scripts/ui/" + f)
+	check(quellen.size() >= 8, "Natur-Quellen gefunden (%s)" % ", ".join(PackedStringArray(quellen.keys())))
+	var re_block := RegEx.create_from_string(r"/\*[\s\S]*?\*/")
+	var re_zeile := RegEx.create_from_string(r"(^|\s)//[^\n]*")
+	var re_gd := RegEx.create_from_string(r"(?m)^\s*#[^\n]*$")
+	var verboten := ["M.Ton", "vibrate", "AppSound", "UiApp.vibrate", "send(", "fetch(", "WebSocket", "XMLHttpRequest", "sendBeacon", "http"]
+	for name in quellen:
+		var src := str(quellen[name])
+		if str(name).ends_with(".js"):
+			src = re_zeile.sub(re_block.sub(src, "", true), "", true)
+		else:
+			src = re_gd.sub(src, "", true)
+		src = src.replace("http://www.w3.org/2000/svg", "").replace("http://www.w3.org/1999/xlink", "")
+		var treffer: Array = verboten.filter(func(v): return src.contains(v))
+		check(treffer.is_empty(), "%s: kein Ton, keine Vibration, kein Netz, keine Adresse (%s)" % [name, str(treffer)])
+	check(FileAccess.file_exists(web_dir.path_join("test/lite_natur.html")) and read_web("test/lite_natur.html").contains("data-ok"),
+		"webclient/test/lite_natur.html: Chrome-Test der Natur-Überraschungen vorhanden")
+
+
+# JSON mit sortierten Schlüsseln (Vergleich unabhängig von der Reihenfolge der Felder)
+func _sj(v: Variant) -> String:
+	return JSON.stringify(v, "", true)

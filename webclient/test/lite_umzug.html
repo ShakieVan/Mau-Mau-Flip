@@ -75,7 +75,7 @@
     // A. hosts merken, Ausfall, Reihum-Probe nach 20 s, Umzug mit Token, dann move lan / online / qr
     await lade('');
     const App = w.MMF.App;
-    ok(App.version === '1.6.11', 'Version 1.6.11 (' + App.version + ')');
+    ok(App.version === '1.6.12', 'Version 1.6.12 (' + App.version + ')');
     let s = await beitreten('Kim');
     ok(App.beigetreten && App.hostBasis === 'file:///', 'beigetreten, hostBasis = eigener Ursprung (' + App.hostBasis + ')');
     s.rx({ t: 'hosts', gid: 'ab12', gen: 2, list: [{ name: 'Anna', url: 'http://10.0.0.7:24690/' }, { name: 'Ben', url: 'http://10.0.0.8:24690/' }], online: '', ap: false, ap_name: '' });

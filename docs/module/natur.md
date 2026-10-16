@@ -735,3 +735,27 @@ Kein `send`, kein `fetch`, keine Felder in Sicht oder Protokoll, keine Änderung
 6. **„Tischrand“** heißt bei Spatz, Eule, Igel und Marienkäfer die Außenkante der Richtungs-Plattform.
 7. **Vorführung** per 7 Tipps auf den freien Himmel (auch ein kleines Easter Egg) und `?natur=reihe` im Lite.
 8. **Nach einem Flip zur Nacht** kommen mit Chance 0,4 Glühwürmchen, Fledermaus oder Eule, als Gegenstück zum Regenbogen.
+
+## 12. Nachtrag: Umsetzung (Beta 1.6.12, 16.10.2026)
+
+Umgesetzt wie oben, veröffentlicht als **Beta 1.6.12** (nicht 1.6.11; dort kam nur der Lite-Kern ohne Tiere mit). Die Kontrollbilder heißen deshalb `optik_1612_*` statt `optik_1611_*`.
+
+**Stand der Aufgaben:** T1–T7 fertig. Tests im Bau: `test_nature_fx` (Kern, Dauerlauf 10 h), `test_nature_tag`, `test_nature_nacht`, `test_web_contract` (`pruefe_natur`), Lite `webclient/test/lite_natur.html` (`Invoke-WebNatureTest`, alle 25 Arten angemeldet). Voller Bau `tools/build.ps1 -Target Android` grün (110 Testskripte, `builds/MauMauFlip-1.6.12.apk`), `run_webtest.sh --nur-test` grün.
+
+**Gleichlauf (8.3, `pruefe_natur`):** Tabelle in `natur.js` gleich `NatureTable.DATA` (Vergleich mit sortierten Schlüsseln, bei Abweichung die erwartete Zeile), Ladereihenfolge `necken.js` < `natur.js` < `natur_tag.js` < `natur_nacht.js` < `tisch.js`, die drei Skripte im ausgelieferten `index.html` und in der Skriptliste der Übersetzungsprüfung, jede id ohne Bestand mit Tier in der App (`NatureFx.make`), jede id mit `N.art('<id>'`/`M.Natur.art('<id>'` im Lite, Haken in `app.js`, `table_view.gd` (`nature.mount` vor `fx`) und `fun_fx.gd` (`sky_auto`, `make_room`), Verbote in `natur*.js` und `scripts/ui/nature_*.gd` (Kommentare und SVG-Namensräume `http://www.w3.org/…` ausgenommen).
+
+**Seit dem Entwurf neu:** Die App-Sternschnuppe zeichnet `shooting_star_fx.gd` (leuchtender Kopf, langer farbiger Schweif, Funken); sie läuft über die Bestand-Brücke im gemeinsamen Takt, ihr Aussehen ist unverändert. Die Lite-Sternschnuppe (`natur_nacht.js`) ist im selben leuchtenden Stil gezeichnet. Die Reaktionsleiste hat 5 Knöpfe (inkl. „Bäää“); in der App zählt sie samt Necken-Menü als Schutzfläche, im Lite meiden die Tiere auf dem Band sie selbst (`#nk-leiste`).
+
+**Abweichungen vom Entwurf (in den Quellen begründet):**
+- **Schnittstelle App:** `obstacles()` liefert `{Name: [Rect2]}`; `spawn(id, seed, opts)` gibt `bool` zurück, das Tier holt `creature()`. Anker heißen in der App anders als im Lite (Rect2 bzw. `{pos}/{deg}/{center}`), die Tabelle ist gleich.
+- **Mau-Katze:** Erst fällt ihr Würfel, dann räumt die Natur den Platz (`make_room`), dann kommt die Katze im nächsten Takt.
+- **Biene:** landet oben rechts auf der obersten (rechten) Handkarte statt auf der mittleren (dort läge der Eckindex der nächsten Karte); ihre Acht sucht eine freie Stelle statt (0,5 W; H − 300), Ein- und Abflug meiden alle Schutzflächen außer der Hand.
+- **Wolke:** zieht von rechts zur Sonne und blendet dort aus (die Sonne liegt halb hinter den Knöpfen oben links).
+- **Regenbogen:** Scheitel oben im Himmel, Füße bei ±0,46 W auf Höhe Tischmitte + 40 (im Lite als Ellipse), Deckkraft 0,36 statt 0,32.
+- **Tempo und Größen:** Libelle, Pusteblume und Ballon schneller; Motte (×1,35), Lampion (×1,3), Igel (×1,3) in der App größer; im Lite kleine Tiere etwa ×1,5, damit sie am Handy erkennbar bleiben.
+- **Viele Spieler:** Eule, Sternbild, Fledermaus, Satellit und Komet suchen sich innerhalb ihres Ankers eine freiere Stelle bzw. Bahn (bei 8 Spielern sind die Schultern der Plattform zugestellt).
+- **Hülle:** Bei Schwärmen und großen Gebilden (Pusteblume, Wolke, Regenbogen) gibt `bounds()` nur die sichtbare Hülle zurück.
+
+**Kontrollbilder:** App je Tier `optik_1612_natur_<id>.png`, Übersichten `optik_1612_natur_tag.jpg`/`_nacht.png`, ruhige Varianten, 8 Spieler, 1600 × 900; Flip `optik_1612_natur_flip.jpg` (`game/tests/test_nature_flip_shot.gd`: Tag mit Marienkäfer → Flip, der Käfer geht in ≤ 0,45 s ab → Glühwürmchen → Flip zum Tag mit Regenbogen). Lite je Art `optik_1612_lite_natur_<id>.png` (`tools/webtest/natur_bilder.ps1 -Stand 1612`), Flip `optik_1612_lite_natur_flip_tag_nacht.jpg`, `_gluehwuermchen.png`, `_nacht_tag.png` (Chrome headless über `cdp.ps1`, `?natur=test`, `MMF.Natur.sicht([{e:'flip'…}])`).
+
+**Offen:** Gerätetest (8.5, S21/S10 gesperrt, Vorführung per 7 Tipps, Ruckeln am S10), iPhone/Safari ungetestet.

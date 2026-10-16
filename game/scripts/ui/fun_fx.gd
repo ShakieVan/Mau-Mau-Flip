@@ -13,6 +13,8 @@ extends Node
 # „Effekte reduziert“: Katze, Schmetterling und Sternschnuppe aus, der Stempel erscheint ohne Aufsetzen, der Applaus steht still.
 # Der Tisch (TableView) ruft nur: mount, set_pile, on_view, on_event, tap. Die Uhr läuft über _process; Tests schalten
 # auto_process aus und rufen tick(delta).
+# Ab 1.6.12 (docs/module/natur.md): Schmetterling und Sternschnuppe startet NatureFx im gemeinsamen Takt der Natur-Überraschungen
+# (sky_auto = false, nature = NatureFx); die Mau-Katze hat Vorrang (nature.busy() → make_room(), sie kommt im nächsten Takt).
 
 const CAT_WAIT_S := 25.0
 const CAT_CHANCE := 0.4
@@ -46,6 +48,9 @@ var cats_started := 0                # Tests/Zähler
 var sky_started := 0
 var stamps := 0
 var applauses := 0
+var sky_auto := true                 # 1.6.12: false = Himmel kommt über den Takt der Natur-Überraschungen (NatureFx)
+var nature: Object = null            # 1.6.12: NatureFx; die Katze hat Vorrang (busy → make_room, danach kommt sie)
+var _cat_due := false                # Würfel für diesen Zug gefallen, die Katze wartet auf Platz
 
 var _turn_since := 0.0
 var _sig := ""
@@ -146,9 +151,11 @@ func on_view(v: Dictionary) -> void:
 		_sig = sig
 		_turn_since = now
 		_rolled = false
+		_cat_due = false
 	if turn != _turn_seat or not _playing:
 		_turn_seat = turn
 		_rolled = false
+		_cat_due = false
 		_turn_since = now
 		if cat != null and cat.active():
 			cat.leave(false, _table_w())
@@ -163,9 +170,16 @@ func _check_cat() -> void:
 		return
 	if now - _turn_since < CAT_WAIT_S or is_busy():
 		return
-	_rolled = true
-	if cat_used.has(_turn_seat) or rng.randf() >= cat_chance:
+	if not _cat_due:
+		if cat_used.has(_turn_seat) or rng.randf() >= cat_chance:
+			_rolled = true
+			return
+		_cat_due = true
+	if nature != null and bool(nature.call("busy")):
+		nature.call("make_room")          # Natur-Ereignis geht schnell, die Katze kommt im nächsten Takt
 		return
+	_rolled = true
+	_cat_due = false
 	cat_used[_turn_seat] = true
 	cats_started += 1
 	cat.night = night
@@ -173,6 +187,8 @@ func _check_cat() -> void:
 
 
 func _check_sky() -> void:
+	if not sky_auto:
+		return
 	if sky == null or now < _sky_due or sky.active():
 		return
 	if not _playing or big or is_busy():

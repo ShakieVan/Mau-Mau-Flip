@@ -317,6 +317,10 @@ func wait_until(cond: Callable, ms := 4000) -> bool:
 
 
 # Züge mit MauBot für alle Menschen (Gastgeber, App-Gäste, Browser-Gäste), bis moves Änderungen beim Gastgeber angekommen sind.
+# Beta 1.6.12 (Bau rot: „3: Partie läuft weiter“ in test_handover_wlan, „7: …“ in test_takeover_wlan, vorher test_takeover_mixed):
+# Je Schleife handeln alle Menschen und die Computergegner (speed 0) sofort, mehrere Züge zählen als eine Änderung. Je nach Zeit-
+# verlauf (der Zufall der Bots hängt an der Zahl der Schleifen) war die Runde deshalb schon vor dem play() zu Ende, und play() kehrte
+# ohne einen Zug zurück. Steht die Runde beim Aufruf schon am Ende, startet der Gastgeber die nächste (wie der Knopf „Nächste Runde“).
 func play(moves: int, until_round_end := false) -> int:
 	var done := 0
 	var end := Time.get_ticks_msec() + (30000 if until_round_end else 8000)
@@ -328,6 +332,13 @@ func play(moves: int, until_round_end := false) -> int:
 		if h.game.phase() == "round_over":
 			if until_round_end:
 				return done
+			if done == 0 and moves > 0:
+				var r0 := h.rev
+				h.act({"a": "next_round"})
+				if h.rev != r0:
+					print("  play: Runde war schon zu Ende – nächste Runde gestartet")
+					done += 1
+				continue
 			break
 		for d in devs:
 			if d.dead:

@@ -149,7 +149,7 @@
     leeren();
     await lade('');
     const App = w.MMF.App;
-    ok(App.version === '1.6.11', 'Version 1.6.11 (' + App.version + ')');
+    ok(App.version === '1.6.12', 'Version 1.6.12 (' + App.version + ')');
     ok(!!N() && App.einstellungen.necken === true, 'necken.js geladen, Necken ab Werk an');
     let s = await beitreten('Kim');
     ok(JSON.stringify(s.msgs('fx_pref')) === '[{"t":"fx_pref","off":false}]', 'fx_pref nach welcome (' + JSON.stringify(s.msgs('fx_pref')) + ')');

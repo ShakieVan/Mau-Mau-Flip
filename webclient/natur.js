@@ -720,6 +720,8 @@
       add('einsatz', this._rect(t.einsatz));
       add('farbe', this._rect(t.farbe), 8);              // Wunschfarbe in der Tischmitte
       add('stapelzahl', this._rect(t.stapelZahl), 4);
+      add('reaktionen', this._rect(document.getElementById('nk-leiste')), 6);   // 1.6.12: Reaktionsknöpfe (Necken)
+      add('necken', this._rect(document.getElementById('nk-menue')), 6);        // offenes Necken-Menü
       return out;
     },
     _plaetze() {

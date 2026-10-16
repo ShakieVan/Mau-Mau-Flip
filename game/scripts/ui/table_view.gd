@@ -40,6 +40,7 @@ const GambleMachineScript := preload("res://scripts/ui/gamble_machine.gd")
 const StakePileScript := preload("res://scripts/ui/stake_pile.gd")
 const DiscardBrowserScript := preload("res://scripts/ui/discard_browser.gd")
 const HouseRulesScript := preload("res://scripts/ui/table_house_rules.gd")
+const NatureFxScript := preload("res://scripts/ui/nature_fx.gd")   # Beta 1.6.12: Natur-Überraschungen (docs/module/natur.md)
 const HINT_NOTHING_FITS := "Du bist dran – nichts passt"
 
 var reduced := false: set = set_reduced
@@ -133,6 +134,7 @@ var _list_flip := -1.0                # Richtungswechsel: 0 … 1 (Zeilen klappe
 var _was_my_turn := false
 var fun: FunFx                        # Ostereier (Beta 1.4.4): Mau-Katze, Himmel, Stempel, Applaus (fun_fx.gd)
 var tease: TeaseFx                    # Mau-Mau Flip (Beta 1.6.3, Easter Eggs Teil 2 „Necken“): Menü am Gegner, Reaktionen, Effekte (tease_fx.gd)
+var nature: NatureFxScript             # Beta 1.6.12: Natur-Überraschungen (nature_fx.gd; lokal, lautlos, im Takt mit Schmetterling/Sternschnuppe)
 
 
 # ================================================================= Aufbau
@@ -199,6 +201,8 @@ func _init() -> void:
 	_hand_halo.name = "Kranz"
 	_hand_halo.reach = 70.0
 	hand_layer.add_child(_hand_halo)
+	nature = NatureFxScript.new()
+	nature.mount(self, _bg, _world, _ring, hand_layer)
 	fx = TableEffects.new()
 	_world.add_child(fx)
 	_ui = Control.new()
@@ -330,6 +334,8 @@ func set_reduced(on: bool) -> void:
 		_bg.motion = not on
 	if fun:
 		fun.set_reduced(on)
+	if nature:
+		nature.set_reduced(on)
 	if tease:
 		tease.reduced = on
 	if list_header:
@@ -423,6 +429,8 @@ func _layout() -> void:
 	if _house != null:
 		_house.place_pile()
 	fun.set_pile(_draw_pos, pile_w)
+	if nature:
+		nature.on_layout()
 	update_hand_target()
 
 
@@ -432,6 +440,8 @@ func set_big(on: bool) -> void:
 	var changed := on != big
 	big = on
 	fun.big = on
+	if nature:
+		nature.set_big(on)
 	if tease:
 		tease.big = on
 	_bg.calm = on
@@ -654,6 +664,7 @@ func apply_view(v: Dictionary) -> void:
 	_apply_me(v, turn, next)
 	fun.on_view(v)
 	tease.on_view(v)
+	nature.on_view(v)
 	if big:
 		_update_list(true)
 	_apply_hints(v.get("hints", {}), turn)
@@ -1249,6 +1260,8 @@ func set_night(v: float) -> void:
 		return
 	_bg.tageszeit = night
 	fun.set_night(night)
+	if nature:
+		nature.set_night(night)
 	tease.night = night
 	_ring.color = UiPalette.ring_color(night)
 	gamble_machine.night = night
@@ -1352,6 +1365,7 @@ func _gui_input(event: InputEvent) -> void:
 	if mb.pressed:
 		_pressing = true
 		_press_pos = mb.position
+		nature.notice_press(_world.to_local(get_global_transform() * mb.position))   # Natur: scheue Tiere (verbraucht nichts)
 		if _gamble_pressable() and gamble_machine.hit(get_global_transform() * mb.position):
 			gamble_machine.set_down(true)
 		return
@@ -1414,6 +1428,8 @@ func _tap(p: Vector2) -> bool:
 			elif not node.list_mode:
 				tease.tap_head(s)
 			return true
+	if nature.tap(wp):                                             # Beta 1.6.12: Tier antippen (nur Tipps ins Leere)
+		return true
 	return false
 
 
@@ -1451,6 +1467,7 @@ func _d(t: float) -> float:
 
 
 func skip_event(ev: Dictionary) -> void:
+	nature.on_event(ev)
 	fx.clear()
 	if str(ev.get("e", "")) == "seats":
 		_remap_seats(ev, false)        # Platznummern auch ohne Animation umstellen (folgende Ereignisse und Sicht sind neu nummeriert)
@@ -1467,6 +1484,7 @@ func play_event(ev: Dictionary, speed: float) -> float:
 		_poke(int(ev.get("seat", -1)))
 	fun.on_event(ev, int(_player(int(ev.get("seat", -1))).get("count", -1)))
 	tease.on_event(ev)
+	nature.on_event(ev)
 	match e:
 		"deal":
 			return _ev_deal(ev)
