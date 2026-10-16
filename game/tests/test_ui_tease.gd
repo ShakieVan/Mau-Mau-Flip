@@ -252,7 +252,7 @@ func run() -> void:
 	check(t._tap(head_pos(1)), "Kopf-Tipp wird verbraucht")
 	check(tf.menu != null and tf.menu.seat == 1, "Kopf-Tipp öffnet das Necken-Menü")
 	var keys: Array = tf.menu.items.map(func(it: Dictionary) -> String: return str(it.key))
-	check(keys == ["ball", "snore", "alarm", "backs"], "Menü am Spieler am Zug: Kugel, Schnarchen, Wecker, Karten ansehen (%s)" % str(keys))
+	check(keys == ["ball", "snore", "alarm", "kissen_geheim", "kissen_name", "backs"], "Menü am Spieler am Zug: Kugel, Schnarchen, Wecker, 2 Kissen, Karten ansehen (%s)" % str(keys))
 	check(bool(tf.menu.items[0].on) and not bool(tf.menu.items[1].on) and not bool(tf.menu.items[2].on), "vor 10 s: Schnarchen/Wecker ausgegraut, Kugel aktiv")
 	check(tf.menu.note == "Erst, wenn Lena eine Weile überlegt.", "Hinweis unter den Knöpfen (%s)" % tf.menu.note)
 	check(tf.menu.title == "Lena · 7 Karten", "Titel mit Kartenzahl (%s)" % tf.menu.title)
@@ -452,7 +452,7 @@ func run() -> void:
 	tf.tick(0.2)
 	check(tf.menu == m0, "Zugwechsel: Menü bleibt offen")
 	keys = tf.menu.items.map(func(it: Dictionary) -> String: return str(it.key))
-	check(keys == ["ball", "snore", "alarm", "backs"] and bool(tf.menu.items[0].on) and not bool(tf.menu.items[1].on) and not bool(tf.menu.items[2].on),
+	check(keys == ["ball", "snore", "alarm", "kissen_geheim", "kissen_name", "backs"] and bool(tf.menu.items[0].on) and not bool(tf.menu.items[1].on) and not bool(tf.menu.items[2].on),
 		"Zugwechsel: Schnarchen/Wecker grau, Kugel aktiv (%s)" % str(keys))
 	check(tf.menu.note == "Erst, wenn Lena dran ist.", "Zugwechsel: Hinweis „Erst, wenn Lena dran ist.“ (%s)" % tf.menu.note)
 	var ball1: Vector2 = m0.get_global_transform_with_canvas() * m0.button_center(0)
@@ -554,7 +554,8 @@ func run() -> void:
 	t._tap(head_pos(2))
 	check(tf.menu != null and tf.menu.seat == 2, "später öffnet er wieder")
 	keys = tf.menu.items.map(func(it: Dictionary) -> String: return str(it.key))
-	check(keys == ["ball", "backs"], "Bot nicht am Zug: nur Kugel und Karten ansehen (%s)" % str(keys))
+	check(keys == ["ball", "kissen_geheim", "kissen_name", "backs"], "Bot nicht am Zug: Kugel, 2 Kissen, Karten ansehen (%s)" % str(keys))
+	check(tf.menu.rows().size() == 1, "Bot: alle Knöpfe in einer Reihe (%s)" % str(tf.menu.rows()))
 	tf._on_menu_chosen("backs")
 	check(t.backs_viewer.visible and tf.menu == null, "„Karten ansehen“ öffnet die Großansicht")
 	t.backs_viewer.visible = false
@@ -778,17 +779,23 @@ func run() -> void:
 	var bot_seat := 0 if ts.table.my_seat != 0 else 2
 	check(tz.open_menu(bot_seat), "Übung: Menü am Computergegner")
 	keys = tz.menu.items.map(func(it: Dictionary) -> String: return str(it.key))
-	check(keys[0] == "ball" and not keys.has("snore") and not keys.has("alarm"), "Übung: nur die Papierkugel (%s)" % str(keys))
+	check(keys.filter(func(x: String) -> bool: return x != "backs") == ["ball", "kissen_geheim", "kissen_name"], "Übung: nur Papierkugel und die 2 Kissen (%s)" % str(keys))
+	check(tz.menu.rows().size() == 1, "Übung: eine Reihe (%s)" % str(tz.menu.rows()))
 	tz._on_menu_chosen("ball")
 	check(tz.effects_of("ball").size() == 1, "Übung: Kugel kommt sofort als Ereignis an")
-	# Beta 1.6.6: Furzkissen auf den Computergegner (lokal): Zeile im Menü, Wahl → Bestätigung als leise Zeile, danach gesperrt
+	# Beta 1.6.6: Furzkissen auf den Computergegner (lokal): Wahl → Bestätigung als leise Zeile, danach gesperrt
+	# (Beta 1.6.10: echter Tipp auf den runden Knopf „Kissen geheim“)
 	tz.open_menu(bot_seat)
-	check(not tz.menu.cushion.is_empty() and bool(tz.menu.cushion.on), "Übung: Kissen-Zeile am Computergegner")
-	tz._on_menu_chosen("kissen_geheim")
+	check(tz.menu.key_on("kissen_geheim") and tz.menu.key_on("kissen_name"), "Übung: beide Kissen-Knöpfe am Computergegner aktiv")
+	await process_frame
+	tap_screen(tz.menu.get_global_transform_with_canvas() * tz.menu.button_center(keys.find("kissen_geheim")))
+	check(tz.menu == null, "Übung: Tipp „Kissen geheim“ legt sofort, Menü zu")
 	var toasts: Array = ts.table.hint_bar._toasts.map(func(e: Dictionary) -> String: return str(e.text))
 	check(toasts.has("Kissen liegt bei %s." % tz._name(bot_seat)), "Übung: Bestätigung „Kissen liegt bei …“ (%s)" % str(toasts))
+	tz.tick(0.45)
 	tz.open_menu(bot_seat)
-	check(not bool(tz.menu.cushion.on) and tz.menu.note.contains("Das Kissen muss sich erst wieder aufpusten."), "Übung: danach gesperrt (%s)" % tz.menu.note)
+	check(not tz.menu.key_on("kissen_geheim") and not tz.menu.key_on("kissen_name") and tz.menu.note.contains("Das Kissen muss sich erst wieder aufpusten."),
+		"Übung: danach beide gesperrt (%s)" % tz.menu.note)
 	tz.close_menu(false)
 	check(ts.bar_obstacles().size() >= 1, "TableScreen.bar_obstacles läuft mit")
 	tz.open_menu(bot_seat)
@@ -813,7 +820,7 @@ func run() -> void:
 	await CleanExit.finish(self, 1 if fails > 0 else 0)
 
 
-# Beta 1.6.6: Furzkissen (docs/module/eastereggs2.md 12.4) – Menüzeile mit „Mit Namen“/„Geheim“ (echter Tipp), Vorprüfung nur mit dem
+# Beta 1.6.6: Furzkissen (docs/module/eastereggs2.md 12.4) – ab 1.6.10 runde Knöpfe „Kissen geheim“/„Kissen mit Namen“ (echter Tipp), Vorprüfung nur mit dem
 # eigenen Kissen (rate/busy mit Hinweis), Bestätigung nur als leise Zeile beim Leger, Ablehnung mit Kissen-Texten (ohne Ausgrauen der
 # übrigen Knöpfe), Pups je Rolle (Ziel laut + 150 ms Vibration + groß, alle anderen leise, auch der Leger), Zeile „Kim war's!“ nur
 # mit reveal und from, sonst „Wer war das?“, Lage im Bild ohne harte Hindernisse, reduziert, Necken aus, Platzwechsel, großer Modus.
@@ -821,26 +828,40 @@ func cushion_checks() -> void:
 	await setup("client", 1, 4)
 	var hb: Toast = t.hint_bar
 	var toasts := func() -> Array: return hb._toasts.map(func(e: Dictionary) -> String: return str(e.text))
-	# --- Menü: eigene Zeile unter den runden Knöpfen
+	# --- Menü (Beta 1.6.10): zwei runde Knöpfe „Kissen geheim“ und „Kissen mit Namen“ wie die übrigen, in Reihe 2 unter
+	#     Kugel/Schnarchen/Wecker/Karten ansehen; bis 1.6.9 eine eigene Zeile mit Kissenbild und Text-Knöpfen (am Tisch tippten alle
+	#     auf das Bild)
 	tf.open_menu(1)
-	check(not tf.menu.cushion.is_empty() and bool(tf.menu.cushion.on), "Kissen-Zeile im Menü, aktiv")
-	check(tf.menu.cushion.label == "Furzkissen" and (tf.menu.cushion.opts as Array).map(func(o: Dictionary) -> String: return str(o.label)) == ["Mit Namen", "Geheim"],
-		"Kissen-Zeile: „Furzkissen“ mit „Mit Namen“ und „Geheim“")
-	var keys: Array = tf.menu.items.map(func(it: Dictionary) -> String: return str(it.key))
-	check(keys == ["ball", "snore", "alarm", "backs"], "runde Knöpfe unverändert (%s)" % str(keys))
 	var m := tf.menu
-	check(m.pill_rect(0).size.y >= 48.0 and m.pill_rect(0).end.x < m.pill_rect(1).position.x and Rect2(Vector2.ZERO, m.size).encloses(m.pill_rect(1)),
-		"Kissen-Knöpfe ≥ 48 px hoch, nebeneinander, in der Blase")
-	check(m.pill_rect(0).position.y > m.button_center(0).y + TeaseMenu.BTN_R, "Kissen-Zeile unter den runden Knöpfen")
-	check(Rect2(Vector2.ZERO, t.size).encloses(Rect2(m.position, m.size)), "Menü mit Kissen-Zeile ganz im Bild")
+	var keys: Array = m.items.map(func(it: Dictionary) -> String: return str(it.key))
+	check(keys == ["ball", "snore", "alarm", "kissen_geheim", "kissen_name", "backs"], "Kissen als runde Knöpfe (%s)" % str(keys))
+	var labels: Array = m.items.map(func(it: Dictionary) -> String: return str(it.label))
+	check(labels.slice(3, 5) == ["Kissen geheim", "Kissen mit Namen"], "Beschriftung „Kissen geheim“/„Kissen mit Namen“ (%s)" % str(labels))
+	check(m.key_on("kissen_geheim") and m.key_on("kissen_name"), "beide Kissen-Knöpfe aktiv")
+	var rs: Array = m.rows()
+	check(rs.size() == 2 and rs[0] == [0, 1, 2, 5] and rs[1] == [3, 4], "Mensch: Reihe 1 Kugel/Schnarchen/Wecker/Karten, Reihe 2 die Kissen (%s)" % str(rs))
+	var kg := m.button_center(3)
+	var kn := m.button_center(4)
+	var bc := Rect2(Vector2.ZERO, m.size).grow(-TeaseMenu.BTN_R)
+	check(is_equal_approx(kg.y, kn.y) and kg.y > m.button_center(0).y + TeaseMenu.BTN_R * 2.0 and kn.x - kg.x >= TeaseMenu.BTN_R * 2.0 + 20.0
+		and bc.has_point(kg) and bc.has_point(kn),
+		"Kissen-Knöpfe nebeneinander unter der ersten Reihe, in der Blase (%s %s)" % [kg, kn])
+	var sep := true
+	for i in m.items.size():
+		for j in m.items.size():
+			if i < j and m.button_center(i).distance_to(m.button_center(j)) < (TeaseMenu.BTN_R + 10.0) * 2.0:
+				sep = false
+	check(sep, "Trefferflächen der 6 Knöpfe überlappen nicht")
+	check(m.key_at(kg) == "kissen_geheim" and m.key_at(kn) == "kissen_name", "Trefferfläche: Knopfmitte gehört zum Knopf")
+	check(Rect2(Vector2.ZERO, t.size).encloses(Rect2(m.position, m.size)), "Menü mit zwei Reihen ganz im Bild")
 	src.sent.clear()
-	tap_screen(m.get_global_transform_with_canvas() * m.pill_rect(0).get_center())
-	check(src.sent == [{"k": "kissen", "to": 1, "reveal": true}] and tf.menu == null, "Tipp „Mit Namen“ → Wunsch mit reveal, Menü zu (%s)" % str(src.sent))
+	tap_screen(m.get_global_transform_with_canvas() * kn)
+	check(src.sent == [{"k": "kissen", "to": 1, "reveal": true}] and tf.menu == null, "Tipp „Kissen mit Namen“ → Wunsch mit reveal, Menü zu (%s)" % str(src.sent))
 	tf.tick(0.45)
 	tf.open_menu(3)
 	src.sent.clear()
-	tap_screen(tf.menu.get_global_transform_with_canvas() * tf.menu.pill_rect(1).get_center())
-	check(src.sent == [{"k": "kissen", "to": 3, "reveal": false}], "Tipp „Geheim“ → Wunsch ohne reveal (%s)" % str(src.sent))
+	tap_screen(tf.menu.get_global_transform_with_canvas() * tf.menu.button_center(tf.menu.items.find_custom(func(it: Dictionary) -> bool: return it.key == "kissen_geheim")))
+	check(src.sent == [{"k": "kissen", "to": 3, "reveal": false}] and tf.menu == null, "Tipp „Kissen geheim“ → Wunsch ohne reveal, Menü zu (%s)" % str(src.sent))
 	check(tf.effects().is_empty() and snd.log.is_empty(), "Legen allein: kein Bild, kein Ton")
 	# --- Bestätigung (nur beim Leger): leise Zeile, dann eigene Sperre bzw. „liegt schon“
 	var conf := NetProtocol.make_cushion(0, 1, true)
@@ -849,20 +870,22 @@ func cushion_checks() -> void:
 	check(toasts.call().has("Kissen liegt bei Lena.") and tf.effects().is_empty() and snd.log.is_empty(), "Bestätigung: Zeile „Kissen liegt bei Lena.“, kein Bild, kein Ton")
 	tf.tick(0.45)
 	tf.open_menu(3)
-	check(not bool(tf.menu.cushion.on) and tf.menu.note.contains("Das Kissen muss sich erst wieder aufpusten.") and bool(tf.menu.items[0].on),
-		"eigene Sperre: Kissen grau mit Hinweis, Kugel bleibt aktiv (%s)" % tf.menu.note)
-	src.sent.clear()
-	tap_screen(tf.menu.get_global_transform_with_canvas() * tf.menu.pill_rect(0).get_center())
-	check(src.sent.is_empty(), "gesperrt: Tipp sendet nichts")
+	check(not tf.menu.key_on("kissen_geheim") and not tf.menu.key_on("kissen_name") and tf.menu.note.contains("Das Kissen muss sich erst wieder aufpusten.")
+		and bool(tf.menu.items[0].on), "eigene Sperre: beide Kissen grau mit Hinweis, Kugel bleibt aktiv (%s)" % tf.menu.note)
+	for kk in ["kissen_geheim", "kissen_name"]:
+		src.sent.clear()
+		tap_screen(tf.menu.get_global_transform_with_canvas() * tf.menu.button_center(tf.menu.items.find_custom(func(it: Dictionary) -> bool: return it.key == kk)))
+		check(src.sent.is_empty() and tf.menu != null, "gesperrt: Tipp „%s“ sendet nichts, Menü bleibt" % kk)
 	tf.close_menu(false)
 	clock += TeaseRules.CUSHION_BLOCK_MIN_MS + 10
 	tf.tick(0.45)
 	tf.open_menu(1)
-	check(not bool(tf.menu.cushion.on) and tf.menu.note.contains("Da liegt schon ein Kissen."), "eigenes Kissen liegt beim Ziel: grau, „Da liegt schon ein Kissen.“ (%s)" % tf.menu.note)
+	check(not tf.menu.key_on("kissen_geheim") and not tf.menu.key_on("kissen_name") and tf.menu.note.contains("Da liegt schon ein Kissen."),
+		"eigenes Kissen liegt beim Ziel: beide grau, „Da liegt schon ein Kissen.“ (%s)" % tf.menu.note)
 	tf.close_menu(false)
 	tf.tick(0.45)
 	tf.open_menu(3)
-	check(bool(tf.menu.cushion.on) and not tf.menu.note.contains("Kissen"), "anderes Ziel nach der Mindestzeit wieder frei (%s)" % tf.menu.note)
+	check(tf.menu.key_on("kissen_geheim") and tf.menu.key_on("kissen_name") and not tf.menu.note.contains("Kissen"), "anderes Ziel nach der Mindestzeit wieder frei (%s)" % tf.menu.note)
 	tf.close_menu(false)
 	# fremde Bestätigung (sollte nie kommen): nichts
 	var n_t: int = toasts.call().size()
@@ -969,7 +992,7 @@ func cushion_checks() -> void:
 	# Ziel mit Necken aus: keine Kissen-Zeile
 	src._fx_offs = [3]
 	tf.open_menu(3)
-	check(tf.menu.cushion.is_empty(), "Ziel mit Necken aus: keine Kissen-Zeile")
+	check(not tf.menu.items.any(func(it: Dictionary) -> bool: return TeaseMenu.is_cushion(str(it.key))), "Ziel mit Necken aus: keine Kissen-Knöpfe")
 	tf.close_menu(false)
 	src._fx_offs = []
 	# großer Modus: Pups an der Listenzeile, ganz im Bild
@@ -986,7 +1009,7 @@ func cushion_checks() -> void:
 		tf.clear()
 	tf.tick(0.45)
 	tf.open_menu(1)
-	check(tf.menu != null and Rect2(Vector2.ZERO, t.size).encloses(Rect2(tf.menu.position, tf.menu.size)), "großer Modus: Menü mit Kissen-Zeile ganz im Bild")
+	check(tf.menu != null and Rect2(Vector2.ZERO, t.size).encloses(Rect2(tf.menu.position, tf.menu.size)), "großer Modus: Menü mit Kissen-Knöpfen ganz im Bild")
 	tf.close_menu(false)
 	t.set_big(false)
 	# Schrift „Sehr groß“: Menü passt
@@ -1019,22 +1042,11 @@ func surprise_checks() -> void:
 	var cat_under := func(screen: Vector2) -> bool:
 		fun.cat.position = t._world.to_local(screen) + Vector2(0, 16.0 * fun.cat.k)
 		return fun.cat.hit(t._world.to_local(screen))
-	# Kissen „Mit Namen“ und „Geheim“
-	for j in 2:
-		tf.open_menu(1)
-		var m := tf.menu
-		var sp: Vector2 = m.get_global_transform_with_canvas() * m.pill_rect(j).get_center()
-		check(cat_under.call(sp), "Katze liegt unter „%s“" % ["Mit Namen", "Geheim"][j])
-		src.sent.clear()
-		tap_screen(sp)
-		check(src.sent == [{"k": "kissen", "to": 1, "reveal": j == 0}] and tf.menu == null and fun.cat.st == "sleep",
-			"Katze + Schmetterling: Tipp „%s“ sendet das Kissen, Katze bleibt (%s, %s)" % [["Mit Namen", "Geheim"][j], str(src.sent), fun.cat.st])
-		tf.tick(0.45)
-	# runde Knöpfe: Papierkugel, Schnarchen, Wecker, Karten ansehen
+	# runde Knöpfe: Papierkugel, Schnarchen, Wecker, Kissen geheim, Kissen mit Namen, Karten ansehen (Beta 1.6.10: Kissen auch rund)
 	tf.open_menu(1)
 	var keys: Array = tf.menu.items.map(func(it: Dictionary) -> String: return str(it.key))
 	tf.close_menu(false)
-	check(keys == ["ball", "snore", "alarm", "backs"], "runde Knöpfe (%s)" % str(keys))
+	check(keys == ["ball", "snore", "alarm", "kissen_geheim", "kissen_name", "backs"], "runde Knöpfe (%s)" % str(keys))
 	for i in keys.size():
 		clock += 10000
 		tf.tick(0.45)
@@ -1048,6 +1060,9 @@ func surprise_checks() -> void:
 		if keys[i] == "backs":
 			check(src.sent.is_empty() and t.backs_viewer.visible and tf.menu == null and fun.cat.st == "sleep", "Katze: Tipp „Karten ansehen“ öffnet die Großansicht")
 			t.backs_viewer.visible = false
+		elif TeaseMenu.is_cushion(str(keys[i])):
+			check(src.sent == [{"k": "kissen", "to": 1, "reveal": keys[i] == "kissen_name"}] and tf.menu == null and fun.cat.st == "sleep",
+				"Katze + Schmetterling: Tipp „%s“ sendet das Kissen, Katze bleibt (%s, %s)" % [keys[i], str(src.sent), fun.cat.st])
 		else:
 			check(src.sent == [{"k": keys[i], "to": 1}] and tf.menu == null and fun.cat.st == "sleep", "Katze: Tipp „%s“ sendet (%s)" % [keys[i], str(src.sent)])
 	# die 4 Reaktionsknöpfe
@@ -1064,12 +1079,12 @@ func surprise_checks() -> void:
 	clock += 10000
 	tf.tick(0.45)
 	tf.open_menu(1)
-	var late: Vector2 = tf.menu.get_global_transform_with_canvas() * tf.menu.pill_rect(0).get_center()
+	var late: Vector2 = tf.menu.get_global_transform_with_canvas() * tf.menu.button_center(4)
 	for i in 76:                                # Beta 1.6.7: 15 s (vorher 5 s)
 		tf.tick(0.2)
 	src.sent.clear()
 	tap_screen(late)
-	check(tf.menu == null and src.sent.is_empty(), "15 s ohne Tipp: Menü zu, später Tipp auf „Mit Namen“ sendet nichts")
+	check(tf.menu == null and src.sent.is_empty(), "15 s ohne Tipp: Menü zu, später Tipp auf „Kissen mit Namen“ sendet nichts")
 	# ohne Menü: Tipp auf die Katze schiebt sie weg (wie bisher)
 	var cp: Vector2 = t._world.get_global_transform_with_canvas() * t._draw_pos
 	check(cat_under.call(cp), "Katze auf dem Stapel antippbar")

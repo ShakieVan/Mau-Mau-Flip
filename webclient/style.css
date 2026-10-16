@@ -1158,20 +1158,29 @@ body.reduziert .nk-menue.folgt { transition: none; }
 .nk-mk span { font-size: calc(12px * var(--fs)); font-weight: 700; white-space: nowrap; }
 .nk-mk[style*="--rest"] i { background: conic-gradient(rgba(255,214,90,.8) calc(var(--rest) * 360deg), transparent 0), var(--nk-grund); }
 .nk-info { margin: 6px 4px 0; max-width: 280px; font-size: calc(13px * var(--fs)); font-weight: 600; opacity: .85; white-space: pre-line; }
-/* Beta 1.6.6: Zeile „Furzkissen“ mit „Mit Namen“ / „Geheim“ (Knöpfe mindestens 44 px hoch), bricht bei großer Schrift um */
-.nk-kissen { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; margin: 8px 0 0; padding-top: 8px; border-top: 2px dashed rgba(127,127,127,.4); }
+/* Beta 1.6.10 (Nutzerbefund: alle tippten auf das Kissenbild, nicht auf die Textknöpfe daneben): zwei runde Kissen-Knöpfe wie die
+   übrigen, „Kissen geheim“ (Abzeichen „?“) und „Kissen mit Namen“ (Abzeichen Namensschild). Eigene Reihe unter den übrigen Knöpfen;
+   .eine-reihe (höchstens 2 übrige Knöpfe: Computergegner, Übung) stellt beide Reihen nebeneinander. */
+.nk-reihen { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.nk-menue.eine-reihe .nk-reihen { flex-direction: row; align-items: flex-start; justify-content: center; gap: 4px; }
+.nk-knoepfe { align-items: flex-start; }
 .nk-kissen[hidden] { display: none; }
-.nk-kt { display: flex; align-items: center; gap: 4px; font-size: calc(12px * var(--fs)); font-weight: 800; white-space: nowrap; }
-.nk-kt i { display: block; width: 46px; height: 38px; }
-.nk-kb { min-height: 44px; min-width: 44px; padding: 0 12px; border-radius: 22px; background: var(--nk-grund); color: var(--nk-tinte); border: 3px solid var(--nk-rand);
-  font: 800 calc(13px * var(--fs)) / 1.1 var(--f-ui); white-space: nowrap; }
-.nk-kb[data-kissen="geheim"] { border-style: dashed; }
-.nk-kb:active { transform: scale(.94); }
-.nk-kb.grau { opacity: .42; filter: grayscale(1); }
-.nk-kissen.grau .nk-kt i { opacity: .5; filter: grayscale(1); }
-.nk-kb.drueck { animation: nkDrueck .25s ease-out; }
-.nk-kb.wackel { animation: nkWackel .3s ease-in-out; }
-body.reduziert .nk-kb.wackel { animation: none; }
+/* Die Breite geben die Knöpfe vor; die Hinweiszeile bricht darin um (sonst würde das Menü beim Zugwechsel mit dem Hinweis breiter
+   und spränge unter dem Finger, 1.6.7) */
+.nk-menue { min-width: min(220px, calc(100vw - 16px)); }
+.nk-info { width: 0; min-width: calc(100% - 8px); max-width: none; }
+.nk-mk.nk-kb { min-width: 64px; }
+.nk-kb i { position: relative; padding: 7px 3px; }
+.nk-kb i > svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.nk-kb span { white-space: normal; max-width: 6em; line-height: 1.1; text-wrap: balance; }
+.nk-abz { position: absolute; right: -9px; bottom: -6px; width: 23px; height: 23px; pointer-events: none; }
+.nk-abz.name { width: 27px; height: 19px; right: -11px; bottom: -4px; }
+.nk-abz svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.nk-ag { fill: var(--nk-tinte, #211B2C); stroke: var(--nk-grund, #FFF7E8); stroke-width: 2.2; }
+.nk-agt { font: 900 16px var(--f-brand); fill: var(--nk-grund, #FFF7E8); }
+.nk-an { fill: #FFFFFF; stroke: #211B2C; stroke-width: 1.8; }
+.nk-anb { fill: var(--nk-mf, #4C7DFF); }
+.nk-anl { fill: none; stroke: #211B2C; stroke-width: 1.9; stroke-linecap: round; }
 /* Kissen-Farben (Menü und Bühne): rosa Gummi, Mundstück dunkler, Naht und Glanz */
 .nk-kf { fill: #FF7EB0; }
 .nk-kd { fill: #E2508A; }

@@ -14,6 +14,9 @@
  * Beta 1.6.7: Menü schließt erst nach 15 s, bleibt bei Zugwechsel und Erwischen offen (springt nicht), „Erwischt!“-Buzzer rund, groß,
  * mit Namen, neben dem Mau-Knopf frei, durch das Menü hindurch drückbar (Loch), reduziert ohne Pulsieren; Rundenende schließt.
  * Beta 1.6.8: Furzkissen-Sperre mit Restdauer left (Bestätigung, fx_no rate): grau bis zum echten Ende, ohne Zahl; ohne left wie bisher.
+ * Beta 1.6.10: Furzkissen als zwei runde Knöpfe „Kissen geheim“/„Kissen mit Namen“ (Tipp aufs Kissenbild legt sofort), eine Reihe am
+ *   Computergegner, zwei an Menschen; alle Menüknöpfe ≥ 44 px, im Fenster, ohne Überschneidung (quer, Schrift groß/sehr groß, großer
+ *   Modus, hochkant).
  * Aufruf: chrome --headless=new --allow-file-access-from-files --virtual-time-budget=300000 --dump-dom file:///…/webclient/test/lite_necken.html
  *   → <pre id="autotest-result" data-ok="1|0">. Läuft im Bau (tools/build.ps1 Invoke-WebTeaseTest). */
 (function () {
@@ -105,12 +108,38 @@
     });
   }
   const App = () => w.MMF.App;
+  // Beta 1.6.10: Necken-Menü an einem Platz – jeder sichtbare Knopf (auch die beiden Kissen-Knöpfe) mindestens 44 px, ganz im
+  // Fenster, keine Überschneidung; Computergegner eine Reihe, Menschen zwei (ohne Transform: Aufspringen läuft virtuell nicht ab)
+  async function pruefeMenue(name, seat) {
+    // App.einstellen öffnet das Einstellungsfenster; offene Fenster schließen das Necken-Menü im 400-ms-Takt (je nach Last
+    // innerhalb der 60 ms unten – im Bau war der Test deshalb wackelig)
+    App().schliesse('menue');
+    N().oeffne(seat);
+    await warte(60);
+    const m = $('#nk-menue'), ml = parseFloat(m.style.left) || 0, mt = parseFloat(m.style.top) || 0, vw = w.innerWidth, vh = w.innerHeight;
+    // gesetzte Lage statt getBoundingClientRect (Aufspringen und Mitgleiten laufen unter virtueller Zeit nicht ab)
+    const mr = { left: ml, top: mt, right: ml + m.offsetWidth, bottom: mt + m.offsetHeight };
+    const bot = (App().view.players.find(p => p.seat === seat) || {}).kind === 'bot';
+    ok(sichtbar(m) && mr.left >= 0 && mr.top >= 0 && mr.right <= vw + 0.5 && mr.bottom <= vh + 0.5, name + ': Menü ganz im Fenster (' + JSON.stringify([mr.left, mr.top, mr.right, mr.bottom].map(Math.round)) + ')');
+    const kn = Array.from(m.querySelectorAll('.nk-reihen button')).filter(b => !b.hidden && b.offsetWidth > 0);
+    const kk = kn.filter(b => b.dataset.kissen);
+    ok(kk.length === 2, name + ': beide Kissen-Knöpfe sichtbar');
+    const box = b => { const L = mr; let x = 0, y = 0, e = b; while (e && e !== m) { x += e.offsetLeft; y += e.offsetTop; e = e.offsetParent; } return { left: L.left + x, top: L.top + y, right: L.left + x + b.offsetWidth, bottom: L.top + y + b.offsetHeight }; };
+    kn.forEach((b, i) => {
+      const r = box(b), was = b.dataset.kissen || b.dataset.k;
+      ok(b.offsetWidth >= 44 && b.offsetHeight >= 44, name + ': ' + was + ' mindestens 44 px (' + b.offsetWidth + '×' + b.offsetHeight + ')');
+      ok(r.left >= 0 && r.top >= 0 && r.right <= vw + 0.5 && r.bottom <= vh + 0.5, name + ': ' + was + ' im Fenster');
+      kn.slice(i + 1).forEach(c => ok(!ueberR(r, box(c)), name + ': ' + was + ' überdeckt ' + (c.dataset.kissen || c.dataset.k) + ' nicht'));
+    });
+    ok(m.classList.contains('eine-reihe') === bot, name + ': ' + (bot ? 'eine Reihe am Computergegner' : 'zwei Reihen an Menschen'));
+    N().zu();
+  }
 
   async function lauf() {
     leeren();
     await lade('');
     const App = w.MMF.App;
-    ok(App.version === '1.6.9', 'Version 1.6.9 (' + App.version + ')');
+    ok(App.version === '1.6.10', 'Version 1.6.10 (' + App.version + ')');
     ok(!!N() && App.einstellungen.necken === true, 'necken.js geladen, Necken ab Werk an');
     let s = await beitreten('Kim');
     ok(JSON.stringify(s.msgs('fx_pref')) === '[{"t":"fx_pref","off":false}]', 'fx_pref nach welcome (' + JSON.stringify(s.msgs('fx_pref')) + ')');
@@ -296,11 +325,21 @@
     App.einstellen('schrift', 'sehr_gross');
     await warte(200);
     pruefeLage('quer, Schrift sehr groß');
+    await pruefeMenue('Menü quer, Schrift sehr groß, Lena', 1);
+    await pruefeMenue('Menü quer, Schrift sehr groß, Tom (Computer)', 2);
+    App.einstellen('schrift', 'gross');
+    await warte(200);
+    await pruefeMenue('Menü quer, Schrift groß, Mia', 3);
     App.einstellen('schrift', 'normal');
+    await warte(100);
+    await pruefeMenue('Menü quer, Lena', 1);
+    await pruefeMenue('Menü quer, Tom (Computer)', 2);
     App.einstellen('grosser_modus', 'true');
     await warte(300);
     ok(sichtbar($('#nk-leiste')), 'großer Modus: Reaktionsknöpfe sichtbar');
     pruefeLage('großer Modus');
+    await pruefeMenue('Menü großer Modus, Lena', 1);
+    await pruefeMenue('Menü großer Modus, Tom (Computer)', 2);
     App.einstellen('grosser_modus', 'false');
     App.schliesse('menue');
     await warte(300);
@@ -313,9 +352,12 @@
       const l = $('#nk-leiste').getBoundingClientRect(), t = $('#tisch').getBoundingClientRect();
       ok(l.top >= t.bottom && w.document.body.classList.contains('nk-unten'), 'hochkant: Reaktionsknöpfe unter dem Tisch (' + JSON.stringify([l.top, t.bottom]) + ')');
     }
+    await pruefeMenue('Menü hochkant, Mia', 3);
+    await pruefeMenue('Menü hochkant, Tom (Computer)', 2);
     App.einstellen('grosser_modus', 'true');
     await warte(300);
     pruefeLage('hochkant, großer Modus');
+    await pruefeMenue('Menü hochkant, großer Modus, Lena', 1);
     App.einstellen('grosser_modus', 'false');
     App.schliesse('menue');
     await warte(300);
@@ -467,17 +509,42 @@
       const m = $('#nk-menue'), reihe = () => m.querySelector('.nk-kissen'), kb = x => m.querySelector('button[data-kissen="' + x + '"]');
       kopf(2).click();
       await warte(30);
-      ok(sichtbar(m) && sichtbar(reihe()) && !kb('name').classList.contains('grau') && !kb('geheim').classList.contains('grau'), 'Kissen: Zeile im Menü am Computergegner, beide Knöpfe aktiv');
-      ok(reihe().querySelector('.nk-kt span').textContent === 'Furzkissen' && kb('name').textContent === 'Mit Namen' && kb('geheim').textContent === 'Geheim', 'Kissen: Texte „Furzkissen“, „Mit Namen“, „Geheim“');
-      ok(kb('name').offsetHeight >= 44 && kb('geheim').offsetHeight >= 44 && kb('geheim').offsetWidth >= 44, 'Kissen: Knöpfe mindestens 44 px (' + kb('name').offsetHeight + ')');   // ohne Transform (Aufspringen des Menüs)
+      ok(sichtbar(m) && sichtbar(reihe()) && !kb('name').classList.contains('grau') && !kb('geheim').classList.contains('grau'), 'Kissen: Knöpfe im Menü am Computergegner, beide aktiv');
+      // Beta 1.6.10 (Nutzerbefund: alle tippten aufs Kissenbild): zwei runde Knöpfe wie die übrigen, erst „Kissen geheim“, dann
+      // „Kissen mit Namen“, je mit Kissen und Abzeichen; das alte Kissenbild mit Textknöpfen gibt es nicht mehr
+      ok(JSON.stringify(Array.from(reihe().querySelectorAll('button')).map(b => b.dataset.kissen + ':' + b.querySelector('span').textContent)) === '["geheim:Kissen geheim","name:Kissen mit Namen"]',
+        '1.6.10: Knöpfe „Kissen geheim“, „Kissen mit Namen“ (' + Array.from(reihe().querySelectorAll('button span')).map(x => x.textContent).join(', ') + ')');
+      ok(['geheim', 'name'].every(x => kb(x).classList.contains('nk-mk') && kb(x).querySelector('i .nk-kf') && kb(x).querySelector('i .nk-abz.' + x + ' svg')
+        && kb(x).querySelector('i').offsetWidth === m.querySelector('button[data-k="ball"] i').offsetWidth), '1.6.10: runde Knöpfe wie die Papierkugel, mit Kissen und Abzeichen');
+      ok(!m.querySelector('.nk-kt') && !/Furzkissen|Mit Namen|Geheim/.test(Array.from(m.querySelectorAll('span, button')).map(x => x.textContent).join('|').replace(/Kissen (geheim|mit Namen)/g, '')), '1.6.10: kein Kissenbild mit Textknöpfen mehr');
+      ok(kb('name').offsetHeight >= 44 && kb('geheim').offsetHeight >= 44 && kb('geheim').offsetWidth >= 44 && kb('name').offsetWidth >= 44, 'Kissen: Knöpfe mindestens 44 px (' + kb('name').offsetWidth + '×' + kb('name').offsetHeight + ')');   // ohne Transform (Aufspringen des Menüs)
       {
         const mr = m.getBoundingClientRect();
         ok(mr.left >= 0 && mr.top >= 0 && mr.right <= w.innerWidth && mr.bottom <= w.innerHeight, 'Kissen: Menü ganz im Fenster (' + JSON.stringify([mr.left, mr.top, mr.right, mr.bottom]) + ')');
       }
+      // Lage: am Computergegner (nur Papierkugel) eine Reihe; an Menschen (Kugel, Schnarchen, Wecker) die Kissen in einer zweiten Reihe
+      const ot = b => b.getBoundingClientRect().top, ol = b => b.getBoundingClientRect().left;
+      const ball = () => m.querySelector('button[data-k="ball"]');
+      ok(m.classList.contains('eine-reihe') && Math.abs(ot(kb('geheim')) - ot(ball())) < 2 && Math.abs(ot(kb('name')) - ot(ball())) < 2 && ol(ball()) < ol(kb('geheim')) && ol(kb('geheim')) < ol(kb('name')),
+        '1.6.10: Computergegner – Papierkugel und beide Kissen in einer Reihe');
+      const breiteBot = m.offsetWidth;
+      kopf(3).click();
+      await warte(30);
+      ok(!m.classList.contains('eine-reihe') && ot(kb('geheim')) > ot(ball()) + 30 && Math.abs(ot(kb('geheim')) - ot(kb('name'))) < 2, '1.6.10: Mensch – Kissen in einer zweiten Reihe unter Kugel, Schnarchen, Wecker');
+      ok(m.offsetWidth <= Math.max(breiteBot, m.querySelector('.nk-knoepfe').offsetWidth + 40), '1.6.10: Menü nicht breiter als nötig (' + m.offsetWidth + ' / ' + breiteBot + ')');
+      // Tipp auf das Kissenbild selbst (das, was alle getan haben): legt das Kissen sofort
+      {
+        const n = s.msgs('fx').length;
+        kb('name').querySelector('i .nk-kf').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+        await warte(20);
+        ok(JSON.stringify(s.msgs('fx').slice(n)) === '[{"t":"fx","k":"kissen","to":3,"reveal":true}]' && !sichtbar(m), '1.6.10: Tipp aufs Kissenbild von „Kissen mit Namen“ legt sofort (' + JSON.stringify(s.msgs('fx').slice(n)) + ')');
+      }
+      kopf(2).click();
+      await warte(30);
       toene = [];
-      kb('geheim').click();
+      kb('geheim').querySelector('i .nk-abz svg').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));   // 1.6.10: auch das Abzeichen
       await warte(20);
-      ok(JSON.stringify(s.msgs('fx')) === '[{"t":"fx","k":"kissen","to":2,"reveal":false}]' && !sichtbar(m), 'Kissen „Geheim“ geschickt, Menü zu (' + JSON.stringify(s.msgs('fx')) + ')');
+      ok(JSON.stringify(s.msgs('fx').slice(-1)) === '[{"t":"fx","k":"kissen","to":2,"reveal":false}]' && s.msgs('fx').length === 2 && !sichtbar(m), 'Kissen geheim geschickt (Tipp aufs Abzeichen), Menü zu (' + JSON.stringify(s.msgs('fx')) + ')');
       ok(!$('#tisch .nk-furz') && toasts().every(t => !/Kissen/.test(t)), 'Kissen: vor der Bestätigung nichts zu sehen');
       // Bestätigung nur beim Leger: leise Zeile, kein Bild, kein Ton
       s.rx({ t: 'fx', k: 'kissen', from: 0, to: 2, reveal: false });

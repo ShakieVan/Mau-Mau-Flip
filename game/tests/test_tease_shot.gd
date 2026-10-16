@@ -21,6 +21,13 @@ extends SceneTree
 #   sehr_gross                   Schrift „Sehr groß“: Menü mit Kissen-Zeile
 #   reduziert                    Effekte reduziert: liegt flach, keine Bewegung
 #   en_menue / en_pups           Englisch
+# SERIE=1610 nach docs/module/optik_1610_*.png (Beta 1.6.10: Furzkissen als zwei runde Knöpfe „Kissen geheim“/„Kissen mit Namen“):
+#   menue_tag / menue_nacht      Mensch am Zug: Reihe 1 Kugel, Schnarchen, Wecker, Karten ansehen; Reihe 2 die beiden Kissen (zoom_*: Ausschnitt 2×)
+#   bot_tag / bot_nacht          Computergegner: eine Reihe Kugel, Kissen geheim, Kissen mit Namen, Karten ansehen
+#   ausgegraut / ausgegraut_nacht   eigenes Kissen gerade gelegt (Sperre) und Kim nicht am Zug: Kissen und Schnarchen/Wecker grau
+#   gross_tag / gross_nacht / gross_sehr_gross   großer Modus (mit Schrift „Sehr groß“)
+#   sehr_gross_kim/_lena_bot/_ben / schrift_gross   Schrift „Sehr groß“ an allen drei Plätzen bzw. „Groß“
+#   en_menue / en_bot            Englisch
 # SERIE=167 nach docs/module/optik_167_*.png (Beta 1.6.7: „Erwischt!“ als Buzzer, Necken-Menü bleibt offen):
 #   buzzer_tag / buzzer_nacht    Kim (1 Karte, kein Mau) erwischbar: großer roter Druckknopf unter seiner Kopfzeile
 #   zwei_tag / zwei_nacht        Kim und Lena gleichzeitig erwischbar
@@ -150,9 +157,11 @@ func run() -> void:
 	var kim := 1 if me != 1 else 2
 	show(kim)
 	await create_timer(0.5).timeout
-	if serie == "165" or serie == "166" or serie == "167":
+	if serie == "165" or serie == "166" or serie == "167" or serie == "1610":
 		if serie == "165":
 			await run_165(me, kim)
+		elif serie == "1610":
+			await run_1610(me, kim)
 		elif serie == "166":
 			await run_166(me, kim)
 		else:
@@ -626,3 +635,117 @@ func run_167(me: int, kim: int) -> void:
 	show(ben)
 	await create_timer(0.5).timeout
 	await shot("en_buzzer")
+
+
+# Beta 1.6.10: Furzkissen als zwei runde Knöpfe „Kissen geheim“ (?-Abzeichen) und „Kissen mit Namen“ (Namensschild)
+func zoom_menu(file: String) -> void:
+	for i in 3:
+		await process_frame
+	var img := root.get_texture().get_image()
+	var sc := img.get_width() / 1600.0
+	var r := Rect2i(Rect2(tz.menu.get_global_rect().grow(16.0).position * sc, tz.menu.get_global_rect().grow(16.0).size * sc)).intersection(Rect2i(Vector2i.ZERO, img.get_size()))
+	var part := img.get_region(r)
+	part.resize(part.get_width() * 2, part.get_height() * 2, Image.INTERPOLATE_LANCZOS)
+	part.save_png(out.path_join("optik_%s_%s.png" % [serie, file]))
+	print("Bild: optik_%s_%s.png" % [serie, file])
+
+
+func run_1610(me: int, kim: int) -> void:
+	var lena := 2
+	# Mensch am Zug (ab 10 s): Reihe 1 Kugel/Schnarchen/Wecker/Karten, Reihe 2 die beiden Kissen
+	for tm in ["tag", "nacht"]:
+		clock += 20000
+		ts.table.set_night(1.0 if tm == "nacht" else 0.0)
+		show(kim)
+		await create_timer(0.4).timeout
+		tz.close_menu(false)
+		tz.open_menu(kim)
+		await create_timer(0.3).timeout
+		await shot("menue_" + tm)
+		await zoom_menu("zoom_" + tm)
+	tz.close_menu(false)
+	# Computergegner (Lena): eine Reihe Kugel, Kissen, Kissen, Karten
+	for tm in ["tag", "nacht"]:
+		ts.table.set_night(1.0 if tm == "nacht" else 0.0)
+		show(kim)
+		await create_timer(0.3).timeout
+		tz.open_menu(lena)
+		await create_timer(0.3).timeout
+		await shot("bot_" + tm)
+		tz.close_menu(false)
+	# ausgegraut: eigenes Kissen gerade gelegt (Sperre), dazu Kim nicht am Zug
+	ts.table.set_night(0.0)
+	placed(me, lena, true)
+	await create_timer(0.3).timeout
+	show(lena)
+	tz.open_menu(kim)
+	await create_timer(0.3).timeout
+	await shot("ausgegraut")
+	await zoom_menu("zoom_ausgegraut")
+	tz.close_menu(false)
+	ts.table.set_night(1.0)
+	tz.open_menu(kim)
+	await create_timer(0.3).timeout
+	await shot("ausgegraut_nacht")
+	tz.close_menu(false)
+	clock += 400000
+	# großer Modus
+	ts.table.set_night(0.0)
+	ts.table.set_big(true)
+	await process_frame
+	ts._layout()
+	show(kim)
+	await create_timer(0.9).timeout
+	for tm in ["tag", "nacht"]:
+		ts.table.set_night(1.0 if tm == "nacht" else 0.0)
+		tz.close_menu(false)
+		tz.open_menu(kim)
+		await create_timer(0.4).timeout
+		await shot("gross_" + tm)
+	tz.close_menu(false)
+	# Schrift „Sehr groß“ im großen Modus und normal
+	UiFonts.set_level("sehr_gross", root)
+	await process_frame
+	ts._layout()
+	show(kim)
+	await create_timer(0.9).timeout
+	tz.open_menu(kim)
+	await create_timer(0.4).timeout
+	await shot("gross_sehr_gross")
+	tz.close_menu(false)
+	ts.table.set_night(0.0)
+	ts.table.set_big(false)
+	await process_frame
+	ts._layout()
+	show(kim)
+	await create_timer(0.8).timeout
+	var who := {kim: "kim", lena: "lena_bot", (3 if me != 3 else 0): "ben"}
+	for s in who:
+		tz.open_menu(s)
+		await create_timer(0.4).timeout
+		await shot("sehr_gross_" + str(who[s]))
+		tz.close_menu(false)
+	UiFonts.set_level("gross", root)
+	await process_frame
+	ts._layout()
+	show(kim)
+	await create_timer(0.6).timeout
+	tz.open_menu(kim)
+	await create_timer(0.4).timeout
+	await shot("schrift_gross")
+	tz.close_menu(false)
+	UiFonts.set_level("normal", root)
+	await process_frame
+	ts._layout()
+	# Englisch
+	I18n.set_language("en")
+	show(kim)
+	await create_timer(0.5).timeout
+	tz.open_menu(kim)
+	await create_timer(0.3).timeout
+	await shot("en_menue")
+	tz.close_menu(false)
+	tz.open_menu(lena)
+	await create_timer(0.3).timeout
+	await shot("en_bot")
+	tz.close_menu(false)

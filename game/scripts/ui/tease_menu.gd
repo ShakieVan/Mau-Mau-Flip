@@ -8,9 +8,12 @@ extends Control
 # und bei Platzwechseln, ab Beta 1.6.7 nicht mehr bei Zugwechsel oder erwischbaren Plätzen (dann frischt es auf bzw. zeigt den
 # „Erwischt!“-Buzzer über sich, buzzers). Tag: Papier und Druckfarbe, Nacht: dunkle Blase mit hellem Rand und leichtem Neon-Schein.
 # Darunter (innere Klasse) ReactionBar: die 4 Reaktionen als runde Knöpfe am eigenen Platz (Beta 1.6.5; vorher ein Lachgesicht-Knopf mit Fächer).
-# Beta 1.6.6 (Furzkissen, eastereggs2.md 12.4): unter den runden Knöpfen eine eigene Zeile „Furzkissen“ (gezeichnetes Kissen) mit zwei
-# Knöpfen „Mit Namen“ (chosen "kissen_name") und „Geheim“ ("kissen_geheim"); beide grau, wenn es gerade nicht geht. Der Hinweis darf
-# mehrere Zeilen haben (durch "\n" getrennt, z. B. „Erst, wenn …“ und „Das Kissen muss sich erst wieder aufpusten.“).
+# Beta 1.6.6 (Furzkissen, eastereggs2.md 12.4): bis 1.6.9 eine eigene Zeile mit gezeichnetem Kissen und Text-Knöpfen „Mit Namen“/„Geheim“.
+# Beta 1.6.10 (Nutzerbefund nach echten Runden: alle tippten auf das Kissenbild, nicht auf die Text-Knöpfe daneben): zwei runde Knöpfe im
+# selben Stil wie die übrigen – „Kissen geheim“ (Kissen mit „?“-Abzeichen, chosen "kissen_geheim") und „Kissen mit Namen“ (Kissen mit
+# Namensschild, "kissen_name"); ein Tipp legt sofort. Bis 4 Knöpfe stehen in einer Reihe, sonst kommen die beiden Kissen in eine zweite
+# Reihe darunter (gleiche Spaltenbreite, mittig). Der Hinweis darf mehrere Zeilen haben (durch "\n" getrennt, z. B. „Erst, wenn …“ und
+# „Das Kissen muss sich erst wieder aufpusten.“).
 
 signal chosen(key: String)
 signal closed
@@ -18,14 +21,13 @@ signal closed
 const BTN_R := 30.0
 const CELL_W := 100.0
 const PAD := 16.0
-const PILL_H := 48.0                  # Beta 1.6.6: Höhe der Kissen-Knöpfe (Trefferfläche ≥ 48 px), × k
-const PILL_GAP := 10.0
+const ROW_GAP := 6.0                  # Beta 1.6.10: Abstand zwischen den Knopfreihen (× k)
+const ONE_ROW_MAX := 4                # bis zu so vielen Knöpfen eine Reihe, sonst die Kissen-Knöpfe in Reihe 2
 
 var seat := -1
 var title := ""
 var note := ""
-var items: Array = []                 # [{key, label, on, progress}]
-var cushion: Dictionary = {}          # Beta 1.6.6: {} = keine Kissen-Zeile, sonst {label, on, why, opts: [{key, label}]}
+var items: Array = []                 # [{key, label, on, progress}] (Beta 1.6.10: auch "kissen_geheim"/"kissen_name")
 var night := 0.0
 var k := 1.0
 var idle := 0.0                       # Sekunden ohne Tipp (TeaseFx schließt nach MENU_IDLE_S = 15 s)
@@ -42,12 +44,11 @@ func _init() -> void:
 	focus_mode = Control.FOCUS_NONE
 
 
-func set_items(new_items: Array, new_note: String, new_cushion: Dictionary = {}) -> void:
+func set_items(new_items: Array, new_note: String) -> void:
 	var old := size
 	old_size = old
 	items = new_items
 	note = new_note
-	cushion = new_cushion
 	relayout()
 	size_changed = not size.is_equal_approx(old)
 	queue_redraw()
@@ -69,19 +70,13 @@ func relayout() -> void:
 	var tf := UiFonts.text(800, 100.0)
 	var lf := UiFonts.text(700, 90.0)
 	var w := tf.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_t()).x
-	var cell := CELL_W * k
-	for it in items:
-		cell = maxf(cell, lf.get_string_size(str(it.label), HORIZONTAL_ALIGNMENT_LEFT, -1, _font_l()).x + 12.0 * k)
-	w = maxf(w, cell * items.size())
-	if not cushion.is_empty():
-		w = maxf(w, cushion_row_width())
+	w = maxf(w, _rows_w())
 	for line in note_lines():
 		w = maxf(w, lf.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_n()).x)
 	var h := PAD * k + _font_t() * 1.25
-	if not items.is_empty():
-		h += BTN_R * k * 2.0 + 10.0 * k + _font_l() * 1.3
-	if not cushion.is_empty():
-		h += cushion_row_height() + 8.0 * k
+	var nr := rows().size()
+	if nr > 0:
+		h += _row_h() * nr + ROW_GAP * k * (nr - 1)
 	h += _font_n() * 1.5 * note_lines().size()
 	size = Vector2(w + PAD * 2.0 * k, h + PAD * k)
 
@@ -90,12 +85,66 @@ func note_lines() -> PackedStringArray:
 	return PackedStringArray() if note == "" else note.split("\n", false)
 
 
-# Mitte des Knopfs i (lokale Koordinaten)
+static func is_cushion(key: String) -> bool:
+	return key == "kissen_geheim" or key == "kissen_name"
+
+
+# Beta 1.6.10: Reihen als Listen von Indizes in items. Bis ONE_ROW_MAX Knöpfe eine Reihe, sonst die Kissen-Knöpfe in Reihe 2.
+func rows() -> Array:
+	var all: Array = range(items.size())
+	if all.is_empty():
+		return []
+	if items.size() <= ONE_ROW_MAX:
+		return [all]
+	var top: Array = all.filter(func(i: int) -> bool: return not is_cushion(str(items[i].key)))
+	var low: Array = all.filter(func(i: int) -> bool: return is_cushion(str(items[i].key)))
+	if top.is_empty() or low.is_empty():
+		return [all]
+	return [top, low]
+
+
+# Breite der Spalte von Knopf i (Beschriftung + Rand, mindestens CELL_W). Beta 1.6.10: je Knopf eigene Breite, damit das Menü nicht
+# breiter wird als nötig (gleich breite Spalten nach „Kissen mit Namen“ machten es ~80 px breiter).
+func _cell_w(i: int) -> float:
+	var lf := UiFonts.text(700, 90.0)
+	return maxf(CELL_W * k, lf.get_string_size(str(items[i].label), HORIZONTAL_ALIGNMENT_LEFT, -1, _font_l()).x + 22.0 * k)
+
+
+func _row_w(row: Array) -> float:
+	var w := 0.0
+	for i in row:
+		w += _cell_w(int(i))
+	return w
+
+
+func _rows_w() -> float:
+	var w := 0.0
+	for r in rows():
+		w = maxf(w, _row_w(r))
+	return w
+
+
+func _row_h() -> float:
+	return BTN_R * k * 2.0 + 10.0 * k + _font_l() * 1.3
+
+
+# Mitte des Knopfs i (lokale Koordinaten). Reihe 1 füllt die Breite (Rest gleichmäßig verteilt, wie bis 1.6.9), weitere Reihen
+# stehen mit ihren eigenen Breiten mittig darunter.
 func button_center(i: int) -> Vector2:
-	var n := items.size()
-	var cell := (size.x - PAD * 2.0 * k) / maxf(n, 1)
-	var y := PAD * k + _font_t() * 1.25 + BTN_R * k + 4.0 * k
-	return Vector2(PAD * k + cell * (i + 0.5), y)
+	var rs := rows()
+	var inner := size.x - PAD * 2.0 * k
+	for ri in rs.size():
+		var row: Array = rs[ri]
+		var p := row.find(i)
+		if p < 0:
+			continue
+		var extra := maxf(0.0, inner - _row_w(row)) / row.size() if ri == 0 else 0.0
+		var x := (size.x - _row_w(row) - extra * row.size()) * 0.5
+		for q in p:
+			x += _cell_w(int(row[q])) + extra
+		var y := PAD * k + _font_t() * 1.25 + BTN_R * k + 4.0 * k + ri * (_row_h() + ROW_GAP * k)
+		return Vector2(x + (_cell_w(i) + extra) * 0.5, y)
+	return Vector2(-1000.0, -1000.0)
 
 
 func button_at(p: Vector2) -> int:
@@ -105,81 +154,16 @@ func button_at(p: Vector2) -> int:
 	return -1
 
 
-# --- Beta 1.6.6: Kissen-Zeile [Kissenbild + „Furzkissen“] [Mit Namen] [Geheim]
-
-func _pill_w(j: int) -> float:
-	var opts: Array = cushion.get("opts", [])
-	var lbl := str((opts[j] as Dictionary).get("label", "")) if j < opts.size() else ""
-	return maxf(UiFonts.text(800, 100.0).get_string_size(lbl, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_n()).x + 34.0 * k, 96.0 * k)
-
-
-func _cushion_icon_w() -> float:
-	var lw := UiFonts.text(700, 90.0).get_string_size(str(cushion.get("label", "")), HORIZONTAL_ALIGNMENT_LEFT, -1, _font_l()).x
-	return maxf(BTN_R * k * 2.0, lw + 6.0 * k)
-
-
-func cushion_row_height() -> float:
-	return maxf(PILL_H * k, BTN_R * k * 1.5 + 6.0 * k + _font_l() * 1.1)
-
-
-func cushion_row_width() -> float:
-	var w := _cushion_icon_w() + 14.0 * k
-	var opts: Array = cushion.get("opts", [])
-	for j in opts.size():
-		w += _pill_w(j) + (PILL_GAP * k if j > 0 else 0.0)
-	return w
-
-
-func _cushion_top() -> float:
-	var y := PAD * k + _font_t() * 1.25
-	if not items.is_empty():
-		y += BTN_R * k * 2.0 + 10.0 * k + _font_l() * 1.3
-	return y + 4.0 * k
-
-
-# Mitte des Kissenbilds (lokal)
-func cushion_icon_center() -> Vector2:
-	var x0 := (size.x - cushion_row_width()) * 0.5
-	return Vector2(x0 + _cushion_icon_w() * 0.5, _cushion_top() + BTN_R * k * 0.75)
-
-
-# Knopf j der Kissen-Zeile (lokal)
-func pill_rect(j: int) -> Rect2:
-	var x := (size.x - cushion_row_width()) * 0.5 + _cushion_icon_w() + 14.0 * k
-	for i in j:
-		x += _pill_w(i) + PILL_GAP * k
-	var h := PILL_H * k
-	return Rect2(Vector2(x, _cushion_top() + (cushion_row_height() - h) * 0.5), Vector2(_pill_w(j), h))
-
-
-func pill_at(p: Vector2) -> int:
-	if cushion.is_empty():
-		return -1
-	var opts: Array = cushion.get("opts", [])
-	for j in opts.size():
-		if pill_rect(j).grow(4.0).has_point(p):
-			return j
-	return -1
-
-
-# Schlüssel unter p ("" = keiner) und ob er gerade geht
+# Schlüssel unter p ("" = keiner)
 func key_at(p: Vector2) -> String:
 	var i := button_at(p)
-	if i >= 0:
-		return str(items[i].key)
-	var j := pill_at(p)
-	if j >= 0:
-		return str(((cushion.get("opts", []) as Array)[j] as Dictionary).get("key", ""))
-	return ""
+	return str(items[i].key) if i >= 0 else ""
 
 
 func key_on(key: String) -> bool:
 	for it in items:
 		if str(it.key) == key:
 			return bool(it.get("on", false))
-	for o in cushion.get("opts", []):
-		if str((o as Dictionary).get("key", "")) == key:
-			return bool(cushion.get("on", false))
 	return false
 
 
@@ -273,15 +257,14 @@ func _draw() -> void:
 		var prog := float(it.get("progress", 1.0))
 		if prog < 0.999:
 			draw_arc(c, r + 6.0 * k, -PI * 0.5, -PI * 0.5 + TAU * clampf(prog, 0.0, 1.0), 40, Color(UiPalette.TURN, 0.95), 4.0 * k, true)
-		var icon: String = {"ball": "ball", "snore": "snore", "alarm": "alarm", "backs": "backs"}.get(str(it.key), "ball")
+		var icon: String = {"ball": "ball", "snore": "snore", "alarm": "alarm", "backs": "backs", "kissen_geheim": "kissen_geheim",
+			"kissen_name": "kissen_name"}.get(str(it.key), "ball")
 		var mod := Color(1, 1, 1, a)
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		modulate_icon(icon, c, r * 0.62, mod)
 		var label := str(it.label)
 		var lw := lf.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_l()).x
 		draw_string(lf, Vector2(c.x - lw * 0.5, c.y + r + 8.0 * k + _font_l() * 0.85), label, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_l(), Color(ink, maxf(a, 0.55)))
-	if not cushion.is_empty():
-		_draw_cushion_row(dark, edge, ink)
 	var lines := note_lines()
 	for li in lines.size():
 		var line := lines[li]
@@ -292,37 +275,6 @@ func _draw() -> void:
 	for b in buzzers:
 		var bd := b as Dictionary
 		OpponentSeat.draw_buzzer(self, bd.rect, float(bd.t), night, bool(bd.get("red", false)), int(bd.fs))
-
-
-# Beta 1.6.6: Kissen-Zeile – links das gezeichnete Kissen mit „Furzkissen“ darunter, rechts die Knöpfe „Mit Namen“ und „Geheim“
-func _draw_cushion_row(dark: bool, edge: Color, ink: Color) -> void:
-	var on := bool(cushion.get("on", false))
-	var a := 1.0 if on else 0.38
-	var lf := UiFonts.text(700, 90.0)
-	var bf := UiFonts.text(800, 100.0)
-	var ic := cushion_icon_center()
-	TeaseFx.draw_cushion(self, ic + Vector2(-BTN_R * k * 0.14, BTN_R * k * 0.05), BTN_R * k * 0.9, 0.0, 1.0, night)
-	if not on:
-		draw_circle(ic, BTN_R * k * 1.05, Color(UiPalette.NIGHT_PANEL if dark else UiPalette.PAPER, 0.6))
-	var label := str(cushion.get("label", ""))
-	var lw := lf.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_l()).x
-	draw_string(lf, Vector2(ic.x - lw * 0.5, ic.y + BTN_R * k * 0.75 + 6.0 * k + _font_l() * 0.85), label, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_l(), Color(ink, maxf(a, 0.55)))
-	var opts: Array = cushion.get("opts", [])
-	for j in opts.size():
-		var o: Dictionary = opts[j]
-		var rect := pill_rect(j)
-		if _press == str(o.get("key", "")) and on:
-			rect = rect.grow(-2.0 * k)
-		var sb := StyleBoxFlat.new()
-		sb.bg_color = UiPalette.NIGHT_HI if dark else UiPalette.CREAM
-		sb.border_color = Color(edge, a)
-		sb.set_border_width_all(int(maxf(2.0, 3.0 * k)))
-		sb.set_corner_radius_all(int(rect.size.y * 0.5))
-		sb.anti_aliasing = true
-		draw_style_box(sb, rect)
-		var t := str(o.get("label", ""))
-		var tw := bf.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_n()).x
-		draw_string(bf, Vector2(rect.get_center().x - tw * 0.5, rect.get_center().y + _font_n() * 0.36), t, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_n(), Color(ink, maxf(a, 0.45)))
 
 
 # Bild mit Deckkraft (ausgegraut): über ein Zwischenbild wäre teuer – die Bilder zeichnen deckend, darüber ein Schleier in der Knopffarbe

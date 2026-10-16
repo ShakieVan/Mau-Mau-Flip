@@ -26,6 +26,10 @@
  *    Beta 1.6.8 (Nutzerbefund S10): Bestätigung und fx_no rate tragen left = Restdauer der eigenen Sperre (ms ab Versand, nur an den
  *    Leger); der Spiegel graut genau so lange aus (ohne Zahl). Ohne left (Gastgeber bis 1.6.7) wie bisher 60 s bzw. KISSEN_GRAU_MS.
  *    Lite bis 1.6.5 verwirft beide Arten (FX_KINDS ohne „kissen“), ein Gastgeber bis 1.6.5 den Wunsch.
+ *    Beta 1.6.10 (Nutzerbefund nach echten Runden: alle tippten auf das gezeichnete Kissen, nicht auf „Mit Namen“/„Geheim“
+ *    daneben): zwei runde Knöpfe wie Papierkugel/Schnarchen/Wecker, „Kissen geheim“ (Kissen mit „?“-Abzeichen) und „Kissen mit
+ *    Namen“ (Kissen mit Namensschild); ein Tipp legt sofort (reveal false bzw. true). Sie stehen in einer eigenen Reihe unter den
+ *    übrigen Knöpfen, bei höchstens 2 übrigen Knöpfen (Computergegner, Übung) in derselben Reihe.
  */
 (function (M) {
   'use strict';
@@ -224,6 +228,12 @@
   const SVG_KISSEN = '<svg viewBox="-32 -24 64 48" aria-hidden="true"><path class="nk-kd nk-s" d="M20,-5 L28,-8 C31,-8 32,-6 31,-3 L30,4 C30,7 28,8 26,7 L20,4 Z"/>'
     + '<path class="nk-kf nk-s" d="M-27,2 C-29,-14 -12,-20 2,-19 C16,-18 24,-10 23,1 C22,13 9,18 -4,18 C-18,18 -26,13 -27,2 Z"/>'
     + '<path class="nk-kn" d="M-19,7 C-9,11 6,11 15,6"/><path class="nk-glanz" d="M-17,-9 C-11,-14 -3,-15 4,-14"/></svg>';
+  // Beta 1.6.10: Abzeichen der Kissen-Knöpfe (unten rechts am Kreis): „?“ = geheim, Namensschild = mit Namen
+  const SVG_ABZ_GEHEIM = '<svg viewBox="-12 -12 24 24" aria-hidden="true"><circle class="nk-ag" r="10.5"/><text class="nk-agt" x="0" y="5.6" text-anchor="middle">?</text></svg>';
+  const SVG_ABZ_NAME = '<svg viewBox="-14 -10 28 20" aria-hidden="true"><rect class="nk-an" x="-12.5" y="-8.5" width="25" height="17" rx="3.5"/>'
+    + '<path class="nk-anb" d="M-11.3,-3.2 V-4.8 A2.5,2.5 0 0 1 -8.8,-7.3 H8.8 A2.5,2.5 0 0 1 11.3,-4.8 V-3.2 Z"/><path class="nk-anl" d="M-7.5,1.6 H7.5 M-7.5,5.2 H2.5"/></svg>';
+  // [data-kissen, Abzeichen, Beschriftung]; Reihenfolge wie im Wunsch des Nutzers: erst geheim, dann mit Namen
+  const KISSEN_KNOEPFE = [['geheim', SVG_ABZ_GEHEIM, 'Kissen geheim'], ['name', SVG_ABZ_NAME, 'Kissen mit Namen']];
   const REAKT = { lachen:['😂', 'Lachen'], schreck: ['😱', 'Schreck'], klatschen: ['👏', 'Klatschen'], daumen: ['👍', 'Daumen hoch'] };
   // Beta 1.6.5 (Nutzer 15.10.2026): Reihenfolge der Reaktionsknöpfe überall Lachen, Klatschen, Daumen hoch, Schreck
   // (FX_REACTS bleibt die Liste des Protokolls, Spiegel von TeaseRules)
@@ -289,13 +299,14 @@
         b.type = 'button'; b.dataset.r = r; b.setAttribute('aria-label', REAKT[r][1]); b.setAttribute('data-t-aria', REAKT[r][1]);
         this.leiste.appendChild(b);
       });
-      this.menue = el('div', 'nk-menue', '<b class="nk-titel"></b><div class="nk-knoepfe">' + KNOEPFE.map(k => '<button type="button" class="nk-mk" data-k="' + k[0] + '"><i>' + k[1]
+      this.menue = el('div', 'nk-menue', '<b class="nk-titel"></b><div class="nk-reihen"><div class="nk-knoepfe">' + KNOEPFE.map(k => '<button type="button" class="nk-mk" data-k="' + k[0] + '"><i>' + k[1]
         + '</i><span></span></button>').join('') + '</div>'
-        // Beta 1.6.6: Furzkissen – eine Zeile mit zwei Knöpfen; der Leger entscheidet, ob sein Name verraten wird
-        + '<div class="nk-kissen"><span class="nk-kt"><i>' + SVG_KISSEN + '</i><span data-t>Furzkissen</span></span>'
-        + '<button type="button" class="nk-kb" data-kissen="name" data-t>Mit Namen</button><button type="button" class="nk-kb" data-kissen="geheim" data-t>Geheim</button></div>'
+        // Beta 1.6.6: Furzkissen; 1.6.10: zwei runde Knöpfe wie die übrigen (der Leger entscheidet, ob sein Name verraten wird)
+        + '<div class="nk-knoepfe nk-kissen">' + KISSEN_KNOEPFE.map(k => '<button type="button" class="nk-mk nk-kb" data-kissen="' + k[0] + '"><i>' + SVG_KISSEN
+        + '<b class="nk-abz ' + k[0] + '">' + k[1] + '</b></i><span></span></button>').join('') + '</div></div>'
         + '<p class="nk-info"></p>');
       KNOEPFE.forEach(k => this.menue.querySelector('button[data-k="' + k[0] + '"] span').setAttribute('data-t', k[2]));
+      KISSEN_KNOEPFE.forEach(k => this.menue.querySelector('button[data-kissen="' + k[0] + '"] span').setAttribute('data-t', k[2]));
       this.menue.id = 'nk-menue'; this.menue.hidden = true; this.menue.setAttribute('role', 'dialog');
       e.appendChild(this.leiste); e.appendChild(this.menue);   // Menü liegt über der Reaktionsleiste
       document.body.appendChild(e);
@@ -315,14 +326,13 @@
         if (!this.offen) return;
         this.offen.bis = this.uhr() + MENUE_ZU_MS;
         const kb = ev.target.closest('button[data-kissen]');
-        if (kb) {   // Beta 1.6.6: Furzkissen legen (mit Namen bzw. geheim)
+        if (kb) {   // Beta 1.6.6: Furzkissen legen (mit Namen bzw. geheim); 1.6.10: ein Tipp auf den runden Knopf
           ev.preventDefault();
           if (kb.classList.contains('grau')) { this._wackel(kb); return; }
           this._drueck(kb);
           if (this.sende({ k: CUSHION, to: this.offen.seat, reveal: kb.dataset.kissen === 'name' })) this.zu();
           return;
         }
-        if (ev.target.closest('.nk-kt')) { this.menue.querySelectorAll('button[data-kissen]').forEach(x => this._wackel(x)); return; }   // Symbol: Knöpfe zeigen
         if (!b) return;
         ev.preventDefault();
         const seat = this.offen.seat, k = b.dataset.k;
@@ -499,15 +509,18 @@
         } else b.style.removeProperty('--rest');
         if (!weg && k !== 'ball' && why === 'busy' && !info) info = M.t('%s wird gerade schon geweckt.', p.name);
       });
-      // Beta 1.6.6: Furzkissen (auch auf Computergegner und den Spieler am Zug; Abwesende/Vertretene: Zeile weg)
+      // Beta 1.6.6: Furzkissen (auch auf Computergegner und den Spieler am Zug; Abwesende/Vertretene: Knöpfe weg)
+      // 1.6.10: beide runden Knöpfe gleich (reveal ändert die Prüfung nicht), grau mit Hinweis wie Schnarchen/Wecker
       {
         const why = this.pruefe({ k: CUSHION, to: o.seat });
         const reihe = this.menue.querySelector('.nk-kissen');
         reihe.hidden = ziel.aus || ['target', 'mode', 'kind', 'self', 'sender'].indexOf(why) >= 0;
-        reihe.querySelectorAll('button[data-kissen]').forEach(b => b.classList.toggle('grau', !!why || grau));
-        reihe.classList.toggle('grau', !!why || grau);
+        reihe.querySelectorAll('button[data-kissen]').forEach(b => { b.hidden = reihe.hidden; b.classList.toggle('grau', !!why || grau); });
         const ki = !reihe.hidden && why === 'rate' ? M.t('Das Kissen muss sich erst wieder aufpusten.') : (!reihe.hidden && why === 'busy' ? M.t('Da liegt schon ein Kissen.') : '');
         if (ki) info = info ? info + '\n' + ki : ki;
+        // eine Reihe, solange das Menü dadurch nicht breiter wird als mit 4 Knöpfen (Computergegner, Übung), sonst zwei
+        const oben = Array.from(this.menue.querySelectorAll('.nk-knoepfe:not(.nk-kissen) > button')).filter(b => !b.hidden).length;
+        this.menue.classList.toggle('eine-reihe', !reihe.hidden && oben <= 2);
       }
       if (ziel.aus) info = M.t('%s möchte gerade nicht geneckt werden.', p.name);
       const z = this.menue.querySelector('.nk-info');

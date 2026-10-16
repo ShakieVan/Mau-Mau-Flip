@@ -11,7 +11,8 @@ extends Node
 #               zurück und bleibt 3 s liegen (höchstens 3 je Platz). Bot: „Mpf!“.
 #   Reaktion    😂 👏 👍 😱 (ab 1.6.5 feste Bilder aus Fluent Emoji, wie im Browser) steigen 1,6 s am Platz des Absenders auf; Ton
 #               auf allen Geräten, je Gerät höchstens 2 gleichzeitig und je Name 600 ms Sperre (Jubel und Mau behalten ihre Stimmen).
-#   Furzkissen  (Beta 1.6.6, eastereggs2.md 12.4) Menüzeile „Furzkissen“ mit „Mit Namen“/„Geheim“. Der Leger bekommt nur eine leise
+#   Furzkissen  (Beta 1.6.6, eastereggs2.md 12.4; ab 1.6.10 zwei runde Menüknöpfe „Kissen geheim“/„Kissen mit Namen“ statt der Zeile
+#               „Furzkissen“ mit „Mit Namen“/„Geheim“). Der Leger bekommt nur eine leise
 #               Zeile „Kissen liegt bei Kim.“ (fx k "kissen", kein Bild, kein Ton). Beim Pups (k "kissen_pop", alle): Am Platz des
 #               Ziels erscheint ein Kissen, wird plattgedrückt (der Avatar staucht sich), eine kleine Wolke steigt aus dem Ventil,
 #               „Pfffrt!“; danach an derselben Stelle „Kim war's!“ bzw. „Wer war das?“ (geheim, auch beim Leger). Ton laut beim
@@ -1029,15 +1030,15 @@ func menu_items(seat: int) -> Dictionary:
 					elif str(it.get("why", "")) == "early":
 						note = I18n.t("Erst, wenn %s eine Weile überlegt.") % _name(seat)
 					items.append(it)
-	if node != null and node.backs_visible():
-		items.append({"key": "backs", "label": I18n.t("Karten ansehen"), "on": true, "progress": 1.0})
-	# Beta 1.6.6: Furzkissen als eigene Zeile mit „Mit Namen“/„Geheim“. Die Vorprüfung kennt nur das eigene Kissen (fremde verrät sie
-	# nie, auch beim Gastgeber nicht): rate = eigene Sperre, busy = eigenes Kissen liegt schon bei diesem Ziel.
-	var cushion := {}
+	# Beta 1.6.10: Furzkissen als zwei runde Knöpfe wie die übrigen (bis 1.6.9 eine eigene Zeile mit Kissenbild und Text-Knöpfen
+	# „Mit Namen“/„Geheim“ – am Tisch tippten alle auf das Bild): „Kissen geheim“ und „Kissen mit Namen“, ein Tipp legt sofort.
+	# Die Vorprüfung kennt nur das eigene Kissen (fremde verrät sie nie, auch beim Gastgeber nicht): rate = eigene Sperre, busy =
+	# eigenes Kissen liegt schon bei diesem Ziel. Beide Knöpfe sind gleich an/aus (die Sperre hängt nicht an reveal).
 	if not off and kinds.has(TeaseRules.CUSHION):
 		var why := source.fx_check({"k": TeaseRules.CUSHION, "to": seat, "reveal": true}) if source != null else "mode"
-		cushion = {"label": I18n.t("Furzkissen"), "on": why == "", "why": why, "opts": [
-			{"key": "kissen_name", "label": I18n.t("Mit Namen")}, {"key": "kissen_geheim", "label": I18n.t("Geheim")}]}
+		for kk in ["kissen_geheim", "kissen_name"]:
+			items.append({"key": kk, "label": I18n.t("Kissen geheim") if kk == "kissen_geheim" else I18n.t("Kissen mit Namen"),
+				"on": why == "", "why": why, "progress": 1.0})
 		var cn := ""
 		if why == "rate":
 			cn = I18n.t("Das Kissen muss sich erst wieder aufpusten.")
@@ -1045,7 +1046,10 @@ func menu_items(seat: int) -> Dictionary:
 			cn = I18n.t("Da liegt schon ein Kissen.")
 		if cn != "":
 			note = cn if note == "" else note + "\n" + cn
-	return {"items": items, "note": note, "cushion": cushion}
+	# „Karten ansehen“ zuletzt (eine Reihe: Kugel, Kissen, Kissen, Karten; zwei Reihen: Karten bleibt oben, TeaseMenu.rows)
+	if node != null and node.backs_visible():
+		items.append({"key": "backs", "label": I18n.t("Karten ansehen"), "on": true, "progress": 1.0})
+	return {"items": items, "note": note}
 
 
 func _item(key: String, label: String, req: Dictionary) -> Dictionary:
@@ -1075,7 +1079,6 @@ func open_menu(seat: int) -> bool:
 	var d := menu_items(seat)
 	menu.items = d.items
 	menu.note = str(d.note)
-	menu.cushion = d.cushion
 	menu.chosen.connect(_on_menu_chosen)
 	menu.closed.connect(_on_menu_closed)
 	var ov: Control = table.get("_overlay")
@@ -1112,7 +1115,7 @@ func _refresh_menu() -> void:
 		return
 	var d := menu_items(menu.seat)
 	menu.title = menu_title(menu.seat)
-	menu.set_items(d.items, str(d.note), d.cushion)
+	menu.set_items(d.items, str(d.note))
 	if menu.size_changed:
 		place_menu(true)                      # Beta 1.6.7: möglichst an der Stelle bleiben (nicht unter dem Finger wegspringen)
 
@@ -1540,6 +1543,12 @@ static func draw_icon(ci: CanvasItem, kind: String, c: Vector2, s: float, t := 0
 			draw_clock(ci, c, s, t * TAU / 3.0, 0.0)
 		"kissen":                                     # Beta 1.6.6: Furzkissen
 			draw_cushion(ci, c + Vector2(-s * 0.15, s * 0.15), s * 0.95, 0.0, 1.0, 0.0)
+		"kissen_geheim", "kissen_name":               # Beta 1.6.10: Menüknöpfe – Kissen mit Abzeichen oben rechts
+			draw_cushion(ci, c + Vector2(-s * 0.2, s * 0.3), s * 0.94, 0.0, 1.0, 0.0)
+			if kind == "kissen_geheim":
+				draw_badge_secret(ci, c + Vector2(s * 0.7, -s * 0.66), s * 0.58)
+			else:
+				draw_badge_name(ci, c + Vector2(s * 0.6, -s * 0.66), s * 0.56)
 		"backs":
 			for i in 2:
 				var off := Vector2((i - 0.5) * s * 0.55, (0.5 - i) * s * 0.12)
@@ -1577,6 +1586,49 @@ static func draw_reaction(ci: CanvasItem, kind: String, c: Vector2, s: float, al
 		return
 	var e := s * REACT_IMG
 	ci.draw_texture_rect(tex, Rect2(c - Vector2.ONE * e * 0.5, Vector2.ONE * e), false, Color(1, 1, 1, alpha))
+
+
+# Beta 1.6.10: Abzeichen der Kissen-Knöpfe (b ≈ Radius). „Geheim“: violetter Kreis mit hellem Rand und „?“.
+static func draw_badge_secret(ci: CanvasItem, c: Vector2, b: float) -> void:
+	var lw := maxf(1.5, b * 0.18)
+	ci.draw_circle(c, b + lw, UiPalette.CREAM)
+	ci.draw_circle(c, b + lw * 0.45, INK)
+	ci.draw_circle(c, b - lw * 0.1, CAP)
+	var f := UiFonts.title(800, false, 100.0, 12.0)
+	var fs := int(maxf(8.0, b * 1.55))
+	var sz := f.get_string_size("?", HORIZONTAL_ALIGNMENT_LEFT, -1, fs)
+	var p := Vector2(c.x - sz.x * 0.5, c.y + fs * 0.36)
+	ci.draw_string(f, p, "?", HORIZONTAL_ALIGNMENT_LEFT, -1, fs, UiPalette.CREAM)
+
+
+# „Mit Namen“: Namensschild (Anhänger mit Loch und Schnur, zwei Schreibstriche), leicht schräg.
+static func draw_badge_name(ci: CanvasItem, c: Vector2, b: float) -> void:
+	var lw := maxf(1.5, b * 0.16)
+	var rot := Transform2D(-0.32, c)
+	var hw := b * 1.12
+	var hh := b * 0.74
+	var tip := hh * 0.55
+	var shape := PackedVector2Array([Vector2(-hw + tip, -hh), Vector2(hw, -hh), Vector2(hw, hh), Vector2(-hw + tip, hh), Vector2(-hw, 0.0)])
+	var pts := PackedVector2Array()
+	for q in shape:
+		pts.append(rot * q)
+	var halo := PackedVector2Array()
+	for q in shape:
+		halo.append(rot * (q * (1.0 + lw * 1.4 / hw)))
+	ci.draw_colored_polygon(halo, UiPalette.CREAM)
+	ci.draw_colored_polygon(pts, Color("#FFFDF6"))
+	var outline := pts.duplicate()
+	outline.append(pts[0])
+	ci.draw_polyline(outline, INK, lw, true)
+	var hole := rot * Vector2(-hw + tip * 0.9, 0.0)
+	ci.draw_circle(hole, b * 0.15, INK)
+	# Schnur zum Kissen (nach links unten)
+	ci.draw_polyline(PackedVector2Array([hole, hole + Vector2(-b * 0.45, b * 0.2), hole + Vector2(-b * 0.7, b * 0.62)]), INK, lw * 0.8, true)
+	# zwei „Schreibstriche“ (Name)
+	for i in 2:
+		var y := (-0.28 + i * 0.56) * hh
+		var x1 := hw * (0.72 if i == 0 else 0.42)
+		ci.draw_line(rot * Vector2(-hw + tip * 1.8, y), rot * Vector2(x1, y), Color(CAP if i == 0 else INK, 1.0), lw * 1.05, true)
 
 
 # Schlafmütze (Spitze nach rechts oben, Bommel)

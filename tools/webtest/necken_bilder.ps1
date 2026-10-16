@@ -90,6 +90,25 @@ $bilder = [ordered]@{
     buzzer_reduziert = @{ q = '&szene=mau&wer=2'; w = 844; h = 390; ms = 900; pre = (Z 0 "MMF.App.einstellungen.effekte='reduziert';document.body.classList.add('reduziert')") }
     buzzer_desktop = @{ q = '&szene=mau&wer=2'; w = 1600; h = 900; ms = 900; pre = '' }
     buzzer_viele = @{ q = '&szene=mau&wer=4&gegner=6'; w = 844; h = 390; ms = 900; pre = (Z 300 "$F([3,4,5])") }
+    # Beta 1.6.10 (-Stand 1610 -Nur knopf_…): Furzkissen als zwei runde Knöpfe „Kissen geheim“/„Kissen mit Namen“; Mensch zwei Reihen,
+    # Computergegner eine Reihe; gesperrt (grau mit Hinweis), Necken aus, großer Modus, hochkant, Schrift groß/sehr groß, Englisch
+    knopf_tag = @{ q = '&dran=1'; w = 844; h = 390; ms = 900; pre = (Z 500 "$N.oeffne(1)") }
+    knopf_bot_tag = @{ q = '&dran=1'; w = 844; h = 390; ms = 900; pre = (Z 500 "$N.oeffne(2)") }
+    knopf_nacht = @{ q = '&dran=1&seite=dunkel'; w = 844; h = 390; ms = 900; pre = (Z 500 "$N.oeffne(3)") }
+    knopf_bot_nacht = @{ q = '&dran=1&seite=dunkel'; w = 844; h = 390; ms = 900; pre = (Z 500 "$N.oeffne(2)") }
+    knopf_gesperrt = @{ q = '&dran=1'; w = 844; h = 390; ms = 900; pre = (Z 500 "$N.regeln.cushionUntil[0]=$N.uhr()+60000;$N.oeffne(3)") }
+    knopf_belegt_nacht = @{ q = '&dran=1&seite=dunkel'; w = 844; h = 390; ms = 900; pre = (Z 500 "$N.regeln.cushions[2]={from:0};$N.oeffne(2)") }
+    knopf_aus = @{ q = '&dran=1'; w = 844; h = 390; ms = 900; pre = (Z 0 "$N.fxOffs({seats:[3]})") + (Z 500 "$N.oeffne(3)") }
+    knopf_gross = @{ q = '&dran=1&gross=1'; w = 844; h = 390; ms = 900; pre = (Z 500 "$N.oeffne(1)") }
+    knopf_gross_bot_nacht = @{ q = '&dran=1&gross=1&seite=dunkel'; w = 844; h = 390; ms = 900; pre = (Z 500 "$N.oeffne(2)") }
+    knopf_hochkant = @{ q = '&dran=1'; w = 390; h = 844; ms = 900; pre = (Z 500 "$N.oeffne(1)") }
+    knopf_hochkant_bot_nacht = @{ q = '&dran=1&seite=dunkel'; w = 390; h = 844; ms = 900; pre = (Z 500 "$N.oeffne(2)") }
+    knopf_hochkant_gross = @{ q = '&dran=1&gross=1'; w = 390; h = 844; ms = 900; pre = (Z 500 "$N.oeffne(3)") }
+    knopf_schrift_gross = @{ q = '&dran=1&schrift=gross'; w = 844; h = 390; ms = 900; pre = (Z 500 "$N.oeffne(3)") }
+    knopf_sehr_gross = @{ q = '&dran=1&schrift=sehr_gross'; w = 844; h = 390; ms = 900; pre = (Z 500 "$N.oeffne(1)") }
+    knopf_sehr_gross_bot = @{ q = '&dran=1&schrift=sehr_gross&seite=dunkel'; w = 844; h = 390; ms = 900; pre = (Z 500 "$N.oeffne(2)") }
+    knopf_en = @{ q = '&dran=1&lang=en'; w = 844; h = 390; ms = 900; pre = (Z 500 "$N.oeffne(1)") }
+    knopf_desktop = @{ q = '&dran=1'; w = 1600; h = 900; ms = 900; pre = (Z 500 "$N.oeffne(3)") }
 }
 $auswahl = @($Nur.Split(',') | Where-Object { $_ })
 foreach ($name in $bilder.Keys) {

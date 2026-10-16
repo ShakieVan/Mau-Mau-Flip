@@ -1033,14 +1033,12 @@ msgid "Daumen hoch"
 msgstr "Thumbs up"
 
 # --- Furzkissen (Beta 1.6.6, docs/module/eastereggs2.md 12.4; Glossar: Furzkissen → whoopee cushion)
-msgid "Furzkissen"
-msgstr "Whoopee cushion"
+# Beta 1.6.10: zwei runde Menüknöpfe statt der Zeile „Furzkissen“ mit „Mit Namen“/„Geheim“
+msgid "Kissen geheim"
+msgstr "Secret cushion"
 
-msgid "Mit Namen"
-msgstr "With name"
-
-msgid "Geheim"
-msgstr "Secret"
+msgid "Kissen mit Namen"
+msgstr "Cushion with name"
 
 msgid "Kissen liegt bei %s."
 msgstr "Cushion placed on %s."

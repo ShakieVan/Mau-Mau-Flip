@@ -231,6 +231,7 @@ Farbnamen als Kartenfarbe groß („Play Blue or a 9“), im Fließtext als Adje
 | Reaktion (Lachen, Schreck, Klatschen, Daumen hoch) | reaction (Laugh, Shock, Applause, Thumbs up) |
 | Karten ansehen | View cards |
 | Furzkissen (Beta 1.6.6) | whoopee cushion |
-| Mit Namen / Geheim (Kissen legen) | With name / Secret |
+| Mit Namen / Geheim (Kissen legen, bis 1.6.9) | With name / Secret |
+| Kissen geheim / Kissen mit Namen (Menüknöpfe ab 1.6.10) | Secret cushion / Cushion with name |
 | Pfffrt! | Pffft! |
 | „%s war's!“ / „Wer war das?“ | “%s did it!” / “Who did that?” |
