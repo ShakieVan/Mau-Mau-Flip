@@ -322,6 +322,12 @@ func download() -> void:
 		publish("Download fehlgeschlagen.")
 
 func _process(dt: float) -> void:
+	if unlock_wait:
+		unlock_clock += dt
+		unlock_age += dt
+		if unlock_clock >= UNLOCK_POLL:
+			unlock_clock = 0.0
+			poll_unlock()
 	if downloading and http != null:
 		# Wächter: solange Bytes ankommen, läuft der Download weiter; erst eine Pause von STALL_TIMEOUT bricht ab.
 		var bytes := http.get_downloaded_bytes()
@@ -387,6 +393,8 @@ func _exit_tree() -> void:
 # --- Android ---
 func android() -> Array:
 	# [Java-Klasse, Activity] oder [] außerhalb von Android.
+	if bridge != null:
+		return [bridge, null]
 	if OS.get_name() != "Android" or not Engine.has_singleton("AndroidRuntime"):
 		return []
 	var activity: Variant = Engine.get_singleton("AndroidRuntime").getActivity()
@@ -397,15 +405,60 @@ func can_install() -> bool:
 	var a := android()
 	return not a.is_empty() and bool(a[0].canInstall(a[1]))
 
-func open_permission() -> void:
+# Systemdialoge und Sperrbildschirm (Beta 1.6.9, Befund S10 16.10.2026): Installer und „Unbekannte Apps installieren“ erscheinen nie
+# über dem Sperrbildschirm. Liegt die App darüber (Testschalter MauMauFlipTestLock), nimmt Updater.java das zurück und bittet ums
+# Entsperren; der Dialog startet erst danach. Java meldet dann UNLOCK_MARK, das Ergebnis holt poll_unlock über launchState ab.
+const UNLOCK_MARK := "@entsperren"   # = Updater.UNLOCK (Java)
+const UNLOCK_WAIT := "Bitte das Handy entsperren – danach geht es weiter."
+const UNLOCK_CANCELLED := "Bitte das Handy entsperren und noch einmal tippen."
+const UNLOCK_POLL := 0.25
+const UNLOCK_TIMEOUT := 180.0        # meldet Java nie ein Ergebnis, gilt das Entsperren als abgebrochen
+var bridge: Object = null            # Tests: Ersatz für die Java-Klasse (android() liefert dann [bridge, null])
+var unlock_wait := false             # Systemdialog wartet aufs Entsperren
+var unlock_then := ""                # Status nach erfolgreichem Entsperren (msgid)
+var unlock_clock := 0.0
+var unlock_age := 0.0
+
+func open_permission() -> String:
+	# "" = Einstellung geöffnet (oder kein Android), UNLOCK_MARK = wartet aufs Entsperren.
 	var a := android()
-	if not a.is_empty():
-		a[0].openInstallPermission(a[1])
+	if a.is_empty():
+		return ""
+	return str(a[0].openInstallPermission(a[1]))
+
+func request_permission() -> void:
+	# Knopf „Installieren“ ohne Installationsrecht (Einstellungen): Einstellung öffnen, ggf. erst nach dem Entsperren.
+	var ask := "Bitte „Apps installieren“ für Mau-Mau Flip erlauben (Android 7: „Unbekannte Herkunft“) und erneut tippen."
+	if open_permission() == UNLOCK_MARK:
+		wait_unlock(ask)
+		publish(UNLOCK_WAIT)
+	else:
+		publish(ask)
 
 func install() -> void:
 	var problem := install_file(apk_path(), str(release.version))
 	apk_ready = FileAccess.file_exists(apk_path())
-	publish("Installer gestartet." if problem == "" else java_text(problem))
+	if problem == UNLOCK_MARK:
+		publish(UNLOCK_WAIT)
+	else:
+		publish("Installer gestartet." if problem == "" else java_text(problem))
+
+func wait_unlock(then: String) -> void:
+	unlock_wait = true
+	unlock_then = then
+	unlock_clock = 0.0
+	unlock_age = 0.0
+
+func poll_unlock() -> void:
+	# Ergebnis des Entsperrens abholen: "started" → Dialog läuft, "cancelled" → nicht entsperrt, "waiting" → weiter warten.
+	if not unlock_wait:
+		return
+	var a := android()
+	var state := "" if a.is_empty() else str(a[0].launchState())
+	if state == "waiting" and unlock_age < UNLOCK_TIMEOUT:
+		return
+	unlock_wait = false
+	publish(unlock_then if state == "started" else UNLOCK_CANCELLED)
 
 func install_file(file: String, version: String) -> String:
 	# Installationsberechtigung, dann Paket, höhere Versionsnummer, angekündigte Version und identische Signatur (Updater.java), dann
@@ -414,14 +467,21 @@ func install_file(file: String, version: String) -> String:
 	if a.is_empty():
 		return I18n.t("Installation nur auf dem Handy möglich.")
 	if not can_install():
-		open_permission()
-		return I18n.t("Bitte „Apps installieren“ für Mau-Mau Flip erlauben (Android 7: „Unbekannte Herkunft“) und erneut tippen.")
+		var ask := "Bitte „Apps installieren“ für Mau-Mau Flip erlauben (Android 7: „Unbekannte Herkunft“) und erneut tippen."
+		if open_permission() == UNLOCK_MARK:
+			wait_unlock(ask)
+			return UNLOCK_MARK
+		return I18n.t(ask)
 	var path := ProjectSettings.globalize_path(file)
 	var problem := str(a[0].verify(a[1], path, version))
 	if problem != "":
 		DirAccess.remove_absolute(file)
 		return I18n.t("Update abgelehnt: %s") % java_text(problem)
-	return str(a[0].install(a[1], path))
+	# "" = Installer gestartet, UNLOCK_MARK = startet nach dem Entsperren (poll_unlock), sonst Fehlertext.
+	var started := str(a[0].install(a[1], path))
+	if started == UNLOCK_MARK:
+		wait_unlock("Installer gestartet.")
+	return started
 
 func prune() -> void:
 	# Alte Downloads entfernen (nur die APK des offenen Updates behalten).

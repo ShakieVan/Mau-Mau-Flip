@@ -861,6 +861,12 @@ msgstr "Ready to install."
 msgid "Installer gestartet."
 msgstr "Installer started."
 
+msgid "Bitte das Handy entsperren – danach geht es weiter."
+msgstr "Please unlock the phone – then it continues."
+
+msgid "Bitte das Handy entsperren und noch einmal tippen."
+msgstr "Please unlock the phone and tap again."
+
 msgid "Installation nur auf dem Handy möglich."
 msgstr "Installing only works on the phone."
 

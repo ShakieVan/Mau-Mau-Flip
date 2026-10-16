@@ -12,6 +12,38 @@ func check(cond: bool, text: String) -> void:
 		failed += 1
 		print("FAIL: ", text)
 
+# Ersatz für com.godot.game.Updater (Java): Installationsrecht, Sperre und Ergebnis des Entsperrens von Hand gesetzt.
+class FakeJava extends RefCounted:
+	var allowed := true
+	var locked := false
+	var state := ""
+	var installs := 0
+	var permissions := 0
+
+	func canInstall(_activity: Variant) -> bool:
+		return allowed
+
+	func verify(_activity: Variant, _path: String, _version: String) -> String:
+		return ""
+
+	func _start() -> String:
+		state = "waiting" if locked else ""
+		return Updater.UNLOCK_MARK if locked else ""
+
+	func install(_activity: Variant, _path: String) -> String:
+		installs += 1
+		return _start()
+
+	func openInstallPermission(_activity: Variant) -> String:
+		permissions += 1
+		return _start()
+
+	func launchState() -> String:
+		var s := state
+		if s != "waiting":
+			state = ""
+		return s
+
 func release(version: String, repo := Updater.REPOSITORY, prerelease := false) -> Dictionary:
 	var name := "MauMauFlip-%s.apk" % version
 	return {"draft": false, "prerelease": prerelease, "tag_name": "v" + version, "body": "Neu in " + version,
@@ -169,8 +201,60 @@ func _init() -> void:
 	beta_up._checked(HTTPRequest.RESULT_SUCCESS, 200, PackedStringArray(), JSON.stringify([release(next_version, Updater.BETA_REPOSITORY, true)]).to_utf8_buffer())
 	check(off_ok and beta_up.available() and beta_up.release.beta, "Beta-Release nur im Beta-Kanal angeboten")
 
+	# Sperrbildschirm (Beta 1.6.9): Java meldet "@entsperren", wenn ein Systemdialog erst nach dem Entsperren startet.
+	check(Updater.UNLOCK_MARK == "@entsperren" and FileAccess.get_file_as_string("res://android/build/src/main/java/com/godot/game/Updater.java")
+		.contains("UNLOCK = \"%s\"" % Updater.UNLOCK_MARK), "Entsperr-Kennung in GDScript und Java gleich")
+	var lock_up := Updater.new()
+	lock_up.download_dir = up.download_dir
+	lock_up.setup(AppSettings.new(store_path))
+	var java := FakeJava.new()
+	lock_up.bridge = java
+	lock_up.release = Updater.parse(JSON.stringify(release(next_version)))
+	var apk := FileAccess.open(lock_up.apk_path(), FileAccess.WRITE)
+	apk.store_string("x")
+	apk.close()
+	# Nicht gesperrt: Installer startet sofort, wie bisher.
+	lock_up.install()
+	check(lock_up.status == "Installer gestartet." and not lock_up.unlock_wait and java.installs == 1, "ohne Sperre: Installer sofort gestartet")
+	# Gesperrt: erst entsperren; der Status bittet darum, das Ergebnis kommt über launchState.
+	java.locked = true
+	lock_up.install()
+	check(lock_up.status == Updater.UNLOCK_WAIT and lock_up.unlock_wait, "gesperrt: Bitte entsperren – " + lock_up.status)
+	lock_up.poll_unlock()
+	check(lock_up.unlock_wait and lock_up.status == Updater.UNLOCK_WAIT, "wartet, solange Java „waiting“ meldet")
+	java.state = "started"
+	lock_up.poll_unlock()
+	check(not lock_up.unlock_wait and lock_up.status == "Installer gestartet." and java.state == "", "entsperrt: Installer gestartet")
+	lock_up.install()
+	java.state = "cancelled"
+	lock_up._process(Updater.UNLOCK_POLL)
+	check(not lock_up.unlock_wait and lock_up.status == Updater.UNLOCK_CANCELLED, "abgebrochen: " + lock_up.status)
+	# Meldet Java nie ein Ergebnis, endet das Warten nach UNLOCK_TIMEOUT.
+	lock_up.install()
+	lock_up.unlock_age = Updater.UNLOCK_TIMEOUT + 1.0
+	lock_up.poll_unlock()
+	check(not lock_up.unlock_wait and lock_up.status == Updater.UNLOCK_CANCELLED, "kein Ergebnis: Warten endet")
+	# Ohne Installationsrecht: Einstellung „Unbekannte Apps“ – gesperrt ebenfalls erst nach dem Entsperren.
+	java.allowed = false
+	java.locked = false
+	lock_up.install()
+	check(java.permissions == 1 and not lock_up.unlock_wait and lock_up.status.begins_with("Bitte „Apps installieren“"), "ohne Recht, ohne Sperre: Einstellung geöffnet")
+	java.locked = true
+	lock_up.request_permission()
+	check(java.permissions == 2 and lock_up.unlock_wait and lock_up.status == Updater.UNLOCK_WAIT, "ohne Recht, gesperrt: Bitte entsperren")
+	java.state = "started"
+	lock_up.poll_unlock()
+	check(not lock_up.unlock_wait and lock_up.status.begins_with("Bitte „Apps installieren“"), "entsperrt: Einstellung offen, Hinweis aufs Erlauben")
+	lock_up.install()
+	java.state = "cancelled"
+	lock_up.poll_unlock()
+	check(lock_up.status == Updater.UNLOCK_CANCELLED and java.installs == 4, "Einstellung nicht entsperrt: kein Installer gestartet")
+	# Texte übersetzt (Statustexte sind msgids, die Oberfläche übersetzt sie).
+	var po := FileAccess.get_file_as_string("res://i18n/en_screens.po")
+	check(po.contains("msgid \"%s\"" % Updater.UNLOCK_WAIT) and po.contains("msgid \"%s\"" % Updater.UNLOCK_CANCELLED), "Entsperr-Texte in en_screens.po")
+
 	var test_dir := up.download_dir
-	for node in [up, pending_update, after_update, beta_up]:
+	for node in [up, pending_update, after_update, beta_up, lock_up]:
 		node.free()
 	for file_name in DirAccess.get_files_at(test_dir):
 		DirAccess.remove_absolute(test_dir + "/" + file_name)

@@ -1,6 +1,7 @@
 package com.godot.game;
 
 import android.app.Activity;
+import android.app.KeyguardManager;
 import android.content.ClipData;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
@@ -9,6 +10,7 @@ import android.content.pm.Signature;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
+import android.view.WindowManager;
 
 import androidx.core.content.FileProvider;
 
@@ -41,18 +43,112 @@ public final class Updater {
         }
     }
 
-    public static void openInstallPermission(Activity activity) {
-        activity.runOnUiThread(() -> {
+    /** "" = Einstellung geöffnet, UNLOCK = wartet aufs Entsperren (Ergebnis über launchState). */
+    public static String openInstallPermission(Activity activity) {
+        try {
+            Intent intent = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+                    ? new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + activity.getPackageName()))
+                    : new Intent(Settings.ACTION_SECURITY_SETTINGS);
+            return startSystemDialog(activity, intent);
+        } catch (Throwable ignored) {
+            return "";
+        }
+    }
+
+    // --- Systemdialoge und Sperrbildschirm (Beta 1.6.9) ---
+    // Befund 16.10.2026 (S10, Testschalter MauMauFlipTestLock an, Handy gesperrt): Die App lag über dem Sperrbildschirm; die Dialoge
+    // „Unbekannte Apps installieren“ und „App scannen“ (Play Protect) blitzten nur kurz auf und verschwanden hinter der Sperre, die
+    // Installation hing bei 90 %. Systemdialoge erscheinen nie über der Sperre. Darum vor jedem Systemdialog: „über Sperrbildschirm“
+    // und „Bildschirm einschalten“ zurücknehmen, bei gesperrtem Gerät um Entsperren bitten und den Dialog erst danach starten.
+    // Ohne Sperre startet der Dialog wie bisher sofort.
+
+    /** Rückgabe an GDScript (Updater.UNLOCK_MARK): Der Systemdialog wartet aufs Entsperren, Ergebnis über launchState. */
+    public static final String UNLOCK = "@entsperren";
+
+    // Ein Update-Vorgang hat einen Systemdialog angefordert: GodotApp.applyTestLock legt die App danach nicht mehr über den
+    // Sperrbildschirm. Gilt bis zum nächsten Prozessstart (statisches Feld).
+    private static volatile boolean systemDialogRequested = false;
+    // "" = nichts offen, "waiting" = Entsperren angefragt, "started" = entsperrt und Dialog gestartet, "cancelled" = nicht entsperrt.
+    private static volatile String launch = "";
+
+    static boolean systemDialogRequested() {
+        return systemDialogRequested;
+    }
+
+    /** Stand des Entsperrens; "started" und "cancelled" werden beim Abholen gelöscht. */
+    public static String launchState() {
+        String state = launch;
+        if (!"waiting".equals(state)) launch = "";
+        return state;
+    }
+
+    private static String startSystemDialog(Activity activity, Intent intent) {
+        systemDialogRequested = true;
+        boolean locked = false;
+        // requestDismissKeyguard gibt es ab Android 8.0 (API 26); darunter wird wie bisher sofort gestartet.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    activity.startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
-                            Uri.parse("package:" + activity.getPackageName())));
-                } else {
-                    activity.startActivity(new Intent(Settings.ACTION_SECURITY_SETTINGS));
-                }
+                KeyguardManager km = activity.getSystemService(KeyguardManager.class);
+                locked = km != null && km.isKeyguardLocked();
             } catch (Throwable ignored) {
             }
+        }
+        final boolean waitForUnlock = locked;
+        launch = waitForUnlock ? "waiting" : "";
+        activity.runOnUiThread(() -> {
+            leaveLockScreen(activity);
+            if (!waitForUnlock) {
+                startQuietly(activity, intent);
+                return;
+            }
+            try {
+                KeyguardManager km = activity.getSystemService(KeyguardManager.class);
+                // Die Activity liegt nach leaveLockScreen hinter der Sperre, wäre ohne sie aber sichtbar – das genügt dem System.
+                km.requestDismissKeyguard(activity, new KeyguardManager.KeyguardDismissCallback() {
+                    @Override
+                    public void onDismissSucceeded() {
+                        startQuietly(activity, intent);
+                        launch = "started";
+                    }
+
+                    @Override
+                    public void onDismissCancelled() {
+                        launch = "cancelled";
+                    }
+
+                    @Override
+                    public void onDismissError() {
+                        launch = "cancelled";
+                    }
+                });
+            } catch (Throwable t) {
+                launch = "cancelled";
+            }
         });
+        return waitForUnlock ? UNLOCK : "";
+    }
+
+    // „Über Sperrbildschirm“ und „Bildschirm einschalten“ zurücknehmen: setShowWhenLocked/setTurnScreenOn ab API 27, davor die
+    // Fenster-Flags. Nur auf dem UI-Thread aufrufen.
+    @SuppressWarnings("deprecation")
+    static void leaveLockScreen(Activity activity) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+                activity.setShowWhenLocked(false);
+                activity.setTurnScreenOn(false);
+            } else if (activity.getWindow() != null) {
+                activity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
+                        | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static void startQuietly(Activity activity, Intent intent) {
+        try {
+            activity.startActivity(intent);
+        } catch (Throwable ignored) {
+        }
     }
 
     public static String installedVersion(Activity activity) {
@@ -113,13 +209,7 @@ public final class Updater {
             intent.setDataAndType(uri, "application/vnd.android.package-archive");
             intent.setClipData(ClipData.newRawUri("MauMauFlip-Update", uri));
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            activity.runOnUiThread(() -> {
-                try {
-                    activity.startActivity(intent);
-                } catch (Throwable ignored) {
-                }
-            });
-            return "";
+            return startSystemDialog(activity, intent);   // "" oder UNLOCK
         } catch (Throwable e) {
             return "Installation nicht möglich: " + e.getMessage();
         }

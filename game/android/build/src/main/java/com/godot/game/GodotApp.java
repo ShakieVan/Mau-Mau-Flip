@@ -103,7 +103,9 @@ public class GodotApp extends GodotActivity {
 		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O_MR1) {
 			return;
 		}
-		boolean on = Log.isLoggable(TEST_LOCK_TAG, Log.VERBOSE);
+		// Beta 1.6.9: Hat ein Update-Vorgang einen Systemdialog angefordert (Installer, „Unbekannte Apps“), bleibt die App bis zum
+		// nächsten Prozessstart unter der Sperre – Systemdialoge erscheinen nie über dem Sperrbildschirm (Updater.startSystemDialog).
+		boolean on = !Updater.systemDialogRequested() && Log.isLoggable(TEST_LOCK_TAG, Log.VERBOSE);
 		setShowWhenLocked(on);
 		setTurnScreenOn(on);
 	}

@@ -577,8 +577,10 @@ func _install() -> void:
 	if up == null:
 		return
 	if up.has_method("can_install") and not bool(up.call("can_install")):
-		toast("Bitte „Unbekannte Apps installieren“ für Mau-Mau Flip erlauben.")
-		up.call("open_permission")
+		# Beta 1.6.9: Die Einstellung erscheint nie über dem Sperrbildschirm; der Updater bittet dann erst ums Entsperren.
+		up.call("request_permission")
+		if not bool(up.get("unlock_wait")):
+			toast("Bitte „Unbekannte Apps installieren“ für Mau-Mau Flip erlauben.")
 		return
 	up.call("install")
 

@@ -228,6 +228,8 @@ window.MMF_I18N_PO = {
   "Bis zum Letzten: Wer fertig ist, scheidet aus. Gespielt wird um die Plätze, bis nur einer Karten hat.": "Play to the last: Whoever is out drops out. You play for places until only one player still has cards.",
   "Bist du damit fertig, macht der Nächste weiter.": "If that finishes your hand, the next player carries on.",
   "Bitte anschnallen, es geht rückwärts.": "Please buckle up, we're going backwards.",
+  "Bitte das Handy entsperren und noch einmal tippen.": "Please unlock the phone and tap again.",
+  "Bitte das Handy entsperren – danach geht es weiter.": "Please unlock the phone – then it continues.",
   "Bitte den Raumcode eingeben, z. B. KATZE-42.": "Please enter the room code, e.g. KATZE-42.",
   "Bitte die Adresse des Gastgebers eingeben.": "Please enter the host's address.",
   "Bitte die App neu starten.": "Please restart the app.",
