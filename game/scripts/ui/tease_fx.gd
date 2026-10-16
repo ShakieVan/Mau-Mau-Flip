@@ -18,7 +18,7 @@ extends Node
 #               „Pfffrt!“; danach an derselben Stelle „Kim war's!“ bzw. „Wer war das?“ (geheim, auch beim Leger). Ton laut beim
 #               Ziel, leise bei allen anderen (auch beim Leger: ein lauteres Handy verriete ihn), Vibration 150 ms beim Ziel. Beim Ziel
 #               groß über dem eigenen Namensschild. Reduziert: kein Plattdrücken, Kissen und Wolke blenden ein und aus.
-# Bedienung: Kopf eines Gegners → Necken-Menü (TeaseMenu), Fächer ohne sichtbare Rückseiten ebenso; die 4 Reaktionsknöpfe am eigenen
+# Bedienung: Kopf eines Gegners → Necken-Menü (TeaseMenu), Fächer ohne sichtbare Rückseiten ebenso; die Reaktionsknöpfe (ab 1.6.11 fünf) am eigenen
 # Platz (TeaseMenu.ReactionBar, Beta 1.6.5: ein Tipp sendet, kein Fächer mehr). Beide zeigen nur, was nach TeaseRules mit der
 # lokalen Uhr gerade geht (source.fx_check).
 # Effekte reduziert: keine Flugbahn (Kugel erscheint am Ziel), kein Wackeln/Stauchen, Z stehen still, Reaktionen blenden am Platz.
@@ -44,8 +44,8 @@ const REACT_RISE := 80.0
 const REACT_S := 1.6
 const REACT_SOUND_MAX := 2                 # je Gerät höchstens so viele Reaktionstöne gleichzeitig
 const REACT_SOUND_GAP_MS := 600            # je Reaktionsname
-const REACT_LEN_MS := {"lachen": 1920, "schreck": 610, "klatschen": 1920, "daumen": 620}   # Dateilängen (eastereggs2.md 7)
-const SOUND_OF := {"lachen": "lachen", "schreck": "schreck", "klatschen": "klatschen", "daumen": "daumen"}
+const REACT_LEN_MS := {"lachen": 1920, "schreck": 610, "klatschen": 1920, "daumen": 620, "baeh": 980}   # Dateilängen (eastereggs2.md 7)
+const SOUND_OF := {"lachen": "lachen", "schreck": "schreck", "klatschen": "klatschen", "daumen": "daumen", "baeh": "baeh"}
 const MENU_IDLE_S := 15.0                  # Beta 1.6.7 (Nutzerwunsch 16.10.2026): vorher 5 s, das Menü verschwand zu früh
 const RATE_GRAY_S := 1.2                   # fx_no "rate": Knöpfe kurz ausgegraut
 const REOPEN_GAP_MS := 400                 # derselbe Kopf direkt nach dem Schließen: nicht gleich wieder öffnen
@@ -62,7 +62,7 @@ var table: TableView
 var source: TableSource
 var layer: Node2D                          # Effekte (über Ablage und Fächern, unter Farbwahl-Rad, Hilfe und Sichtschutz)
 var menu: TeaseMenu                        # offenes Necken-Menü (oder null)
-var reactions: TeaseMenu.ReactionBar      # Beta 1.6.5: die 4 Reaktionsknöpfe am eigenen Platz
+var reactions: TeaseMenu.ReactionBar      # Beta 1.6.5: die Reaktionsknöpfe am eigenen Platz (ab 1.6.11 fünf)
 var enabled := true                        # Einstellung „necken“ dieses Geräts
 var reduced := false
 var night := 0.0: set = set_night
@@ -1297,7 +1297,7 @@ func _on_react_chosen(r: String) -> void:
 	send({"k": "react", "r": r})
 
 
-# Beta 1.6.5: die 4 Reaktionsknöpfe – nur mit Reaktionen in dieser Spielart, eigenem Platz und Necken an. Lage: normal neben dem
+# Beta 1.6.5: die Reaktionsknöpfe (ab 1.6.11 fünf) – nur mit Reaktionen in dieser Spielart, eigenem Platz und Necken an. Lage: normal neben dem
 # eigenen Namen (Platzwahl _place_reactions), großer Modus in der Zeile „Du“ vor der Kartenzahl (_row_reactions).
 # full = auch die Regeln und die Platzwahl neu prüfen (alle SYNC_S); sonst nur Lage und Uhr (jedes Bild), gezeichnet nur bei Änderung.
 func _sync_reactions(full := true) -> void:
@@ -1397,7 +1397,7 @@ func _row_hidden(badge: OpponentSeat) -> bool:
 
 
 # Normaler Modus: Lage nach TeaseFx._choose (wie die größeren Effekte) – (1) als Reihe rechts neben Name und Kartenzahl, (2) darüber,
-# (3) 2 × 2 rechts daneben, (4) etwas weiter rechts. Hart gemieden: Hand, Ziehstapel, Ablage, Mau, Sortieren/Rückseiten, Knöpfe oben
+# (3) als Block rechts daneben (ab 1.6.11 3 + 2, vorher 2 × 2), (4) etwas weiter rechts, (5) Block darüber. Hart gemieden: Hand, Ziehstapel, Ablage, Mau, Sortieren/Rückseiten, Knöpfe oben
 # links, „Erwischt!“-Felder aller Mitspieler (auch wenn gerade niemand erwischbar ist – sonst sprängen die Knöpfe), die Fächer der
 # Mitspieler, die Hinweisleiste (als Band über die ganze Breite, damit lange Hinweise nichts verschieben) und der Einsatzstapel im
 # Glücksspiel; weich die Köpfe. Ergebnis: Knopfmitten relativ zum eigenen Avatar (_react_rel).
@@ -1429,21 +1429,28 @@ func _place_reactions(badge: OpponentSeat) -> void:
 		var c := table._table_to(layer, (table.get("_world") as Node2D).transform * sp.position)
 		hard.append(Rect2(c - Vector2(w * 0.65, w * CardView.ASPECT * 0.65), Vector2(w * 1.3, w * CardView.ASPECT * 1.3)))
 	var row := Vector2(2.0 * r * n + gap * (n - 1), 2.0 * r)
-	var grid := Vector2(4.0 * r + gap, 4.0 * r + gap)
+	# Beta 1.6.11: fünf Knöpfe – als Block 3 + 2 (zweite Reihe mittig), bis 1.6.10 bei vier 2 × 2
+	var g_cols := ceili(n / 2.0)
+	var g_rows := ceili(float(n) / g_cols)
+	var grid := Vector2(2.0 * r * g_cols + gap * (g_cols - 1), 2.0 * r * g_rows + gap * (g_rows - 1))
 	var y_max := hint_top - 4.0                        # Unterkante über der Hinweisleiste
 	var cands: Array = []
 	var add := func(top_left: Vector2, shape: Vector2, cols: int) -> void:
 		cands.append({"pos": Vector2(top_left.x, minf(top_left.y, y_max - shape.y)), "rel": Rect2(Vector2.ZERO, shape), "cols": cols})
 	add.call(Vector2(head.end.x + 14.0, a.y - r), row, n)
 	add.call(Vector2(a.x - ar, a.y - ar - 14.0 - row.y), row, n)
-	add.call(Vector2(head.end.x + 14.0, a.y - grid.y * 0.5), grid, 2)
+	add.call(Vector2(head.end.x + 14.0, a.y - grid.y * 0.5), grid, g_cols)
 	add.call(Vector2(head.end.x + 14.0 + 2.0 * r, a.y - r), row, n)
+	add.call(Vector2(a.x - ar, a.y - ar - 14.0 - grid.y), grid, g_cols)
 	var best := _choose(cands, {"hard": hard, "soft": blk.soft})
 	var tl: Vector2 = best.pos
 	var cols := int(best.cols)
 	var rel: Array[Vector2] = []
 	for i in n:
-		rel.append(tl + Vector2(r + float(i % cols) * (2.0 * r + gap), r + float(i / cols) * (2.0 * r + gap)) - a)
+		var row_i := i / cols
+		var in_row := mini(cols, n - row_i * cols)           # letzte Reihe ggf. kürzer: mittig unter der vollen
+		var x0 := float(cols - in_row) * (r + gap * 0.5)
+		rel.append(tl + Vector2(x0 + r + float(i % cols) * (2.0 * r + gap), r + float(row_i) * (2.0 * r + gap)) - a)
 	_react_rel = rel
 	reactions.r = r
 
@@ -1575,6 +1582,7 @@ const REACT_TEX := {
 	"klatschen": preload("res://assets/ui/reaktionen/klatschen.svg"),
 	"daumen": preload("res://assets/ui/reaktionen/daumen.svg"),
 	"schreck": preload("res://assets/ui/reaktionen/schreck.svg"),
+	"baeh": preload("res://assets/ui/reaktionen/baeh.svg"),     # Beta 1.6.11: 😝 „Squinting face with tongue“
 }
 const REACT_IMG := 2.2          # Bildkante relativ zu s (≈ Radius): das Motiv (gut 28 von 32 Einheiten) füllt dann etwa 2 s
 

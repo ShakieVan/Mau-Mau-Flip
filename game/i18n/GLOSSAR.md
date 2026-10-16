@@ -44,6 +44,7 @@ Verbindlich für alle Übersetzungen in `game/i18n/*.po` und `webclient/i18n_en.
 | Spielrichtung | direction of play |
 | Uhrzeigersinn / gegen den Uhrzeigersinn | clockwise / counterclockwise |
 | fertig (Hand leer) | out („You're out“) |
+| kontern / Kontern (Hausregel, Beta 1.6.11) | counter / Counter |
 | Strafe / Strafkarten | penalty / penalty cards |
 | Strafziehen | penalty draw |
 | Erwischt! | Caught! |
@@ -228,7 +229,7 @@ Farbnamen als Kartenfarbe groß („Play Blue or a 9“), im Fließtext als Adje
 | Papierkugel | paper ball |
 | Schnarchen | snore |
 | Wecker | alarm clock |
-| Reaktion (Lachen, Schreck, Klatschen, Daumen hoch) | reaction (Laugh, Shock, Applause, Thumbs up) |
+| Reaktion (Lachen, Schreck, Klatschen, Daumen hoch, Bäää ab 1.6.11) | reaction (Laugh, Shock, Applause, Thumbs up, Bleh!) |
 | Karten ansehen | View cards |
 | Furzkissen (Beta 1.6.6) | whoopee cushion |
 | Mit Namen / Geheim (Kissen legen, bis 1.6.9) | With name / Secret |

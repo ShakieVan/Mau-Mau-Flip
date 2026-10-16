@@ -7,7 +7,8 @@ extends Control
 # Blase gehört nicht zum Menü, _has_point). Die Lage setzt TeaseFx.place_menu; TeaseFx schließt es nach 15 s ohne Tipp (bis 1.6.6: 5 s)
 # und bei Platzwechseln, ab Beta 1.6.7 nicht mehr bei Zugwechsel oder erwischbaren Plätzen (dann frischt es auf bzw. zeigt den
 # „Erwischt!“-Buzzer über sich, buzzers). Tag: Papier und Druckfarbe, Nacht: dunkle Blase mit hellem Rand und leichtem Neon-Schein.
-# Darunter (innere Klasse) ReactionBar: die 4 Reaktionen als runde Knöpfe am eigenen Platz (Beta 1.6.5; vorher ein Lachgesicht-Knopf mit Fächer).
+# Darunter (innere Klasse) ReactionBar: die Reaktionen als runde Knöpfe am eigenen Platz (Beta 1.6.5; vorher ein Lachgesicht-Knopf mit Fächer;
+# ab Beta 1.6.11 fünf mit „Bäää“).
 # Beta 1.6.6 (Furzkissen, eastereggs2.md 12.4): bis 1.6.9 eine eigene Zeile mit gezeichnetem Kissen und Text-Knöpfen „Mit Namen“/„Geheim“.
 # Beta 1.6.10 (Nutzerbefund nach echten Runden: alle tippten auf das Kissenbild, nicht auf die Text-Knöpfe daneben): zwei runde Knöpfe im
 # selben Stil wie die übrigen – „Kissen geheim“ (Kissen mit „?“-Abzeichen, chosen "kissen_geheim") und „Kissen mit Namen“ (Kissen mit
@@ -287,7 +288,7 @@ func modulate_icon(icon: String, c: Vector2, s: float, mod: Color) -> void:
 # ================================================================= Reaktionsknöpfe am eigenen Platz
 
 # Beta 1.6.5 (Nutzerwunsch nach der Familienrunde): Reihenfolge der Knöpfe (TeaseRules.FX_REACTS bleibt die Liste des Protokolls)
-const REACT_ORDER := ["lachen", "klatschen", "daumen", "schreck"]
+const REACT_ORDER := ["lachen", "klatschen", "daumen", "schreck", "baeh"]   # Beta 1.6.11: + Bäää (😝)
 const REACT_BTN_R := 24.0             # Knopfradius (Trefferfläche ≥ 48 px), großer Modus × k
 const REACT_ICON := 0.76              # Bildgröße relativ zum Knopfradius (Fluent-Emoji-Bild, TeaseFx.draw_reaction)
 
@@ -326,6 +327,8 @@ class ReactionBar:
 				return I18n.t("Klatschen")
 			"daumen":
 				return I18n.t("Daumen hoch")
+			"baeh":
+				return I18n.t("Bäää")
 		return I18n.t("Reaktion")
 
 	func _get_tooltip(at_position: Vector2) -> String:

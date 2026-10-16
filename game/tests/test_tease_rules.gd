@@ -191,6 +191,12 @@ func run() -> void:
 	check(NetProtocol.make_fx_request({"k": "ball", "to": 2}) == {"t": "fx", "k": "ball", "to": 2}, "F: Wunsch Kugel")
 	check(NetProtocol.make_fx_request({"k": "react", "r": "daumen", "to": 1}) == {"t": "fx", "k": "react", "r": "daumen"},
 		"F: Wunsch Reaktion ohne Ziel")
+	# Beta 1.6.11: fünfte Reaktion „Bäää“ – gültig als Wunsch und vom Gastgeber; Geräte bis 1.6.10 kennen sie nicht und verwerfen sie
+	# (clean_fx → make_fx_request mit ihrer FX_REACTS-Liste, wie hier jeder unbekannte Name)
+	check(NetProtocol.make_fx_request({"k": "react", "r": "baeh"}) == {"t": "fx", "k": "react", "r": "baeh"}, "F: Wunsch Reaktion Bäää")
+	check(NetProtocol.clean_fx({"t": "fx", "k": "react", "from": 2, "r": "baeh"}) == {"t": "fx", "k": "react", "from": 2, "r": "baeh"},
+		"F: Gast nimmt Bäää vom Gastgeber an")
+	check(NetProtocol.clean_fx({"t": "fx", "k": "react", "from": 2, "r": "zunge"}).is_empty(), "F: unbekannte Reaktion vom Gastgeber verworfen")
 	for bad in [{"k": "ball"}, {"k": "ball", "to": -1}, {"k": "ball", "to": 10}, {"k": "ball", "to": "1"}, {"k": "ball", "to": 1.5},
 			{"k": "react"}, {"k": "react", "r": "gaehnen"}, {"k": "gaehnen", "to": 1}, {"k": 3, "to": 1}, {}]:
 		check(NetProtocol.make_fx_request(bad).is_empty(), "F: ungültiger Wunsch %s" % str(bad))

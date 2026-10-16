@@ -1,5 +1,5 @@
 {
- "stand": "2026-10-15",
+ "stand": "2026-10-16",
  "modell": "OpenMOSS-Team/MOSS-SoundEffect-v2.0",
  "lizenz_modell": "Apache-2.0",
  "skript": "tools/make_ostereier.py",
@@ -1032,6 +1032,455 @@
     }
    },
    "behalten": 6
+  },
+  "baeh": {
+   "titel": "Zunge rausstrecken (Reaktion 😛)",
+   "ziel_s": [
+    0.5,
+    1.2
+   ],
+   "ziel_lufs": -19.0,
+   "daueransage_s": 0.8,
+   "prompts": {
+    "kurz": {
+     "prompt": "a person playfully sticks out their tongue and makes one short cheeky bleh sound, a quick nasal teasing blehh, funny and friendly, close-up, dry room, no words",
+     "seeds": [
+      7101,
+      7102,
+      7103,
+      7104,
+      7105,
+      7106
+     ],
+     "negativ": "sheep, lamb, goat, bleating, baa, baaing, animal, farm animal, cow, moo, cat, meow, purr, dog, bird, duck, speech, words, talking, sentence, laughter, laughing, giggling, crying, sobbing, whining, screaming, shouting, yelling, singing, music, burp, fart, groan",
+     "kategorie": "kurz",
+     "ziel": [
+      0.5,
+      0.9
+     ],
+     "sekunden": 0.7
+    },
+    "kurz_albern": {
+     "prompt": "one short silly mocking bleh with the tongue sticking out, a single playful nasal vocal sound, cheeky but friendly, close-up, quiet room, no words",
+     "seeds": [
+      7101,
+      7102,
+      7103,
+      7104,
+      7105,
+      7106,
+      7121,
+      7122,
+      7123,
+      7124,
+      7125,
+      7126
+     ],
+     "negativ": "sheep, lamb, goat, bleating, baa, baaing, animal, farm animal, cow, moo, cat, meow, purr, dog, bird, duck, speech, words, talking, sentence, laughter, laughing, giggling, crying, sobbing, whining, screaming, shouting, yelling, singing, music, burp, fart, groan",
+     "kategorie": "kurz",
+     "ziel": [
+      0.5,
+      0.9
+     ],
+     "sekunden": 0.7
+    },
+    "lang": {
+     "prompt": "a person sticks out their tongue and teases with a long drawn-out nasal bleeeeh, one single silly vocal sound, playful and friendly, close-up, dry room, no words",
+     "seeds": [
+      7101,
+      7102,
+      7103,
+      7104,
+      7105,
+      7106,
+      7121,
+      7122,
+      7123,
+      7124,
+      7125,
+      7126
+     ],
+     "negativ": "sheep, lamb, goat, bleating, baa, baaing, animal, farm animal, cow, moo, cat, meow, purr, dog, bird, duck, speech, words, talking, sentence, laughter, laughing, giggling, crying, sobbing, whining, screaming, shouting, yelling, singing, music, burp, fart, groan",
+     "kategorie": "lang",
+     "ziel": [
+      0.8,
+      1.25
+     ],
+     "sekunden": 1.1,
+     "ausblenden": 0.2
+    },
+    "lang_blaeh": {
+     "prompt": "a playful drawn-out teasing blaaaah with the tongue sticking out, a long nasal mocking vocal sound that slowly fades, funny, not mean, close-up, quiet room, no words",
+     "seeds": [
+      7101,
+      7102,
+      7103,
+      7104,
+      7105,
+      7106,
+      7121,
+      7122,
+      7123,
+      7124,
+      7125,
+      7126
+     ],
+     "negativ": "sheep, lamb, goat, bleating, baa, baaing, animal, farm animal, cow, moo, cat, meow, purr, dog, bird, duck, speech, words, talking, sentence, laughter, laughing, giggling, crying, sobbing, whining, screaming, shouting, yelling, singing, music, burp, fart, groan",
+     "kategorie": "lang",
+     "ziel": [
+      0.8,
+      1.25
+     ],
+     "sekunden": 1.1,
+     "ausblenden": 0.2
+    },
+    "prusten": {
+     "prompt": "a person sticks out their tongue and blows a raspberry, a short playful blehhh ending in a fluttering pbbbt of the lips and tongue, funny teasing, close-up, dry room, no words",
+     "seeds": [
+      7101,
+      7102,
+      7103,
+      7104,
+      7105,
+      7106
+     ],
+     "negativ": "sheep, lamb, goat, bleating, baa, baaing, animal, farm animal, cow, moo, cat, meow, purr, dog, bird, duck, speech, words, talking, sentence, laughter, laughing, giggling, crying, sobbing, whining, screaming, shouting, yelling, singing, music, burp, fart, groan",
+     "kategorie": "prusten",
+     "ziel": [
+      0.55,
+      1.2
+     ],
+     "sekunden": 1.0
+    },
+    "raspberry": {
+     "prompt": "a quick playful tongue raspberry, the tongue sticks out and flutters between the lips, bllbllbleh, cheeky teasing vocal sound, close-up, dry room, no words",
+     "seeds": [
+      7101,
+      7102,
+      7103,
+      7104,
+      7105,
+      7106
+     ],
+     "negativ": "sheep, lamb, goat, bleating, baa, baaing, animal, farm animal, cow, moo, cat, meow, purr, dog, bird, duck, speech, words, talking, sentence, laughter, laughing, giggling, crying, sobbing, whining, screaming, shouting, yelling, singing, music, burp, fart, groan",
+     "kategorie": "prusten",
+     "ziel": [
+      0.55,
+      1.2
+     ],
+     "sekunden": 1.0
+    },
+    "kind": {
+     "prompt": "a little child sticks out their tongue and teases with a bright, high, cheeky bleeeh, one single playful vocal sound, funny and friendly, close-up, quiet room, no words",
+     "seeds": [
+      7101,
+      7102,
+      7103,
+      7104,
+      7105,
+      7106
+     ],
+     "negativ": "sheep, lamb, goat, bleating, baa, baaing, animal, farm animal, cow, moo, cat, meow, purr, dog, bird, duck, speech, words, talking, sentence, laughter, laughing, giggling, crying, sobbing, whining, screaming, shouting, yelling, singing, music, burp, fart, groan",
+     "kategorie": "hell",
+     "ziel": [
+      0.5,
+      1.15
+     ],
+     "sekunden": 0.8
+    },
+    "comic": {
+     "prompt": "a cartoon character with a high squeaky voice sticks out its tongue and goes bleh, a short funny teasing vocal sound effect, animated cartoon, close-up, no words",
+     "seeds": [
+      7101,
+      7102,
+      7103,
+      7104,
+      7105,
+      7106
+     ],
+     "negativ": "sheep, lamb, goat, bleating, baa, baaing, animal, farm animal, cow, moo, cat, meow, purr, dog, bird, duck, speech, words, talking, sentence, laughter, laughing, giggling, crying, sobbing, whining, screaming, shouting, yelling, singing, music, burp, fart, groan",
+     "kategorie": "hell",
+     "ziel": [
+      0.5,
+      1.15
+     ],
+     "sekunden": 0.8
+    },
+    "kurz_sfx": {
+     "prompt": "human vocal sound effect, a short cheeky bleh with the tongue sticking out, voiced and nasal, one quick syllable, comedic and friendly, close-up, dry room, no words",
+     "seeds": [
+      7111,
+      7112,
+      7113,
+      7114,
+      7115,
+      7116
+     ],
+     "negativ": "sheep, lamb, goat, bleating, baa, baaing, animal, farm animal, cow, moo, cat, meow, purr, dog, bird, duck, speech, words, talking, sentence, laughter, laughing, giggling, crying, sobbing, whining, screaming, shouting, yelling, singing, music, burp, fart, groan",
+     "kategorie": "kurz",
+     "ziel": [
+      0.5,
+      0.9
+     ],
+     "sekunden": 0.5
+    },
+    "kurz_frau": {
+     "prompt": "a young woman sticks her tongue out and makes a quick voiced bleh, one short cheeky syllable with her voice, playful teasing, close-up, quiet room, no words",
+     "seeds": [
+      7111,
+      7112,
+      7113,
+      7114,
+      7115,
+      7116,
+      7121,
+      7122,
+      7123,
+      7124,
+      7125,
+      7126
+     ],
+     "negativ": "sheep, lamb, goat, bleating, baa, baaing, animal, farm animal, cow, moo, cat, meow, purr, dog, bird, duck, speech, words, talking, sentence, laughter, laughing, giggling, crying, sobbing, whining, screaming, shouting, yelling, singing, music, burp, fart, groan",
+     "kategorie": "kurz",
+     "ziel": [
+      0.5,
+      0.9
+     ],
+     "sekunden": 0.5,
+     "cfg": 6.0
+    },
+    "lang_frech": {
+     "prompt": "a cheeky teenager sticks out the tongue and mocks with a long nasal voiced bleeeeh, sarcastic and playful, one single sound, close-up, quiet room, no words",
+     "seeds": [
+      7111,
+      7112,
+      7113,
+      7114,
+      7115,
+      7116
+     ],
+     "negativ": "sheep, lamb, goat, bleating, baa, baaing, animal, farm animal, cow, moo, cat, meow, purr, dog, bird, duck, speech, words, talking, sentence, laughter, laughing, giggling, crying, sobbing, whining, screaming, shouting, yelling, singing, music, burp, fart, groan",
+     "kategorie": "lang",
+     "ziel": [
+      0.8,
+      1.25
+     ],
+     "sekunden": 0.9,
+     "ausblenden": 0.2
+    },
+    "lang_sfx": {
+     "prompt": "human vocal sound effect, a long mocking nasal bleeeeh with the tongue sticking out, comedic and friendly, close-up, dry room, no words",
+     "seeds": [
+      7111,
+      7112,
+      7113,
+      7114,
+      7115,
+      7116
+     ],
+     "negativ": "sheep, lamb, goat, bleating, baa, baaing, animal, farm animal, cow, moo, cat, meow, purr, dog, bird, duck, speech, words, talking, sentence, laughter, laughing, giggling, crying, sobbing, whining, screaming, shouting, yelling, singing, music, burp, fart, groan",
+     "kategorie": "lang",
+     "ziel": [
+      0.8,
+      1.25
+     ],
+     "sekunden": 0.9,
+     "ausblenden": 0.2,
+     "cfg": 6.0
+    },
+    "raspberry_blow": {
+     "prompt": "a person blows a raspberry with their lips and tongue, a rubbery fluttering pbbbbbt, human mouth sound, playful teasing, close-up, dry room",
+     "seeds": [
+      7111,
+      7112,
+      7113,
+      7114,
+      7115,
+      7116
+     ],
+     "negativ": "sheep, lamb, goat, bleating, baa, baaing, animal, farm animal, cow, moo, cat, meow, purr, dog, bird, duck, speech, words, talking, sentence, laughter, laughing, giggling, crying, sobbing, whining, screaming, shouting, yelling, singing, music, burp, fart, groan",
+     "kategorie": "prusten",
+     "ziel": [
+      0.55,
+      1.2
+     ],
+     "sekunden": 0.8
+    },
+    "raspberry_blow_ohne": {
+     "prompt": "a person blows a raspberry with their lips and tongue, a rubbery fluttering pbbbbbt, human mouth sound, playful teasing, close-up, dry room",
+     "seeds": [
+      7111,
+      7112,
+      7113,
+      7114,
+      7115,
+      7116
+     ],
+     "negativ": "sheep, lamb, goat, bleating, baa, baaing, animal, farm animal, cow, moo, cat, meow, purr, dog, bird, duck, speech, words, talking, sentence, laughter, laughing, giggling, crying, sobbing, whining, screaming, shouting, yelling, singing, music, burp, groan",
+     "kategorie": "prusten",
+     "ziel": [
+      0.55,
+      1.2
+     ],
+     "sekunden": 0.8
+    },
+    "bronx": {
+     "prompt": "Bronx cheer, a comedic human raspberry made with the tongue between the lips, a short fluttering blowing sound, close-up, dry room",
+     "seeds": [
+      7111,
+      7112,
+      7113,
+      7114,
+      7115,
+      7116
+     ],
+     "negativ": "sheep, lamb, goat, bleating, baa, baaing, animal, farm animal, cow, moo, cat, meow, purr, dog, bird, duck, speech, words, talking, sentence, laughter, laughing, giggling, crying, sobbing, whining, screaming, shouting, yelling, singing, music, burp, fart, groan",
+     "kategorie": "prusten",
+     "ziel": [
+      0.55,
+      1.2
+     ],
+     "sekunden": 0.8
+    },
+    "bleh_prusten": {
+     "prompt": "a cheeky voice goes bleh and then blows a short raspberry with the tongue out, blehhpbbbt, one quick playful sound, close-up, dry room, no words",
+     "seeds": [
+      7111,
+      7112,
+      7113,
+      7114,
+      7115,
+      7116
+     ],
+     "negativ": "sheep, lamb, goat, bleating, baa, baaing, animal, farm animal, cow, moo, cat, meow, purr, dog, bird, duck, speech, words, talking, sentence, laughter, laughing, giggling, crying, sobbing, whining, screaming, shouting, yelling, singing, music, burp, fart, groan",
+     "kategorie": "prusten",
+     "ziel": [
+      0.55,
+      1.2
+     ],
+     "sekunden": 0.8,
+     "cfg": 6.0
+    },
+    "kind_frech": {
+     "prompt": "a cheeky little girl sticks out her tongue at her brother and goes bleeeh, a bright playful voiced bleh, teasing and happy, close-up, quiet room, no words",
+     "seeds": [
+      7111,
+      7112,
+      7113,
+      7114,
+      7115,
+      7116
+     ],
+     "negativ": "sheep, lamb, goat, bleating, baa, baaing, animal, farm animal, cow, moo, cat, meow, purr, dog, bird, duck, speech, words, talking, sentence, laughter, laughing, giggling, crying, sobbing, whining, screaming, shouting, yelling, singing, music, burp, fart, groan, whimper, whining, baby crying, kitten, squeak, squeal, whistle, alarm, siren",
+     "kategorie": "hell",
+     "ziel": [
+      0.5,
+      1.15
+     ],
+     "sekunden": 0.6
+    },
+    "comic_stimme": {
+     "prompt": "a cartoon character with a high-pitched human voice teases with a short nasal bleh, tongue out, comedic vocal sound effect, close-up, no words",
+     "seeds": [
+      7111,
+      7112,
+      7113,
+      7114,
+      7115,
+      7116,
+      7121,
+      7122,
+      7123,
+      7124,
+      7125,
+      7126,
+      7127,
+      7128
+     ],
+     "negativ": "sheep, lamb, goat, bleating, baa, baaing, animal, farm animal, cow, moo, cat, meow, purr, dog, bird, duck, speech, words, talking, sentence, laughter, laughing, giggling, crying, sobbing, whining, screaming, shouting, yelling, singing, music, burp, fart, groan, whimper, whining, baby crying, kitten, squeak, squeal, whistle, alarm, siren",
+     "kategorie": "hell",
+     "ziel": [
+      0.5,
+      1.15
+     ],
+     "sekunden": 0.6,
+     "cfg": 6.0
+    },
+    "mundfurz": {
+     "prompt": "a person blows a raspberry with their mouth, a silly rubbery fart noise made with the lips and tongue, pbbbbt, playful teasing, close-up, dry room",
+     "seeds": [
+      7121,
+      7122,
+      7123,
+      7124,
+      7125,
+      7126
+     ],
+     "negativ": "sheep, lamb, goat, bleating, baa, baaing, animal, farm animal, cow, moo, cat, meow, purr, dog, bird, duck, speech, words, talking, sentence, laughter, laughing, giggling, crying, sobbing, whining, screaming, shouting, yelling, singing, music, burp, groan, hiss, spray, steam, snake, static, white noise, plop, pop, bang, explosion, whip, slap, wet, liquid, splash, toilet, whoopee cushion",
+     "kategorie": "prusten",
+     "ziel": [
+      0.55,
+      1.2
+     ],
+     "sekunden": 0.8
+    },
+    "bleh_mundfurz": {
+     "prompt": "a kid sticks out the tongue and blows a raspberry, a short voiced blehhh with fluttering lips like a silly mouth fart, playful teasing, close-up, quiet room, no words",
+     "seeds": [
+      7121,
+      7122,
+      7123,
+      7124,
+      7125,
+      7126
+     ],
+     "negativ": "sheep, lamb, goat, bleating, baa, baaing, animal, farm animal, cow, moo, cat, meow, purr, dog, bird, duck, speech, words, talking, sentence, laughter, laughing, giggling, crying, sobbing, whining, screaming, shouting, yelling, singing, music, burp, groan, hiss, spray, steam, snake, static, white noise, plop, pop, bang, explosion, whip, slap, wet, liquid, splash, toilet, whoopee cushion",
+     "kategorie": "prusten",
+     "ziel": [
+      0.55,
+      1.2
+     ],
+     "sekunden": 0.8
+    },
+    "lippen_brrr": {
+     "prompt": "a person does a short silly lip trill, the lips flutter loosely, a playful voiced brrrrr, close-up, dry room, no words",
+     "seeds": [
+      7121,
+      7122,
+      7123,
+      7124,
+      7125,
+      7126
+     ],
+     "negativ": "sheep, lamb, goat, bleating, baa, baaing, animal, farm animal, cow, moo, cat, meow, purr, dog, bird, duck, speech, words, talking, sentence, laughter, laughing, giggling, crying, sobbing, whining, screaming, shouting, yelling, singing, music, burp, groan, hiss, spray, steam, snake, static, white noise, plop, pop, bang, explosion, whip, slap, wet, liquid, splash, toilet, whoopee cushion",
+     "kategorie": "prusten",
+     "ziel": [
+      0.55,
+      1.2
+     ],
+     "sekunden": 0.8
+    },
+    "comic_hoch": {
+     "prompt": "a cheerful cartoon character with a bright high-pitched human voice sticks its tongue out and goes bleeeh, one short playful voiced bleh, comedic vocal sound effect, close-up, no words",
+     "seeds": [
+      7121,
+      7122,
+      7123,
+      7124,
+      7125,
+      7126
+     ],
+     "negativ": "sheep, lamb, goat, bleating, baa, baaing, animal, farm animal, cow, moo, cat, meow, purr, dog, bird, duck, speech, words, talking, sentence, laughter, laughing, giggling, crying, sobbing, whining, screaming, shouting, yelling, singing, music, burp, fart, groan, whimper, whining, baby crying, kitten, squeak, squeal, whistle, alarm, siren",
+     "kategorie": "hell",
+     "ziel": [
+      0.5,
+      1.15
+     ],
+     "sekunden": 0.6,
+     "cfg": 6.0
+    }
+   },
+   "behalten": 8
   },
   "furzkissen": {
    "titel": "Furzkissen",
@@ -8020,6 +8469,1485 @@
    "punkte": -0.85,
    "id": "daumen_06",
    "notiz": "Prompt „pling“: weiches „Pling“, runder Schlägelton. AudioSet: „Ringtone“ 0,14 (Spitze: „Music“ 0,16). Hinweis: natürlich 1,1 s, auf 0,60 s gekürzt und ausgeblendet; ähnlich wie daumen_04 (gleicher Seed, Spektrogramm r = 0,88)."
+  },
+  {
+   "roh": "baeh_kurz_frau_7111",
+   "ton": "baeh",
+   "variante": "kurz_frau",
+   "prompt": "a young woman sticks her tongue out and makes a quick voiced bleh, one short cheeky syllable with her voice, playful teasing, close-up, quiet room, no words",
+   "seed": 7111,
+   "sekunden_prompt": 0.5,
+   "roh_spitze_dbfs": -1.6,
+   "roh_leer": false,
+   "roh_leise": false,
+   "ziel": [
+    0.5,
+    0.9
+   ],
+   "kategorie": "kurz",
+   "negativ": "sheep, lamb, goat, bleating, baa, baaing, animal, farm animal, cow, moo, cat, meow, purr, dog, bird, duck, speech, words, talking, sentence, laughter, laughing, giggling, crying, sobbing, whining, screaming, shouting, yelling, singing, music, burp, fart, groan",
+   "cfg": 6.0,
+   "dauer_s": 0.7,
+   "lufs": -19.0,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -3.1,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -21.9,
+   "ueber_6k_db": -52.7,
+   "ueber_10k_db": -73.4,
+   "ueber_12k_db": -95.7,
+   "mitten_500_4k_db": -3.2,
+   "unter_300_db": -15.8,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 33.3,
+    "schaerfe": 3.7
+   },
+   "natuerliche_dauer_s": 0.685,
+   "gekuerzt": false,
+   "einblenden_s": 0.01,
+   "ausblenden_s": 0.15,
+   "sim_lufs": -19.0,
+   "sim_mitten_500_4k_db": -0.4,
+   "sim_pegelverlust_db": 0.0,
+   "ast_meiden": {
+    "Sheep": 0.0,
+    "Goat": 0.0,
+    "Bleat": 0.0,
+    "Livestock, farm animals, working animals": 0.0,
+    "Cattle, bovinae": 0.0,
+    "Moo": 0.0,
+    "Animal": 0.0,
+    "Domestic animals, pets": 0.0,
+    "Dog": 0.0,
+    "Whimper (dog)": 0.0,
+    "Duck": 0.0,
+    "Quack": 0.0,
+    "Goose": 0.0,
+    "Honk": 0.0,
+    "Horse": 0.0,
+    "Neigh, whinny": 0.0,
+    "Pig": 0.0,
+    "Oink": 0.0,
+    "Bird": 0.0,
+    "Wild animals": 0.0,
+    "Laughter": 0.001,
+    "Giggle": 0.001,
+    "Baby laughter": 0.0,
+    "Belly laugh": 0.0,
+    "Chuckle, chortle": 0.001,
+    "Snicker": 0.0,
+    "Crying, sobbing": 0.001,
+    "Baby cry, infant cry": 0.001,
+    "Whimper": 0.009,
+    "Wail, moan": 0.015,
+    "Screaming": 0.001,
+    "Yell": 0.001,
+    "Shout": 0.0,
+    "Children shouting": 0.0,
+    "Battle cry": 0.0,
+    "Singing": 0.001,
+    "Child singing": 0.0,
+    "Music": 0.014,
+    "Groan": 0.026,
+    "Burping, eructation": 0.001,
+    "Humming": 0.0,
+    "Mantra": 0.0,
+    "Chant": 0.0,
+    "Male singing": 0.001,
+    "Female singing": 0.0,
+    "Fowl": 0.0,
+    "Chicken, rooster": 0.0,
+    "Owl": 0.0,
+    "Howl": 0.0,
+    "Canidae, dogs, wolves": 0.0,
+    "Squawk": 0.0,
+    "Bird vocalization, bird call, bird song": 0.0,
+    "Whistle": 0.0,
+    "Whistling": 0.0,
+    "Theremin": 0.0,
+    "Heart sounds, heartbeat": 0.0,
+    "Heart murmur": 0.0,
+    "Plop": 0.0,
+    "Finger snapping": 0.0,
+    "Slap, smack": 0.0,
+    "Spray": 0.0,
+    "Hiss": 0.0,
+    "Steam": 0.0,
+    "Static": 0.0,
+    "Whip": 0.0
+   },
+   "ast_beobachtet": {
+    "Speech": 0.074,
+    "Sigh": 0.515,
+    "Gasp": 0.644
+   },
+   "baeh": {
+    "stimmhaft_anteil": 0.48,
+    "schwerpunkt_hz": 1673.0,
+    "ende_stimmhaft": 0.49,
+    "ende_schwerpunkt_hz": 1675.0,
+    "f0_median_hz": 337.0,
+    "f0_p10_hz": 295.0,
+    "f0_p90_hz": 386.0,
+    "anstieg_ht": -0.1,
+    "abfall_ht": 4.7,
+    "gipfel_lage": 0.0,
+    "hoerbar_ab_s": 0.0,
+    "hoerbar_s": 0.49,
+    "laute": 1,
+    "laute_s": [
+     [
+      0.0,
+      0.49
+     ]
+    ],
+    "flattern_anteil": 0.0,
+    "flattern_r": 0.26,
+    "flattern_hz": null,
+    "kern_s": 0.35,
+    "meckert": false
+   },
+   "ast_mensch": [
+    "Gasp",
+    0.644
+   ],
+   "ast_erwartet": [
+    "Sound effect",
+    0.011
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.074
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Gasp",
+     0.644
+    ],
+    [
+     "Sigh",
+     0.515
+    ],
+    [
+     "Speech",
+     0.074
+    ],
+    [
+     "Male speech, man speaking",
+     0.028
+    ],
+    [
+     "Groan",
+     0.026
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ],
+   "punkte": -0.16,
+   "id": "baeh_01",
+   "notiz": "Art: kurzes freches „Bäh“. Prompt „kurz_frau“: kurz: junge Frau, kurzes stimmhaftes „bleh“. Gemessen: ein Laut, 0,68 s, helle Kinderstimme (um 337 Hz), halb Stimme, halb Luft, Tonhöhe fällt zum Ende um 5 Halbtöne, näselnd-hell. AudioSet: „Sound effect“ 0,01 (Spitze: „Gasp“ 0,64). Kontrolle: „Sheep“ 0,00, „Goat“ 0,00, „Bleat“ 0,00, „Animal“ 0,00, „Laughter“ 0,00, „Crying, sobbing“ 0,00, „Screaming“ 0,00, „Yell“ 0,00, Sprache 0,07. AudioSet hört außerdem: „Gasp“ 0,64, „Sigh“ 0,52, „Speech“ 0,07. Hinweis: AudioSet erkennt keine der erwarteten Klassen."
+  },
+  {
+   "roh": "baeh_kurz_albern_7105",
+   "ton": "baeh",
+   "variante": "kurz_albern",
+   "prompt": "one short silly mocking bleh with the tongue sticking out, a single playful nasal vocal sound, cheeky but friendly, close-up, quiet room, no words",
+   "seed": 7105,
+   "sekunden_prompt": 0.7,
+   "roh_spitze_dbfs": -0.6,
+   "roh_leer": false,
+   "roh_leise": false,
+   "ziel": [
+    0.5,
+    0.9
+   ],
+   "kategorie": "kurz",
+   "negativ": "sheep, lamb, goat, bleating, baa, baaing, animal, farm animal, cow, moo, cat, meow, purr, dog, bird, duck, speech, words, talking, sentence, laughter, laughing, giggling, crying, sobbing, whining, screaming, shouting, yelling, singing, music, burp, fart, groan",
+   "dauer_s": 0.92,
+   "lufs": -18.9,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -10.1,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -32.4,
+   "ueber_6k_db": -58.6,
+   "ueber_10k_db": -87.1,
+   "ueber_12k_db": -137.6,
+   "mitten_500_4k_db": -22.8,
+   "unter_300_db": -16.3,
+   "linien_2_6k": [
+    [
+     3562,
+     15.4,
+     -38.8
+    ],
+    [
+     3539,
+     13.1,
+     -40.9
+    ]
+   ],
+   "puls_15_50": {
+    "hz": 17.5,
+    "schaerfe": 6.1
+   },
+   "natuerliche_dauer_s": 0.907,
+   "gekuerzt": true,
+   "einblenden_s": 0.01,
+   "ausblenden_s": 0.15,
+   "sim_lufs": -20.1,
+   "sim_mitten_500_4k_db": -16.3,
+   "sim_pegelverlust_db": -1.2,
+   "ast_meiden": {
+    "Sheep": 0.0,
+    "Goat": 0.0,
+    "Bleat": 0.001,
+    "Livestock, farm animals, working animals": 0.0,
+    "Cattle, bovinae": 0.0,
+    "Moo": 0.0,
+    "Animal": 0.01,
+    "Domestic animals, pets": 0.007,
+    "Dog": 0.003,
+    "Whimper (dog)": 0.002,
+    "Duck": 0.0,
+    "Quack": 0.001,
+    "Goose": 0.0,
+    "Honk": 0.0,
+    "Horse": 0.0,
+    "Neigh, whinny": 0.001,
+    "Pig": 0.0,
+    "Oink": 0.011,
+    "Bird": 0.001,
+    "Wild animals": 0.0,
+    "Laughter": 0.002,
+    "Giggle": 0.005,
+    "Baby laughter": 0.001,
+    "Belly laugh": 0.001,
+    "Chuckle, chortle": 0.005,
+    "Snicker": 0.004,
+    "Crying, sobbing": 0.004,
+    "Baby cry, infant cry": 0.005,
+    "Whimper": 0.03,
+    "Wail, moan": 0.099,
+    "Screaming": 0.002,
+    "Yell": 0.001,
+    "Shout": 0.0,
+    "Children shouting": 0.0,
+    "Battle cry": 0.0,
+    "Singing": 0.002,
+    "Child singing": 0.001,
+    "Music": 0.038,
+    "Groan": 0.011,
+    "Burping, eructation": 0.003,
+    "Humming": 0.001,
+    "Mantra": 0.0,
+    "Chant": 0.0,
+    "Male singing": 0.0,
+    "Female singing": 0.001,
+    "Fowl": 0.001,
+    "Chicken, rooster": 0.0,
+    "Owl": 0.001,
+    "Howl": 0.006,
+    "Canidae, dogs, wolves": 0.003,
+    "Squawk": 0.0,
+    "Bird vocalization, bird call, bird song": 0.0,
+    "Whistle": 0.0,
+    "Whistling": 0.0,
+    "Theremin": 0.0,
+    "Heart sounds, heartbeat": 0.0,
+    "Heart murmur": 0.0,
+    "Plop": 0.001,
+    "Finger snapping": 0.0,
+    "Slap, smack": 0.0,
+    "Spray": 0.0,
+    "Hiss": 0.0,
+    "Steam": 0.0,
+    "Static": 0.0,
+    "Whip": 0.0
+   },
+   "ast_beobachtet": {
+    "Speech": 0.097
+   },
+   "baeh": {
+    "stimmhaft_anteil": 0.74,
+    "schwerpunkt_hz": 455.0,
+    "ende_stimmhaft": 0.65,
+    "ende_schwerpunkt_hz": 404.0,
+    "f0_median_hz": 395.0,
+    "f0_p10_hz": 324.0,
+    "f0_p90_hz": 437.0,
+    "anstieg_ht": -0.1,
+    "abfall_ht": 17.7,
+    "gipfel_lage": 0.0,
+    "hoerbar_ab_s": 0.0,
+    "hoerbar_s": 0.85,
+    "laute": 1,
+    "laute_s": [
+     [
+      0.0,
+      0.85
+     ]
+    ],
+    "flattern_anteil": 0.0,
+    "flattern_r": 0.0,
+    "flattern_hz": null,
+    "kern_s": 0.3,
+    "meckert": false
+   },
+   "ast_mensch": [
+    "Wail, moan",
+    0.099
+   ],
+   "ast_erwartet": [
+    "Sound effect",
+    0.077
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.097
+   ],
+   "ast_katze": [
+    "Meow",
+    0.008
+   ],
+   "ast_top": [
+    [
+     "Wail, moan",
+     0.099
+    ],
+    [
+     "Speech",
+     0.097
+    ],
+    [
+     "Sound effect",
+     0.077
+    ],
+    [
+     "Music",
+     0.038
+    ],
+    [
+     "Whimper",
+     0.03
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "etwas „Wail, moan“ (AudioSet 0,10)",
+    "schmale Linie bei 3562 Hz (+15,4 dB über der Umgebung): auf Piepen achten"
+   ],
+   "punkte": -1.63,
+   "id": "baeh_02",
+   "notiz": "Art: kurzes freches „Bäh“. Prompt „kurz_albern“: kurz: albern-spöttisch, ein einziger Laut. Gemessen: ein Laut, 0,90 s, sehr hohe Comic-/Kinderstimme (um 395 Hz), überwiegend Stimme, Tonhöhe fällt zum Ende um 18 Halbtöne, dumpf. AudioSet: „Sound effect“ 0,08 (Spitze: „Wail, moan“ 0,10). Kontrolle: „Sheep“ 0,00, „Goat“ 0,00, „Bleat“ 0,00, „Animal“ 0,01, „Laughter“ 0,00, „Crying, sobbing“ 0,00, „Screaming“ 0,00, „Yell“ 0,00, Sprache 0,10. AudioSet hört außerdem: „Speech“ 0,10. Hinweis: etwas „Wail, moan“ (AudioSet 0,10); schmale Linie bei 3562 Hz (+15,4 dB über der Umgebung): auf Piepen achten."
+  },
+  {
+   "roh": "baeh_lang_7104",
+   "ton": "baeh",
+   "variante": "lang",
+   "prompt": "a person sticks out their tongue and teases with a long drawn-out nasal bleeeeh, one single silly vocal sound, playful and friendly, close-up, dry room, no words",
+   "seed": 7104,
+   "sekunden_prompt": 1.1,
+   "roh_spitze_dbfs": -0.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "ziel": [
+    0.8,
+    1.25
+   ],
+   "kategorie": "lang",
+   "negativ": "sheep, lamb, goat, bleating, baa, baaing, animal, farm animal, cow, moo, cat, meow, purr, dog, bird, duck, speech, words, talking, sentence, laughter, laughing, giggling, crying, sobbing, whining, screaming, shouting, yelling, singing, music, burp, fart, groan",
+   "dauer_s": 1.27,
+   "lufs": -18.9,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -13.2,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -33.5,
+   "ueber_6k_db": -43.3,
+   "ueber_10k_db": -93.5,
+   "ueber_12k_db": -141.2,
+   "mitten_500_4k_db": -11.5,
+   "unter_300_db": -26.0,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 18.4,
+    "schaerfe": 8.4
+   },
+   "natuerliche_dauer_s": 1.399,
+   "gekuerzt": true,
+   "einblenden_s": 0.01,
+   "ausblenden_s": 0.2,
+   "sim_lufs": -21.1,
+   "sim_mitten_500_4k_db": -6.2,
+   "sim_pegelverlust_db": -2.2,
+   "ast_meiden": {
+    "Sheep": 0.001,
+    "Goat": 0.0,
+    "Bleat": 0.0,
+    "Livestock, farm animals, working animals": 0.0,
+    "Cattle, bovinae": 0.0,
+    "Moo": 0.0,
+    "Animal": 0.005,
+    "Domestic animals, pets": 0.004,
+    "Dog": 0.001,
+    "Whimper (dog)": 0.001,
+    "Duck": 0.0,
+    "Quack": 0.0,
+    "Goose": 0.0,
+    "Honk": 0.0,
+    "Horse": 0.0,
+    "Neigh, whinny": 0.0,
+    "Pig": 0.0,
+    "Oink": 0.001,
+    "Bird": 0.001,
+    "Wild animals": 0.0,
+    "Laughter": 0.003,
+    "Giggle": 0.004,
+    "Baby laughter": 0.001,
+    "Belly laugh": 0.001,
+    "Chuckle, chortle": 0.002,
+    "Snicker": 0.003,
+    "Crying, sobbing": 0.001,
+    "Baby cry, infant cry": 0.001,
+    "Whimper": 0.003,
+    "Wail, moan": 0.001,
+    "Screaming": 0.002,
+    "Yell": 0.001,
+    "Shout": 0.0,
+    "Children shouting": 0.0,
+    "Battle cry": 0.0,
+    "Singing": 0.005,
+    "Child singing": 0.005,
+    "Music": 0.085,
+    "Groan": 0.003,
+    "Burping, eructation": 0.001,
+    "Humming": 0.002,
+    "Mantra": 0.0,
+    "Chant": 0.0,
+    "Male singing": 0.001,
+    "Female singing": 0.004,
+    "Fowl": 0.004,
+    "Chicken, rooster": 0.001,
+    "Owl": 0.0,
+    "Howl": 0.004,
+    "Canidae, dogs, wolves": 0.001,
+    "Squawk": 0.0,
+    "Bird vocalization, bird call, bird song": 0.0,
+    "Whistle": 0.003,
+    "Whistling": 0.001,
+    "Theremin": 0.001,
+    "Heart sounds, heartbeat": 0.0,
+    "Heart murmur": 0.0,
+    "Plop": 0.0,
+    "Finger snapping": 0.0,
+    "Slap, smack": 0.002,
+    "Spray": 0.0,
+    "Hiss": 0.0,
+    "Steam": 0.0,
+    "Static": 0.0,
+    "Whip": 0.0
+   },
+   "ast_beobachtet": {
+    "Speech": 0.188,
+    "Gargling": 0.084
+   },
+   "baeh": {
+    "stimmhaft_anteil": 0.93,
+    "schwerpunkt_hz": 971.0,
+    "ende_stimmhaft": 1.0,
+    "ende_schwerpunkt_hz": 949.0,
+    "f0_median_hz": 374.0,
+    "f0_p10_hz": 351.0,
+    "f0_p90_hz": 427.0,
+    "anstieg_ht": 4.3,
+    "abfall_ht": 0.0,
+    "gipfel_lage": 0.83,
+    "hoerbar_ab_s": 0.0,
+    "hoerbar_s": 1.23,
+    "laute": 1,
+    "laute_s": [
+     [
+      0.0,
+      1.23
+     ]
+    ],
+    "flattern_anteil": 0.14,
+    "flattern_r": 0.24,
+    "flattern_hz": 29,
+    "kern_s": 1.11,
+    "zittern_pegel_hz": 7.6,
+    "zittern_pegel_schaerfe": 5.4,
+    "zittern_pegel_db": 0.9,
+    "zittern_ton_hz": 6.2,
+    "zittern_ton_schaerfe": 7.3,
+    "zittern_ton_ht": 0.21,
+    "meckert": false
+   },
+   "ast_mensch": [
+    "Speech",
+    0.188
+   ],
+   "ast_erwartet": [
+    "Sound effect",
+    0.053
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.188
+   ],
+   "ast_katze": [
+    "Cat",
+    0.002
+   ],
+   "ast_top": [
+    [
+     "Speech",
+     0.188
+    ],
+    [
+     "Music",
+     0.085
+    ],
+    [
+     "Gargling",
+     0.084
+    ],
+    [
+     "Sound effect",
+     0.053
+    ],
+    [
+     "Flute",
+     0.014
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "natürlich 1,4 s, auf 1,25 s gekürzt und ausgeblendet"
+   ],
+   "punkte": -1.5,
+   "id": "baeh_03",
+   "notiz": "Art: langgezogenes „Bäääh“. Prompt „lang“: lang: langgezogenes „bleeeeh“. Gemessen: ein Laut, 1,25 s, helle Kinderstimme (um 374 Hz), überwiegend Stimme, Tonhöhe steigt um 4 Halbtöne, näselnd-hell. AudioSet: „Sound effect“ 0,05 (Spitze: „Speech“ 0,19). Kontrolle: „Sheep“ 0,00, „Goat“ 0,00, „Bleat“ 0,00, „Animal“ 0,01, „Laughter“ 0,00, „Crying, sobbing“ 0,00, „Screaming“ 0,00, „Yell“ 0,00, Sprache 0,19. AudioSet hört außerdem: „Speech“ 0,19, „Gargling“ 0,08. Hinweis: natürlich 1,4 s, auf 1,25 s gekürzt und ausgeblendet."
+  },
+  {
+   "roh": "baeh_lang_sfx_7113",
+   "ton": "baeh",
+   "variante": "lang_sfx",
+   "prompt": "human vocal sound effect, a long mocking nasal bleeeeh with the tongue sticking out, comedic and friendly, close-up, dry room, no words",
+   "seed": 7113,
+   "sekunden_prompt": 0.9,
+   "roh_spitze_dbfs": -0.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "ziel": [
+    0.8,
+    1.25
+   ],
+   "kategorie": "lang",
+   "negativ": "sheep, lamb, goat, bleating, baa, baaing, animal, farm animal, cow, moo, cat, meow, purr, dog, bird, duck, speech, words, talking, sentence, laughter, laughing, giggling, crying, sobbing, whining, screaming, shouting, yelling, singing, music, burp, fart, groan",
+   "cfg": 6.0,
+   "dauer_s": 1.27,
+   "lufs": -19.0,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -10.7,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -25.5,
+   "ueber_6k_db": -49.2,
+   "ueber_10k_db": -90.3,
+   "ueber_12k_db": -122.7,
+   "mitten_500_4k_db": -0.5,
+   "unter_300_db": -9.7,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 17.6,
+    "schaerfe": 2.8
+   },
+   "natuerliche_dauer_s": 2.284,
+   "gekuerzt": true,
+   "einblenden_s": 0.01,
+   "ausblenden_s": 0.2,
+   "sim_lufs": -18.2,
+   "sim_mitten_500_4k_db": -0.0,
+   "sim_pegelverlust_db": 0.8,
+   "ast_meiden": {
+    "Sheep": 0.003,
+    "Goat": 0.0,
+    "Bleat": 0.005,
+    "Livestock, farm animals, working animals": 0.001,
+    "Cattle, bovinae": 0.001,
+    "Moo": 0.001,
+    "Animal": 0.003,
+    "Domestic animals, pets": 0.001,
+    "Dog": 0.001,
+    "Whimper (dog)": 0.0,
+    "Duck": 0.0,
+    "Quack": 0.001,
+    "Goose": 0.0,
+    "Honk": 0.0,
+    "Horse": 0.0,
+    "Neigh, whinny": 0.001,
+    "Pig": 0.0,
+    "Oink": 0.002,
+    "Bird": 0.0,
+    "Wild animals": 0.0,
+    "Laughter": 0.0,
+    "Giggle": 0.0,
+    "Baby laughter": 0.0,
+    "Belly laugh": 0.0,
+    "Chuckle, chortle": 0.001,
+    "Snicker": 0.001,
+    "Crying, sobbing": 0.0,
+    "Baby cry, infant cry": 0.0,
+    "Whimper": 0.002,
+    "Wail, moan": 0.001,
+    "Screaming": 0.008,
+    "Yell": 0.009,
+    "Shout": 0.0,
+    "Children shouting": 0.0,
+    "Battle cry": 0.0,
+    "Singing": 0.009,
+    "Child singing": 0.001,
+    "Music": 0.048,
+    "Groan": 0.027,
+    "Burping, eructation": 0.003,
+    "Humming": 0.002,
+    "Mantra": 0.063,
+    "Chant": 0.048,
+    "Male singing": 0.034,
+    "Female singing": 0.001,
+    "Fowl": 0.0,
+    "Chicken, rooster": 0.0,
+    "Owl": 0.0,
+    "Howl": 0.0,
+    "Canidae, dogs, wolves": 0.0,
+    "Squawk": 0.0,
+    "Bird vocalization, bird call, bird song": 0.0,
+    "Whistle": 0.001,
+    "Whistling": 0.0,
+    "Theremin": 0.0,
+    "Heart sounds, heartbeat": 0.0,
+    "Heart murmur": 0.0,
+    "Plop": 0.0,
+    "Finger snapping": 0.0,
+    "Slap, smack": 0.0,
+    "Spray": 0.001,
+    "Hiss": 0.0,
+    "Steam": 0.0,
+    "Static": 0.0,
+    "Whip": 0.0
+   },
+   "ast_beobachtet": {
+    "Grunt": 0.055
+   },
+   "baeh": {
+    "stimmhaft_anteil": 0.3,
+    "schwerpunkt_hz": 1322.0,
+    "ende_stimmhaft": 0.27,
+    "ende_schwerpunkt_hz": 1351.0,
+    "f0_median_hz": 139.0,
+    "f0_p10_hz": 137.0,
+    "f0_p90_hz": 141.0,
+    "anstieg_ht": 0.4,
+    "abfall_ht": 0.3,
+    "gipfel_lage": 0.42,
+    "hoerbar_ab_s": 0.0,
+    "hoerbar_s": 1.23,
+    "laute": 1,
+    "laute_s": [
+     [
+      0.0,
+      1.23
+     ]
+    ],
+    "flattern_anteil": 0.1,
+    "flattern_r": 0.17,
+    "flattern_hz": 26,
+    "kern_s": 1.11,
+    "zittern_pegel_hz": 7.9,
+    "zittern_pegel_schaerfe": 2.4,
+    "zittern_pegel_db": 0.4,
+    "meckert": false
+   },
+   "ast_mensch": [
+    "Mantra",
+    0.063
+   ],
+   "ast_erwartet": [
+    "Sound effect",
+    0.187
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.019
+   ],
+   "ast_katze": [
+    "Meow",
+    0.001
+   ],
+   "ast_top": [
+    [
+     "Sound effect",
+     0.187
+    ],
+    [
+     "Mantra",
+     0.063
+    ],
+    [
+     "Grunt",
+     0.055
+    ],
+    [
+     "Music",
+     0.048
+    ],
+    [
+     "Chant",
+     0.048
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "etwas „Mantra“ (AudioSet 0,06)",
+    "natürlich 2,3 s, auf 1,25 s gekürzt und ausgeblendet"
+   ],
+   "punkte": -1.84,
+   "id": "baeh_04",
+   "notiz": "Art: langgezogenes „Bäääh“. Prompt „lang_sfx“: lang: „human vocal sound effect“, langes spöttisches „bleeeeh“. Gemessen: ein Laut, 1,25 s, mittlere Stimme (um 139 Hz), halb Stimme, halb Luft, Tonhöhe fast gleich, näselnd-hell. AudioSet: „Sound effect“ 0,19 (Spitze: „Sound effect“ 0,19). Kontrolle: „Sheep“ 0,00, „Goat“ 0,00, „Bleat“ 0,01, „Animal“ 0,00, „Laughter“ 0,00, „Crying, sobbing“ 0,00, „Screaming“ 0,01, „Yell“ 0,01, Sprache 0,02. AudioSet hört außerdem: „Grunt“ 0,06. Hinweis: etwas „Mantra“ (AudioSet 0,06); natürlich 2,3 s, auf 1,25 s gekürzt und ausgeblendet."
+  },
+  {
+   "roh": "baeh_bleh_mundfurz_7126",
+   "ton": "baeh",
+   "variante": "bleh_mundfurz",
+   "prompt": "a kid sticks out the tongue and blows a raspberry, a short voiced blehhh with fluttering lips like a silly mouth fart, playful teasing, close-up, quiet room, no words",
+   "seed": 7126,
+   "sekunden_prompt": 0.8,
+   "roh_spitze_dbfs": -9.4,
+   "roh_leer": false,
+   "roh_leise": false,
+   "ziel": [
+    0.55,
+    1.2
+   ],
+   "kategorie": "prusten",
+   "negativ": "sheep, lamb, goat, bleating, baa, baaing, animal, farm animal, cow, moo, cat, meow, purr, dog, bird, duck, speech, words, talking, sentence, laughter, laughing, giggling, crying, sobbing, whining, screaming, shouting, yelling, singing, music, burp, groan, hiss, spray, steam, snake, static, white noise, plop, pop, bang, explosion, whip, slap, wet, liquid, splash, toilet, whoopee cushion",
+   "dauer_s": 0.97,
+   "lufs": -19.2,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -3.6,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 5600.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -15.4,
+   "ueber_6k_db": -30.9,
+   "ueber_10k_db": -86.5,
+   "ueber_12k_db": -108.1,
+   "mitten_500_4k_db": -7.6,
+   "unter_300_db": -6.1,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 22.9,
+    "schaerfe": 1.6
+   },
+   "natuerliche_dauer_s": 0.955,
+   "gekuerzt": false,
+   "einblenden_s": 0.01,
+   "ausblenden_s": 0.15,
+   "sim_lufs": -20.6,
+   "sim_mitten_500_4k_db": -3.0,
+   "sim_pegelverlust_db": -1.4,
+   "ast_meiden": {
+    "Sheep": 0.0,
+    "Goat": 0.0,
+    "Bleat": 0.0,
+    "Livestock, farm animals, working animals": 0.0,
+    "Cattle, bovinae": 0.0,
+    "Moo": 0.0,
+    "Animal": 0.002,
+    "Domestic animals, pets": 0.001,
+    "Dog": 0.0,
+    "Whimper (dog)": 0.0,
+    "Duck": 0.0,
+    "Quack": 0.0,
+    "Goose": 0.0,
+    "Honk": 0.0,
+    "Horse": 0.0,
+    "Neigh, whinny": 0.0,
+    "Pig": 0.0,
+    "Oink": 0.0,
+    "Bird": 0.0,
+    "Wild animals": 0.0,
+    "Laughter": 0.001,
+    "Giggle": 0.0,
+    "Baby laughter": 0.0,
+    "Belly laugh": 0.0,
+    "Chuckle, chortle": 0.0,
+    "Snicker": 0.0,
+    "Crying, sobbing": 0.0,
+    "Baby cry, infant cry": 0.0,
+    "Whimper": 0.0,
+    "Wail, moan": 0.0,
+    "Screaming": 0.001,
+    "Yell": 0.0,
+    "Shout": 0.0,
+    "Children shouting": 0.0,
+    "Battle cry": 0.0,
+    "Singing": 0.0,
+    "Child singing": 0.0,
+    "Music": 0.004,
+    "Groan": 0.001,
+    "Burping, eructation": 0.001,
+    "Humming": 0.0,
+    "Mantra": 0.0,
+    "Chant": 0.0,
+    "Male singing": 0.0,
+    "Female singing": 0.0,
+    "Fowl": 0.0,
+    "Chicken, rooster": 0.0,
+    "Owl": 0.0,
+    "Howl": 0.0,
+    "Canidae, dogs, wolves": 0.0,
+    "Squawk": 0.0,
+    "Bird vocalization, bird call, bird song": 0.0,
+    "Whistle": 0.0,
+    "Whistling": 0.0,
+    "Theremin": 0.0,
+    "Heart sounds, heartbeat": 0.0,
+    "Heart murmur": 0.0,
+    "Plop": 0.0,
+    "Finger snapping": 0.0,
+    "Slap, smack": 0.0,
+    "Spray": 0.0,
+    "Hiss": 0.0,
+    "Steam": 0.0,
+    "Static": 0.0,
+    "Whip": 0.0
+   },
+   "ast_beobachtet": {},
+   "baeh": {
+    "stimmhaft_anteil": 0.0,
+    "schwerpunkt_hz": 2299.0,
+    "ende_stimmhaft": 0.0,
+    "ende_schwerpunkt_hz": 2148.0,
+    "hoerbar_ab_s": 0.0,
+    "hoerbar_s": 0.92,
+    "laute": 1,
+    "laute_s": [
+     [
+      0.0,
+      0.92
+     ]
+    ],
+    "flattern_anteil": 0.6,
+    "flattern_r": 0.6,
+    "flattern_hz": 45,
+    "kern_s": 0.81,
+    "zittern_pegel_hz": 5.5,
+    "zittern_pegel_schaerfe": 5.5,
+    "zittern_pegel_db": 1.0,
+    "meckert": false
+   },
+   "ast_mensch": [
+    "Fart",
+    0.876
+   ],
+   "ast_erwartet": [
+    "Fart",
+    0.876
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.013
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Fart",
+     0.876
+    ],
+    [
+     "Sound effect",
+     0.041
+    ],
+    [
+     "Zipper (clothing)",
+     0.018
+    ],
+    [
+     "Speech",
+     0.013
+    ],
+    [
+     "Clatter",
+     0.007
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 4.56,
+   "id": "baeh_05",
+   "notiz": "Art: mit Prusten (Zungen-Flattern). Prompt „bleh_mundfurz“: Prusten: kurzes stimmhaftes „blehhh“ mit flatternden Lippen. Gemessen: ein Laut, 0,95 s, fast nur Luft, kaum Stimme, mit Zungen-/Lippenflattern (etwa 45 Hz, 60 % der Dauer), scharf. AudioSet: „Fart“ 0,88 (Spitze: „Fart“ 0,88). Kontrolle: „Sheep“ 0,00, „Goat“ 0,00, „Bleat“ 0,00, „Animal“ 0,00, „Laughter“ 0,00, „Crying, sobbing“ 0,00, „Screaming“ 0,00, „Yell“ 0,00, Sprache 0,01. Tiefpass 5,60 kHz (Leitplanke)."
+  },
+  {
+   "roh": "baeh_mundfurz_7123",
+   "ton": "baeh",
+   "variante": "mundfurz",
+   "prompt": "a person blows a raspberry with their mouth, a silly rubbery fart noise made with the lips and tongue, pbbbbt, playful teasing, close-up, dry room",
+   "seed": 7123,
+   "sekunden_prompt": 0.8,
+   "roh_spitze_dbfs": -4.1,
+   "roh_leer": false,
+   "roh_leise": false,
+   "ziel": [
+    0.55,
+    1.2
+   ],
+   "kategorie": "prusten",
+   "negativ": "sheep, lamb, goat, bleating, baa, baaing, animal, farm animal, cow, moo, cat, meow, purr, dog, bird, duck, speech, words, talking, sentence, laughter, laughing, giggling, crying, sobbing, whining, screaming, shouting, yelling, singing, music, burp, groan, hiss, spray, steam, snake, static, white noise, plop, pop, bang, explosion, whip, slap, wet, liquid, splash, toilet, whoopee cushion",
+   "dauer_s": 1.22,
+   "lufs": -19.0,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -3.3,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 5450.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -7.1,
+   "ueber_6k_db": -30.8,
+   "ueber_10k_db": -71.0,
+   "ueber_12k_db": -89.9,
+   "mitten_500_4k_db": -10.4,
+   "unter_300_db": -3.2,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 18.1,
+    "schaerfe": 3.5
+   },
+   "natuerliche_dauer_s": 2.169,
+   "gekuerzt": true,
+   "einblenden_s": 0.01,
+   "ausblenden_s": 0.15,
+   "sim_lufs": -22.2,
+   "sim_mitten_500_4k_db": -4.0,
+   "sim_pegelverlust_db": -3.2,
+   "ast_meiden": {
+    "Sheep": 0.0,
+    "Goat": 0.0,
+    "Bleat": 0.0,
+    "Livestock, farm animals, working animals": 0.0,
+    "Cattle, bovinae": 0.0,
+    "Moo": 0.0,
+    "Animal": 0.001,
+    "Domestic animals, pets": 0.001,
+    "Dog": 0.0,
+    "Whimper (dog)": 0.0,
+    "Duck": 0.0,
+    "Quack": 0.0,
+    "Goose": 0.0,
+    "Honk": 0.0,
+    "Horse": 0.0,
+    "Neigh, whinny": 0.0,
+    "Pig": 0.0,
+    "Oink": 0.001,
+    "Bird": 0.0,
+    "Wild animals": 0.0,
+    "Laughter": 0.0,
+    "Giggle": 0.0,
+    "Baby laughter": 0.0,
+    "Belly laugh": 0.0,
+    "Chuckle, chortle": 0.0,
+    "Snicker": 0.0,
+    "Crying, sobbing": 0.0,
+    "Baby cry, infant cry": 0.0,
+    "Whimper": 0.0,
+    "Wail, moan": 0.0,
+    "Screaming": 0.0,
+    "Yell": 0.0,
+    "Shout": 0.0,
+    "Children shouting": 0.0,
+    "Battle cry": 0.0,
+    "Singing": 0.0,
+    "Child singing": 0.0,
+    "Music": 0.005,
+    "Groan": 0.0,
+    "Burping, eructation": 0.0,
+    "Humming": 0.0,
+    "Mantra": 0.0,
+    "Chant": 0.0,
+    "Male singing": 0.0,
+    "Female singing": 0.0,
+    "Fowl": 0.0,
+    "Chicken, rooster": 0.0,
+    "Owl": 0.0,
+    "Howl": 0.0,
+    "Canidae, dogs, wolves": 0.0,
+    "Squawk": 0.0,
+    "Bird vocalization, bird call, bird song": 0.0,
+    "Whistle": 0.0,
+    "Whistling": 0.0,
+    "Theremin": 0.0,
+    "Heart sounds, heartbeat": 0.0,
+    "Heart murmur": 0.0,
+    "Plop": 0.0,
+    "Finger snapping": 0.0,
+    "Slap, smack": 0.0,
+    "Spray": 0.0,
+    "Hiss": 0.0,
+    "Steam": 0.0,
+    "Static": 0.0,
+    "Whip": 0.0
+   },
+   "ast_beobachtet": {},
+   "baeh": {
+    "stimmhaft_anteil": 0.08,
+    "schwerpunkt_hz": 1798.0,
+    "ende_stimmhaft": 0.12,
+    "ende_schwerpunkt_hz": 1791.0,
+    "hoerbar_ab_s": 0.0,
+    "hoerbar_s": 1.19,
+    "laute": 1,
+    "laute_s": [
+     [
+      0.0,
+      1.19
+     ]
+    ],
+    "flattern_anteil": 0.35,
+    "flattern_r": 0.44,
+    "flattern_hz": 45,
+    "kern_s": 0.28,
+    "meckert": false
+   },
+   "ast_mensch": [
+    "Fart",
+    0.927
+   ],
+   "ast_erwartet": [
+    "Fart",
+    0.927
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.009
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Fart",
+     0.927
+    ],
+    [
+     "Zipper (clothing)",
+     0.045
+    ],
+    [
+     "Sound effect",
+     0.023
+    ],
+    [
+     "Speech",
+     0.009
+    ],
+    [
+     "Music",
+     0.005
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "natürlich 2,2 s, auf 1,20 s gekürzt und ausgeblendet"
+   ],
+   "punkte": 3.28,
+   "id": "baeh_06",
+   "notiz": "Art: mit Prusten (Zungen-Flattern). Prompt „mundfurz“: Prusten: Raspberry als „Mund-Furz“ mit Lippen und Zunge. Gemessen: ein Laut, 1,20 s, fast nur Luft, kaum Stimme, mit Zungen-/Lippenflattern (etwa 45 Hz, 35 % der Dauer), näselnd-hell. AudioSet: „Fart“ 0,93 (Spitze: „Fart“ 0,93). Kontrolle: „Sheep“ 0,00, „Goat“ 0,00, „Bleat“ 0,00, „Animal“ 0,00, „Laughter“ 0,00, „Crying, sobbing“ 0,00, „Screaming“ 0,00, „Yell“ 0,00, Sprache 0,01. Tiefpass 5,45 kHz (Leitplanke). Hinweis: natürlich 2,2 s, auf 1,20 s gekürzt und ausgeblendet."
+  },
+  {
+   "roh": "baeh_comic_hoch_7121",
+   "ton": "baeh",
+   "variante": "comic_hoch",
+   "prompt": "a cheerful cartoon character with a bright high-pitched human voice sticks its tongue out and goes bleeeh, one short playful voiced bleh, comedic vocal sound effect, close-up, no words",
+   "seed": 7121,
+   "sekunden_prompt": 0.6,
+   "roh_spitze_dbfs": -0.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "ziel": [
+    0.5,
+    1.15
+   ],
+   "kategorie": "hell",
+   "negativ": "sheep, lamb, goat, bleating, baa, baaing, animal, farm animal, cow, moo, cat, meow, purr, dog, bird, duck, speech, words, talking, sentence, laughter, laughing, giggling, crying, sobbing, whining, screaming, shouting, yelling, singing, music, burp, fart, groan, whimper, whining, baby crying, kitten, squeak, squeal, whistle, alarm, siren",
+   "cfg": 6.0,
+   "dauer_s": 1.17,
+   "lufs": -19.0,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -10.4,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 5350.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -12.0,
+   "ueber_6k_db": -31.1,
+   "ueber_10k_db": -86.7,
+   "ueber_12k_db": -132.1,
+   "mitten_500_4k_db": -0.2,
+   "unter_300_db": -33.8,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 15.3,
+    "schaerfe": 6.9
+   },
+   "natuerliche_dauer_s": 1.201,
+   "gekuerzt": true,
+   "einblenden_s": 0.01,
+   "ausblenden_s": 0.15,
+   "sim_lufs": -17.1,
+   "sim_mitten_500_4k_db": -0.1,
+   "sim_pegelverlust_db": 1.9,
+   "ast_meiden": {
+    "Sheep": 0.001,
+    "Goat": 0.0,
+    "Bleat": 0.003,
+    "Livestock, farm animals, working animals": 0.0,
+    "Cattle, bovinae": 0.0,
+    "Moo": 0.0,
+    "Animal": 0.002,
+    "Domestic animals, pets": 0.002,
+    "Dog": 0.001,
+    "Whimper (dog)": 0.001,
+    "Duck": 0.001,
+    "Quack": 0.002,
+    "Goose": 0.0,
+    "Honk": 0.0,
+    "Horse": 0.0,
+    "Neigh, whinny": 0.001,
+    "Pig": 0.0,
+    "Oink": 0.008,
+    "Bird": 0.0,
+    "Wild animals": 0.0,
+    "Laughter": 0.001,
+    "Giggle": 0.003,
+    "Baby laughter": 0.0,
+    "Belly laugh": 0.0,
+    "Chuckle, chortle": 0.003,
+    "Snicker": 0.003,
+    "Crying, sobbing": 0.003,
+    "Baby cry, infant cry": 0.005,
+    "Whimper": 0.032,
+    "Wail, moan": 0.006,
+    "Screaming": 0.019,
+    "Yell": 0.024,
+    "Shout": 0.001,
+    "Children shouting": 0.0,
+    "Battle cry": 0.0,
+    "Singing": 0.003,
+    "Child singing": 0.005,
+    "Music": 0.014,
+    "Groan": 0.022,
+    "Burping, eructation": 0.001,
+    "Humming": 0.0,
+    "Mantra": 0.0,
+    "Chant": 0.0,
+    "Male singing": 0.006,
+    "Female singing": 0.006,
+    "Fowl": 0.001,
+    "Chicken, rooster": 0.001,
+    "Owl": 0.0,
+    "Howl": 0.0,
+    "Canidae, dogs, wolves": 0.0,
+    "Squawk": 0.0,
+    "Bird vocalization, bird call, bird song": 0.0,
+    "Whistle": 0.0,
+    "Whistling": 0.0,
+    "Theremin": 0.0,
+    "Heart sounds, heartbeat": 0.0,
+    "Heart murmur": 0.0,
+    "Plop": 0.0,
+    "Finger snapping": 0.0,
+    "Slap, smack": 0.002,
+    "Spray": 0.0,
+    "Hiss": 0.0,
+    "Steam": 0.0,
+    "Static": 0.0,
+    "Whip": 0.0
+   },
+   "ast_beobachtet": {
+    "Speech": 0.2,
+    "Grunt": 0.143,
+    "Gasp": 0.076
+   },
+   "baeh": {
+    "stimmhaft_anteil": 0.54,
+    "schwerpunkt_hz": 2319.0,
+    "ende_stimmhaft": 0.61,
+    "ende_schwerpunkt_hz": 2357.0,
+    "f0_median_hz": 477.0,
+    "f0_p10_hz": 453.0,
+    "f0_p90_hz": 488.0,
+    "anstieg_ht": 0.5,
+    "abfall_ht": 0.3,
+    "gipfel_lage": 0.16,
+    "hoerbar_ab_s": 0.0,
+    "hoerbar_s": 1.14,
+    "laute": 1,
+    "laute_s": [
+     [
+      0.0,
+      1.14
+     ]
+    ],
+    "flattern_anteil": 0.0,
+    "flattern_r": 0.04,
+    "flattern_hz": null,
+    "kern_s": 0.25,
+    "meckert": false
+   },
+   "ast_mensch": [
+    "Speech",
+    0.2
+   ],
+   "ast_erwartet": [
+    "Sound effect",
+    0.086
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.2
+   ],
+   "ast_katze": [
+    "Meow",
+    0.005
+   ],
+   "ast_top": [
+    [
+     "Speech",
+     0.2
+    ],
+    [
+     "Grunt",
+     0.143
+    ],
+    [
+     "Sound effect",
+     0.086
+    ],
+    [
+     "Gasp",
+     0.076
+    ],
+    [
+     "Whimper",
+     0.032
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": -0.38,
+   "id": "baeh_07",
+   "notiz": "Art: helle Kinder- bzw. Comicstimme. Prompt „comic_hoch“: hell: fröhliche Zeichentrickfigur, hohe menschliche Stimme. Gemessen: ein Laut, 1,15 s, sehr hohe Comic-/Kinderstimme (um 477 Hz), halb Stimme, halb Luft, Tonhöhe fast gleich, scharf. AudioSet: „Sound effect“ 0,09 (Spitze: „Speech“ 0,20). Kontrolle: „Sheep“ 0,00, „Goat“ 0,00, „Bleat“ 0,00, „Animal“ 0,00, „Laughter“ 0,00, „Crying, sobbing“ 0,00, „Screaming“ 0,02, „Yell“ 0,02, Sprache 0,20. AudioSet hört außerdem: „Speech“ 0,20, „Grunt“ 0,14, „Gasp“ 0,08. Tiefpass 5,35 kHz (Leitplanke)."
+  },
+  {
+   "roh": "baeh_comic_stimme_7114",
+   "ton": "baeh",
+   "variante": "comic_stimme",
+   "prompt": "a cartoon character with a high-pitched human voice teases with a short nasal bleh, tongue out, comedic vocal sound effect, close-up, no words",
+   "seed": 7114,
+   "sekunden_prompt": 0.6,
+   "roh_spitze_dbfs": -0.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "ziel": [
+    0.5,
+    1.15
+   ],
+   "kategorie": "hell",
+   "negativ": "sheep, lamb, goat, bleating, baa, baaing, animal, farm animal, cow, moo, cat, meow, purr, dog, bird, duck, speech, words, talking, sentence, laughter, laughing, giggling, crying, sobbing, whining, screaming, shouting, yelling, singing, music, burp, fart, groan, whimper, whining, baby crying, kitten, squeak, squeal, whistle, alarm, siren",
+   "cfg": 6.0,
+   "dauer_s": 1.17,
+   "lufs": -19.0,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -12.4,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 5800.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -18.1,
+   "ueber_6k_db": -30.8,
+   "ueber_10k_db": -82.5,
+   "ueber_12k_db": -118.6,
+   "mitten_500_4k_db": -2.2,
+   "unter_300_db": -30.6,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 17.6,
+    "schaerfe": 6.4
+   },
+   "natuerliche_dauer_s": 1.225,
+   "gekuerzt": true,
+   "einblenden_s": 0.01,
+   "ausblenden_s": 0.15,
+   "sim_lufs": -18.1,
+   "sim_mitten_500_4k_db": -1.8,
+   "sim_pegelverlust_db": 0.9,
+   "ast_meiden": {
+    "Sheep": 0.001,
+    "Goat": 0.001,
+    "Bleat": 0.002,
+    "Livestock, farm animals, working animals": 0.001,
+    "Cattle, bovinae": 0.0,
+    "Moo": 0.0,
+    "Animal": 0.013,
+    "Domestic animals, pets": 0.007,
+    "Dog": 0.007,
+    "Whimper (dog)": 0.002,
+    "Duck": 0.001,
+    "Quack": 0.001,
+    "Goose": 0.001,
+    "Honk": 0.001,
+    "Horse": 0.0,
+    "Neigh, whinny": 0.002,
+    "Pig": 0.0,
+    "Oink": 0.001,
+    "Bird": 0.004,
+    "Wild animals": 0.0,
+    "Laughter": 0.007,
+    "Giggle": 0.03,
+    "Baby laughter": 0.004,
+    "Belly laugh": 0.003,
+    "Chuckle, chortle": 0.005,
+    "Snicker": 0.014,
+    "Crying, sobbing": 0.015,
+    "Baby cry, infant cry": 0.035,
+    "Whimper": 0.034,
+    "Wail, moan": 0.022,
+    "Screaming": 0.068,
+    "Yell": 0.001,
+    "Shout": 0.001,
+    "Children shouting": 0.0,
+    "Battle cry": 0.0,
+    "Singing": 0.001,
+    "Child singing": 0.001,
+    "Music": 0.006,
+    "Groan": 0.013,
+    "Burping, eructation": 0.001,
+    "Humming": 0.0,
+    "Mantra": 0.0,
+    "Chant": 0.0,
+    "Male singing": 0.001,
+    "Female singing": 0.002,
+    "Fowl": 0.003,
+    "Chicken, rooster": 0.002,
+    "Owl": 0.005,
+    "Howl": 0.003,
+    "Canidae, dogs, wolves": 0.002,
+    "Squawk": 0.0,
+    "Bird vocalization, bird call, bird song": 0.001,
+    "Whistle": 0.004,
+    "Whistling": 0.001,
+    "Theremin": 0.001,
+    "Heart sounds, heartbeat": 0.0,
+    "Heart murmur": 0.0,
+    "Plop": 0.0,
+    "Finger snapping": 0.0,
+    "Slap, smack": 0.0,
+    "Spray": 0.0,
+    "Hiss": 0.0,
+    "Steam": 0.0,
+    "Static": 0.0,
+    "Whip": 0.0
+   },
+   "ast_beobachtet": {},
+   "baeh": {
+    "stimmhaft_anteil": 0.59,
+    "schwerpunkt_hz": 1972.0,
+    "ende_stimmhaft": 0.55,
+    "ende_schwerpunkt_hz": 1952.0,
+    "f0_median_hz": 526.0,
+    "f0_p10_hz": 471.0,
+    "f0_p90_hz": 549.0,
+    "anstieg_ht": 0.8,
+    "abfall_ht": 0.9,
+    "gipfel_lage": 0.09,
+    "hoerbar_ab_s": 0.0,
+    "hoerbar_s": 1.14,
+    "laute": 1,
+    "laute_s": [
+     [
+      0.0,
+      1.14
+     ]
+    ],
+    "flattern_anteil": 0.0,
+    "flattern_r": 0.19,
+    "flattern_hz": null,
+    "kern_s": 1.03,
+    "zittern_pegel_hz": 7.0,
+    "zittern_pegel_schaerfe": 2.6,
+    "zittern_pegel_db": 0.5,
+    "meckert": false
+   },
+   "ast_mensch": [
+    "Screaming",
+    0.068
+   ],
+   "ast_erwartet": [
+    "Sound effect",
+    0.08
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.005
+   ],
+   "ast_katze": [
+    "Meow",
+    0.002
+   ],
+   "ast_top": [
+    [
+     "Sound effect",
+     0.08
+    ],
+    [
+     "Screaming",
+     0.068
+    ],
+    [
+     "Squeak",
+     0.046
+    ],
+    [
+     "Baby cry, infant cry",
+     0.035
+    ],
+    [
+     "Whimper",
+     0.034
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "etwas „Screaming“ (AudioSet 0,07)"
+   ],
+   "punkte": -1.16,
+   "id": "baeh_08",
+   "notiz": "Art: helle Kinder- bzw. Comicstimme. Prompt „comic_stimme“: hell: Zeichentrickfigur mit hoher menschlicher Stimme. Gemessen: ein Laut, 1,15 s, sehr hohe Comic-/Kinderstimme (um 526 Hz), halb Stimme, halb Luft, Tonhöhe fast gleich, näselnd-hell. AudioSet: „Sound effect“ 0,08 (Spitze: „Sound effect“ 0,08). Kontrolle: „Sheep“ 0,00, „Goat“ 0,00, „Bleat“ 0,00, „Animal“ 0,01, „Laughter“ 0,01, „Crying, sobbing“ 0,01, „Screaming“ 0,07, „Yell“ 0,00, Sprache 0,01. Tiefpass 5,80 kHz (Leitplanke). Hinweis: etwas „Screaming“ (AudioSet 0,07)."
   },
   {
    "roh": "furzkissen_kurz_6102",
@@ -15135,6 +17063,2066 @@
    ],
    "hinweise": [
     "natürlich 1,4 s, auf 0,60 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "baeh_kurz_7101",
+   "ton": "baeh",
+   "punkte": -0.23,
+   "gruende": [
+    "kaum Stimme (0 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_kurz_7102",
+   "ton": "baeh",
+   "punkte": -7.25,
+   "gruende": [
+    "klingt nach „Finger snapping“ (AudioSet 0,81, Grenze 0,20)",
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,02)",
+    "4 getrennte Laute statt eines einzigen „Bäh“",
+    "kaum Stimme (0 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen",
+    "nur −27,4 LUFS statt −19,0: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser"
+   ]
+  },
+  {
+   "roh": "baeh_kurz_7103",
+   "ton": "baeh",
+   "punkte": -1.22,
+   "gruende": [
+    "Sprache? (AudioSet „Speech“ 0,70)",
+    "kaum Stimme (27 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "baeh_kurz_7104",
+   "ton": "baeh",
+   "punkte": -0.48,
+   "gruende": [
+    "kaum Stimme (0 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "baeh_kurz_7105",
+   "ton": "baeh",
+   "punkte": -0.48,
+   "gruende": [
+    "2 getrennte Laute statt eines einzigen „Bäh“"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "baeh_kurz_7106",
+   "ton": "baeh",
+   "punkte": -1.81,
+   "gruende": [
+    "kaum Stimme (0 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": [
+    "schmale Linie bei 3281 Hz (+12,8 dB über der Umgebung): auf Piepen achten",
+    "natürlich 1,1 s, auf 0,90 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_kurz_albern_7101",
+   "ton": "baeh",
+   "punkte": -2.2,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "etwas Sprache-Verdacht (AudioSet „Speech“ 0,58), auf Wörter achten",
+    "Hüllkurve pulsiert mit 17 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 12,7)",
+    "natürlich 1,1 s, auf 0,90 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_kurz_albern_7102",
+   "ton": "baeh",
+   "punkte": -2.29,
+   "gruende": [
+    "Sprache? (AudioSet „Speech“ 0,71)",
+    "kaum Stimme (6 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": [
+    "natürlich 1,5 s, auf 0,90 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_kurz_albern_7103",
+   "ton": "baeh",
+   "punkte": -2.63,
+   "gruende": [
+    "Sprache? (AudioSet „Speech“ 0,70)",
+    "kaum Stimme (26 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": [
+    "natürlich 1,4 s, auf 0,90 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_kurz_albern_7104",
+   "ton": "baeh",
+   "punkte": -1.96,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "etwas Sprache-Verdacht (AudioSet „Speech“ 0,60), auf Wörter achten"
+   ]
+  },
+  {
+   "roh": "baeh_lang_7101",
+   "ton": "baeh",
+   "punkte": -3.03,
+   "gruende": [
+    "kaum Stimme (11 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": [
+    "etwas „Male singing“ (AudioSet 0,09)",
+    "natürlich 2,1 s, auf 1,25 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "baeh_lang_7102",
+   "ton": "baeh",
+   "punkte": -2.05,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "etwas „Humming“ (AudioSet 0,14)",
+    "natürlich 1,9 s, auf 1,25 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "baeh_lang_7103",
+   "ton": "baeh",
+   "punkte": -5.38,
+   "gruende": [
+    "klingt nach „Giggle“ (AudioSet 0,31, Grenze 0,12)",
+    "klingt nach „Snicker“ (AudioSet 0,14, Grenze 0,12)",
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,01)"
+   ],
+   "hinweise": [
+    "etwas „Chuckle, chortle“ (AudioSet 0,08)",
+    "Hüllkurve pulsiert mit 18 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 10,7)",
+    "schmale Linie bei 2806 Hz (+17,8 dB über der Umgebung): auf Piepen achten",
+    "natürlich 1,8 s, auf 1,25 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "baeh_lang_7105",
+   "ton": "baeh",
+   "punkte": -6.28,
+   "gruende": [
+    "klingt nach „Animal“ (AudioSet 0,25, Grenze 0,12)",
+    "klingt nach „Screaming“ (AudioSet 0,14, Grenze 0,12)",
+    "klingt nach „Fowl“ (AudioSet 0,15, Grenze 0,12)",
+    "klingt nach „Chicken, rooster“ (AudioSet 0,17, Grenze 0,12)"
+   ],
+   "hinweise": [
+    "etwas „Livestock, farm animals, working animals“ (AudioSet 0,05)",
+    "natürlich 1,9 s, auf 1,25 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_lang_7106",
+   "ton": "baeh",
+   "punkte": -2.49,
+   "gruende": [
+    "kaum Stimme (0 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": [
+    "etwas „Groan“ (AudioSet 0,19)",
+    "natürlich 1,6 s, auf 1,25 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "baeh_lang_blaeh_7101",
+   "ton": "baeh",
+   "punkte": -3.66,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "etwas „Wail, moan“ (AudioSet 0,10)",
+    "natürlich 1,9 s, auf 1,25 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "baeh_lang_blaeh_7102",
+   "ton": "baeh",
+   "punkte": -4.2,
+   "gruende": [
+    "klingt nach „Mantra“ (AudioSet 0,19, Grenze 0,12)"
+   ],
+   "hinweise": [
+    "etwas „Humming“ (AudioSet 0,11)",
+    "etwas „Male singing“ (AudioSet 0,08)",
+    "schmale Linie bei 2800 Hz (+12,2 dB über der Umgebung): auf Piepen achten",
+    "natürlich 2,0 s, auf 1,25 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "baeh_lang_blaeh_7103",
+   "ton": "baeh",
+   "punkte": -5.15,
+   "gruende": [
+    "klingt nach „Whimper“ (AudioSet 0,13, Grenze 0,12)"
+   ],
+   "hinweise": [
+    "etwas „Wail, moan“ (AudioSet 0,14)",
+    "Hüllkurve pulsiert mit 21 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 13,0)",
+    "schmale Linie bei 2806 Hz (+13,1 dB über der Umgebung): auf Piepen achten",
+    "natürlich 1,8 s, auf 1,25 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_lang_blaeh_7104",
+   "ton": "baeh",
+   "punkte": -4.59,
+   "gruende": [
+    "klingt nach „Music“ (AudioSet 0,31, Grenze 0,25)",
+    "klingt nach „Theremin“ (AudioSet 0,16, Grenze 0,15)",
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Humming“ 0,02)"
+   ],
+   "hinweise": [
+    "etwas „Whistle“ (AudioSet 0,10)",
+    "natürlich 1,9 s, auf 1,25 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_lang_blaeh_7105",
+   "ton": "baeh",
+   "punkte": -1.98,
+   "gruende": [
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Grunt“ 0,02)"
+   ],
+   "hinweise": [
+    "natürlich 1,8 s, auf 1,25 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "baeh_lang_blaeh_7106",
+   "ton": "baeh",
+   "punkte": -5.71,
+   "gruende": [
+    "klingt nach „Wail, moan“ (AudioSet 0,50, Grenze 0,15)",
+    "klingt nach „Groan“ (AudioSet 0,26, Grenze 0,20)",
+    "kaum Stimme (28 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": [
+    "natürlich 1,5 s, auf 1,25 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "baeh_prusten_7101",
+   "ton": "baeh",
+   "punkte": -4.66,
+   "gruende": [
+    "klingt nach „Static“ (AudioSet 0,59, Grenze 0,20)",
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,02)",
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)",
+    "fast gleich wie baeh_prusten_7104 (Spektrogramm r = 0,91)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 4400 Hz (+12,3 dB über der Umgebung): auf Piepen achten",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_prusten_7102",
+   "ton": "baeh",
+   "punkte": -4.35,
+   "gruende": [
+    "klingt nach „Slap, smack“ (AudioSet 0,68, Grenze 0,25)",
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,01)",
+    "2 getrennte Laute statt eines einzigen „Bäh“",
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_prusten_7103",
+   "ton": "baeh",
+   "punkte": -1.72,
+   "gruende": [
+    "2 getrennte Laute statt eines einzigen „Bäh“",
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 4400 Hz (+15,9 dB über der Umgebung): auf Piepen achten"
+   ]
+  },
+  {
+   "roh": "baeh_prusten_7104",
+   "ton": "baeh",
+   "punkte": -0.85,
+   "gruende": [
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,04)",
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_prusten_7105",
+   "ton": "baeh",
+   "punkte": -5.74,
+   "gruende": [
+    "klingt nach „Plop“ (AudioSet 0,40, Grenze 0,30)",
+    "zu kurz (0,23 s)",
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 4400 Hz (+19,3 dB über der Umgebung): auf Piepen achten",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_prusten_7106",
+   "ton": "baeh",
+   "punkte": -2.82,
+   "gruende": [
+    "zu kurz (0,38 s)",
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,02)",
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_raspberry_7101",
+   "ton": "baeh",
+   "punkte": -3.67,
+   "gruende": [
+    "klingt nach „Plop“ (AudioSet 0,54, Grenze 0,30)",
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,02)",
+    "2 getrennte Laute statt eines einzigen „Bäh“",
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "baeh_raspberry_7102",
+   "ton": "baeh",
+   "punkte": -1.55,
+   "gruende": [
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,01)",
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": [
+    "nur −23,7 LUFS statt −19,0: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser"
+   ]
+  },
+  {
+   "roh": "baeh_raspberry_7103",
+   "ton": "baeh",
+   "punkte": -0.81,
+   "gruende": [
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Grunt“ 0,01)",
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "baeh_raspberry_7104",
+   "ton": "baeh",
+   "punkte": -1.2,
+   "gruende": [
+    "klingt nach „Plop“ (AudioSet 0,40, Grenze 0,30)",
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,02)",
+    "2 getrennte Laute statt eines einzigen „Bäh“"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "baeh_raspberry_7105",
+   "ton": "baeh",
+   "punkte": -1.81,
+   "gruende": [
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,01)",
+    "2 getrennte Laute statt eines einzigen „Bäh“",
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": [
+    "nur −26,7 LUFS statt −19,0: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser"
+   ]
+  },
+  {
+   "roh": "baeh_raspberry_7106",
+   "ton": "baeh",
+   "punkte": -2.37,
+   "gruende": [
+    "klingt nach „Heart sounds, heartbeat“ (AudioSet 0,16, Grenze 0,10)",
+    "klingt nach „Heart murmur“ (AudioSet 0,11, Grenze 0,10)",
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,02)"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen",
+    "nur −25,1 LUFS statt −19,0: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser"
+   ]
+  },
+  {
+   "roh": "baeh_kind_7101",
+   "ton": "baeh",
+   "punkte": -4.08,
+   "gruende": [
+    "klingt nach „Baby cry, infant cry“ (AudioSet 0,13, Grenze 0,12)",
+    "klingt nach „Whimper“ (AudioSet 0,26, Grenze 0,12)",
+    "2 getrennte Laute statt eines einzigen „Bäh“",
+    "kaum Stimme (21 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": [
+    "etwas „Giggle“ (AudioSet 0,09)",
+    "schmale Linie bei 4435 Hz (+13,0 dB über der Umgebung): auf Piepen achten",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_kind_7102",
+   "ton": "baeh",
+   "punkte": -4.72,
+   "gruende": [
+    "katzenähnlich (AudioSet „Meow“ 0,14)",
+    "Sprache? (AudioSet „Speech“ 0,81)",
+    "kaum Stimme (24 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "baeh_kind_7103",
+   "ton": "baeh",
+   "punkte": -6.91,
+   "gruende": [
+    "klingt nach „Giggle“ (AudioSet 0,56, Grenze 0,12)",
+    "klingt nach „Chuckle, chortle“ (AudioSet 0,15, Grenze 0,12)",
+    "klingt nach „Snicker“ (AudioSet 0,14, Grenze 0,12)",
+    "kaum Stimme (17 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": [
+    "natürlich 1,3 s, auf 1,15 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_kind_7104",
+   "ton": "baeh",
+   "punkte": -5.36,
+   "gruende": [
+    "klingt nach „Whimper“ (AudioSet 0,18, Grenze 0,12)"
+   ],
+   "hinweise": [
+    "leichter Katzen-Verdacht (AudioSet „Meow“ 0,06)",
+    "etwas „Domestic animals, pets“ (AudioSet 0,09)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_kind_7105",
+   "ton": "baeh",
+   "punkte": -3.95,
+   "gruende": [
+    "klingt nach „Whimper“ (AudioSet 0,15, Grenze 0,12)"
+   ],
+   "hinweise": [
+    "etwas Sprache-Verdacht (AudioSet „Speech“ 0,55), auf Wörter achten",
+    "natürlich 1,3 s, auf 1,15 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_kind_7106",
+   "ton": "baeh",
+   "punkte": -3.87,
+   "gruende": [
+    "Sprache? (AudioSet „Speech“ 0,78)",
+    "Katzen-Leitplanke: schmale Linie bei 2162 Hz (+22,9 dB über der Umgebung), Piepen",
+    "2 getrennte Laute statt eines einzigen „Bäh“"
+   ],
+   "hinweise": [
+    "natürlich 1,3 s, auf 1,15 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "baeh_comic_7101",
+   "ton": "baeh",
+   "punkte": -4.76,
+   "gruende": [
+    "klingt nach „Music“ (AudioSet 0,35, Grenze 0,25)",
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Screaming“ 0,02)",
+    "kaum Stimme (0 % stimmhaft), eher Luft/Hauchen als „Bäh“",
+    "Stimme nicht hell (kein Grundton messbar)"
+   ],
+   "hinweise": [
+    "etwas „Whistle“ (AudioSet 0,11)",
+    "schmale Linie bei 2367 Hz (+18,6 dB über der Umgebung): auf Piepen achten",
+    "natürlich 2,8 s, auf 1,15 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "baeh_comic_7102",
+   "ton": "baeh",
+   "punkte": -0.64,
+   "gruende": [
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,01)",
+    "kaum Stimme (8 % stimmhaft), eher Luft/Hauchen als „Bäh“",
+    "Stimme nicht hell (kein Grundton messbar)"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_comic_7103",
+   "ton": "baeh",
+   "punkte": -1.72,
+   "gruende": [
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,01)",
+    "kaum Stimme (11 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": [
+    "etwas „Squawk“ (AudioSet 0,11)",
+    "natürlich 2,7 s, auf 1,15 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_comic_7104",
+   "ton": "baeh",
+   "punkte": -3.09,
+   "gruende": [
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,02)"
+   ],
+   "hinweise": [
+    "etwas „Whistle“ (AudioSet 0,11)",
+    "schmale Linie bei 4001 Hz (+12,7 dB über der Umgebung): auf Piepen achten",
+    "natürlich 2,8 s, auf 1,15 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_comic_7105",
+   "ton": "baeh",
+   "punkte": -22.01,
+   "gruende": [
+    "katzenähnlich (AudioSet „Meow“ 0,75)",
+    "klingt nach „Animal“ (AudioSet 0,44, Grenze 0,12)",
+    "klingt nach „Domestic animals, pets“ (AudioSet 0,46, Grenze 0,12)",
+    "Katzen-Leitplanke: schmale Linie bei 2044 Hz (+28,1 dB über der Umgebung), Piepen",
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,04)"
+   ],
+   "hinweise": [
+    "natürlich 1,8 s, auf 1,15 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_comic_7106",
+   "ton": "baeh",
+   "punkte": -2.0,
+   "gruende": [
+    "2 getrennte Laute statt eines einzigen „Bäh“",
+    "kaum Stimme (9 % stimmhaft), eher Luft/Hauchen als „Bäh“",
+    "Stimme nicht hell (kein Grundton messbar)"
+   ],
+   "hinweise": [
+    "etwas „Quack“ (AudioSet 0,07)",
+    "etwas „Fowl“ (AudioSet 0,07)"
+   ]
+  },
+  {
+   "roh": "baeh_kurz_albern_7106",
+   "ton": "baeh",
+   "punkte": -2.98,
+   "gruende": [
+    "Sprache? (AudioSet „Speech“ 0,76)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2167 Hz (+12,6 dB über der Umgebung): auf Piepen achten",
+    "natürlich 1,1 s, auf 0,90 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_kurz_sfx_7111",
+   "ton": "baeh",
+   "punkte": -2.95,
+   "gruende": [
+    "Sprache? (AudioSet „Speech“ 0,76)"
+   ],
+   "hinweise": [
+    "etwas „Quack“ (AudioSet 0,06)",
+    "schmale Linie bei 2039 Hz (+12,0 dB über der Umgebung): auf Piepen achten",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_kurz_sfx_7112",
+   "ton": "baeh",
+   "punkte": -1.77,
+   "gruende": [
+    "Sprache? (AudioSet „Speech“ 0,74)"
+   ],
+   "hinweise": [
+    "Hüllkurve pulsiert mit 19 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 14,7)"
+   ]
+  },
+  {
+   "roh": "baeh_kurz_sfx_7113",
+   "ton": "baeh",
+   "punkte": -1.78,
+   "gruende": [
+    "Sprache? (AudioSet „Speech“ 0,80)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2144 Hz (+14,4 dB über der Umgebung): auf Piepen achten",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_kurz_sfx_7114",
+   "ton": "baeh",
+   "punkte": -2.95,
+   "gruende": [
+    "Sprache? (AudioSet „Speech“ 0,75)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2378 Hz (+13,3 dB über der Umgebung): auf Piepen achten",
+    "tiefe Stimme (Grundton im Mittel 106 Hz): eher brummig als kindlich-frech?"
+   ]
+  },
+  {
+   "roh": "baeh_kurz_sfx_7115",
+   "ton": "baeh",
+   "punkte": -1.09,
+   "gruende": [
+    "2 getrennte Laute statt eines einzigen „Bäh“",
+    "kaum Stimme (0 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": [
+    "etwas Sprache-Verdacht (AudioSet „Speech“ 0,55), auf Wörter achten"
+   ]
+  },
+  {
+   "roh": "baeh_kurz_sfx_7116",
+   "ton": "baeh",
+   "punkte": -3.75,
+   "gruende": [
+    "2 getrennte Laute statt eines einzigen „Bäh“"
+   ],
+   "hinweise": [
+    "etwas Sprache-Verdacht (AudioSet „Speech“ 0,56), auf Wörter achten",
+    "natürlich 1,0 s, auf 0,90 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_kurz_frau_7112",
+   "ton": "baeh",
+   "punkte": -3.25,
+   "gruende": [
+    "kürzer als das Ziel (0,47 s statt 0,50–0,90 s)",
+    "kaum Stimme (18 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_kurz_frau_7113",
+   "ton": "baeh",
+   "punkte": -3.24,
+   "gruende": [
+    "klingt nach „Quack“ (AudioSet 0,11, Grenze 0,10)",
+    "Sprache? (AudioSet „Speech“ 0,60)",
+    "Katzen-Leitplanke: schmale Linie bei 2144 Hz (+24,2 dB über der Umgebung), Piepen"
+   ],
+   "hinweise": [
+    "leichter Katzen-Verdacht (AudioSet „Meow“ 0,04)"
+   ]
+  },
+  {
+   "roh": "baeh_kurz_frau_7114",
+   "ton": "baeh",
+   "punkte": -1.93,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "etwas Sprache-Verdacht (AudioSet „Speech“ 0,59), auf Wörter achten",
+    "schmale Linie bei 4253 Hz (+13,0 dB über der Umgebung): auf Piepen achten",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_kurz_frau_7115",
+   "ton": "baeh",
+   "punkte": -5.79,
+   "gruende": [
+    "zu kurz (0,20 s)",
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,02)",
+    "kaum Stimme (0 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2015 Hz (+12,9 dB über der Umgebung): auf Piepen achten",
+    "AudioSet erkennt keine der erwarteten Klassen",
+    "nur −27,0 LUFS statt −19,0: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser"
+   ]
+  },
+  {
+   "roh": "baeh_kurz_frau_7116",
+   "ton": "baeh",
+   "punkte": -2.41,
+   "gruende": [
+    "kaum Stimme (0 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": [
+    "etwas „Quack“ (AudioSet 0,07)",
+    "etwas Sprache-Verdacht (AudioSet „Speech“ 0,49), auf Wörter achten",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_lang_frech_7111",
+   "ton": "baeh",
+   "punkte": -2.69,
+   "gruende": [
+    "Sprache? (AudioSet „Speech“ 0,72)"
+   ],
+   "hinweise": [
+    "natürlich 2,0 s, auf 1,25 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_lang_frech_7112",
+   "ton": "baeh",
+   "punkte": -2.55,
+   "gruende": [
+    "Sprache? (AudioSet „Speech“ 0,72)"
+   ],
+   "hinweise": [
+    "natürlich 2,2 s, auf 1,25 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_lang_frech_7113",
+   "ton": "baeh",
+   "punkte": -1.31,
+   "gruende": [
+    "Sprache? (AudioSet „Speech“ 0,69)",
+    "2 getrennte Laute statt eines einzigen „Bäh“"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_lang_frech_7114",
+   "ton": "baeh",
+   "punkte": -2.36,
+   "gruende": [
+    "Sprache? (AudioSet „Speech“ 0,76)",
+    "kaum Stimme (11 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": [
+    "natürlich 1,4 s, auf 1,25 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_lang_frech_7115",
+   "ton": "baeh",
+   "punkte": -2.92,
+   "gruende": [
+    "Sprache? (AudioSet „Speech“ 0,63)",
+    "2 getrennte Laute statt eines einzigen „Bäh“"
+   ],
+   "hinweise": [
+    "natürlich 1,6 s, auf 1,25 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_lang_frech_7116",
+   "ton": "baeh",
+   "punkte": -2.55,
+   "gruende": [
+    "Sprache? (AudioSet „Speech“ 0,72)",
+    "2 getrennte Laute statt eines einzigen „Bäh“"
+   ],
+   "hinweise": [
+    "natürlich 1,5 s, auf 1,25 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_lang_sfx_7111",
+   "ton": "baeh",
+   "punkte": -7.97,
+   "gruende": [
+    "klingt nach „Whistle“ (AudioSet 0,70, Grenze 0,15)",
+    "klingt nach „Whistling“ (AudioSet 0,36, Grenze 0,15)",
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Yodeling“ 0,03)"
+   ],
+   "hinweise": [
+    "Hüllkurve pulsiert mit 20 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 16,0)",
+    "natürlich 2,7 s, auf 1,25 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_lang_sfx_7112",
+   "ton": "baeh",
+   "punkte": -4.13,
+   "gruende": [
+    "klingt nach „Humming“ (AudioSet 0,36, Grenze 0,20)"
+   ],
+   "hinweise": [
+    "natürlich 2,2 s, auf 1,25 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_lang_sfx_7114",
+   "ton": "baeh",
+   "punkte": -4.7,
+   "gruende": [
+    "klingt nach „Male singing“ (AudioSet 0,17, Grenze 0,15)"
+   ],
+   "hinweise": [
+    "etwas „Music“ (AudioSet 0,23)",
+    "schmale Linie bei 2636 Hz (+15,6 dB über der Umgebung): auf Piepen achten",
+    "natürlich 1,6 s, auf 1,25 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_lang_sfx_7115",
+   "ton": "baeh",
+   "punkte": -5.4,
+   "gruende": [
+    "klingt nach „Male singing“ (AudioSet 0,28, Grenze 0,15)"
+   ],
+   "hinweise": [
+    "etwas „Mantra“ (AudioSet 0,10)",
+    "etwas „Chant“ (AudioSet 0,09)",
+    "Hüllkurve pulsiert mit 20 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 18,0)",
+    "schmale Linie bei 2800 Hz (+19,2 dB über der Umgebung): auf Piepen achten",
+    "natürlich 2,5 s, auf 1,25 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_lang_sfx_7116",
+   "ton": "baeh",
+   "punkte": -4.34,
+   "gruende": [
+    "klingt nach „Whistle“ (AudioSet 0,22, Grenze 0,15)"
+   ],
+   "hinweise": [
+    "etwas „Humming“ (AudioSet 0,10)",
+    "etwas „Theremin“ (AudioSet 0,15)",
+    "natürlich 1,8 s, auf 1,25 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_raspberry_blow_7111",
+   "ton": "baeh",
+   "punkte": -4.64,
+   "gruende": [
+    "klingt nach „Spray“ (AudioSet 0,16, Grenze 0,15)",
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,01)",
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)",
+    "fast gleich wie baeh_raspberry_blow_ohne_7111 (Spektrogramm r = 0,99)"
+   ],
+   "hinweise": [
+    "etwas „Hiss“ (AudioSet 0,15)",
+    "etwas „Steam“ (AudioSet 0,10)",
+    "schmale Linie bei 4400 Hz (+12,1 dB über der Umgebung): auf Piepen achten",
+    "natürlich 2,1 s, auf 1,20 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_raspberry_blow_7112",
+   "ton": "baeh",
+   "punkte": -2.04,
+   "gruende": [
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,04)",
+    "kaum Flattern messbar (15 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": [
+    "natürlich 2,1 s, auf 1,20 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_raspberry_blow_7113",
+   "ton": "baeh",
+   "punkte": -7.43,
+   "gruende": [
+    "klingt nach „Plop“ (AudioSet 0,90, Grenze 0,30)",
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,02)",
+    "3 getrennte Laute statt eines einzigen „Bäh“",
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen",
+    "nur −27,3 LUFS statt −19,0: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser"
+   ]
+  },
+  {
+   "roh": "baeh_raspberry_blow_7114",
+   "ton": "baeh",
+   "punkte": -4.46,
+   "gruende": [
+    "zu kurz (0,31 s)",
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,01)",
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": [
+    "etwas „Slap, smack“ (AudioSet 0,14)",
+    "etwas „Whip“ (AudioSet 0,19)"
+   ]
+  },
+  {
+   "roh": "baeh_raspberry_blow_7115",
+   "ton": "baeh",
+   "punkte": -3.7,
+   "gruende": [
+    "Katzen-Leitplanke verfehlt (über 6 kHz −30,2 dB)",
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,02)",
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": [
+    "AudioSet hört eher einen Knall (Explosion/Bang 0,15): zu hart?",
+    "schmale Linie bei 4400 Hz (+18,1 dB über der Umgebung): auf Piepen achten",
+    "nur −30,2 LUFS statt −19,0: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser"
+   ]
+  },
+  {
+   "roh": "baeh_raspberry_blow_7116",
+   "ton": "baeh",
+   "punkte": -6.62,
+   "gruende": [
+    "klingt nach „Plop“ (AudioSet 0,79, Grenze 0,30)",
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,03)",
+    "2 getrennte Laute statt eines einzigen „Bäh“",
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen",
+    "nur −25,3 LUFS statt −19,0: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser"
+   ]
+  },
+  {
+   "roh": "baeh_bronx_7111",
+   "ton": "baeh",
+   "punkte": -5.33,
+   "gruende": [
+    "klingt nach „Hiss“ (AudioSet 0,33, Grenze 0,20)",
+    "Katzen-Leitplanke verfehlt (über 6 kHz −28,7 dB)",
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,01)",
+    "kaum Flattern messbar (20 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": [
+    "Zischen? (AudioSet „Hiss“ 0,33)",
+    "etwas „Steam“ (AudioSet 0,13)",
+    "schmale Linie bei 4400 Hz (+13,6 dB über der Umgebung): auf Piepen achten",
+    "natürlich 2,6 s, auf 1,20 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_bronx_7112",
+   "ton": "baeh",
+   "punkte": -5.18,
+   "gruende": [
+    "klingt nach „Spray“ (AudioSet 0,26, Grenze 0,15)",
+    "Katzen-Leitplanke verfehlt (über 6 kHz −27,8 dB)",
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,02)",
+    "kaum Flattern messbar (5 % der Dauer, Zunge/Lippen 20–80 Hz)",
+    "fast gleich wie baeh_raspberry_blow_7112 (Spektrogramm r = 0,91)",
+    "fast gleich wie baeh_raspberry_blow_ohne_7112 (Spektrogramm r = 0,92)"
+   ],
+   "hinweise": [
+    "etwas „Hiss“ (AudioSet 0,18)",
+    "etwas „Static“ (AudioSet 0,14)",
+    "natürlich 1,9 s, auf 1,20 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_bronx_7113",
+   "ton": "baeh",
+   "punkte": -1.02,
+   "gruende": [
+    "Katzen-Leitplanke verfehlt (über 6 kHz −28,9 dB)",
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,01)",
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": [
+    "natürlich 1,8 s, auf 1,20 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "baeh_bronx_7114",
+   "ton": "baeh",
+   "punkte": -1.67,
+   "gruende": [
+    "Katzen-Leitplanke verfehlt (über 6 kHz −23,6 dB)",
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,02)",
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 4400 Hz (+18,3 dB über der Umgebung): auf Piepen achten",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_bronx_7115",
+   "ton": "baeh",
+   "punkte": -6.56,
+   "gruende": [
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,02)",
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)",
+    "fast gleich wie baeh_raspberry_blow_ohne_7115 (Spektrogramm r = 0,92)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 4400 Hz (+17,5 dB über der Umgebung): auf Piepen achten",
+    "natürlich 2,4 s, auf 1,20 s gekürzt und ausgeblendet",
+    "nur −34,2 LUFS statt −19,0: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser"
+   ]
+  },
+  {
+   "roh": "baeh_raspberry_blow_ohne_7111",
+   "ton": "baeh",
+   "punkte": -4.38,
+   "gruende": [
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,02)",
+    "kaum Flattern messbar (5 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": [
+    "etwas „Spray“ (AudioSet 0,15)",
+    "etwas „Steam“ (AudioSet 0,08)",
+    "schmale Linie bei 4400 Hz (+14,0 dB über der Umgebung): auf Piepen achten",
+    "natürlich 2,1 s, auf 1,20 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_raspberry_blow_ohne_7112",
+   "ton": "baeh",
+   "punkte": -2.4,
+   "gruende": [
+    "kaum Flattern messbar (10 % der Dauer, Zunge/Lippen 20–80 Hz)",
+    "fast gleich wie baeh_raspberry_blow_7112 (Spektrogramm r = 0,95)"
+   ],
+   "hinweise": [
+    "etwas „Spray“ (AudioSet 0,09)",
+    "natürlich 1,9 s, auf 1,20 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_raspberry_blow_ohne_7113",
+   "ton": "baeh",
+   "punkte": -3.05,
+   "gruende": [
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,01)",
+    "3 getrennte Laute statt eines einzigen „Bäh“",
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen",
+    "nur −28,4 LUFS statt −19,0: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser"
+   ]
+  },
+  {
+   "roh": "baeh_raspberry_blow_ohne_7114",
+   "ton": "baeh",
+   "punkte": -4.89,
+   "gruende": [
+    "klingt nach „Whip“ (AudioSet 0,25, Grenze 0,20)",
+    "zu kurz (0,30 s)",
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,01)",
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)",
+    "fast gleich wie baeh_raspberry_blow_7114 (Spektrogramm r = 0,99)"
+   ],
+   "hinweise": [
+    "etwas „Slap, smack“ (AudioSet 0,13)"
+   ]
+  },
+  {
+   "roh": "baeh_raspberry_blow_ohne_7115",
+   "ton": "baeh",
+   "punkte": -4.51,
+   "gruende": [
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,02)",
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 4400 Hz (+16,4 dB über der Umgebung): auf Piepen achten",
+    "AudioSet erkennt keine der erwarteten Klassen",
+    "nur −33,4 LUFS statt −19,0: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser"
+   ]
+  },
+  {
+   "roh": "baeh_raspberry_blow_ohne_7116",
+   "ton": "baeh",
+   "punkte": -4.97,
+   "gruende": [
+    "klingt nach „Plop“ (AudioSet 0,56, Grenze 0,30)",
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,03)",
+    "2 getrennte Laute statt eines einzigen „Bäh“",
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": [
+    "nur −25,1 LUFS statt −19,0: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser"
+   ]
+  },
+  {
+   "roh": "baeh_bronx_7116",
+   "ton": "baeh",
+   "punkte": -2.36,
+   "gruende": [
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,02)",
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen",
+    "nur −26,0 LUFS statt −19,0: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser"
+   ]
+  },
+  {
+   "roh": "baeh_bleh_prusten_7111",
+   "ton": "baeh",
+   "punkte": -3.0,
+   "gruende": [
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": [
+    "etwas „Groan“ (AudioSet 0,11)",
+    "etwas Sprache-Verdacht (AudioSet „Speech“ 0,36), auf Wörter achten",
+    "natürlich 1,3 s, auf 1,20 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_bleh_prusten_7112",
+   "ton": "baeh",
+   "punkte": -5.03,
+   "gruende": [
+    "klingt nach „Snicker“ (AudioSet 0,17, Grenze 0,12)",
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": [
+    "natürlich 1,4 s, auf 1,20 s gekürzt und ausgeblendet",
+    "zittert regelmäßig in Pegel oder Tonhöhe (4–12 Hz): auf Meckern wie Schaf/Ziege achten"
+   ]
+  },
+  {
+   "roh": "baeh_bleh_prusten_7113",
+   "ton": "baeh",
+   "punkte": -2.2,
+   "gruende": [
+    "Sprache? (AudioSet „Speech“ 0,67)",
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 3363 Hz (+17,9 dB über der Umgebung): auf Piepen achten",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_bleh_prusten_7114",
+   "ton": "baeh",
+   "punkte": -1.9,
+   "gruende": [
+    "2 getrennte Laute statt eines einzigen „Bäh“"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2560 Hz (+12,8 dB über der Umgebung): auf Piepen achten",
+    "natürlich 1,5 s, auf 1,20 s gekürzt und ausgeblendet",
+    "tiefe Stimme (Grundton im Mittel 106 Hz): eher brummig als kindlich-frech?"
+   ]
+  },
+  {
+   "roh": "baeh_bleh_prusten_7115",
+   "ton": "baeh",
+   "punkte": -0.35,
+   "gruende": [
+    "2 getrennte Laute statt eines einzigen „Bäh“",
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "baeh_bleh_prusten_7116",
+   "ton": "baeh",
+   "punkte": -3.6,
+   "gruende": [
+    "klingt nach „Oink“ (AudioSet 0,12, Grenze 0,10)",
+    "2 getrennte Laute statt eines einzigen „Bäh“",
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": [
+    "etwas Sprache-Verdacht (AudioSet „Speech“ 0,59), auf Wörter achten",
+    "natürlich 1,3 s, auf 1,20 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "baeh_kind_frech_7111",
+   "ton": "baeh",
+   "punkte": -1.96,
+   "gruende": [
+    "Sprache? (AudioSet „Speech“ 0,72)",
+    "2 getrennte Laute statt eines einzigen „Bäh“"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2097 Hz (+12,8 dB über der Umgebung): auf Piepen achten",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_kind_frech_7112",
+   "ton": "baeh",
+   "punkte": -3.93,
+   "gruende": [
+    "klingt nach „Whimper“ (AudioSet 0,16, Grenze 0,12)",
+    "2 getrennte Laute statt eines einzigen „Bäh“"
+   ],
+   "hinweise": [
+    "etwas „Wail, moan“ (AudioSet 0,09)",
+    "etwas Sprache-Verdacht (AudioSet „Speech“ 0,58), auf Wörter achten",
+    "natürlich 1,4 s, auf 1,15 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_kind_frech_7113",
+   "ton": "baeh",
+   "punkte": -3.9,
+   "gruende": [
+    "Sprache? (AudioSet „Speech“ 0,63)",
+    "Katzen-Leitplanke: schmale Linie bei 2126 Hz (+20,6 dB über der Umgebung), Piepen",
+    "2 getrennte Laute statt eines einzigen „Bäh“"
+   ],
+   "hinweise": [
+    "natürlich 1,3 s, auf 1,15 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_kind_frech_7114",
+   "ton": "baeh",
+   "punkte": -3.56,
+   "gruende": [
+    "Sprache? (AudioSet „Speech“ 0,77)",
+    "Katzen-Leitplanke: schmale Linie bei 2308 Hz (+20,9 dB über der Umgebung), Piepen",
+    "2 getrennte Laute statt eines einzigen „Bäh“"
+   ],
+   "hinweise": [
+    "leichter Katzen-Verdacht (AudioSet „Meow“ 0,05)",
+    "Hüllkurve pulsiert mit 17 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 10,1)"
+   ]
+  },
+  {
+   "roh": "baeh_kind_frech_7115",
+   "ton": "baeh",
+   "punkte": -2.7,
+   "gruende": [
+    "Sprache? (AudioSet „Speech“ 0,82)"
+   ],
+   "hinweise": [
+    "leichter Katzen-Verdacht (AudioSet „Meow“ 0,04)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_kind_frech_7116",
+   "ton": "baeh",
+   "punkte": -1.68,
+   "gruende": [
+    "Sprache? (AudioSet „Speech“ 0,75)",
+    "2 getrennte Laute statt eines einzigen „Bäh“"
+   ],
+   "hinweise": [
+    "Hüllkurve pulsiert mit 20 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 10,5)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_comic_stimme_7111",
+   "ton": "baeh",
+   "punkte": -1.83,
+   "gruende": [
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,02)",
+    "kaum Stimme (26 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": [
+    "etwas „Whistle“ (AudioSet 0,10)",
+    "natürlich 2,4 s, auf 1,15 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "baeh_comic_stimme_7112",
+   "ton": "baeh",
+   "punkte": -4.67,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "etwas „Music“ (AudioSet 0,17)",
+    "etwas „Male singing“ (AudioSet 0,14)",
+    "schmale Linie bei 2396 Hz (+18,8 dB über der Umgebung): auf Piepen achten",
+    "natürlich 1,3 s, auf 1,15 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_comic_stimme_7113",
+   "ton": "baeh",
+   "punkte": -6.19,
+   "gruende": [
+    "klingt nach „Music“ (AudioSet 0,72, Grenze 0,25)",
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Synthetic singing“ 0,04)",
+    "kaum Stimme (13 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": [
+    "etwas „Whistle“ (AudioSet 0,08)",
+    "schmale Linie bei 3357 Hz (+17,3 dB über der Umgebung): auf Piepen achten",
+    "natürlich 1,9 s, auf 1,15 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_comic_stimme_7115",
+   "ton": "baeh",
+   "punkte": -3.77,
+   "gruende": [
+    "klingt nach „Screaming“ (AudioSet 0,17, Grenze 0,12)"
+   ],
+   "hinweise": [
+    "etwas „Baby cry, infant cry“ (AudioSet 0,09)",
+    "natürlich 1,7 s, auf 1,15 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_comic_stimme_7116",
+   "ton": "baeh",
+   "punkte": -3.23,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "etwas „Music“ (AudioSet 0,13)",
+    "etwas Sprache-Verdacht (AudioSet „Speech“ 0,39), auf Wörter achten",
+    "schmale Linie bei 5648 Hz (+12,6 dB über der Umgebung): auf Piepen achten",
+    "natürlich 2,3 s, auf 1,15 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "baeh_kurz_albern_7121",
+   "ton": "baeh",
+   "punkte": -3.44,
+   "gruende": [
+    "Sprache? (AudioSet „Speech“ 0,73)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 3609 Hz (+12,2 dB über der Umgebung): auf Piepen achten",
+    "natürlich 1,2 s, auf 0,90 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen",
+    "tiefe Stimme (Grundton im Mittel 121 Hz): eher brummig als kindlich-frech?"
+   ]
+  },
+  {
+   "roh": "baeh_kurz_albern_7122",
+   "ton": "baeh",
+   "punkte": -2.7,
+   "gruende": [
+    "Sprache? (AudioSet „Speech“ 0,81)"
+   ],
+   "hinweise": [
+    "leichter Katzen-Verdacht (AudioSet „Meow“ 0,05)",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_kurz_albern_7123",
+   "ton": "baeh",
+   "punkte": -1.46,
+   "gruende": [
+    "Sprache? (AudioSet „Speech“ 0,72)",
+    "2 getrennte Laute statt eines einzigen „Bäh“",
+    "kaum Stimme (29 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "baeh_kurz_albern_7124",
+   "ton": "baeh",
+   "punkte": -2.75,
+   "gruende": [
+    "Sprache? (AudioSet „Speech“ 0,72)"
+   ],
+   "hinweise": [
+    "natürlich 1,3 s, auf 0,90 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen",
+    "tiefe Stimme (Grundton im Mittel 109 Hz): eher brummig als kindlich-frech?"
+   ]
+  },
+  {
+   "roh": "baeh_kurz_albern_7125",
+   "ton": "baeh",
+   "punkte": -1.74,
+   "gruende": [
+    "Sprache? (AudioSet „Speech“ 0,80)",
+    "kaum Stimme (21 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_kurz_albern_7126",
+   "ton": "baeh",
+   "punkte": -2.86,
+   "gruende": [
+    "Sprache? (AudioSet „Speech“ 0,77)",
+    "kaum Stimme (13 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": [
+    "natürlich 1,6 s, auf 0,90 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_lang_7121",
+   "ton": "baeh",
+   "punkte": -2.92,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "etwas „Mantra“ (AudioSet 0,09)",
+    "natürlich 1,9 s, auf 1,25 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "baeh_lang_7122",
+   "ton": "baeh",
+   "punkte": -1.37,
+   "gruende": [
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Fart“ 0,04)"
+   ],
+   "hinweise": [
+    "natürlich 1,7 s, auf 1,25 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_lang_7123",
+   "ton": "baeh",
+   "punkte": -3.34,
+   "gruende": [
+    "klingt nach „Groan“ (AudioSet 0,34, Grenze 0,20)",
+    "kaum Stimme (0 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": [
+    "natürlich 2,0 s, auf 1,25 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "baeh_lang_7124",
+   "ton": "baeh",
+   "punkte": -3.34,
+   "gruende": [
+    "klingt nach „Mantra“ (AudioSet 0,14, Grenze 0,12)",
+    "kaum Stimme (6 % stimmhaft), eher Luft/Hauchen als „Bäh“",
+    "fast gleich wie baeh_lang_blaeh_7124 (Spektrogramm r = 0,93)"
+   ],
+   "hinweise": [
+    "etwas „Male singing“ (AudioSet 0,13)",
+    "natürlich 2,1 s, auf 1,25 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "baeh_lang_7125",
+   "ton": "baeh",
+   "punkte": -5.03,
+   "gruende": [
+    "kaum Stimme (25 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": [
+    "etwas „Animal“ (AudioSet 0,08)",
+    "etwas „Domestic animals, pets“ (AudioSet 0,09)",
+    "etwas „Dog“ (AudioSet 0,06)",
+    "etwas „Howl“ (AudioSet 0,08)",
+    "natürlich 1,9 s, auf 1,25 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_lang_7126",
+   "ton": "baeh",
+   "punkte": -2.57,
+   "gruende": [
+    "klingt nach „Sheep“ (AudioSet 0,10, Grenze 0,08)",
+    "klingt nach „Bleat“ (AudioSet 0,10, Grenze 0,08)",
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Grunt“ 0,04)",
+    "kaum Stimme (7 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": [
+    "natürlich 1,9 s, auf 1,25 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "baeh_lang_blaeh_7121",
+   "ton": "baeh",
+   "punkte": -3.2,
+   "gruende": [
+    "kaum Stimme (23 % stimmhaft), eher Luft/Hauchen als „Bäh“",
+    "fast gleich wie baeh_lang_7121 (Spektrogramm r = 0,94)"
+   ],
+   "hinweise": [
+    "etwas „Groan“ (AudioSet 0,11)",
+    "etwas „Mantra“ (AudioSet 0,12)",
+    "etwas „Chant“ (AudioSet 0,10)",
+    "natürlich 1,9 s, auf 1,25 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "baeh_lang_blaeh_7122",
+   "ton": "baeh",
+   "punkte": -13.76,
+   "gruende": [
+    "klingt nach „Animal“ (AudioSet 0,39, Grenze 0,12)",
+    "klingt nach „Domestic animals, pets“ (AudioSet 0,32, Grenze 0,12)",
+    "klingt nach „Dog“ (AudioSet 0,32, Grenze 0,12)",
+    "klingt nach „Whimper (dog)“ (AudioSet 0,24, Grenze 0,12)",
+    "klingt nach „Whimper“ (AudioSet 0,23, Grenze 0,12)",
+    "klingt nach „Howl“ (AudioSet 0,30, Grenze 0,12)",
+    "klingt nach „Canidae, dogs, wolves“ (AudioSet 0,19, Grenze 0,12)"
+   ],
+   "hinweise": [
+    "natürlich 1,7 s, auf 1,25 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_lang_blaeh_7123",
+   "ton": "baeh",
+   "punkte": -15.27,
+   "gruende": [
+    "klingt nach „Animal“ (AudioSet 0,46, Grenze 0,12)",
+    "klingt nach „Domestic animals, pets“ (AudioSet 0,48, Grenze 0,12)",
+    "klingt nach „Dog“ (AudioSet 0,38, Grenze 0,12)",
+    "klingt nach „Whimper (dog)“ (AudioSet 0,15, Grenze 0,12)",
+    "klingt nach „Howl“ (AudioSet 0,53, Grenze 0,12)",
+    "klingt nach „Canidae, dogs, wolves“ (AudioSet 0,22, Grenze 0,12)"
+   ],
+   "hinweise": [
+    "etwas „Whimper“ (AudioSet 0,09)",
+    "natürlich 1,7 s, auf 1,25 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_lang_blaeh_7124",
+   "ton": "baeh",
+   "punkte": -3.2,
+   "gruende": [
+    "klingt nach „Mantra“ (AudioSet 0,20, Grenze 0,12)"
+   ],
+   "hinweise": [
+    "natürlich 2,0 s, auf 1,25 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "baeh_lang_blaeh_7125",
+   "ton": "baeh",
+   "punkte": -2.45,
+   "gruende": [
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Humming“ 0,05)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2191 Hz (+13,1 dB über der Umgebung): auf Piepen achten",
+    "natürlich 1,7 s, auf 1,25 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_lang_blaeh_7126",
+   "ton": "baeh",
+   "punkte": -2.59,
+   "gruende": [
+    "kaum Stimme (5 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": [
+    "natürlich 1,8 s, auf 1,25 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "baeh_kurz_frau_7121",
+   "ton": "baeh",
+   "punkte": -5.27,
+   "gruende": [
+    "kürzer als das Ziel (0,43 s statt 0,50–0,90 s)"
+   ],
+   "hinweise": [
+    "leichter Katzen-Verdacht (AudioSet „Meow“ 0,05)",
+    "etwas Sprache-Verdacht (AudioSet „Speech“ 0,57), auf Wörter achten",
+    "schmale Linie bei 2150 Hz (+17,7 dB über der Umgebung): auf Piepen achten",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_kurz_frau_7122",
+   "ton": "baeh",
+   "punkte": -3.33,
+   "gruende": [
+    "kürzer als das Ziel (0,46 s statt 0,50–0,90 s)",
+    "kaum Stimme (15 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2103 Hz (+12,9 dB über der Umgebung): auf Piepen achten",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_kurz_frau_7123",
+   "ton": "baeh",
+   "punkte": -3.05,
+   "gruende": [
+    "zu kurz (0,33 s)",
+    "kaum Stimme (4 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": [
+    "etwas Sprache-Verdacht (AudioSet „Speech“ 0,37), auf Wörter achten",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_kurz_frau_7124",
+   "ton": "baeh",
+   "punkte": -3.9,
+   "gruende": [
+    "Sprache? (AudioSet „Speech“ 0,71)",
+    "kürzer als das Ziel (0,41 s statt 0,50–0,90 s)",
+    "kaum Stimme (29 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": [
+    "schmale Linie bei 3931 Hz (+14,1 dB über der Umgebung): auf Piepen achten"
+   ]
+  },
+  {
+   "roh": "baeh_kurz_frau_7125",
+   "ton": "baeh",
+   "punkte": -1.86,
+   "gruende": [
+    "Sprache? (AudioSet „Speech“ 0,80)",
+    "kaum Stimme (8 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_kurz_frau_7126",
+   "ton": "baeh",
+   "punkte": -3.73,
+   "gruende": [
+    "zu kurz (0,20 s)",
+    "kaum Stimme (0 % stimmhaft), eher Luft/Hauchen als „Bäh“",
+    "fast gleich wie baeh_kurz_7106 (Spektrogramm r = 0,91)"
+   ],
+   "hinweise": [
+    "etwas „Slap, smack“ (AudioSet 0,19)",
+    "schmale Linie bei 3638 Hz (+12,6 dB über der Umgebung): auf Piepen achten"
+   ]
+  },
+  {
+   "roh": "baeh_comic_stimme_7121",
+   "ton": "baeh",
+   "punkte": -2.29,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "etwas Sprache-Verdacht (AudioSet „Speech“ 0,53), auf Wörter achten",
+    "natürlich 2,6 s, auf 1,15 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_comic_stimme_7122",
+   "ton": "baeh",
+   "punkte": -4.26,
+   "gruende": [
+    "klingt nach „Music“ (AudioSet 0,52, Grenze 0,25)",
+    "kaum Stimme (14 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": [
+    "schmale Linie bei 3433 Hz (+14,1 dB über der Umgebung): auf Piepen achten",
+    "natürlich 1,7 s, auf 1,15 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "baeh_comic_stimme_7123",
+   "ton": "baeh",
+   "punkte": -3.13,
+   "gruende": [
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Screaming“ 0,01)",
+    "kaum Stimme (8 % stimmhaft), eher Luft/Hauchen als „Bäh“",
+    "Stimme nicht hell (kein Grundton messbar)"
+   ],
+   "hinweise": [
+    "etwas „Music“ (AudioSet 0,14)",
+    "etwas „Whistle“ (AudioSet 0,10)",
+    "schmale Linie bei 4001 Hz (+17,2 dB über der Umgebung): auf Piepen achten",
+    "natürlich 2,6 s, auf 1,15 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "baeh_comic_stimme_7124",
+   "ton": "baeh",
+   "punkte": -6.51,
+   "gruende": [
+    "klingt nach „Giggle“ (AudioSet 0,44, Grenze 0,12)",
+    "klingt nach „Snicker“ (AudioSet 0,16, Grenze 0,12)",
+    "kaum Stimme (10 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": [
+    "etwas „Baby laughter“ (AudioSet 0,06)",
+    "etwas „Chuckle, chortle“ (AudioSet 0,10)",
+    "natürlich 1,3 s, auf 1,15 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_comic_stimme_7125",
+   "ton": "baeh",
+   "punkte": -0.37,
+   "gruende": [
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Whimper“ 0,01)"
+   ],
+   "hinweise": [
+    "natürlich 2,2 s, auf 1,15 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "baeh_comic_stimme_7126",
+   "ton": "baeh",
+   "punkte": -4.0,
+   "gruende": [
+    "Sprache? (AudioSet „Speech“ 0,64)"
+   ],
+   "hinweise": [
+    "etwas „Quack“ (AudioSet 0,05)",
+    "etwas „Whimper“ (AudioSet 0,08)",
+    "natürlich 1,3 s, auf 1,15 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "baeh_comic_stimme_7127",
+   "ton": "baeh",
+   "punkte": -2.65,
+   "gruende": [
+    "klingt nach „Music“ (AudioSet 0,29, Grenze 0,25)",
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,01)",
+    "kaum Stimme (0 % stimmhaft), eher Luft/Hauchen als „Bäh“",
+    "Stimme nicht hell (kein Grundton messbar)"
+   ],
+   "hinweise": [
+    "natürlich 1,7 s, auf 1,15 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "baeh_comic_stimme_7128",
+   "ton": "baeh",
+   "punkte": -1.76,
+   "gruende": [
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Singing“ 0,03)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 5654 Hz (+15,3 dB über der Umgebung): auf Piepen achten",
+    "natürlich 2,2 s, auf 1,15 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "baeh_mundfurz_7121",
+   "ton": "baeh",
+   "punkte": 0.11,
+   "gruende": [
+    "2 getrennte Laute statt eines einzigen „Bäh“",
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "baeh_mundfurz_7122",
+   "ton": "baeh",
+   "punkte": -0.79,
+   "gruende": [
+    "2 getrennte Laute statt eines einzigen „Bäh“",
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": [
+    "natürlich 1,8 s, auf 1,20 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "baeh_mundfurz_7124",
+   "ton": "baeh",
+   "punkte": 3.28,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "tiefe Stimme (Grundton im Mittel 110 Hz): eher brummig als kindlich-frech?"
+   ]
+  },
+  {
+   "roh": "baeh_mundfurz_7125",
+   "ton": "baeh",
+   "punkte": -1.36,
+   "gruende": [
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Fart“ 0,04)",
+    "kaum Flattern messbar (10 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": [
+    "natürlich 1,9 s, auf 1,20 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "baeh_mundfurz_7126",
+   "ton": "baeh",
+   "punkte": -2.41,
+   "gruende": [
+    "klingt nach „Music“ (AudioSet 0,41, Grenze 0,25)",
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,02)",
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "baeh_bleh_mundfurz_7121",
+   "ton": "baeh",
+   "punkte": -2.69,
+   "gruende": [
+    "klingt nach „Quack“ (AudioSet 0,10, Grenze 0,10)",
+    "Sprache? (AudioSet „Speech“ 0,72)",
+    "2 getrennte Laute statt eines einzigen „Bäh“",
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)",
+    "fast gleich wie baeh_mundfurz_7121 (Spektrogramm r = 0,91)"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_bleh_mundfurz_7122",
+   "ton": "baeh",
+   "punkte": -3.43,
+   "gruende": [
+    "Sprache? (AudioSet „Speech“ 0,89)",
+    "kaum Flattern messbar (17 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_bleh_mundfurz_7123",
+   "ton": "baeh",
+   "punkte": -0.19,
+   "gruende": [
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_bleh_mundfurz_7124",
+   "ton": "baeh",
+   "punkte": 3.05,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "baeh_bleh_mundfurz_7125",
+   "ton": "baeh",
+   "punkte": 1.93,
+   "gruende": [
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": [
+    "etwas „Music“ (AudioSet 0,14)"
+   ]
+  },
+  {
+   "roh": "baeh_lippen_brrr_7121",
+   "ton": "baeh",
+   "punkte": -0.97,
+   "gruende": [
+    "2 getrennte Laute statt eines einzigen „Bäh“",
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2150 Hz (+16,7 dB über der Umgebung): auf Piepen achten",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_lippen_brrr_7122",
+   "ton": "baeh",
+   "punkte": -0.73,
+   "gruende": [
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": [
+    "etwas „Music“ (AudioSet 0,23)"
+   ]
+  },
+  {
+   "roh": "baeh_lippen_brrr_7123",
+   "ton": "baeh",
+   "punkte": 0.11,
+   "gruende": [
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Grunt“ 0,02)"
+   ],
+   "hinweise": [
+    "etwas „Plop“ (AudioSet 0,22)"
+   ]
+  },
+  {
+   "roh": "baeh_lippen_brrr_7124",
+   "ton": "baeh",
+   "punkte": -0.58,
+   "gruende": [
+    "kaum Flattern messbar (10 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": [
+    "etwas Sprache-Verdacht (AudioSet „Speech“ 0,40), auf Wörter achten"
+   ]
+  },
+  {
+   "roh": "baeh_lippen_brrr_7125",
+   "ton": "baeh",
+   "punkte": -0.03,
+   "gruende": [
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,01)",
+    "kaum Flattern messbar (0 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "baeh_lippen_brrr_7126",
+   "ton": "baeh",
+   "punkte": -5.37,
+   "gruende": [
+    "klingt nach „Plop“ (AudioSet 0,88, Grenze 0,30)",
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,02)",
+    "kaum Flattern messbar (23 % der Dauer, Zunge/Lippen 20–80 Hz)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "baeh_comic_hoch_7122",
+   "ton": "baeh",
+   "punkte": -4.79,
+   "gruende": [
+    "klingt nach „Music“ (AudioSet 0,37, Grenze 0,25)",
+    "klingt nach „Squawk“ (AudioSet 0,13, Grenze 0,12)",
+    "Katzen-Leitplanke: schmale Linie bei 3439 Hz (+20,2 dB über der Umgebung), Piepen",
+    "AudioSet hört keinen Mundlaut und keine Stimme (höchstens „Speech“ 0,02)",
+    "kaum Stimme (10 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": [
+    "etwas „Whistle“ (AudioSet 0,09)",
+    "natürlich 1,7 s, auf 1,15 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "baeh_comic_hoch_7123",
+   "ton": "baeh",
+   "punkte": -3.99,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "etwas „Music“ (AudioSet 0,22)",
+    "schmale Linie bei 2003 Hz (+13,4 dB über der Umgebung): auf Piepen achten",
+    "natürlich 1,8 s, auf 1,15 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "baeh_comic_hoch_7124",
+   "ton": "baeh",
+   "punkte": -5.5,
+   "gruende": [
+    "klingt nach „Giggle“ (AudioSet 0,30, Grenze 0,12)",
+    "kaum Stimme (11 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": [
+    "etwas „Baby cry, infant cry“ (AudioSet 0,08)",
+    "etwas „Whimper“ (AudioSet 0,10)",
+    "natürlich 1,5 s, auf 1,15 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_comic_hoch_7125",
+   "ton": "baeh",
+   "punkte": -3.12,
+   "gruende": [
+    "Sprache? (AudioSet „Speech“ 0,60)",
+    "kaum Stimme (25 % stimmhaft), eher Luft/Hauchen als „Bäh“"
+   ],
+   "hinweise": [
+    "natürlich 1,3 s, auf 1,15 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "baeh_comic_hoch_7126",
+   "ton": "baeh",
+   "punkte": -1.8,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "etwas „Whimper“ (AudioSet 0,06)",
+    "natürlich 1,3 s, auf 1,15 s gekürzt und ausgeblendet"
    ]
   },
   {

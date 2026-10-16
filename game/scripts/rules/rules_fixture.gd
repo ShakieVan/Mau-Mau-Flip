@@ -18,6 +18,7 @@ extends RefCounted
 #   current, dir, color, wished, phase ("turn" …), dealer, round, scores, mau_said: [Plätze], finished: [Plätze], host (Platz)
 #   gamble: {q, stake: [Schlüssel, …], need: "stake"|"press", last}   laufendes Glücksspiel des Platzes current (dazu
 #                                 phase "gamble"); stake = Einsatz, zuerst gelegte Karte zuerst
+#   counter: [Plätze]             Hausregel Kontern: Plätze (ohne Karten) in der Konter-Runde, zuerst leer gewordener zuerst
 
 const NAMES := ["Anna", "Ben", "Cleo", "Dani", "Emil", "Fritzi", "Gus", "Hanna", "Ida", "Jo"]
 
@@ -67,10 +68,12 @@ static func draw_key(g: MauGame, n := 0) -> String:
 # Schalter immer aus (dieselben Zufallszahlen wie vor den Hausregeln, bestehende Läufe bleiben gleich); with_swap: Kartentausch
 # an, Richtung zufällig (die Zufallszahl dafür wird zuletzt gezogen); with_gamble / with_discard: Glücksspiel bzw. Farbe mit
 # ablegen an (ohne weitere Zufallszahlen).
-static func random_config(rng: RandomNumberGenerator, with_swap := false, with_gamble := false, with_discard := false) -> RuleConfig:
+# with_counter: Hausregel Kontern an (ohne weitere Zufallszahlen; ohne den Schalter immer aus, Läufe wie vor der Hausregel).
+static func random_config(rng: RandomNumberGenerator, with_swap := false, with_gamble := false, with_discard := false,
+		with_counter := false) -> RuleConfig:
 	var d := {}
 	for k in RuleConfig.CHOICES:
-		if k in ["swap_cards", "swap_direction", "gamble_cards", "discard_color"]:
+		if k in ["swap_cards", "swap_direction", "gamble_cards", "discard_color", "counter_round"]:
 			continue
 		var vals: Array = RuleConfig.CHOICES[k]
 		d[k] = vals[rng.randi_range(0, vals.size() - 1)]
@@ -86,6 +89,8 @@ static func random_config(rng: RandomNumberGenerator, with_swap := false, with_g
 		d["gamble_cards"] = "on"
 	if with_discard:
 		d["discard_color"] = "on"
+	if with_counter:
+		d["counter_round"] = "on"
 	return RuleConfig.from_dict(d)
 
 
@@ -98,6 +103,21 @@ static func invariants(g: MauGame) -> String:
 	for s in n:
 		if int(g.place[s]) != 0 and not (g.hands[s] as Array).is_empty() and g.state in MauGame.PLAY_PHASES:
 			return "fertiger Platz %d hat Karten" % s
+	# Hausregel Kontern: Wartende haben keine Karten, spielen noch und stehen nur einmal in der Liste, nur mit der Hausregel und nur
+	# während der Runde; am Zug ist ein Wartender höchstens bei der Farbwahl nach seinem Flip.
+	var cw: Array = g.counter_wait
+	if not cw.is_empty() and (not g.counter_on() or not g.state in MauGame.PLAY_PHASES):
+		return "Konter-Runde ohne Hausregel bzw. außerhalb der Runde"
+	for s in cw:
+		if int(s) < 0 or int(s) >= n or cw.count(s) != 1:
+			return "Konter-Liste kaputt: %s" % str(cw)
+		if not (g.hands[int(s)] as Array).is_empty() or int(g.place[int(s)]) != 0:
+			return "Wartender Platz %d hat Karten oder ist fertig" % int(s)
+		if int(s) == g.current and g.state != "color":
+			return "Wartender Platz %d ist am Zug (Phase %s)" % [int(s), g.state]
+	for s in g.counter_fresh:
+		if not cw.has(s) or g.counter_fresh.count(s) != 1:
+			return "Frisch Wartende kaputt: %s (wartend %s)" % [str(g.counter_fresh), str(cw)]
 	if g.state == "gamble":
 		var gb := g.gamble
 		if gb.is_empty() or int(gb.get("seat", -1)) != g.current:
@@ -252,6 +272,8 @@ func _build(config: RuleConfig, player_count: int, spec: Dictionary, rng_seed: i
 		g.scores[s] = int(sc[s])
 	if spec.has("host"):
 		g.set_host(int(spec.host))
+	for s in spec.get("counter", []):
+		g.counter_wait.append(int(s))
 	if spec.has("gamble"):
 		g.state = str(spec.get("phase", "gamble"))
 		g.turn_started = true

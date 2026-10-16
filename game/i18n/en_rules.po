@@ -907,3 +907,74 @@ msgstr "Gamble on top: you choose the color and play Gamble."
 
 msgid "Ablegen-Karte oben: Du legst Karten ihrer Farbe mit ab, beim Ablegen-Joker wählst du Ablegefarbe und Spielfarbe. Zurücknehmen geht hier nicht."
 msgstr "Discard Color card on top: you discard cards of its color too; with the Discard Wild you choose the discard color and the play color. You can't take it back here."
+
+# --- Hausregel Kontern (Beta 1.6.11, counter_round; Regeltexte, Regelauswahl, Hinweise der Spiellogik, Browser-Regelübersicht)
+msgid "Kontern"
+msgstr "Counter"
+
+msgid "Kontern: Wer keine Karten mehr hat, ist erst fertig, wenn die Runde wieder bei ihm ankommt. Bekommt er bis dahin Karten, spielt er weiter."
+msgstr "Counter: Whoever has no cards left is only out once the turn comes back to them. If they get cards before that, they play on."
+
+msgid "Wer keine Karten mehr hat, ist erst fertig, wenn der Zug wieder bei ihm ankommt – bis dahin holt ihn eine Ziehkarte, ein Kartentausch … zurück."
+msgstr "Whoever has no cards left is only out once the turn comes back to them – until then a draw card, a Card Swap … brings them back."
+
+msgid "Kontern: Hat der Nächste keine Karten mehr, zieht er und spielt weiter."
+msgstr "Counter: If the next player has no cards left, they draw and play on."
+
+msgid "Kontern: Hat der Nächste keine Karten mehr, ist er damit fertig – er wird ja übersprungen."
+msgstr "Counter: If the next player has no cards left, this makes them out – they are skipped, after all."
+
+msgid "Kontern: Wer keine Karten mehr hat, ist damit fertig. Ist es deine letzte Karte, bist du gleich fertig, und der Nächste macht weiter."
+msgstr "Counter: Everyone with no cards left is out. If it's your last card, you are out right away and the next player carries on."
+
+msgid "Kontern: Kommt der Zug dadurch wieder zu jemandem ohne Karten, ist er fertig."
+msgstr "Counter: If this brings the turn back to someone with no cards, they are out."
+
+msgid "Kontern: Mit leerer Hand bist du erst fertig, wenn dich bis zu deinem nächsten Zug keiner kontert."
+msgstr "Counter: With an empty hand you are only out if nobody counters you before your next turn."
+
+msgid "Auch als letzte Karte: Die anderen tauschen untereinander, du nicht. Fertig bist du erst, wenn dich keiner kontert."
+msgstr "Also as your last card: the others swap among themselves, you don't. You are only out if nobody counters you."
+
+msgid "Kontern: Wer keine Karten mehr hat, tauscht mit und spielt weiter; wer dabei die leere Hand bekommt, hat nun selbst keine Karten mehr."
+msgstr "Counter: Whoever has no cards left swaps too and plays on; whoever receives the empty hand now has no cards left themselves."
+
+msgid "Als letzte Karte tauschen die anderen untereinander, du nicht. Wer keine Karten mehr hat und auf den Kontern wartet, tauscht mit; die leere Hand wandert weiter."
+msgstr "As your last card, the others swap among themselves, you don't. Whoever has no cards left and is waiting to be countered swaps too; the empty hand moves on."
+
+msgid "Hausregel: Wer keine Karten mehr hat, ist noch nicht fertig, sondern bleibt mit 0 Karten in der Runde. Bekommt er Karten, bevor der Zug wieder bei ihm ankommt – durch eine Ziehkarte, eine Strafe, einen Kartentausch oder eine Flip-Überraschung –, spielt er ganz normal weiter. Kommt der Zug wieder bei ihm an oder wird er übersprungen, ist er fertig. Ein Richtungswechsel kann das abkürzen oder verlängern. Das gilt für jede letzte Karte, auch beim Glücksspiel und beim Farbe-Ablegen."
+msgstr "House rule: Whoever has no cards left is not out yet but stays in the round with 0 cards. If they get cards before the turn comes back to them – from a draw card, a penalty, a Card Swap or a Flip Surprise – they play on as usual. If the turn comes back to them or they are skipped, they are out. A Reverse can make that shorter or longer. This applies to every last card, including Gamble and Discard Color."
+
+msgid "%s ist fertig!"
+msgstr "%s is out!"
+
+msgid "Du hast keine Karten mehr – kontert keiner, bist du fertig."
+msgstr "You have no cards left – if nobody counters, you are out."
+
+msgid "%s hat keine Karten mehr – wer kontert?"
+msgstr "%s has no cards left – who counters?"
+
+msgid "%d Spieler haben keine Karten mehr – wer kontert?"
+msgstr "%d players have no cards left – who counters?"
+
+# Kontern statt „fertig“ in der Kartenhilfe und Regelübersicht (Gegenprüfung Beta 1.6.11)
+msgid "Als letzte Karte wird der Flip noch ausgeführt und wirkt ganz normal; fertig bist du erst, wenn dich keiner kontert."
+msgstr "As your last card, the Flip is still carried out and works as usual; you are only out if nobody counters you."
+
+msgid "Zeigt er 0 und deine Hand ist leer, kommt der Einsatz unter den Ablagestapel; fertig bist du erst, wenn dich keiner kontert."
+msgstr "If it shows 0 and your hand is empty, the stake goes under the discard pile; you are only out if nobody counters you."
+
+msgid "Als letzte Karte gibt es kein Glücksspiel; fertig bist du erst, wenn dich keiner kontert."
+msgstr "As your last card there is no Gamble; you are only out if nobody counters you."
+
+msgid "Bleibt dir danach 1 Karte, ruf „Mau!“ (auch schon vorher erlaubt); bleibt keine, wartest du, ob dich jemand kontert."
+msgstr "If you have 1 card left after that, call “Mau!” (also allowed earlier); if none is left, you wait to see whether someone counters you."
+
+msgid "Bleibt dir danach keine Karte, wartest du, ob dich jemand kontert."
+msgstr "If no card is left afterwards, you wait to see whether someone counters you."
+
+msgid "wartest, ob dich jemand kontert"
+msgstr "wait to see whether someone counters you"
+
+msgid "Bleibt keine Karte, wartest du, ob dich jemand kontert."
+msgstr "If no card is left, you wait to see whether someone counters you."

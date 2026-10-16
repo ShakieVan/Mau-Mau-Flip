@@ -1,0 +1,751 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><title>Test Natur Lite</title></head>
+<body>
+<pre id="autotest-result">läuft …</pre>
+<iframe id="f" style="width:844px;height:390px;border:0"></iframe>
+<script>
+/* Mau-Mau Flip (Beta 1.6.11, „Natur-Überraschungen“, docs/module/natur.md 8.2): der echte Lite-Ablauf (index.html?natur=test im iframe)
+ * gegen einen Schein-WebSocket, Uhr manuell (MMF.Natur.tick), Arten als Probe (eine Art für alle ids), damit der Kern ohne die Tierdateien
+ * (natur_tag.js / natur_nacht.js, Aufgaben T5/T6) prüfbar ist. Geprüft:
+ *  - Tabelle (25 Einträge, ruhig, vorn), Ebenen (DOM-Reihenfolge, z-index, pointer-events, aria-hidden), ?natur=test/?natur=reihe
+ *  - Planer im Dauerlauf (10 h, Lage eingespritzt): Abstände, nie zwei gleichzeitig, Wiederholungssperre, je_partie/je_runde, Seite,
+ *    fremder Zug, Flip-Anlass (≤ 1 je Runde und Seite, ≥ 25 s), Trödeln, Komet-Sperre, jedes Zufallsereignis kommt vor
+ *  - Bedingungen am echten Tisch: großer Modus, Fenster, Erwischt-Fenster, Phasen, Regie < 2 s ruhig, reduziert (nur ruhige, Abstände ×2),
+ *    fremder Zug, Lobby, enges Fenster (hochkant)
+ *  - Abgang und Abbruch nach 4.5, Schnecke beim Trödeln (verdrängt ein laufendes Ereignis, einmal je Spieler und Partie)
+ *  - Tippen: Stapel unter dem UFO zieht, Handkarte unter der Biene wird angetippt (Biene geht), Kopf öffnet das Necken-Menü, freie
+ *    Stelle auf dem Spatz gibt eine Reaktion ohne App-Aktion; nie preventDefault; Vorführung per 7 Tipps
+ *  - generisch für jede angemeldete Art (MMF.Natur.arten()) in 1180×720, 1558×720 und 2000×720: Sichtbarkeit, deckt, Aufräumen,
+ *    Bestimmtheit, schneller Abgang (≤ 0,5 s); zur Kontrolle des Prüfers auch mit der Probe
+ *  - nichts nach außen: kein Ton, keine Vibration, nichts an den WebSocket aus natur*.js
+ * Aufruf: chrome --headless=new --allow-file-access-from-files --virtual-time-budget=300000 --dump-dom file:///…/webclient/test/lite_natur.html
+ *   → <pre id="autotest-result" data-ok="1|0">. Läuft im Bau (tools/build.ps1 Invoke-WebNatureTest). */
+(function () {
+  const fehler = [], notizen = [];
+  const ok = (b, t) => { if (!b) fehler.push(t); };
+  const warte = ms => new Promise(r => setTimeout(r, ms));
+  const frame = document.getElementById('f');
+  let w = null;
+  const sockets = [];
+  const ausNatur = () => /natur(_tag|_nacht)?\.js/.test(String(new Error().stack || ''));
+  let natSenden = 0, natTon = 0, natVib = 0, natPrevent = 0;
+  class FakeWS {
+    constructor(url) { this.url = url; this.readyState = 0; this.gesendet = []; sockets.push(this); setTimeout(() => { this.readyState = 1; if (this.onopen) this.onopen(); }, 5); }
+    send(s) { if (ausNatur()) natSenden++; this.gesendet.push(s); let m = null; try { m = JSON.parse(s); } catch (e) { /* Text */ } if (m && m.t === 'ping') setTimeout(() => this.rx({ t: 'pong', ts: m.ts }), 2); }
+    close() { this.readyState = 3; }
+    rx(obj) { if (this.readyState === 1 && this.onmessage) this.onmessage({ data: JSON.stringify(obj) }); }
+  }
+  const letzter = () => sockets[sockets.length - 1];
+  const $ = s => w.document.querySelector(s);
+  const App = () => w.MMF.App;
+  const N = () => w.MMF.Natur;
+
+  function lade(zusatz) {
+    return new Promise(fertig => {
+      frame.onload = async () => {
+        w = frame.contentWindow;
+        for (let i = 0; i < 100 && !(w.MMF && w.MMF.App && w.MMF.App.hostBasis); i++) await warte(20);
+        w.WebSocket = FakeWS;
+        w.MMF.Ton.spiele = () => { if (ausNatur()) natTon++; return true; };
+        try { Object.defineProperty(w.navigator, 'vibrate', { configurable: true, value: () => { if (ausNatur()) natVib++; return true; } }); } catch (e) { /* egal */ }
+        const pd = w.Event.prototype.preventDefault;
+        w.Event.prototype.preventDefault = function () { if (ausNatur()) natPrevent++; return pd.call(this); };
+        fertig();
+      };
+      frame.src = '../index.html' + (zusatz || '');
+    });
+  }
+  async function groesse(b, h) { frame.style.width = b + 'px'; frame.style.height = h + 'px'; await warte(250); App().groesse(); await warte(50); }
+  async function beitreten(name) {
+    sockets.length = 0;
+    App().beitreten(name);
+    await warte(50);
+    const s = letzter();
+    s.rx({ t: 'welcome', id: 3, token: 'tok123abc', host_name: 'Lena' });
+    await warte(20);
+    return s;
+  }
+  let topId = 50;
+  // Sicht: ich Platz 0 (web), Lena 1 (app), Tom 2 (Computer), Mia 3 (web)
+  function sicht(turn, extra) {
+    const v = {
+      v: 1, seat: 0, side: 'hell', phase: 'turn', turn, dir: 1, color: 'rot',
+      players: [['Kim', 'web'], ['Lena', 'app'], ['Tom', 'bot'], ['Mia', 'web']].map(([name, kind], s) => ({ seat: s, name, kind, count: 7, backs: [], place: 0, mau: false, connected: true, score: 0 })),
+      hand: [1, 2, 3, 4, 5, 6, 7].map(i => ({ id: i, face: 'hell_blau_' + i })), top: { id: topId, face: 'hell_rot_5' }, discard_log: [], draw_back: 'rueckseite', draw_count: 40,
+      pending: null, hints: { playable: [], text: turn === 0 ? 'Du bist dran.' : 'Lena ist dran.', catch: [] }, round: 1, ranking: [],
+      rules: { backs_visible: false, peek_own_backs: false, mau_call: 'catch' },
+    };
+    return Object.assign(v, extra || {});
+  }
+  let S = null;   // Schein-WebSocket
+  async function zustand(turn, extra, events) { S.rx({ t: 'state', events: events || [], view: sicht(turn, extra) }); await warte(350); }
+
+  // Probe-Art: kleines Quadrat am Ort des Eintrags (UFO groß über dem Stapel, Biene auf der mittleren Handkarte)
+  const PROBE = {
+    baue(ctx, z) {
+      const e = ctx.eintrag, d = e.dauer[0] + z() * (e.dauer[1] - e.dauer[0]);
+      const el = w.document.createElement('div');
+      el.className = 'nt-probe';
+      let gw = 20, gh = 20, p = { x: ctx.W * 0.5, y: ctx.H * 0.15 };
+      const o = ctx.ort;
+      if (o && typeof o.grad === 'number') p = ctx.band(o.grad);
+      else if (o && typeof o.x === 'number' && typeof o.y === 'number') p = { x: o.x, y: o.y };
+      else if (o && typeof o.y0 === 'number') p = { x: ctx.W * (0.2 + 0.6 * z()), y: (o.y0 + o.y1) / 2 };
+      else if (o && typeof o.cx === 'number') p = { x: o.cx, y: o.cy - (o.ry || o.r || 0) * 1.2 };
+      if (ctx.id === 'biene') { const k = ctx.hand(); if (k) p = { x: k.x + k.w / 2 - 26, y: k.y - k.h / 2 + 22 }; }
+      if (ctx.id === 'ufo') { const st = ctx.orte.stapel_oben.stapel; gw = 160; gh = 260; p = { x: st.x + st.w / 2, y: st.y + st.h / 2 - 30 }; }
+      el.style.width = gw + 'px'; el.style.height = gh + 'px'; el.style.background = 'rgba(255,0,128,.35)';
+      return {
+        el, dauer: d, getippt: 0, abgaenge: 0, ereignisse: [], ctx,
+        stelle(t) { this.t = t; w.MMF.Natur.h.setze(el, p.x - gw / 2, p.y - gh / 2, 0, 1, 1); },
+        hulle() { return { x: p.x - gw / 2, y: p.y - gh / 2, w: gw, h: gh }; },
+        tipp() { this.getippt++; }, scheu() { this.scheue = true; },
+        abgang() { this.abgaenge++; return 0.4; },
+        ereignis(ev) { this.ereignisse.push(ev.e); return ev.e === 'probe_weg'; },
+      };
+    },
+  };
+  const tick = (sek, dt) => { dt = dt || 0.5; for (let t = 0; t < sek - 1e-9; t += dt) N().tick(dt); };
+  const starts = () => N().protokoll.filter(z => z.was === 'start' && z.anlass !== 'zeige');
+  const info = () => JSON.stringify({ lage: N()._lage(), modal: Array.from(w.document.querySelectorAll('.modal:not([hidden])')).map(e => e.id), cur: N().zustand().current, wartet: N().trWartet, tr: N().tr, now: N().now });
+  const cur = () => N().current;
+  // frischer Planer am echten Tisch, Zufallsereignis sofort fällig
+  function frisch(seed) {
+    N().test({ neu: true, probe: PROBE, seed: seed || 3, lage: null, manuell: true });
+    N().tick(0.5);
+    N().test({ faellig: 0 });
+  }
+  const zuClient = p => { const t = App().tisch, r = t.root.getBoundingClientRect(); return { x: r.left + t.ox + p.x * t.s, y: r.top + t.oy + p.y * t.s }; };
+  const mitte = r => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 });
+  const buehneRect = e => { const r = e.getBoundingClientRect(), t = App().tisch, a = t.zuBuehne(r.left, r.top), b = t.zuBuehne(r.right, r.bottom); return { x: a.x, y: a.y, w: b.x - a.x, h: b.y - a.y }; };
+  function druck(p, ziel, mitHoch) {
+    const c = zuClient(p);
+    const z = ziel || w.document.elementFromPoint(c.x, c.y);
+    const o = { bubbles: true, cancelable: true, clientX: c.x, clientY: c.y, pointerId: 7, pointerType: 'touch', isPrimary: true };
+    const frei = z.dispatchEvent(new w.PointerEvent('pointerdown', o));
+    if (mitHoch) z.dispatchEvent(new w.PointerEvent('pointerup', o));
+    else w.dispatchEvent(new w.PointerEvent('pointerup', o));
+    return { z, frei };
+  }
+
+  // Generischer Prüfer einer Art (8.2): Hülle über die Zeit, deckt, Aufräumen, Bestimmtheit, schneller Abgang
+  function pruefeArt(id, name) {
+    const n = N(), e = n.EINTRAG[id], t = App().tisch, W = t.W, H = t.H;
+    const was = name + ' ' + id + ' (' + Math.round(W) + '×' + Math.round(H) + ')';
+    if (!n.zeige(id, { seed: 7, t: 0, stehen: true })) { ok(false, was + ': startet'); return; }
+    const dauer = n._dauer(n.current), schutz = n.schutz();
+    const proben = [];
+    for (let s = 0; s <= dauer + 1e-9; s += 0.05) proben.push([s, n.huelle(s)]);
+    const huelleA = JSON.stringify(proben.map(p => p[1]));
+    // Sichtbarkeit (hinten/mitte): in der Hauptphase (15–85 %) zu ≥ 60 % der Zeit mit der Mitte im Bild und höchstens 60 % überdeckt
+    const haupt = proben.filter(p => p[0] >= dauer * 0.15 && p[0] <= dauer * 0.85);
+    const sichtbar = h => {
+      if (!h || h.w <= 0 || h.h <= 0) return false;
+      const m = mitte(h);
+      if (m.x < 0 || m.x > W || m.y < 0 || m.y > H) return false;
+      const a = h.w * h.h, ueber = Math.min(a, schutz.reduce((s, q) => s + flaeche(h, q), 0));
+      return ueber / a <= 0.6;
+    };
+    if (e.ebene !== 'vorn') {
+      const anteil = haupt.filter(p => sichtbar(p[1])).length / Math.max(1, haupt.length);
+      ok(anteil >= 0.6, was + ': in der Hauptphase zu ' + Math.round(anteil * 100) + ' % sichtbar (≥ 60 %)');
+    } else {
+      // vorn (z-index 33): nur die Flächen aus deckt, je höchstens deckt_max_s. Gezählt wird, was wirklich darunter liegt (Hand,
+      // Stapel, Ablage mit Ring, Glücksspiel); Plätze, Leiste, Knöpfe und „Erwischt!“ liegen ohnehin darüber.
+      const UNTER_VORN = ['hand', 'stapel', 'ablage', 'automat', 'einsatz'];
+      const zeit = {};
+      proben.forEach(([s, h]) => { if (!h) return; const ge = {}; schutz.forEach(q => { if (UNTER_VORN.indexOf(q.name) >= 0 && flaeche(h, q) > 0) ge[q.name] = 1; }); Object.keys(ge).forEach(k => { zeit[k] = (zeit[k] || 0) + 0.05; }); });
+      Object.keys(zeit).forEach(k => {
+        if (e.deckt.indexOf(k) >= 0) ok(zeit[k] <= e.deckt_max_s + 0.06, was + ': deckt ' + k + ' höchstens ' + e.deckt_max_s + ' s (' + zeit[k].toFixed(2) + ')');
+        else ok(false, was + ': deckt ' + k + ' nicht (' + zeit[k].toFixed(2) + ' s)');
+      });
+      if (e.deckt.indexOf('hand') >= 0) {   // Eckindex (AGENTS 8): nie im linken oberen Viertel einer Handkarte
+        const ecken = t.hand.reihe.map(k => t.hand.position(k.id)).filter(Boolean).map(p => { const kh = p.w * 870 / 560; return { x: p.x - p.w / 2, y: p.y - kh / 2, w: p.w / 2, h: kh / 2 }; });
+        ok(!proben.some(([s, h]) => h && ecken.some(q => flaeche(h, q) > 0)), was + ': nie über dem Eckindex einer Handkarte');
+      }
+    }
+    // Bestimmtheit: gleicher Samen → gleiche Hüllen
+    n.zeige(id, { seed: 7, t: 0, stehen: true });
+    const huelleB = JSON.stringify(proben.map(p => n.huelle(p[0])));
+    ok(huelleA === huelleB, was + ': gleicher Samen, gleiche Bahn');
+    // Aufräumen: live laufen lassen bis dauer + 1 s
+    n.zeige(id, { seed: 7 });
+    tick(dauer + 1, 0.05);
+    ok(!n.current, was + ': nach dauer + 1 s vorbei');
+    ok(!w.document.querySelector('.natur-ebene *'), was + ': keine Knoten übrig (' + (w.document.querySelector('.natur-ebene *') || {}).className + ')');
+    // schneller Abgang ≤ 0,5 s
+    n.zeige(id, { seed: 7 });
+    tick(Math.min(1, dauer / 3), 0.05);
+    n._abgang(n.current, 'test');
+    tick(0.5, 0.05);
+    ok(!n.current, was + ': schneller Abgang in ≤ 0,5 s');
+    if (n.current) n._weg(n.current, 'test');
+  }
+  const flaeche = (a, b) => Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) * Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+
+  /* ---------- Dauerlauf (Lage eingespritzt) ---------- */
+  function dauerlauf() {
+    const n = N(), D = n.DATEN, Z = n.ZEITEN;
+    const L = { tisch: true, gross: false, eng: false, reduziert: false, phase: 'turn', meinZug: false, regieLeer: true, wechsel: false, dialog: false, fang: false, necken: 0, strafe: false, seite: 'tag', handSig: '', gewaehlt: false };
+    n.test({ neu: true, seed: 42, probe: PROBE, manuell: true, lage: L });
+    const zz = (() => { let a = 12345; return () => { a = (a * 1103515245 + 12345) >>> 0; return a / 4294967296; }; })();
+    let naechsteSicht = 0, unruheBis = 0, wechselBis = 0, naechsterFlip = 60 + zz() * 300, naechsteRunde = 300, naechstePartie = 1200, troedelBis = -1, seat = 1;
+    let top = 1000, runde = 1, flipSeiteSetzen = -1, flipSeite = 'tag';
+    const marken = [];   // [{now, was, …}] Rundenwechsel, skip_all
+    n.sicht([{ e: 'round_start', round: 1 }], { seat: 0, turn: 1, top: { id: top }, draw_count: 40, phase: 'turn', side: 'hell' });
+    marken.push({ now: 0, was: 'partie' });
+    const DT = 1, ENDE = 10 * 3600;
+    for (let t = 0; t < ENDE; t += DT) {
+      const now = n.now;
+      L.regieLeer = now >= unruheBis;
+      L.wechsel = now < wechselBis;
+      if (flipSeiteSetzen >= 0 && now >= flipSeiteSetzen) { L.seite = flipSeite; flipSeiteSetzen = -1; wechselBis = now + 1.1; }
+      if (now >= naechstePartie) {
+        runde = 1; naechstePartie = now + 1200; naechsteRunde = now + 300;
+        n.sicht([{ e: 'round_start', round: 1 }], { seat: 0, turn: seat, top: { id: ++top }, draw_count: 40, phase: 'turn', side: 'hell' });
+        marken.push({ now, was: 'partie' }); unruheBis = now + 2;
+      } else if (now >= naechsteRunde) {
+        runde++; naechsteRunde = now + 300;
+        n.sicht([{ e: 'round_start', round: runde }], { seat: 0, turn: seat, top: { id: ++top }, draw_count: 40, phase: 'turn', side: 'hell' });
+        marken.push({ now, was: 'runde' }); unruheBis = now + 2;
+      }
+      if (now >= naechsterFlip && flipSeiteSetzen < 0) {
+        naechsterFlip = now + 90 + zz() * 300;
+        flipSeite = L.seite === 'tag' ? 'nacht' : 'tag';
+        n.sicht([{ e: 'flip', side: flipSeite === 'nacht' ? 'dunkel' : 'hell' }], { seat: 0, turn: seat, top: { id: ++top }, draw_count: 40, phase: 'turn' });
+        flipSeiteSetzen = now + 0.5; unruheBis = now + 1.6;
+      }
+      if (now >= naechsteSicht && now >= troedelBis) {
+        // neue Sicht alle 4–12 s, Regie 20 % der Zeit kurz beschäftigt, ich bin in 25 % der Züge dran, 3 % der Züge trödeln (45 s)
+        naechsteSicht = now + 4 + zz() * 8;
+        seat = (seat + 1) % 4;
+        L.meinZug = seat === 0;
+        const ev = [];
+        if (zz() < 0.02) { ev.push({ e: 'skip_all', seat }); marken.push({ now, was: 'skip_all' }); }
+        n.sicht(ev, { seat: 0, turn: seat, top: { id: ++top }, draw_count: 40, phase: 'turn' });
+        if (zz() < 0.2) unruheBis = now + 1 + zz() * 2;
+        if (zz() < 0.03) troedelBis = now + 45;
+      }
+      n.tick(DT);
+    }
+    const P = n.protokoll;
+    // nie zwei gleichzeitig: start und ende wechseln sich ab
+    let offen = null, zwei = 0;
+    P.forEach(z => { if (z.was === 'start') { if (offen) zwei++; offen = z; } else { offen = null; } });
+    ok(zwei === 0, 'Dauerlauf: nie zwei Ereignisse gleichzeitig (' + zwei + ')');
+    const st = P.filter(z => z.was === 'start');
+    ok(st.length > 150, 'Dauerlauf: genug Ereignisse (' + st.length + ')');
+    // Abstände ab Ende
+    let letztEnde = null, letztGrund = '', gaps = [], zuKurz = 0, anlassKurz = 0;
+    P.forEach(z => {
+      if (z.was === 'ende') { letztEnde = z.now; letztGrund = z.grund; return; }
+      if (letztEnde === null) return;
+      const g = z.now - letztEnde;
+      if (z.anlass === 'zufall') { gaps.push(g); if (g < Z.abstand_s[0] - 1e-6) zuKurz++; }
+      else if (g < Z.anlass_abstand_s - 1e-6 && !(z.anlass === 'troedeln' && letztGrund === 'schnecke')) anlassKurz++;
+    });
+    const mittel = gaps.reduce((a, b) => a + b, 0) / Math.max(1, gaps.length);
+    notizen.push('Dauerlauf 10 h: ' + st.length + ' Ereignisse, Abstand Ø ' + mittel.toFixed(1) + ' s, Flip ' + st.filter(z => z.anlass === 'flip').length + ', Schnecke ' + st.filter(z => z.id === 'schnecke').length);
+    ok(mittel >= 150 && mittel <= 230, 'Dauerlauf: mittlerer Abstand ' + mittel.toFixed(1) + ' s (150–230)');
+    ok(zuKurz === 0, 'Dauerlauf: Zufallsstart frühestens ' + Z.abstand_s[0] + ' s nach dem Ende (' + zuKurz + ' zu früh)');
+    ok(anlassKurz === 0, 'Dauerlauf: Anlass frühestens ' + Z.anlass_abstand_s + ' s nach dem Ende (' + anlassKurz + ' zu früh)');
+    // Wiederholungssperre: die letzten 4 beendeten derselben Seite
+    const beendet = { tag: [], nacht: [] };
+    let wdh = 0;
+    P.forEach(z => {
+      const e = n.EINTRAG[z.id];
+      if (z.was === 'ende') { beendet[e.seite].push(z.id); return; }
+      if (z.anlass === 'zufall' && beendet[e.seite].slice(-Z.keine_wiederholung).indexOf(z.id) >= 0) wdh++;
+    });
+    ok(wdh === 0, 'Dauerlauf: keine Wiederholung unter den letzten ' + Z.keine_wiederholung + ' (' + wdh + ')');
+    // Seite und fremder Zug
+    ok(st.every(z => n.EINTRAG[z.id].seite === z.tischSeite), 'Dauerlauf: Tagtiere nur am Tag, Nachttiere nur nachts');
+    ok(st.every(z => !(n.EINTRAG[z.id].fremder_zug && z.meinZug)), 'Dauerlauf: fremder_zug nie im eigenen Zug');
+    // je_partie / je_runde und Flip-Anlass je Runde und Seite
+    let verstoss = 0, flipVerstoss = 0, kometVerstoss = 0;
+    const alle = marken.concat(st.map(z => Object.assign({ was: 'start' }, z))).sort((a, b) => a.now - b.now || (a.was === 'start' ? 1 : -1));
+    let zp = {}, zr = {}, fr = {}, skipAll = -1e9;
+    alle.forEach(z => {
+      if (z.was === 'partie') { zp = {}; zr = {}; fr = {}; return; }
+      if (z.was === 'runde') { zr = {}; fr = {}; return; }
+      if (z.was === 'skip_all') { skipAll = z.now; return; }
+      const e = n.EINTRAG[z.id];
+      zp[z.id] = (zp[z.id] || 0) + 1; zr[z.id] = (zr[z.id] || 0) + 1;
+      if ((e.je_partie && zp[z.id] > e.je_partie) || (e.je_runde && zr[z.id] > e.je_runde)) verstoss++;
+      if (z.anlass === 'flip') { fr[e.seite] = (fr[e.seite] || 0) + 1; if (fr[e.seite] > Z.flip_je_runde) flipVerstoss++; }
+      if (z.id === 'komet' && z.now < skipAll + Z.komet_sperre_s) kometVerstoss++;
+    });
+    ok(verstoss === 0, 'Dauerlauf: je_partie/je_runde eingehalten (' + verstoss + ')');
+    ok(flipVerstoss === 0, 'Dauerlauf: höchstens ein Flip-Ereignis je Runde und Seite (' + flipVerstoss + ')');
+    ok(kometVerstoss === 0, 'Dauerlauf: kein Komet in den ' + Z.komet_sperre_s + ' s nach skip_all (' + kometVerstoss + ')');
+    const flips = st.filter(z => z.anlass === 'flip');
+    ok(flips.length >= 5 && flips.every(z => n.EINTRAG[z.id].nach_flip > 0), 'Dauerlauf: Flip-Anlässe kommen vor, nur aus nach_flip (' + flips.length + ')');
+    ok(flips.some(z => z.id === 'regenbogen'), 'Dauerlauf: Regenbogen nach einem Flip zum Tag');
+    const schnecken = st.filter(z => z.id === 'schnecke');
+    ok(schnecken.length >= 1 && schnecken.every(z => z.anlass === 'troedeln'), 'Dauerlauf: Schnecke nur beim Trödeln (' + schnecken.length + ')');
+    const fehlt = D.ereignisse.filter(e => e.zufall > 0 && !st.some(z => z.id === e.id && z.anlass === 'zufall')).map(e => e.id);
+    ok(!fehlt.length, 'Dauerlauf: jedes Zufallsereignis kommt vor (fehlt: ' + fehlt.join(', ') + ')');
+    ok(!w.document.querySelector('.natur-ebene .nt-probe:nth-child(2)'), 'Dauerlauf: höchstens ein Ereignis in den Ebenen');
+    n.test({ lage: null });
+  }
+
+  async function lauf() {
+    localStorage.clear(); localStorage.setItem('mmf.sprache', '"de"');
+    await lade('?natur=test&seed=5');
+    ok(!!N(), 'natur.js geladen (MMF.Natur)');
+    if (!N()) return;
+    ok(N().manuell === true, '?natur=test: manuelle Uhr');
+    // Tabelle
+    {
+      const D = N().DATEN, ids = D.ereignisse.map(e => e.id);
+      ok(ids.length === 25 && new Set(ids).size === 25, 'Tabelle: 25 Einträge, ids eindeutig');
+      ok(JSON.stringify(D.ereignisse.filter(e => e.ruhig).map(e => e.id).sort()) === '["mond_muetze","polarlicht","regenbogen","sternbild","wolke"]', 'Tabelle: ruhig genau Wolke, Regenbogen, Mütze, Polarlicht, Sternbild');
+      ok(JSON.stringify(D.ereignisse.filter(e => e.ebene === 'vorn').map(e => e.id).sort()) === '["biene","ufo"]', 'Tabelle: vorn nur Biene und UFO');
+      ok(['tag', 'nacht'].every(s => D.ereignisse.some(e => e.seite === s && e.zufall > 0)), 'Tabelle: jede Seite hat Zufallseinträge');
+      ok(D.ereignisse.filter(e => e.bestand).map(e => e.id).join() === 'schmetterling,sternschnuppe', 'Tabelle: Bestand Schmetterling und Sternschnuppe');
+      ok(D.zeiten.abstand_s[0] === 100 && D.zeiten.scheu_r === 130 && D.zeiten.vorfuehr_tipps === 7, 'Tabelle: Zeiten');
+      const roh = await (await fetch('../natur.js')).text().catch(() => '');
+      if (roh) {
+        const a = roh.indexOf('/*NATUR-DATEN*/'), b = roh.indexOf('/*ENDE*/');
+        let gleich = false;
+        try { gleich = JSON.stringify(JSON.parse(roh.slice(a + 15, b))) === JSON.stringify(D); } catch (e) { gleich = false; }
+        ok(a > 0 && b > a && gleich, 'Tabelle zwischen /*NATUR-DATEN*/ und /*ENDE*/ ist reines JSON');
+      }
+    }
+    S = await beitreten('Kim');
+    S.rx({ t: 'start', seat: 0 });
+    await zustand(1);
+    ok(App().screen === 'tisch', 'am Tisch');
+    // Ebenen
+    {
+      N().tick(0.5);
+      const b = $('.buehne'), hi = $('#natur-hinten'), mi = $('#natur-mitte'), vo = $('#natur-vorn');
+      ok(!!hi && !!mi && !!vo, 'drei Ebenen angelegt');
+      ok(b.firstElementChild === hi, '#natur-hinten ist erstes Kind der .buehne');
+      ok($('.richtung').nextElementSibling === mi, '#natur-mitte direkt nach .richtung');
+      const vor = (a, c) => !!(a.compareDocumentPosition(c) & w.Node.DOCUMENT_POSITION_FOLLOWING);
+      ok(vor(mi, $('.farbanzeige')) && vor(mi, $('.stapelzahl')) && vor(mi, $('#stapel')) && vor(mi, $('#ablage')) && vor(mi, $('#hand')), '#natur-mitte vor Farbanzeige, Stapelzahl, Stapel, Ablage, Hand');
+      const cs = e => w.getComputedStyle(e);
+      ok(cs(hi).zIndex === 'auto' && cs(mi).zIndex === 'auto', 'hinten und mitte mit z-index auto (' + cs(hi).zIndex + '/' + cs(mi).zIndex + ')');
+      ok(cs(vo).zIndex === '33', '#natur-vorn z-index 33 (' + cs(vo).zIndex + ')');
+      ok(+cs($('.leiste')).zIndex > 33 && +cs($('#mau')).zIndex > 33 && +cs($('.gegner-box')).zIndex > 33 && +cs($('#hand')).zIndex < 33, '#natur-vorn über der Hand, unter Leiste, Mau und Plätzen');
+      ok([hi, mi, vo].every(e => cs(e).pointerEvents === 'none' && e.getAttribute('aria-hidden') === 'true'), 'Ebenen: pointer-events none, aria-hidden');
+      ok(Math.abs(hi.getBoundingClientRect().width - App().tisch.W * App().tisch.s) < 2, 'Ebenen so groß wie die Bühne');
+    }
+    // Orte und Schutzflächen
+    {
+      const o = N().orte(), t = App().tisch;
+      ok(!!o && o.band_hinten.grad >= 240 && o.band_hinten.grad <= 300, 'Ort band_hinten 240–300° (' + (o && o.band_hinten.grad) + ')');
+      ok(o.band_vorn_seite.grad < 66 || o.band_vorn_seite.grad > 114, 'Ort band_vorn_seite nicht unter der Hinweisleiste (' + o.band_vorn_seite.grad + ')');
+      ok((o.band_schulter.grad >= 200 && o.band_schulter.grad <= 215) || (o.band_schulter.grad >= 325 && o.band_schulter.grad <= 340), 'Ort band_schulter');
+      ok(o.himmel_frei.w === 240 && o.himmel_frei.h === 160, 'Ort himmel_frei 240×160');
+      ok(Math.abs(o.ablage_ring.x - t.g.ablage.x) < 1 && o.ablage_ring.R > 100, 'Ort ablage_ring (R ' + Math.round(o.ablage_ring.R) + ')');
+      ok(o.stapel_oben.y < t.g.stapel.y - 92, 'Ort stapel_oben über dem Stapel');
+      ok(!!o.handkarte && o.handkarte.w > 50, 'Ort handkarte (mittlere Handkarte)');
+      ok(o.sonne.x > 0 && o.sonne.x < t.W * 0.3 && o.sonne.y < t.H * 0.3, 'Ort sonne oben links (' + Math.round(o.sonne.x) + ',' + Math.round(o.sonne.y) + ')');
+      const sch = N().schutz().map(q => q.name);
+      ['hand', 'stapel', 'ablage', 'platz', 'name', 'leiste', 'mau', 'menue', 'ton', 'sortieren', 'stapelzahl'].forEach(k => ok(sch.indexOf(k) >= 0, 'Schutzfläche ' + k));
+      {   // Farbanzeige (Wunschfarbe): Schutzfläche, sobald sie etwas zeigt
+        const altF = t.farbe.innerHTML;
+        t.farbe.innerHTML = '<span>Rot</span>';
+        const fs = N().schutz().filter(q => q.name === 'farbe');
+        const fr = t.farbe.getBoundingClientRect();
+        ok(fs.length === 1 && fr.width > 0, 'Schutzfläche farbe (Wunschfarbe)');
+        t.farbe.innerHTML = altF;
+      }
+      const pb = o._band(90);
+      ok(Math.abs(pb.x - t.g.cx) < 1 && pb.y > t.g.cy + 100, 'band(90°) vorn');
+    }
+
+    /* ---------- Dauerlauf ---------- */
+    dauerlauf();
+
+    /* ---------- Bedingungen am echten Tisch ---------- */
+    {
+      frisch(3);
+      tick(3);
+      ok(starts().length === 1, 'Ruhe: Zufallsereignis startet, sobald fällig (' + starts().length + ')');
+      ok(!!w.document.querySelector('.natur-ebene .nt-wesen[data-natur]'), 'Element hängt in seiner Ebene (nt-wesen, data-natur)');
+      const c0 = cur();
+      ok(!!c0 && w.document.getElementById('natur-' + c0.ebene).contains(c0.el), 'Element in der Ebene ' + (c0 && c0.ebene));
+      // großer Modus
+      App().tisch.setzeGross(true);
+      frisch(3); tick(10);
+      ok(starts().length === 0, 'großer Modus: nichts');
+      App().tisch.setzeGross(false);
+      // Fenster offen
+      App().oeffne('menue');
+      frisch(3); tick(10);
+      ok(starts().length === 0, 'Fenster offen: nichts');
+      App().schliesse('menue');
+      // Necken-Menü offen
+      w.MMF.Necken.oeffne(1);
+      frisch(3); tick(10);
+      ok(starts().length === 0, 'Necken-Menü offen: nichts');
+      w.MMF.Necken.zu();
+      // Erwischt-Fenster
+      await zustand(1, { hints: { playable: [], text: '', catch: [1] } });
+      frisch(3); tick(10);
+      ok(starts().length === 0, 'Erwischt-Fenster: nichts');
+      // Phasen
+      for (const ph of ['color', 'challenge', 'gamble', 'discard_pick', 'round_over']) {
+        await zustand(1, { phase: ph });
+        frisch(3); tick(10);
+        ok(starts().length === 0, 'Phase ' + ph + ': nichts');
+        if (cur()) N()._weg(cur(), 'test');
+      }
+      if ($('#runde') && !$('#runde').hidden) App().schliesse('runde');
+      await zustand(1, { phase: 'drawn' });
+      frisch(3); tick(3);
+      ok(starts().length === 1, 'Phase drawn: startet');
+      // Regie beschäftigt, danach erst nach ruhe_s
+      await zustand(1);
+      frisch(3);
+      App().tisch.regie.laeuft = true;
+      tick(10);
+      ok(starts().length === 0, 'Regie beschäftigt: nichts');
+      App().tisch.regie.laeuft = false; N().test({ faellig: 0 });
+      tick(1.5);
+      ok(starts().length === 0, 'Regie erst 1,5 s ruhig: noch nichts');
+      tick(6);
+      ok(starts().length === 1 && starts()[0].now - (N().now - 6) >= 0.5, 'Regie ≥ 2 s ruhig: startet (beim nächsten Versuch)');
+      // Tag/Nacht-Wechsel läuft: nichts
+      frisch(3);
+      const wr = App().tisch.wechselRest;
+      App().tisch.wechselRest = () => 500;
+      tick(10);
+      ok(starts().length === 0, 'Tag/Nacht-Wechsel läuft: nichts');
+      App().tisch.wechselRest = wr;
+      // fremder Zug: im eigenen Zug nie Biene, UFO, Motte (3 h)
+      await zustand(0);
+      frisch(11);
+      tick(3 * 3600, 1);
+      ok(starts().length > 20 && starts().every(z => !N().EINTRAG[z.id].fremder_zug), 'eigener Zug: kein fremder_zug (' + starts().length + ' Starts)');
+      // reduziert: nur die ruhigen, Abstände ×2 (6 h, Tag)
+      await zustand(1);
+      App().einstellungen.effekte = 'reduziert'; w.document.body.classList.add('reduziert');
+      frisch(13);
+      tick(6 * 3600, 1);
+      {
+        const P = N().protokoll, st = P.filter(z => z.was === 'start');
+        ok(st.length > 5 && st.every(z => N().EINTRAG[z.id].ruhig), 'reduziert: nur ruhige (' + st.map(z => z.id).filter((x, i, a) => a.indexOf(x) === i).join(', ') + ')');
+        let le = null, kurz = 0;
+        P.forEach(z => { if (z.was === 'ende') le = z.now; else if (le !== null && z.now - le < 2 * N().ZEITEN.abstand_s[0] - 1e-6) kurz++; });
+        ok(kurz === 0, 'reduziert: Abstände ×2 (' + kurz + ' zu kurz)');
+      }
+      N().zeige('spatz', { seed: 1 });
+      N().tick(0.3);
+      ok(!cur(), 'reduziert an: nicht ruhiges Ereignis sofort weg');
+      N().zeige('wolke', { seed: 1 });
+      N().tick(0.3);
+      ok(!!cur() && cur().id === 'wolke', 'reduziert: ruhiges Ereignis bleibt');
+      if (cur()) N()._weg(cur(), 'test');
+      App().einstellungen.effekte = 'voll'; w.document.body.classList.remove('reduziert');
+      // Lobby: nichts, laufendes weg
+      frisch(3);
+      N().zeige('spatz', { seed: 1 }); N().tick(0.3);
+      App().zeigeScreen('lobby');
+      tick(10);
+      ok(!cur() && starts().length === 0, 'Lobby: nichts, laufendes Ereignis weg');
+      App().zeigeScreen('tisch');
+      // enges Fenster (hochkant, Maßstab < 0,5)
+      await groesse(390, 844);
+      ok(App().tisch.s < 0.5, 'hochkant: Maßstab < 0,5 (' + App().tisch.s.toFixed(2) + ')');
+      frisch(3); tick(10);
+      ok(starts().length === 0, 'hochkant/eng: nichts');
+      await groesse(844, 390);
+    }
+
+    /* ---------- Abgang und Abbruch ---------- */
+    {
+      const n = N();
+      n.test({ neu: true, probe: PROBE, seed: 21, lage: null });
+      await zustand(1);
+      const weg = (titel, s) => { tick(s || 0.5, 0.05); ok(!cur(), titel); if (cur()) n._weg(cur(), 'test'); };
+      // eigener Zug: vorn geht
+      n.zeige('biene', { seed: 1 }); n.tick(0.1);
+      await zustand(0);
+      weg('eigener Zug beginnt: Biene geht in ≤ 0,5 s');
+      await zustand(1);
+      n.zeige('motte', { seed: 1 }); n.tick(0.1);
+      n.sicht([{ e: 'mau', seat: 1 }], App().view);
+      weg('mau: Motte geht');
+      n.zeige('ufo', { seed: 1 }); n.tick(0.1);
+      await zustand(1, { hints: { playable: [], text: '', catch: [2] } });
+      weg('Erwischt-Fenster: UFO geht');
+      await zustand(1);
+      // Glücksspiel bzw. Auswahl eines Mitspielers: vorn macht die Tischmitte frei
+      n.zeige('ufo', { seed: 1 }); n.tick(0.1);
+      n.sicht([{ e: 'gamble_start', seat: 1 }], App().view);
+      weg('gamble_start: UFO geht');
+      for (const ph of ['gamble', 'discard_pick', 'color']) {
+        n.zeige('ufo', { seed: 1 }); n.tick(0.1);
+        await zustand(1, { phase: ph });
+        weg('Phase ' + ph + ' (Mitspieler): UFO geht');
+      }
+      await zustand(1);
+      // Flip-Anlass verfällt nicht, solange die Regie noch frühere Ereignisse abspielt
+      n.flip = { seite: 'nacht', at: n.now };
+      n.test({ lage: { regieLeer: false, wechsel: false, seite: 'tag' } });
+      tick(4, 0.25);
+      ok(!!n.flip, 'Flip-Anlass bleibt, solange die Regie beschäftigt ist');
+      n.test({ lage: { regieLeer: true, wechsel: false, seite: 'tag' } });
+      tick(0.5, 0.25);
+      ok(!n.flip, 'Flip-Anlass verfällt erst bei leerer Regie ohne Seitenwechsel');
+      n.test({ lage: null });
+      // Flip: Tagtier geht
+      n.zeige('marienkaefer', { seed: 1 }); n.tick(0.1);
+      n.sicht([{ e: 'flip', side: 'dunkel' }], App().view);
+      ok(!!cur() && cur().ende !== null, 'Flip: Tagtier geht sofort ab');
+      weg('Flip: Tagtier weg in ≤ 0,5 s');
+      ok(!!n.flip && n.flip.seite === 'nacht', 'Flip: Anlass gemerkt');
+      n.flip = null;
+      // alle bei round_over usw.
+      for (const k of ['round_over', 'game_over', 'deal', 'seats', 'round_start']) {
+        n.zeige('spatz', { seed: 1 }); n.tick(0.1);
+        n.sicht([{ e: k, round: 2 }], App().view);
+        weg(k + ': alle gehen');
+      }
+      // Fenster: vorn geht, mitte bleibt
+      n.zeige('ufo', { seed: 1 }); n.tick(0.1);
+      App().oeffne('menue');
+      weg('Fenster öffnet: UFO geht');
+      n.zeige('spatz', { seed: 1 }); tick(1, 0.1);
+      ok(!!cur() && cur().ende === null, 'Fenster offen: Spatz (mitte) bleibt');
+      if (cur()) n._weg(cur(), 'test');
+      App().schliesse('menue');
+      // Necken-Effekt beginnt: vorn geht
+      n.zeige('biene', { seed: 1 }); n.tick(0.1);
+      w.MMF.Necken.zeige({ k: 'react', from: 1, r: 'lachen' });
+      weg('Necken-Effekt beginnt: Biene geht');
+      w.MMF.Necken.abraeumen();
+      // Ereignisse am Ort
+      n.zeige('ufo', { seed: 1 }); n.tick(0.1);
+      n.sicht([{ e: 'draw', seat: 2, count: 1 }], App().view);
+      weg('draw: UFO geht');
+      n.zeige('motte', { seed: 1 }); n.tick(0.1);
+      n.sicht([{ e: 'play', seat: 2, card: 9, face: 'hell_rot_3' }], App().view);
+      weg('play: Motte geht');
+      n.zeige('biene', { seed: 1 }); n.tick(0.1);
+      n.sicht([{ e: 'swap_hands', dir: 1 }], App().view);
+      weg('swap_hands: Biene geht');
+      n.zeige('spatz', { seed: 1 }); n.tick(0.1);
+      n.sicht([{ e: 'probe_weg' }], App().view);
+      ok(!!cur() && cur().inst.ereignisse.indexOf('probe_weg') >= 0, 'ereignis(e) der Art wird gerufen');
+      weg('ereignis(e) = true: Art geht');
+      // Sortieren (Handreihenfolge ändert sich): Biene geht
+      n.zeige('biene', { seed: 1 }); n.tick(0.1);
+      App().tisch.hand.reihe.reverse();
+      weg('Hand umsortiert: Biene geht');
+      App().tisch.hand.reihe.reverse();
+      // Größe, großer Modus: sofort
+      n.zeige('spatz', { seed: 1 }); n.tick(0.1);
+      await groesse(900, 390);
+      n.tick(0.05);
+      ok(!cur(), 'neue Größe: sofort weg');
+      await groesse(844, 390);
+      n.tick(0.1);
+      n.zeige('spatz', { seed: 1 }); n.tick(0.1);
+      App().tisch.setzeGross(true);
+      n.tick(0.05);
+      ok(!cur(), 'großer Modus an: sofort weg');
+      App().tisch.setzeGross(false);
+      n.tick(0.1);
+      // natürliches Ende, Element weg
+      n.zeige('satellit', { seed: 1 });
+      tick(12, 0.25);
+      ok(!cur() && !w.document.querySelector('.natur-ebene *'), 'natürliches Ende: Element entfernt');
+    }
+
+    /* ---------- Trödeln (Schnecke) ---------- */
+    {
+      const n = N();
+      frisch(3);
+      n.faellig = Infinity;
+      const rng = n.rng;
+      n.rng = () => 0;   // Würfel: immer Treffer
+      topId = 600;
+      await zustand(1);
+      tick(30);
+      ok(!cur(), 'Trödeln: vor 35 s keine Schnecke');
+      tick(8);
+      ok(!!cur() && cur().id === 'schnecke' && cur().anlass === 'troedeln' && cur().ctx.troedler === 1, 'Trödeln: Schnecke nach 35 s, kriecht zu Lena ' + info());
+      topId++;
+      await zustand(2);
+      tick(1.6, 0.1);
+      ok(!cur(), 'Zugende: Schnecke geht');
+      // derselbe Spieler kein zweites Mal in dieser Partie; ein laufendes Ereignis macht für die Schnecke Platz
+      topId++;
+      await zustand(1);
+      n.letztesEnde = -1e9;
+      tick(40);
+      ok(!cur(), 'Trödeln: einmal je Spieler und Partie');
+      topId++;
+      await zustand(3);
+      n.zeige('spatz', { seed: 1 });
+      cur().anlass = 'zufall';
+      tick(36, 0.5);
+      ok(!!cur() && cur().id === 'schnecke' && cur().ctx.troedler === 3, 'Trödeln: laufendes Ereignis geht, Schnecke kommt danach');
+      if (cur()) n._weg(cur(), 'test');
+      n.rng = rng;
+      topId++;
+      await zustand(1);
+    }
+
+    /* ---------- Flip-Anlass am echten Tisch ---------- */
+    {
+      const n = N();
+      frisch(3);
+      n.faellig = Infinity;
+      n.letztesEnde = -1e9;
+      const rng = n.rng;
+      n.rng = () => 0;
+      topId++;
+      S.rx({ t: 'state', events: [{ e: 'flip', side: 'dunkel' }], view: sicht(1, { side: 'dunkel' }) });
+      await warte(2600);   // Flip-Animation der Regie
+      ok(App().tisch.root.dataset.seite === 'dunkel', 'Tisch ist nachts');
+      tick(4, 0.25);
+      const fs = starts().filter(z => z.anlass === 'flip');
+      ok(fs.length === 1 && n.EINTRAG[fs[0].id].seite === 'nacht' && n.EINTRAG[fs[0].id].nach_flip > 0, 'Flip zur Nacht: Anlass-Ereignis (' + (fs[0] && fs[0].id) + ')');
+      if (cur()) n._weg(cur(), 'test');
+      n.letztesEnde = -1e9;
+      topId++;
+      S.rx({ t: 'state', events: [{ e: 'flip', side: 'dunkel' }], view: sicht(1, { side: 'dunkel' }) });
+      await warte(600);
+      tick(4, 0.25);
+      ok(starts().filter(z => z.anlass === 'flip').length === 1, 'Flip-Anlass höchstens einmal je Runde und Seite');
+      n.rng = rng;
+      topId++;
+      S.rx({ t: 'state', events: [{ e: 'flip', side: 'hell' }], view: sicht(1, { side: 'hell' }) });
+      await warte(2600);
+      if (cur()) n._weg(cur(), 'test');
+    }
+
+    /* ---------- Tippen ---------- */
+    {
+      const n = N(), t = App().tisch;
+      n.test({ neu: true, probe: PROBE, seed: 31, lage: null });
+      await zustand(1);
+      n.tick(0.5);
+      const spione = { ziehen: 0, antippen: [], spielen: 0, gegner: 0 };
+      const alt = { ziehen: App().ziehen, antippen: App().antippen, spielen: App().spielen, gegnerAnsicht: App().gegnerAnsicht };
+      App().ziehen = () => { spione.ziehen++; };
+      App().antippen = id => { spione.antippen.push(id); };
+      App().spielen = () => { spione.spielen++; };
+      App().gegnerAnsicht = () => { spione.gegner++; };
+      // UFO über dem Stapel: Tipp auf den Stapel zieht, UFO geht
+      n.zeige('ufo', { seed: 1 }); n.tick(0.1);
+      const sm = mitte(buehneRect($('#stapel')));
+      const c1 = zuClient(sm), z1 = w.document.elementFromPoint(c1.x, c1.y);
+      ok(!!z1 && !!z1.closest('#stapel'), 'unter dem UFO trifft der Finger den Stapel (' + (z1 && z1.className) + ')');
+      const d1 = druck(sm);
+      z1.click();
+      ok(spione.ziehen === 1, 'Tipp auf den Stapel unter dem UFO: ziehen');
+      ok(!!cur() && cur().ende !== null && cur().inst.scheue, 'UFO ist scheu und geht ' + info());
+      ok(d1.frei, 'pointerdown nicht verhindert');
+      tick(0.5, 0.1);
+      // Biene auf der Handkarte: Hand wird angetippt, Biene geht
+      n.zeige('biene', { seed: 1 }); n.tick(0.1);
+      const hk = n.orte().handkarte;
+      const hp = { x: hk.x, y: hk.top + 40 };
+      const c2 = zuClient(hp), z2 = w.document.elementFromPoint(c2.x, c2.y);
+      ok(!!z2 && z2.id === 'hand-zone', 'unter der Biene trifft der Finger die Hand (' + (z2 && (z2.id || z2.className)) + ')');
+      druck(hp, z2, true);
+      ok(spione.antippen.indexOf(hk.id) >= 0, 'Handkarte unter der Biene angetippt (' + JSON.stringify(spione.antippen) + ')');
+      ok(!!cur() && cur().ende !== null, 'Biene geht bei Berührung der Hand');
+      tick(0.5, 0.1);
+      // Kopf eines Mitspielers: Necken-Menü, kein Tier reagiert
+      n.zeige('spatz', { seed: 1 }); n.tick(0.1);
+      const kopf = $('#tisch .gg[data-seat="1"] .kopf');
+      const km = mitte(buehneRect(kopf));
+      druck(km, kopf);
+      kopf.click();
+      ok(!!w.MMF.Necken.offen && w.MMF.Necken.offen.seat === 1, 'Tipp auf den Kopf: Necken-Menü offen');
+      ok(cur().inst.getippt === 0, 'Tipp auf den Kopf: Spatz reagiert nicht');
+      w.MMF.Necken.zu();
+      // freie Stelle auf dem Spatz: Reaktion, keine App-Aktion
+      const h = n.huelle();
+      const p = mitte(h);
+      const c3 = zuClient(p), z3 = w.document.elementFromPoint(c3.x, c3.y);
+      ok(!!z3 && (z3.classList.contains('buehne') || !!z3.closest('.himmel')), 'Spatz sitzt auf einer freien Stelle (' + (z3 && (z3.id || z3.className)) + ')');
+      const v0 = JSON.stringify(spione);
+      const d3 = druck(p);
+      ok(cur().inst.getippt === 1 && cur().getippt, 'Tipp auf den freien Spatz: Reaktion');
+      ok(JSON.stringify(spione) === v0 && !w.MMF.Necken.offen, 'Tipp auf den freien Spatz: keine App-Aktion');
+      ok(d3.frei, 'pointerdown auf dem Spatz nicht verhindert');
+      druck(p);
+      ok(cur().inst.getippt === 1, 'höchstens eine Reaktion je Ereignis');
+      n._weg(cur(), 'test');
+      // Vorführung: 7 Tipps in 4 s auf eine freie Stelle
+      n.test({ neu: true, probe: PROBE, seed: 31 });
+      n.tick(0.5);
+      const frei = { x: n.orte().himmel_frei.x + 40, y: n.orte().himmel_frei.y + 30 };
+      for (let i = 0; i < 6; i++) druck({ x: frei.x + i * 3, y: frei.y });
+      ok(!n.demo.an, '6 Tipps: noch keine Vorführung');
+      druck(frei);
+      ok(n.demo.an, '7 Tipps: Vorführung an');
+      n.tick(0.5);
+      const ids = n.DATEN.ereignisse.filter(e => e.seite === 'tag').map(e => e.id);
+      ok(!!cur() && cur().id === ids[0] && cur().anlass === 'demo', 'Vorführung: erstes Ereignis der Seite (' + (cur() && cur().id) + ')');
+      n._weg(cur(), 'test');
+      tick(12.5);
+      ok(!!cur() && cur().id === ids[1], 'Vorführung: nach 12 s das nächste in Tabellenreihenfolge (' + (cur() && cur().id) + ')');
+      if (cur()) n._weg(cur(), 'test');
+      for (let i = 0; i < 7; i++) druck(frei);
+      ok(!n.demo.an, '7 Tipps: Vorführung aus');
+      App().zeigeScreen('lobby'); n.demo.an = true; n.tick(0.5);
+      ok(!n.demo.an, 'Tisch verlassen: Vorführung aus');
+      App().zeigeScreen('tisch');
+      Object.assign(App(), alt);
+    }
+
+    /* ---------- generischer Prüfer (Probe) und alle angemeldeten Arten ---------- */
+    {
+      const n = N();
+      n.test({ neu: true, probe: PROBE, seed: 1, lage: null });
+      await zustand(1);
+      n.tick(0.5);
+      const vor = fehler.length;
+      pruefeArt('spatz', 'Probe');
+      pruefeArt('wolke', 'Probe');
+      ok(fehler.length === vor, 'Prüfer läuft mit der Probe ohne Befund');
+      // Gegenprobe: das Proben-UFO deckt den Stapel die ganze Zeit (> 3 s) – das muss der Prüfer finden
+      pruefeArt('ufo', 'Gegenprobe');
+      const befunde = fehler.splice(vor);
+      ok(befunde.some(b => /deckt stapel höchstens 3 s/.test(b)), 'Prüfer findet zu langes Decken (' + befunde.join(' / ').slice(0, 200) + ')');
+      n.test({ probe: null });
+      const arten = n.arten();
+      for (const [b, hh] of [[590, 360], [844, 390], [1000, 360]]) {
+        await groesse(b, hh);
+        for (const seite of ['hell', 'dunkel']) {
+          const liste = arten.filter(id => n.EINTRAG[id].seite === (seite === 'hell' ? 'tag' : 'nacht'));
+          if (!liste.length) continue;
+          topId++;
+          S.rx({ t: 'state', events: [], view: sicht(1, { side: seite }) });
+          await warte(1800);
+          n.tick(0.5);
+          liste.forEach(id => pruefeArt(id, 'Art'));
+        }
+      }
+      await groesse(844, 390);
+      notizen.push('angemeldete Arten: ' + arten.length);
+    }
+
+    /* ---------- nichts nach außen ---------- */
+    ok(natTon === 0, 'kein Ton aus natur*.js (' + natTon + ')');
+    ok(natVib === 0, 'keine Vibration aus natur*.js (' + natVib + ')');
+    ok(natSenden === 0, 'nichts an den WebSocket aus natur*.js (' + natSenden + ')');
+    ok(natPrevent === 0, 'kein preventDefault aus natur*.js (' + natPrevent + ')');
+    ok(!App().fehler || !App().fehler.length, 'keine Fehler in der App (' + JSON.stringify(App().fehler || []).slice(0, 300) + ')');
+
+    /* ---------- ?natur=reihe ---------- */
+    await lade('?natur=reihe');
+    ok(!!N() && N().demo.an === true && N().manuell === false, '?natur=reihe: Vorführung an, echte Uhr');
+  }
+  lauf().then(() => {}, e => fehler.push('Ausnahme: ' + (e && e.stack || e))).then(() => {
+    const el = document.getElementById('autotest-result');
+    el.setAttribute('data-ok', fehler.length ? '0' : '1');
+    el.textContent = (fehler.length ? 'FEHLER: ' + fehler.join(' | ') : 'ok') + (notizen.length ? ' (' + notizen.join('; ') + ')' : '');
+  });
+})();
+</script></body></html>

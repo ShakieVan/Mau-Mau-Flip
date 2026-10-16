@@ -6,7 +6,8 @@ extends Node
 #     schiebt sie weg (sie springt beleidigt davon). Beim nächsten Zug (oder Rundenende) steht sie auf und geht. Sie blockiert nichts:
 #     Das Ziehen funktioniert überall außer genau auf der Katze.
 #  2. Himmel: nachts gelegentlich eine Sternschnuppe, tagsüber ein Schmetterling, alle SKY_MIN_S … SKY_MAX_S Sekunden, nur wenn
-#     keine Animation läuft; die Knoten liegen hinter den Karten.
+#     keine Animation läuft; die Knoten liegen hinter den Karten. Die Sternschnuppe zeichnet ab 1.6.11 shooting_star_fx.gd
+#     (leuchtender Kopf, ausglühender Schweif, Funken; nachts additiv, Helligkeit nach dem Nachtwert).
 #  3. Kommentar-Stempel: „Autsch!“, wenn jemand mit 1 Karte eine Strafe von 2 oder mehr Karten bekommt (+5, Wünscher +2, Farbjagd);
 #     kurzer Applaus (gezeichnete Hände) bei „Mau-Mau!“.
 # „Effekte reduziert“: Katze, Schmetterling und Sternschnuppe aus, der Stempel erscheint ohne Aufsetzen, der Applaus steht still.
@@ -26,6 +27,7 @@ const FUR_DARK := Color("#8A5528")
 const FUR_LIGHT := Color("#F3DDBB")
 const OUTLINE := Color("#211B2C")
 const PINK := Color("#F2A3B5")
+const ShootingStarScript := preload("res://scripts/ui/shooting_star_fx.gd")
 
 var table: Control
 var rng := RandomNumberGenerator.new()
@@ -178,6 +180,7 @@ func _check_sky() -> void:
 		return
 	_sky_due = now + rng.randf_range(SKY_MIN_S, SKY_MAX_S)
 	sky_started += 1
+	sky.glow = night
 	sky.launch(night > 0.5, rng, Vector2(_table_w(), _table_h()))
 
 
@@ -471,7 +474,15 @@ class SkyNode:
 	var p1 := Vector2.ZERO
 	var wing := Color("#FF9A3C")
 	var wing2 := Color("#FFD76A")
+	var glow := 1.0          # Nachtwert beim Start der Sternschnuppe (0 Tag … 1 Nacht), steuert Mischung und Helligkeit
+	var star: Node2D         # shooting_star_fx.gd (eigener Knoten: nachts additiv gemischt, der Schmetterling nicht)
 	var _bob := 0.0
+
+	func _init() -> void:
+		star = ShootingStarScript.new()
+		star.name = "Sternschnuppe"
+		star.visible = false
+		add_child(star)
 
 	func active() -> bool:
 		return kind != ""
@@ -479,15 +490,18 @@ class SkyNode:
 	func stop() -> void:
 		kind = ""
 		visible = false
+		star.call("clear")
 
 	func launch(is_night: bool, rng: RandomNumberGenerator, sz: Vector2) -> void:
 		t = 0.0
 		visible = true
 		if is_night:
 			kind = "star"
-			dur = 1.2
-			p0 = Vector2(rng.randf_range(0.5, 0.95) * sz.x, rng.randf_range(0.04, 0.2) * sz.y)
-			p1 = p0 + Vector2(-0.34 * sz.x, 0.15 * sz.y)
+			# 1.6.11: etwas höher und flacher, damit die Bahn seltener hinter Tischring und Karten verschwindet
+			p0 = Vector2(rng.randf_range(0.5, 0.95) * sz.x, rng.randf_range(0.03, 0.13) * sz.y)
+			p1 = p0 + Vector2(-0.34 * sz.x, 0.11 * sz.y)
+			star.call("start", p0, p1, glow, rng, sz.y)
+			dur = float(star.call("total"))
 		else:
 			kind = "butterfly"
 			dur = 9.0
@@ -506,10 +520,13 @@ class SkyNode:
 		if kind == "":
 			return
 		t += delta
+		if kind == "star":
+			star.call("step", delta)
 		if t >= dur:
 			stop()
 			return
-		queue_redraw()
+		if kind == "butterfly":
+			queue_redraw()
 
 	func pos_at(u: float) -> Vector2:
 		if kind == "butterfly":
@@ -518,23 +535,8 @@ class SkyNode:
 		return p0.lerp(p1, u)
 
 	func _draw() -> void:
-		if kind == "":
-			return
-		var u := clampf(t / dur, 0.0, 1.0)
-		if kind == "star":
-			var e := u * (2.0 - u)
-			var head := pos_at(e)
-			var dir := (p1 - p0).normalized()
-			var fade := sin(clampf(u, 0.0, 1.0) * PI)
-			var tail_len := (p1 - p0).length() * 0.3
-			var n := 16
-			for i in n:
-				var a := float(i) / n
-				var b := float(i + 1) / n
-				draw_line(head - dir * tail_len * a, head - dir * tail_len * b, Color(1, 1, 1, (1.0 - a) * 0.85 * fade), lerpf(3.4, 0.6, a), true)
-			draw_circle(head, 5.5, Color(1, 0.96, 0.8, 0.25 * fade))
-			draw_circle(head, 2.8, Color(1, 1, 1, fade))
-		else:
+		if kind == "butterfly":
+			var u := clampf(t / dur, 0.0, 1.0)
 			var c0 := pos_at(u)
 			var ahead := pos_at(minf(u + 0.01, 1.0)) - c0
 			draw_set_transform(c0, 0.0, Vector2(1.8, 1.8))

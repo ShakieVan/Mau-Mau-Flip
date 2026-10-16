@@ -109,6 +109,20 @@ $bilder = [ordered]@{
     knopf_sehr_gross_bot = @{ q = '&dran=1&schrift=sehr_gross&seite=dunkel'; w = 844; h = 390; ms = 900; pre = (Z 500 "$N.oeffne(2)") }
     knopf_en = @{ q = '&dran=1&lang=en'; w = 844; h = 390; ms = 900; pre = (Z 500 "$N.oeffne(1)") }
     knopf_desktop = @{ q = '&dran=1'; w = 1600; h = 900; ms = 900; pre = (Z 500 "$N.oeffne(3)") }
+    # Beta 1.6.11 (-Stand 1611_baeh -Nur quer_tag,…): fünfte Reaktion „Bäää“ (😝) – fünf Knöpfe in der Leiste (Reihe bzw. Block 3 + 2),
+    # Bäää steigt auf; quer, hochkant, großer Modus, Schrift sehr groß, kleines Handy, Desktop, Sperrzeit
+    quer_tag = @{ q = '&dran=1'; w = 844; h = 390; ms = 900; pre = (Z 300 "$N.zeige({k:'react',from:0,r:'baeh'});$N.zeige({k:'react',from:2,r:'baeh'})") }
+    quer_nacht = @{ q = '&dran=1&seite=dunkel'; w = 844; h = 390; ms = 900; pre = (Z 300 "$N.zeige({k:'react',from:0,r:'baeh'});$N.zeige({k:'react',from:1,r:'lachen'});$N.zeige({k:'react',from:3,r:'baeh'})") }
+    quer_sperre = @{ q = '&dran=1'; w = 844; h = 390; ms = 900; pre = (Z 500 "$N._grauBis=$N.uhr()+60000;$N._leisteStand()") }
+    quer_klein = @{ q = '&dran=1'; w = 640; h = 320; ms = 900; pre = (Z 300 "$N.zeige({k:'react',from:0,r:'baeh'})") }
+    quer_sehr_gross = @{ q = '&dran=1&schrift=sehr_gross'; w = 844; h = 390; ms = 900; pre = (Z 300 "$N.zeige({k:'react',from:0,r:'baeh'})") }
+    hk_tag = @{ q = '&dran=1'; w = 390; h = 844; ms = 900; pre = (Z 300 "$N.zeige({k:'react',from:0,r:'baeh'})") }
+    hk_nacht_sehr_gross = @{ q = '&dran=1&seite=dunkel&schrift=sehr_gross'; w = 390; h = 844; ms = 900; pre = (Z 300 "$N.zeige({k:'react',from:0,r:'baeh'})") }
+    gross_tag = @{ q = '&dran=1&gross=1'; w = 844; h = 390; ms = 900; pre = (Z 300 "$N.zeige({k:'react',from:0,r:'baeh'})") }
+    gross_nacht_sehr_gross = @{ q = '&dran=1&gross=1&seite=dunkel&schrift=sehr_gross'; w = 844; h = 390; ms = 900; pre = (Z 300 "$N.zeige({k:'react',from:2,r:'baeh'})") }
+    gross_hk = @{ q = '&dran=1&gross=1'; w = 390; h = 844; ms = 900; pre = '' }
+    rundenende_baeh = @{ q = '&szene=rundenende'; w = 844; h = 390; ms = 1800; pre = (Z 900 "$N.zeige({k:'react',from:0,r:'baeh'})") }
+    desktop_baeh = @{ q = '&dran=1'; w = 1600; h = 900; ms = 900; pre = (Z 300 "$N.zeige({k:'react',from:0,r:'baeh'})") }
 }
 $auswahl = @($Nur.Split(',') | Where-Object { $_ })
 foreach ($name in $bilder.Keys) {

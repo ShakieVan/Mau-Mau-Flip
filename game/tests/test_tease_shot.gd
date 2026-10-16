@@ -10,6 +10,9 @@ extends SceneTree
 #   sehr_gross / gross_sehr_gross_nacht   Schrift „Sehr groß“ (normal bzw. großer Modus)
 #   rundenende                   Rundenende: Knöpfe über der Tafel, eine Reaktion steigt auf
 #   en_tag                       Englisch (Hinweis englisch, Knöpfe ohne Text)
+# SERIE=1611 nach docs/module/optik_1611_baeh_*.png (Beta 1.6.11: fünfte Reaktion „Bäää“ 😝): wie 165 mit fünf Knöpfen, dazu
+#   reaktion_tag / reaktion_nacht  Bäää steigt auf · alle_tag  alle fünf gleichzeitig · rundenende mit Bäää
+#   (Aufruf mit -EnvPairs "SERIE=1611"; die Bilder heißen optik_1611_baeh_<name>.png)
 # SERIE=166 nach docs/module/optik_166_*.png (Furzkissen, eastereggs2.md 12.4):
 #   menue_tag / menue_nacht      Necken-Menü mit der Zeile „Furzkissen“ (Mit Namen / Geheim)
 #   menue_gesperrt               nach dem eigenen Kissen: grau, „Das Kissen muss sich erst wieder aufpusten.“ (und „Da liegt schon …“)
@@ -94,8 +97,9 @@ func now_ms() -> int:
 func shot(file: String) -> void:
 	for i in 3:
 		await process_frame
-	root.get_texture().get_image().save_png(out.path_join("optik_%s_%s.png" % [serie, file]))
-	print("Bild: optik_%s_%s.png" % [serie, file])
+	var pre := serie + ("_baeh" if serie == "1611" else "")   # Beta 1.6.11: optik_1611_baeh_*.png
+	root.get_texture().get_image().save_png(out.path_join("optik_%s_%s.png" % [pre, file]))
+	print("Bild: optik_%s_%s.png" % [pre, file])
 
 
 func show(turn: int, phase := "turn") -> void:
@@ -115,7 +119,7 @@ func fx(k: String, from: int, to := -1, r := "") -> void:
 
 
 func run() -> void:
-	root.size = Vector2i(1600, 720)
+	root.size = Vector2i(int(OS.get_environment("SHOT_W")) if OS.get_environment("SHOT_W") != "" else 1600, 720)   # 1.6.11: SHOT_W=1280 für 16:9
 	GameStarter.test_speed = 0.0
 	out = OS.get_environment("SHOT_DIR")
 	if out == "":
@@ -157,8 +161,8 @@ func run() -> void:
 	var kim := 1 if me != 1 else 2
 	show(kim)
 	await create_timer(0.5).timeout
-	if serie == "165" or serie == "166" or serie == "167" or serie == "1610":
-		if serie == "165":
+	if serie == "165" or serie == "166" or serie == "167" or serie == "1610" or serie == "1611":
+		if serie == "165" or serie == "1611":
 			await run_165(me, kim)
 		elif serie == "1610":
 			await run_1610(me, kim)
@@ -339,10 +343,28 @@ func run_165(me: int, kim: int) -> void:
 		await shot("tisch_" + tm)
 	ts.table.set_night(0.0)
 	clock += 20000
-	fx("react", me, -1, "daumen")
+	var rx := "baeh" if serie == "1611" else "daumen"     # Beta 1.6.11: die neue Reaktion „Bäää“
+	fx("react", me, -1, rx)
 	await create_timer(0.55).timeout
 	await shot("reaktion_tag")
 	await create_timer(1.5).timeout
+	if serie == "1611":
+		# nachts: Bäää steigt auf; dann alle fünf von verschiedenen Plätzen gleichzeitig
+		ts.table.set_night(1.0)
+		clock += 20000
+		fx("react", me, -1, "baeh")
+		await create_timer(0.55).timeout
+		await shot("reaktion_nacht")
+		await create_timer(1.5).timeout
+		ts.table.set_night(0.0)
+		clock += 20000
+		var who := [me, 1 if me != 1 else 0, 2, 3 if me != 3 else 0, me]
+		for i in TeaseMenu.REACT_ORDER.size():
+			clock += 3000
+			fx("react", int(who[i]), -1, TeaseMenu.REACT_ORDER[i])
+		await create_timer(0.6).timeout
+		await shot("alle_tag")
+		await create_timer(1.8).timeout
 	# Sperrzeit: eigener Eimer leer → alle 4 grau
 	clock += 20000
 	for i in TeaseRules.REACT_BUCKET:
@@ -384,7 +406,7 @@ func run_165(me: int, kim: int) -> void:
 	show(-1, "round_over")
 	await create_timer(0.8).timeout
 	clock += 20000
-	fx("react", me, -1, "klatschen")
+	fx("react", me, -1, "baeh" if serie == "1611" else "klatschen")
 	await create_timer(0.5).timeout
 	await shot("rundenende")
 	fake.v.erase("ranking")

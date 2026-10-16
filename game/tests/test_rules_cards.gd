@@ -91,7 +91,7 @@ func _config() -> void:
 		"draw_play": "drawn", "stacking": "off", "penalty_turn": "skip", "wild_restriction": "free", "wild_counts_for_bluff": true, "jagd_wild_stops": false,
 		"mau_call": "catch", "mau_penalty": 2, "backs_visible": true, "peek_own_backs": true, "two_player_reverse_skips": true,
 		"flip_last_card": "execute", "swap_cards": "off", "swap_direction": "clockwise", "gamble_cards": "off",
-		"discard_color": "off", "flip_surprise": "off", "flip_mode": "pile"}
+		"discard_color": "off", "flip_surprise": "off", "flip_mode": "pile", "counter_round": "off"}
 	for k in want:
 		check(d.has(k) and d[k] == want[k], "Standard %s = %s (%s)" % [k, str(want[k]), str(d.get(k))])
 	check(d.size() == want.size(), "to_dict hat genau die Optionen (%d)" % d.size())

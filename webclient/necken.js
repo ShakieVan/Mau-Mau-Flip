@@ -1,14 +1,14 @@
 /* Mau-Mau Flip (Beta 1.6.3, Easter Eggs Teil 2): „Necken“ im Browser-Client „Lite“ (docs/module/eastereggs2.md).
  * Mitspieler können einander eine Papierkugel zuwerfen, den Spieler am Zug nach 10 s mit Schnarchen oder einem Wecker (3 s Ticken,
- * dann Klingeln) necken und schnelle Reaktionen (😂 👏 👍 😱, ab 1.6.5 als Fluent-Emoji-Bilder) an den ganzen Tisch schicken. Es ändert nie den Spielstand.
+ * dann Klingeln) necken und schnelle Reaktionen (😂 👏 👍 😱, ab 1.6.11 auch 😝 „Bäää“; ab 1.6.5 als Fluent-Emoji-Bilder) an den ganzen Tisch schicken. Es ändert nie den Spielstand.
  *  - Regeln: Spiegel von game/scripts/game/tease_rules.gd (TeaseRules; gleiche Konstanten und Gründe, test_web_contract prüft den
  *    Gleichlauf). Der Gastgeber prüft maßgeblich; hier graut die Oberfläche aus, was er ablehnen würde (Abschnitt 2 „Lokal vorgeprüft“).
  *  - Netz (Abschnitt 4): Wunsch {t:"fx", k, to?|r?}; nach jedem welcome und bei Änderung {t:"fx_pref", off}. Vom Gastgeber kommen
  *    fx {k, from, to?, r?} (an alle Sitzenden, auch an den Absender – erst dann erscheint der Effekt), fx_no {why} (nur an den
  *    Absender: late | busy | rate) und fx_offs {seats} (Plätze mit Necken aus). app.js wertet sie nur am Tisch aus.
  *  - Bedienung (Abschnitt 2): Tipp auf den Kopf eines Mitspielers öffnet das Necken-Menü (Fächer ohne sichtbare Rückseiten auch;
- *    großer Modus: der Avatar). Beta 1.6.5 (Nutzer nach einer Familienrunde, 15.10.2026): Die 4 Reaktionen liegen direkt als eigene
- *    Knöpfe am eigenen Platz (Leiste #nk-leiste, ein Tipp = senden, Reihenfolge Lachen, Klatschen, Daumen hoch, Schreck); der
+ *    großer Modus: der Avatar). Beta 1.6.5 (Nutzer nach einer Familienrunde, 15.10.2026): Die Reaktionen (ab 1.6.11 fünf) liegen direkt als eigene
+ *    Knöpfe am eigenen Platz (Leiste #nk-leiste, ein Tipp = senden, Reihenfolge Lachen, Klatschen, Daumen hoch, Schreck, Bäää); der
  *    Lachgesicht-Knopf mit Fächer entfällt. Menü und Leiste liegen in einer eigenen Ebene über dem Viewport (#necken, außerhalb der
  *    skalierten .buehne, Knöpfe mindestens 44 CSS-px, Schrift nach --fs); ein Tipp neben das Menü schließt es und wirkt normal weiter.
  *  - Darstellung und Töne (Abschnitt 3): Effekte auf der Bühne (tisch.flug), Zeilen für den Betroffenen in der Ebene. Ziel hört laut,
@@ -40,7 +40,7 @@
   const CUSHION = 'kissen', CUSHION_POP = 'kissen_pop';
   const CUSHION_BLOCK_MIN_MS = 60000, CUSHION_BLOCK_MAX_MS = 180000;
   const CUSHION_TRIGGERS = ['play', 'draw', 'accept', 'stake'];
-  const FX_REACTS = ['lachen', 'schreck', 'klatschen', 'daumen'];
+  const FX_REACTS = ['lachen', 'schreck', 'klatschen', 'daumen', 'baeh'];   // Beta 1.6.11: + „Bäää“ (😝)
   const WAKE_KINDS = ['snore', 'alarm'];
   const FX_SLOW_MS = 10000;
   const WAKE_BUSY_MS = { snore: 4500, alarm: 5000 };
@@ -234,10 +234,10 @@
     + '<path class="nk-anb" d="M-11.3,-3.2 V-4.8 A2.5,2.5 0 0 1 -8.8,-7.3 H8.8 A2.5,2.5 0 0 1 11.3,-4.8 V-3.2 Z"/><path class="nk-anl" d="M-7.5,1.6 H7.5 M-7.5,5.2 H2.5"/></svg>';
   // [data-kissen, Abzeichen, Beschriftung]; Reihenfolge wie im Wunsch des Nutzers: erst geheim, dann mit Namen
   const KISSEN_KNOEPFE = [['geheim', SVG_ABZ_GEHEIM, 'Kissen geheim'], ['name', SVG_ABZ_NAME, 'Kissen mit Namen']];
-  const REAKT = { lachen:['😂', 'Lachen'], schreck: ['😱', 'Schreck'], klatschen: ['👏', 'Klatschen'], daumen: ['👍', 'Daumen hoch'] };
+  const REAKT = { lachen:['😂', 'Lachen'], schreck: ['😱', 'Schreck'], klatschen: ['👏', 'Klatschen'], daumen: ['👍', 'Daumen hoch'], baeh: ['😝', 'Bäää'] };
   // Beta 1.6.5 (Nutzer 15.10.2026): Reihenfolge der Reaktionsknöpfe überall Lachen, Klatschen, Daumen hoch, Schreck
   // (FX_REACTS bleibt die Liste des Protokolls, Spiegel von TeaseRules)
-  const REAKT_REIHE = ['lachen', 'klatschen', 'daumen', 'schreck'];
+  const REAKT_REIHE = ['lachen', 'klatschen', 'daumen', 'schreck', 'baeh'];   // Beta 1.6.11: + Bäää
   const LEISTE_ABST = 6;   // Abstand zwischen den Reaktionsknöpfen (CSS-px)
   // Beta 1.6.5 (Nutzer 15.10.2026: „Die sind doch viel schöner.“): Reaktionen als Bilder aus Microsoft Fluent Emoji (MIT,
   // bilder/reaktionen/LIZENZ.md; dieselben Dateien wie game/assets/ui/reaktionen/ der App), damit sie auf jedem Gerät gleich aussehen.
@@ -253,7 +253,7 @@
     f.appendChild(el('span', 'nk-re', REAKT[r][0]));
     return f;
   }
-  const REAKT_MS = { lachen: 1920, schreck: 610, klatschen: 1920, daumen: 620 };   // Dauer der Töne (Deckel: höchstens 2 gleichzeitig)
+  const REAKT_MS = { lachen: 1920, schreck: 610, klatschen: 1920, daumen: 620, baeh: 980 };   // Dauer der Töne (Deckel: höchstens 2 gleichzeitig)
   const KNOEPFE = [['ball', SVG_KUGEL, 'Papierkugel'], ['snore', SVG_ZZZ, 'Schnarchen'], ['alarm', SVG_WECKER, 'Wecker'], ['ansehen', SVG_KARTEN, 'Karten ansehen']];
   const LEISE = 0.25;            // −12 dB (Absender, Zuschauer beim Plopp)
   const FLUG_MS = 700, LIEGT_MS = 3000, LIEGT_SK = 0.78, SCHNARCH_MS = 4200, TICK_MS = 3000, KLINGEL_MS = 1800, REAKT_AUF_MS = 1600, MENUE_ZU_MS = 15000;   // Beta 1.6.7: Menü schließt nach 15 s ohne Tipp (vorher 5 s)
@@ -652,11 +652,22 @@
       const spalte = nr.right + (parseFloat(getComputedStyle(name).marginRight) || 0) * (t.s || 1);   // rechter Rand der Namensspalte (ohne Platzhalter)
       return { e, rect: ab(r), nameEnde: nr.left + nw, spalte, zahl: ab(zahl.getBoundingClientRect()), dy };
     },
-    // Reaktionsleiste platzieren (nach jedem tisch.zeige und bei Größenänderung). Formen: Reihe (4 × 1), Quadrat (2 × 2), Spalte
-    // (1 × 4). Lagen nach Vorrang: hochkant bzw. fast quadratisch (Rahmen) unter dem Tisch links (der Hinweis „Quer halten“ rückt
-    // nach unten), sonst darüber; großer Modus als Reihe in der Zeile „Du“ vor der Kartenzahl, sonst 2 × 2 links bündig daran; sonst rechts neben
+    // Bildprüfung 1.6.11: Fläche eines Mitspielers (normale Ansicht) in CSS-px = Box von .gg (Kopf und Fächer) vereint mit den
+    // gedrehten Fächerkarten, die etwas darüber hinausragen; null, wenn unsichtbar
+    _platzFlaeche(e) {
+      if (!e || e.classList.contains('aus')) return null;
+      const r0 = e.getBoundingClientRect();
+      if (!r0.width) return null;
+      let l = r0.left, o = r0.top, r = r0.right, u = r0.bottom;
+      e.querySelectorAll('.faecher *').forEach(k => { const b = k.getBoundingClientRect(); if (b.width > 0) { l = Math.min(l, b.left); o = Math.min(o, b.top); r = Math.max(r, b.right); u = Math.max(u, b.bottom); } });
+      return { left: l, top: o, right: r, bottom: u, width: r - l, height: u - o };
+    },
+    // Reaktionsleiste platzieren (nach jedem tisch.zeige und bei Größenänderung). Formen (ab 1.6.11 fünf Knöpfe): Reihe (5 × 1), Block (3 + 2, zweite Reihe mittig; bis 1.6.10 2 × 2), Spalte
+    // (1 × 5). Lagen nach Vorrang: hochkant bzw. fast quadratisch (Rahmen) unter dem Tisch links (der Hinweis „Quer halten“ rückt
+    // nach unten), sonst darüber; großer Modus als Reihe in der Zeile „Du“ vor der Kartenzahl, sonst als Block links bündig daran; sonst rechts neben
     // „Du“, darüber oder als Quadrat. Hart gemieden (nie verdecken): Hand, Stapel, Ablage, Mau, „Erwischt!“, Sortieren, Rückseiten,
-    // Hinweisleiste mit Aktionen, Menü-/Ton-Knopf, Spielerliste (großer Modus), Glücksspiel; weich die Mitspieler und die Farbe.
+    // Hinweisleiste mit Aktionen, Menü-/Ton-Knopf, Spielerliste (großer Modus), Glücksspiel, ab 1.6.11 auch die Mitspieler samt
+    // Kartenfächer (vorher weich); weich nur noch die Farbe. Findet sich an „Du“ in voller Größe nichts, dieselben Lagen mit 40/36 px.
     layout() {
       if (!this.leiste) return;
       const a = this.app, t = a && a.tisch, v = t && t.v;
@@ -674,8 +685,9 @@
       }
       const rahmen = document.body.classList.contains('rahmen');
       const d = Math.max(rahmen ? 52 : 44, Math.round(58 * t.s)), gap = LEISTE_ABST;   // Rahmen: Platz genug für etwas größere Knöpfe
-      const FORM = { reihe: [4, 1], quadrat: [2, 2], spalte: [1, 4] };
-      const mass = f => ({ w: FORM[f][0] * d + (FORM[f][0] - 1) * gap, h: FORM[f][1] * d + (FORM[f][1] - 1) * gap });
+      const NR = REAKT_REIHE.length, QS = Math.ceil(NR / 2);   // 1.6.11: 5 Knöpfe, „quadrat“ = Block 3 + 2
+      const FORM = { reihe: [NR, 1], quadrat: [QS, Math.ceil(NR / QS)], spalte: [1, NR] };
+      const mass = (f, dd, gg) => { dd = dd || d; gg = gg || gap; return { w: FORM[f][0] * dd + (FORM[f][0] - 1) * gg, h: FORM[f][1] * dd + (FORM[f][1] - 1) * gg }; };
       const rect = sel => { const e = typeof sel === 'string' ? document.querySelector(sel) : sel; if (!e || e.hidden) return null; const r = e.getBoundingClientRect(); return r.width > 0 ? r : null; };
       // Stapel und Ablage sind Ankerpunkte ohne eigene Größe (Karten absolut darin): deren Fläche ist die Hülle der Kinder
       const huelle = e => {
@@ -696,7 +708,10 @@
       // großer Modus: Zeilen der Spielerliste hart; die eigene zählt erst unten (Lage nach dem Gleiten, für die Reihe darin nicht)
       // (Die Reihe in der eigenen Zeile prüft die anderen Zeilen nicht: sie gleiten gerade, ihre Lage jetzt ist nicht die nach dem Gleiten.)
       const zeilen = [];
-      alle(t.gross ? '#tisch .gg:not(.aus):not(.ich)' : '#tisch .gg', t.gross ? zeilen : weich);
+      if (t.gross) alle('#tisch .gg:not(.aus):not(.ich)', zeilen);
+      // Bildprüfung 1.6.11 (kleines Handy quer, fünf Knöpfe): Mitspieler samt Kartenfächer sind hart (bis 1.6.10 weich) – der Block
+      // lag sonst auf Lenas Karten. Fläche = Kopf mit Fächer (gedrehte Karten ragen etwas über die Box hinaus)
+      else document.querySelectorAll('#tisch .gg').forEach(e => { const r = this._platzFlaeche(e); if (r) hart.push(r); });
       const root = t.root.getBoundingClientRect();
       // Was auf dem Tisch liegt, zählt nur innerhalb von #tisch (Hand und Fächer ragen im Rahmen über den Rand, sind dort aber abgeschnitten)
       const schnitt = r => { const left = Math.max(r.left, root.left), top = Math.max(r.top, root.top), right = Math.min(r.right, root.right), bottom = Math.min(r.bottom, root.bottom);
@@ -705,7 +720,8 @@
       const runde = rect('#runde:not([hidden]) .runde-karte');   // Rundenende-Tafel (liegt unter der Ebene): nicht zudecken
       if (runde) hart.push(runde);
       const kand = [];
-      const dazu = (form, left, top, unten) => kand.push(Object.assign({ form, left, top, unten: !!unten }, mass(form)));
+      // dd/gg: kleinere Knöpfe (klein = Ausweichgröße, siehe Kosten)
+      const dazu = (form, left, top, unten, dd, gg) => kand.push(Object.assign({ form, left, top, unten: !!unten }, mass(form, dd, gg), dd ? { d: dd, gap: gg, klein: true } : {}));
       if (rahmen) {
         const m = mass('reihe');
         const rest = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--rahmen-rest')) || 0;
@@ -713,18 +729,18 @@
         dazu('reihe', root.left + 12, root.top - m.h - 10);
       }
       // Großer Modus (Bildprüfung 1.6.5): wie in der App als Reihe IN der Zeile „Du“ rechtsbündig vor der Kartenzahl (dem Wort „Du“
-      // bleibt sein Platz); Ausweichlage 2 × 2 links bündig an der eigenen Zeile, kleinere Knöpfe (unter 36 px, sehr schmale Handys) erst
+      // bleibt sein Platz); Ausweichlage Block (3 + 2) links bündig an der eigenen Zeile, kleinere Knöpfe (unter 36 px, sehr schmale Handys) erst
       // danach, aber noch vor den Notlagen am Rand. Nie mehr als Spalte über alle Zeilen
       // (las sich wie „Reaktion an diesen Spieler“). Trefferfläche: unsichtbarer Rand bis 44 px (--nk-tx/--nk-ty).
       const zeile = t.gross ? this._eigeneZeile(t) : null;
       if (zeile) {
         const x1 = zeile.zahl.left - 5, x0 = zeile.nameEnde + 6;
-        const passt = gi => Math.min(d, Math.floor((x1 - x0 - 3 * gi) / 4), Math.max(36, Math.floor(zeile.rect.height - 2)));
+        const passt = gi => Math.min(d, Math.floor((x1 - x0 - (NR - 1) * gi) / NR), Math.max(36, Math.floor(zeile.rect.height - 2)));
         // Abstand 6, 5 oder 4 px: am liebsten Trefferfläche (Knopf + Abstand, je halb links und rechts) ≥ 44 px, dann der größere Knopf
         let gi = LEISTE_ABST, di = passt(gi);
         [5, 4].forEach(g => { const x = passt(g); if (Math.min(44, x + g) * 100 + x > Math.min(44, di + gi) * 100 + di) { gi = g; di = x; } });
         if (di >= 30) {   // unter 36 px (sehr schmale Handys): notfall, siehe Kosten
-          const w = 4 * di + 3 * gi;
+          const w = NR * di + (NR - 1) * gi;
           kand.push({ form: 'reihe', left: x1 - w, top: zeile.rect.top + zeile.rect.height / 2 - di / 2, unten: false, w, h: di, d: di, gap: gi, inZeile: true, notfall: di < 36 });
         }
       }
@@ -742,20 +758,39 @@
         if (s) { dazu('reihe', s.left, s.top - mass('reihe').h - 10); dazu('quadrat', s.left, s.top - mass('quadrat').h - 10); }
       } else {
         const ank = rect(t.ichZahl);
+        // Lagen an „Du“; dd/gg nur für die Ausweichgrößen (kleine Handys quer: in voller Größe läge der Block auf einem Kartenfächer)
+        const amIch = (dd, gg) => {
+          const r = mass('reihe', dd, gg), q = mass('quadrat', dd, gg);
+          dazu('reihe', ank.right + 10, Math.min(ank.top + ank.height / 2 - r.h / 2, ank.bottom + 6 - r.h), false, dd, gg);   // etwas höher: Sortieren liegt knapp darunter
+          dazu('reihe', ank.left, ank.top - r.h - 8, false, dd, gg);
+          dazu('reihe', ank.right + 10, ank.top - r.h - 8, false, dd, gg);
+          dazu('quadrat', ank.right + 10, ank.bottom - q.h, false, dd, gg);
+          dazu('quadrat', ank.left, ank.top - q.h - 8, false, dd, gg);
+          dazu('quadrat', ank.right + 10, ank.bottom + 6 - q.h, false, dd, gg);   // 1.6.11: etwas tiefer (unter einem Fächer)
+        };
         if (ank) {
-          const r = mass('reihe'), q = mass('quadrat');
-          dazu('reihe', ank.right + 10, Math.min(ank.top + ank.height / 2 - r.h / 2, ank.bottom + 6 - r.h));   // etwas höher: Sortieren liegt knapp darunter
-          dazu('reihe', ank.left, ank.top - r.h - 8);
-          dazu('reihe', ank.right + 10, ank.top - r.h - 8);
-          dazu('quadrat', ank.right + 10, ank.bottom - q.h);
-          dazu('quadrat', ank.left, ank.top - q.h - 8);
+          amIch();
+          // Bildprüfung 1.6.11: dieselben Lagen mit 40 bzw. 36 px (sichtbar nie unter 36; der Abstand wächst, damit Knopf + Abstand
+          // weiter 44 px Trefferfläche ergeben) – vor den Notlagen am Rand
+          [40, 36].forEach(dd => { if (dd < d) amIch(dd, Math.max(gap, 44 - dd)); });
         }
       }
       // Notlagen (z. B. Rundenende-Tafel über der Mitte): Spalte am linken bzw. rechten Rand zwischen den Eckknöpfen
       { const m = mass('spalte'), oben = (rect(t.knMenue) || { bottom: root.top }).bottom + 10;
         const unten = Math.min((rect(t.knSort) || { top: root.bottom }).top - 10, t.gross ? 1e9 : (rect(t.ichZahl) || { top: 1e9 }).top - 8);
         dazu('spalte', root.left + 6, Math.max(oben, unten - m.h));
-        dazu('spalte', root.right - m.w - 6, (rect(t.knTon) || { bottom: root.top }).bottom + 10); }
+        const rOben = (rect(t.knTon) || { bottom: root.top }).bottom + 10;
+        dazu('spalte', root.right - m.w - 6, rOben);
+        // Beta 1.6.11 (Bildprüfung Rundenende, fünf Knöpfe): passt die Spalte nicht ganz zwischen die Eckknöpfe (links: Menü und „Du“,
+        // rechts: Ton und Mau), dieselbe Spalte mit etwas kleineren Knöpfen (≥ 36 px) – vorher lag der fünfte auf dem Mau-Knopf
+        const enger = (left, von, bis, rechts) => {
+          const dd = Math.floor((bis - von - (NR - 1) * gap) / NR);
+          if (dd >= d || dd < 36) return;
+          const h = NR * dd + (NR - 1) * gap;
+          kand.push({ form: 'spalte', left: rechts ? root.right - dd - 6 : left, top: rechts ? von : Math.max(von, bis - h), unten: false, w: dd, h, d: dd });
+        };
+        enger(root.left + 6, oben, unten, false);
+        enger(0, rOben, (rect(t.knMau) || { top: root.bottom }).top - 10, true); }
       const vw = window.innerWidth, vh = window.innerHeight;
       const flaeche = (a, b, x) => ueber(a, b, x) ? Math.max(0, Math.min(a.right, b.right + x) - Math.max(a.left, b.left - x)) * Math.max(0, Math.min(a.bottom, b.bottom + x) - Math.max(a.top, b.top - x)) : 0;
       let wahl = null, beste = Infinity;
@@ -765,7 +800,8 @@
         const r = { left, top, right: left + c.w, bottom: top + c.h, width: c.w, height: c.h };
         let kosten = i * 300 + (Math.abs(left - c.left) + Math.abs(top - c.top)) * 50;
         (c.inZeile ? hart : hart.concat(zeilen, eigen)).forEach(h => { const f = flaeche(r, h, 4); if (f > 0) kosten += 1e6 + f * 40; });
-        if (c.notfall) kosten += 1200;   // kleine Knöpfe in der Zeile: schlechter als 2 × 2 daneben, besser als die Notlagen am Rand
+        if (c.notfall) kosten += 1200;   // kleine Knöpfe in der Zeile: schlechter als der Block daneben, besser als die Notlagen am Rand
+        if (c.klein) kosten += 1500 + (d - c.d) * 40;   // 1.6.11: Ausweichgröße an „Du“ nur, wenn keine Lage in voller Größe frei ist
         weich.forEach(h => { kosten += flaeche(r, h, 0) * 2; });
         c.kosten = kosten;
         if (kosten < beste) { beste = kosten; wahl = Object.assign({}, c, { left, top }); }
@@ -775,6 +811,7 @@
       L.hidden = false;
       L.dataset.form = wahl.form;
       L.dataset.lage = wahl.inZeile ? 'zeile' : '';
+      L.dataset.notfall = wahl.notfall ? '1' : '';   // Selbsttest: Knöpfe unter 36 px (Zeile „Du“ zu schmal) nur als markierte Notlage
       L.style.left = Math.round(wahl.left) + 'px';
       // In der Zeile „Du“ gleitet die Leiste mit der Zeile (0,45 s wie #tisch.gross .gg): erst an die Lage der Zeile jetzt, dann ans Ziel
       if (wahl.inZeile && Math.abs(zeile.dy) > 0.5) {
@@ -788,7 +825,9 @@
       L.style.gap = gg + 'px';
       const rand = Math.max(0, (44 - dd) / 2);   // Trefferfläche: unsichtbarer Rand bis 44 px, seitlich höchstens bis zur Mitte des Abstands
       L.style.setProperty('--nk-tx', Math.min(gg / 2, rand) + 'px'); L.style.setProperty('--nk-ty', rand + 'px');
+      const zeilenN = FORM[wahl.form][1], letzte = NR - (zeilenN - 1) * sp;   // 1.6.11: kürzere letzte Reihe (Block 3 + 2) mittig
       Array.from(L.children).forEach((b, i) => {
+        b.style.left = i >= (zeilenN - 1) * sp && letzte < sp ? Math.round((sp - letzte) * (dd + gg) / 2) + 'px' : '';
         b.style.width = b.style.height = dd + 'px';
         b.style.fontSize = Math.round(dd * 0.56) + 'px';
         b.style.setProperty('--i', String(i));
@@ -1161,6 +1200,29 @@
       const kand = [];
       if (t.gross) kand.push({ x: z.x + z.r + (kp.zahlX - z.x - z.r) * 0.6 + dx, y: z.y, rel });
       kand.push({ x: z.x + dx, y: z.y - z.r - g * 0.45, rel });
+      // Beta 1.6.11 (Bildprüfung, fünf Knöpfe): Liegt die Leiste über „Du“, steigt die eigene Reaktion über der Leiste auf statt dahinter,
+      // und zwar am weitesten links über der Leiste, wo die ganze Bahn (Start und Weg nach oben) keinen Mitspieler samt Kartenfächer
+      // berührt (sähe sonst aus wie seine Reaktion; zuerst lag sie mitten auf Lenas Fächer); weitere gleichzeitige im nächsten freien Platz
+      const lb = !t.gross && t.v && from === t.v.seat ? this._bRect(this.leiste) : null;
+      if (lb && lb.b > 0 && lb.t < t.H) {
+        const fremde = [];
+        document.querySelectorAll('#tisch .gg').forEach(e => {
+          if (+e.dataset.seat === from) return;
+          const f = this._platzFlaeche(e);
+          if (!f) return;
+          const a = t.zuBuehne(f.left, f.top), b = t.zuBuehne(f.right, f.bottom);
+          fremde.push({ l: a.x - 6, t: a.y - 6, r: b.x + 6, b: b.y + 6 });   // etwas Luft
+        });
+        const y = lb.t - g * 0.55 - 8, x0 = Math.max(6 - rel.l, lb.l);   // ganz links (Bühnenrand), höchstens ab dem Anfang der Leiste
+        const plaetze = [];
+        for (let k = 0; k < 8; k++) {
+          const x = x0 + k * g * 1.08;
+          if (x + rel.l > lb.r) break;
+          const r = { l: x + rel.l, t: y + rel.t, r: x + rel.r, b: y + rel.b };   // ganze Bahn (mit dem Weg nach oben)
+          if (!fremde.some(k2 => k2.l < r.r && k2.r > r.l && k2.t < r.b && k2.b > r.t)) plaetze.push(x);
+        }
+        if (plaetze.length) kand.push({ x: plaetze[n % plaetze.length], y, rel });
+      }
       kand.push({ x: z.x - z.r - g * 0.6 - 8 + dx, y: z.y, rel });
       kand.push({ x: kp.rect.r + g * 0.6 + 8 + dx, y: z.y, rel });
       const p = this._waehle(kand, this._hindernisse(from));

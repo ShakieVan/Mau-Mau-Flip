@@ -60,6 +60,13 @@ extends RefCounted
 #   mit der Farbwahl.
 # - Plätze mitten im Spiel (Beta 1.4.2): insert_player/remove_player nummerieren alle Plätze neu (_remap, Ereignis seats); Einzelheiten
 #   im Abschnitt „Plätze ändern“ und in docs/module/dazuholen.md.
+# - Kontern (counter_round = on, Beta 1.6.11, docs/module/kontern.md): Wer keine Karten mehr hat (letzte Karte gelegt, gesetzt oder
+#   mitabgelegt, beim Kartentausch eine leere Hand bekommen), ist noch nicht fertig, sondern wartet mit 0 Karten in der Zugfolge
+#   (counter_wait, Ereignis counter_open). Bekommt er Karten (Ziehkarte, Strafe, Kartentausch, Flip-Überraschung …), ist er wieder
+#   normal im Spiel (Ereignis countered). Fertig (finish mit survived = true) ist er, wenn der Zug wieder bei ihm ankäme (_new_turn)
+#   oder er übersprungen wird (Aussetzen, Alle aussetzen, Strafe mit Aussetzen ohne Karten). Eine Ziehkarte auf einen Wartenden
+#   zieht er sofort (er kann nichts drauflegen); den eigenen Kartentausch macht der Leger nicht mit. Endet die Runde anders
+#   (blockiert, zu wenige Spieler), zählen Wartende wie alle Übrigen nach ihren (0) Karten.
 
 const FORMAT := 1
 const SWAP := "tausch"
@@ -110,6 +117,10 @@ var gamble := {}                 # laufendes Glücksspiel {seat, q (geheim, 1–
 var dpick := {}                  # offene Ablege-Auswahl {seat, color (Ablegefarbe), card (Ablegen-Karte), wild, undo | flip}
 var dlog := {}                   # Ablage-Protokoll: id → {s: Leger (-1 Startkarte), c: Wunschfarbe, h: verdeckter Einsatz}
 var dside := {}                  # nur flip_mode = card: id → Seite (0/1), mit der die Ablagekarte liegt
+var counter_wait: Array = []     # Hausregel Kontern: Plätze ohne Karten in der Konter-Runde, in der Reihenfolge, in der sie leer wurden
+var counter_done := -1           # Hausregel Kontern: eben nach überstandener Konter-Runde fertig (Hinweis bis zur nächsten Handlung)
+var counter_fresh: Array = []    # Hausregel Kontern: Wartende, die außerhalb ihres Zugs leer wurden (leere Hand beim Kartentausch);
+                                 # der Zug kommt bei ihnen erst noch an: beim ersten Ankommen geht er weiter, beim nächsten sind sie fertig
 
 var _valid := true              # false bei ungültiger Spielerzahl: start_round() und apply() lehnen ab
 var _forced_rolls: Array = []   # Testhaken (force_rolls): vorgegebene Ergebnisse der nächsten Drucke, nicht gespeichert
@@ -326,8 +337,8 @@ func remove_player(r: int) -> Dictionary:
 				wished = true                # Ablegen-Joker oben ohne Spielfarbe: die bisherige Farbe gilt als Wunsch
 				_note_wish(color)
 			dpick = {}
-		if finisher >= 0:
-			_finish(finisher, ev)
+		if finisher >= 0 and not _emptied(finisher, ev):
+			finisher = -1                # Kontern: Der Leger wartet erst seine Konter-Runde ab
 		if was_current:
 			nxt = _next_in(r, dir)
 			if nxt == r:
@@ -416,6 +427,19 @@ func _remap(map: Array, new_n: int) -> void:
 		gamble.seat = int(m.call(int(gamble.seat)))
 	if not dpick.is_empty():
 		dpick.seat = int(m.call(int(dpick.seat)))
+	var cw: Array = []
+	for s in counter_wait:
+		var t: int = m.call(int(s))
+		if t >= 0:
+			cw.append(t)
+	counter_wait = cw
+	var cf: Array = []
+	for s in counter_fresh:
+		var t: int = m.call(int(s))
+		if t >= 0 and counter_wait.has(t):
+			cf.append(t)
+	counter_fresh = cf
+	counter_done = int(m.call(counter_done))
 	for id in dlog:
 		var e: Dictionary = dlog[id]
 		if int(e.s) >= 0:
@@ -459,6 +483,8 @@ func apply(seat: int, action: Dictionary) -> Dictionary:
 	var ev: Array = []
 	var why := ""
 	_why_lt = []
+	var done_before := counter_done
+	counter_done = -1                    # Hinweis „… ist fertig!“ gilt bis zur nächsten Handlung
 	match a:
 		"play":
 			why = _act_play(seat, action, ev)
@@ -491,6 +517,7 @@ func apply(seat: int, action: Dictionary) -> Dictionary:
 		_:
 			why = "Unbekannte Aktion."
 	if why != "":
+		counter_done = done_before
 		# reason_lt: Bausteine für die Anzeige in der Sprache des Empfängers (I18n); ohne Platzhalter ist der Text selbst die msgid.
 		var lt: Array = _why_lt if not _why_lt.is_empty() and I18n.render(_why_lt, false) == why else [why]
 		_why_lt = []
@@ -712,11 +739,9 @@ func _act_decide(seat: int, challenge: bool, ev: Array) -> String:
 		ev.append({"e": "accept", "seat": seat})
 		_take_pending(seat, ev)
 	pending = {}
-	if finisher:
-		_finish(by, ev)
-		if _round_should_end():
-			_end_round("fertig", ev)
-			return ""
+	if finisher and _emptied(by, ev) and _round_should_end():
+		_end_round("fertig", ev)
+		return ""
 	_after_penalty(seat, ev)
 	return ""
 
@@ -806,8 +831,7 @@ func _act_press(seat: int, ev: Array) -> String:
 		return ""
 	if (hands[seat] as Array).is_empty():
 		_stake_under(seat, "empty", ev)
-		_finish(seat, ev)
-		if _round_should_end():
+		if _emptied(seat, ev) and _round_should_end():
 			_end_round("fertig", ev)
 			return ""
 		_advance(seat, false, ev)
@@ -1048,6 +1072,9 @@ func _start(ev: Array) -> void:
 	result = {}
 	gamble = {}
 	dpick = {}
+	counter_wait = []
+	counter_fresh = []
+	counter_done = -1
 	for s in n:
 		mau_said[s] = false
 		place[s] = 0
@@ -1097,6 +1124,19 @@ func _reveal_start_card(ev: Array) -> void:
 
 
 func _new_turn(seat: int, ev: Array) -> void:
+	# Kontern: Käme der Zug wieder bei einem Wartenden an, hat er die Konter-Runde überstanden und ist fertig; dran ist der Nächste.
+	while counter_wait.has(seat):
+		if counter_fresh.has(seat):
+			# Leer geworden, ohne dran gewesen zu sein (Kartentausch): Der Zug kommt erst jetzt bei ihm an. Er wartet weiter,
+			# dran ist der Nächste; fertig ist er beim nächsten Ankommen (oder wenn er übersprungen wird).
+			counter_fresh.erase(seat)
+			seat = _next_in(seat, dir)
+			continue
+		_counter_final(seat, ev)
+		if _round_should_end():
+			_end_round("fertig", ev)
+			return
+		seat = _next_in(seat, dir)
 	current = seat
 	state = "turn"
 	turn_started = false
@@ -1117,6 +1157,9 @@ func _stalled() -> bool:
 		return false
 	var sig: Array = [side, current, dir, color, wished, str(pending.get("kind", "")), int(pending.get("amount", 0)),
 		draw_pile, discard, place]
+	if not counter_wait.is_empty():
+		sig.append(counter_wait)
+		sig.append(counter_fresh)
 	for h in hands:
 		var sorted_hand: Array = (h as Array).duplicate()
 		sorted_hand.sort()
@@ -1132,6 +1175,11 @@ func _advance(from: int, skip: bool, ev: Array) -> void:
 	var nxt := _next_active(from)
 	if skip:
 		ev.append({"e": "skip", "seat": nxt})
+		if counter_wait.has(nxt):
+			_counter_final(nxt, ev)          # Kontern: übersprungen = Konter-Runde überstanden
+			if _round_should_end():
+				_end_round("fertig", ev)
+				return
 		nxt = _next_active(nxt)
 	_new_turn(nxt, ev)
 
@@ -1155,7 +1203,7 @@ func _next_in(from: int, step: int) -> int:
 # Stapel leer sind (wird wieder eine Karte frei, ist er normal dran und zieht). Nicht gemeint sind der Platz am Zug (Glücksspiel oder
 # Ablege-Auswahl mit leerer Hand) und der Leger einer anzweifelbaren letzten Karte.
 func _out_of_cards(s: int) -> bool:
-	if place[s] != 0 or not (hands[s] as Array).is_empty() or not state in PLAY_PHASES or s == current:
+	if place[s] != 0 or not (hands[s] as Array).is_empty() or not state in PLAY_PHASES or s == current or counter_wait.has(s):
 		return false
 	if not draw_pile.is_empty() or discard.size() > 1:
 		return false
@@ -1232,8 +1280,8 @@ func _play_rest(p: int, kind: String, legal: bool, snap: Array, ev: Array) -> vo
 	_after_hand_shrinks(p)
 	var finishing := left == 0
 	if finishing and not challengeable:
-		_finish(p, ev)
-		if _round_should_end():
+		# Kontern: _emptied startet die Konter-Runde statt fertig; die Karte wirkt dann ganz normal (die Runde läuft ja weiter).
+		if _emptied(p, ev) and _round_should_end():
 			_final_effect(p, kind, ev)
 			_end_round("fertig", ev)
 			return
@@ -1250,10 +1298,12 @@ func _play_rest(p: int, kind: String, legal: bool, snap: Array, ev: Array) -> vo
 			_advance(p, _active_count() == 2 and config.two_player_reverse_skips, ev)
 		"alle_aussetzen":
 			ev.append({"e": "skip_all", "seat": p})
+			if _counter_skip_all(p, ev):
+				return
 			if place[p] != 0:
 				_advance(p, false, ev)         # fertig: Der Zusatzzug entfällt, der Nächste macht weiter.
 			else:
-				_new_turn(p, ev)
+				_new_turn(p, ev)               # (wartet p selbst in der Konter-Runde, ist er damit fertig)
 		"flip":
 			_do_flip(ev)
 			if color == "":
@@ -1270,7 +1320,7 @@ func _play_rest(p: int, kind: String, legal: bool, snap: Array, ev: Array) -> vo
 			_swap_hands(p, ev)
 			_advance(p, false, ev)
 		GAMBLE:
-			if place[p] != 0:
+			if place[p] != 0 or (hands[p] as Array).is_empty():
 				_advance(p, false, ev)             # als letzte Karte: fertig, ohne Glücksspiel (es gibt nichts zu setzen)
 			else:
 				_start_gamble(p, ev)
@@ -1331,8 +1381,9 @@ func _surprise_kind(p: int) -> String:
 	var k := _kind[faces[side * n_cards + int(discard.back())]]
 	if not SURPRISE_KINDS.has(k):
 		return ""
-	if (k == GAMBLE or k == DISCARD or k == DISCARD_WILD) and (p < 0 or p >= place.size() or place[p] != 0):
-		return ""
+	if (k == GAMBLE or k == DISCARD or k == DISCARD_WILD) and (p < 0 or p >= place.size() or place[p] != 0 \
+			or (hands[p] as Array).is_empty()):
+		return ""                          # (leere Hand: Kontern, p wartet in der Konter-Runde)
 	return k
 
 
@@ -1351,6 +1402,8 @@ func _surprise(p: int, ev: Array, dcol := "") -> void:
 			_advance(p, _active_count() == 2 and config.two_player_reverse_skips, ev)
 		"alle_aussetzen":
 			ev.append({"e": "skip_all", "seat": p})
+			if _counter_skip_all(p, ev):
+				return
 			if place[p] != 0:
 				_advance(p, false, ev)
 			else:
@@ -1384,7 +1437,13 @@ func _start_pending(p: int, kind: String, legal: bool, snap: Array, finishing: b
 	pending = {"kind": kind, "amount": amount, "by": p, "victim": victim, "color": color, "legal": legal,
 		"snap": snap.duplicate(), "finisher": finishing}
 	ev.append({"e": "pending", "kind": kind, "amount": amount, "seat": victim, "by": p})
-	if challengeable and (kind == PLUS2 or kind == JAGD) and config.wild_restriction == "bluff":
+	if counter_wait.has(victim):
+		# Kontern: Ohne Karten kann das Opfer nichts drauflegen oder anzweifeln – es zieht sofort und ist wieder im Spiel.
+		if finishing:
+			_emptied(p, ev)              # anzweifelbare letzte Karte (bluff): auch der Leger wartet jetzt (mit Kontern nie gleich fertig)
+		_take_pending(victim, ev)
+		_after_penalty(victim, ev)
+	elif challengeable and (kind == PLUS2 or kind == JAGD) and config.wild_restriction == "bluff":
 		current = victim
 		state = "challenge"
 		turn_started = false
@@ -1413,7 +1472,8 @@ func _take_pending(seat: int, ev: Array) -> void:
 # Nach dem Strafziehen: offiziell setzt das Opfer aus (der Nächste ist dran); mit der Hausregel penalty_turn = play ist das
 # Opfer danach ganz normal am Zug (legen oder, wenn nichts passt, wie üblich ziehen).
 func _after_penalty(seat: int, ev: Array) -> void:
-	if config.penalty_turn == "play":
+	# Kontern: Hat ein Wartender nichts bekommen (beide Stapel leer), ist er damit fertig (_new_turn).
+	if config.penalty_turn == "play" or counter_wait.has(seat):
 		_new_turn(seat, ev)
 	else:
 		_advance(seat, false, ev)
@@ -1459,13 +1519,19 @@ func _do_flip(ev: Array) -> void:
 func _swap_hands(p: int, ev: Array) -> void:
 	var n := players.size()
 	var step := config.swap_step(dir)
-	if _active_count() < 2:
+	# Kontern: Wartende tauschen mit (sie bekommen eine Hand, ihre leere wandert weiter), nur der Leger selbst nicht, wenn der
+	# Tausch seine letzte Karte war (_swap_skip: er wartet und wird beim Weiterreichen übergangen).
+	var lone := counter_wait.has(p)
+	if _active_count() - (1 if lone else 0) < 2:
 		return
 	var old: Array = hands.duplicate()
 	var targets := {}                # vor dem Umschichten bestimmen (_next_in liest die Hände wegen _out_of_cards)
 	for s in n:
-		if place[s] == 0 and not _out_of_cards(s):
-			targets[s] = _next_in(s, step)
+		if place[s] == 0 and not _out_of_cards(s) and not (lone and s == p):
+			var t := _next_in(s, step)
+			if lone and t == p:
+				t = _next_in(p, step)
+			targets[s] = t
 	for s in targets:
 		hands[int(targets[s])] = old[s]
 	mau_open = -1
@@ -1483,6 +1549,18 @@ func _swap_hands(p: int, ev: Array) -> void:
 		items.append(hand_items)
 		backs.append(_sorted_backs(s))
 	ev.append({"e": "swap_hands", "seat": p, "dir": step, "counts": counts, "hands": items, "backs": backs})
+	if config.counter_round == "on":
+		# Kontern: Wartende mit neuer Hand sind wieder im Spiel; wer die leere Hand bekommen hat, wartet jetzt selbst.
+		for s in n:
+			if not targets.has(s):
+				continue
+			var empty := (hands[s] as Array).is_empty()
+			if empty and not counter_wait.has(s):
+				_emptied(s, ev)
+				if s != p and not counter_fresh.has(s):
+					counter_fresh.append(s)      # nicht am Zug leer geworden: Der Zug muss erst noch bei ihm ankommen
+			elif not empty and counter_wait.has(s):
+				_countered(s, ev)
 
 
 # Rückseiten (Gegenseite) der Hand eines Platzes, sortiert nach Seite, Farbe, Art und Wert (nie in Besitzerreihenfolge).
@@ -1507,6 +1585,62 @@ func _finish(p: int, ev: Array) -> void:
 	if mau_open == p:
 		mau_open = -1
 	ev.append({"e": "finish", "seat": p, "place": place[p]})
+
+
+# --- Hausregel Kontern (counter_round, docs/module/kontern.md) ---
+
+func counter_on() -> bool:
+	return config.counter_round == "on"
+
+
+# Wartet der Platz gerade in der Konter-Runde (0 Karten, noch nicht fertig)?
+func is_waiting(s: int) -> bool:
+	return counter_wait.has(s)
+
+
+# Platz p hat keine Karten mehr (letzte Karte gelegt, Einsatz gesetzt, mitabgelegt oder beim Kartentausch eine leere Hand bekommen).
+# Ohne die Hausregel ist er fertig (true). Mit ihr beginnt seine Konter-Runde (false): Er bleibt in der Zugfolge, Mau-Ruf und -Fenster
+# verfallen (es gibt nichts mehr zu rufen), Ereignis counter_open {seat}.
+func _emptied(p: int, ev: Array) -> bool:
+	if not counter_on():
+		_finish(p, ev)
+		return true
+	if not counter_wait.has(p):
+		counter_wait.append(p)
+	mau_said[p] = false
+	if mau_open == p:
+		mau_open = -1
+	ev.append({"e": "counter_open", "seat": p})
+	return false
+
+
+# Ein Wartender hat Karten bekommen: gekontert, er spielt normal weiter (Ereignis countered {seat}).
+func _countered(s: int, ev: Array) -> void:
+	counter_wait.erase(s)
+	counter_fresh.erase(s)
+	ev.append({"e": "countered", "seat": s})
+
+
+# Konter-Runde überstanden (der Zug käme wieder bei ihm an oder er wird übersprungen): jetzt fertig. Das Ereignis finish trägt
+# survived = true (Feier, „Mau-Mau!“ und Statistik hängen wie bisher an finish und round_over).
+func _counter_final(s: int, ev: Array) -> void:
+	counter_wait.erase(s)
+	counter_fresh.erase(s)
+	_finish(s, ev)
+	(ev.back() as Dictionary)["survived"] = true
+	counter_done = s
+
+
+# Alle aussetzen von p: Alle anderen Wartenden werden übersprungen und sind damit fertig. true = die Runde ist dadurch zu Ende.
+func _counter_skip_all(p: int, ev: Array) -> bool:
+	for s in counter_wait.duplicate():
+		if int(s) == p:
+			continue
+		_counter_final(int(s), ev)
+		if _round_should_end():
+			_end_round("fertig", ev)
+			return true
+	return false
 
 
 func _round_should_end() -> bool:
@@ -1576,6 +1710,8 @@ func _end_round(reason: String, ev: Array) -> void:
 	mau_open = -1
 	drawn_id = -1
 	gamble = {}
+	counter_wait = []                # Kontern: Wartende sind oben nach ihren (0) Karten eingeordnet
+	counter_fresh = []
 	result = {"ranking": ranking, "points": pts, "gains": gains, "scores": scores.duplicate(), "hands": shown,
 		"reason": reason, "side": SIDES[side], "round": round_no}
 	ev.append({"e": "round_over", "ranking": ranking.duplicate(), "scores": scores.duplicate(), "points": pts.duplicate(),
@@ -1650,6 +1786,8 @@ func _flush_draw(seat: int, got: Array, reason: String, ev: Array) -> void:
 		backs.append(_key[faces[(1 - side) * n_cards + int(id)]])
 	ev.append({"e": "draw", "seat": seat, "count": got.size(), "reason": reason, "cards": got.duplicate(), "faces": keys,
 		"backs": backs})
+	if counter_wait.has(seat):
+		_countered(seat, ev)             # Kontern: Karten bekommen, die Konter-Runde ist für ihn vorbei
 
 
 # Nachziehstapel leer: Ablage außer der obersten Karte mischen (Wunschfarbe bleibt).
@@ -1889,6 +2027,8 @@ func view_for(seat: int) -> Dictionary:
 			backs = _sorted_backs(i)
 		pl.append({"seat": i, "name": players[i].name, "kind": players[i].kind, "count": (hands[i] as Array).size(),
 			"backs": backs, "place": place[i], "mau": mau_said[i], "connected": connected[i], "score": scores[i]})
+		if counter_on():
+			pl[i]["counter"] = counter_wait.has(i)     # Kontern: wartet ohne Karten in der Konter-Runde
 	var hand: Array = []
 	if me >= 0:
 		for id in hands[me]:
@@ -1927,6 +2067,9 @@ func view_for(seat: int) -> Dictionary:
 		v["discard_pick"] = {"seat": int(dpick.seat), "color": str(dpick.color)} if state == "discard_pick" and not dpick.is_empty() else {}
 		if state == "discard_pick" and not dpick.is_empty() and str(dpick.color) == "" and bool(dpick.get("flip", false)):
 			v["color"] = ""           # Flip-Überraschung mit offener Ablegefarbe: Die vorläufige Farbe ist keine (wie in Phase color)
+	# Kontern (nur mit der Hausregel): Wartende in der Reihenfolge, in der sie leer wurden, und wer eben fertig wurde (-1 = niemand)
+	if counter_on():
+		v["counter"] = {"wait": counter_wait.duplicate(), "done": counter_done}
 	return v
 
 
@@ -2017,6 +2160,7 @@ func _hint_parts(me: int, h: Dictionary) -> Array:
 			if bool(h.can_next_round):
 				out.append("Weiter mit der nächsten Runde.")
 			return out
+	out.append_array(_counter_parts(me))
 	if me < 0 or me != current:
 		var who := _name(current)
 		if not (h.catch as Array).is_empty():
@@ -2097,6 +2241,25 @@ func _hint_parts(me: int, h: Dictionary) -> Array:
 	var size := (hands[me] as Array).size()
 	if bool(h.can_mau) and config.mau_call != "off" and (size == 2 or (size > 2 and mau_open != me)):
 		out.append("Denk an „Mau!“")
+	return out
+
+
+# Kontern: „Kim ist fertig!“ (eben nach überstandener Konter-Runde), die eigene Konter-Runde und „Kim hat keine Karten mehr – wer
+# kontert?“ für die übrigen Wartenden; ohne die Hausregel nichts.
+func _counter_parts(me: int) -> Array:
+	var out: Array = []
+	if not counter_on():
+		return out
+	if counter_done >= 0 and counter_done != me:
+		out.append(I18n.part("%s ist fertig!", [_name(counter_done)]))
+	var others: Array = counter_wait.duplicate()
+	if me >= 0 and others.has(me):
+		others.erase(me)
+		out.append("Du hast keine Karten mehr – kontert keiner, bist du fertig.")
+	if others.size() == 1:
+		out.append(I18n.part("%s hat keine Karten mehr – wer kontert?", [_name(int(others[0]))]))
+	elif others.size() > 1:
+		out.append(I18n.part("%d Spieler haben keine Karten mehr – wer kontert?", [others.size()]))
 	return out
 
 
@@ -2184,6 +2347,10 @@ func to_dict() -> Dictionary:
 		d["gamble"] = gamble.duplicate(true)
 	if config.discard_color == "on":
 		d["discard_pick"] = dpick.duplicate(true)
+	if counter_on():                     # Kontern: nur mit der Hausregel (Schnappschuss der Gastgeber-Übergabe inbegriffen)
+		d["counter"] = {"wait": counter_wait.duplicate(), "done": counter_done}
+		if not counter_fresh.is_empty():
+			(d["counter"] as Dictionary)["fresh"] = counter_fresh.duplicate()
 	if config.flip_mode == "card":       # nur in diesem Modus, sonst bleibt der Spielstand wie bisher
 		var ds: Array = []
 		for id in discard:
@@ -2288,6 +2455,20 @@ static func from_dict(d: Dictionary) -> MauGame:
 			g.dpick["undo"] = {"state": str(u.get("state", "turn")), "drawn": int(u.get("drawn", -1)),
 				"streak": int(u.get("streak", 0)), "color": str(u.get("color", "")), "wished": bool(u.get("wished", false)),
 				"idx": int(u.get("idx", 0)), "mau": bool(u.get("mau", false))}
+	g.counter_wait = []
+	g.counter_fresh = []
+	g.counter_done = -1
+	var cd: Variant = d.get("counter", {})
+	if g.counter_on() and cd is Dictionary:
+		for s in _ints((cd as Dictionary).get("wait", [])):
+			# nur gültige Plätze ohne Karten, die noch spielen (ein kaputter Stand darf niemanden mit Karten warten lassen)
+			if s >= 0 and s < n and not g.counter_wait.has(s) and (g.hands[s] as Array).is_empty() and int(g.place[s]) == 0:
+				g.counter_wait.append(s)
+		for s in _ints((cd as Dictionary).get("fresh", [])):
+			if g.counter_wait.has(s) and not g.counter_fresh.has(s):
+				g.counter_fresh.append(s)
+		var done := _int_field(cd as Dictionary, "done", -1)
+		g.counter_done = done if done >= 0 and done < n else -1
 	return g
 
 

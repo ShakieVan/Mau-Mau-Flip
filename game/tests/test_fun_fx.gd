@@ -141,6 +141,39 @@ func run() -> void:
 		n.tick(0.5)
 		guard += 1
 	check(n.sky.kind == "star", "Himmel: nachts eine Sternschnuppe (%s)" % n.sky.kind)
+	# 1.6.11: leuchtende Sternschnuppe (shooting_star_fx.gd): nachts additiv, Funken, Schweif glüht nach, kurz und begrenzt
+	var ss: Node2D = n.sky.star
+	check(bool(ss.get("running")) and ss.material is CanvasItemMaterial and (ss.material as CanvasItemMaterial).blend_mode == CanvasItemMaterial.BLEND_MODE_ADD,
+		"Sternschnuppe: nachts additiv gemischt")
+	check(n.sky.dur > 1.2 and n.sky.dur <= 2.5, "Sternschnuppe: Kopf 1,2 s, danach kurzes Ausglühen (%.2f s)" % n.sky.dur)
+	var peak := 0
+	var t_star := 0.0
+	var after_glow := false
+	while n.sky.active() and t_star < 5.0:
+		n.tick(1.0 / 60.0)
+		t_star += 1.0 / 60.0
+		peak = maxi(peak, (ss.get("sparks") as Array).size())
+		if t_star > 1.45 and t_star < 1.55 and bool(ss.get("running")) and float(ss.call("head_bright")) < 0.01:
+			after_glow = true
+	check(after_glow, "Sternschnuppe: Kopf verglüht, der Schweif glüht noch nach")
+	check(int(ss.get("sparks_made")) >= 20 and peak <= FunFx.ShootingStarScript.MAX_SPARKS, "Sternschnuppe: Funken fallen ab, höchstens %d gleichzeitig (%d, gemacht %d)" % [FunFx.ShootingStarScript.MAX_SPARKS, peak, int(ss.get("sparks_made"))])
+	check(not n.sky.active() and not bool(ss.get("running")) and (ss.get("sparks") as Array).is_empty() and not ss.visible,
+		"Sternschnuppe: danach alles leer (keine Dauerlast, %.2f s)" % t_star)
+	var dl := make()
+	dl.sky.glow = 0.0
+	dl.sky.launch(true, dl.rng, Vector2(1600, 720))
+	for i in 60:
+		dl.sky.step(1.0 / 60.0)
+	var dstar: Node2D = dl.sky.star
+	check(dstar.material == null and int(dstar.get("sparks_made")) < 30, "Sternschnuppe: tagsüber dezent (normal gemischt, weniger Funken: %d)" % int(dstar.get("sparks_made")))
+	dl.sky.stop()
+	check(not dstar.visible and (dstar.get("sparks") as Array).is_empty(), "Sternschnuppe: stop räumt Funken weg")
+	var sh := make()
+	sh.sky.launch(true, sh.rng, Vector2(1600, 720))
+	sh.sky.star.set("calm", true)
+	for i in 60:
+		sh.sky.step(1.0 / 60.0)
+	check(int(sh.sky.star.get("sparks_made")) == 0, "Sternschnuppe: ruhige Fassung ohne Funken")
 	var b := make()
 	b.busy_override = 1
 	b.on_view(view(0))

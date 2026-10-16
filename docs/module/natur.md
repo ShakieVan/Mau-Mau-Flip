@@ -60,10 +60,10 @@ Bei neuer Tischgröße (App `_layout`, Lite neue `W`/`H`/`s`) endet das laufende
 
 ### 2.3 Schutzflächen
 
-Schutzflächen sind: Hand (`cards_rect`), Ziehstapel (+12 px), Ablage mit Farbring (R + 8), Plätze (Kopf und Fächer), eigenes Namensschild, Hinweisleiste, Mau, Sortieren/Rückseiten/Aktionsknöpfe, Erwischt-Buzzer, Glücksspiel-Automat und Einsatz (wenn sichtbar), Knöpfe oben links (App `TableScreen`, Lite Menü) und oben rechts (Lite Ton).
+Schutzflächen sind: Hand (`cards_rect`), Ziehstapel (+12 px), Ablage mit Farbring (R + 8), Plätze (Kopf und Fächer), eigenes Namensschild, Hinweisleiste, Mau, Sortieren/Rückseiten/Aktionsknöpfe, Erwischt-Buzzer, Glücksspiel-Automat und Einsatz (wenn sichtbar), Farbanzeige der Wunschfarbe (+8 px), Stapelzahl (+4 px), Knöpfe oben links (App `TableScreen`, Lite Menü) und oben rechts (Lite Ton).
 
 - App: `NatureFx.obstacles()` liest sie selbst aus der `TableView` (`table.get(...)`/`call(...)` wie `FunFx`, `OpponentSeat.avatar_global/header_width/header_height/fan_global_center`). `table_view.gd` bekommt dafür keine neue Funktion.
-- Lite: `natur.js` misst die Elemente (`#stapel`, `#ablage`, `.gg`, `#hand-zone`/Handkarten, `.leiste`, `.pill`, `#mau`, `.menue-knopf`, `.ton-knopf`, `#automat`, `#einsatz`, `.erwischen`) per `getBoundingClientRect` → `zuBuehne`.
+- Lite: `natur.js` misst die Elemente (`#stapel`, `#ablage`, `.gg`, `#hand-zone`/Handkarten, `.leiste`, `.pill`, `#mau`, `.menue-knopf`, `.ton-knopf`, `#automat`, `#einsatz`, `.erwischen`, `.farbanzeige`, `.stapelzahl`) per `getBoundingClientRect` → `zuBuehne`.
 
 **Was darf was decken** (`deckt` in der Tabelle, Prüfung in Abschnitt 8):
 - `hinten`/`mitte` liegen unter allem und decken nichts. Ein Ort muss aber so gewählt sein, dass das Tier in der Hauptphase zu mindestens 60 % der Zeit sichtbar ist.

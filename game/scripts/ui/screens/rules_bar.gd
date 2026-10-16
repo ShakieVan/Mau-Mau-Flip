@@ -109,6 +109,8 @@ static func summary(cfg: RuleConfig, extras_first := false) -> String:
 	parts.append(I18n.t({"bluff": "Bluffen erlaubt", "enforce": "+2 nur ohne Farbe", "free": "Wünscher +2 immer erlaubt"}[cfg.wild_restriction]))
 	if str(cfg.get("flip_surprise")) == "on":
 		parts.append(I18n.t("Flip-Überraschung"))
+	if str(cfg.get("counter_round")) == "on":
+		parts.append(I18n.t("Kontern"))
 	parts.append(I18n.t("%d Handkarten") % cfg.hand_size)
 	parts.append(I18n.t("Rückseiten sichtbar") if cfg.backs_visible else I18n.t("Rückseiten verdeckt"))
 	var extras := extras_text(cfg)

@@ -42,7 +42,9 @@
   // Ereignisse, die der Client kennt (Effekt in tisch.js oder bewusst ohne Effekt)
   const EREIGNISSE = ['deal', 'play', 'draw', 'skip', 'skip_all', 'reverse', 'color', 'flip', 'pending', 'challenge', 'mau', 'catch', 'penalty', 'shuffle',
     'round_over', 'game_over', 'finish', 'pass', 'choose_color', 'seats', 'leave_cards', 'round_start', 'start', 'turn', 'keep', 'accept',
-    'swap_hands', 'gamble_start', 'stake', 'gamble_roll', 'stake_back', 'stake_discard', 'discard_color', 'discard_pick', 'flip_surprise'];
+    'swap_hands', 'gamble_start', 'stake', 'gamble_roll', 'stake_back', 'stake_discard', 'discard_color', 'discard_pick', 'flip_surprise',
+    // Hausregel Kontern (Beta 1.6.11): bewusst ohne eigenen Effekt, der Hinweis der Sicht (hints.lt) zeigt die Konter-Runde
+    'counter_open', 'countered'];
   // Hausregel-Karten, die der Selbsttest bevorzugt legt (damit Kartentausch, Farbe ablegen und Glücksspiel sicher vorkommen)
   const VORRANG = { tausch: 1, ablegen: 2, ablegen_joker: 3, gluecksspiel: 4 };
 
@@ -449,7 +451,8 @@
       if (M.Ton.spiele('mau')) this.fail('Mau-Ton spielt trotz stumm');
       this.klick('#ton-knopf'); await schlaf(40);
       if (M.Ton.stumm || t.knTon.classList.contains('stumm')) this.fail('Ton-Knopf schaltet nicht wieder an');
-      if (M.Ton.spiele('karte')) this.fail('Spieltöne spielen, obwohl sie aus sind');
+      // Beta 1.5.1: Spieltöne ab Werk „normal“ – nach dem Ton-Knopf spielen sie wieder („Aus“ prüft das Menü unten)
+      if (M.Ton.bereit && M.Ton.toene !== 'aus' && !M.Ton.spiele('karte')) this.fail('Spieltöne spielen nach dem Ton-Knopf nicht wieder');
       // Aufnahmen (sfx/mau.* und sfx/mau_mau.*) und Spieltöne (alle Einträge aus sfx/index.json) über http geladen und dekodiert
       if (/^https?:/.test(location.protocol)) {
         let liste = null;
@@ -495,19 +498,63 @@
         if (M.Speicher.get('hervorheben', null) !== false) this.notiz('Speicher nicht verfügbar – Einstellung gilt bis zum Neuladen');
         this.ohneHervorheben = true;
       }
+      // Spieltöne „Aus“ im Menü: Spiel- und Neck-Töne (Reaktionen, Papierkugel …) schweigen, der Mau-Ton bleibt; danach wie vorher
+      const tAus = $('#menue button[data-set="toene"][data-wert="aus"]'), tVorher = app.einstellungen.toene;
+      const tZurueck = $('#menue button[data-set="toene"][data-wert="' + tVorher + '"]');
+      if (!tAus || !tZurueck) this.fail('Einstellung „Spieltöne“ fehlt im Menü');
+      else {
+        this.klick(tAus); await schlaf(40);
+        if (M.Ton.toene !== 'aus' || app.einstellungen.toene !== 'aus' || !tAus.classList.contains('an')) this.fail('Spieltöne lassen sich nicht ausschalten');
+        const laut = M.Ton.SPIEL_TOENE.concat(['lachen', 'baeh', 'papier_wurf']).filter(n => M.Ton.spiele(n));
+        if (laut.length) this.fail('Spieltöne spielen, obwohl sie aus sind: ' + laut.join(', '));
+        // Mau-Ton und Neck-Töne gibt es nur als Datei (über http geladen, file:// ohne)
+        if (M.Ton.bereit && M.Ton.stufe !== 'aus' && M.Ton.dateien.indexOf('mau') >= 0 && !M.Ton.spiele('mau')) this.fail('Mau-Ton schweigt mit den Spieltönen');
+        M.Ton.stoppe('mau', 0);
+        this.klick(tZurueck); await schlaf(40);
+        if (M.Ton.toene !== tVorher || app.einstellungen.toene !== tVorher) this.fail('Spieltöne lassen sich nicht wieder einschalten');
+      }
       this.klick('#menue .knopf.haupt.schliessen'); await schlaf(50);
       if (this.mock) this.ohneSpeicher();
-      const g = t.gegnerBox.querySelector('.gg');
+      // Mitspieler antippen. Beta 1.6.3 (Necken): Kopf (großer Modus: Avatar) öffnet das Necken-Menü, darin „Karten ansehen“ nur bei
+      // sichtbaren Rückseiten; der Fächer mit sichtbaren Rückseiten öffnet die Gegneransicht direkt; großer Modus außerhalb des
+      // Avatars bzw. Necken aus: Gegneransicht oder (Rückseiten verdeckt, backs_visible=false) nur ein Hinweis mit der Kartenzahl
+      const g = Array.from(t.gegnerBox.querySelectorAll('.gg')).find(e => +e.dataset.seat !== this.v.seat && !e.classList.contains('aus') && e.getBoundingClientRect().width > 0);
       if (g) {
-        const p = (this.v.players || []).find(x => x.seat === +g.dataset.seat);
-        const toasts = document.querySelectorAll('.toast').length;
-        this.klick(g.querySelector('.ava')); await schlaf(50);
-        if (p && (!p.backs || !p.backs.length)) {
-          // Rückseiten verdeckt (backs_visible=false): nur ein Hinweis mit der Kartenzahl, keine Ansicht
-          if (!$('#ansicht').hidden) this.fail('Gegneransicht trotz verdeckter Rückseiten');
-          else if (document.querySelectorAll('.toast').length <= toasts && toasts < 3) this.fail('Kein Hinweis bei verdeckten Rückseiten');
-        } else if ($('#ansicht').hidden) this.fail('Gegneransicht öffnet nicht');
-        else this.klick('#ansicht .schliessen');
+        const seat = +g.dataset.seat;
+        const p = (this.v.players || []).find(x => x.seat === seat);
+        const backs = !!(p && p.backs && p.backs.length);
+        const N = M.Necken, necken = !!(N && N.verfuegbar());
+        const zu = async () => { if (N) N.zu(); if (!$('#ansicht').hidden) this.klick('#ansicht .schliessen'); await schlaf(50); };
+        // Weg ohne Menü: Gegneransicht bzw. Hinweis
+        const direkt = async (ziel, wo) => {
+          const toasts = document.querySelectorAll('.toast').length;
+          this.klick(ziel); await schlaf(50);
+          if (N && N.offen) this.fail('Tipp auf ' + wo + ' öffnet das Necken-Menü');
+          if (!backs) {
+            if (!$('#ansicht').hidden) this.fail('Gegneransicht trotz verdeckter Rückseiten (' + wo + ')');
+            else if (document.querySelectorAll('.toast').length <= toasts && toasts < 3) this.fail('Kein Hinweis bei verdeckten Rückseiten (' + wo + ')');
+          } else if ($('#ansicht').hidden) this.fail('Gegneransicht öffnet nicht (' + wo + ')');
+          await zu();
+        };
+        if (necken) {
+          this.klick(g.querySelector('.ava')); await schlaf(50);
+          const menue = $('#nk-menue');
+          if (!menue || menue.hidden || !N.offen || N.offen.seat !== seat) this.fail('Necken-Menü öffnet nicht (Tipp auf den Mitspieler)');
+          else if (!$('#ansicht').hidden) this.fail('Tipp auf den Mitspieler öffnet die Gegneransicht statt des Necken-Menüs');
+          else {
+            const ans = menue.querySelector('button[data-k="ansehen"]');
+            if (!ans || ans.hidden !== !backs) this.fail('„Karten ansehen“ im Necken-Menü ' + (backs ? 'fehlt trotz sichtbarer Rückseiten' : 'trotz verdeckter Rückseiten'));
+            else if (backs) {
+              this.klick(ans); await schlaf(50);
+              if (!menue.hidden || N.offen) this.fail('Necken-Menü bleibt nach „Karten ansehen“ offen');
+              if ($('#ansicht').hidden) this.fail('Gegneransicht öffnet nicht („Karten ansehen“)');
+            }
+          }
+          await zu();
+          if (t.gross) { const nm = g.querySelector('.name'); if (nm) await direkt(nm, 'den Namen (großer Modus)'); }
+          else if (backs) { const f = g.querySelector('.faecher'); if (f && f.childElementCount) await direkt(f, 'den Fächer'); }
+          this.notiz('Mitspieler angetippt: Necken-Menü' + (backs ? ' + Ansicht' : ''));
+        } else await direkt(g.querySelector('.ava'), 'den Mitspieler (Necken aus)');
       }
       await schlaf(50);
     },

@@ -81,7 +81,20 @@ static func discard_wish(view: Dictionary) -> bool:
 		return false
 	for p in view.get("players", []):
 		if int(p.get("seat", -1)) == me:
-			return int(p.get("place", 0)) == 0
+			return int(p.get("place", 0)) == 0 and not (view.get("hand", []) as Array).is_empty()   # leer: Kontern, nur Farbwahl
+	return false
+
+
+# Hausregel Kontern: Wartet dieser Mitspieler (aus players der Sicht) ohne Karten in der Konter-Runde?
+static func waiting(p: Dictionary) -> bool:
+	return bool(p.get("counter", false)) and int(p.get("place", 0)) == 0
+
+
+static func _anyone_waiting(view: Dictionary) -> bool:
+	var me := int(view.get("seat", -1))
+	for p in view.get("players", []):
+		if int(p.get("seat", -1)) != me and waiting(p):
+			return true
 	return false
 
 
@@ -459,6 +472,12 @@ static func _turn(view: Dictionary, hints: Dictionary, rng: RandomNumberGenerato
 	var prv := _neighbour(view, -1)
 	var next_count := int(nxt.get("count", 99))
 	var prev_count := int(prv.get("count", 99))
+	# Hausregel Kontern: Wartet der Nächste ohne Karten, holt ihn eine Ziehkarte zurück ins Spiel; Aussetzen und ein
+	# Richtungswechsel zu einem Wartenden machen ihn dagegen fertig. Ein Kartentausch kontert alle Wartenden.
+	var next_wait := waiting(nxt)
+	var prev_wait := waiting(prv)
+	var any_wait := _anyone_waiting(view)
+	var two := (view.get("players", []) as Array).filter(func(p: Dictionary) -> bool: return int(p.get("place", 0)) == 0).size() == 2
 	var hand: Array = view.get("hand", [])
 	var ctab := CardDB.color_table()
 	var ktab := CardDB.kind_table()
@@ -522,6 +541,23 @@ static func _turn(view: Dictionary, hints: Dictionary, rng: RandomNumberGenerato
 				for c in view.get("colors", []):
 					most = maxi(most, _color_count(view, str(c), id))
 				s = _discard_value(most, hand.size(), 1.0)
+		if any_wait:
+			match kind:
+				"plus1", "plus5", "wuenscher_plus2", "farbjagd":
+					if next_wait:
+						s += 60.0                  # kontern: der Wartende zieht und spielt weiter
+				"tausch":
+					s += 50.0                      # alle Wartenden bekommen eine Hand
+				"aussetzen":
+					if next_wait:
+						s -= 40.0
+				"alle_aussetzen":
+					s -= 40.0                      # überspringt alle Wartenden: fertig
+				"richtungswechsel":
+					if prev_wait or (two and next_wait):
+						s -= 40.0
+					elif next_wait:
+						s += 6.0                   # der Zug läuft erst von ihm weg: Zeit für andere zum Kontern
 		# Beweglichkeit: wie viele Restkarten danach (bei gleicher Farbe) noch passen würden (beim Kartentausch egal: Die Resthand
 		# wandert weiter; beim Ablegen geht die Farbe mit).
 		if wtab[code] == 0 and kind != CardDB.SWAP and kind != CardDB.DISCARD:
@@ -542,7 +578,8 @@ static func _turn(view: Dictionary, hints: Dictionary, rng: RandomNumberGenerato
 	if best_id < 0:
 		best_id = int(playable[0])
 	# Bleibt nur ein Kartentausch, der viel mehr Karten bringt als er abgibt: lieber ziehen.
-	if can_draw and _is_swap(int(code_by_id.get(best_id, -1))) and swap_value(view) < -6.0:
+	# (Nicht, wenn jemand auf das Kontern wartet: Der Tausch holt ihn zurück.)
+	if can_draw and _is_swap(int(code_by_id.get(best_id, -1))) and swap_value(view) < -6.0 and not any_wait:
 		return {"a": "draw"}
 	return _play(view, best_id, rng)
 
@@ -570,7 +607,7 @@ static func _drawn(view: Dictionary, hints: Dictionary, rng: RandomNumberGenerat
 		if code >= 0 and CardDB.kind_table()[code] == "wuenscher" and (view.get("hand", []) as Array).size() > 4 \
 				and rng.randf() < 0.5:
 			return {"a": "keep"}       # Joker aufsparen
-		if _is_swap(code) and swap_value(view) < 0.0:
+		if _is_swap(code) and swap_value(view) < 0.0 and not _anyone_waiting(view):
 			return {"a": "keep"}       # Kartentausch lohnt gerade nicht
 		if code >= 0:
 			var size := (view.get("hand", []) as Array).size()

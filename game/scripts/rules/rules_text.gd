@@ -105,15 +105,21 @@ static func card_help(key: String, config: RuleConfig = null) -> Array[String]:
 			else:
 				out.append(_t("Nicht stapelbar: Wer sie abbekommt, zieht sofort und %s.") % cfg.penalty_tail())
 			out.append(_t("Auch als letzte Karte: Der Nächste zieht trotzdem."))
+			if cfg.counter_round == "on":
+				out.append(_t("Kontern: Hat der Nächste keine Karten mehr, zieht er und spielt weiter."))
 		"aussetzen":
 			out.append(_t("Der Nächste wird übersprungen."))
 			out.append(_t("Passt auf %s und auf jedes Aussetzen.") % color)
 			out.append(_t("Zu zweit bist du gleich noch einmal dran."))
+			if cfg.counter_round == "on":
+				out.append(_t("Kontern: Hat der Nächste keine Karten mehr, ist er damit fertig – er wird ja übersprungen."))
 		"alle_aussetzen":
 			out.append(_t("Alle anderen setzen aus: Du bist sofort noch einmal dran und legst oder ziehst ganz normal."))
 			out.append(_t("Passt auf %s und auf jedes Alle aussetzen.") % color)
-			if cfg.round_end == "last":
+			if cfg.round_end == "last" and cfg.counter_round != "on":
 				out.append(_t("Bist du damit fertig, macht der Nächste weiter."))
+			if cfg.counter_round == "on":
+				out.append(_t("Kontern: Wer keine Karten mehr hat, ist damit fertig. Ist es deine letzte Karte, bist du gleich fertig, und der Nächste macht weiter."))
 		"richtungswechsel":
 			out.append(_t("Die Spielrichtung dreht sich um."))
 			out.append(_t("Passt auf %s und auf jeden Richtungswechsel.") % color)
@@ -121,6 +127,8 @@ static func card_help(key: String, config: RuleConfig = null) -> Array[String]:
 				out.append(_t("Zu zweit wirkt er wie Aussetzen: Du bist gleich noch einmal dran."))
 			else:
 				out.append(_t("Zu zweit hat er keine Wirkung."))
+			if cfg.counter_round == "on":
+				out.append(_t("Kontern: Kommt der Zug dadurch wieder zu jemandem ohne Karten, ist er fertig."))
 		"flip":
 			if cfg.flip_mode == "card":
 				out.append(_t("Wendet Nachziehstapel, alle Hände und sich selbst. Danach gilt die %s.") % tr_side(other))
@@ -142,7 +150,9 @@ static func card_help(key: String, config: RuleConfig = null) -> Array[String]:
 				out.append(_t("Ein Flip oben wirkt nicht (keine Kette); beim Wünscher wählst du nur die Farbe."))
 			else:
 				out.append(_t("Liegt danach eine Aktionskarte oben, wirkt sie nicht. Liegt ein Joker oben, wählst du die Farbe."))
-			if cfg.flip_last_card == "execute":
+			if cfg.flip_last_card == "execute" and cfg.counter_round == "on":
+				out.append(_t("Als letzte Karte wird der Flip noch ausgeführt und wirkt ganz normal; fertig bist du erst, wenn dich keiner kontert."))
+			elif cfg.flip_last_card == "execute":
 				out.append(_t("Als letzte Karte wird der Flip noch ausgeführt; gewertet wird die neue Seite."))
 			else:
 				out.append(_t("Als letzte Karte wird der Flip nicht mehr ausgeführt."))
@@ -165,6 +175,8 @@ static func card_help(key: String, config: RuleConfig = null) -> Array[String]:
 				else:
 					out.append(_t("Farbjagd darf weitergegeben werden: Das letzte Opfer zieht bis zur zuletzt gewünschten Farbe."))
 			out.append(_t("Auch als letzte Karte: Der Nächste zieht trotzdem."))
+			if cfg.counter_round == "on":
+				out.append(_t("Kontern: Hat der Nächste keine Karten mehr, zieht er und spielt weiter."))
 		"tausch":
 			out.append_array(_swap_lines(color, cfg))
 		"gluecksspiel":
@@ -182,7 +194,10 @@ static func _gamble_lines(cfg: RuleConfig) -> Array[String]:
 	out.append(_t("Dann spielst du um dein Glück: Leg eine beliebige Karte deiner Hand verdeckt auf deinen Einsatz und drück den Glücksspielknopf. Das geht reihum weiter."))
 	out.append(_t("Für jedes Glücksspiel wird geheim eine Trefferquote zwischen 1:1 und 1:10 ausgelost."))
 	out.append(_t("Treffer: Der Knopf zeigt 1 bis 10. So viele Karten ziehst du, nimmst deinen ganzen Einsatz zurück, und dein Zug ist vorbei."))
-	if cfg.round_end == "first":
+	var counter := cfg.counter_round == "on"
+	if counter:
+		out.append(_t("Zeigt er 0 und deine Hand ist leer, kommt der Einsatz unter den Ablagestapel; fertig bist du erst, wenn dich keiner kontert."))
+	elif cfg.round_end == "first":
 		out.append(_t("Zeigt er 0 und deine Hand ist leer, kommt der Einsatz unter den Ablagestapel: Du bist fertig und gewinnst die Runde."))
 	else:
 		out.append(_t("Zeigt er 0 und deine Hand ist leer, kommt der Einsatz unter den Ablagestapel und du bist fertig."))
@@ -192,7 +207,11 @@ static func _gamble_lines(cfg: RuleConfig) -> Array[String]:
 		out.append(_t("Bleibt dir nach dem Setzen nur noch 1 Karte, ruf „Mau!“ – wie beim Legen."))
 	if cfg.stacking == "same":
 		out.append(_t("Liegt eine Ziehstrafe auf dir, passt das Glücksspiel nicht (wie jeder andere Joker)."))
-	out.append(_t("Als letzte Karte bist du einfach fertig; dann gibt es kein Glücksspiel."))
+	if counter:
+		out.append(_t("Als letzte Karte gibt es kein Glücksspiel; fertig bist du erst, wenn dich keiner kontert."))
+		out.append(_t("Kontern: Mit leerer Hand bist du erst fertig, wenn dich bis zu deinem nächsten Zug keiner kontert."))
+	else:
+		out.append(_t("Als letzte Karte bist du einfach fertig; dann gibt es kein Glücksspiel."))
 	if cfg.gamble_cards != "on":
 		out.append(_t("Gehört zur Hausregel Glücksspiel (gerade nicht im Spiel)."))
 	return out
@@ -209,7 +228,12 @@ static func _discard_lines(kind: String, color: String, cfg: RuleConfig) -> Arra
 		out.append(_t("Die mitabgelegten Karten kommen unter den Joker."))
 	out.append(_t("Joker auf deiner Hand bleiben dort. Mitabgelegte Aktionskarten wirken nicht."))
 	var first := cfg.round_end == "first"
-	if cfg.mau_call != "off":
+	if cfg.counter_round == "on":
+		if cfg.mau_call != "off":
+			out.append(_t("Bleibt dir danach 1 Karte, ruf „Mau!“ (auch schon vorher erlaubt); bleibt keine, wartest du, ob dich jemand kontert."))
+		else:
+			out.append(_t("Bleibt dir danach keine Karte, wartest du, ob dich jemand kontert."))
+	elif cfg.mau_call != "off":
 		if first:
 			out.append(_t("Bleibt dir danach 1 Karte, ruf „Mau!“ (auch schon vorher erlaubt); bleibt keine, gewinnst du die Runde."))
 		else:
@@ -218,6 +242,8 @@ static func _discard_lines(kind: String, color: String, cfg: RuleConfig) -> Arra
 		out.append(_t("Bleibt dir danach keine Karte, gewinnst du die Runde."))
 	else:
 		out.append(_t("Bleibt dir danach keine Karte, bist du fertig."))
+	if cfg.counter_round == "on":
+		out.append(_t("Kontern: Mit leerer Hand bist du erst fertig, wenn dich bis zu deinem nächsten Zug keiner kontert."))
 	if cfg.discard_color != "on":
 		out.append(_t("Gehört zur Hausregel Farbe ablegen (gerade nicht im Spiel)."))
 	return out
@@ -231,7 +257,10 @@ static func _swap_lines(color: String, cfg: RuleConfig) -> Array[String]:
 		out.append(_t("Nach einem Richtungswechsel wandern die Hände also andersherum."))
 	out.append(_t("Passt auf %s und auf jeden Kartentausch.") % color)
 	out.append(_t("Zu zweit tauscht ihr einfach eure Hände."))
-	if cfg.round_end == "first":
+	if cfg.counter_round == "on":
+		out.append(_t("Auch als letzte Karte: Die anderen tauschen untereinander, du nicht. Fertig bist du erst, wenn dich keiner kontert."))
+		out.append(_t("Kontern: Wer keine Karten mehr hat, tauscht mit und spielt weiter; wer dabei die leere Hand bekommt, hat nun selbst keine Karten mehr."))
+	elif cfg.round_end == "first":
 		out.append(_t("Auch als letzte Karte: Du bist fertig und gewinnst die Runde; getauscht wird dann nicht mehr."))
 	else:
 		out.append(_t("Auch als letzte Karte: Du bist fertig, die anderen tauschen trotzdem untereinander."))
@@ -335,12 +364,16 @@ static func overview(config: RuleConfig = null) -> Array[Dictionary]:
 	if swap_on:
 		var last := _t("Als letzte Karte bist du fertig und gewinnst; getauscht wird dann nicht mehr.") if cfg.round_end == "first" \
 			else _t("Als letzte Karte bist du fertig; die anderen tauschen trotzdem untereinander.")
+		if cfg.counter_round == "on":
+			last = _t("Als letzte Karte tauschen die anderen untereinander, du nicht. Wer keine Karten mehr hat und auf den Kontern wartet, tauscht mit; die leere Hand wandert weiter.")
 		var swap_text := _t("Hausregel: Wer einen Kartentausch legt, lässt alle Spieler gleichzeitig ihre ganze Hand an den Nächsten weitergeben, %s. Danach ist der Nächste in Spielrichtung dran; zu zweit tauscht ihr einfach eure Hände. Der Kartentausch passt auf seine Farbe und auf jeden anderen Kartentausch.") % cfg.swap_direction_text()
 		if cfg.mau_call != "off":
 			swap_text += " " + _t("Wer so auf 1 Karte kommt, muss nicht „Mau!“ rufen.")
 		out.append({"title": _t("Kartentausch"), "text": swap_text + " " + last})
 	if gamble_on:
 		var done := _t("bist fertig und gewinnst die Runde") if cfg.round_end == "first" else _t("bist fertig")
+		if cfg.counter_round == "on":
+			done = _t("wartest, ob dich jemand kontert")
 		var gamble_text := _t("Hausregel: Der Glücksspiel-Joker passt immer; du wünschst eine Farbe, die nach dem Glücksspiel gilt. Dann legst du reihum eine beliebige Karte verdeckt auf deinen Einsatz und drückst den Glücksspielknopf. Je Glücksspiel wird geheim eine Trefferquote zwischen 1:1 und 1:10 ausgelost. Bei einem Treffer zeigt der Knopf 1 bis 10: So viele Karten ziehst du, nimmst den ganzen Einsatz zurück, und dein Zug ist vorbei. Zeigt er 0, geht es weiter; ist deine Hand dann leer, kommt der Einsatz unter den Ablagestapel und du %s. Nach einer 0 darfst du statt weiterzusetzen auch aufhören: Der ganze Einsatz kommt unter den Ablagestapel, dein Zug ist vorbei. Die Einsatzkarten wirken nicht.") % done
 		if cfg.mau_call != "off":
 			gamble_text += " " + _t("Bleibt nach dem Setzen 1 Karte, gilt „Mau!“ wie beim Legen.")
@@ -349,7 +382,9 @@ static func overview(config: RuleConfig = null) -> Array[Dictionary]:
 		var disc_text := _t("Hausregel: Wer eine Ablegen-Karte legt, wählt danach, welche eigenen Karten derselben Farbe er mit ablegt (alle, einige oder keine). Beim Ablegen-Joker tippst du auf eine Karte der Farbe, die du mit ablegen willst (alle Karten dieser Farbe werden gewählt), und wählst zum Schluss getrennt die Farbe, mit der es weitergeht. Die Karten kommen unter die Ablegen-Karte, die oben bleibt. Joker bleiben auf der Hand, mitabgelegte Aktionskarten wirken nicht. Die farbige Ablegen-Karte passt auf ihre Farbe und auf jede andere Ablegen-Karte, der Ablegen-Joker immer.")
 		if cfg.mau_call != "off":
 			disc_text += " " + _t("Bleibt dir 1 Karte, ruf „Mau!“.")
-		out.append({"title": _t("Farbe ablegen"), "text": disc_text + " " + _t("Bleibt keine Karte, bist du fertig.")})
+		var disc_end := _t("Bleibt keine Karte, bist du fertig.") if cfg.counter_round != "on" \
+			else _t("Bleibt keine Karte, wartest du, ob dich jemand kontert.")
+		out.append({"title": _t("Farbe ablegen"), "text": disc_text + " " + disc_end})
 	# Besondere Karten der ausgeschalteten Hausregeln kurz vorstellen (eingeschaltete haben oben einen eigenen Absatz).
 	var more: Array[String] = []
 	if not swap_on:
@@ -385,6 +420,8 @@ static func overview(config: RuleConfig = null) -> Array[Dictionary]:
 		"off":
 			mau = _t("In diesen Regeln wird nicht „Mau!“ gerufen.")
 	out.append({"title": "Mau!", "text": mau})
+	if cfg.counter_round == "on":
+		out.append({"title": _t("Kontern"), "text": _t("Hausregel: Wer keine Karten mehr hat, ist noch nicht fertig, sondern bleibt mit 0 Karten in der Runde. Bekommt er Karten, bevor der Zug wieder bei ihm ankommt – durch eine Ziehkarte, eine Strafe, einen Kartentausch oder eine Flip-Überraschung –, spielt er ganz normal weiter. Kommt der Zug wieder bei ihm an oder wird er übersprungen, ist er fertig. Ein Richtungswechsel kann das abkürzen oder verlängern. Das gilt für jede letzte Karte, auch beim Glücksspiel und beim Farbe-Ablegen.")})
 	var special := _t("Ist der Nachziehstapel leer, wird die Ablage außer der obersten Karte gemischt. Sind beide leer, entfällt das Ziehen. Wiederholt sich bei fast leeren Stapeln dieselbe Lage zum dritten Mal, endet die Runde; vorn liegt, wer die wenigsten Karten hat.")
 	if cfg.two_player_reverse_skips:
 		special += " " + _t("Zu zweit wirkt der Richtungswechsel wie Aussetzen.")

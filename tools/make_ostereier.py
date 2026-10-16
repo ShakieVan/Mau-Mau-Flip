@@ -50,6 +50,19 @@ besten), nur Bestandene, Dubletten über alle Paare; Nummern nach Art geordnet. 
 „quietschig_langsam“, „pfft_furz“; „pfft“/„pfft_klein“ ohne „fart“ ergaben Glocken, „kurz_platt“ Schläge.
 Erzeugt im Sparmodus auf GPU 0 (LM Studio belegte beide GPUs), rund 30 s je Ton.
 
+Zunge rausstrecken („baeh“, 16.10.2026, neue Reaktion 😛/😝): kindlich-neckisches „Bäää“/„Bläää“, gern mit kurzem
+Zungen-Flattern (Prusten), lustig und freundlich; 0,6–1,2 s, ein Laut, keine Wörter, kein Lachen, kein Tier (nicht nach
+Schaf/Ziege: im Prompt „bleh“, „baa“/„bleating“ nur im Negativ-Prompt). Vier Arten (kurz, lang, mit Prusten, hell) wie
+beim Furzkissen, Auswahl reihum, nur Bestandene. Messung baeh_messen: Zahl der Laute, Stimme/Tonhöhe, Flattern 20–80 Hz,
+Zittern 4–12 Hz (Meckern); dazu muss AudioSet einen Mundlaut/eine Stimme hören („mensch“). Stand: 164 erzeugt
+(22 Prompt-Varianten in drei Runden), 21 bestanden, 8 behalten (baeh_01–08, je 2 pro Art). Das Modell kennt das
+Raspberry nicht („raspberry“, „Bronx cheer“: Zischen, Plopps, Knall); geflattert hat nur „mouth fart“ (mundfurz,
+bleh_mundfurz; AudioSet hört dann „Fart“). Viele „bleh“ hört AudioSet als Sprache, lange „bleeeh“ als Summen/Gesang,
+helle Stimmen als Wimmern, Kichern, Pfeifen oder Miauen. Schaf/Ziege gab nie den Ausschlag (einziger Fall lang_7126,
+ohnehin ohne Stimme). Sparmodus auf GPU 0 (--vram 6.5, Spitze 5,4 GiB), etwa 30 s je Ton.
+Lauf: & $py tools\\make_ostereier.py --erzeugen --nur baeh --gpu 0 --vram 6.5, dann --bearbeiten/--ast/--seite mit
+--nur baeh.
+
 Sparmodus (15.10.2026): Ist auf der GPU weniger als SPARSAM_AB_GIB frei (z. B. fremdes Sprachmodell geladen), lädt
 erzeugen das Modell in den Arbeitsspeicher und holt je Schritt nur den gerade nötigen Teil auf die GPU
 (Textkodierer, DiT, VAE; DiffSynth-VRAM-Verwaltung), ohne Autocast-Zwischenspeicher der bf16-Gewichte (requires_grad
@@ -529,7 +542,157 @@ TOENE["furzkissen"] = {
          "kleines „Pfft“: sehr kurz und weich", list(range(6101, 6109)), None, F_PFFT),
     ],
 }
-TOENE = {k: TOENE[k] for k in ["gaehnen", "gaehnen2", "gaehnen3"] + [k for k in TOENE if not k.startswith("gaehnen")]}
+# Zunge rausstrecken (16.10.2026, neue Reaktion 😛/😝): ein kindlich-neckisches „Bäää“ bzw. „Bläää“, wie wenn jemand
+# die Zunge rausstreckt und frech „bäh“ macht, gern mit kurzem Zungen-Flattern (Prusten), lustig und freundlich, nicht
+# gemein. 0,6–1,2 s, ein einziger Laut, keine verständlichen Wörter, kein Lachen, keine Katzen- oder Tierlaute: „bäää“
+# darf nicht nach Schaf oder Ziege klingen. Das englische „baa“ IST das Schaf; im Prompt steht daher „bleh“, „baa“ und
+# „bleating“ nur im CFG-Negativ-Prompt. Vier Arten wie beim Furzkissen (Kategorie im 6. Feld, je Zieldauer und
+# Daueransage), Auswahl reihum über die Arten, nur Bestandene. Messung baeh_messen (analyse-Umgebung): Zahl der Laute,
+# Stimme und Tonhöhe (stimme_messen), Zungen-Flattern (Hüllkurve 20–80 Hz wie das Knattern des Furzkissens), Zittern
+# 4–12 Hz in Pegel und Tonhöhe (ein Meckern wie Schaf/Ziege).
+BAEH_NEGATIV = ("sheep, lamb, goat, bleating, baa, baaing, animal, farm animal, cow, moo, cat, meow, purr, dog, bird, "
+                "duck, speech, words, talking, sentence, laughter, laughing, giggling, crying, sobbing, whining, "
+                "screaming, shouting, yelling, singing, music, burp, fart, groan")
+BAEH_ARTEN = {"kurz": "kurzes freches „Bäh“", "lang": "langgezogenes „Bäääh“",
+              "prusten": "mit Prusten (Zungen-Flattern)", "hell": "helle Kinder- bzw. Comicstimme"}
+B_KURZ = {"kategorie": "kurz", "ziel": (0.5, 0.9), "sekunden": 0.7}
+B_LANG = {"kategorie": "lang", "ziel": (0.8, 1.25), "sekunden": 1.1, "ausblenden": 0.2}
+B_PRUSTEN = {"kategorie": "prusten", "ziel": (0.55, 1.2), "sekunden": 1.0}
+B_HELL = {"kategorie": "hell", "ziel": (0.5, 1.15), "sekunden": 0.8}
+B_SEEDS = list(range(7101, 7107))
+B_SEEDS3 = list(range(7121, 7127))         # dritte Runde: weitere Seeds für die tragenden Varianten
+TOENE["baeh"] = {
+    "titel": "Zunge rausstrecken (Reaktion 😛)", "zweck": "Reaktion (😛/😝)",
+    "ziel_text": "0,6–1,2 s: kindlich-neckisches „Bäää“/„Bläää“ wie mit rausgestreckter Zunge, gern mit kurzem "
+                 "Zungen-Flattern (Prusten), lustig und freundlich; ein einziger Laut, keine Wörter, kein Lachen, kein Tier",
+    "hinweis": "Neue Reaktion. Schaf, Ziege, Tier, Sprache, Lachen, Weinen und Schreien stehen als Negativ-Prompt "
+               "(im Prompt „bleh“, weil das englische „baa“ das Schaf ist). Behalten wurde nur, was AudioSet nicht deutlich "
+               "als Schaf, Ziege, Tier, Sprache, Lachen, Weinen, Schreien, Summen, Gesang, Pfeifen oder Katze hört, was "
+               "AudioSet überhaupt als Mundlaut oder Stimme erkennt, aus einem einzigen Laut besteht, "
+               "die Zieldauer der Art einhält und nicht meckernd zittert; die Art „mit Prusten“ muss messbar flattern, die "
+               "helle Art eine hohe Stimme haben. Dubletten über alle Paare aussortiert, Auswahl reihum über die vier "
+               "Arten. Die Beschreibungen (Stimmlage, Tonhöhe, Flattern, Zittern) stammen aus Messungen, nicht vom Hören.",
+    "sekunden": 0.8, "ziel": (0.5, 1.2), "modus": "anfang", "vorlauf": 0.06, "einblenden": 0.01, "ausblenden": 0.15,
+    "lufs": -19.0, "begrenzer": 3.0, "hochpass": 90.0, "stimme": True, "behalten": 8,
+    "erwartet": ["Babbling", "Child speech, kid speaking", "Whoop", "Sound effect", "Fart"],
+    "arten": BAEH_ARTEN, "baeh": True, "ausgewogen": True, "nur_ok": True, "dubletten_alle": True, "streng": True,
+    "puls_purr": True, "sprache_grenze": (0.6, 0.35),
+    # Ausschluss ab der Grenze, Hinweis ab der Hälfte, Abzug in den Punkten (wie gaehnen2/furzkissen)
+    "meiden": {"Sheep": 0.08, "Goat": 0.08, "Bleat": 0.08, "Livestock, farm animals, working animals": 0.1,
+               "Cattle, bovinae": 0.1, "Moo": 0.1, "Animal": 0.12, "Domestic animals, pets": 0.12, "Dog": 0.12,
+               "Whimper (dog)": 0.12, "Duck": 0.1, "Quack": 0.1, "Goose": 0.1, "Honk": 0.1, "Horse": 0.12,
+               "Neigh, whinny": 0.12, "Pig": 0.1, "Oink": 0.1, "Bird": 0.15, "Wild animals": 0.12,
+               "Laughter": 0.12, "Giggle": 0.12, "Baby laughter": 0.12, "Belly laugh": 0.12, "Chuckle, chortle": 0.12,
+               "Snicker": 0.12, "Crying, sobbing": 0.12, "Baby cry, infant cry": 0.12, "Whimper": 0.12,
+               "Wail, moan": 0.15, "Screaming": 0.12, "Yell": 0.2, "Shout": 0.2, "Children shouting": 0.2,
+               "Battle cry": 0.15, "Singing": 0.2, "Child singing": 0.2, "Music": 0.25, "Groan": 0.2,
+               "Burping, eructation": 0.25,
+               # nach der ersten Sichtung: lange „bleeeh“ teils Summen/Mantra/Gesang, helle Stimmen teils Huhn, Eule,
+               # Heulen, Krächzen; Pfeifen/Theremin statt Stimme
+               "Humming": 0.2, "Mantra": 0.12, "Chant": 0.15, "Male singing": 0.15, "Female singing": 0.15,
+               "Fowl": 0.12, "Chicken, rooster": 0.12, "Owl": 0.12, "Howl": 0.12, "Canidae, dogs, wolves": 0.12,
+               "Squawk": 0.12, "Bird vocalization, bird call, bird song": 0.15, "Whistle": 0.15, "Whistling": 0.15,
+               "Theremin": 0.15,
+               # zweite Sichtung: das Prusten ergab Zischen, Sprühen, Plopps, Schnippen, Klatschen, Herzschlag statt eines
+               # Mundlauts
+               "Heart sounds, heartbeat": 0.1, "Heart murmur": 0.1, "Plop": 0.3, "Finger snapping": 0.2,
+               "Slap, smack": 0.25, "Spray": 0.15, "Hiss": 0.2, "Steam": 0.15, "Static": 0.2, "Whip": 0.2},
+    # Mundlaut/Stimme: mindestens eine dieser Klassen ab „mensch_mindestens“, sonst hört AudioSet keinen Menschen
+    # (Pfeifen, Musik, Geräusch); Klassen, die zugleich in „meiden“ stehen, schließen dort ohnehin aus
+    "mensch": ["Speech", "Male speech, man speaking", "Female speech, woman speaking", "Child speech, kid speaking",
+               "Babbling", "Whoop", "Yell", "Shout", "Grunt", "Groan", "Snort", "Gasp", "Sigh", "Breathing", "Pant",
+               "Throat clearing", "Humming", "Fart", "Gargling", "Singing", "Male singing", "Female singing",
+               "Child singing", "Yodeling", "Whimper", "Screaming", "Baby cry, infant cry", "Cough", "Sneeze", "Sniff",
+               "Wail, moan", "Mantra", "Chant", "Synthetic singing", "Burping, eructation", "Hiccup"],
+    "mensch_mindestens": 0.05,
+    # nur zur Beschreibung in ast.json
+    "beobachten": ["Speech", "Babbling", "Child speech, kid speaking", "Whoop", "Sound effect", "Fart", "Humming",
+                   "Grunt", "Snort", "Hubbub, speech noise, speech babble", "Children playing", "Squeak", "Boing",
+                   "Vibration", "Buzz", "Rattle", "Cartoon", "Male speech, man speaking", "Female speech, woman speaking",
+                   "Mosquito", "Insect", "Kazoo", "Breathing", "Sigh", "Gasp", "Throat clearing", "Cough", "Sneeze",
+                   "Synthetic singing", "Speech synthesizer", "Gargling", "Plop", "Slap, smack", "Finger snapping",
+                   "Static", "Chewing, mastication", "Sniff"],
+    "negativ": BAEH_NEGATIV,
+    "seeds": B_SEEDS,
+    "prompts": [
+        ("kurz", "a person playfully sticks out their tongue and makes one short cheeky bleh sound, a quick nasal teasing blehh, funny and friendly, close-up, dry room, " + NO_WORDS,
+         "kurz: Zunge raus, ein kurzes freches „bleh“", B_SEEDS, None, B_KURZ),
+        ("kurz_albern", "one short silly mocking bleh with the tongue sticking out, a single playful nasal vocal sound, cheeky but friendly, close-up, quiet room, " + NO_WORDS,
+         "kurz: albern-spöttisch, ein einziger Laut", B_SEEDS + B_SEEDS3, None, B_KURZ),
+        ("lang", "a person sticks out their tongue and teases with a long drawn-out nasal bleeeeh, one single silly vocal sound, playful and friendly, close-up, dry room, " + NO_WORDS,
+         "lang: langgezogenes „bleeeeh“", B_SEEDS + B_SEEDS3, None, B_LANG),
+        ("lang_blaeh", "a playful drawn-out teasing blaaaah with the tongue sticking out, a long nasal mocking vocal sound that slowly fades, funny, not mean, close-up, quiet room, " + NO_WORDS,
+         "lang: „blaaaah“, klingt langsam aus", B_SEEDS + B_SEEDS3, None, B_LANG),
+        ("prusten", "a person sticks out their tongue and blows a raspberry, a short playful blehhh ending in a fluttering pbbbt of the lips and tongue, funny teasing, close-up, dry room, " + NO_WORDS,
+         "Prusten: „blehhh“, endet in einem flatternden Zungen-Raspberry", B_SEEDS, None, B_PRUSTEN),
+        ("raspberry", "a quick playful tongue raspberry, the tongue sticks out and flutters between the lips, bllbllbleh, cheeky teasing vocal sound, close-up, dry room, " + NO_WORDS,
+         "Prusten: Zunge flattert zwischen den Lippen, „bllbllbleh“", B_SEEDS, None, B_PRUSTEN),
+        ("kind", "a little child sticks out their tongue and teases with a bright, high, cheeky bleeeh, one single playful vocal sound, funny and friendly, close-up, quiet room, " + NO_WORDS,
+         "hell: kleines Kind, helles freches „bleeeh“", B_SEEDS, None, B_HELL),
+        ("comic", "a cartoon character with a high squeaky voice sticks out its tongue and goes bleh, a short funny teasing vocal sound effect, animated cartoon, close-up, " + NO_WORDS,
+         "hell: Zeichentrickfigur mit hoher Quietschstimme", B_SEEDS, None, B_HELL),
+    ],
+}
+# Erste Sichtung (48, 16.10.2026): „kurz“ ergab meist stimmlose Luftstöße (AudioSet Niesen/Seufzen), „kurz_albern“ eine
+# Stimme, die AudioSet als Sprache hört; „lang“/„lang_blaeh“ stimmhaft, aber oft Summen, Mantra, Jammern oder Musik;
+# „prusten“/„raspberry“ Plopps, Schnippen, Rauschen statt Zungen-Flattern; „kind“ Wimmern, Weinen, Kichern, Miauen;
+# „comic“ Pfeifen, Alarm, Musik und einmal Miauen. Das Modell hält die Daueransage nicht ein (natürlich 0,9–2,8 s statt
+# 0,7–1,1 s), daher kürzere Ansagen. Neu: Formulierungen wie in Geräuschbibliotheken („human vocal sound effect“,
+# „Bronx cheer“, „blows a raspberry with lips and tongue“), Stimme ausdrücklich („voiced“, „human voice“); bei den hellen
+# Stimmen zusätzlich Wimmern, Weinen, Miauen, Quietschen und Pfeifen im Negativ-Prompt; beim Prusten ein Zwilling ohne
+# „fart“ im Negativ-Prompt (A/B). Einige mit CFG 6 (stärkere Prompt-Führung).
+BAEH_NEG_HELL = BAEH_NEGATIV + ", whimper, whining, baby crying, kitten, squeak, squeal, whistle, alarm, siren"
+BAEH_NEG_OHNE_FURZ = BAEH_NEGATIV.replace(", fart", "")
+B_SEEDS2 = list(range(7111, 7117))
+B_KURZ2 = dict(B_KURZ, sekunden=0.5)
+B_LANG2 = dict(B_LANG, sekunden=0.9)
+B_PRUSTEN2 = dict(B_PRUSTEN, sekunden=0.8)
+B_HELL2 = dict(B_HELL, sekunden=0.6)
+TOENE["baeh"]["prompts"] += [
+    ("kurz_sfx", "human vocal sound effect, a short cheeky bleh with the tongue sticking out, voiced and nasal, one quick syllable, comedic and friendly, close-up, dry room, " + NO_WORDS,
+     "kurz: „human vocal sound effect“, stimmhaft und näselnd", B_SEEDS2, None, B_KURZ2),
+    ("kurz_frau", "a young woman sticks her tongue out and makes a quick voiced bleh, one short cheeky syllable with her voice, playful teasing, close-up, quiet room, " + NO_WORDS,
+     "kurz: junge Frau, kurzes stimmhaftes „bleh“", B_SEEDS2 + B_SEEDS3, None, dict(B_KURZ2, cfg=6.0)),
+    ("lang_frech", "a cheeky teenager sticks out the tongue and mocks with a long nasal voiced bleeeeh, sarcastic and playful, one single sound, close-up, quiet room, " + NO_WORDS,
+     "lang: frecher Teenager, langes näselndes „bleeeeh“", B_SEEDS2, None, B_LANG2),
+    ("lang_sfx", "human vocal sound effect, a long mocking nasal bleeeeh with the tongue sticking out, comedic and friendly, close-up, dry room, " + NO_WORDS,
+     "lang: „human vocal sound effect“, langes spöttisches „bleeeeh“", B_SEEDS2, None, dict(B_LANG2, cfg=6.0)),
+    ("raspberry_blow", "a person blows a raspberry with their lips and tongue, a rubbery fluttering pbbbbbt, human mouth sound, playful teasing, close-up, dry room",
+     "Prusten: Raspberry mit Lippen und Zunge, „pbbbbbt“", B_SEEDS2, None, B_PRUSTEN2),
+    ("raspberry_blow_ohne", "a person blows a raspberry with their lips and tongue, a rubbery fluttering pbbbbbt, human mouth sound, playful teasing, close-up, dry room",
+     "Prusten: wie „raspberry_blow“, ohne „fart“ im Negativ-Prompt", B_SEEDS2, BAEH_NEG_OHNE_FURZ, B_PRUSTEN2),
+    ("bronx", "Bronx cheer, a comedic human raspberry made with the tongue between the lips, a short fluttering blowing sound, close-up, dry room",
+     "Prusten: „Bronx cheer“ (Zunge zwischen den Lippen)", B_SEEDS2, None, B_PRUSTEN2),
+    ("bleh_prusten", "a cheeky voice goes bleh and then blows a short raspberry with the tongue out, blehhpbbbt, one quick playful sound, close-up, dry room, " + NO_WORDS,
+     "Prusten: „bleh“ geht in ein kurzes Raspberry über", B_SEEDS2, None, dict(B_PRUSTEN2, cfg=6.0)),
+    ("kind_frech", "a cheeky little girl sticks out her tongue at her brother and goes bleeeh, a bright playful voiced bleh, teasing and happy, close-up, quiet room, " + NO_WORDS,
+     "hell: freches kleines Mädchen, helles „bleeeh“", B_SEEDS2, BAEH_NEG_HELL, B_HELL2),
+    ("comic_stimme", "a cartoon character with a high-pitched human voice teases with a short nasal bleh, tongue out, comedic vocal sound effect, close-up, " + NO_WORDS,
+     "hell: Zeichentrickfigur mit hoher menschlicher Stimme", B_SEEDS2 + B_SEEDS3 + [7127, 7128], BAEH_NEG_HELL, dict(B_HELL2, cfg=6.0)),
+]
+# Zweite Sichtung (108, 16.10.2026): bestanden nur 15 (kurz 5, lang 5, hell 4, Prusten 1 fraglich). „raspberry_blow“,
+# „bronx“ und „bleh_prusten“ ergaben Zischen, Sprühen, Plopps, Knall, Peitsche oder Sprache, nie ein Flattern (das Modell
+# kennt das Raspberry offenbar nicht); messbar geflattert hat bisher nur, was das Modell als Furz kennt (Furzkissen).
+# Neu fürs Prusten daher „mouth fart“/„lip trill“, ohne „fart“ im Negativ-Prompt, dafür Zischen, Plopp, Knall, Nasses
+# und das Furzkissen selbst (das gibt es im Spiel schon). Dazu weitere Seeds der Varianten, die bestanden haben
+# (kurz_albern, kurz_frau, lang, lang_blaeh, comic_stimme), und eine hellere Zeichentrickstimme.
+BAEH_NEG_PRUSTEN = (BAEH_NEG_OHNE_FURZ + ", hiss, spray, steam, snake, static, white noise, plop, pop, bang, explosion, "
+                    "whip, slap, wet, liquid, splash, toilet, whoopee cushion")
+TOENE["baeh"]["prompts"] += [
+    ("mundfurz", "a person blows a raspberry with their mouth, a silly rubbery fart noise made with the lips and tongue, pbbbbt, playful teasing, close-up, dry room",
+     "Prusten: Raspberry als „Mund-Furz“ mit Lippen und Zunge", B_SEEDS3, BAEH_NEG_PRUSTEN, B_PRUSTEN2),
+    ("bleh_mundfurz", "a kid sticks out the tongue and blows a raspberry, a short voiced blehhh with fluttering lips like a silly mouth fart, playful teasing, close-up, quiet room, " + NO_WORDS,
+     "Prusten: kurzes stimmhaftes „blehhh“ mit flatternden Lippen", B_SEEDS3, BAEH_NEG_PRUSTEN, B_PRUSTEN2),
+    ("lippen_brrr", "a person does a short silly lip trill, the lips flutter loosely, a playful voiced brrrrr, close-up, dry room, " + NO_WORDS,
+     "Prusten: Lippenflattern „brrrr“ (lip trill)", B_SEEDS3, BAEH_NEG_PRUSTEN, B_PRUSTEN2),
+    # dritte Sichtung (56): „mundfurz“/„bleh_mundfurz“ flattern messbar (4 von 12, AudioSet „Fart“ 0,66–0,93), „lippen_brrr“
+    # ergab Plopps/Holzklänge; „comic_hoch“ 3 von 6 bestanden. Danach Schluss (Erzeugung dauerte dem Nutzer zu lange).
+    ("comic_hoch", "a cheerful cartoon character with a bright high-pitched human voice sticks its tongue out and goes bleeeh, one short playful voiced bleh, comedic vocal sound effect, close-up, " + NO_WORDS,
+     "hell: fröhliche Zeichentrickfigur, hohe menschliche Stimme", B_SEEDS3, BAEH_NEG_HELL, dict(B_HELL2, cfg=6.0)),
+]
+_ORDNUNG = ["gaehnen", "gaehnen2", "gaehnen3"] + [k for k in TOENE if not k.startswith("gaehnen") and k != "baeh"]
+_ORDNUNG.insert(_ORDNUNG.index("daumen") + 1, "baeh")      # bei den Reaktionen
+TOENE = {k: TOENE[k] for k in _ORDNUNG}
 # Einziger Versuch „gaehnen3_02umgestellt“: in gaehnen2_02 (Rohdatei gaehnen2_frau_4110) Einatmen und „aaah“ tauschen,
 # an der natürlichen Pause dazwischen und mit weicher Blende in der Stille (siehe umstellen). Nur, wenn die Pause klar ist
 # und die Nähte in der Stille liegen; sonst entfällt er.
@@ -1396,6 +1559,149 @@ def furz_text(fm, dauer):
     return ", ".join(t)
 
 
+# Zunge rausstrecken (Grenzen, siehe bewerten)
+BAEH_LUECKE_S = 0.12         # Laute: Lücken darunter überbrückt (Flattern, kurze Einbrüche); darüber zwei Laute
+BAEH_LAUT_DB = -20.0         # ein Laut zählt nur, wenn sein lautester Rahmen höchstens so weit unter dem Höchstwert liegt
+BAEH_STIMME_MIN = 0.3        # Arten außer „prusten“: mindestens so viel Stimme (sonst nur Luft/Hauchen)
+BAEH_FLATTERN_HZ = (20, 80)  # Flattern: Rate der Zunge/Lippen (Hz); darunter liegen Silbenfolgen wie beim Lachen
+BAEH_FLATTERN_R = 0.4        # ein 200-ms-Fenster flattert, wenn die Autokorrelation der Hüllkurve dort so hoch ist
+BAEH_FLATTERN_ANTEIL = 0.25  # Art „prusten“: mindestens dieser Anteil der hörbaren Fenster flattert
+BAEH_HELL_HZ = 280.0         # Art „hell“: Grundton im Mittel mindestens so hoch
+BAEH_ZITTERN = (6.0, 2.0, 0.4)  # Meckern: Schärfe der Linie 4,5–12 Hz ≥ 6 und Tiefe (Std. 4–12 Hz) ≥ 2 dB bzw. ≥ 0,4 Halbtöne
+
+
+def baeh_messen(y, sr=16000):
+    """Zunge rausstrecken: Ablauf und Klang (Messung, nicht gehört), Rahmen 10 ms. Stimme wie stimme_messen (Anteil,
+    Grundton, Verlauf). Laute = hörbare Strecken (RMS 32 ms höchstens 30 dB unter dem Höchstwert), Lücken unter
+    BAEH_LUECKE_S überbrückt, kürzer als 60 ms oder leiser als BAEH_LAUT_DB verworfen. Flattern (Zunge/Lippen):
+    Hüllkurve des Bands 300 Hz–4 kHz (Tiefpass 100 Hz, 8. Ordnung, damit der Grundton einer Stimme kaum durchkommt),
+    je 200-ms-Fenster die Periodizität bei 20–80 Hz (siehe unten); Anteil der flatternden Fenster, ihre Rate (Median)
+    und das 75. Perzentil der Periodizität. Zittern (Meckern wie Schaf oder Ziege, ein
+    regelmäßiges Beben): im Kern des längsten Lauts (siehe unten) Pegel (dB, 10 ms) und Tonhöhe (Halbtöne, längste
+    stimmhafte Strecke) gegen ihren gleitenden Median (250 ms), stärkste Linie 4,5–12 Hz mit Schärfe gegen den Median
+    1–25 Hz (nur bei mindestens 2,5 Schwingungen im Kern), Tiefe = Standardabweichung nach Bandpass 4–12 Hz."""
+    import librosa
+    import numpy as np
+    from scipy.signal import butter, hilbert, medfilt, resample_poly, sosfiltfilt
+    out = stimme_messen(y, sr)
+    hop = 160
+    s = hop / sr
+    rms = librosa.feature.rms(y=y, frame_length=512, hop_length=hop)[0]
+    db = 20 * np.log10(rms + 1e-9)
+    db -= db.max()
+    akt = db > -30.0
+    ai = np.nonzero(akt)[0]
+    if not len(ai):
+        out["fehler"] = "nichts hörbar"
+        return out
+    a0, a1 = int(ai[0]), int(ai[-1])
+    out["hoerbar_ab_s"], out["hoerbar_s"] = round(a0 * s, 2), round((a1 - a0 + 1) * s, 2)
+    st = []
+    for a, b in m.quiet_runs(akt, 1):
+        if st and a - st[-1][1] < int(BAEH_LUECKE_S / s):
+            st[-1] = (st[-1][0], b)
+        else:
+            st.append((a, b))
+    st = [(a, b) for a, b in st if b - a >= 6 and db[a:b].max() > BAEH_LAUT_DB]
+    out["laute"] = len(st)
+    out["laute_s"] = [(round(a * s, 2), round(b * s, 2)) for a, b in st][:8]
+
+    def linie(sig, fs, lo, hi, ref):
+        sig = sig - np.mean(sig)
+        nf = 8192
+        sp = np.abs(np.fft.rfft(sig * np.hanning(len(sig)), n=nf))
+        fm = np.fft.rfftfreq(nf, 1 / fs)
+        band, rb = (fm >= lo) & (fm <= hi), (fm >= ref[0]) & (fm <= ref[1])
+        i = int(np.argmax(np.where(band, sp, 0)))
+        return float(fm[i]), float(sp[i] / (np.median(sp[rb]) + 1e-12))
+    yb = sosfiltfilt(butter(4, [300, 4000], "bandpass", fs=sr, output="sos"), y)
+    h = np.abs(hilbert(yb))
+    h = sosfiltfilt(butter(8, 100, "low", fs=sr, output="sos"), h)     # Grundton einer Stimme kaum durchlassen
+    h = resample_poly(h, 1, sr // 1000)[int(a0 * s * 1000):int((a1 + 1) * s * 1000)]
+    if len(h) >= 200:
+        # je 200-ms-Fenster (Schritt 50 ms, nur Fenster im hörbaren Teil) die normierte Autokorrelation der
+        # Hüllkurve (Hochpass 12 Hz, auf die Überlappung bezogen), höchstes lokales Maximum bei Abständen 1/80–1/20 s;
+        # Fenster mit r ≥ BAEH_FLATTERN_R flattern. Ein Spektrum taugt hier nicht: die Hüllkurve hat unten am meisten
+        # Energie, die stärkste Linie lag sonst fast immer am unteren Bandrand.
+        h = sosfiltfilt(butter(2, 12, "high", fs=1000, output="sos"), h - h.mean())
+        dbk = np.repeat(db, int(round(s * 1000)))[a0 * int(round(s * 1000)):][:len(h)]
+        lo, hi = int(1000 / BAEH_FLATTERN_HZ[1]), int(1000 / BAEH_FLATTERN_HZ[0])
+        fen = []
+        for i0 in range(0, len(h) - 200 + 1, 50):
+            if np.median(dbk[i0:i0 + 200]) < -25.0:
+                continue
+            f = h[i0:i0 + 200]
+            ac = np.correlate(f, f, "full")[199:]
+            ac = ac / (ac[0] + 1e-12) * 200.0 / (200.0 - np.arange(200))
+            seg = ac[lo:hi + 1]
+            k = np.nonzero((seg[1:-1] > seg[:-2]) & (seg[1:-1] >= seg[2:]))[0] + 1
+            j = int(k[np.argmax(seg[k])]) if len(k) else None
+            fen.append((float(seg[j]), 1000.0 / (lo + j)) if j is not None else (0.0, 0.0))
+        if fen:
+            ok = [hz for r_, hz in fen if r_ >= BAEH_FLATTERN_R]
+            out["flattern_anteil"] = round(len(ok) / len(fen), 2)
+            out["flattern_r"] = round(float(np.percentile([r_ for r_, _ in fen], 75)), 2)
+            out["flattern_hz"] = round(float(np.median(ok))) if ok else None
+    if st:
+        # Kern = längste Strecke des längsten Lauts, die höchstens 20 dB unter dem Höchstwert liegt, ohne je 50 ms am Rand
+        # (Einsatz und Ausklingen sind kein Zittern); Pegel und Tonhöhe dort mit 4–12 Hz bandgefiltert (vor/rückwärts)
+        a, b = max(st, key=lambda ab: ab[1] - ab[0])
+        kern = [(ka, kb) for ka, kb in m.quiet_runs(db[a:b] > -20.0, 1)]
+        ka, kb = max(kern, key=lambda ab: ab[1] - ab[0]) if kern else (0, 0)
+        ka, kb = a + ka + 5, a + kb - 5
+        out["kern_s"] = round(max(0, kb - ka) * s, 2)
+        bp = butter(2, [4.0, 12.0], "bandpass", fs=1 / s, output="sos")
+        if kb - ka >= 30:
+            d = db[ka:kb]
+            hz, sch = linie(d - medfilt(d, 25), 1 / s, 4.5, 12, (1, 25))
+            # mindestens 2,5 Schwingungen im Kern, sonst ist es eher die Form des Lauts
+            if (kb - ka) * s * hz >= 2.5:
+                out.update({"zittern_pegel_hz": round(hz, 1), "zittern_pegel_schaerfe": round(sch, 1),
+                            "zittern_pegel_db": round(float(np.std(sosfiltfilt(bp, d))), 1)})
+        f0, _vf, vp = librosa.pyin(y, fmin=65, fmax=800, sr=sr, frame_length=1024, hop_length=hop)
+        n = min(len(f0), len(db))
+        sth = (vp[:n] >= 0.4) & np.isfinite(f0[:n]) & (db[:n] > -30.0)
+        runs = m.quiet_runs(sth[ka:min(kb, n)], 1) if kb > ka else []
+        va, vb = max(runs, key=lambda ab: ab[1] - ab[0]) if runs else (0, 0)
+        if vb - va >= 30:
+            ht = 12 * np.log2(f0[ka + va:ka + vb] / 100.0)
+            hz, sch = linie(ht - medfilt(ht, 25), 1 / s, 4.5, 12, (1, 25))
+            if (vb - va) * s * hz >= 2.5:
+                out.update({"zittern_ton_hz": round(hz, 1), "zittern_ton_schaerfe": round(sch, 1),
+                            "zittern_ton_ht": round(float(np.std(sosfiltfilt(bp, ht))), 2)})
+    zp = out.get("zittern_pegel_schaerfe", 0) >= BAEH_ZITTERN[0] and out.get("zittern_pegel_db", 0) >= BAEH_ZITTERN[1]
+    zt = out.get("zittern_ton_schaerfe", 0) >= BAEH_ZITTERN[0] and out.get("zittern_ton_ht", 0) >= BAEH_ZITTERN[2]
+    out["meckert"] = bool(zp or zt)
+    return out
+
+
+def baeh_text(bm, dauer):
+    """Kurzbeschreibung aus baeh_messen (Messung, nicht gehört), z. B. „ein Laut, 0,8 s, helle Kinderstimme (um 350 Hz),
+    überwiegend Stimme, Tonhöhe fällt zum Ende um 5 Halbtöne, mit Zungen-Flattern (etwa 30 Hz)“."""
+    if bm.get("fehler"):
+        return bm["fehler"]
+    t = ["ein Laut" if bm["laute"] <= 1 else f"{bm['laute']} getrennte Laute", f"{z(dauer, 2)} s"]
+    f0, sa = bm.get("f0_median_hz"), bm["stimmhaft_anteil"]
+    if f0 is None or sa < 0.15:
+        t.append("fast nur Luft, kaum Stimme")
+    else:
+        lage = ("sehr hohe Comic-/Kinderstimme" if f0 >= 380 else "helle Kinderstimme" if f0 >= BAEH_HELL_HZ
+                else "helle Stimme" if f0 >= 200 else "mittlere Stimme" if f0 >= 130 else "tiefe Stimme")
+        t.append(f"{lage} (um {z(f0, 0)} Hz)")
+        t.append("überwiegend Luft/Prusten" if sa < 0.3 else "halb Stimme, halb Luft" if sa < 0.6 else "überwiegend Stimme")
+        an, ab = bm.get("anstieg_ht", 0.0), bm.get("abfall_ht", 0.0)
+        t.append(f"Tonhöhe steigt um {z(an, 0)} und fällt um {z(ab, 0)} Halbtöne" if an >= 2 and ab >= 2 else
+                 f"Tonhöhe steigt um {z(an, 0)} Halbtöne" if an >= 2 else
+                 f"Tonhöhe fällt zum Ende um {z(ab, 0)} Halbtöne" if ab >= 2 else "Tonhöhe fast gleich")
+    if bm.get("flattern_anteil", 0) >= BAEH_FLATTERN_ANTEIL and bm.get("flattern_hz"):
+        t.append(f"mit Zungen-/Lippenflattern (etwa {bm['flattern_hz']} Hz, {z(100 * bm.get('flattern_anteil', 0), 0)} % der Dauer)")
+    if bm.get("meckert"):
+        t.append("zittert regelmäßig (Meckern?)")
+    sp = bm.get("schwerpunkt_hz", 0)
+    t.append("dumpf" if sp < 900 else "näselnd-hell" if sp < 2200 else "scharf")
+    return ", ".join(t)
+
+
 def ast_lauf(nur=None):
     os.environ["HF_HUB_OFFLINE"] = "1"
     import librosa
@@ -1409,7 +1715,7 @@ def ast_lauf(nur=None):
     watch = set(SPRACHE + KATZE + WARN)
     for t in TOENE.values():
         watch |= set(t["erwartet"]) | set(t.get("erwartet_ticken", [])) | set(t.get("erwartet_klingeln", []))
-        watch |= set(t.get("meiden", {})) | set(t.get("beobachten", []))
+        watch |= set(t.get("meiden", {})) | set(t.get("beobachten", [])) | set(t.get("mensch", []))
     keys = [k.strip() for k in nur.split(",")] if nur else None
 
     def tag(y):
@@ -1433,6 +1739,8 @@ def ast_lauf(nur=None):
             e["reihenfolge"] = reihenfolge_messen(y)
         if TOENE[r["ton"]].get("furz"):
             e["furz"] = furz_messen(y)
+        if TOENE[r["ton"]].get("baeh"):
+            e["baeh"] = baeh_messen(y)
         wm = r.get("wecker")
         if wm:
             t0 = int(wm["klingeln_ab_s"] * 16000)
@@ -1568,6 +1876,51 @@ def bewerten(r, a):
                 punkte -= 0.5
             if fm.get("flachheit", 0.0) >= 0.15 and r.get("kategorie") != "pfft":
                 hinweise.append(f"viel Luft/Rauschen (Flachheit {z(fm['flachheit'], 2)})")
+    if t.get("baeh"):
+        r["ast_beobachtet"] = {k: round(w[k], 3) for k in t.get("beobachten", []) + t["erwartet"]
+                               if k != erw_k and w.get(k, 0.0) >= 0.05}
+        bm = (a or {}).get("baeh")
+        art = r.get("kategorie")
+        if bm is None:
+            gruende.append("ohne Bäh-Messung")
+        elif bm.get("fehler"):
+            gruende.append(f"Bäh-Messung: {bm['fehler']}")
+        else:
+            r["baeh"] = bm
+            sa, f0 = bm["stimmhaft_anteil"], bm.get("f0_median_hz")
+            mk = max(t["mensch"], key=lambda k: w.get(k, 0.0))
+            r["ast_mensch"] = (mk, round(w.get(mk, 0.0), 3))
+            if a and w.get(mk, 0.0) < t["mensch_mindestens"]:
+                gruende.append(f"AudioSet hört keinen Mundlaut und keine Stimme (höchstens „{mk}“ {z(w.get(mk, 0.0), 2)})")
+            schaf = max(w.get(k, 0.0) for k in ("Sheep", "Goat", "Bleat"))
+            if 0.03 < schaf <= min(t["meiden"][k] for k in ("Sheep", "Goat", "Bleat")):
+                hinweise.insert(0, f"klingt evtl. nach Schaf/Ziege (Grenzfall, AudioSet bis {z(schaf, 2)})")
+            if bm["laute"] > 1:
+                gruende.append(f"{bm['laute']} getrennte Laute statt eines einzigen „Bäh“")
+            if art != "prusten" and sa < BAEH_STIMME_MIN:
+                gruende.append(f"kaum Stimme ({z(100 * sa, 0)} % stimmhaft), eher Luft/Hauchen als „Bäh“")
+            fl = bm.get("flattern_anteil", 0.0)
+            if art == "prusten":
+                if fl < BAEH_FLATTERN_ANTEIL:
+                    gruende.append(f"kaum Flattern messbar ({z(100 * fl, 0)} % der Dauer, Zunge/Lippen 20–80 Hz)")
+                else:
+                    punkte += 1.0 * min(fl, 0.8) + 1.0 * bm.get("flattern_r", 0.0)
+            elif fl >= BAEH_FLATTERN_ANTEIL:
+                punkte += 0.2                     # etwas Flattern ist erwünscht („Bläh“ mit Prusten)
+            if art == "hell":
+                if f0 is None or f0 < BAEH_HELL_HZ:
+                    gruende.append("Stimme nicht hell" + (f" (Grundton im Mittel {z(f0, 0)} Hz)" if f0 else " (kein Grundton messbar)"))
+                else:
+                    punkte += 0.3
+            if bm.get("meckert"):
+                hinweise.append("zittert regelmäßig in Pegel oder Tonhöhe (4–12 Hz): auf Meckern wie Schaf/Ziege achten")
+                punkte -= 1.5
+                if max(w.get(k, 0.0) for k in ("Sheep", "Goat", "Bleat")) > 0.03:
+                    gruende.append("meckert (Zittern 4–12 Hz) und AudioSet hört etwas Schaf/Ziege")
+            if f0 is not None and f0 < 130 and sa > 0.35:
+                hinweise.append(f"tiefe Stimme (Grundton im Mittel {z(f0, 0)} Hz): eher brummig als kindlich-frech?")
+                punkte -= 0.5
+            punkte += 0.5 * min(sa, 0.8) if art != "prusten" else 0.0
     st = (a or {}).get("stimme")
     if st is not None:
         r["stimme"] = st
@@ -1683,8 +2036,8 @@ def stimme_text(st, ende=True):
 def notiz(r):
     t = TOENE[r["ton"]]
     teile = [f"Prompt „{r['variante']}“: {r['prompt_notiz']}."]
-    if r.get("kategorie") and t.get("furz"):
-        teile.insert(0, f"Art: {FURZ_ARTEN.get(r['kategorie'], r['kategorie'])}.")
+    if r.get("kategorie") and (t.get("furz") or t.get("arten")):
+        teile.insert(0, f"Art: {t.get('arten', FURZ_ARTEN).get(r['kategorie'], r['kategorie'])}.")
     if r.get("umgestellt"):
         u = r["umgestellt"]
         sc = u["schnitte_s"]
@@ -1698,6 +2051,8 @@ def notiz(r):
         teile.append(f"Gemessen: {stimme_text(r['stimme'], ende=not r.get('reihenfolge'))}.")
     if r.get("furz"):
         teile.append(f"Gemessen: {furz_text(r['furz'], r['dauer_s'] - m.TAIL_S)}.")
+    if r.get("baeh"):
+        teile.append(f"Gemessen: {baeh_text(r['baeh'], r['dauer_s'] - m.TAIL_S)}.")
     wm = r.get("wecker")
     if wm:
         tz = wm["tick_zeiten_s"]
@@ -1710,6 +2065,13 @@ def notiz(r):
             am = r["ast_meiden"]
             teile.append("Kontrolle: " + ", ".join(f"„{k}“ {z(am[k], 2)}" for k in ("Laughter", "Squish", "Liquid", "Burping, eructation", "Hiss")
                                                    if k in am) + ".")
+            if r.get("ast_beobachtet"):
+                teile.append("AudioSet hört außerdem: " + ", ".join(f"„{k}“ {z(v, 2)}" for k, v in sorted(r["ast_beobachtet"].items(), key=lambda kv: -kv[1])) + ".")
+        elif r.get("ast_meiden") and t.get("baeh"):
+            am = r["ast_meiden"]
+            teile.append("Kontrolle: " + ", ".join(f"„{k}“ {z(am[k], 2)}" for k in ("Sheep", "Goat", "Bleat", "Animal", "Laughter",
+                                                                                     "Crying, sobbing", "Screaming", "Yell") if k in am)
+                         + f", Sprache {z(r['ast_sprache'][1], 2)}.")
             if r.get("ast_beobachtet"):
                 teile.append("AudioSet hört außerdem: " + ", ".join(f"„{k}“ {z(v, 2)}" for k, v in sorted(r["ast_beobachtet"].items(), key=lambda kv: -kv[1])) + ".")
         elif r.get("ast_meiden"):
@@ -1931,7 +2293,7 @@ nav{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px}nav a{color:var(--ink)
         for r in rs:
             if t.get("ausgewogen") and r.get("kategorie") != art:
                 art = r.get("kategorie")
-                teile.append(f'<h3 style="margin:18px 0 6px">{html.escape(FURZ_ARTEN.get(art, art or ""))}</h3>')
+                teile.append(f'<h3 style="margin:18px 0 6px">{html.escape(t.get("arten", FURZ_ARTEN).get(art, art or ""))}</h3>')
             wm = r.get("wecker")
             extra = ""
             if wm:
@@ -1967,7 +2329,7 @@ Handy-Modell: Pegelverlust {z(r['sim_pegelverlust_db'])} dB, Mitten {z(r['sim_mi
 <h1>Easter Eggs: Hörproben</h1><p class="lead">Töne zum Senden an Mitspieler (Gähnen, Schnarchen, Wecker, Papierkugel, Furzkissen) und für Reaktionen. {len(behalten)} Kandidaten, erzeugt mit MOSS-SoundEffect v2.0 (Apache 2.0), mono, weich ein- und ausgeblendet. Offline, lokal. Entwurf, nichts davon ist im Spiel.</p>
 <nav>{nav}</nav>
 <div class="hint"><b>Wecker in einem Stück:</b> Ticken und Klingeln hat das Modell zusammen erzeugt; geschnitten wurden nur Anfang und Ende (weiche Blenden), nichts zusammengesetzt. Der Klingel-Einsatz ist gemessen (Sekunde ab Dateianfang, in messwerte.json als <code>klingeln_ab_s</code>) und steht bei jedem Wecker, damit die Animation darauf passt. War das Ticken mehr als 20 dB leiser als das Klingeln (am Handy unhörbar), ist es vor dem Klingeln mit einer weichen Pegelkurve angehoben (steht beim Kandidaten).<br>
-<b>Katzen-Leitplanke:</b> keine Katzenlaute in den Prompts; Tiefpass so, dass über 6 kHz höchstens −30 dB bleiben; geprüft auf Pulsfolge 15–50 Hz (Schnurr-Bereich) und schmale Linien 2–6 kHz (Piepen){', AudioSet-Klassifikator auf Katze/Miauen/Schnurren und Sprache' if mit_ast else ''}. Ein Wecker ist von Natur aus eine Glocke mit schnellem Klöppel: Linien und Puls sind dort zu erwarten und nur markiert. Beim Furzkissen ist das Flattern des Gummis von Natur aus ein Puls in diesem Bereich: markiert, ausgeschlossen nur, wenn AudioSet zugleich Schnurren hört; Quietschen, das nach Maus oder Vogel klingt, fällt aus.<br>
+<b>Katzen-Leitplanke:</b> keine Katzenlaute in den Prompts; Tiefpass so, dass über 6 kHz höchstens −30 dB bleiben; geprüft auf Pulsfolge 15–50 Hz (Schnurr-Bereich) und schmale Linien 2–6 kHz (Piepen){', AudioSet-Klassifikator auf Katze/Miauen/Schnurren und Sprache' if mit_ast else ''}. Ein Wecker ist von Natur aus eine Glocke mit schnellem Klöppel: Linien und Puls sind dort zu erwarten und nur markiert. Beim Furzkissen ist das Flattern des Gummis von Natur aus ein Puls in diesem Bereich: markiert, ausgeschlossen nur, wenn AudioSet zugleich Schnurren hört; Quietschen, das nach Maus oder Vogel klingt, fällt aus. Dasselbe gilt für das Zungen-Flattern beim „Bäh“; dort fällt außerdem aus, was nach Schaf, Ziege oder anderem Tier klingt.<br>
 <b>Pegel:</b> Wecker −17,5 LUFS (wie „Du bist dran“), Stimmen, Klatschen und Daumen −19 LUFS (wie der Jubel), Papier −21/−21,5 LUFS (wie Flip/Mischen), Furzkissen −20 LUFS (dazwischen), sein kleines „Pfft“ −23 LUFS; Mau-Ton −11,4 LUFS. Im Spiel kommt die Stufe der Spieltöne dazu (normal −4,5 dB).<br>
 <b>Ehrlich:</b> Niemand hat gehört; Rangfolge und Notizen stützen sich auf Messwerte und den AudioSet-Klassifikator. Bitte besonders auf verständliche Wörter, katzenähnliche Laute und Klicks achten.</div>
 {''.join(teile)}

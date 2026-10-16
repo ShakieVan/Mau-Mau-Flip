@@ -42,8 +42,13 @@ func discard_mode() -> bool:
 	return false
 
 
+# Zufallsregeln mit der Hausregel Kontern? Hier nie; test_rules_counter.gd überschreibt das.
+func counter_mode() -> bool:
+	return false
+
+
 func rand_cfg(rng: RandomNumberGenerator) -> RuleConfig:
-	return RulesFixture.random_config(rng, swap_mode(), gamble_mode(), discard_mode())
+	return RulesFixture.random_config(rng, swap_mode(), gamble_mode(), discard_mode(), counter_mode())
 
 
 func count(key: String) -> int:
@@ -304,9 +309,17 @@ func _leak_view(g: MauGame, s: int, secrets: Array) -> String:
 	# Glücksspiel-Felder nur mit der Hausregel (ohne sie bleibt die Sicht wie vorher).
 	var gamble_on := g.config.gamble_cards == "on"
 	var discard_on := g.config.discard_color == "on"
-	if v.size() != VIEW_KEYS.size() + (1 if gamble_on else 0) + (1 if discard_on else 0) or v.has("gamble") != gamble_on \
-			or v.has("discard_pick") != discard_on:
+	var counter_on := g.counter_on()       # Hausregel Kontern: view.counter und players[].counter
+	if v.size() != VIEW_KEYS.size() + (1 if gamble_on else 0) + (1 if discard_on else 0) + (1 if counter_on else 0) \
+			or v.has("gamble") != gamble_on or v.has("discard_pick") != discard_on or v.has("counter") != counter_on:
 		return "Platz %d: zusätzliche Felder" % s
+	if counter_on:
+		var cv: Dictionary = v.counter
+		if cv.get("wait", []) != g.counter_wait or int(cv.get("done", -9)) != g.counter_done or cv.size() != 2:
+			return "Platz %d: view.counter passt nicht zum Zustand" % s
+		for p in v.players:
+			if bool(p.get("counter", false)) != g.counter_wait.has(int(p.seat)):
+				return "Platz %d: players[].counter falsch" % s
 	if v.hints.has("can_pick") != discard_on:
 		return "Platz %d: Ablege-Hinweise ohne die Hausregel bzw. fehlend" % s
 	if discard_on:
@@ -341,7 +354,7 @@ func _leak_view(g: MauGame, s: int, secrets: Array) -> String:
 		if (not (v.hints.can_stake as Array).is_empty() or bool(v.hints.can_press)) and (s != g.current or g.state != "gamble"):
 			return "Glücksspiel-Hinweise für Platz %d außerhalb des eigenen Glücksspiels" % s
 	for p in v.players:
-		if p.size() != PLAYER_KEYS.size():
+		if p.size() != PLAYER_KEYS.size() + (1 if counter_on else 0):
 			return "Platz %d: Spielerfelder %s" % [s, str(p.keys())]
 	if s < 0 and not (v.hand as Array).is_empty():
 		return "Zuschauer mit Hand"
