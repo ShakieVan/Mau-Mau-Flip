@@ -13,6 +13,7 @@
  * ohne Reaktionen, bei Necken aus und über Farbrad/Fenster), Lage quer, Schrift sehr groß, großer Modus und hochkant (unter dem Tisch).
  * Beta 1.6.7: Menü schließt erst nach 15 s, bleibt bei Zugwechsel und Erwischen offen (springt nicht), „Erwischt!“-Buzzer rund, groß,
  * mit Namen, neben dem Mau-Knopf frei, durch das Menü hindurch drückbar (Loch), reduziert ohne Pulsieren; Rundenende schließt.
+ * Beta 1.6.8: Furzkissen-Sperre mit Restdauer left (Bestätigung, fx_no rate): grau bis zum echten Ende, ohne Zahl; ohne left wie bisher.
  * Aufruf: chrome --headless=new --allow-file-access-from-files --virtual-time-budget=300000 --dump-dom file:///…/webclient/test/lite_necken.html
  *   → <pre id="autotest-result" data-ok="1|0">. Läuft im Bau (tools/build.ps1 Invoke-WebTeaseTest). */
 (function () {
@@ -109,7 +110,7 @@
     leeren();
     await lade('');
     const App = w.MMF.App;
-    ok(App.version === '1.6.7', 'Version 1.6.7 (' + App.version + ')');
+    ok(App.version === '1.6.8', 'Version 1.6.8 (' + App.version + ')');
     ok(!!N() && App.einstellungen.necken === true, 'necken.js geladen, Necken ab Werk an');
     let s = await beitreten('Kim');
     ok(JSON.stringify(s.msgs('fx_pref')) === '[{"t":"fx_pref","off":false}]', 'fx_pref nach welcome (' + JSON.stringify(s.msgs('fx_pref')) + ')');
@@ -551,6 +552,57 @@
       ok(toasts().indexOf('Das Kissen muss sich erst wieder aufpusten.') >= 0 && N().pruefe({ k: 'kissen', to: 1 }) === 'rate', 'fx_no rate mit k → „Das Kissen muss sich erst wieder aufpusten.“, Knopf grau');
       ok(!w.document.querySelector('#toasts .toast.fehler'), 'Kissen-Ablehnungen sind keine Fehler');
       await warte(2900);
+      // Beta 1.6.8 (Nutzerbefund S10): Bestätigung mit left = Restdauer der eigenen Sperre – der Knopf bleibt die ganze Zeit grau,
+      // ohne Zahl; fx_no rate mit left setzt die Sperre; ohne left (Gastgeber bis 1.6.7) wie bisher. Eigene Uhr, statt Minuten zu warten.
+      {
+        const uhr0 = N().uhr;
+        let jetzt = 5000000;
+        N().uhr = () => jetzt;
+        N().regeln.cushionUntil = {}; N().regeln.cushions = {};
+        s.rx({ t: 'fx', k: 'kissen', from: 0, to: 1, reveal: true, left: 150000 });
+        await warte(20);
+        ok(N().regeln.cushionUntil[0] === jetzt + 150000 && toasts().indexOf('Kissen liegt bei Lena.') >= 0, '1.6.8: Bestätigung mit left – Spiegel kennt die echte Sperre (' + (N().regeln.cushionUntil[0] - jetzt) + ')');
+        jetzt += 61000;
+        ok(N().pruefe({ k: 'kissen', to: 3 }) === 'rate', '1.6.8: bei 61 s noch gesperrt (früher frei)');
+        kopf(3).click();
+        await warte(30);
+        const info = m.querySelector('.nk-info').textContent;
+        ok(kb('name').classList.contains('grau') && kb('geheim').classList.contains('grau') && info === 'Erst, wenn Mia dran ist.\nDas Kissen muss sich erst wieder aufpusten.' && !/\d/.test(info), '1.6.8: bei 61 s Knöpfe grau, Hinweis ohne Zahl (' + info + ')');
+        { const n = s.msgs('fx').length; kb('geheim').click(); await warte(20); ok(s.msgs('fx').length === n, '1.6.8: grauer Knopf schickt nichts'); }
+        N().zu();
+        jetzt += 88000;
+        ok(N().pruefe({ k: 'kissen', to: 3 }) === 'rate', '1.6.8: bei 149 s noch gesperrt');
+        jetzt += 2000;
+        ok(N().pruefe({ k: 'kissen', to: 3 }) === '', '1.6.8: bei 151 s frei');
+        kopf(3).click();
+        await warte(30);
+        ok(!kb('name').classList.contains('grau') && m.querySelector('.nk-info').textContent === 'Erst, wenn Mia dran ist.', '1.6.8: bei 151 s Knöpfe wieder aktiv');
+        N().zu();
+        // fx_no rate mit Restdauer (z. B. Spiegel nach Neuladen leer): grau genau so lange
+        N().regeln.cushionUntil = {};
+        s.rx({ t: 'fx_no', why: 'rate', k: 'kissen', left: 90000 });
+        await warte(20);
+        jetzt += 89000;
+        ok(N().pruefe({ k: 'kissen', to: 3 }) === 'rate', '1.6.8: fx_no rate mit left – bei 89 s noch grau (früher nach 10 s frei)');
+        jetzt += 2000;
+        ok(N().pruefe({ k: 'kissen', to: 3 }) === '', '1.6.8: fx_no rate mit left – danach frei');
+        // Gastgeber bis 1.6.7: Bestätigung ohne left → 60 s, fx_no rate ohne left → KISSEN_GRAU_MS (10 s)
+        N().regeln.cushions = {};
+        s.rx({ t: 'fx', k: 'kissen', from: 0, to: 1, reveal: false });
+        await warte(20);
+        ok(N().regeln.cushionUntil[0] === jetzt + 60000, '1.6.8: alter Gastgeber ohne left – Mindestzeit 60 s');
+        N().regeln.cushionUntil = {}; N().regeln.cushions = {};
+        s.rx({ t: 'fx_no', why: 'rate', k: 'kissen' });
+        await warte(20);
+        ok(N().regeln.cushionUntil[0] === jetzt + 10000, '1.6.8: alter Gastgeber, fx_no rate ohne left – wie bisher 10 s grau');
+        // kaputtes left: Bestätigung gilt, Sperre wie ohne left
+        N().regeln.cushionUntil = {};
+        s.rx({ t: 'fx', k: 'kissen', from: 0, to: 2, reveal: false, left: 'lange' });
+        await warte(20);
+        ok(N().regeln.cushionUntil[0] === jetzt + 60000 && N().regeln.cushions[2] && N().regeln.cushions[2].from === 0, '1.6.8: kaputtes left – Bestätigung gilt, Mindestzeit');
+        N().regeln.cushionUntil = {}; N().regeln.cushions = {};
+        N().uhr = uhr0;
+      }
       // Rundenende: offene Kissen verfallen still, die Sperre bleibt; seats leert beides
       N().regeln.cushionUntil = {};
       s.rx({ t: 'fx', k: 'kissen', from: 0, to: 1, reveal: true });
@@ -634,6 +686,15 @@
       ok(JSON.stringify(cf({ k: 'kissen_pop', to: 2, reveal: false, from: 0 })) === '{"t":"fx","k":"kissen_pop","to":2,"reveal":false,"from":0}' && JSON.stringify(cf({ k: 'kissen_pop', to: 2, reveal: false })) === '{"t":"fx","k":"kissen_pop","to":2,"reveal":false}'
         && cf({ k: 'kissen_pop', to: 2, reveal: true }) === null && JSON.stringify(cf({ k: 'kissen', from: 0, to: 2, reveal: true, x: 1 })) === '{"t":"fx","k":"kissen","from":0,"to":2,"reveal":true}', 'cleanFx: kissen/kissen_pop wie NetProtocol');
       ok(w.MMF.Necken.cleanFxNoKind({ why: 'busy', k: 'kissen' }) === 'kissen' && w.MMF.Necken.cleanFxNoKind({ why: 'busy' }) === '' && w.MMF.Necken.cleanFxNoKind({ why: 'busy', k: 'ball' }) === '', 'cleanFxNoKind wie NetProtocol.clean_fx_no_kind');
+      // Beta 1.6.8: Restdauer left (wie NetProtocol.clean_cushion_left / clean_fx_no_left)
+      ok(JSON.stringify(cf({ k: 'kissen', from: 0, to: 2, reveal: false, left: 150000 })) === '{"t":"fx","k":"kissen","from":0,"to":2,"reveal":false,"left":150000}'
+        && cf({ k: 'kissen', from: 0, to: 2, reveal: false, left: 9999999 }).left === 180000 && cf({ k: 'kissen', from: 0, to: 2, reveal: false, left: -3 }).left === undefined
+        && cf({ k: 'kissen', from: 0, to: 2, reveal: false, left: '9' }).left === undefined && cf({ k: 'kissen', from: 0, to: 2, reveal: false, left: 1234.6 }).left === 1235, 'cleanFx: left geklemmt, kaputt weg');
+      const nr = w.MMF.Necken.cleanFxNoRest;
+      ok(nr({ why: 'rate', k: 'kissen', left: 89000 }) === 89000 && nr({ why: 'rate', k: 'kissen' }) === -1 && nr({ why: 'busy', k: 'kissen', left: 5 }) === -1
+        && nr({ why: 'rate', left: 5 }) === -1 && nr({ why: 'rate', k: 'kissen', left: NaN }) === -1, 'cleanFxNoRest wie NetProtocol.clean_fx_no_left');
+      K.verbuche({ k: 'kissen', from: 0, to: 3, reveal: false, left: 150000 }, 100000);
+      ok(K.pruefe(0, { k: 'kissen', to: 1 }, T(1), 249999) === 'rate' && K.pruefe(0, { k: 'kissen', to: 1 }, T(1), 250000) === '', 'Regeln: Bestätigung mit left sperrt genau so lange');
     }
   }
   lauf().then(() => {}, e => fehler.push('Ausnahme: ' + (e && e.stack || e))).then(() => {

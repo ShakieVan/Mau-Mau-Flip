@@ -8,13 +8,17 @@ extends "res://tests/handover_kit.gd"
 #  1  Geheim legen: Bestätigung nur an den Leger; Gastgeberin, Ziel und Browser bekommen nichts, die Vorprüfung der Gastgeberin verrät
 #     nichts; Spielstand unberührt (rev, seq, Datei).
 #  2  Zweites Kissen beim selben Ziel: fx_no busy mit k:"kissen" nur an den Absender (Gastgeberin: fx_refused + fx_refused_kind).
-#  3  Zufallssperre: 0,5 → 120 s beim Gastgeber, ohne Restzeit in fx_no; der Spiegel des Legers sperrt nur 60 s.
+#  3  Zufallssperre: 0,75 → 150 s beim Gastgeber. Beta 1.6.8 (Nutzerbefund S10): Der Leger bekommt die Restdauer left in Bestätigung
+#     und fx_no rate, sein Spiegel bleibt die ganze Sperre grau (61 s, 149 s grau, 151 s frei); nach verlorenem Spiegel (Neuverbinden)
+#     setzt fx_no rate mit left die Sperre wieder.
 #  4  Auslösen: Zugwechsel allein löst nichts aus, der nächste Zug (Ziehen) des Ziels schon – erst der Stand, dann kissen_pop; geheim ohne
 #     from an alle außer dem Leger (Kopie mit from); kein Leck des Legers an andere, weder vorher noch nachher; zweite Aktion: nichts.
 #  5  Mit Namen auf den Computergegner: Pups beim Zug des Bots, alle bekommen from.
 #  6  Necken aus: Kissen auf ein Ziel mit Necken aus still verworfen; Ziel schaltet nach dem Legen aus → verfällt still.
 #  7  Lobby/neue Partie: offene Kissen verfallen, nichts pupst später.
 #  8  Ältere/fremde Nachrichten am Gast: Bestätigung für einen anderen Platz und unbekannte Arten ohne Signal; Browser bleibt verbunden.
+#  9  Beta 1.6.8: Gastgeber bis 1.6.7 (Bestätigung/fx_no ohne left): Spiegel wie bisher 60 s, fx_no rate ohne left ändert nichts.
+# 10  Beta 1.6.8: Gastgeberin legt selbst: ihre Vorprüfung kennt die echte Sperre (149,999 s grau, 150 s frei).
 
 const H_PORT := 24842
 const K_PORT := 24843
@@ -179,7 +183,7 @@ func _main_table() -> void:
 	give_turn(h, 0)                       # Hanna ist dran: niemand sonst handelt von selbst
 
 	# ---------- 1: geheim legen
-	rand_u = 0.5
+	rand_u = 0.75                         # Sperre 150 s
 	var rev0 := h.rev
 	var seq0 := h.seq
 	var file0 := file_of(h)
@@ -187,7 +191,8 @@ func _main_table() -> void:
 	check(kim.fx_check(kissen(as_)) == "", "1: Kim lokal: Kissen auf Anna geht")
 	kim.send_fx(kissen(as_))
 	check(wait_until(func(): return rk.fx.size() == 1), "1: Kim bekommt die Bestätigung")
-	check(rk.fx[0] == NetProtocol.make_cushion(ks, as_, false), "1: Bestätigung {kissen, from, to, reveal:false} (%s)" % str(rk.fx))
+	check(rk.fx[0] == NetProtocol.make_cushion(ks, as_, false, 150000), "1: Bestätigung {kissen, from, to, reveal:false, left:150000} (%s)" % str(rk.fx))
+	check(last_of(kd.inbox, "fx").get("left") == 150000, "1: left steht in Kims Posteingang")
 	pump(250)
 	check(rh.fx.is_empty() and ra.fx.is_empty() and count(ad.inbox, "fx") == 0 and count(w.inbox, "fx") == 0,
 		"1: Gastgeberin, Anna und Wally sehen nichts")
@@ -207,20 +212,34 @@ func _main_table() -> void:
 	check(count(kd.inbox, "fx_no") == 0 and count(ad.inbox, "fx_no") == 0 and count(w.inbox, "err") == 0, "2: die anderen merken nichts, kein err")
 	check(int(h.tease.cushion_at(as_).from) == ks, "2: es bleibt Kims Kissen")
 
-	# ---------- 3: Zufallssperre (0,5 → 120 s), ohne Restzeit
-	check(int(h.tease.cushion_until[ks]) == t1 + 120000, "3: Sperre beim Gastgeber 120 s")
+	# ---------- 3: Zufallssperre (0,75 → 150 s); Beta 1.6.8: der Leger kennt sie (left), sein Knopf bleibt die ganze Zeit grau
+	check(int(h.tease.cushion_until[ks]) == t1 + 150000, "3: Sperre beim Gastgeber 150 s")
+	check(int(kim.tease.cushion_until[ks]) == t1 + 150000, "3: Kims Spiegel kennt die echte Sperre aus der Bestätigung")
 	kim.client.send({"t": "fx", "k": "kissen", "to": bot, "reveal": false})   # an der lokalen Vorprüfung vorbei
 	check(wait_until(func(): return rk.no == ["rate"]), "3: Kim gesperrt: rate")
-	check(kim.fx_refused_kind == "kissen" and last_of(kd.inbox, "fx_no") == {"t": "fx_no", "why": "rate", "k": "kissen"},
-		"3: fx_no ohne Restzeit (%s)" % str(last_of(kd.inbox, "fx_no")))
-	clock_off += 60000
-	check(kim.fx_check(kissen(bot)) == "", "3: Kims Spiegel gibt nach 60 s frei")
+	check(kim.fx_refused_kind == "kissen" and last_of(kd.inbox, "fx_no") == {"t": "fx_no", "why": "rate", "k": "kissen", "left": 150000},
+		"3: fx_no rate mit Restdauer left (%s)" % str(last_of(kd.inbox, "fx_no")))
+	clock_off += 61000
+	check(kim.fx_check(kissen(bot)) == "rate" and kim.fx_check(kissen(0)) == "rate", "3: Kims Spiegel bei 61 s noch grau (früher frei)")
+	# Spiegel verloren (z. B. Neuverbinden → reset): Knopf sieht frei aus, der Gastgeber nennt beim Drücken die Restdauer
+	kim.tease.cushion_until.clear()
+	check(kim.fx_check(kissen(bot)) == "", "3: ohne Spiegel-Sperre sähe der Knopf frei aus")
 	kim.send_fx(kissen(bot))
 	check(wait_until(func(): return rk.no.size() == 2), "3: Gastgeber sperrt weiter (rate)")
-	clock_off += 59999
-	check(h.tease.check(ks, kissen(bot), h._fx_table(), fx_now()) == "rate", "3: bis kurz vor 120 s gesperrt")
+	check(last_of(kd.inbox, "fx_no") == {"t": "fx_no", "why": "rate", "k": "kissen", "left": 89000}, "3: fx_no mit Restdauer 89 s (%s)" % str(last_of(kd.inbox, "fx_no")))
+	check(kim.fx_check(kissen(bot)) == "rate" and int(kim.tease.cushion_until[ks]) == t1 + 150000, "3: nach fx_no rate wieder grau bis zum echten Ende")
+	clock_off += 88000                    # 149 s
+	check(kim.fx_check(kissen(bot)) == "rate", "3: Kims Spiegel bei 149 s noch grau")
+	check(h.tease.check(ks, kissen(bot), h._fx_table(), fx_now()) == "rate", "3: Gastgeber bei 149 s gesperrt")
+	clock_off += 999
+	check(h.tease.check(ks, kissen(bot), h._fx_table(), fx_now()) == "rate", "3: bis kurz vor 150 s gesperrt")
 	clock_off += 1
-	check(h.tease.check(ks, kissen(bot), h._fx_table(), fx_now()) == "", "3: ab 120 s frei")
+	check(h.tease.check(ks, kissen(bot), h._fx_table(), fx_now()) == "" and kim.fx_check(kissen(bot)) == "", "3: ab 150 s frei (Gastgeber und Spiegel)")
+	clock_off += 1000                     # 151 s
+	check(kim.fx_check(kissen(bot)) == "", "3: Kims Spiegel bei 151 s frei")
+	check(anna.tease.cushion_until.is_empty() and not cushion_msgs(ad.inbox).any(func(m): return m.has("left"))
+		and not (ad.inbox as Array).any(func(m): return str(m.get("t", "")) == "fx_no")
+		and not (w.inbox as Array).any(func(m): return m.has("left")), "3: Anna und Wally erfahren keine Sperre")
 
 	# ---------- 4: nächster Zug des Ziels löst aus
 	var nfx := [rh.fx.size(), rk.fx.size(), ra.fx.size(), count(w.inbox, "fx")]
@@ -263,7 +282,7 @@ func _main_table() -> void:
 	# ---------- 5: mit Namen auf den Computergegner
 	give_turn(h, 0)
 	anna.send_fx(kissen(bot, true))
-	check(wait_until(func(): return ra.fx.size() > 0 and ra.fx[-1] == NetProtocol.make_cushion(as_, bot, true)), "5: Anna legt mit Namen auf Minka")
+	check(wait_until(func(): return ra.fx.size() > 0 and ra.fx[-1] == NetProtocol.make_cushion(as_, bot, true, 150000)), "5: Anna legt mit Namen auf Minka (mit ihrer Sperrdauer)")
 	pump(150)
 	check(cushion_msgs(rk.fx).size() == 2 and count(w.inbox, "fx") == nfx[3] + 1, "5: auch mit Namen sieht vorher niemand etwas")
 	var named := NetProtocol.make_cushion_pop(bot, true, as_)
@@ -317,3 +336,35 @@ func _main_table() -> void:
 	kim._on_message({"t": "fx_no", "why": "boom", "k": "kissen"})
 	check([rk.fx.size(), rk.no.size()] == n8 and kim.tease.cushions.is_empty(), "8: fremde Bestätigung/unbekannt/kaputt: ohne Signal")
 	check((w.c as NetClient).state == "open", "8: Browser-Gast bleibt verbunden")
+
+	# ---------- 9: Beta 1.6.8 – Gastgeber bis 1.6.7 (ohne left): bisheriges Verhalten
+	give_turn(h, 0)
+	check(wait_until(func(): return int(kim.current_view().get("turn", -1)) == 0 and kim.current_view().get("phase") == "turn"), "9: Hanna ist dran")
+	kim.tease.reset()
+	kim.tease.note_view(kim.current_view(), fx_now())
+	var t9 := fx_now()
+	kim._on_message({"t": "fx", "k": "kissen", "from": ks, "to": bot, "reveal": false})   # Bestätigung wie bis 1.6.7
+	check(int(kim.tease.cushion_until.get(ks, -1)) == t9 + TeaseRules.CUSHION_BLOCK_MIN_MS, "9: ohne left sperrt der Spiegel die Mindestzeit")
+	clock_off += 59999
+	check(kim.fx_check(kissen(as_)) == "rate", "9: bis kurz vor 60 s grau")
+	clock_off += 1
+	check(kim.fx_check(kissen(as_)) == "", "9: ab 60 s frei (der alte Gastgeber lehnte dann mit fx_no ab)")
+	kim._on_message({"t": "fx_no", "why": "rate", "k": "kissen"})
+	check(kim.fx_check(kissen(as_)) == "" and kim.fx_refused_kind == "kissen", "9: fx_no rate ohne left ändert den Spiegel nicht")
+	kim.tease.reset()
+	kim.tease.note_view(kim.current_view(), fx_now())
+
+	# ---------- 10: Beta 1.6.8 – Gastgeberin legt selbst: ihre Vorprüfung ist exakt
+	clock_off += 200000
+	rand_u = 0.75
+	var n10: int = rh.fx.size()
+	var t10 := fx_now()
+	var others10 := [count(kd.inbox, "fx"), count(ad.inbox, "fx"), count(w.inbox, "fx")]
+	h.send_fx(kissen(bot))
+	check(rh.fx.size() == n10 + 1 and rh.fx[-1] == NetProtocol.make_cushion(0, bot, false, 150000), "10: Bestätigung am Gastgeber-Bildschirm (%s)" % str(rh.fx.slice(-1)))
+	clock_off += 149999
+	check(h.fx_check(kissen(as_)) == "rate", "10: Gastgeberin bis kurz vor 150 s grau")
+	clock_off += 1
+	check(h.fx_check(kissen(as_)) == "" and fx_now() == t10 + 150000, "10: ab 150 s frei")
+	pump(150)
+	check([count(kd.inbox, "fx"), count(ad.inbox, "fx"), count(w.inbox, "fx")] == others10, "10: die Gäste erfahren nichts von Hannas Kissen")

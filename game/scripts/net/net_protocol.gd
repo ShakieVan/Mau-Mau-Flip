@@ -32,6 +32,8 @@ extends RefCounted
 #   Host → nur Leger: fx {k:"kissen", from, to, reveal} (Bestätigung) · fx_no {why:"busy"|"rate", k:"kissen"}
 #   Host → alle Sitzenden: fx {k:"kissen_pop", to, reveal, from?} – from nur bei reveal:true; geheim bekommt nur der Leger eine Kopie
 #                  mit from. Geräte bis 1.6.5 verwerfen beide Arten (clean_fx/make_fx_request kennen sie nicht, Lite necken.js ebenso).
+#   Beta 1.6.8: Bestätigung und fx_no {why:"rate", k:"kissen"} tragen left (Restdauer der Sperre des Legers in ms ab Versand; nur an ihn).
+#                  Geräte bis 1.6.7 übergehen das Feld (make_cushion/clean_fx_no ohne left); fehlt es, sperrt der Spiegel 60 s.
 # Zahlen: JSON kennt nur float; decode() wandelt ganzzahlige Werte in int (Kennungen, Plätze, Zeitstempel in ms).
 
 const PROTO := 1                          # Protokollversion: bei jeder inkompatiblen Änderung erhöhen
@@ -385,13 +387,25 @@ static func clean_fx(msg: Dictionary) -> Dictionary:
 	if str(m.k) == TeaseRules.CUSHION:
 		if not msg.get("reveal") is bool:
 			return {}
-		return make_cushion(from, int(m.to), bool(msg.reveal))
+		return make_cushion(from, int(m.to), bool(msg.reveal), clean_cushion_left(msg))
 	return make_fx(str(m.k), from, int(m.get("to", -1)), str(m.get("r", "")))
 
 # Beta 1.6.6 (Furzkissen, docs/module/eastereggs2.md Abschnitt 12):
-static func make_cushion(from: int, to: int, reveal: bool) -> Dictionary:
-	# Gastgeber → nur der Leger: Bestätigung „Kissen liegt bei …“ (geht nie an andere).
-	return {"t": "fx", "k": TeaseRules.CUSHION, "from": from, "to": to, "reveal": reveal}
+static func make_cushion(from: int, to: int, reveal: bool, left := -1) -> Dictionary:
+	# Gastgeber → nur der Leger: Bestätigung „Kissen liegt bei …“ (geht nie an andere). Beta 1.6.8: left = Restdauer seiner Sperre in ms
+	# ab Versand (nur er erfährt sie; −1 lässt das Feld weg wie bis 1.6.7).
+	var m := {"t": "fx", "k": TeaseRules.CUSHION, "from": from, "to": to, "reveal": reveal}
+	if left >= 0:
+		m["left"] = left
+	return m
+
+# Beta 1.6.8: Restdauer left (ms) einer Bestätigung bzw. eines fx_no rate prüfen: Zahl ≥ 0, höchstens CUSHION_BLOCK_MAX_MS, ganze ms;
+# fehlt sie oder ist sie kaputt: −1 (dann wie bis 1.6.7: Mindestzeit bzw. keine Änderung).
+static func clean_cushion_left(msg: Dictionary) -> int:
+	var v = msg.get("left")
+	if not (v is int or v is float) or is_nan(float(v)) or float(v) < 0.0:
+		return -1
+	return int(roundf(minf(float(v), float(TeaseRules.CUSHION_BLOCK_MAX_MS))))
 
 static func make_cushion_pop(to: int, reveal: bool, from := -1) -> Dictionary:
 	# Gastgeber → alle Sitzenden: Kissen am Platz to löst aus. from steht nur drin, wenn reveal (an alle) – geheim nur in der Kopie an
@@ -419,17 +433,27 @@ static func clean_fx_no(msg: Dictionary) -> String:
 	var why = msg.get("why")
 	return str(why) if why is String and str(why) in TeaseRules.REFUSALS else ""
 
-static func make_fx_no(why: String, k := "") -> Dictionary:
+static func make_fx_no(why: String, k := "", left := -1) -> Dictionary:
 	# Gastgeber → nur der Absender. Beta 1.6.6: beim Furzkissen zusätzlich k:"kissen" (busy = „Da liegt schon ein Kissen.“, rate = „Das
-	# Kissen muss sich erst wieder aufpusten.“); die übrigen Arten bleiben wie in 1.6.3 ohne k.
+	# Kissen muss sich erst wieder aufpusten.“); die übrigen Arten bleiben wie in 1.6.3 ohne k. Beta 1.6.8: bei kissen/rate zusätzlich
+	# left = Restdauer der eigenen Sperre in ms ab Versand (−1 lässt es weg).
 	var m := {"t": "fx_no", "why": why}
 	if k == TeaseRules.CUSHION:
 		m["k"] = k
+		if why == "rate" and left >= 0:
+			m["left"] = left
 	return m
 
 static func clean_fx_no_kind(msg: Dictionary) -> String:
 	# Gast: Art einer Ablehnung ("kissen" oder "" = eine der Arten aus 1.6.3).
 	return TeaseRules.CUSHION if msg.get("k") is String and str(msg.k) == TeaseRules.CUSHION else ""
+
+static func clean_fx_no_left(msg: Dictionary) -> int:
+	# Beta 1.6.8, Gast: Restdauer der eigenen Kissen-Sperre aus fx_no {why:"rate", k:"kissen", left}; −1 = keine (Gastgeber bis 1.6.7,
+	# andere Gründe/Arten, kaputt).
+	if clean_fx_no(msg) != "rate" or clean_fx_no_kind(msg) != TeaseRules.CUSHION:
+		return -1
+	return clean_cushion_left(msg)
 
 static func make_fx_offs(seats: Array) -> Dictionary:
 	return {"t": "fx_offs", "seats": clean_fx_offs({"seats": seats})}

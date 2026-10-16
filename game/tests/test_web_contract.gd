@@ -1099,11 +1099,16 @@ func pruefe_necken(tisch: String, app: String, seite: String) -> void:
 			and nk.find("if (this.cushionUntil[sender] !== undefined && now < this.cushionUntil[sender]) return 'rate';") < nk.find("if (this.cushions[to] !== undefined) return 'busy';"),
 		"necken.js: Kissen-Prüfzweig wie TeaseRules.check (Phase, erst Sperre, dann Ziel)")
 	var verb := nk.find("verbuche(msg, now) {")
-	check(verb > 0 and nk.find("if (k === CUSHION) {", verb) < nk.find("this._take('table'", verb) and nk.contains("this.legeKissen(from, to, msg.reveal === true, now, CUSHION_BLOCK_MIN_MS)")
-			and nk.contains("if (k === CUSHION_POP) { delete this.cushions[to]; return; }"), "necken.js: Spiegel wie TeaseRules.commit (Kissen ohne Eimer, Mindestsperre, Pups räumt ab)")
+	check(verb > 0 and nk.find("if (k === CUSHION) {", verb) < nk.find("this._take('table'", verb) and nk.contains("this.legeKissen(from, to, msg.reveal === true, now, ganz(msg.left) && msg.left >= 0 ? msg.left : CUSHION_BLOCK_MIN_MS)")
+			and nk.contains("if (k === CUSHION_POP) { delete this.cushions[to]; return; }"), "necken.js: Spiegel wie TeaseRules.commit (Kissen ohne Eimer, Sperre left bzw. Mindestzeit, Pups räumt ab)")
 	check(nk.contains("if (k === CUSHION_POP) return cleanKissenPop(m);") and nk.contains("if (m.reveal && from < 0) return null;")
-			and nk.contains("typeof m.reveal === 'boolean' ? { t: 'fx', k, from, to, reveal: m.reveal } : null") and nk.contains("m && m.k === CUSHION ? CUSHION : ''"),
+			and nk.contains("if (typeof m.reveal !== 'boolean') return null;") and nk.contains("m && m.k === CUSHION ? CUSHION : ''"),
 		"necken.js: Bereinigung wie NetProtocol.clean_fx/_clean_cushion_pop/clean_fx_no_kind")
+	# Beta 1.6.8: Restdauer left der eigenen Kissen-Sperre (Bestätigung, fx_no rate) wie NetProtocol.clean_cushion_left/clean_fx_no_left
+	check(nk.contains("if (typeof v !== 'number' || !isFinite(v) || v < 0) return -1;") and nk.contains("return Math.round(Math.min(v, CUSHION_BLOCK_MAX_MS));")
+			and nk.contains("cleanFxNo(m) === 'rate' && cleanFxNoKind(m) === CUSHION ? cleanKissenRest(m) : -1")
+			and nk.contains("R.cushionUntil[v.seat] = rest >= 0 ? now + rest :"),
+		"necken.js: Kissen-Restdauer left wie NetProtocol (geklemmt, nur bei rate/kissen, Spiegel sperrt genau so lange)")
 	check(nk.contains("if (req.k === CUSHION) m.reveal = req.reveal === true;") and nk.contains("if (f.k === CUSHION && f.from !== v.seat) return false;")
 			and nk.contains("this._ton('furzkissen', ziel ? 1 : LEISE)"), "necken.js: Kissen-Wunsch mit reveal, Bestätigung nur vom eigenen Platz, Ton beim Ziel normal, sonst leise")
 	var ton := read_web("ton.js")

@@ -10,6 +10,9 @@ extends SceneTree
 #  F  Protokoll: Wunsch {k:"kissen", to, reveal}, Bestätigung, kissen_pop (from nur bei reveal bzw. in der Kopie an den Leger), fx_no mit
 #     k:"kissen", Bereinigung kaputter Nachrichten; ein Gast kann kein kissen_pop schicken.
 #  G  Ältere Geräte (bis 1.6.5): ihre Prüfung kennt nur snore/alarm/ball/react – beide neuen Arten fallen dort heraus.
+#  H  Beta 1.6.8 (Nutzerbefund S10): Restdauer left nur für den Leger – Bestätigung und fx_no rate mit left, Spiegel sperrt genau so lange
+#     (Sperre 150 s: bei 61 s und 149 s gesperrt, ab 150 s frei), fx_no rate mit left setzt die Sperre, ohne left wie bis 1.6.7 (60 s),
+#     Bereinigung (geklemmt, kaputt → weg), left nur bei kissen/rate.
 
 var failures := 0
 var checks := 0
@@ -194,3 +197,51 @@ func run() -> void:
 	for k in [TeaseRules.CUSHION, TeaseRules.CUSHION_POP]:
 		check(not old_kinds.has(k), "G: „%s“ ist für Geräte bis 1.6.5 unbekannt" % k)
 	check(TeaseRules.FX_KINDS.slice(0, 4) == old_kinds, "G: alte Arten unverändert und in derselben Reihenfolge")
+
+	# ---------- H: Beta 1.6.8 – Restdauer der Sperre für den Leger
+	var host := fresh()
+	var blk := TeaseRules.cushion_block_ms(0.75)        # 150 s
+	check(blk == 150000, "H: Zufall 0,75 → 150 s")
+	host.place_cushion(1, 2, false, now, blk)
+	check(host.cushion_left_ms(1, now) == 150000 and host.cushion_left_ms(1, now + 61000) == 89000
+		and host.cushion_left_ms(1, now + 200000) == 0 and host.cushion_left_ms(0, now) == 0, "H: cushion_left_ms (Gastgeber)")
+	var conf := NetProtocol.make_cushion(1, 2, false, blk)
+	check(conf == {"t": "fx", "k": "kissen", "from": 1, "to": 2, "reveal": false, "left": 150000}, "H: Bestätigung mit left (%s)" % str(conf))
+	check(NetProtocol.make_cushion(1, 2, false) == {"t": "fx", "k": "kissen", "from": 1, "to": 2, "reveal": false}, "H: ohne left wie bis 1.6.7")
+	var wire := NetProtocol.decode(NetProtocol.encode(conf))
+	check(NetProtocol.clean_fx(wire) == conf, "H: clean_fx behält left (%s)" % str(NetProtocol.clean_fx(wire)))
+	var g := fresh()
+	g.commit(NetProtocol.clean_fx(wire), now)
+	check(g.check(1, kissen(3), t, now + 61000) == "rate", "H: Spiegel bei 61 s noch gesperrt")
+	check(g.check(1, kissen(3), t, now + 149000) == "rate", "H: Spiegel bei 149 s noch gesperrt")
+	check(g.check(1, kissen(3), t, now + 149999) == "rate" and g.check(1, kissen(3), t, now + 150000) == "", "H: Spiegel frei ab 150 s (wie der Gastgeber)")
+	check(g.check(1, kissen(3), t, now + 151000) == "", "H: Spiegel bei 151 s frei")
+	for c in [[{"left": 999999}, 180000], [{"left": 1234.6}, 1235], [{"left": 0}, 0], [{"left": -1}, -1], [{"left": "90000"}, -1],
+			[{"left": null}, -1], [{"left": NAN}, -1], [{}, -1]]:
+		check(NetProtocol.clean_cushion_left(c[0]) == c[1], "H: clean_cushion_left %s → %d (%d)" % [str(c[0]), c[1], NetProtocol.clean_cushion_left(c[0])])
+	var bad_left := NetProtocol.clean_fx({"t": "fx", "k": "kissen", "from": 1, "to": 2, "reveal": true, "left": "viel"})
+	check(bad_left == NetProtocol.make_cushion(1, 2, true), "H: kaputtes left fällt weg, die Bestätigung bleibt (%s)" % str(bad_left))
+	var huge := NetProtocol.clean_fx({"t": "fx", "k": "kissen", "from": 1, "to": 2, "reveal": true, "left": 10000000})
+	check(int(huge.get("left", -1)) == TeaseRules.CUSHION_BLOCK_MAX_MS, "H: left geklemmt auf höchstens 3 min")
+	var old := fresh()
+	old.commit(NetProtocol.clean_fx(NetProtocol.make_cushion(1, 2, false)), now)
+	check(old.check(1, kissen(3), t, now + 59999) == "rate" and old.check(1, kissen(3), t, now + 60000) == "",
+		"H: Gastgeber bis 1.6.7 (ohne left): Spiegel wie bisher 60 s")
+	# fx_no rate mit left
+	check(NetProtocol.make_fx_no("rate", "kissen", 89000) == {"t": "fx_no", "why": "rate", "k": "kissen", "left": 89000}, "H: fx_no rate mit left")
+	check(NetProtocol.make_fx_no("busy", "kissen", 89000) == {"t": "fx_no", "why": "busy", "k": "kissen"}
+		and NetProtocol.make_fx_no("rate", "ball", 89000) == {"t": "fx_no", "why": "rate"} and NetProtocol.make_fx_no("rate", "kissen") == {"t": "fx_no", "why": "rate", "k": "kissen"},
+		"H: left nur bei kissen/rate")
+	check(NetProtocol.clean_fx_no_left({"t": "fx_no", "why": "rate", "k": "kissen", "left": 89000}) == 89000
+		and NetProtocol.clean_fx_no_left({"t": "fx_no", "why": "rate", "k": "kissen"}) == -1
+		and NetProtocol.clean_fx_no_left({"t": "fx_no", "why": "busy", "k": "kissen", "left": 5}) == -1
+		and NetProtocol.clean_fx_no_left({"t": "fx_no", "why": "rate", "left": 5}) == -1
+		and NetProtocol.clean_fx_no_left({"t": "fx_no", "why": "rate", "k": "kissen", "left": -5}) == -1, "H: clean_fx_no_left")
+	var n := fresh()
+	n.note_cushion_wait(1, 89000, now)
+	check(n.check(1, kissen(3), t, now + 88999) == "rate" and n.check(1, kissen(3), t, now + 89000) == "", "H: note_cushion_wait sperrt genau so lange")
+	n.note_cushion_wait(1, -1, now + 100000)
+	n.note_cushion_wait(-1, 5000, now + 100000)
+	check(n.check(1, kissen(3), t, now + 100000) == "" and not n.cushion_until.has(-1), "H: note_cushion_wait ohne Restdauer/Platz ändert nichts")
+	n.note_cushion_wait(1, 20000, now + 100000)
+	check(n.check(1, kissen(3), t, now + 119999) == "rate" and n.cushions.is_empty(), "H: Sperre aus fx_no ohne Kissen am Ziel (kein busy erfunden)")

@@ -259,7 +259,7 @@ Stand 15.10.2026. Nutzerwunsch nach der Familienrunde („Die Papierkugeln sind 
 - **Legen:** Man legt das Kissen unbemerkt auf den Platz eines anderen Mitspielers, auch eines Computergegners. Es pupst erst bei dessen **nächstem Zug**, sobald er eine Karte legt oder zieht. Das ist seine nächste angenommene Aktion dieser Art, nicht der Mau-Ruf und nicht das Necken.
 - **Eins je Ziel:** Liegt schon ein Kissen bei ihm, geht kein zweites („Da liegt schon ein Kissen.“).
 - **Verfall:** Endet die Runde vorher, verfällt das Kissen still.
-- **Zeitsperre:** Nach jedem Einsatz ist das Kissen für den Leger **zufällig 1–3 min** gesperrt. Der Gastgeber lost die Sperre aus und prüft sie. Die Restzeit wird nie verraten („Das Kissen muss sich erst wieder aufpusten.“).
+- **Zeitsperre:** Nach jedem Einsatz ist das Kissen für den Leger **zufällig 1–3 min** gesperrt. Der Gastgeber lost die Sperre aus und prüft sie. Die Restzeit wird nie verraten („Das Kissen muss sich erst wieder aufpusten.“). Ab 1.6.8 kennt nur das Gerät des Legers sie, damit der Knopf grau bleibt; angezeigt wird sie nicht (12.9).
 - **Absender:** Der Leger entscheidet beim Legen, ob sein Name verraten wird. „Mit Namen“ führt zu „Kim war's!“, „Geheim“ zu „Wer war das?“. Im Menü gibt es dafür zwei Knöpfe.
 - **Vor dem Pups:** Niemand außer dem Leger sieht etwas. Der Leger bekommt eine kurze Bestätigung („Kissen liegt bei Kim.“). Geheim heißt: Auch der Gastgeber-Bildschirm zeigt nichts, nur die Logik weiß es.
 - **Beim Pups:**
@@ -290,7 +290,7 @@ Stand 15.10.2026. Nutzerwunsch nach der Familienrunde („Die Papierkugeln sind 
 | Verfall (still) | `note_turn` außerhalb der Zugphasen (Rundenende, Partieende), Ereignis `seats` (Dazuholen/Entfernen), `reset()` (neue Partie, Lobby, `resume()`/Übernahme, `welcome` beim Gast). Hat beim Pups das Ziel **oder** der Leger Necken aus, verfällt es ebenfalls still, ohne Meldung |
 | Sperre und Verfall | Die Sperre überdauert das Rundenende (sie hängt an der Zeit, nicht an der Runde). `seats`/`reset()` leeren sie mit, weil die Platznummern dann nicht mehr gelten |
 | Eimer | Kissen gehen in **keinen** Eimer, auch nicht in den Tisch-Eimer. Das Legen ist geheim, die Spiegel der anderen könnten es nicht mitzählen und würden sonst anders ausgrauen als der Gastgeber. Die Last bleibt klein: höchstens 1 Kissen je Leger und Minute |
-| Spiegel | Nur der Spiegel des Legers kennt dessen Kissen (aus der Bestätigung). Er sperrt nur die Mindestzeit (60 s), die echte Sperre kennt nur der Gastgeber. Danach ist der Knopf beim Leger wieder aktiv, und der Gastgeber antwortet notfalls mit `fx_no rate`. Alle anderen Spiegel wissen nichts. Ein zweites Kissen auf dasselbe Ziel sieht dort erlaubt aus und wird mit `fx_no busy` beantwortet |
+| Spiegel | Nur der Spiegel des Legers kennt dessen Kissen (aus der Bestätigung). Ab Beta 1.6.8 kennt er auch die echte Sperre (`left`, siehe 12.9); bis 1.6.7 sperrte er nur die Mindestzeit (60 s), danach war der Knopf beim Leger wieder aktiv, und der Gastgeber antwortete mit `fx_no rate`. Alle anderen Spiegel wissen nichts. Ein zweites Kissen auf dasselbe Ziel sieht dort erlaubt aus und wird mit `fx_no busy` beantwortet |
 
 **Gastgeber-Bildschirm:** `HostTable.tease` ist maßgeblich und kennt auch fremde Kissen. `HostTable.fx_check` verrät sie deshalb nicht. Liegt beim Ziel das Kissen eines anderen, meldet die Vorprüfung `""` (Knopf aktiv), genau wie bei einem Gast. Erst beim Drücken kommt `fx_refused("busy")`. Die Oberfläche darf `tease.cushions` nie lesen.
 
@@ -300,7 +300,7 @@ Stand 15.10.2026. Nutzerwunsch nach der Familienrunde („Die Papierkugeln sind 
 |---|---|
 | Gast → Gastgeber | `{t:"fx", k:"kissen", to:int, reveal:bool}` (nur `reveal:true` verrät den Namen; fehlt es oder ist es kein bool, gilt geheim) |
 | Gastgeber → **nur Leger** | `{t:"fx", k:"kissen", from, to, reveal}` (Bestätigung) |
-| Gastgeber → nur Absender | `{t:"fx_no", why:"busy"\|"rate", k:"kissen"}`: ohne Restzeit und ohne Hinweis auf den Leger des liegenden Kissens; die übrigen Arten bleiben ohne `k` |
+| Gastgeber → nur Absender | `{t:"fx_no", why:"busy"|"rate", k:"kissen"}`: ohne Hinweis auf den Leger des liegenden Kissens (ab 1.6.8 bei `rate` mit der Restdauer `left` der eigenen Sperre, 12.9); die übrigen Arten bleiben ohne `k` |\|"rate", k:"kissen"}`: ohne Restzeit und ohne Hinweis auf den Leger des liegenden Kissens; die übrigen Arten bleiben ohne `k` |
 | Gastgeber → alle Sitzenden | `{t:"fx", k:"kissen_pop", to, reveal}`, bei `reveal:true` zusätzlich `from` an alle |
 | Gastgeber → nur Leger (geheim) | dieselbe Nachricht **mit** `from`, statt der Fassung ohne (nur er weiß es ohnehin) |
 
@@ -362,7 +362,7 @@ Ergänzt Abschnitt 6.1; alles Übrige bleibt.
 | Teil | Bedeutung |
 |---|---|
 | `send_fx({k:"kissen", to, reveal})` | Kissen legen. `reveal` true = „Mit Namen“, false = „Geheim“ |
-| `fx_check({k:"kissen", to})` | lokale Vorprüfung: `""`, `rate` (eigene Sperre; Gast: 60 s nach dem eigenen Kissen, Gastgeber/Übung: die echte), `busy` (nur das **eigene** Kissen bei diesem Ziel), `off`, `self`, `target`, `phase`, `mode`, `sender` |
+| `fx_check({k:"kissen", to})` | lokale Vorprüfung: `""`, `rate` (eigene Sperre; Gast: ab 1.6.8 die echte aus `left`, ohne `left` 60 s nach dem eigenen Kissen; Gastgeber/Übung: die echte), `busy` (nur das **eigene** Kissen bei diesem Ziel), `off`, `self`, `target`, `phase`, `mode`, `sender` |
 | `fx_caps().kinds` | enthält `"kissen"` bei host/client und solo (dort `bots_only`) |
 | `fx_event` `{t:"fx", k:"kissen", from, to, reveal}` | nur beim Leger: Bestätigung („Kissen liegt bei %s.“) |
 | `fx_event` `{t:"fx", k:"kissen_pop", to, reveal, from?}` | bei allen: Pups am Platz `to`; Zeile „%s war's!“ nur mit `reveal` und `from`, sonst „Wer war das?“. `from` bei `reveal:false` gibt es nur beim Leger, die Oberfläche zeigt dann trotzdem „Wer war das?“ |
@@ -408,3 +408,12 @@ Der Effekt kommt wie bei allen Necken erst mit dem Ereignis des Gastgebers. Die 
    - Einstellungstext neu, `en_fun.po` (10 msgids, die zwei alten Einstellungstexte ersetzt), Glossar. `webclient/i18n_po.js` muss mit `tools/build.ps1 -Target Web` neu erzeugt werden (sonst meldet `test_web_contract` „i18n_po.js veraltet“).
    - Tests: `test_ui_tease.gd` (`cushion_checks`, Übung), Kontrollbilder `optik_166_{menue_tag, menue_nacht, menue_gesperrt, bestaetigung, pups_tag, pups_nacht, pups_oben_nacht, zeile_tag, zeile_geheim, ziel_tag, ziel_zeile, ziel_nacht, reduziert, gross_menue, gross_pups_tag, gross_pups_nacht, sehr_gross, en_menue, en_zeile}.png` (`test_tease_shot.gd` mit `SERIE=166`, ANGLE).
 4. **Lite:** `necken.js` (Spiegel, Menü, Effekt), `app.js` (ohne `VERSION`), `ton.js`, `style.css`, `i18n_en.js`, `test_web_contract.gd`, `webclient/test/lite_necken.html`.
+
+### 12.9 Nachtrag Beta 1.6.8: Der Leger kennt seine Sperre
+
+- **Befund (Nutzer, S10 als Gast):** Nach einem Kissen war „Furzkissen“ im Mitspielermenü wieder wählbar, ohne „Das Kissen muss sich erst wieder aufpusten.“, obwohl die Sperre noch lief. Erst beim Legen kam die Ablehnung. Ursache: Der Spiegel des Gasts kannte nur die Mindestzeit 60 s, die Zufallssperre (1–3 min) nur der Gastgeber.
+- **Festlegung:** Die Sperrdauer bleibt vor **anderen** geheim, der **Leger selbst** darf sie kennen. Angezeigt wird weiter keine Zahl, nur der bisherige Text; der Knopf ist genau bis zum Ende grau.
+- **Protokoll (additiv):** Die Bestätigung an den Leger trägt `left` = Sperrdauer in ms (`{t:"fx", k:"kissen", from, to, reveal, left}`), ebenso `{t:"fx_no", why:"rate", k:"kissen", left}` die Restdauer ab Versand. `left` ist eine Dauer, kein Zeitpunkt, weil die Uhren der Geräte nicht gleich laufen; der Empfänger rechnet ab Empfang (die Laufzeit verlängert die Sperre nur ein wenig, er wird also nie zu früh frei). `busy` und die übrigen Arten bleiben ohne `left`.
+- **Bausteine:** `NetProtocol.make_cushion(…, left)`, `make_fx_no(why, k, left)`, `clean_cushion_left` (Zahl ≥ 0, geklemmt auf 180 000 ms, kaputt → −1), `clean_fx_no_left`; `TeaseRules.cushion_left_ms` (Gastgeber), `note_cushion_wait` (Spiegel nach `fx_no rate`), `commit` nimmt `left` aus der Bestätigung. Lite: `cleanKissenRest`, `cleanFxNoRest`, `verbuche`, `fxNo`.
+- **Verträglichkeit:** Geräte bis 1.6.7 übergehen `left` (ihre Bereinigung baut die Nachricht ohne das Feld neu). Ohne `left` (Gastgeber bis 1.6.7) gilt das alte Verhalten: Bestätigung → 60 s; `fx_no rate` → App ohne Änderung, Lite 10 s grau. Gastgeber-Bildschirm und Übung prüfen ohnehin gegen die echte Sperre. Nach einer Übernahme verfällt die Sperre wie bisher.
+- **Tests:** `test_tease_cushion.gd` H (Sperre 150 s: 61 s und 149 s gesperrt, ab 150 s frei; Bereinigung; `fx_no` nur bei `rate`/`kissen` mit `left`; ohne `left` 60 s), `test_game_net_cushion.gd` 3, 9, 10 (Gast grau während der ganzen Sperre, nach verlorenem Spiegel setzt `fx_no rate` sie neu, Anna und Wally erfahren nichts; alter Gastgeber; Gastgeberin selbst exakt), `lite_necken.html` (Knopf grau mit Hinweis ohne Zahl bei 61 s, frei bei 151 s; `fx_no rate` mit `left`; alter Gastgeber; kaputtes `left`), `test_web_contract.gd`.

@@ -28,6 +28,9 @@ extends RefCounted
 # Tisch-Eimer): Das Legen ist geheim, die Spiegel der anderen könnten es nicht mitzählen. Rundenende (note_turn außerhalb der
 # Zugphasen), „seats“ und reset() lassen offene Kissen still verfallen. Der Spiegel des Legers kennt sein eigenes Kissen (Bestätigung)
 # und sperrt ihn nur die Mindestzeit CUSHION_BLOCK_MIN_MS; alle anderen Spiegel wissen nichts davon (der Gastgeber antwortet mit fx_no).
+# Beta 1.6.8 (Nutzerbefund S10: Knopf nach 60 s wieder frei, obwohl die Sperre noch lief): Die Sperre bleibt vor anderen geheim, der
+# Leger selbst darf sie kennen. Der Gastgeber schickt ihm in der Bestätigung und in fx_no rate die Restdauer left (ms ab Versand, keine
+# gemeinsame Uhr); sein Spiegel sperrt genau so lange (commit, note_cushion_wait). Ohne left (Gastgeber bis 1.6.7) wie bisher 60 s.
 
 const FX_KINDS := ["snore", "alarm", "ball", "react", "kissen"]   # Wünsche der Spieler (Gast → Gastgeber)
 const CUSHION := "kissen"                       # Beta 1.6.6: Furzkissen legen {to, reveal}
@@ -58,7 +61,7 @@ var busy_until := {}              # Ziel -> ms (laufende Weckaktion)
 var last_ball := {}               # Ziel -> ms (letzte Papierkugel)
 var buckets := {}                 # "Absender:Art" bzw. "table" -> {level: float, t: int}
 var cushions := {}                # Beta 1.6.6: Ziel -> {from, reveal, at} (offenes Furzkissen; beim Gastgeber maßgeblich)
-var cushion_until := {}           # Beta 1.6.6: Leger -> ms (Sperre bis dahin; Spiegel des Legers: nur die Mindestzeit)
+var cushion_until := {}           # Beta 1.6.6: Leger -> ms (Sperre bis dahin; Spiegel des Legers: ab 1.6.8 left des Gastgebers, sonst die Mindestzeit)
 
 
 # Was in dieser Spielart geht: kinds = erlaubte Arten, bots_only = nur Computergegner als Ziel (Übung).
@@ -220,9 +223,11 @@ func commit(msg: Dictionary, now: int) -> void:
 	var from := int(msg.get("from", -1)) if msg.get("from") is int else -1
 	var to := int(msg.get("to", -1)) if msg.get("to") is int else -1
 	if k == CUSHION:
-		# Spiegel des Legers (Bestätigung): Kissen merken, Sperre nur die Mindestzeit (die echte kennt nur der Gastgeber, place_cushion)
+		# Spiegel des Legers (Bestätigung): Kissen merken. Sperre: Beta 1.6.8 die Restdauer left des Gastgebers (bereinigt in
+		# NetProtocol.clean_fx); ohne left (Gastgeber bis 1.6.7) nur die Mindestzeit (die echte kannte dann nur der Gastgeber)
 		if from >= 0 and to >= 0:
-			place_cushion(from, to, (msg.get("reveal") is bool and bool(msg.reveal)), now, CUSHION_BLOCK_MIN_MS)
+			var block := int(msg.left) if msg.get("left") is int and int(msg.left) >= 0 else CUSHION_BLOCK_MIN_MS
+			place_cushion(from, to, (msg.get("reveal") is bool and bool(msg.reveal)), now, block)
 		return
 	if k == CUSHION_POP:
 		cushions.erase(to)
@@ -249,6 +254,17 @@ func commit(msg: Dictionary, now: int) -> void:
 func place_cushion(from: int, to: int, reveal: bool, now: int, block_ms: int) -> void:
 	cushions[to] = {"from": from, "reveal": reveal, "at": now}
 	cushion_until[from] = now + block_ms
+
+
+# Beta 1.6.8: Restdauer der Sperre des Legers seat (ms, 0 = frei) – geht nur an ihn selbst (Bestätigung, fx_no rate).
+func cushion_left_ms(seat: int, now: int) -> int:
+	return maxi(0, int(cushion_until[seat]) - now) if cushion_until.has(seat) else 0
+
+
+# Beta 1.6.8: Spiegel des Legers – der Gastgeber nennt die Restdauer seiner Sperre (fx_no rate mit left): genau so lange gesperrt.
+func note_cushion_wait(seat: int, left_ms: int, now: int) -> void:
+	if seat >= 0 and left_ms >= 0:
+		cushion_until[seat] = now + left_ms
 
 
 # Offenes Kissen am Platz seat ({} = keins), ohne es zu entfernen.

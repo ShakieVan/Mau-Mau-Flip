@@ -26,7 +26,8 @@ extends TableSource
 #  - send_fx(req) → {t:"fx"}; set_fx_off(off) → {t:"fx_pref"} (auch nach jedem welcome). fx → fx_event (nur mit Platz und Sicht),
 #    fx_no → fx_refused, fx_offs → fx_offs_changed. Sichten und Ereignisse füttern den Spiegel tease (fx_check der Oberfläche).
 #  - Beta 1.6.6 (Furzkissen): fx kissen (nur als Leger: Bestätigung, Spiegel sperrt die Mindestzeit) und kissen_pop (alle) → fx_event;
-#    fx_no mit k:"kissen" setzt fx_refused_kind.
+#    fx_no mit k:"kissen" setzt fx_refused_kind. Beta 1.6.8: left in Bestätigung bzw. fx_no rate = Restdauer der eigenen Sperre
+#    (Spiegel sperrt genau so lange; ohne left wie bisher die Mindestzeit 60 s bzw. keine Änderung).
 
 signal backup_changed                              # Beta 1.6.1: neue Sicherung (bk) liegt in backup
 signal handover_received(msg: Dictionary)          # Beta 1.6.1: geprüftes {t:"handover"} (z oder own:true) → HostSwitch
@@ -540,6 +541,10 @@ func _on_message(msg: Dictionary) -> void:
 		"fx_no":
 			var why := NetProtocol.clean_fx_no(msg)   # Beta 1.6.3: eigener Wunsch abgelehnt
 			if why != "":
+				# Beta 1.6.8: Kissen gesperrt – der Gastgeber nennt die Restdauer (left), der Spiegel graut genau so lange aus
+				var left := NetProtocol.clean_fx_no_left(msg)
+				if left >= 0 and _seat >= 0:
+					tease.note_cushion_wait(_seat, left, _fx_now())
 				_fx_refuse(why, NetProtocol.clean_fx_no_kind(msg))   # Beta 1.6.6: fx_refused_kind (Furzkissen)
 		"fx_offs":
 			var offs := NetProtocol.clean_fx_offs(msg)   # Beta 1.6.3: Plätze mit Necken aus

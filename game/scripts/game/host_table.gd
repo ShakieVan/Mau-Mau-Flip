@@ -60,6 +60,7 @@ extends GameTable
 #    fx_rand) aus und bestätigt nur dem Leger. Ausgelöst wird in GameTable._apply bei der nächsten angenommenen Lege-/Zieh-Aktion des
 #    Ziels (auch Bots); _cushion_pop schickt kissen_pop an alle Sitzenden, geheim ohne from (nur der Leger bekommt from). Offene Kissen
 #    stehen nicht im Speicherstand und nicht in der Sicherung: Übergabe, Rundenende und seats lassen sie verfallen.
+#  - Beta 1.6.8: Der Leger (und nur er) erfährt die Restdauer seiner Sperre: left in der Bestätigung und in fx_no rate (k:"kissen").
 
 signal stepped_down(new_host: String)         # Beta 1.6.1: ein anderes Gerät führt jetzt das Spiel ("" = Name unbekannt)
 signal online_check(info: Dictionary)         # Beta 1.6.1: /info meldet einen Gastgeber – Probe als Gast, dann probe_done()
@@ -1816,7 +1817,9 @@ func _on_fx(id: int, msg: Dictionary) -> void:
 			if id == session.host_id:
 				_fx_refuse(why, str(msg.k))
 			else:
-				session.send_to(id, NetProtocol.make_fx_no(why, str(msg.k)))
+				# Beta 1.6.8: beim Kissen nennt rate dem Absender die Restdauer seiner eigenen Sperre (left), damit sein Knopf grau bleibt
+				var left := tease.cushion_left_ms(sender, now) if why == "rate" and str(msg.k) == TeaseRules.CUSHION else -1
+				session.send_to(id, NetProtocol.make_fx_no(why, str(msg.k), left))
 		return
 	if str(msg.k) == TeaseRules.CUSHION:
 		_cushion_place(id, sender, int(msg.to), (msg.get("reveal") is bool and bool(msg.reveal)), now)
@@ -1842,10 +1845,12 @@ func fx_check(req: Dictionary) -> String:
 
 
 # Beta 1.6.6 (Furzkissen, docs/module/eastereggs2.md Abschnitt 12): legen. Die Sperre des Legers wird hier ausgelost (1–3 min, fx_rand)
-# und nie verschickt. Bestätigung nur an den Leger – auch der Gastgeber-Bildschirm erfährt nichts, wenn er nicht selbst gelegt hat.
+# und geht nur an ihn selbst (Beta 1.6.8: left in der Bestätigung, vorher nie verschickt). Bestätigung nur an den Leger – auch der
+# Gastgeber-Bildschirm erfährt nichts, wenn er nicht selbst gelegt hat.
 func _cushion_place(id: int, sender: int, to: int, reveal: bool, now: int) -> void:
-	tease.place_cushion(sender, to, reveal, now, _cushion_block_ms())
-	var m := NetProtocol.make_cushion(sender, to, reveal)
+	var block := _cushion_block_ms()
+	tease.place_cushion(sender, to, reveal, now, block)
+	var m := NetProtocol.make_cushion(sender, to, reveal, block)   # Beta 1.6.8: mit der Sperrdauer (left) – nur der Leger erfährt sie
 	if id == session.host_id:
 		fx_event.emit(m)
 	else:

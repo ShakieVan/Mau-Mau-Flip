@@ -23,6 +23,8 @@
  *    Kissen am Platz des Ziels wird plattgedrückt, Wolke, „Pfffrt!“, Ton beim Ziel normal, bei allen anderen leise (auch beim Leger,
  *    sonst verriete sein Handy den geheimen Absender), Vibration nur beim Ziel, danach „Kim war's!“ bzw. „Wer war das?“. Der Spiegel
  *    kennt nur das eigene Kissen und sperrt die Mindestzeit (60 s); die echte Sperre (1–3 min) kennt nur der Gastgeber.
+ *    Beta 1.6.8 (Nutzerbefund S10): Bestätigung und fx_no rate tragen left = Restdauer der eigenen Sperre (ms ab Versand, nur an den
+ *    Leger); der Spiegel graut genau so lange aus (ohne Zahl). Ohne left (Gastgeber bis 1.6.7) wie bisher 60 s bzw. KISSEN_GRAU_MS.
  *    Lite bis 1.6.5 verwirft beide Arten (FX_KINDS ohne „kissen“), ein Gastgeber bis 1.6.5 den Wunsch.
  */
 (function (M) {
@@ -136,7 +138,8 @@
     verbuche(msg, now) {
       const k = String(msg.k || ''), from = ganz(msg.from) ? msg.from : -1, to = ganz(msg.to) ? msg.to : -1;
       // 1.6.6: Kissen gehen in keinen Eimer (das Legen ist geheim). Bestätigung = eigenes Kissen, Sperre nur die Mindestzeit
-      if (k === CUSHION) { if (from >= 0 && to >= 0) this.legeKissen(from, to, msg.reveal === true, now, CUSHION_BLOCK_MIN_MS); return; }
+      // 1.6.8: mit left (Restdauer vom Gastgeber, bereinigt in cleanFx) genau so lange, ohne (Gastgeber bis 1.6.7) die Mindestzeit
+      if (k === CUSHION) { if (from >= 0 && to >= 0) this.legeKissen(from, to, msg.reveal === true, now, ganz(msg.left) && msg.left >= 0 ? msg.left : CUSHION_BLOCK_MIN_MS); return; }
       if (k === CUSHION_POP) { delete this.cushions[to]; return; }
       this._take('table', TABLE_BUCKET, TABLE_REFILL_MS, now);
       if (k === 'react') this._take(from + ':react', REACT_BUCKET, REACT_REFILL_MS, now);
@@ -166,9 +169,22 @@
     if (k === 'react') return typeof m.r === 'string' && FX_REACTS.indexOf(m.r) >= 0 ? { t: 'fx', k, from, r: m.r } : null;
     const to = platz(m.to);
     if (to < 0 || to === from) return null;
-    if (k === CUSHION) return typeof m.reveal === 'boolean' ? { t: 'fx', k, from, to, reveal: m.reveal } : null;   // Bestätigung an den Leger
+    if (k === CUSHION) {   // Bestätigung an den Leger; 1.6.8: left = Restdauer seiner Sperre (ms)
+      if (typeof m.reveal !== 'boolean') return null;
+      const f = { t: 'fx', k, from, to, reveal: m.reveal }, rest = cleanKissenRest(m);
+      if (rest >= 0) f.left = rest;
+      return f;
+    }
     return { t: 'fx', k, from, to };
   }
+  // 1.6.8 (wie NetProtocol.clean_cushion_left): left ≥ 0, höchstens CUSHION_BLOCK_MAX_MS, ganze ms; fehlt/kaputt: -1
+  function cleanKissenRest(m) {
+    const v = m && m.left;
+    if (typeof v !== 'number' || !isFinite(v) || v < 0) return -1;
+    return Math.round(Math.min(v, CUSHION_BLOCK_MAX_MS));
+  }
+  // 1.6.8 (wie NetProtocol.clean_fx_no_left): Restdauer aus fx_no {why:"rate", k:"kissen", left}; -1 = keine
+  function cleanFxNoRest(m) { return cleanFxNo(m) === 'rate' && cleanFxNoKind(m) === CUSHION ? cleanKissenRest(m) : -1; }
   // 1.6.6 (wie NetProtocol._clean_cushion_pop): to und reveal Pflicht; from nur, wenn vorhanden (≠ to); „mit Namen“ ohne from verwerfen
   function cleanKissenPop(m) {
     const to = platz(m.to);
@@ -240,7 +256,7 @@
   const ueber = (a, b, rand) => a && b && a.width > 0 && b.width > 0 && a.left < b.right + rand && a.right + rand > b.left && a.top < b.bottom + rand && a.bottom + rand > b.top;
 
   const N = {
-    Regeln, cleanFx, cleanFxNo, cleanFxNoKind, cleanFxOffs, REAKT_BILD,
+    Regeln, cleanFx, cleanFxNo, cleanFxNoKind, cleanFxNoRest, cleanKissenRest, cleanFxOffs, REAKT_BILD,
     FX_KINDS, FX_REACTS, FX_SLOW_MS, WAKE_BUSY_MS, REFUSALS,
     CUSHION, CUSHION_POP, CUSHION_BLOCK_MIN_MS, CUSHION_BLOCK_MAX_MS, CUSHION_TRIGGERS,
     regeln: new Regeln(),
@@ -376,13 +392,14 @@
       const l = this._letzter, name = l && typeof l.to === 'number' ? this._name(l.to) : '';
       if (cleanFxNoKind(m) === CUSHION) {
         // 1.6.6: Furzkissen abgelehnt – ohne Restzeit und ohne Hinweis, von wem das liegende Kissen ist. Der Spiegel merkt sich beides,
-        // damit der Knopf grau bleibt (fremdes Kissen bis zum Pups bzw. Rundenende, eigene Sperre noch KISSEN_GRAU_MS)
-        const now = this.uhr(), v = this.app.view, R = this.regeln;
+        // damit der Knopf grau bleibt (fremdes Kissen bis zum Pups bzw. Rundenende, eigene Sperre noch KISSEN_GRAU_MS).
+        // 1.6.8: rate nennt die Restdauer der eigenen Sperre (left) – genau so lange grau; die Zeile bleibt ohne Zahl
+        const now = this.uhr(), v = this.app.view, R = this.regeln, rest = cleanFxNoRest(m);
         if (why === 'busy') {
           if (l && l.k === CUSHION && typeof l.to === 'number' && R.cushions[l.to] === undefined) R.cushions[l.to] = { from: -1, reveal: false, at: now };
           this.app.toast(M.t('Da liegt schon ein Kissen.'), 'leise', 2400);
         } else if (why === 'rate') {
-          if (v && v.seat >= 0) R.cushionUntil[v.seat] = Math.max(R.cushionUntil[v.seat] || 0, now + KISSEN_GRAU_MS);
+          if (v && v.seat >= 0) R.cushionUntil[v.seat] = rest >= 0 ? now + rest : Math.max(R.cushionUntil[v.seat] || 0, now + KISSEN_GRAU_MS);
           this.app.toast(M.t('Das Kissen muss sich erst wieder aufpusten.'), 'leise', 2400);
         }
         if (this.offen) this._menueStand();
