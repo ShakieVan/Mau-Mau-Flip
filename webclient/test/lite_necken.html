@@ -11,6 +11,8 @@
  * kaputte Nachrichten und fx in der Lobby schadlos, Necken aus, alter Gastgeber ohne fx (nichts passiert, kein Fehler).
  * Beta 1.6.5: vier direkte Reaktionsknöpfe (Reihenfolge, ein Tipp sendet genau diese Reaktion, grau in der Sperrzeit, nicht in Phasen
  * ohne Reaktionen, bei Necken aus und über Farbrad/Fenster), Lage quer, Schrift sehr groß, großer Modus und hochkant (unter dem Tisch).
+ * Beta 1.6.7: Menü schließt erst nach 15 s, bleibt bei Zugwechsel und Erwischen offen (springt nicht), „Erwischt!“-Buzzer rund, groß,
+ * mit Namen, neben dem Mau-Knopf frei, durch das Menü hindurch drückbar (Loch), reduziert ohne Pulsieren; Rundenende schließt.
  * Aufruf: chrome --headless=new --allow-file-access-from-files --virtual-time-budget=300000 --dump-dom file:///…/webclient/test/lite_necken.html
  *   → <pre id="autotest-result" data-ok="1|0">. Läuft im Bau (tools/build.ps1 Invoke-WebTeaseTest). */
 (function () {
@@ -107,7 +109,7 @@
     leeren();
     await lade('');
     const App = w.MMF.App;
-    ok(App.version === '1.6.6', 'Version 1.6.6 (' + App.version + ')');
+    ok(App.version === '1.6.7', 'Version 1.6.7 (' + App.version + ')');
     ok(!!N() && App.einstellungen.necken === true, 'necken.js geladen, Necken ab Werk an');
     let s = await beitreten('Kim');
     ok(JSON.stringify(s.msgs('fx_pref')) === '[{"t":"fx_pref","off":false}]', 'fx_pref nach welcome (' + JSON.stringify(s.msgs('fx_pref')) + ')');
@@ -327,6 +329,83 @@
     frame.style.width = '1000px'; frame.style.height = '600px';
     await warte(50); App.groesse();
     await warte(300);
+    // Beta 1.6.7 (Nutzer 16.10.2026): Menü schließt erst nach 15 s ohne Tipp, bleibt bei Zugwechsel und Erwischen offen (frischt auf,
+    // springt nicht); „Erwischt!“ ist ein großer, runder Buzzer, der dem offenen Menü ausweicht bzw. durch ein Loch drückbar bleibt
+    {
+      const m = $('#nk-menue'), knopf = k => m.querySelector('button[data-k="' + k + '"]');
+      s.rx({ t: 'state', events: [], view: sicht(1) });
+      await warte(300);
+      kopf(1).click();
+      await warte(60);
+      ok(sichtbar(m), '1.6.7: Menü offen');
+      const lage = () => m.style.left + ',' + m.style.top + ',' + m.dataset.seite;   // gesetzte Lage (Übergänge laufen unter virtueller Zeit nicht ab)
+      const vorher = lage();
+      await warte(14000);
+      N()._takt();
+      ok(sichtbar(m), '1.6.7: Menü nach 14 s noch offen');
+      await warte(1500);
+      N()._takt();
+      ok(!sichtbar(m), '1.6.7: Menü nach 15 s ohne Tipp zu');
+      // Zugwechsel: bleibt offen, Schnarchen/Wecker ausgegraut mit Hinweis, Papierkugel und Furzkissen bleiben nutzbar
+      kopf(1).click();
+      await warte(60);
+      s.rx({ t: 'state', events: [{ e: 'draw', seat: 1, count: 1 }], view: sicht(2, { hints: { playable: [], text: 'Tom ist dran.', catch: [] } }) });
+      await warte(400);
+      ok(sichtbar(m), '1.6.7: Zugwechsel schließt das Menü nicht');
+      ok(!knopf('snore').hidden && knopf('snore').classList.contains('grau') && !knopf('alarm').hidden && knopf('alarm').classList.contains('grau'), '1.6.7: Zugwechsel: Schnarchen/Wecker bleiben, ausgegraut');
+      ok($('#nk-menue .nk-info').textContent === 'Erst, wenn Lena dran ist.', '1.6.7: Hinweis „Erst, wenn Lena dran ist.“ (' + $('#nk-menue .nk-info').textContent + ')');
+      ok(!knopf('ball').classList.contains('grau') && !m.querySelector('.nk-kissen').hidden, '1.6.7: Papierkugel und Furzkissen bleiben nutzbar');
+      ok(lage() === vorher, '1.6.7: Menü springt beim Zugwechsel nicht (' + vorher + ' → ' + lage() + ')');
+      // Erwischen: Lena (1 Karte) wird erwischbar, während ihr Menü offen ist
+      s.rx({ t: 'state', events: [{ e: 'play', seat: 2, card: 61, face: 'hell_rot_8' }], view: sicht(3, { hints: { playable: [], text: 'Mia ist dran.', catch: [1] } }) });
+      await warte(400);
+      N()._takt();
+      const bz = $('#tisch .gg[data-seat="1"] .erwischen');
+      ok(sichtbar(m), '1.6.7: Erwischen schließt das Menü nicht');
+      ok(lage() === vorher, '1.6.7: Menü springt beim Erwischen nicht (' + vorher + ' → ' + lage() + ')');
+      const br = bz.getBoundingClientRect();
+      ok(sichtbar(bz) && br.width >= 44 && Math.abs(br.width - br.height) < 2, '1.6.7: Buzzer rund und mindestens 44 px (' + Math.round(br.width) + '×' + Math.round(br.height) + ')');
+      ok(w.getComputedStyle(bz).borderRadius === '50%' && /buzzerPuls/.test(w.getComputedStyle(bz).animationName), '1.6.7: Buzzer rund und pulsierend');
+      ok(bz.querySelector('.bz-name').textContent === 'Lena', '1.6.7: Buzzer nennt den Namen');
+      const mau = $('#mau').getBoundingClientRect();
+      ok(!ueberR(br, mau), '1.6.7: Buzzer liegt nicht über dem Mau-Knopf');
+      const mitte = w.document.elementFromPoint((br.left + br.right) / 2, (br.top + br.bottom) / 2);
+      ok(!!mitte && bz.contains(mitte), '1.6.7: Buzzer-Mitte ist drückbar, nicht vom Menü verdeckt (' + (mitte && mitte.className) + ')');
+      // Lage bleibt bei der nächsten Sicht (springt nicht unter dem Finger)
+      const bzVor = Math.round(br.left) + ',' + Math.round(br.top);
+      s.rx({ t: 'state', events: [], view: sicht(3, { hints: { playable: [], text: 'Mia ist dran.', catch: [1] } }) });
+      await warte(300);
+      const br2 = bz.getBoundingClientRect();
+      ok(Math.round(br2.left) + ',' + Math.round(br2.top) === bzVor, '1.6.7: Buzzer bleibt stehen (' + bzVor + ' → ' + Math.round(br2.left) + ',' + Math.round(br2.top) + ')');
+      // Tipp auf den Buzzer: Menü zu (Tipp daneben), „catch“ geht an den Gastgeber
+      const vorAkt = s.msgs('act').length;
+      mitte.dispatchEvent(new w.PointerEvent('pointerdown', { bubbles: true }));
+      mitte.click();
+      await warte(30);
+      const akt = s.msgs('act').slice(vorAkt);
+      ok(!sichtbar(m) && akt.length === 1 && akt[0].a.a === 'catch' && akt[0].a.target === 1, '1.6.7: Buzzer erwischt Lena, Menü zu (' + JSON.stringify(akt) + ')');
+      // Menü über einem Buzzer erzwungen: Loch im Menü, der Buzzer bleibt drückbar
+      kopf(3).click();
+      await warte(60);
+      N().offen.seite = '';
+      const ziel = bz.getBoundingClientRect();
+      m.style.left = Math.round(ziel.left - 20) + 'px'; m.style.top = Math.round(ziel.top - 10) + 'px';
+      N()._loch(Math.round(ziel.left - 20), Math.round(ziel.top - 10), m.offsetWidth, m.offsetHeight);
+      const mitte2 = w.document.elementFromPoint((ziel.left + ziel.right) / 2, (ziel.top + ziel.bottom) / 2);
+      ok(m.classList.contains('loch') && !!mitte2 && bz.contains(mitte2), '1.6.7: Menü über dem Buzzer hat ein Loch, Buzzer drückbar (' + (mitte2 && mitte2.className) + ')');
+      // Effekte reduziert: kein Pulsieren
+      w.document.body.classList.add('reduziert');
+      ok(w.getComputedStyle(bz).animationName === 'none', '1.6.7: reduziert ohne Pulsieren');
+      w.document.body.classList.remove('reduziert');
+      // Rundenende schließt das Menü
+      s.rx({ t: 'state', events: [], view: sicht(-1, { phase: 'round_over', hints: { playable: [], text: '', catch: [] } }) });
+      await warte(300);
+      ok(!sichtbar(m), '1.6.7: Rundenende schließt das Menü');
+      ok(!sichtbar(bz), '1.6.7: Buzzer weg, wenn niemand erwischbar ist');
+      N().zu();
+      s.rx({ t: 'state', events: [], view: sicht(1) });
+      await warte(300);
+    }
     // kaputte Nachrichten
     const vorher = N().gezeigt.length;
     [{ t: 'fx', k: 'boom', from: 1, to: 2 }, { t: 'fx', k: 'ball', from: 1, to: 1 }, { t: 'fx', k: 'ball', from: 12, to: 1 }, { t: 'fx', k: 'react', from: 2, r: 'x' },
@@ -407,7 +486,7 @@
       ok(N().pruefe({ k: 'ball', to: 2 }) === '', 'Kissen geht in keinen Eimer (Papierkugel weiter frei)');
       kopf(3).click();
       await warte(30);
-      ok(kb('name').classList.contains('grau') && kb('geheim').classList.contains('grau') && m.querySelector('.nk-info').textContent === 'Das Kissen muss sich erst wieder aufpusten.', 'Sperre: Kissen-Knöpfe grau, Hinweis ohne Restzeit (' + m.querySelector('.nk-info').textContent + ')');
+      ok(kb('name').classList.contains('grau') && kb('geheim').classList.contains('grau') && m.querySelector('.nk-info').textContent === 'Erst, wenn Mia dran ist.\nDas Kissen muss sich erst wieder aufpusten.', 'Sperre: Kissen-Knöpfe grau, Hinweis ohne Restzeit (' + m.querySelector('.nk-info').textContent + ')');
       { const n = s.msgs('fx').length; kb('name').click(); await warte(20); ok(s.msgs('fx').length === n && kb('name').classList.contains('wackel'), 'Sperre: grauer Kissen-Knopf schickt nichts und wackelt'); }
       N().zu();
       // fremde Bestätigung (gehört nie hierher): verworfen
@@ -452,7 +531,7 @@
       N().regeln.cushionUntil = {};   // Sperre vorbei (statt 60 s zu warten)
       kopf(3).click();
       await warte(30);
-      ok(!kb('name').classList.contains('grau') && m.querySelector('.nk-info').hidden, 'nach der Sperre: Kissen-Knöpfe wieder aktiv');
+      ok(!kb('name').classList.contains('grau') && m.querySelector('.nk-info').textContent === 'Erst, wenn Mia dran ist.', 'nach der Sperre: Kissen-Knöpfe wieder aktiv, nur der Hinweis zu Schnarchen/Wecker (1.6.7)');
       kb('name').click();
       await warte(20);
       ok(JSON.stringify(s.msgs('fx').slice(-1)) === '[{"t":"fx","k":"kissen","to":3,"reveal":true}]', 'Kissen „Mit Namen“ geschickt (reveal:true)');
@@ -462,7 +541,7 @@
       ok(N().pruefe({ k: 'kissen', to: 3 }) === 'busy' && N().pruefe({ k: 'kissen', to: 1 }) === '', 'nach busy: Kissen bei Mia bleibt grau, andere frei');
       kopf(3).click();
       await warte(30);
-      ok(kb('geheim').classList.contains('grau') && m.querySelector('.nk-info').textContent === 'Da liegt schon ein Kissen.', 'Menü: „Da liegt schon ein Kissen.“');
+      ok(kb('geheim').classList.contains('grau') && m.querySelector('.nk-info').textContent === 'Erst, wenn Mia dran ist.\nDa liegt schon ein Kissen.', 'Menü: „Da liegt schon ein Kissen.“');
       N().zu();
       s.rx({ t: 'fx', k: 'kissen_pop', to: 3, reveal: false });
       await warte(30);

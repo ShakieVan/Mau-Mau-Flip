@@ -4,8 +4,9 @@ extends Control
 # Sprechblase mit Zipfel zum Avatar, Titel „Kim · 5 Karten“, darunter runde Knöpfe mit gezeichneten Bildern (Papierkugel, Schnarchen,
 # Wecker, Karten ansehen) und ggf. ein Hinweis („Erst, wenn Kim eine Weile überlegt.“). Was gerade nicht geht, ist ausgegraut;
 # Schnarchen/Wecker füllen bis 10 s einen Ring. Ein Tipp daneben schließt das Menü und wirkt normal weiter (die Fläche außerhalb der
-# Blase gehört nicht zum Menü, _has_point). Die Lage setzt TeaseFx.place_menu; TeaseFx schließt es nach 5 s ohne Tipp, bei Zugwechsel,
-# erwischbaren Plätzen und Platzwechseln. Tag: Papier und Druckfarbe, Nacht: dunkle Blase mit hellem Rand und leichtem Neon-Schein.
+# Blase gehört nicht zum Menü, _has_point). Die Lage setzt TeaseFx.place_menu; TeaseFx schließt es nach 15 s ohne Tipp (bis 1.6.6: 5 s)
+# und bei Platzwechseln, ab Beta 1.6.7 nicht mehr bei Zugwechsel oder erwischbaren Plätzen (dann frischt es auf bzw. zeigt den
+# „Erwischt!“-Buzzer über sich, buzzers). Tag: Papier und Druckfarbe, Nacht: dunkle Blase mit hellem Rand und leichtem Neon-Schein.
 # Darunter (innere Klasse) ReactionBar: die 4 Reaktionen als runde Knöpfe am eigenen Platz (Beta 1.6.5; vorher ein Lachgesicht-Knopf mit Fächer).
 # Beta 1.6.6 (Furzkissen, eastereggs2.md 12.4): unter den runden Knöpfen eine eigene Zeile „Furzkissen“ (gezeichnetes Kissen) mit zwei
 # Knöpfen „Mit Namen“ (chosen "kissen_name") und „Geheim“ ("kissen_geheim"); beide grau, wenn es gerade nicht geht. Der Hinweis darf
@@ -27,10 +28,12 @@ var items: Array = []                 # [{key, label, on, progress}]
 var cushion: Dictionary = {}          # Beta 1.6.6: {} = keine Kissen-Zeile, sonst {label, on, why, opts: [{key, label}]}
 var night := 0.0
 var k := 1.0
-var idle := 0.0                       # Sekunden ohne Tipp (TeaseFx schließt nach 5 s)
+var idle := 0.0                       # Sekunden ohne Tipp (TeaseFx schließt nach MENU_IDLE_S = 15 s)
 var tail_to := Vector2.ZERO           # Avatar relativ zur Blase
 var tail_r := 30.0
 var size_changed := false
+var old_size := Vector2.ZERO          # Beta 1.6.7: Größe vor dem letzten set_items (TeaseFx.place_menu(keep))
+var buzzers: Array = []               # Beta 1.6.7: [{rect, hit, t, fs}] „Erwischt!“-Buzzer unter der Blase (lokal), von TeaseFx gesetzt
 var _press := ""
 
 
@@ -41,6 +44,7 @@ func _init() -> void:
 
 func set_items(new_items: Array, new_note: String, new_cushion: Dictionary = {}) -> void:
 	var old := size
+	old_size = old
 	items = new_items
 	note = new_note
 	cushion = new_cushion
@@ -179,7 +183,11 @@ func key_on(key: String) -> bool:
 	return false
 
 
+# Beta 1.6.7: über einem „Erwischt!“-Buzzer gehört der Tipp dem Tisch (er erwischt; _input schließt das Menü wie bei jedem Tipp daneben)
 func _has_point(p: Vector2) -> bool:
+	for b in buzzers:
+		if ((b as Dictionary).hit as Rect2).has_point(p):
+			return false
 	return Rect2(Vector2.ZERO, size).has_point(p)
 
 
@@ -280,6 +288,10 @@ func _draw() -> void:
 		var nw := lf.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_n()).x
 		var ny := size.y - PAD * k * 0.9 - _font_n() * 1.5 * (lines.size() - 1 - li)
 		draw_string(lf, Vector2((size.x - nw) * 0.5, ny), line, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_n(), muted)
+	# Beta 1.6.7: wer erwischbar wurde, während das Menü offen ist, dessen Buzzer liegt sichtbar über der Blase
+	for b in buzzers:
+		var bd := b as Dictionary
+		OpponentSeat.draw_buzzer(self, bd.rect, float(bd.t), night, bool(bd.get("red", false)), int(bd.fs))
 
 
 # Beta 1.6.6: Kissen-Zeile – links das gezeichnete Kissen mit „Furzkissen“ darunter, rechts die Knöpfe „Mit Namen“ und „Geheim“

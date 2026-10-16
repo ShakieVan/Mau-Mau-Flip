@@ -45,7 +45,7 @@ const REACT_SOUND_MAX := 2                 # je Gerät höchstens so viele Reakt
 const REACT_SOUND_GAP_MS := 600            # je Reaktionsname
 const REACT_LEN_MS := {"lachen": 1920, "schreck": 610, "klatschen": 1920, "daumen": 620}   # Dateilängen (eastereggs2.md 7)
 const SOUND_OF := {"lachen": "lachen", "schreck": "schreck", "klatschen": "klatschen", "daumen": "daumen"}
-const MENU_IDLE_S := 5.0
+const MENU_IDLE_S := 15.0                  # Beta 1.6.7 (Nutzerwunsch 16.10.2026): vorher 5 s, das Menü verschwand zu früh
 const RATE_GRAY_S := 1.2                   # fx_no "rate": Knöpfe kurz ausgegraut
 const REOPEN_GAP_MS := 400                 # derselbe Kopf direkt nach dem Schließen: nicht gleich wieder öffnen
 const SYNC_S := 0.15                       # Beta 1.6.3: Abstand der Regelprüfung in tick (Reaktionsknöpfe, Menüeinträge)
@@ -191,8 +191,10 @@ func tick(delta: float) -> void:
 		menu.idle += delta
 		if menu.idle >= MENU_IDLE_S:
 			close_menu()
-		elif full:
-			_refresh_menu()
+		else:
+			if full:
+				_refresh_menu()
+			_sync_menu_buzzers()
 	_sync_reactions(full)
 
 
@@ -203,12 +205,16 @@ func on_view(v: Dictionary) -> void:
 	var turn: int = int(v.get("turn", -1)) if v.get("turn") is int or v.get("turn") is float else -1
 	if not phase in TeaseRules.TURN_PHASES:
 		turn = -1
+	# Beta 1.6.7 (Nutzerwunsch 16.10.2026): Zugwechsel und erwischbare Plätze schließen das Menü nicht mehr („es wird einem unterm
+	# Finger weggeklaut“). Beim Zugwechsel frischt es auf (Schnarchen/Wecker grau bzw. aktiv, ohne zu springen); ein „Erwischt!“-Buzzer
+	# unter dem Menü bleibt sichtbar und drückbar (_sync_menu_buzzers). Nur das Rundenende (kein Zug mehr) schließt es.
 	if turn != _turn:
 		_turn = turn
-		close_menu()
-	var h: Variant = v.get("hints", {})
-	if h is Dictionary and (h as Dictionary).get("catch") is Array and not ((h as Dictionary).get("catch") as Array).is_empty():
-		close_menu()                          # Erwischen geht vor (eastereggs2.md 2)
+		if turn < 0:
+			close_menu()
+		else:
+			_refresh_menu()
+	_sync_menu_buzzers()
 	for e in effects():
 		if (e is AlarmFx or e is SnoreFx) and e.target != turn:
 			_wake_up(e)
@@ -1009,13 +1015,18 @@ func menu_items(seat: int) -> Dictionary:
 	else:
 		if kinds.has("ball"):
 			items.append(_item("ball", I18n.t("Papierkugel"), {"k": "ball", "to": seat}))
-		if not _is_bot(seat) and seat == _current_turn():
+		# Beta 1.6.7: bei Menschen immer da (das Menü bleibt beim Zugwechsel offen und soll nicht springen), nicht am Zug ausgegraut
+		if not _is_bot(seat):
+			var at_turn := seat == _current_turn()
 			for kk in ["snore", "alarm"]:
 				if kinds.has(kk):
 					var it := _item(kk, I18n.t("Schnarchen") if kk == "snore" else I18n.t("Wecker"), {"k": kk, "to": seat})
-					var left := source.fx_slow_left_ms(seat) if source != null else -1
-					it["progress"] = 1.0 - float(left) / float(TeaseRules.FX_SLOW_MS) if left >= 0 else 0.0
-					if str(it.get("why", "")) == "early":
+					var left := source.fx_slow_left_ms(seat) if source != null and at_turn else -1
+					it["progress"] = 1.0 - float(left) / float(TeaseRules.FX_SLOW_MS) if left >= 0 else 1.0
+					if not at_turn:
+						it["on"] = false
+						note = I18n.t("Erst, wenn %s dran ist.") % _name(seat)
+					elif str(it.get("why", "")) == "early":
 						note = I18n.t("Erst, wenn %s eine Weile überlegt.") % _name(seat)
 					items.append(it)
 	if node != null and node.backs_visible():
@@ -1103,7 +1114,28 @@ func _refresh_menu() -> void:
 	menu.title = menu_title(menu.seat)
 	menu.set_items(d.items, str(d.note), d.cushion)
 	if menu.size_changed:
-		place_menu()
+		place_menu(true)                      # Beta 1.6.7: möglichst an der Stelle bleiben (nicht unter dem Finger wegspringen)
+
+
+# Beta 1.6.7: „Erwischt!“-Buzzer, die gerade unter dem offenen Menü liegen (jemand wurde erwischbar, während es offen war). Das Menü
+# zeichnet sie über sich und lässt Tipps dort durch (TeaseMenu.buzzers/_has_point) – der Tisch erwischt, das Menü schließt wie bei
+# jedem Tipp daneben. Es bleibt offen und springt nicht.
+func _sync_menu_buzzers() -> void:
+	if menu == null or table == null:
+		return
+	var out: Array = []
+	var mr := Rect2(Vector2.ZERO, menu.size)
+	for s in table.get("_seats"):
+		var sn: OpponentSeat = table.seat_node(int(s))
+		if sn == null or not sn.catchable or not sn.is_visible_in_tree() or sn.modulate.a < 0.5:
+			continue
+		var hit := catch_rect_of(int(s), menu)
+		if not hit.intersects(mr):
+			continue
+		out.append({"rect": catch_rect_of(int(s), menu, 0.0), "hit": hit, "t": float(sn.get("_time")), "fs": sn.buzzer_font_size(), "red": sn.reduced})
+	if not out.is_empty() or not menu.buzzers.is_empty():
+		menu.buzzers = out
+		menu.queue_redraw()
 
 
 func _on_menu_chosen(key: String) -> void:
@@ -1137,10 +1169,11 @@ func send(req: Dictionary) -> void:
 
 
 # Menü am Avatar platzieren: rechts neben Name und Kartenzahl, links, links neben dem „Erwischt!“-Feld (großer Modus), darunter oder
-# darüber – jeweils in den Bildschirm geklemmt. Gemieden werden das „Erwischt!“-Feld des Ziels und jedes gerade erwischbaren Platzes
-# (das Menü schließt sich ohnehin, sobald jemand erwischbar wird), die Knöpfe oben links (avoid_cb, TableScreen), der Mau-Knopf und
-# möglichst der Kopf des Ziels.
-func place_menu() -> void:
+# darüber – jeweils in den Bildschirm geklemmt. Gemieden werden das „Erwischt!“-Feld des Ziels und jedes gerade erwischbaren Platzes,
+# die Knöpfe oben links (avoid_cb, TableScreen), der Mau-Knopf und möglichst der Kopf des Ziels. Beta 1.6.7: Weil das Menü offen
+# bleibt, wenn jemand erwischbar wird, meidet es auch die „Erwischt!“-Felder der übrigen Plätze (etwas schwächer). keep = beim
+# Auffrischen mit neuer Größe die bisherige Lage bevorzugen (die dem Avatar zugewandte Kante bleibt stehen).
+func place_menu(keep := false) -> void:
 	if menu == null:
 		return
 	var node := table.seat_node(menu.seat)
@@ -1155,10 +1188,15 @@ func place_menu() -> void:
 	var head := Rect2(a - Vector2(r, r), Vector2(maxf(head_end.x - a.x + r, 2.0 * r), 2.0 * r)).grow(6.0)
 	var rc := catch_rect_of(menu.seat, par)
 	var hard: Array[Rect2] = [rc]
+	var mid: Array[Rect2] = []                # Beta 1.6.7: „Erwischt!“-Felder der übrigen Plätze, die (noch) nicht erwischbar sind
 	for s in table.get("_seats"):
 		var sn: OpponentSeat = table.seat_node(int(s))
-		if sn != null and sn.catchable and int(s) != menu.seat:
+		if sn == null or int(s) == menu.seat or not sn.is_visible_in_tree() or sn.modulate.a < 0.5:
+			continue
+		if sn.catchable:
 			hard.append(catch_rect_of(int(s), par))
+		else:
+			mid.append(catch_rect_of(int(s), par, 0.0))
 	if avoid_cb.is_valid():
 		for g in avoid_cb.call():
 			hard.append(g as Rect2)
@@ -1192,12 +1230,23 @@ func place_menu() -> void:
 		for b in hard:
 			if rect.intersects(b):
 				cost += rect.intersection(b).get_area() * 40.0
+		for b in mid:
+			if rect.intersects(b):
+				cost += rect.intersection(b).get_area() * 12.0
 		for b in soft:
 			if rect.intersects(b):
 				cost += rect.intersection(b).get_area() * 4.0
 		return cost
 	var best := Vector2.INF
 	var best_cost := INF
+	if keep and menu.position.is_finite():
+		# bisherige Lage mit der neuen Größe: die Kante zum Avatar bleibt stehen; gewinnt, solange sie nichts Hartes trifft
+		var old := Rect2(menu.position, menu.old_size)
+		var c := Vector2(old.position.x if old.get_center().x >= a.x else old.end.x - s.x,
+			old.position.y if old.get_center().y >= a.y else old.end.y - s.y)
+		c = clamp_c.call(c)
+		best_cost = cost_of.call(c, 0) - 800.0
+		best = c
 	for i in base.size():
 		# jede Lage auch an harten Hindernissen vorbeigeschoben (z. B. rechts neben die Knöpfe oben links)
 		var tries: Array[Vector2] = [clamp_c.call(base[i])]
@@ -1223,12 +1272,12 @@ func place_menu() -> void:
 
 
 # „Erwischt!“-Feld eines Platzes in Koordinaten von node (auch wenn er gerade nicht erwischbar ist)
-func catch_rect_of(seat: int, node: CanvasItem) -> Rect2:
+func catch_rect_of(seat: int, node: CanvasItem, margin := 18.0) -> Rect2:
 	var sn := table.seat_node(seat)
 	if sn == null:
 		return Rect2()
 	var inv := table.get_global_transform().affine_inverse()
-	var cr: Rect2 = sn._catch_rect().grow(18.0)
+	var cr: Rect2 = sn._catch_rect().grow(margin)
 	var p0: Vector2 = table._table_to(node, inv * sn.to_global(cr.position))
 	var p1: Vector2 = table._table_to(node, inv * sn.to_global(cr.end))
 	return Rect2(p0, Vector2.ZERO).expand(p1)

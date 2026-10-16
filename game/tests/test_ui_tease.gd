@@ -2,7 +2,8 @@ extends SceneTree
 # Mau-Mau Flip (Beta 1.6.3, Easter Eggs Teil 2 „Necken“, docs/module/eastereggs2.md Abschnitte 2, 3 und 9): Oberfläche am Tisch,
 # headless mit eingespritzter Uhr (TeaseFx.tick, source.fx_clock) und einer Spielsteuerungs-Attrappe (FakeSource).
 #   Gesten: Kopf → Menü, Fächer mit sichtbaren Rückseiten → Großansicht, ohne → Menü, Erwischt geht vor, Tipp daneben schließt und
-#   wirkt weiter; Menü schließt bei Zugwechsel, Erwischbarkeit, Platzwechsel, 5 s; nie über einem „Erwischt!“-Knopf; „1 Karte“.
+#   wirkt weiter; Menü schließt bei Platzwechsel, Rundenende, 15 s (Beta 1.6.7; vorher 5 s), aber nicht mehr bei Zugwechsel (frischt
+#   auf, springt nicht) oder Erwischbarkeit (Buzzer bleibt drückbar, auch unter der Blase); nie über einem „Erwischt!“-Knopf; „1 Karte“.
 #   Menüeinträge nach lokaler Uhr (vor/nach 10 s), Ziel mit Necken aus, Ziel Bot, eigener Wunsch → send_fx.
 #   Effekte und Töne je Rolle (Ziel normal, Absender −12 dB, Zuschauer still bzw. Plopp leise), Vibration, Wecker abstellen,
 #   Schnarchen ausblenden, Kugeln je Platz ≤ 3, „Mpf!“, Reaktionstöne ≤ 2 gleichzeitig und 600 ms je Name, fx_no-Zeilen/Ausgrauen,
@@ -180,6 +181,40 @@ func covered_by_reactions() -> Array:
 			if b.grow(-1.0).intersects(r):
 				out.append("%s %s↔%s" % [key, b, r])
 				break
+	return out
+
+
+# Beta 1.6.7: Probleme der sichtbaren „Erwischt!“-Buzzer (Bildschirmkoordinaten). Leer = nichts.
+func buzzer_issues() -> Array:
+	var out: Array = []
+	var rects := {}
+	var stacks: Array[Rect2] = []
+	for c: CardView in [t.pile_top(), t.discard_top()]:
+		if c != null and is_instance_valid(c) and c.is_visible_in_tree():
+			var w := c.width * c.global_scale.x
+			stacks.append(Rect2(c.get_global_transform_with_canvas().origin - Vector2(w * 0.5, w * 0.78), Vector2(w, w * 1.56)))
+	for s in t.get("_seats"):
+		var node := t.seat_node(int(s))
+		if node == null or not node.catchable:
+			continue
+		var xf := node.get_global_transform_with_canvas()
+		var r := node._catch_rect()
+		var g := Rect2(xf * r.position, r.size * xf.get_scale().abs())
+		rects[int(s)] = g
+		if g.size.x < 145.0 or g.size.y < 84.0:
+			out.append("klein %d %s" % [s, g])
+		if not Rect2(Vector2.ZERO, t.size).grow(2.0).encloses(g):
+			out.append("raus %d %s" % [s, g])
+		if g.intersects(t.mau_button.get_global_rect()):
+			out.append("Mau %d %s" % [s, g])
+		for st in stacks:
+			if g.grow(-2.0).intersects(st):
+				out.append("Stapel %d %s↔%s" % [s, g, st])
+	var ks := rects.keys()
+	for i in ks.size():
+		for j in range(i + 1, ks.size()):
+			if (rects[ks[i]] as Rect2).intersects(rects[ks[j]]):
+				out.append("überlappt %d/%d" % [ks[i], ks[j]])
 	return out
 
 
@@ -402,21 +437,91 @@ func run() -> void:
 	tf.tick(1.3)
 	check(bool(tf.menu.items[0].on), "nach kurzer Zeit wieder aktiv")
 
-	# --- Menü schließt: Zugwechsel, erwischbarer Platz, Platzwechsel, 5 s, Tipp daneben (der weiter wirkt)
+	# --- Beta 1.6.7 (Nutzerwunsch 16.10.2026): Zugwechsel und erwischbare Plätze schließen das Menü nicht mehr. Beim Zugwechsel frischt
+	#     es auf (Schnarchen/Wecker grau bzw. aktiv) und bleibt an seiner Stelle; der Buzzer bleibt sichtbar und drückbar.
+	sample.turn = 1
+	show(sample.view_for(0))
+	clock += 10000
+	tf.tick(0.45)
+	tf.open_menu(1)
+	var m0 := tf.menu
+	check(bool(m0.items[1].on) and bool(m0.items[2].on), "Lena am Zug, ab 10 s: Schnarchen/Wecker aktiv")
+	var ball0: Vector2 = m0.get_global_transform_with_canvas() * m0.button_center(0)
 	sample.turn = 3
 	show(sample.view_for(0))
-	check(tf.menu == null, "Zugwechsel schließt das Menü")
-	tf.open_menu(1)
-	sample.catch_targets = [1]
+	tf.tick(0.2)
+	check(tf.menu == m0, "Zugwechsel: Menü bleibt offen")
+	keys = tf.menu.items.map(func(it: Dictionary) -> String: return str(it.key))
+	check(keys == ["ball", "snore", "alarm", "backs"] and bool(tf.menu.items[0].on) and not bool(tf.menu.items[1].on) and not bool(tf.menu.items[2].on),
+		"Zugwechsel: Schnarchen/Wecker grau, Kugel aktiv (%s)" % str(keys))
+	check(tf.menu.note == "Erst, wenn Lena dran ist.", "Zugwechsel: Hinweis „Erst, wenn Lena dran ist.“ (%s)" % tf.menu.note)
+	var ball1: Vector2 = m0.get_global_transform_with_canvas() * m0.button_center(0)
+	check(ball1.distance_to(ball0) < 2.0, "Zugwechsel: Menü springt nicht (Papierkugel bleibt an ihrer Stelle, %s → %s)" % [ball0, ball1])
+	sample.turn = 1
 	show(sample.view_for(0))
-	check(tf.menu == null, "erwischbarer Platz schließt das Menü (Erwischen geht vor)")
+	tf.tick(0.2)
+	check(tf.menu == m0 and not bool(tf.menu.items[1].on) and tf.menu.note == "Erst, wenn Lena eine Weile überlegt.", "Lena wieder am Zug: erst nach 10 s (%s)" % tf.menu.note)
+	clock += 10000
+	tf.tick(0.2)
+	check(bool(tf.menu.items[1].on) and bool(tf.menu.items[2].on) and tf.menu.note == "", "… dann aktiv")
+	# erwischbarer Platz: Menü bleibt offen, liegt nicht über dem Buzzer, ein echter Tipp darauf erwischt (Menü zu wie bei jedem Tipp daneben)
+	sample.catch_targets = [3]
+	show(sample.view_for(0))
+	tf.tick(0.02)
+	check(tf.menu == m0, "erwischbarer Platz: Menü bleibt offen")
+	var n3 := t.seat_node(3)
+	check(n3.catchable and not Rect2(m0.position, m0.size).intersects(tf.catch_rect_of(3, m0.get_parent(), 0.0)) and m0.buzzers.is_empty(),
+		"Menü liegt nicht über dem neuen Buzzer")
+	var buzz3: Vector2 = n3.get_global_transform_with_canvas() * n3._catch_rect().get_center()
 	var acts: Array = []
 	t.action.connect(func(a: Dictionary) -> void: acts.append(a))
+	tap_screen(buzz3)
+	check(acts.size() == 1 and str(acts[0].a) == "catch" and int(acts[0].target) == 3 and tf.menu == null, "echter Tipp auf den Buzzer: erwischt, Menü zu (%s)" % str(acts))
+	# Menüknöpfe bleiben neben einem Buzzer nutzbar
+	tf.tick(0.45)
+	tf.open_menu(1)
+	src.sent.clear()
+	tap_screen(tf.menu.get_global_transform_with_canvas() * tf.menu.button_center(0))
+	check(src.sent == [{"k": "ball", "to": 1}] and tf.menu == null, "Buzzer sichtbar: Papierkugel im Menü geht weiter (%s)" % str(src.sent))
+	# Buzzer unter der Blase (erzwungen, z. B. nach Größenwechsel): wird über der Blase gezeichnet, der Tipp darauf gehört dem Tisch
+	tf.tick(0.45)
+	tf.open_menu(1)
+	var cr3 := tf.catch_rect_of(3, tf.menu.get_parent(), 0.0)
+	tf.menu.position = cr3.get_center() - tf.menu.size * 0.5
+	tf.tick(0.02)
+	check(tf.menu.buzzers.size() == 1 and not tf.menu._has_point(tf.menu.get_global_transform_with_canvas().affine_inverse() * buzz3),
+		"Buzzer unter der Blase: Menü zeichnet ihn und lässt den Tipp durch")
+	acts.clear()
+	tap_screen(buzz3)
+	check(acts.size() == 1 and str(acts[0].a) == "catch" and int(acts[0].target) == 3 and tf.menu == null, "Tipp auf den Buzzer über der Blase erwischt (%s)" % str(acts))
+	sample.catch_targets = [1]
+	show(sample.view_for(0))
+	acts.clear()
 	var n1 := t.seat_node(1)
 	t._tap(t.get_global_transform().affine_inverse() * n1.to_global(n1._catch_rect().get_center()))
 	check(acts.size() == 1 and str(acts[0].a) == "catch", "„Erwischt!“ geht vor allem anderen")
+	# Bildprüfung 1.6.7: überlappende Tippbereiche zweier Buzzer (großer Modus, Nachbarzeilen) – der nächstgelegene gewinnt
+	sample.catch_targets = [1, 3]
+	show(sample.view_for(0))
+	var nb3 := t.seat_node(3)
+	var c1 := n1._catch_rect()
+	var c3 := nb3._catch_rect()
+	var sc := n1.get_global_transform().get_scale().y
+	var old3 := nb3.global_position
+	nb3.global_position += n1.to_global(c1.position + Vector2(0.0, c1.size.y + 4.0)) - nb3.to_global(c3.position)
+	acts.clear()
+	var edge := nb3.to_global(c3.position + Vector2(c3.size.x * 0.5, 3.0))
+	check(n1.hit_catch(edge) and nb3.hit_catch(edge), "Testaufbau: Tippbereiche überlappen (Maßstab %.2f)" % sc)
+	t._tap(t.get_global_transform().affine_inverse() * edge)
+	check(acts.size() == 1 and int(acts[0].target) == 3, "oberer Rand des unteren Buzzers erwischt den unteren (%s)" % str(acts))
+	acts.clear()
+	t._tap(t.get_global_transform().affine_inverse() * n1.to_global(c1.position + Vector2(c1.size.x * 0.5, c1.size.y - 3.0)))
+	check(acts.size() == 1 and int(acts[0].target) == 1, "unterer Rand des oberen Buzzers erwischt den oberen (%s)" % str(acts))
+	nb3.global_position = old3
 	sample.catch_targets = []
 	show(sample.view_for(0))
+	# übrige Schließgründe bleiben: Platzwechsel, Rundenende, 15 s ohne Tipp, Tipp daneben
+	tf.tick(0.45)
 	tf.open_menu(2)
 	t.play_event({"e": "seats", "map": [0, 1, 2, 3]}, 1.0)
 	check(tf.menu == null, "Platzwechsel schließt das Menü")
@@ -424,8 +529,18 @@ func run() -> void:
 	t.play_event({"e": "seats", "map": [0, 1, 2, 3]}, 1.0)
 	check(tf.effects().is_empty(), "Platzwechsel räumt die Effekte ab")
 	tf.open_menu(2)
+	sample.phase = "round_over"
+	show(sample.view_for(0))
+	check(tf.menu == null, "Rundenende schließt das Menü")
+	sample.phase = "turn"
+	show(sample.view_for(0))
+	tf.open_menu(2)
 	tf.tick(5.1)
-	check(tf.menu == null, "5 s ohne Tipp: Menü zu")
+	check(tf.menu != null, "nach 5 s noch offen (Beta 1.6.7: 15 s)")
+	tf.tick(9.8)
+	check(tf.menu != null, "nach 14,9 s noch offen")
+	tf.tick(0.2)
+	check(tf.menu == null and is_equal_approx(TeaseFx.MENU_IDLE_S, 15.0), "15 s ohne Tipp: Menü zu")
 	tf.open_menu(2)
 	var press := InputEventMouseButton.new()
 	press.button_index = MOUSE_BUTTON_LEFT
@@ -619,6 +734,18 @@ func run() -> void:
 				var bb := Rect2(tf.reactions.get_global_transform_with_canvas() * tf.reactions.bounds().position, tf.reactions.bounds().size)
 				check(tf.reactions.visible and cv.is_empty(), "%s: Knöpfe verdecken nichts (%s)" % [what, str(cv)])
 				check(Rect2(Vector2.ZERO, t.size).grow(2.0).encloses(bb) and tf.reactions.r >= 22.0, "%s: ganz im Bild, ≥ 44 px (%s)" % [what, bb])
+				# Beta 1.6.7: „Erwischt!“-Buzzer – zwei Nachbarn gleichzeitig (im normalen Modus auch alle Mitspieler): groß, im Bild,
+				# getrennt, nicht über Mau-Knopf und Stapeln
+				var sets: Array = [[1, 2] if n > 2 else [1]]
+				if not big_on and n > 3:
+					sets.append(range(1, n))
+				for cs in sets:
+					sample.catch_targets = cs
+					show(sample.view_for(0))
+					await create_timer(0.6 if big_on else 0.05).timeout
+					var bz := buzzer_issues()
+					check(bz.is_empty(), "%s, erwischbar %s: Buzzer groß, im Bild, getrennt, frei von Mau und Stapeln (%s)" % [what, str(cs), str(bz)])
+				sample.catch_targets = []
 	UiFonts.set_level("normal", root)
 
 	await cushion_checks()
@@ -735,7 +862,7 @@ func cushion_checks() -> void:
 	tf.close_menu(false)
 	tf.tick(0.45)
 	tf.open_menu(3)
-	check(bool(tf.menu.cushion.on) and tf.menu.note == "", "anderes Ziel nach der Mindestzeit wieder frei")
+	check(bool(tf.menu.cushion.on) and not tf.menu.note.contains("Kissen"), "anderes Ziel nach der Mindestzeit wieder frei (%s)" % tf.menu.note)
 	tf.close_menu(false)
 	# fremde Bestätigung (sollte nie kommen): nichts
 	var n_t: int = toasts.call().size()
@@ -933,16 +1060,16 @@ func surprise_checks() -> void:
 		src.sent.clear()
 		tap_screen(rp)
 		check(src.sent == [{"k": "react", "r": TeaseMenu.REACT_ORDER[i]}] and fun.cat.st == "sleep", "Katze: Reaktion %d sendet (%s)" % [i + 1, str(src.sent)])
-	# Menü nach 5 s von selbst zu: ein später Tipp auf die alte Stelle sendet nichts (so am Gerät, F1)
+	# Menü nach 15 s (bis 1.6.6: 5 s) von selbst zu: ein später Tipp auf die alte Stelle sendet nichts (so am Gerät, F1)
 	clock += 10000
 	tf.tick(0.45)
 	tf.open_menu(1)
 	var late: Vector2 = tf.menu.get_global_transform_with_canvas() * tf.menu.pill_rect(0).get_center()
-	for i in 26:
+	for i in 76:                                # Beta 1.6.7: 15 s (vorher 5 s)
 		tf.tick(0.2)
 	src.sent.clear()
 	tap_screen(late)
-	check(tf.menu == null and src.sent.is_empty(), "5 s ohne Tipp: Menü zu, später Tipp auf „Mit Namen“ sendet nichts")
+	check(tf.menu == null and src.sent.is_empty(), "15 s ohne Tipp: Menü zu, später Tipp auf „Mit Namen“ sendet nichts")
 	# ohne Menü: Tipp auf die Katze schiebt sie weg (wie bisher)
 	var cp: Vector2 = t._world.get_global_transform_with_canvas() * t._draw_pos
 	check(cat_under.call(cp), "Katze auf dem Stapel antippbar")

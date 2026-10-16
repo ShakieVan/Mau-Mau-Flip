@@ -13,6 +13,8 @@ $warte = "!!(window.MMF && MMF.App && MMF.App.tisch && MMF.App.tisch.v && docume
 # Bausteine: Effekte nach ms auslösen
 function Z([int]$ms, [string]$js) { return "setTimeout(()=>{try{$js}catch(e){console.error(e)}},$ms);" }
 $N = 'MMF.Necken'
+# Beta 1.6.7: erwischbare Plätze setzen (wie hints.catch des Gastgebers), nur für die Bilder
+$F = '((c)=>{const t=MMF.App.tisch,v=t.v;t.zeige(Object.assign({},v,{hints:Object.assign({},v.hints,{catch:c})}))})'
 $bilder = [ordered]@{
     # Tag: Menü an Lena (am Zug, vor 10 s: Schnarchen/Wecker ausgegraut), Mia schnarcht, Kugel liegt bei Tom (Computer, „Mpf!“), Reaktionen
     tag = @{ q = '&dran=1'; w = 844; h = 390; ms = 3000; pre = (Z 0 "$N.zeige({k:'snore',from:1,to:3});$N.zeige({k:'ball',from:3,to:2})") + (Z 2300 "$N.zeige({k:'react',from:0,r:'klatschen'})") + (Z 2450 "$N.zeige({k:'react',from:1,r:'lachen'})") + (Z 2600 "$N.oeffne(1)") }
@@ -67,13 +69,35 @@ $bilder = [ordered]@{
     kissen_sehr_gross = @{ q = '&dran=1&schrift=sehr_gross'; w = 844; h = 390; ms = 900; pre = (Z 500 "$N.regeln.cushions[2]={from:0};$N.oeffne(2)") }
     kissen_reduziert = @{ q = '&dran=1'; w = 844; h = 390; ms = 520; pre = (Z 0 "MMF.App.einstellungen.effekte='reduziert';document.body.classList.add('reduziert');$N.zeige({k:'kissen_pop',to:1,reveal:false})") }
     kissen_desktop = @{ q = '&dran=1'; w = 1600; h = 900; ms = 1900; pre = (Z 0 "$N.zeige({k:'kissen_pop',to:2,reveal:true,from:3})") + (Z 1500 "$N.oeffne(1)") }
+    # Beta 1.6.7 (-Stand 167 -Nur buzzer_…): „Erwischt!“ als runder Buzzer (szene=mau: Platz wer vergisst „Mau!“), mehrere Erwischbare
+    # ($F setzt hints.catch), Menü bleibt offen, wenn jemand erwischbar wird (der Buzzer weicht ihm aus), großer Modus, hochkant,
+    # Schrift sehr groß, Englisch, reduziert (ohne Pulsieren), Desktop
+    buzzer_tag = @{ q = '&szene=mau&wer=2'; w = 844; h = 390; ms = 900; pre = '' }
+    buzzer_nacht = @{ q = '&szene=mau&wer=1&seite=dunkel'; w = 844; h = 390; ms = 900; pre = '' }
+    buzzer_mehrere = @{ q = '&szene=mau&wer=2'; w = 844; h = 390; ms = 900; pre = (Z 300 "$F([1,2,3])") }
+    buzzer_menue = @{ q = '&szene=mau&wer=2'; w = 844; h = 390; ms = 1200; pre = (Z 0 "$F([])") + (Z 200 "$N.oeffne(3)") + (Z 700 "$F([3])") }
+    buzzer_menue_nacht = @{ q = '&szene=mau&wer=2&seite=dunkel'; w = 844; h = 390; ms = 1200; pre = (Z 0 "$F([])") + (Z 200 "$N.oeffne(1)") + (Z 700 "$F([1,2])") }
+    buzzer_gross = @{ q = '&szene=mau&wer=2&gross=1'; w = 844; h = 390; ms = 1200; pre = '' }
+    buzzer_gross_mehrere_nacht = @{ q = '&szene=mau&wer=2&gross=1&seite=dunkel'; w = 844; h = 390; ms = 1200; pre = (Z 300 "$F([1,2])") }
+    buzzer_gross_menue = @{ q = '&szene=mau&wer=2&gross=1'; w = 844; h = 390; ms = 1500; pre = (Z 0 "$F([])") + (Z 200 "$N.oeffne(2)") + (Z 800 "$F([2])") }
+    # Bildprüfung 1.6.7: Menü links neben der Zeile (kein freier Platz für den künftigen Buzzer), dann wird das Ziel erwischbar –
+    # der Buzzer weicht über/unter das Menü aus
+    buzzer_gross_menue_links = @{ q = '&dran=1&gross=1'; w = 844; h = 390; ms = 1500; pre = (Z 200 "$N.oeffne(2)") + (Z 800 "$F([2])") }
+    buzzer_hochkant = @{ q = '&szene=mau&wer=2'; w = 390; h = 844; ms = 1200; pre = '' }
+    buzzer_hochkant_gross = @{ q = '&szene=mau&wer=3&gross=1&seite=dunkel'; w = 390; h = 844; ms = 1200; pre = '' }
+    buzzer_sehr_gross = @{ q = '&szene=mau&wer=1&schrift=sehr_gross'; w = 844; h = 390; ms = 900; pre = (Z 300 "$F([1,3])") }
+    buzzer_en = @{ q = '&szene=mau&wer=3&lang=en'; w = 844; h = 390; ms = 900; pre = '' }
+    buzzer_reduziert = @{ q = '&szene=mau&wer=2'; w = 844; h = 390; ms = 900; pre = (Z 0 "MMF.App.einstellungen.effekte='reduziert';document.body.classList.add('reduziert')") }
+    buzzer_desktop = @{ q = '&szene=mau&wer=2'; w = 1600; h = 900; ms = 900; pre = '' }
+    buzzer_viele = @{ q = '&szene=mau&wer=4&gegner=6'; w = 844; h = 390; ms = 900; pre = (Z 300 "$F([3,4,5])") }
 }
 $auswahl = @($Nur.Split(',') | Where-Object { $_ })
 foreach ($name in $bilder.Keys) {
     if ($auswahl.Count -and $auswahl -notcontains $name) { continue }
     $b = $bilder[$name]
     $szene = if ($b.q -match 'szene=') { '' } else { '&szene=tisch' }
-    $url = "$seite`?mock=1$szene&halt=1&gegner=3&name=Kim$($b.q)"
+    $gegner = if ($b.q -match 'gegner=') { '' } else { '&gegner=3' }
+    $url = "$seite`?mock=1$szene&halt=1$gegner&name=Kim$($b.q)"
     $datei = Join-Path $out "optik_$($Stand)_lite_$name.png"
     & $cdp -Url $url -Out $datei -Width $b.w -Height $b.h -Scale 2 -Mobile -WaitExpr $warte -Pre $b.pre -WaitMs $b.ms -TimeoutMs 30000 -Eval "JSON.stringify({fehler: MMF.App.fehler, gezeigt: MMF.Necken.gezeigt.length})"
 }

@@ -993,6 +993,9 @@ msgstr "%s · %s"
 msgid "Erst, wenn %s eine Weile überlegt."
 msgstr "Only once %s has been thinking for a while."
 
+msgid "Erst, wenn %s dran ist."
+msgstr "Only when it's %s's turn."
+
 msgid "%s möchte gerade nicht geneckt werden."
 msgstr "%s doesn't want to be teased right now."
 

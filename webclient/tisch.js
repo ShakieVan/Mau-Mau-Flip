@@ -475,6 +475,7 @@
         M.Ton.spiele('dran');
         if (this.app.zugVibration) this.app.zugVibration();   // eigene Einstellung „Bei deinem Zug: Vibration“
       }
+      this._buzzerPlatz(this._fangbar || new Set());   // Beta 1.6.7
       if (M.Necken) M.Necken.layout();   // Beta 1.6.3: Reaktionsknopf und offenes Necken-Menü an die neue Lage
     }
     // Hinweis des Gastgebers; ohne „Spielbare Karten hervorheben“ verrät er nicht, dass nichts passt (sonst wäre das die
@@ -547,7 +548,7 @@
         if (!g) {
           const e = el('div', 'gg');
           e.dataset.seat = p.seat;
-          e.innerHTML = '<i class="kranz"></i><div class="denk" aria-hidden="true"><i></i><i></i><b>…</b></div><div class="kopf"><div class="ava"></div><div class="name"></div><div class="zahl"></div><span class="zug"></span></div><div class="faecher"></div><div class="marken"></div><button class="erwischen" data-t>Erwischt!</button>';
+          e.innerHTML = '<i class="kranz"></i><div class="denk" aria-hidden="true"><i></i><i></i><b>…</b></div><div class="kopf"><div class="ava"></div><div class="name"></div><div class="zahl"></div><span class="zug"></span></div><div class="faecher"></div><div class="marken"></div><button class="erwischen" type="button"><b class="bz"><span data-t>Erwischt!</span><i class="bz-name"></i></b></button>';
           M.I18n.anwenden(e);
           this.gegnerBox.appendChild(e);
           g = { e, sig: '' };
@@ -586,12 +587,14 @@
         }
         e.classList.toggle('dran', v.turn === p.seat && laeuft);
         e.classList.toggle('weg', p.connected === false);
+        g.warFang = e.classList.contains('fangbar');
         e.classList.toggle('fangbar', fangbar.has(p.seat));
         if (!gross) e.classList.remove('vorn');
         const ava = e.querySelector('.ava');
         ava.textContent = (p.name || '?').trim().charAt(0).toUpperCase();
         ava.style.background = AVA_FARBEN[p.seat % AVA_FARBEN.length];
         e.querySelector('.name').textContent = p.seat === ich ? M.t('Du') : (p.name || M.t('Platz %d', p.seat + 1));
+        { const bn = e.querySelector('.bz-name'), nm = p.name || M.t('Platz %d', p.seat + 1); if (bn.textContent !== nm) bn.textContent = nm; }   // Buzzer: wen man erwischt
         const zahl = p.seat === ich ? (v.hand || []).length : p.count;
         e.querySelector('.zahl').textContent = zahl;
         let marken = '';
@@ -615,6 +618,117 @@
         const vorne = [...this.gegnerEls.values()].some(g => g.e.classList.contains('vorn'));
         for (const g of this.gegnerEls.values()) if (vorne && !g.e.classList.contains('vorn') && g.k === this.g.liste.cap - 1) g.e.classList.add('aus');
       }
+      this._fangbar = fangbar;   // Buzzer-Lage am Ende von zeige (Farbe, Hinweis und Aktionen stehen dann schon)
+    }
+    // Beta 1.6.7 (Nutzer 16.10.2026: wirkte „eher wie ein Banner“): „Erwischt!“ als großer, runder Buzzer neben dem Mitspieler.
+    // Lage in Bühnenkoordinaten: normal zur Tischmitte hin (sonst in 40°-Schritten gedreht), im großen Modus links neben der Zeile
+    // (weitere Buzzer rücken nach links). Hart gemieden: Mau-Knopf, Menü-/Ton-Knopf, Sortieren/Rückseiten, Hinweisleiste mit
+    // Aktionen, die Reaktionsknöpfe, ein offenes Necken-Menü (das bleibt stehen, der Buzzer weicht ihm aus) und die anderen Buzzer;
+    // weich Stapel, Ablage, Hand und die Namen. Die Lage bleibt, solange das Fenster offen ist (springt nicht unter dem Finger), neu
+    // nur beim Aufgehen oder wenn sich die Geometrie ändert; im großen Modus wandert der Buzzer mit seiner Zeile.
+    _bzDurchmesser() {
+      const fs = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--fs')) || 1;
+      return Math.round((this.gross ? 140 : 126) * (1 + (fs - 1) * 0.6));
+    }
+    // Beta 1.6.7 (Bildprüfung): bevorzugter Buzzer-Platz eines Mitspielers (erste Lage aus _buzzerPlatz: großer Modus links neben der
+    // Zeile an ihrem Ziel, sonst zur Tischmitte hin) in Viewport-px, auch wenn er gerade nicht erwischbar ist. necken.js hält ihn beim
+    // Öffnen des Menüs frei (wie die App), damit ein später erwischbares Ziel seinen Buzzer nicht mitten im Menü bekommt.
+    bzVorschau(seat) {
+      const g = this.gegnerEls.get(seat);
+      if (!g || !this.s) return null;
+      const D = this._bzDurchmesser(), r = D / 2, e = g.e, w = e.offsetWidth, h = e.offsetHeight;
+      let x, y;
+      if (this.gross) {
+        const L = this.g.liste;
+        if (!L) return null;
+        y = L.top + (Math.min(g.k || 0, L.cap - 1) + 0.5) * L.zeile;
+        x = L.x - w / 2 - 12 - r;
+      } else {
+        const x0 = g.px - w / 2, y0 = g.py - (g.kompakt ? 56 : 74);
+        const cx = x0 + w / 2, cy = y0 + h / 2, hw = w / 2, hh = h / 2;
+        const a = Math.atan2(this.g.cy - cy, this.g.cx - cx), dx = Math.cos(a), dy = Math.sin(a);
+        const t = Math.min(Math.abs(dx) > 1e-6 ? hw / Math.abs(dx) : 1e9, Math.abs(dy) > 1e-6 ? hh / Math.abs(dy) : 1e9);
+        x = cx + dx * (t + r + 6); y = cy + dy * (t + r + 6);
+      }
+      x = Math.max(r + 4, Math.min(this.W - r - 4, x)); y = Math.max(r + 4, Math.min(this.H - r - 4, y));
+      const rt = this.root.getBoundingClientRect(), s = this.s;
+      const vx = rt.left + this.ox + x * s, vy = rt.top + this.oy + y * s, vr = r * s;
+      return { left: vx - vr, top: vy - vr, right: vx + vr, bottom: vy + vr, width: 2 * vr, height: 2 * vr };
+    }
+    _buzzerPlatz(fangbar) {
+      if (!fangbar.size) { for (const g of this.gegnerEls.values()) g.bz = null; return; }
+      const gross = this.gross, W = this.W, H = this.H;
+      const D = this._bzDurchmesser(), r = D / 2;
+      const rt = this.root.getBoundingClientRect();
+      const zuB = q => ({ left: (q.left - rt.left - this.ox) / this.s, top: (q.top - rt.top - this.oy) / this.s, right: (q.right - rt.left - this.ox) / this.s, bottom: (q.bottom - rt.top - this.oy) / this.s });
+      const feld = e => { if (!e || e.hidden) return null; const q = e.getBoundingClientRect(); return q.width > 0 ? zuB(q) : null; };
+      // Mau-Knopf mit weitem Abstand (sein Schein reicht über den Rand; kein Vertippen zwischen „Mau!“ und „Erwischt!“)
+      const weit = (f, x) => f && { left: f.left - x, top: f.top - x, right: f.right + x, bottom: f.bottom + x };
+      const menueF = feld(document.getElementById('nk-menue'));
+      const hart = [weit(feld(this.knMau), 26)].concat([this.knMenue, this.knTon, this.knSort, this.knRueck, this.hinweis, this.aktionen, document.getElementById('nk-leiste')]
+        .map(feld)).concat([menueF]).filter(Boolean);
+      const VH = K().VERHAELTNIS, st = this.g.stapel, ab = this.g.ablage, sh = this.g.sw * VH / 2, ah = this.g.aw * VH / 2;
+      const weich = [
+        { left: st.x - this.g.sw / 2, top: st.y - sh, right: st.x + this.g.sw / 2, bottom: st.y + sh, w: 3 },
+        { left: ab.x - this.g.aw / 2, top: ab.y - ah, right: ab.x + this.g.aw / 2, bottom: ab.y + ah, w: 3 },
+        { left: 0, top: H - 200, right: W, bottom: H, w: 2 },   // sichtbarer Teil der Hand
+      ].concat([[this.farbe, 6], [this.offenEl, 6], [this.seiten, 3]].map(([e, w]) => { const f = feld(e); return f && Object.assign(f, { w }); }).filter(Boolean));
+      // Kasten eines Platzes bzw. einer Zeile am Ziel ihrer Bewegung (nicht mitten im Rollen der Liste)
+      const kasten = g => {
+        const e = g.e, w = e.offsetWidth, h = e.offsetHeight;
+        if (gross) { const L = this.g.liste, y = L.top + (Math.min(g.k || 0, L.cap - 1) + 0.5) * L.zeile; return { left: L.x - w / 2, top: y - h / 2, right: L.x + w / 2, bottom: y + h / 2 }; }
+        const x0 = g.px - w / 2, y0 = g.py - (g.kompakt ? 56 : 74);
+        return { left: x0, top: y0, right: x0 + w, bottom: y0 + h };
+      };
+      const ueber = (a, b, x) => Math.max(0, Math.min(a.right, b.right + x) - Math.max(a.left, b.left - x)) * Math.max(0, Math.min(a.bottom, b.bottom + x) - Math.max(a.top, b.top - x));
+      const kl = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
+      const sitz = g => [W, H, gross, D].concat(gross ? [] : [g.px, g.py]).join('|');
+      const alle = [...this.gegnerEls.values()];
+      const namen = alle.filter(g => !g.e.classList.contains('aus')).map(g => ({ g, k: kasten(g) }));
+      const reihe = alle.filter(g => fangbar.has(+g.e.dataset.seat)).sort((a, b) => (a.k || 0) - (b.k || 0) || a.px - b.px);
+      const kreis = (x, y) => ({ left: x - r, top: y - r, right: x + r, bottom: y + r });
+      // erst die stehenden Buzzer (bleiben, wo sie sind), dann die neuen um sie herum
+      const belegt = [];
+      reihe.forEach(g => {
+        g.bzBleibt = !!(g.bz && g.warFang && g.bz.key === sitz(g));
+        if (g.bzBleibt) { const k = kasten(g); belegt.push(kreis(k.left + g.bz.dx, k.top + g.bz.dy)); }
+      });
+      reihe.forEach(g => {
+        const k = kasten(g);
+        if (!g.bzBleibt) {
+          const cx = (k.left + k.right) / 2, cy = (k.top + k.bottom) / 2, hw = (k.right - k.left) / 2, hh = (k.bottom - k.top) / 2;
+          const kand = [];
+          if (gross) {
+            for (let j = 0; j < 4; j++) kand.push({ x: k.left - 12 - r - j * (D + 12), y: cy });
+            kand.push({ x: k.left - 12 - r, y: cy - D * 0.6 }, { x: k.left - 12 - r, y: cy + D * 0.6 });
+            // Bildprüfung 1.6.7: Liegt ein offenes Necken-Menü links neben der Zeile, Ausweichplätze über, unter und links neben ihm
+            if (menueF) kand.push({ x: k.left - 12 - r, y: menueF.top - 12 - r }, { x: k.left - 12 - r, y: menueF.bottom + 12 + r }, { x: menueF.left - 12 - r, y: cy });
+          } else {
+            const a0 = Math.atan2(this.g.cy - cy, this.g.cx - cx);
+            [0, 40, -40, 80, -80, 120, -120, 180].forEach(gr => {
+              const a = a0 + gr * Math.PI / 180, dx = Math.cos(a), dy = Math.sin(a);
+              const t = Math.min(Math.abs(dx) > 1e-6 ? hw / Math.abs(dx) : 1e9, Math.abs(dy) > 1e-6 ? hh / Math.abs(dy) : 1e9);
+              [0, D * 0.35, D * 0.7].forEach(mehr => kand.push({ x: cx + dx * (t + r + 6 + mehr), y: cy + dy * (t + r + 6 + mehr), n: mehr }));
+            });
+          }
+          let beste = Infinity, wahl = null;
+          kand.forEach((c, i) => {
+            const x = kl(c.x, r + 4, W - r - 4), y = kl(c.y, r + 4, H - r - 4), b = kreis(x, y);
+            let kosten = i * 300;
+            hart.concat(belegt).forEach(f => { const a = ueber(b, f, 10); if (a > 0) kosten += 1e7 + a * 40; });
+            weich.forEach(f => { kosten += ueber(b, f, 0) * f.w; });
+            namen.forEach(n => { kosten += ueber(b, n.k, 0) * (n.g === g ? 20 : 2); });   // den eigenen Namen nicht zudecken
+            if (kosten < beste) { beste = kosten; wahl = { x, y }; }
+          });
+          g.bz = { dx: wahl.x - k.left, dy: wahl.y - k.top, key: sitz(g) };
+          belegt.push(kreis(wahl.x, wahl.y));
+        }
+        const b = g.e.querySelector('.erwischen');
+        b.style.setProperty('--bd', D + 'px');
+        b.style.setProperty('--bx', Math.round(g.bz.dx - (g.e.clientLeft || 0)) + 'px');
+        b.style.setProperty('--by', Math.round(g.bz.dy - (g.e.clientTop || 0)) + 'px');
+      });
+      for (const g of alle) if (!fangbar.has(+g.e.dataset.seat)) g.bz = null;
     }
     _faecher(box, backs, kompakt, count) {
       box.innerHTML = '';

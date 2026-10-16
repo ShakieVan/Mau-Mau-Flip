@@ -230,7 +230,7 @@
   const REAKT_MS = { lachen: 1920, schreck: 610, klatschen: 1920, daumen: 620 };   // Dauer der Töne (Deckel: höchstens 2 gleichzeitig)
   const KNOEPFE = [['ball', SVG_KUGEL, 'Papierkugel'], ['snore', SVG_ZZZ, 'Schnarchen'], ['alarm', SVG_WECKER, 'Wecker'], ['ansehen', SVG_KARTEN, 'Karten ansehen']];
   const LEISE = 0.25;            // −12 dB (Absender, Zuschauer beim Plopp)
-  const FLUG_MS = 700, LIEGT_MS = 3000, LIEGT_SK = 0.78, SCHNARCH_MS = 4200, TICK_MS = 3000, KLINGEL_MS = 1800, REAKT_AUF_MS = 1600, MENUE_ZU_MS = 5000;
+  const FLUG_MS = 700, LIEGT_MS = 3000, LIEGT_SK = 0.78, SCHNARCH_MS = 4200, TICK_MS = 3000, KLINGEL_MS = 1800, REAKT_AUF_MS = 1600, MENUE_ZU_MS = 15000;   // Beta 1.6.7: Menü schließt nach 15 s ohne Tipp (vorher 5 s)
   // Beta 1.6.6 Furzkissen: Plattdrücken nach PLATT_MS (Ton und Vibration dazu), Kissen 1,5 s sichtbar, danach 2,6 s „Kim war's!“
   // Nach fx_no rate bleibt der Kissen-Knopf noch KISSEN_GRAU_MS grau (die echte Restzeit kennt nur der Gastgeber, sie bleibt geheim)
   const PLATT_MS = 120, KISSEN_MS = 1500, WER_MS = 2600, KISSEN_VIB = 150, KISSEN_GRAU_MS = 10000;
@@ -319,7 +319,7 @@
       document.addEventListener('pointerdown', ev => {
         if (this.offen && !this.menue.contains(ev.target)) { this._zu = { seat: this.offen.seat, zeit: this.uhr() }; this.zu(); }
       }, true);
-      window.addEventListener('resize', () => this.layout());
+      window.addEventListener('resize', () => { if (this.offen) this.offen.seite = ''; this.layout(); });   // neue Fenstergröße: Lage neu wählen
       setInterval(() => this._takt(), 400);
     },
 
@@ -353,10 +353,12 @@
         const gehandelt = events.some(e => e && e.seat === w.seat) || view.turn !== w.seat || TURN_PHASES.indexOf(view.phase) < 0;
         if (gehandelt) w.abstellen();
       });
-      if (this.offen) {
-        const h = view.hints || {};
-        if ((Array.isArray(h.catch) && h.catch.length) || view.turn !== this.offen.turn) this.zu();
-      }
+      // Beta 1.6.7 (Nutzer 16.10.2026: „ärgerlich, wenn es plötzlich unterm Finger weggeklaut wird“): Zugwechsel und erwischbare
+      // Mitspieler schließen das Menü nicht mehr. Es frischt auf (Schnarchen/Wecker grau bzw. aktiv) und bleibt stehen; ein neuer
+      // „Erwischt!“-Buzzer weicht ihm aus (tisch.js _buzzerPlatz). Nur das Rundenende schließt es.
+      const imZug = TURN_PHASES.indexOf(view.phase) >= 0, warImZug = this._imZug;
+      this._imZug = imZug;
+      if (this.offen) { if (!imZug && warImZug) this.zu(); else this._menueStand(); }
     },
     fx(m) {
       const v = this.app && this.app.view;
@@ -441,12 +443,15 @@
     oeffne(seat) {
       const v = this.app.view;
       if (!v) return;
-      this.offen = { seat, turn: v.turn, bis: this.uhr() + MENUE_ZU_MS };
+      this.offen = { seat, bis: this.uhr() + MENUE_ZU_MS, seite: '' };
       this.menue.hidden = false;
-      this.menue.classList.remove('auf'); void this.menue.offsetWidth; this.menue.classList.add('auf');
+      this.menue.classList.remove('auf', 'folgt'); void this.menue.offsetWidth; this.menue.classList.add('auf');
       this._menueStand();
+      // erst nach dem Aufgehen gleitet das Menü mit (großer Modus: die Zeile rollt beim Zugwechsel)
+      clearTimeout(this._folgtT);
+      this._folgtT = setTimeout(() => { if (this.offen) this.menue.classList.add('folgt'); }, 60);
     },
-    zu() { this.offen = null; if (this.menue) this.menue.hidden = true; },
+    zu() { this.offen = null; if (this.menue) { this.menue.hidden = true; this.menue.classList.remove('folgt'); } },
     // Einträge des Menüs nach der lokalen Uhr (ausgrauen, ausblenden, Hinweiszeile), dann platzieren
     _menueStand() {
       const o = this.offen, v = this.app.view;
@@ -462,11 +467,16 @@
         const b = this.menue.querySelector('button[data-k="' + k + '"]');
         if (k === 'ansehen') { b.hidden = !backs; return; }
         const why = this.pruefe({ k, to: o.seat });
+        // Beta 1.6.7 (wie die App): Schnarchen/Wecker bei Menschen immer im Menü (es bleibt beim Zugwechsel offen und soll nicht
+        // springen), nicht am Zug ausgegraut mit Hinweis
         let weg = ziel.aus;
-        if (k !== 'ball') weg = weg || ziel.bot || why === 'late' || why === 'target';
+        if (k !== 'ball') weg = weg || ziel.bot || why === 'target';
         b.hidden = weg;
         b.classList.toggle('grau', !!why || grau);
-        if (!weg && k !== 'ball' && why === 'early') {
+        if (!weg && k !== 'ball' && why === 'late') {
+          info = M.t('Erst, wenn %s dran ist.', p.name);
+          b.style.removeProperty('--rest');
+        } else if (!weg && k !== 'ball' && why === 'early') {
           info = M.t('Erst, wenn %s eine Weile überlegt.', p.name);
           b.style.setProperty('--rest', String(Math.max(0, Math.min(1, 1 - this.regeln.restMs(o.seat, this.uhr()) / FX_SLOW_MS))));
         } else b.style.removeProperty('--rest');
@@ -488,11 +498,19 @@
       this._menuePlatz();
     },
     // Blase am Kopf des Ziels (großer Modus: links neben der Zeile), nie über einem „Erwischt!“-Knopf, im Viewport geklemmt
+    // Beta 1.6.7: Die Lage wird nur beim Öffnen (und nach einer Größenänderung des Fensters) gewählt; danach bleibt die Seite fest und
+    // das Menü folgt nur noch dem Kopf (großer Modus: der rollenden Zeile, an ihr Ziel), damit es nicht unter dem Finger springt.
+    // Ist die Zeile gerade außer Sicht, bleibt es stehen.
     _menuePlatz() {
       const o = this.offen, t = this.app.tisch;
       const g = o && t.gegnerEls.get(o.seat);
       if (!g) { this.zu(); return; }
-      const ank = (t.gross ? g.e.querySelector('.ava') : g.e.querySelector('.kopf')).getBoundingClientRect();
+      if (o.seite && g.e.classList.contains('aus')) return;
+      let ank = (t.gross ? g.e.querySelector('.ava') : g.e.querySelector('.kopf')).getBoundingClientRect();
+      if (t.gross) {
+        const dy = this._rollRest(g.e, t);   // Ziel der Rollbewegung statt der Zwischenlage
+        if (dy) ank = { left: ank.left, right: ank.right, width: ank.width, height: ank.height, top: ank.top + dy, bottom: ank.bottom + dy };
+      }
       const m = this.menue, mw = m.offsetWidth, mh = m.offsetHeight;
       const vw = window.innerWidth, vh = window.innerHeight, rand = 8, abst = 14;
       const fang = Array.from(document.querySelectorAll('#tisch .gg.fangbar .erwischen')).map(e => e.getBoundingClientRect());
@@ -509,22 +527,64 @@
       // weich Ziehstapel, Ablage und der Kopf des Ziels; Reihenfolge der Lagen wie bisher. Passt keine, gewinnt die kleinste Überdeckung.
       const feld = sel => { const e = document.querySelector(sel); if (!e || e.hidden) return null; const r = e.getBoundingClientRect(); return r.width > 0 ? r : null; };
       const hart = fang.concat(['#mau'].map(feld).filter(Boolean));
+      // Beta 1.6.7 (Bildprüfung, wie die App): den künftigen Buzzer-Platz des Ziels freihalten, auch wenn es noch nicht erwischbar ist –
+      // häufiger Fall: Menü am Spieler am Zug, der danach ohne „Mau!“ auf 1 Karte kommt. Sonst läge sein Buzzer mitten im Menü.
+      // Bevorzugt wird eine Lage, die ihn frei lässt und weder Hartes noch den Kopf des Ziels überdeckt; gibt es keine, gilt die Wahl
+      // wie bisher (der Buzzer weicht dann über/unter das Menü aus, tisch.js _buzzerPlatz).
+      let vor = null;
+      if (!g.e.classList.contains('fangbar') && t.bzVorschau) {
+        const bv = t.bzVorschau(o.seat), x = 12 * (t.s || 1);   // Rand: der Buzzer hält 10 Bühnen-px Abstand zum Menü
+        if (bv) vor = { left: bv.left - x, top: bv.top - x, right: bv.right + x, bottom: bv.bottom + x, width: bv.width + 2 * x, height: bv.height + 2 * x };
+      }
       const weich = ['#stapel', '#ablage', '#nk-leiste'].map(feld).filter(Boolean);   // 1.6.5: Reaktionsleiste weich
       const flaeche = (a, b, x) => ueber(a, b, x) ? Math.max(0, Math.min(a.right, b.right + x) - Math.max(a.left, b.left - x)) * Math.max(0, Math.min(a.bottom, b.bottom + x) - Math.max(a.top, b.top - x)) : 0;
-      let wahl = null, beste = Infinity;
-      kand.forEach((c, i) => {
-        const left = kl(c.left, rand, vw - mw - rand), top = kl(c.top, rand, vh - mh - rand);
-        const r = { left, top, right: left + mw, bottom: top + mh, width: mw, height: mh };
-        let kosten = i * 400;
-        hart.forEach(f => { const a = flaeche(r, f, 6); if (a > 0) kosten += 1e7 + a * 40; });
-        weich.forEach(f => { kosten += flaeche(r, f, 0) * 4; });
-        if (i !== kand.length - 1 && ueber(r, ank, 0)) kosten += 1e5;   // Kopf des Ziels: nur die letzte Lage darf ihn überdecken (wie bisher)
-        if (kosten < beste) { beste = kosten; wahl = { c, left, top }; }
-      });
+      let wahl = null, beste = Infinity, frei = null, besteFrei = Infinity;
+      const fest = o.seite && kand.find(c => c.seite === o.seite);
+      if (fest) wahl = { c: fest, left: kl(fest.left, rand, vw - mw - rand), top: kl(fest.top, rand, vh - mh - rand) };
+      else {
+        kand.forEach((c, i) => {
+          const left = kl(c.left, rand, vw - mw - rand), top = kl(c.top, rand, vh - mh - rand);
+          const r = { left, top, right: left + mw, bottom: top + mh, width: mw, height: mh };
+          let kosten = i * 400;
+          hart.forEach(f => { const a = flaeche(r, f, 6); if (a > 0) kosten += 1e7 + a * 40; });
+          weich.forEach(f => { kosten += flaeche(r, f, 0) * 4; });
+          const kopf = ueber(r, ank, 0);
+          if (i !== kand.length - 1 && kopf) kosten += 1e5;   // Kopf des Ziels: nur die letzte Lage darf ihn überdecken (wie bisher)
+          if (kosten < beste) { beste = kosten; wahl = { c, left, top }; }
+          if (vor && !kopf && kosten < 1e5 && !flaeche(r, vor, 0) && kosten < besteFrei) { besteFrei = kosten; frei = { c, left, top }; }
+        });
+        if (frei) wahl = frei;
+      }
       m.style.left = Math.round(wahl.left) + 'px'; m.style.top = Math.round(wahl.top) + 'px';
-      m.dataset.seite = wahl.c.seite;
+      m.dataset.seite = o.seite = wahl.c.seite;
       const zx = wahl.c.seite === 'unten' || wahl.c.seite === 'oben' ? kl(cx - wahl.left, 18, mw - 18) : kl(cy - wahl.top, 18, mh - 18);
       m.style.setProperty('--zz', Math.round(zx) + 'px');
+      this._loch(Math.round(wahl.left), Math.round(wahl.top), mw, mh);
+    },
+    // Großer Modus: restlicher Weg einer rollenden Zeile (Viewport-px) bis zu ihrem Ziel (translateY aus tisch.js minus laufende Lage)
+    _rollRest(e, t) {
+      try {
+        const ziel = parseFloat((e.style.transform.match(/translateY\(([-\d.]+)px\)/) || [])[1]);
+        const jetzt = new DOMMatrixReadOnly(getComputedStyle(e).transform).m42;
+        return isFinite(ziel) && isFinite(jetzt) ? (ziel - jetzt) * t.s : 0;
+      } catch (err) { return 0; }
+    },
+    // Beta 1.6.7: Ein „Erwischt!“-Buzzer meidet das offene Menü (tisch.js _buzzerPlatz). Findet er keinen freien Platz und liegt doch
+    // darunter, bekommt das Menü dort ein rundes Loch (clip-path wirkt auch auf Tipps): Der Buzzer bleibt sichtbar und drückbar, das
+    // Menü bleibt stehen. Der Tipp auf den Buzzer schließt das Menü wie jeder Tipp daneben.
+    _loch(left, top, mw, mh) {
+      const t = this.app.tisch, R = 40, f = x => x.toFixed(1);
+      let d = '';
+      document.querySelectorAll('#tisch .gg.fangbar .erwischen').forEach(b => {
+        const q = b.getBoundingClientRect();
+        if (!q.width) return;
+        const g = b.closest('.gg'), dy = t.gross && g ? this._rollRest(g, t) : 0;
+        const cx = (q.left + q.right) / 2 - left, cy = (q.top + q.bottom) / 2 + dy - top, r = b.offsetWidth / 2 * (t.s || 1) * 1.1 + 6;
+        if (cx + r <= 0 || cx - r >= mw || cy + r <= 0 || cy - r >= mh) return;
+        d += ' M' + f(cx - r) + ' ' + f(cy) + ' a' + f(r) + ' ' + f(r) + ' 0 1 0 ' + f(2 * r) + ' 0 a' + f(r) + ' ' + f(r) + ' 0 1 0 ' + f(-2 * r) + ' 0 Z';
+      });
+      this.menue.style.clipPath = d ? 'path(evenodd, "M' + -R + ' ' + -R + ' H' + (mw + R) + ' V' + (mh + R) + ' H' + -R + ' Z' + d + '")' : '';
+      this.menue.classList.toggle('loch', !!d);
     },
     // Beta 1.6.5: Den Reaktionsfächer gibt es nicht mehr (die Reaktionen liegen direkt in der Leiste); app.js (Zurück-Taste) ruft
     // reaktionen(false) noch auf – absichtlich ohne Wirkung
@@ -720,7 +780,7 @@
       this._leisteStand();
       if (this.offen) this._menuePlatz();
     },
-    // alle 400 ms: Menü nach der Uhr auffrischen bzw. nach 5 s schließen; Ebene unter anderen Fenstern (Menü, Regeln …) verstecken
+    // alle 400 ms: Menü nach der Uhr auffrischen bzw. nach 15 s ohne Tipp schließen; Ebene unter anderen Fenstern (Menü, Regeln …) verstecken
     // Gerätetest 1.6.3: Fenster (Menü, Regeln …) verdecken die ganze Ebene; das Farbrad nur die Reaktionsleiste (Effektzeilen bleiben)
     _modal() { return !!document.querySelector('.modal:not([hidden]):not(#runde)'); },
     _farbwahl() { const t = this.app && this.app.tisch; return !!(t && t.farbwahl && t.farbwahlOffen); },

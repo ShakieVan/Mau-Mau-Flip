@@ -353,11 +353,49 @@ func hit_catch(global_pos: Vector2) -> bool:
 	return catchable and _catch_rect().grow(18.0).has_point(to_local(global_pos))
 
 
+# Beta 1.6.7 (Bildprüfung): Abstand des Tipps zum sichtbaren Buzzer (0 = darauf, INF = außerhalb des Tippbereichs). Im großen Modus
+# überlappen sich die vergrößerten Tippbereiche zweier Erwischbarer in Nachbarzeilen; der Tisch nimmt dann den nächstgelegenen.
+func catch_distance(global_pos: Vector2) -> float:
+	if not hit_catch(global_pos):
+		return INF
+	var local := to_local(global_pos)
+	var r := _catch_rect()
+	var q := Vector2(clampf(local.x, r.position.x, r.end.x), clampf(local.y, r.position.y, r.end.y))
+	return (to_global(q) - global_pos).length()
+
+
+# Beta 1.6.7 (Nutzerwunsch 16.10.2026): „Erwischt!“ als großer roter Buzzer (Druckknopf mit Gehäuse, Seitenwand und Glanz) statt
+# einer flachen Pille, die wie ein Banner wirkte („der andere sei gerade erwischt worden“). Feld = ganzer Buzzer samt Gehäuse;
+# Schrift wächst mit der Einstellung „Schrift“. Normal unter der Kopfzeile über dem Fächer (dort liegt nur seine letzte Karte),
+# großer Modus links neben der Zeile, kaum höher als die Zeile (zwei Erwischbare untereinander berühren sich nicht).
+const BUZZER_W_MIN := 168.0
+const BUZZER_W_COMPACT := 150.0         # ab 7 Spielern (Abzeichen): Nachbarplätze liegen enger
+
+
+func buzzer_font_size() -> int:
+	if list_mode:
+		return mini(UiFonts.px(30), int(_list_buzzer_h() * 0.3))
+	return UiFonts.px(24 if compact else 26)
+
+
+# Höhe im großen Modus: Zeile + 8 (Zeilenabstand 10: zwei Buzzer untereinander bleiben getrennt), höchstens 110 – sonst ragt er in
+# hohen Fenstern über die Ablage (die Spalte „aktuelle Farbe“ davor ist nur ≥ 230 px breit)
+func _list_buzzer_h() -> float:
+	return minf(row_size.y + 8.0, 110.0)
+
+
 func _catch_rect() -> Rect2:
+	var tw := buzzer_text_width(buzzer_font_size())
 	if list_mode:                       # links neben der Zeile, zur Tischmitte hin
-		return Rect2(-row_size.x * 0.5 - 158.0, -23.0, 150.0, 46.0)
-	var y := header_height() * 0.5 + 6.0
-	return Rect2(-70.0, y, 140.0, 46.0)
+		var h := _list_buzzer_h()
+		var w := maxf(tw + 52.0, h * 1.6)
+		return Rect2(-row_size.x * 0.5 - 12.0 - w, -h * 0.5, w, h)
+	var w := maxf(BUZZER_W_COMPACT if compact else BUZZER_W_MIN, tw + 56.0)
+	return Rect2(-w * 0.5, header_height() * 0.5 + 6.0, w, w * 0.62)
+
+
+static func buzzer_text_width(fs: int) -> float:
+	return UiFonts.title(800, true, 100.0, 36.0).get_string_size(I18n.t("Erwischt!"), HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 
 
 # ---------------------------------------------------------------- Aufbau des Fächers
@@ -692,15 +730,65 @@ func _draw_top() -> void:
 func _draw_catch() -> void:
 	if not catchable:
 		return
-	var r := _catch_rect()
-	var pulse := 0.5 + 0.5 * sin(_time * 6.0)
-	_round_rect(_catch, r.grow(3.0 + 2.0 * pulse), 26.0, Color(UiPalette.ALERT, 0.35))
-	_round_rect(_catch, r, 23.0, UiPalette.ALERT)
+	draw_buzzer(_catch, _catch_rect(), _time, night, reduced, buzzer_font_size())
+
+
+# Beta 1.6.7: Buzzer in das Feld r zeichnen (auch TeaseMenu, falls ein offenes Necken-Menü darüber liegt). Von unten: pulsierender
+# Ring (reduziert: still), Schatten, Gehäuse (Tag Druckfarbe, Nacht dunkel mit hellem Rand und rotem Schein), dunkelrote Seitenwand,
+# rote Kuppel mit Glanz, „Erwischt!“ hell mit dunkler Kontur. Die Kuppel atmet leicht (reduziert nicht).
+static func draw_buzzer(ci: CanvasItem, r: Rect2, t: float, night_v: float, reduced_v: bool, fs: int) -> void:
+	var dark := night_v > 0.5
+	var w := r.size.x
+	var h := r.size.y
+	var cx := r.get_center().x
+	var house_c := Vector2(cx, r.position.y + h * 0.5)
+	var hrx := w * 0.5
+	var hry := h * 0.5
+	var depth := h * 0.12
+	var top_c := Vector2(cx, r.position.y + h * 0.42)
+	var rx := w * 0.43
+	var ry := h * 0.34
+	var p := fposmod(t * 0.9, 1.0)
+	var breathe := 0.0 if reduced_v else 0.5 + 0.5 * sin(t * 5.0)
+	# Ring, der vom Knopf weg wandert („drück mich“); reduziert ein ruhiger Schein
+	if reduced_v:
+		ci.draw_colored_polygon(_ellipse(house_c, hrx + 8.0, hry + 8.0), Color(UiPalette.ALERT, 0.22))
+	else:
+		var grow := 4.0 + 18.0 * p
+		ci.draw_colored_polygon(_ellipse(house_c, hrx + grow, hry + grow), Color(UiPalette.ALERT, 0.42 * (1.0 - p)))
+	if dark:
+		ci.draw_colored_polygon(_ellipse(house_c, hrx + 5.0, hry + 5.0), Color(UiPalette.ALERT, 0.25 + 0.1 * breathe))
+	ci.draw_colored_polygon(_ellipse(house_c + Vector2(0, 5.0), hrx, hry), Color(0, 0, 0, 0.32))
+	var house := Color("#2A2236") if dark else UiPalette.INK
+	var rim := UiPalette.MOON if dark else Color(UiPalette.INK).lightened(0.25)
+	ci.draw_colored_polygon(_ellipse(house_c, hrx, hry), rim)
+	ci.draw_colored_polygon(_ellipse(house_c, hrx - 3.0, hry - 3.0), house)
+	# Seitenwand des Knopfs (Zylinder zwischen Kuppel und Boden)
+	var side := UiPalette.ALERT.darkened(0.5)
+	var bot_c := top_c + Vector2(0, depth)
+	var wall := _ellipse(bot_c, rx, ry)
+	ci.draw_colored_polygon(wall, side)
+	ci.draw_rect(Rect2(top_c.x - rx, top_c.y, rx * 2.0, depth), side)
+	# Kuppel
+	var s := 1.0 + 0.025 * breathe
+	ci.draw_colored_polygon(_ellipse(top_c, rx * s, ry * s), UiPalette.ALERT.lightened(0.06 * breathe))
+	ci.draw_colored_polygon(_ellipse(top_c + Vector2(0, ry * 0.18), rx * 0.92 * s, ry * 0.78 * s), UiPalette.ALERT.darkened(0.08))
+	ci.draw_colored_polygon(_ellipse(top_c + Vector2(0, -ry * 0.12), rx * 0.9 * s, ry * 0.76 * s), UiPalette.ALERT)
+	ci.draw_colored_polygon(_ellipse(top_c + Vector2(-rx * 0.12, -ry * 0.46), rx * 0.62, ry * 0.3), Color(1, 1, 1, 0.30))
 	var ef := UiFonts.title(800, true, 100.0, 36.0)
 	var et := I18n.t("Erwischt!")
-	var ew := ef.get_string_size(et, HORIZONTAL_ALIGNMENT_LEFT, -1, 22).x
-	# mittig im Knopf (im großen Modus liegt er links neben der Zeile, nicht unter der Platzmitte)
-	_catch.draw_string(ef, Vector2(r.get_center().x - ew * 0.5, r.position.y + 31.0), et, HORIZONTAL_ALIGNMENT_LEFT, -1, 22, UiPalette.CREAM)
+	var ew := ef.get_string_size(et, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	var base := Vector2(top_c.x - ew * 0.5, top_c.y + fs * 0.34)
+	ci.draw_string_outline(ef, base, et, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, maxi(4, int(fs * 0.2)), UiPalette.ALERT.darkened(0.55))
+	ci.draw_string(ef, base, et, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, UiPalette.CREAM)
+
+
+static func _ellipse(c: Vector2, rx: float, ry: float, n := 48) -> PackedVector2Array:
+	var pts := PackedVector2Array()
+	for i in n:
+		var a := TAU * float(i) / float(n)
+		pts.append(c + Vector2(cos(a) * rx, sin(a) * ry))
+	return pts
 
 
 func _draw_mau_tag(p: Vector2) -> void:

@@ -1371,11 +1371,18 @@ func _tap(p: Vector2) -> bool:
 	var wp := _world.to_local(g)
 	if discard_browser.handle_tap(discard_browser.to_local(g)):    # Ablage/Seitenstapel; sonst schiebt es alles zurück
 		return true
+	# Beta 1.6.7: Die Tippbereiche großer Buzzer in Nachbarzeilen (großer Modus) überlappen – der nächstgelegene Buzzer gewinnt
+	var catch_seat := -1
+	var catch_d := INF
 	for s in _seats:
 		var node: OpponentSeat = _seats[s]
-		if node.hit_catch(g):
-			_emit_action({"a": "catch", "target": s})
-			return true
+		var d := node.catch_distance(g)
+		if d < catch_d:
+			catch_d = d
+			catch_seat = int(s)
+	if catch_seat >= 0:
+		_emit_action({"a": "catch", "target": catch_seat})
+		return true
 	if gamble_machine.hit_stop(g):
 		stop_gamble()
 		return true

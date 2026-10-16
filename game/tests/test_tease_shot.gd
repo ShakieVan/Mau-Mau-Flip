@@ -21,6 +21,17 @@ extends SceneTree
 #   sehr_gross                   Schrift „Sehr groß“: Menü mit Kissen-Zeile
 #   reduziert                    Effekte reduziert: liegt flach, keine Bewegung
 #   en_menue / en_pups           Englisch
+# SERIE=167 nach docs/module/optik_167_*.png (Beta 1.6.7: „Erwischt!“ als Buzzer, Necken-Menü bleibt offen):
+#   buzzer_tag / buzzer_nacht    Kim (1 Karte, kein Mau) erwischbar: großer roter Druckknopf unter seiner Kopfzeile
+#   zwei_tag / zwei_nacht        Kim und Lena gleichzeitig erwischbar
+#   menue_buzzer                 Necken-Menü an Ben offen, Kim wird erwischbar: Menü bleibt, Buzzer sichtbar daneben
+#   menue_ueber_buzzer           Menü liegt (erzwungen) über Kims Buzzer: der Buzzer liegt sichtbar über der Blase
+#   menue_vor_zugwechsel / menue_zugwechsel   Menü an Kim (am Zug) offen, dann kommt Ben dran: Schnarchen/Wecker grau,
+#                                „Erst, wenn Kim dran ist.“, die Blase bleibt an ihrer Stelle
+#   gross_tag / gross_nacht / gross_zwei   großer Modus: Buzzer links neben der Zeile (zwei: Kim und Lena)
+#   sehr_gross / gross_sehr_gross          Schrift „Sehr groß“ (normal bzw. großer Modus, mit Menü)
+#   reduziert                    Effekte reduziert: kein Pulsieren
+#   en_buzzer                    Englisch
 # SERIE=163 nach docs/module/optik_163_*.png (docs/module/eastereggs2.md 9; Stand 1.6.3, Reaktionsknopf seit 1.6.5 wie oben):
 #   menue_tag / menue_nacht      Necken-Menü am Spieler am Zug (ab 10 s: Kugel, Schnarchen, Wecker, Karten ansehen)
 #   menue_ausgegraut             vor 10 s: Schnarchen/Wecker ausgegraut mit Ring und Hinweis
@@ -139,11 +150,13 @@ func run() -> void:
 	var kim := 1 if me != 1 else 2
 	show(kim)
 	await create_timer(0.5).timeout
-	if serie == "165" or serie == "166":
+	if serie == "165" or serie == "166" or serie == "167":
 		if serie == "165":
 			await run_165(me, kim)
-		else:
+		elif serie == "166":
 			await run_166(me, kim)
+		else:
+			await run_167(me, kim)
 		I18n.set_language("de")
 		for key in before:
 			app.settings.set_value(key, before[key])
@@ -501,3 +514,115 @@ func run_166(me: int, kim: int) -> void:
 	await shot("en_pups")
 	await create_timer(1.0).timeout
 	await shot("en_zeile")
+
+
+# Beta 1.6.7: „Erwischt!“-Buzzer und Necken-Menü, das bei Zugwechsel und Erwischbarkeit offen bleibt
+func catchable(seats: Array) -> void:
+	for p in fake.v.players:
+		if seats.has(int(p.seat)):
+			p["count"] = 1
+			var backs: Array = p.get("backs", [])
+			if backs.size() > 1:
+				p["backs"] = [backs[0]]
+	var h: Dictionary = fake.v.get("hints", {})
+	h["catch"] = seats.duplicate()
+	fake.v["hints"] = h
+
+
+func run_167(me: int, kim: int) -> void:
+	var lena := 2
+	var ben := 3 if me != 3 else 0
+	catchable([kim])
+	for tm in ["tag", "nacht"]:
+		ts.table.set_night(1.0 if tm == "nacht" else 0.0)
+		show(ben)
+		await create_timer(0.6).timeout
+		await shot("buzzer_" + tm)
+	catchable([kim, lena])
+	for tm in ["tag", "nacht"]:
+		ts.table.set_night(1.0 if tm == "nacht" else 0.0)
+		show(ben)
+		await create_timer(0.6).timeout
+		await shot("zwei_" + tm)
+	# Menü an Ben offen, dann wird Kim erwischbar
+	ts.table.set_night(0.0)
+	catchable([])
+	show(ben)
+	clock += 20000
+	await create_timer(0.3).timeout
+	tz.open_menu(ben)
+	await create_timer(0.3).timeout
+	catchable([kim])
+	show(ben)
+	await create_timer(0.5).timeout
+	await shot("menue_buzzer")
+	# erzwungen: Menü über Kims Buzzer
+	var cr := tz.catch_rect_of(kim, tz.menu.get_parent(), 0.0)
+	tz.menu.position = cr.position + Vector2(-40.0, -30.0)
+	tz.tick(0.02)
+	await create_timer(0.3).timeout
+	await shot("menue_ueber_buzzer")
+	tz.close_menu(false)
+	# Zugwechsel bei offenem Menü an Kim (ab 10 s Schnarchen/Wecker aktiv, dann kommt Ben dran)
+	catchable([])
+	show(kim)
+	clock += 20000
+	await create_timer(0.3).timeout
+	tz.open_menu(kim)
+	tz.tick(0.2)
+	await create_timer(0.3).timeout
+	await shot("menue_vor_zugwechsel")
+	show(ben)
+	tz.tick(0.2)
+	await create_timer(0.3).timeout
+	await shot("menue_zugwechsel")
+	tz.close_menu(false)
+	# großer Modus
+	ts.table.set_big(true)
+	await process_frame
+	ts._layout()
+	catchable([kim])
+	for tm in ["tag", "nacht"]:
+		ts.table.set_night(1.0 if tm == "nacht" else 0.0)
+		show(ben)
+		await create_timer(0.9).timeout
+		await shot("gross_" + tm)
+	catchable([kim, lena])
+	show(ben)
+	await create_timer(0.9).timeout
+	await shot("gross_zwei")
+	# Schrift „Sehr groß“: großer Modus mit Menü, dann normal
+	UiFonts.set_level("sehr_gross", root)
+	await process_frame
+	ts._layout()
+	catchable([kim])
+	show(ben)
+	await create_timer(0.9).timeout
+	tz.open_menu(ben)
+	await create_timer(0.4).timeout
+	await shot("gross_sehr_gross")
+	tz.close_menu(false)
+	ts.table.set_night(0.0)
+	ts.table.set_big(false)
+	await process_frame
+	ts._layout()
+	show(ben)
+	await create_timer(0.8).timeout
+	tz.open_menu(ben)
+	await create_timer(0.4).timeout
+	await shot("sehr_gross")
+	tz.close_menu(false)
+	UiFonts.set_level("normal", root)
+	await process_frame
+	ts._layout()
+	# reduziert
+	ts.table.reduced = true
+	show(ben)
+	await create_timer(0.5).timeout
+	await shot("reduziert")
+	ts.table.reduced = false
+	# Englisch
+	I18n.set_language("en")
+	show(ben)
+	await create_timer(0.5).timeout
+	await shot("en_buzzer")

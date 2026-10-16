@@ -553,6 +553,7 @@ window.MMF_I18N_PO = {
   "Erst die Farbe wählen.": "Choose the color first.",
   "Erst die Strafe ziehen.": "Draw the penalty first.",
   "Erst eine Karte verdeckt auf den Einsatz legen.": "First put a card face down on the stake.",
+  "Erst, wenn %s dran ist.": "Only when it's %s's turn.",
   "Erst, wenn %s eine Weile überlegt.": "Only once %s has been thinking for a while.",
   "Erster fertig": "First one out",
   "Erwischen": "Catch",
