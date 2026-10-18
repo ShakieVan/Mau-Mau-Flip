@@ -196,6 +196,11 @@ func run() -> void:
 	check(NetProtocol.make_fx_request({"k": "react", "r": "baeh"}) == {"t": "fx", "k": "react", "r": "baeh"}, "F: Wunsch Reaktion Bäää")
 	check(NetProtocol.clean_fx({"t": "fx", "k": "react", "from": 2, "r": "baeh"}) == {"t": "fx", "k": "react", "from": 2, "r": "baeh"},
 		"F: Gast nimmt Bäää vom Gastgeber an")
+	# Beta 1.6.13: sechste und siebte Reaktion „Heulen“ und „Facepalm“ ebenso
+	for r_new in ["heulen", "facepalm"]:
+		check(NetProtocol.make_fx_request({"k": "react", "r": r_new}) == {"t": "fx", "k": "react", "r": r_new}, "F: Wunsch Reaktion %s" % r_new)
+		check(NetProtocol.clean_fx({"t": "fx", "k": "react", "from": 1, "r": r_new}) == {"t": "fx", "k": "react", "from": 1, "r": r_new},
+			"F: Gast nimmt %s vom Gastgeber an" % r_new)
 	check(NetProtocol.clean_fx({"t": "fx", "k": "react", "from": 2, "r": "zunge"}).is_empty(), "F: unbekannte Reaktion vom Gastgeber verworfen")
 	for bad in [{"k": "ball"}, {"k": "ball", "to": -1}, {"k": "ball", "to": 10}, {"k": "ball", "to": "1"}, {"k": "ball", "to": 1.5},
 			{"k": "react"}, {"k": "react", "r": "gaehnen"}, {"k": "gaehnen", "to": 1}, {"k": 3, "to": 1}, {}]:

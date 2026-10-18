@@ -36,6 +36,21 @@ func _init() -> void:
 	stats = AppStats.new("user://statistik_tests.json" if scripted else AppStats.PATH)
 	# Beta 1.6.2 (Gegenprüfung): hello.ap aus NetAndroid (sonst meldete jede App {ok:false, perm:false} – keine Übergabe im Spiel-WLAN)
 	NetAndroid.install_net_hooks()
+	if is_android():
+		enable_pen_touch()
+
+
+# Stift (Beta 1.6.13, Nutzerbefund: Knöpfe gingen mit dem Stift, Karten legen nicht). Godot 4.6.1 meldet Stift (S Pen, TOOL_TYPE_STYLUS)
+# und Maus auf Android als Mausereignisse (GodotInputHandler.isMouseEvent) und schaltet input_devices/pointing/emulate_touch_from_mouse
+# auf Geräten mit Touchscreen ab (main.cpp). Knöpfe verstehen die Maus, die Hand (hand_view.gd) hört aber nur auf Berührungen. Hier
+# eingeschaltet erzeugt Godot zu jedem Druck/Ziehen mit der linken Taste bzw. der Stiftspitze eine Berührung (Gerät DEVICE_ID_EMULATION),
+# genau wie am PC mit der Maus. Finger bleiben unverändert: Deren nachgebildete Mausereignisse werden nie zurückverwandelt.
+# true = jetzt eingeschaltet (war aus).
+static func enable_pen_touch() -> bool:
+	if Input.is_emulating_touch_from_mouse():
+		return false
+	Input.emulate_touch_from_mouse = true
+	return true
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS

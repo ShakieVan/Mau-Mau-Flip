@@ -690,8 +690,221 @@ TOENE["baeh"]["prompts"] += [
     ("comic_hoch", "a cheerful cartoon character with a bright high-pitched human voice sticks its tongue out and goes bleeeh, one short playful voiced bleh, comedic vocal sound effect, close-up, " + NO_WORDS,
      "hell: fröhliche Zeichentrickfigur, hohe menschliche Stimme", B_SEEDS3, BAEH_NEG_HELL, dict(B_HELL2, cfg=6.0)),
 ]
-_ORDNUNG = ["gaehnen", "gaehnen2", "gaehnen3"] + [k for k in TOENE if not k.startswith("gaehnen") and k != "baeh"]
+# Heulen (18.10.2026, sechste Reaktion 😭 „Heulen“): gespieltes, übertriebenes Heulen wie bei einem schlechten Verlierer
+# („buhuhu“, „wääh“), lustig und harmlos, nie echtes Leid; kein Baby, kein Schreien, kein Stöhnen (Gähnen Runde 1 klang dem
+# Nutzer nach Klo/Sex: Stöhnen, Ächzen, Pressen stehen daher im Negativ-Prompt und in „meiden“), kein Lachen, keine
+# Wörter, kein Tier (Heulen ≠ Wolf/Hund). 0,8–1,9 s (Lachen und Klatschen sind 1,9 s). Vier Arten wie beim „Bäää“:
+# rhythmisches „Buhuhu“, langgezogenes „Wääh“, kurzes Schluchzen mit Schniefen, Zeichentrick-Heulen. Kürzere
+# Daueransagen, weil das Modell sie überzieht (Befund „baeh“).
+HEUL_NEGATIV = ("baby, infant, newborn, toddler, tantrum, screaming, scream, shriek, horror, pain, real distress, "
+                "laughter, laughing, giggling, speech, words, talking, sentence, singing, music, moaning, groaning, "
+                "straining, grunting, sexual, animal, dog, wolf, howl, cat, meow, kitten, bird, siren, alarm, whistle")
+HEUL_ARTEN = {"buhuhu": "rhythmisches „Buhuhu“", "waeh": "langgezogenes „Wääh“",
+              "schniefen": "kurzes Schluchzen mit Schniefen", "comic": "Zeichentrick-Heulen"}
+H_SEEDS = list(range(7201, 7207))
+H_BUHU = {"kategorie": "buhuhu", "ziel": (0.9, 1.9), "sekunden": 1.2}
+H_WAEH = {"kategorie": "waeh", "ziel": (0.8, 1.9), "sekunden": 1.1}
+H_SCHNIEF = {"kategorie": "schniefen", "ziel": (0.7, 1.7), "sekunden": 1.0}
+H_COMIC = {"kategorie": "comic", "ziel": (0.8, 1.9), "sekunden": 1.1}
+TOENE["heulen"] = {
+    "titel": "Heulen (Reaktion 😭)", "zweck": "Reaktion (😭)",
+    "ziel_text": "0,8–1,9 s: gespieltes, übertriebenes Heulen wie ein schlechter Verlierer („buhuhu“, „wääh“), lustig und "
+                 "harmlos; keine Wörter, kein Baby, kein Schreien, kein Stöhnen, kein Lachen, kein Tier",
+    "hinweis": "Neue Reaktion. Baby, Schreien, Stöhnen/Ächzen, Lachen, Sprache, Musik und Tiere (auch Wolf/Hund) stehen als "
+               "Negativ-Prompt. Behalten wurde nur, was AudioSet als Weinen/Schluchzen/Wimmern erkennt und nicht deutlich "
+               "als Baby, Schreien, Stöhnen, Lachen, Sprache, Gesang, Tier oder Katze hört und die Zieldauer der Art "
+               "einhält. Dubletten über alle Paare aussortiert, Auswahl reihum über die vier Arten. Beschreibungen stammen "
+               "aus Messungen, nicht vom Hören.",
+    "sekunden": 1.1, "ziel": (0.8, 1.9), "modus": "anfang", "vorlauf": 0.08, "einblenden": 0.01, "ausblenden": 0.2,
+    "lufs": -19.0, "begrenzer": 3.0, "hochpass": 90.0, "stimme": True, "behalten": 8,
+    "erwartet": ["Crying, sobbing", "Whimper", "Sniff"], "erwartet_mindestens": 0.05,
+    "arten": HEUL_ARTEN, "ausgewogen": True, "nur_ok": True, "dubletten_alle": True, "streng": True,
+    "puls_purr": True, "sprache_grenze": (0.5, 0.3),
+    "meiden": {"Baby cry, infant cry": 0.35, "Screaming": 0.12, "Yell": 0.2, "Shout": 0.2, "Children shouting": 0.2,
+               "Groan": 0.12, "Grunt": 0.15, "Wail, moan": 0.3, "Laughter": 0.12, "Giggle": 0.12, "Belly laugh": 0.12,
+               "Chuckle, chortle": 0.12, "Snicker": 0.12, "Baby laughter": 0.12, "Singing": 0.2, "Music": 0.25,
+               "Humming": 0.2, "Howl": 0.1, "Dog": 0.12, "Whimper (dog)": 0.12, "Canidae, dogs, wolves": 0.1,
+               "Animal": 0.15, "Domestic animals, pets": 0.12, "Bird": 0.15, "Whistle": 0.15, "Siren": 0.12,
+               "Burping, eructation": 0.2, "Fart": 0.15},
+    "beobachten": ["Speech", "Babbling", "Child speech, kid speaking", "Whimper", "Sniff", "Sigh", "Breathing", "Gasp",
+                   "Wail, moan", "Baby cry, infant cry", "Sound effect", "Cartoon", "Hiccup", "Cough"],
+    "negativ": HEUL_NEGATIV,
+    "seeds": H_SEEDS,
+    "prompts": [
+        ("buhuhu", "a person pretends to cry in an exaggerated comedic way, theatrical fake sobbing boo hoo hoo, a few short rhythmic sobs, funny and playful, close-up, dry room, " + NO_WORDS,
+         "Buhuhu: theatralisches, gespieltes Schluchzen", H_SEEDS, None, H_BUHU),
+        ("buhuhu_verlierer", "a grown man fake cries like a sore loser after a board game, a short silly boo-hoo-hoo sobbing, comedic and harmless, close-up, quiet room, " + NO_WORDS,
+         "Buhuhu: erwachsener Mann als schlechter Verlierer", H_SEEDS, None, H_BUHU),
+        ("waeh", "a person bursts into a short exaggerated cartoonish wail, one drawn-out comedic waaah crying sound, playful not sad, close-up, dry room, " + NO_WORDS,
+         "Wääh: kurzes, übertriebenes Losheulen", H_SEEDS, None, H_WAEH),
+        ("waeh_frau", "a young woman jokingly whines and cries waaah for a moment, a short melodramatic fake cry, funny, close-up, quiet room, " + NO_WORDS,
+         "Wääh: junge Frau, gespielt melodramatisch", H_SEEDS, None, H_WAEH),
+        ("schniefen", "a person sobs briefly and sniffles, two or three short whimpering sobs with a sniff at the end, mock sadness, playful, close-up, dry room, " + NO_WORDS,
+         "Schniefen: zwei, drei Schluchzer, am Ende ein Schniefen", H_SEEDS, None, H_SCHNIEF),
+        ("schniefen_kurz", "quick comedic sniffling and sobbing, a short pitiful sob sob sniff, playful fake sadness, close-up, quiet room, " + NO_WORDS,
+         "Schniefen: kurz und jämmerlich", H_SEEDS, None, H_SCHNIEF),
+        ("comic", "a cartoon character bursts into tears, a short funny exaggerated crying sound effect with a human voice, animated cartoon, close-up, " + NO_WORDS,
+         "Comic: Zeichentrickfigur bricht in Tränen aus", H_SEEDS, None, H_COMIC),
+        ("comic_traenen", "cartoon style comedic crying, a character wails with streams of tears, a short silly boo hoo sound effect, human voice, close-up, " + NO_WORDS,
+         "Comic: Tränenbäche, albernes „Buhu“", H_SEEDS, None, H_COMIC),
+    ],
+}
+# Erste Sichtung (48, 18.10.2026): nur 1 bestanden (waeh_frau_7206). „comedic“, „cartoon“ und „sore loser“ ergaben Sprache,
+# Schreien, Grunzen, Räuspern, Truthahn/Insekt oder Wolfsheulen; Weinen erkannte AudioSet nur bei „waeh_frau“ (7201: Jammern,
+# Wimmern; 7206). Zweite Runde: echtes, übertriebenes Schluchzen statt „komischer“ Geräusche (der Witz liegt im Übertreiben),
+# Formulierungen aus Geräuschbibliotheken, teils CFG 6; „waeh_frau“ mit weiteren Seeds; „pain, real distress“ nicht mehr im
+# Negativ-Prompt (zog weg vom Weinen).
+HEUL_NEG2 = HEUL_NEGATIV.replace("horror, pain, real distress, ", "")
+H_SEEDS2 = list(range(7211, 7217))
+TOENE["heulen"]["prompts"] = [(p[0], p[1], p[2], H_SEEDS + H_SEEDS2, p[4], p[5]) if p[0] == "waeh_frau" else p
+                              for p in TOENE["heulen"]["prompts"]]
+TOENE["heulen"]["prompts"] += [
+    ("weinen_frau", "a woman bursts into tears and sobs for a moment, short crying with shaky sobbing breaths, close-up, quiet room, " + NO_WORDS,
+     "Frau bricht kurz in Tränen aus und schluchzt", H_SEEDS2, HEUL_NEG2, H_WAEH),
+    ("schluchzen_mann", "a man sobs and cries briefly, a few loud blubbering sobs, boo hoo, close-up, quiet room, " + NO_WORDS,
+     "Mann: ein paar laute, blubbernde Schluchzer", H_SEEDS2, HEUL_NEG2, H_BUHU),
+    ("wimmern", "a person whimpers and sobs softly, a short pitiful crying whimper with a sniff, close-up, dry room, " + NO_WORDS,
+     "kurzes, jämmerliches Wimmern mit Schniefen", H_SEEDS2, HEUL_NEG2, H_SCHNIEF),
+    ("melodrama", "melodramatic crying, a person wails and sobs dramatically for a second, overacted fake tears, close-up, quiet room, " + NO_WORDS,
+     "melodramatisch: übertrieben schluchzen und jammern", H_SEEDS2, HEUL_NEG2, dict(H_WAEH, cfg=6.0)),
+    ("heulen_sfx", "human vocal sound effect, short crying and sobbing, voiced sobs, boo hoo hoo, close-up, dry room, " + NO_WORDS,
+     "„human vocal sound effect“: kurzes Weinen, „buhuhu“", H_SEEDS2, HEUL_NEG2, dict(H_BUHU, cfg=6.0)),
+    ("heulen_comic_sfx", "crying sound effect, a short exaggerated sob, a person cries waaah and sniffles, human voice, close-up, " + NO_WORDS,
+     "Comic: „crying sound effect“, kurzes übertriebenes Losheulen", H_SEEDS2, HEUL_NEG2, dict(H_COMIC, cfg=6.0)),
+]
+# Zweite Sichtung (90, 18.10.2026): wieder nur 1 neu bestanden (weinen_frau_7216). Weinen erkennt AudioSet selten („Whimper“ meist
+# unter 0,1); der deutlichste Kandidat (waeh_frau_7201: „Wail, moan“ 0,52, „Whimper“ 0,20, Baby 0,24) fiel an der Grenze für
+# „Wail, moan“. Der Nutzer entscheidet beim Hören (die Messwerte stehen auf der Hörseite), daher für die Auswahl lockerer:
+# „Wail, moan“ bis 0,6, Baby bis 0,45 (beides weiter als Hinweis ab der Hälfte und mit Abzug in den Punkten).
+TOENE["heulen"]["meiden"].update({"Wail, moan": 0.6, "Baby cry, infant cry": 0.45})
+# Facepalm (18.10.2026, siebte Reaktion 🤦 „Facepalm“): Hand klatscht auf die Stirn, gern mit einem kurzen, genervten
+# Seufzer danach; trocken-komisch. Kein Stöhnen/Ächzen (siehe Heulen), keine Wörter, kein Applaus (Klatschen gibt es
+# schon), nichts Nasses. Vier Arten: Klatsch mit Seufzer, nur der Klatsch (kurz wie „Daumen hoch“), nur der Seufzer,
+# Zeichentrick.
+FACE_NEGATIV = ("speech, words, talking, sentence, groaning, moaning, grunting, straining, sexual, laughter, laughing, "
+                "applause, clapping hands, crowd, cheering, crying, sobbing, screaming, music, singing, animal, cat, "
+                "meow, dog, explosion, gunshot, wet, liquid, splash, toilet, kiss")
+FACE_ARTEN = {"klatsch_seufzer": "Klatsch auf die Stirn, dann ein Seufzer", "klatsch": "nur der Klatsch auf die Stirn",
+              "seufzer": "genervter Seufzer", "comic": "Zeichentrick-Facepalm"}
+FP_SEEDS = list(range(7301, 7307))
+FP_BEIDES = {"kategorie": "klatsch_seufzer", "ziel": (0.8, 1.8), "sekunden": 1.2}
+FP_KLATSCH = {"kategorie": "klatsch", "ziel": (0.2, 0.7), "sekunden": 0.5, "ausblenden": 0.12}
+FP_SEUFZER = {"kategorie": "seufzer", "ziel": (0.7, 1.7), "sekunden": 1.1}
+FP_COMIC = {"kategorie": "comic", "ziel": (0.5, 1.7), "sekunden": 1.0}
+TOENE["facepalm"] = {
+    "titel": "Facepalm (Reaktion 🤦)", "zweck": "Reaktion (🤦)",
+    "ziel_text": "0,3–1,8 s: Hand klatscht auf die Stirn, gern mit kurzem, genervtem Seufzer; trocken-komisch, keine Wörter, "
+                 "kein Stöhnen, kein Applaus",
+    "hinweis": "Neue Reaktion. Sprache, Stöhnen/Ächzen, Lachen, Applaus, Weinen, Schreien, Musik, Tiere, Knall und Nasses "
+               "stehen als Negativ-Prompt. Behalten wurde nur, was AudioSet als Schlag/Klatsch oder Seufzen/Atmen erkennt "
+               "und nicht deutlich als Stöhnen, Applaus, Lachen, Weinen, Sprache, Knall, Tier oder Katze hört und die "
+               "Zieldauer der Art einhält. Dubletten über alle Paare aussortiert, Auswahl reihum über die vier Arten. "
+               "Beschreibungen stammen aus Messungen, nicht vom Hören.",
+    "sekunden": 1.0, "ziel": (0.3, 1.8), "modus": "anfang", "vorlauf": 0.04, "einblenden": 0.004, "ausblenden": 0.2,
+    "lufs": -19.0, "begrenzer": 4.0, "hochpass": 70.0, "stimme": True, "behalten": 8,
+    "erwartet": ["Slap, smack", "Whack, thwack", "Sigh", "Breathing"], "erwartet_mindestens": 0.05,
+    "arten": FACE_ARTEN, "ausgewogen": True, "nur_ok": True, "dubletten_alle": True, "streng": True,
+    "puls_purr": True, "sprache_grenze": (0.5, 0.3),
+    "meiden": {"Groan": 0.12, "Grunt": 0.15, "Wail, moan": 0.12, "Applause": 0.2, "Crowd": 0.15, "Cheering": 0.15,
+               "Laughter": 0.12, "Giggle": 0.12, "Chuckle, chortle": 0.12, "Crying, sobbing": 0.15, "Whimper": 0.15,
+               "Screaming": 0.12, "Snoring": 0.15, "Music": 0.25, "Singing": 0.2, "Humming": 0.2, "Animal": 0.15,
+               "Dog": 0.12, "Explosion": 0.12, "Gunshot, gunfire": 0.1, "Burping, eructation": 0.2, "Fart": 0.15,
+               "Splash, splatter": 0.15, "Liquid": 0.15},
+    "beobachten": ["Speech", "Clapping", "Slap, smack", "Whack, thwack", "Thump, thud", "Tap", "Sigh", "Breathing",
+                   "Gasp", "Pant", "Snort", "Sniff", "Sound effect", "Cartoon", "Wood block", "Knock"],
+    "negativ": FACE_NEGATIV,
+    "seeds": FP_SEEDS,
+    "prompts": [
+        ("beides", "a person slaps their own forehead with the palm of the hand, one soft dull smack, followed by a short exasperated sigh, comedic, close-up, dry room, " + NO_WORDS,
+         "Klatsch auf die Stirn, dann ein genervter Seufzer", FP_SEEDS, None, FP_BEIDES),
+        ("beides_mann", "a man facepalms, one quick flat hand slap against his forehead and then a weary disappointed sigh, funny, close-up, quiet room, " + NO_WORDS,
+         "Mann: kurzer Klatsch, müder enttäuschter Seufzer", FP_SEEDS, None, FP_BEIDES),
+        ("klatsch", "a single soft dull slap of a palm hitting a forehead, one short fleshy smack, close-up, dry room, no voice",
+         "nur ein dumpfer Klatsch der Handfläche auf die Stirn", FP_SEEDS, None, FP_KLATSCH),
+        ("klatsch_comic", "cartoon facepalm sound effect, one comedic hand slap on the forehead, short and dry, close-up, no voice",
+         "Zeichentrick-Klatsch auf die Stirn, kurz und trocken", FP_SEEDS, None, FP_KLATSCH),
+        ("seufzer", "a long exasperated sigh of disbelief, a person exhales slowly through the nose, unimpressed and annoyed, close-up, dry room, " + NO_WORDS,
+         "langer, ungläubig-genervter Seufzer durch die Nase", FP_SEEDS, None, FP_SEUFZER),
+        ("seufzer_frau", "a woman lets out a short weary sigh, a deflated disappointed exhale, comedic, close-up, quiet room, " + NO_WORDS,
+         "Frau: kurzer, müder, enttäuschter Seufzer", FP_SEEDS, None, FP_SEUFZER),
+        ("comic", "a cartoon character slaps its forehead with a hollow pop and lets out a funny deflated sigh, comedic sound effect, human voice, close-up, " + NO_WORDS,
+         "Comic: hohler Klatsch, dann ein komischer Seufzer", FP_SEEDS, None, FP_COMIC),
+        ("comic_slapstick", "slapstick facepalm, a hand smacks a forehead with a comedic thwack, then an exaggerated tired huff, animated cartoon, close-up, " + NO_WORDS,
+         "Comic: Slapstick-Klatsch, dann ein übertriebenes Schnaufen", FP_SEEDS, None, FP_COMIC),
+    ],
+}
+# (Abgebrochen am 18.10.2026: Der Nutzer nimmt stattdessen eigene Aufnahmen, tools/make_reaktion_aufnahmen.py.)
+# Nutzerbefund zu Heulen (18.10.2026): Kandidat 03 (waeh_frau_7201) am besten, „klingt aber eher wie ein verzweifelter Schrei“;
+# gewünscht ist ein theatralisches, übertriebenes Weinen. Runde 3 als eigener Ton „heulen3“ (eigene Nummern): Schluchzen und
+# Weinen in Theater-/Seifenoper-Manier, „buhuhu“ mit zitterndem Atem, dazu weitere Seeds von waeh_frau; Schreien, Panik,
+# Verzweiflung und Angst im Negativ-Prompt; Schreien hart gemieden, Jammern bis 0,6 erlaubt (Weinen klingt so).
+HEUL3_NEGATIV = (HEUL_NEG2 + ", desperate, despair, terror, fear, panic, horror scream, shriek of pain, yelling, howling")
+H3_SEEDS = list(range(7231, 7239))
+H3_DRAMA = {"kategorie": "drama", "ziel": (1.0, 1.95), "sekunden": 1.3}
+H3_WAEH = {"kategorie": "waeh", "ziel": (1.0, 1.95), "sekunden": 1.2}
+TOENE["heulen3"] = dict(TOENE["heulen"], **{
+    "titel": "Heulen, Runde 3 (Reaktion 😭)",
+    "ziel_text": "1,0–1,95 s: theatralisches, übertriebenes Weinen (Schluchzen, „buhuhu“, zitternder Atem), kein Schrei, keine "
+                 "Verzweiflung; keine Wörter, kein Baby, kein Stöhnen, kein Lachen, kein Tier",
+    "hinweis": "Runde 3 nach dem Nutzerbefund „Kandidat 3 am besten, klingt aber eher wie ein verzweifelter Schrei“: Prompts mit "
+               "Theater- und Seifenoper-Weinen, Schreien/Panik/Verzweiflung im Negativ-Prompt und hart gemieden. Beschreibungen "
+               "stammen aus Messungen, nicht vom Hören.",
+    "arten": {"drama": "theatralisches Schluchzen", "waeh": "melodramatisches „Wääh“"},
+    "meiden": dict(TOENE["heulen"]["meiden"], **{"Screaming": 0.08, "Yell": 0.12, "Shout": 0.12, "Battle cry": 0.1,
+                                                  "Wail, moan": 0.6, "Baby cry, infant cry": 0.4}),
+    "erwartet": ["Crying, sobbing", "Whimper", "Sniff", "Wail, moan"], "erwartet_mindestens": 0.08,
+    "negativ": HEUL3_NEGATIV, "seeds": H3_SEEDS, "behalten": 8,
+    "prompts": [
+        ("drama", "a drama queen weeps theatrically, exaggerated loud sobbing with shaky trembling breaths, boo hoo hoo, overacted fake crying, comedic, close-up, quiet room, " + NO_WORDS,
+         "Drama-Queen: übertriebenes lautes Schluchzen, zitternder Atem", H3_SEEDS, None, dict(H3_DRAMA, cfg=6.0)),
+        ("seifenoper", "melodramatic soap opera weeping, a woman sobs and cries dramatically with a trembling voice, exaggerated tearful crying, sad but theatrical, close-up, " + NO_WORDS,
+         "Seifenoper: Frau weint melodramatisch mit zitternder Stimme", H3_SEEDS, None, H3_WAEH),
+        ("blubbern", "a man blubbers and weeps theatrically, exaggerated tearful crying with hiccuping sobs, boo hoo hoo, comedic overacting, close-up, quiet room, " + NO_WORDS,
+         "Mann blubbert und weint theatralisch, schluchzend", H3_SEEDS, None, H3_DRAMA),
+        ("schluchzer", "exaggerated theatrical sobbing, several loud rhythmic sobs one after another, uh-huh-huh-huh, a person weeps dramatically, tearful, close-up, " + NO_WORDS,
+         "mehrere laute, rhythmische Schluchzer hintereinander", H3_SEEDS, None, dict(H3_DRAMA, cfg=6.0)),
+        ("waeh_frau", "a young woman jokingly whines and cries waaah for a moment, a short melodramatic fake cry, funny, close-up, quiet room, " + NO_WORDS,
+         "wie Heulen 03 (waeh_frau): junge Frau, gespielt melodramatisch, neue Seeds", list(range(7221, 7229)), None, H3_WAEH),
+    ],
+})
+# Nutzerwunsch zu Facepalm (18.10.2026): „eher einen Klatscher direkt gefolgt von einem genervten ‚ääääh‘ (vom Tonfall ähnlich
+# wie eine Kuh)“ – tief, gedehnt, genervt. Runde 2 als eigener Ton „facepalm2“. Das tiefe Äääh ist ein Brummen/Stöhnen der
+# Stimme: „Groan“ diesmal erwartet und bis 0,7 erlaubt; eine echte Kuh (Moo, Cattle, Animal) und alles Sexuelle bleiben gemieden.
+FACE2_NEGATIV = ("speech, words, talking, sentence, sexual, moaning in pleasure, laughter, laughing, applause, clapping hands, crowd, "
+                 "cheering, crying, sobbing, screaming, music, singing, cow, cattle, moo, mooing, animal, farm animal, sheep, goat, "
+                 "dog, cat, meow, explosion, gunshot, wet, liquid, splash, toilet, burp, fart")
+FP2_SEEDS = list(range(7311, 7319))
+FP2 = {"kategorie": "klatsch_aeh", "ziel": (0.9, 1.9), "sekunden": 1.3}
+TOENE["facepalm2"] = dict(TOENE["facepalm"], **{
+    "titel": "Facepalm, Runde 2 (Reaktion 🤦)",
+    "ziel_text": "0,9–1,9 s: Klatsch auf die Stirn, direkt danach ein tiefes, gedehntes, genervtes „Äääh“ (Tonfall fast wie eine "
+                 "Kuh, aber Mensch); keine Wörter, kein Applaus, nichts Sexuelles",
+    "hinweis": "Runde 2 nach dem Nutzerwunsch „Klatscher direkt gefolgt von einem genervten ‚ääääh‘, vom Tonfall ähnlich wie eine "
+               "Kuh“. Ob der Klatsch vorn liegt, ist nicht gemessen. Beschreibungen stammen aus Messungen, nicht vom Hören.",
+    "arten": {"klatsch_aeh": "Klatsch, dann genervtes „Äääh“"},
+    "erwartet": ["Groan", "Grunt", "Sigh", "Slap, smack", "Whack, thwack"], "erwartet_mindestens": 0.05,
+    "meiden": {k: v for k, v in dict(TOENE["facepalm"]["meiden"], **{"Groan": 0.7, "Grunt": 0.6, "Wail, moan": 0.35,
+               "Cattle, bovinae": 0.12, "Moo": 0.12, "Livestock, farm animals, working animals": 0.12, "Animal": 0.15,
+               "Snoring": 0.2}).items()},
+    "negativ": FACE2_NEGATIV, "seeds": FP2_SEEDS, "behalten": 8, "begrenzer": 3.0, "hochpass": 70.0,
+    "prompts": [
+        ("aeh", "a hand slaps a forehead, immediately followed by a long deep annoyed voiced aaaah, a low drawn-out exasperated human groan of disbelief, comedic, close-up, dry room, " + NO_WORDS,
+         "Klatsch, sofort danach ein langes, tiefes, genervtes „Aaaah“", FP2_SEEDS, None, FP2),
+        ("ugh", "facepalm, one quick flat slap on the forehead and right after it a long low frustrated uuugh, a deep nasal droning human voice, annoyed, funny, close-up, " + NO_WORDS,
+         "Klatsch, dann ein tiefes, näselndes, frustriertes „Uuugh“", FP2_SEEDS, None, FP2),
+        ("brummen", "a slap on the forehead followed by a drawn-out low bored human voice, a deep droning annoyed aaaaeh, grumpy and slow, comedic sound effect, close-up, " + NO_WORDS,
+         "Klatsch, dann ein gedehntes, tiefes, brummiges „Äääh“", FP2_SEEDS, None, dict(FP2, cfg=6.0)),
+        ("genervt", "human vocal sound effect, a smack of a palm on a forehead, then a long deep exasperated nasal aaaah of annoyance, like a grumpy teenager, close-up, dry room, " + NO_WORDS,
+         "„human vocal sound effect“: Klatsch, dann genervtes, tiefes „Aaaah“", FP2_SEEDS, None, dict(FP2, cfg=6.0)),
+    ],
+})
+_ORDNUNG = ["gaehnen", "gaehnen2", "gaehnen3"] + [k for k in TOENE if not k.startswith("gaehnen") and k not in
+                                                  ("baeh", "heulen", "heulen3", "facepalm", "facepalm2")]
 _ORDNUNG.insert(_ORDNUNG.index("daumen") + 1, "baeh")      # bei den Reaktionen
+_ORDNUNG.insert(_ORDNUNG.index("baeh") + 1, "heulen")
+_ORDNUNG.insert(_ORDNUNG.index("heulen") + 1, "heulen3")
+_ORDNUNG.insert(_ORDNUNG.index("heulen3") + 1, "facepalm")
+_ORDNUNG.insert(_ORDNUNG.index("facepalm") + 1, "facepalm2")
 TOENE = {k: TOENE[k] for k in _ORDNUNG}
 # Einziger Versuch „gaehnen3_02umgestellt“: in gaehnen2_02 (Rohdatei gaehnen2_frau_4110) Einatmen und „aaah“ tauschen,
 # an der natürlichen Pause dazwischen und mit weicher Blende in der Stille (siehe umstellen). Nur, wenn die Pause klar ist

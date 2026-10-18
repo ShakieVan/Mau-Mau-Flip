@@ -258,7 +258,7 @@ static func _swap_lines(color: String, cfg: RuleConfig) -> Array[String]:
 	out.append(_t("Passt auf %s und auf jeden Kartentausch.") % color)
 	out.append(_t("Zu zweit tauscht ihr einfach eure Hände."))
 	if cfg.counter_round == "on":
-		out.append(_t("Auch als letzte Karte: Die anderen tauschen untereinander, du nicht. Fertig bist du erst, wenn dich keiner kontert."))
+		out.append(_t("Auch als letzte Karte tauschst du mit: Du bekommst eine Hand, deine leere Hand wandert zum Nächsten – der hat dann keine Karten mehr und wartet aufs Kontern."))
 		out.append(_t("Kontern: Wer keine Karten mehr hat, tauscht mit und spielt weiter; wer dabei die leere Hand bekommt, hat nun selbst keine Karten mehr."))
 	elif cfg.round_end == "first":
 		out.append(_t("Auch als letzte Karte: Du bist fertig und gewinnst die Runde; getauscht wird dann nicht mehr."))
@@ -365,7 +365,7 @@ static func overview(config: RuleConfig = null) -> Array[Dictionary]:
 		var last := _t("Als letzte Karte bist du fertig und gewinnst; getauscht wird dann nicht mehr.") if cfg.round_end == "first" \
 			else _t("Als letzte Karte bist du fertig; die anderen tauschen trotzdem untereinander.")
 		if cfg.counter_round == "on":
-			last = _t("Als letzte Karte tauschen die anderen untereinander, du nicht. Wer keine Karten mehr hat und auf den Kontern wartet, tauscht mit; die leere Hand wandert weiter.")
+			last = _t("Als letzte Karte tauschst du mit: Du bekommst eine Hand, deine leere wandert weiter, und wer sie bekommt, wartet aufs Kontern. Wer schon auf das Kontern wartet, tauscht ebenso mit.")
 		var swap_text := _t("Hausregel: Wer einen Kartentausch legt, lässt alle Spieler gleichzeitig ihre ganze Hand an den Nächsten weitergeben, %s. Danach ist der Nächste in Spielrichtung dran; zu zweit tauscht ihr einfach eure Hände. Der Kartentausch passt auf seine Farbe und auf jeden anderen Kartentausch.") % cfg.swap_direction_text()
 		if cfg.mau_call != "off":
 			swap_text += " " + _t("Wer so auf 1 Karte kommt, muss nicht „Mau!“ rufen.")

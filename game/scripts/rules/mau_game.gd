@@ -1519,19 +1519,16 @@ func _do_flip(ev: Array) -> void:
 func _swap_hands(p: int, ev: Array) -> void:
 	var n := players.size()
 	var step := config.swap_step(dir)
-	# Kontern: Wartende tauschen mit (sie bekommen eine Hand, ihre leere wandert weiter), nur der Leger selbst nicht, wenn der
-	# Tausch seine letzte Karte war (_swap_skip: er wartet und wird beim Weiterreichen übergangen).
-	var lone := counter_wait.has(p)
-	if _active_count() - (1 if lone else 0) < 2:
+	# Kontern: Wartende tauschen mit (sie bekommen eine Hand, ihre leere wandert weiter). Beta 1.6.13 (Nutzerwunsch 18.10.2026):
+	# auch der Leger, wenn der Tausch seine letzte Karte war – er bekommt die Hand seines Vorgängers, seine leere Hand wandert
+	# zum Nächsten in Tauschrichtung, der nun wartet (bis 1.6.12 tauschte der Leger nicht mit und wartete selbst).
+	if _active_count() < 2:
 		return
 	var old: Array = hands.duplicate()
 	var targets := {}                # vor dem Umschichten bestimmen (_next_in liest die Hände wegen _out_of_cards)
 	for s in n:
-		if place[s] == 0 and not _out_of_cards(s) and not (lone and s == p):
-			var t := _next_in(s, step)
-			if lone and t == p:
-				t = _next_in(p, step)
-			targets[s] = t
+		if place[s] == 0 and not _out_of_cards(s):
+			targets[s] = _next_in(s, step)
 	for s in targets:
 		hands[int(targets[s])] = old[s]
 	mau_open = -1

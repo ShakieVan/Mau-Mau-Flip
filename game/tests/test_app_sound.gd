@@ -41,14 +41,15 @@ func _run() -> void:
 	var tease_lengths := {"schnarchen": [4.0, 4.4], "wecker": [1.7, 1.95], "papier_wurf": [1.2, 1.45], "papier_plopp": [0.2, 0.4],
 		"lachen": [1.8, 2.05], "schreck": [0.5, 0.75], "klatschen": [1.8, 2.05], "daumen": [0.5, 0.75],
 		"furzkissen": [0.7, 0.85],   # Beta 1.6.6: furzkissen_02 (eastereggs2.md 12.4)
-		"baeh": [0.55, 1.4]}         # Beta 1.6.11: Bäää (gewählt baeh_05, 0,98 s; Spanne für die Kandidaten 01–08)
+		"baeh": [0.55, 1.4],         # Beta 1.6.11: Bäää (gewählt baeh_05, 0,98 s; Spanne für die Kandidaten 01–08)
+		"heulen": [2.0, 2.2], "facepalm": [1.0, 1.15]}   # Beta 1.6.13: Aufnahmen des Nutzers, +6 Halbtöne in gleicher Länge (nur6)
 	for sound_name in tease_lengths:
 		var s: AudioStream = sound.stream(sound_name)
 		var span: Array = tease_lengths[sound_name]
 		check(s != null and sound.is_loaded(sound_name) and AppSound.TEASE_NAMES.has(sound_name), "Necken: Datei %s vorhanden und vorgeladen" % sound_name)
 		if s != null:
 			check(s.get_length() >= float(span[0]) and s.get_length() <= float(span[1]), "Necken: Länge %s: %.3f s" % [sound_name, s.get_length()])
-	check(AppSound.NAMES.size() == 21 and sound.preload_all() == 21, "preload_all zählt alle 21 Dateien (1.6.6: mit Furzkissen, 1.6.11: mit Bäää)")
+	check(AppSound.NAMES.size() == 23 and sound.preload_all() == 23, "preload_all zählt alle 23 Dateien (1.6.6: mit Furzkissen, 1.6.11: mit Bäää, 1.6.13: mit Heulen und Facepalm)")
 	for k in ["stimme", "gesungen", "blubb", "spieluhr", "kalimba"]:
 		check(AppSound.path_for("mau_" + k) == "", "synthetische Mau-Variante mau_%s entfernt" % k)
 	var web := ProjectSettings.globalize_path("res://").path_join("../webclient/sfx/")

@@ -34,12 +34,16 @@ extends Node
 # Beta 1.6.6 (Furzkissen, docs/module/eastereggs2.md 12.4): neunter Necken-Ton "furzkissen" (audio/entwurf/ostereier/furzkissen_02.ogg,
 # unverändert kopiert, −20,9 LUFS, Spitze −4,9 dBTP, 0,78 s) – laut beim Ziel, leise (QUIET_DB) bei allen anderen, auch beim Leger.
 # Beta 1.6.11: fünfte Reaktion "baeh" (😝 „Bäää“), gewählt (Nutzer 16.10.2026): audio/entwurf/ostereier/baeh_05.ogg unverändert (Prusten, −19,7 LUFS, 0,98 s).
+# Beta 1.6.13: sechste und siebte Reaktion "heulen" (😭) und "facepalm" (🤦): Aufnahmen des Nutzers (audio/aufnahmen/Weinen 2.m4a,
+# Facepalm 2.m4a), auf Wunsch „hochgepitcht (Chipmunk)“, gewählt die Stufe nur6 (+6 Halbtöne, gleiche Länge; tools/make_reaktion_aufnahmen.py,
+# −19 LUFS, 2,10 s bzw. 1,08 s).
 
 const DIR := "res://assets/sfx/"
 const TEASE_NAMES := ["schnarchen", "wecker", "papier_wurf", "papier_plopp", "lachen", "schreck", "klatschen", "daumen",
-	"furzkissen", "baeh"]                  # Beta 1.6.3; Beta 1.6.6: Furzkissen (eastereggs2.md 12.4); Beta 1.6.11: Bäää
+	"furzkissen", "baeh", "heulen", "facepalm"]   # Beta 1.6.3; 1.6.6: Furzkissen (eastereggs2.md 12.4); 1.6.11: Bäää; 1.6.13: 😭 🤦
 const NAMES := ["mau", "mau_mau", "karte", "ziehen", "mischen", "flip", "jubel_1", "jubel_2", "fehler", "dran", "schnurren",
-	"schnarchen", "wecker", "papier_wurf", "papier_plopp", "lachen", "schreck", "klatschen", "daumen", "furzkissen", "baeh"]
+	"schnarchen", "wecker", "papier_wurf", "papier_plopp", "lachen", "schreck", "klatschen", "daumen", "furzkissen", "baeh",
+	"heulen", "facepalm"]
 const QUIET_DB := -12.0                    # Beta 1.6.3: „leise“ für Absender/Zuschauer beim Necken (relativ zur Stufe „Spieltöne“)
 const JUBEL := ["jubel_1", "jubel_2"]       # Ereignis "sieg" spielt zufällig eine der beiden Jubel-Dateien (Nutzerentscheidung 10.10.2026)
 const JUBEL_FADE_S := 0.6

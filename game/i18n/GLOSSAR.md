@@ -229,7 +229,7 @@ Farbnamen als Kartenfarbe groß („Play Blue or a 9“), im Fließtext als Adje
 | Papierkugel | paper ball |
 | Schnarchen | snore |
 | Wecker | alarm clock |
-| Reaktion (Lachen, Schreck, Klatschen, Daumen hoch, Bäää ab 1.6.11) | reaction (Laugh, Shock, Applause, Thumbs up, Bleh!) |
+| Reaktion (Lachen, Schreck, Klatschen, Daumen hoch, Bäää ab 1.6.11, Heulen und Facepalm ab 1.6.13) | reaction (Laugh, Shock, Applause, Thumbs up, Bleh!, Cry, Facepalm) |
 | Karten ansehen | View cards |
 | Furzkissen (Beta 1.6.6) | whoopee cushion |
 | Mit Namen / Geheim (Kissen legen, bis 1.6.9) | With name / Secret |

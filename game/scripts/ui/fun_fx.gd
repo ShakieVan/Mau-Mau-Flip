@@ -9,7 +9,7 @@ extends Node
 #     keine Animation läuft; die Knoten liegen hinter den Karten. Die Sternschnuppe zeichnet ab 1.6.11 shooting_star_fx.gd
 #     (leuchtender Kopf, ausglühender Schweif, Funken; nachts additiv, Helligkeit nach dem Nachtwert).
 #  3. Kommentar-Stempel: „Autsch!“, wenn jemand mit 1 Karte eine Strafe von 2 oder mehr Karten bekommt (+5, Wünscher +2, Farbjagd);
-#     kurzer Applaus (gezeichnete Hände) bei „Mau-Mau!“.
+#     kurzer Applaus bei „Mau-Mau!“ (ab 1.6.13 das Klatsch-Bild der Reaktionen, Fluent Emoji 👏; vorher gezeichnete Hände).
 # „Effekte reduziert“: Katze, Schmetterling und Sternschnuppe aus, der Stempel erscheint ohne Aufsetzen, der Applaus steht still.
 # Der Tisch (TableView) ruft nur: mount, set_pile, on_view, on_event, tap. Die Uhr läuft über _process; Tests schalten
 # auto_process aus und rufen tick(delta).
@@ -589,6 +589,11 @@ class ApplauseFx:
 	var k := 1.0
 	var t := 0.0
 	const DUR := 1.4
+	const IMG_S := 30.0              # Beta 1.6.13: Bildgröße (≈ Radius wie TeaseFx.draw_reaction; Bild etwa 66 px)
+	# dasselbe Bild wie der Reaktionsknopf (TeaseFx.REACT_TEX); eigener Verweis, damit FunFx die Klasse TeaseFx nicht lädt (ihre Bilder
+	# blieben in Testläufen beim Beenden belegt: „resources still in use at exit“)
+	const CLAP_TEX := preload("res://assets/ui/reaktionen/klatschen.svg")
+	const IMG_EDGE := 2.2            # Bildkante relativ zu IMG_S wie TeaseFx.REACT_IMG
 
 	func _ready() -> void:
 		scale = Vector2.ONE * k
@@ -601,40 +606,24 @@ class ApplauseFx:
 		modulate.a = clampf(minf(t / 0.12, (DUR - t) / 0.3), 0.0, 1.0)
 		queue_redraw()
 
-	func _hand(side: float, d: float) -> void:
-		var skin := Color("#F2C48D")
-		var ink := Color("#211B2C")
-		var c := Vector2(side * d, 0)
-		var rot := -side * 0.32
-		var xf := Transform2D(rot, c)
-		draw_set_transform_matrix(xf)
-		var pts := PackedVector2Array()
-		for i in 20:
-			var a := TAU * i / 20.0
-			pts.append(Vector2(cos(a) * 13.0, 7.0 + sin(a) * 15.0))
-		draw_colored_polygon(pts, ink.lerp(skin, 0.0))
-		pts = PackedVector2Array()
-		for i in 20:
-			var a := TAU * i / 20.0
-			pts.append(Vector2(cos(a) * 11.0, 7.0 + sin(a) * 13.0))
-		draw_colored_polygon(pts, skin)
-		for i in 4:
-			var x := -8.0 + i * 5.3
-			var top := Vector2(x * 1.1, -24.0 + absf(x) * 0.5)
-			draw_line(Vector2(x, -4.0), top, ink, 7.0, true)
-			draw_line(Vector2(x, -4.0), top, skin, 4.4, true)
-		draw_line(Vector2(-side * 10.0, 8.0), Vector2(-side * 20.0, -4.0), ink, 7.0, true)
-		draw_line(Vector2(-side * 10.0, 8.0), Vector2(-side * 20.0, -4.0), skin, 4.4, true)
-		draw_set_transform_matrix(Transform2D.IDENTITY)
+	func _clap() -> void:
+		var e := IMG_S * IMG_EDGE
+		draw_texture_rect(CLAP_TEX, Rect2(-Vector2.ONE * e * 0.5, Vector2.ONE * e), false)
 
+	# Beta 1.6.13 (Nutzerwunsch): das Klatsch-Bild der Reaktionen (Fluent Emoji 👏, wie TeaseFx.draw_reaction) statt gezeichneter Hände.
+	# Drei Klatscher: beim Zusammenschlagen kurz schmaler und gedreht, dann ein kleiner Strahlenkranz; „Effekte reduziert“: still.
 	func _draw() -> void:
-		var cyc := 0.5 + 0.5 * cos(t / DUR * 3.0 * TAU)      # 1 = weit auseinander, 0 = zusammen
-		var d := 20.0 if calm else 9.0 + 16.0 * cyc
-		_hand(-1.0, d)
-		_hand(1.0, d)
-		if not calm and cyc < 0.25:
+		var cyc := 0.5 + 0.5 * cos(t / DUR * 3.0 * TAU)      # 1 = Hände auseinander, 0 = zusammen (Klatsch)
+		if calm:
+			_clap()
+			return
+		var wob := sin(t / DUR * 3.0 * TAU) * 0.08
+		draw_set_transform(Vector2.ZERO, wob, Vector2(0.9 + 0.16 * cyc, 1.04 - 0.06 * cyc))
+		_clap()
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		if cyc < 0.25:
 			var s := 1.0 - cyc / 0.25
 			for i in 7:
 				var a := -PI * 0.5 + (i - 3) * 0.42
 				var dir := Vector2(cos(a), sin(a))
-				draw_line(dir * (30.0 + 4.0 * s), dir * (30.0 + 16.0 * s), UiPalette.TURN, 3.0, true)
+				draw_line(dir * (IMG_S * 1.2 + 4.0 * s), dir * (IMG_S * 1.2 + 16.0 * s), UiPalette.TURN, 3.0, true)

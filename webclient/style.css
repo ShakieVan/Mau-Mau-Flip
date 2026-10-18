@@ -1116,6 +1116,14 @@ body[data-screen="tisch"] .necken-ebene { display: block; }
 .nk-leiste { display: grid; pointer-events: none !important; }
 .nk-leiste[hidden] { display: none; }
 .nk-leiste > .nk-rb { pointer-events: auto; }
+/* Beta 1.6.13: wischbare Reihe auf kleinen Handys (necken.js layout, „wisch“): 4½ Knöpfe sichtbar, der Rest per Wischen; Rand oben und
+   unten für die Trefferfläche (sonst schnitte overflow sie ab), rechts blendet die Reihe aus (es geht weiter) */
+.nk-leiste.wisch { pointer-events: auto !important; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scrollbar-width: none;
+  scroll-snap-type: x proximity; padding: var(--nk-ty, 0px) 0; margin-top: calc(-1 * var(--nk-ty, 0px)); touch-action: pan-x;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 22px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 22px), transparent); }
+.nk-leiste.wisch.ende { -webkit-mask-image: none; mask-image: none; }
+.nk-leiste.wisch::-webkit-scrollbar { display: none; }
+.nk-leiste.wisch > .nk-rb { scroll-snap-align: start; box-shadow: none; }   /* der Schatten würde am Rand der Reihe gerade abgeschnitten */
 .nk-rb { position: relative; width: 48px; height: 48px; padding: 0; border-radius: 50%; display: grid; place-items: center; line-height: 1; background: var(--nk-grund); border: 3px solid var(--nk-rand); box-shadow: var(--nk-schein);
   animation: nkRbAuf .22s cubic-bezier(.3,1.5,.5,1) both; animation-delay: calc(var(--i, 0) * 40ms); }
 .nk-rb::before { content: ''; position: absolute; inset: calc(-3px - var(--nk-ty, 0px)) calc(-3px - var(--nk-tx, 0px)); border-radius: 22px; }   /* Trefferfläche ≥ 44 px (necken.js) */
@@ -1131,7 +1139,9 @@ body[data-screen="tisch"] .necken-ebene { display: block; }
 .nk-leiste.huepf .nk-rb:not(.drueck):not(.wackel) { animation: nkHuepf .42s ease-out both; animation-delay: calc(var(--i, 0) * 60ms); }   /* Tipp auf „Du“ */
 body.reduziert .nk-rb.wackel { animation: none; }
 /* Hochkant (Rahmen): Leiste unter dem Tisch, der Hinweis „Quer halten“ rückt darunter */
-body.nk-unten.rahmen-hinweis[data-screen="tisch"] .quer { align-items: flex-end; padding-bottom: 4px; }
+/* Beta 1.6.13: Leiste (Block 4 + 3) unter dem Tisch → der Hinweis rückt darunter (vorher teilten sich beide den Streifen --rahmen-rest) */
+body.nk-unten.rahmen-hinweis[data-screen="tisch"] .quer { top: calc(var(--rahmen-oben) + var(--rahmen-h) + var(--nk-leiste-h, 0px) + 10px);
+  height: min(var(--rahmen-rest), calc(var(--vh, 100vh) - var(--rahmen-oben) - var(--rahmen-h) - var(--nk-leiste-h, 0px) - 10px)); }
 @keyframes nkRbAuf { from { opacity: 0; transform: translateY(24px) scale(.5); } }
 @keyframes nkHuepf { 40% { transform: translateY(-10px) scale(1.08); } }
 @keyframes nkDrueck { 50% { transform: scale(.86); } }

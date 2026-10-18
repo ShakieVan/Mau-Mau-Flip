@@ -36,6 +36,7 @@ extends RefCounted
 #                  Geräte bis 1.6.7 übergehen das Feld (make_cushion/clean_fx_no ohne left); fehlt es, sperrt der Spiegel 60 s.
 # Beta 1.6.11: fünfte Reaktion r:"baeh" („Bäää“, 😝; TeaseRules.FX_REACTS). Ein Gastgeber bis 1.6.10 verwirft den Wunsch still
 #   (make_fx_request), ein Gast bis 1.6.10 das fx des Gastgebers (clean_fx); Lite kommt immer vom Gastgeber bzw. vom Tag seiner Version.
+# Beta 1.6.13: sechste und siebte Reaktion r:"heulen" (😭) und r:"facepalm" (🤦), gleich behandelt (Geräte bis 1.6.12 verwerfen sie still).
 # Zahlen: JSON kennt nur float; decode() wandelt ganzzahlige Werte in int (Kennungen, Plätze, Zeitstempel in ms).
 
 const PROTO := 1                          # Protokollversion: bei jeder inkompatiblen Änderung erhöhen

@@ -386,12 +386,17 @@ static func _is_swap(code: int) -> bool:
 # Ende ist (er bekommt meine große Hand); nicht, wenn ich selbst kurz vor dem Ende bin. Positiv = lohnt.
 static func swap_value(view: Dictionary) -> float:
 	var keep := (view.get("hand", []) as Array).size() - 1
-	if keep <= 0:
-		return 30.0                                   # letzte Karte: fertig
 	var rules: Dictionary = view.get("rules", {})
+	if keep <= 0 and str(rules.get("counter_round", "off")) != "on":
+		return 30.0                                   # letzte Karte: fertig
 	var step := 1 if str(rules.get("swap_direction", "clockwise")) == "clockwise" or int(view.get("dir", 1)) >= 0 else -1
 	var got := int(_neighbour_dir(view, -step).get("count", keep))       # dessen Hand bekomme ich
 	var receiver := int(_neighbour_dir(view, step).get("count", keep))   # bekommt meine Resthand
+	if keep <= 0:
+		# Beta 1.6.13, Kontern: Als letzte Karte tausche ich mit – ich bekomme die Hand des Vorigen, meine leere Hand wandert zum
+		# Nächsten (der dann auf das Kontern wartet). Das lohnt nie; je mehr ich bekomme, desto weniger (passt nur er, zieht der
+		# Bot lieber, außer jemand wartet – siehe _turn).
+		return -4.0 * got - 8.0
 	var v := 4.0 * (keep - got) - 2.0
 	if receiver <= 2 and keep >= receiver + 2:
 		v += 16.0

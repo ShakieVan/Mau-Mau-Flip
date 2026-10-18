@@ -169,7 +169,7 @@ func card_help() -> void:
 	check(t[0].contains("ganze Hand") and t[0].contains("im Uhrzeigersinn"), "Kartentausch: Wirkung und Richtung (%s)" % t[0])
 	check("\n".join(PackedStringArray(t)).contains("Passt auf Rot und auf jeden Kartentausch"), "Kartentausch: passt auf Rot")
 	# (Familie mit Kontern, Beta 1.6.11: Der Leger wartet, die anderen tauschen untereinander)
-	check("\n".join(PackedStringArray(t)).contains("die anderen tauschen trotzdem" if on.counter_round != "on" else "Die anderen tauschen untereinander, du nicht"),
+	check("\n".join(PackedStringArray(t)).contains("die anderen tauschen trotzdem" if on.counter_round != "on" else "Auch als letzte Karte tauschst du mit"),
 		"Kartentausch bis zum Letzten: die anderen tauschen weiter")
 	check("\n".join(PackedStringArray(t)).contains("muss nicht „Mau!“"), "Kartentausch: kein Mau nötig")
 	var play_dir := house()

@@ -19,8 +19,13 @@ Nutzerwunsch vom 16.10.2026. Schlüssel `counter_round` (`off` | `on`), offiziel
 - **Kartentausch:** Wartende tauschen mit (sie bekommen eine Hand, ihre leere Hand wandert weiter). Wer die leere Hand bekommt,
   wartet nun selbst. Bekommt sie jemand, der gerade nicht dran war, kommt der Zug erst noch bei ihm an: Beim ersten Ankommen
   geht er weiter (`counter_fresh`, im Spielstand `counter.fresh`), fertig ist er beim nächsten Ankommen oder wenn er übersprungen wird.
-  War der Kartentausch die eigene letzte Karte, tauscht der Leger nicht mit (die anderen tauschen
-  untereinander), wartet aber wie bei jeder letzten Karte.
+  War der Kartentausch die eigene letzte Karte, **tauscht der Leger mit** (ab Beta 1.6.13, Nutzerwunsch 18.10.2026: „die
+  Lücke wandert weiter“): Er bekommt die Hand seines Vorgängers in Tauschrichtung und spielt normal weiter (`counter_open`, dann
+  `countered` für ihn), seine leere Hand geht an den Nächsten, der nun wartet (frisch, s. o.). Zu zweit bekommt der Leger die Hand
+  des anderen. Gilt ebenso für einen Kartentausch aus der Flip-Überraschung. Bis 1.6.12 tauschte der Leger nicht mit (die anderen
+  untereinander) und wartete selbst. Ohne Kontern bleibt es dabei: Als letzte Karte ist er fertig, die anderen tauschen
+  untereinander. Bots legen den Kartentausch mit Kontern nicht als letzte Karte (`swap_value` negativ), sondern ziehen, außer
+  jemand wartet.
 - Glücksspiel- und Ablegen-Karten als letzte Karte bzw. nach dem Flip mit leerer Hand: kein Glücksspiel, nichts abzulegen (beim Joker
   nur die Farbwahl). Ein Flip als letzte Karte wird nach `flip_last_card` ausgeführt oder nicht.
 - „Mau!“: Ruf und Fenster verfallen beim Leerwerden; einen Wartenden kann man nicht erwischen. Wer gekontert wird, muss mit 2

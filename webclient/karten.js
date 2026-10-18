@@ -182,7 +182,7 @@
         if (r.swap_direction === 'play' || r.swap_direction === 'against') z.push(tr('Nach einem Richtungswechsel wandern die Hände also andersherum.'));
         neben(tr('Passt auf %s und auf jeden Kartentausch.', f));
         z.push(tr('Zu zweit tauscht ihr einfach eure Hände.'));
-        if (kontern) z.push(tr('Auch als letzte Karte: Die anderen tauschen untereinander, du nicht. Fertig bist du erst, wenn dich keiner kontert.'),
+        if (kontern) z.push(tr('Auch als letzte Karte tauschst du mit: Du bekommst eine Hand, deine leere Hand wandert zum Nächsten – der hat dann keine Karten mehr und wartet aufs Kontern.'),
           tr('Kontern: Wer keine Karten mehr hat, tauscht mit und spielt weiter; wer dabei die leere Hand bekommt, hat nun selbst keine Karten mehr.'));
         else z.push(r.round_end === 'last' ? tr('Auch als letzte Karte: Du bist fertig, die anderen tauschen trotzdem untereinander.')
           : tr('Auch als letzte Karte: Du bist fertig und gewinnst die Runde; getauscht wird dann nicht mehr.'));

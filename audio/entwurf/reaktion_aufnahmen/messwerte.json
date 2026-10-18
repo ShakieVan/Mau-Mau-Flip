@@ -1,0 +1,497 @@
+{
+ "stand": "18.10.2026",
+ "toene": {
+  "facepalm_original": {
+   "ton": "facepalm",
+   "stufe": "original",
+   "halbtoene": 0,
+   "tempo": true,
+   "quelle": "Facepalm 2.m4a",
+   "dauer_s": 1.1,
+   "lufs_momentan_max": -19.0,
+   "spitze_dbtp": -7.5,
+   "ueber_6k_db": -42.8,
+   "ast_top": [
+    [
+     "Speech",
+     0.324
+    ],
+    [
+     "Grunt",
+     0.253
+    ],
+    [
+     "Sound effect",
+     0.23
+    ],
+    [
+     "Groan",
+     0.039
+    ],
+    [
+     "Fart",
+     0.034
+    ]
+   ],
+   "ast_katze": [
+    0.001,
+    "Meow"
+   ],
+   "ast_sprache": [
+    0.324,
+    "Speech"
+   ]
+  },
+  "facepalm_hoch4": {
+   "ton": "facepalm",
+   "stufe": "hoch4",
+   "halbtoene": 4,
+   "tempo": true,
+   "quelle": "Facepalm 2.m4a",
+   "dauer_s": 0.87,
+   "lufs_momentan_max": -19.0,
+   "spitze_dbtp": -7.1,
+   "ueber_6k_db": -43.1,
+   "ast_top": [
+    [
+     "Grunt",
+     0.138
+    ],
+    [
+     "Sound effect",
+     0.13
+    ],
+    [
+     "Speech",
+     0.123
+    ],
+    [
+     "Groan",
+     0.101
+    ],
+    [
+     "Fart",
+     0.057
+    ]
+   ],
+   "ast_katze": [
+    0.001,
+    "Meow"
+   ],
+   "ast_sprache": [
+    0.123,
+    "Speech"
+   ]
+  },
+  "facepalm_hoch6": {
+   "ton": "facepalm",
+   "stufe": "hoch6",
+   "halbtoene": 6,
+   "tempo": true,
+   "quelle": "Facepalm 2.m4a",
+   "dauer_s": 0.78,
+   "lufs_momentan_max": -19.1,
+   "spitze_dbtp": -6.8,
+   "ueber_6k_db": -40.5,
+   "ast_top": [
+    [
+     "Grunt",
+     0.265
+    ],
+    [
+     "Sound effect",
+     0.151
+    ],
+    [
+     "Speech",
+     0.092
+    ],
+    [
+     "Fart",
+     0.077
+    ],
+    [
+     "Groan",
+     0.073
+    ]
+   ],
+   "ast_katze": [
+    0.001,
+    "Meow"
+   ],
+   "ast_sprache": [
+    0.092,
+    "Speech"
+   ]
+  },
+  "facepalm_hoch8": {
+   "ton": "facepalm",
+   "stufe": "hoch8",
+   "halbtoene": 8,
+   "tempo": true,
+   "quelle": "Facepalm 2.m4a",
+   "dauer_s": 0.69,
+   "lufs_momentan_max": -19.0,
+   "spitze_dbtp": -6.5,
+   "ueber_6k_db": -35.7,
+   "ast_top": [
+    [
+     "Sound effect",
+     0.148
+    ],
+    [
+     "Fart",
+     0.13
+    ],
+    [
+     "Speech",
+     0.128
+    ],
+    [
+     "Grunt",
+     0.126
+    ],
+    [
+     "Groan",
+     0.048
+    ]
+   ],
+   "ast_katze": [
+    0.001,
+    "Meow"
+   ],
+   "ast_sprache": [
+    0.128,
+    "Speech"
+   ]
+  },
+  "facepalm_hoch10": {
+   "ton": "facepalm",
+   "stufe": "hoch10",
+   "halbtoene": 10,
+   "tempo": true,
+   "quelle": "Facepalm 2.m4a",
+   "dauer_s": 0.62,
+   "lufs_momentan_max": -19.0,
+   "spitze_dbtp": -6.3,
+   "ueber_6k_db": -34.4,
+   "ast_top": [
+    [
+     "Fart",
+     0.372
+    ],
+    [
+     "Sound effect",
+     0.167
+    ],
+    [
+     "Speech",
+     0.08
+    ],
+    [
+     "Grunt",
+     0.061
+    ],
+    [
+     "Boing",
+     0.033
+    ]
+   ],
+   "ast_katze": [
+    0.002,
+    "Meow"
+   ],
+   "ast_sprache": [
+    0.08,
+    "Speech"
+   ]
+  },
+  "facepalm_nur6": {
+   "ton": "facepalm",
+   "stufe": "nur6",
+   "halbtoene": 6,
+   "tempo": false,
+   "quelle": "Facepalm 2.m4a",
+   "dauer_s": 1.08,
+   "lufs_momentan_max": -19.0,
+   "spitze_dbtp": -8.7,
+   "ueber_6k_db": -41.4,
+   "ast_top": [
+    [
+     "Sound effect",
+     0.207
+    ],
+    [
+     "Fart",
+     0.147
+    ],
+    [
+     "Grunt",
+     0.135
+    ],
+    [
+     "Speech",
+     0.093
+    ],
+    [
+     "Groan",
+     0.061
+    ]
+   ],
+   "ast_katze": [
+    0.001,
+    "Meow"
+   ],
+   "ast_sprache": [
+    0.093,
+    "Speech"
+   ]
+  },
+  "heulen_original": {
+   "ton": "heulen",
+   "stufe": "original",
+   "halbtoene": 0,
+   "tempo": true,
+   "quelle": "Weinen 2.m4a",
+   "dauer_s": 2.13,
+   "lufs_momentan_max": -18.9,
+   "spitze_dbtp": -8.6,
+   "ueber_6k_db": -41.1,
+   "ast_top": [
+    [
+     "Groan",
+     0.283
+    ],
+    [
+     "Wail, moan",
+     0.126
+    ],
+    [
+     "Sound effect",
+     0.079
+    ],
+    [
+     "Whimper",
+     0.063
+    ],
+    [
+     "Speech",
+     0.043
+    ]
+   ],
+   "ast_katze": [
+    0.002,
+    "Domestic animals, pets"
+   ],
+   "ast_sprache": [
+    0.043,
+    "Speech"
+   ]
+  },
+  "heulen_hoch4": {
+   "ton": "heulen",
+   "stufe": "hoch4",
+   "halbtoene": 4,
+   "tempo": true,
+   "quelle": "Weinen 2.m4a",
+   "dauer_s": 1.69,
+   "lufs_momentan_max": -19.1,
+   "spitze_dbtp": -8.8,
+   "ueber_6k_db": -35.7,
+   "ast_top": [
+    [
+     "Wail, moan",
+     0.226
+    ],
+    [
+     "Baby cry, infant cry",
+     0.179
+    ],
+    [
+     "Whimper",
+     0.175
+    ],
+    [
+     "Groan",
+     0.124
+    ],
+    [
+     "Crying, sobbing",
+     0.069
+    ]
+   ],
+   "ast_katze": [
+    0.003,
+    "Domestic animals, pets"
+   ],
+   "ast_sprache": [
+    0.027,
+    "Speech"
+   ]
+  },
+  "heulen_hoch6": {
+   "ton": "heulen",
+   "stufe": "hoch6",
+   "halbtoene": 6,
+   "tempo": true,
+   "quelle": "Weinen 2.m4a",
+   "dauer_s": 1.51,
+   "lufs_momentan_max": -19.0,
+   "spitze_dbtp": -8.8,
+   "ueber_6k_db": -39.2,
+   "ast_top": [
+    [
+     "Baby cry, infant cry",
+     0.279
+    ],
+    [
+     "Whimper",
+     0.201
+    ],
+    [
+     "Wail, moan",
+     0.102
+    ],
+    [
+     "Crying, sobbing",
+     0.079
+    ],
+    [
+     "Groan",
+     0.051
+    ]
+   ],
+   "ast_katze": [
+    0.002,
+    "Domestic animals, pets"
+   ],
+   "ast_sprache": [
+    0.018,
+    "Speech"
+   ]
+  },
+  "heulen_hoch8": {
+   "ton": "heulen",
+   "stufe": "hoch8",
+   "halbtoene": 8,
+   "tempo": true,
+   "quelle": "Weinen 2.m4a",
+   "dauer_s": 1.34,
+   "lufs_momentan_max": -18.9,
+   "spitze_dbtp": -8.4,
+   "ueber_6k_db": -42.9,
+   "ast_top": [
+    [
+     "Baby cry, infant cry",
+     0.386
+    ],
+    [
+     "Whimper",
+     0.202
+    ],
+    [
+     "Crying, sobbing",
+     0.129
+    ],
+    [
+     "Wail, moan",
+     0.089
+    ],
+    [
+     "Groan",
+     0.03
+    ]
+   ],
+   "ast_katze": [
+    0.002,
+    "Domestic animals, pets"
+   ],
+   "ast_sprache": [
+    0.021,
+    "Speech"
+   ]
+  },
+  "heulen_hoch10": {
+   "ton": "heulen",
+   "stufe": "hoch10",
+   "halbtoene": 10,
+   "tempo": true,
+   "quelle": "Weinen 2.m4a",
+   "dauer_s": 1.2,
+   "lufs_momentan_max": -19.0,
+   "spitze_dbtp": -8.4,
+   "ueber_6k_db": -44.1,
+   "ast_top": [
+    [
+     "Baby cry, infant cry",
+     0.385
+    ],
+    [
+     "Whimper",
+     0.19
+    ],
+    [
+     "Crying, sobbing",
+     0.1
+    ],
+    [
+     "Wail, moan",
+     0.054
+    ],
+    [
+     "Speech",
+     0.019
+    ]
+   ],
+   "ast_katze": [
+    0.001,
+    "Domestic animals, pets"
+   ],
+   "ast_sprache": [
+    0.019,
+    "Speech"
+   ]
+  },
+  "heulen_nur6": {
+   "ton": "heulen",
+   "stufe": "nur6",
+   "halbtoene": 6,
+   "tempo": false,
+   "quelle": "Weinen 2.m4a",
+   "dauer_s": 2.1,
+   "lufs_momentan_max": -19.0,
+   "spitze_dbtp": -8.7,
+   "ueber_6k_db": -39.8,
+   "ast_top": [
+    [
+     "Baby cry, infant cry",
+     0.215
+    ],
+    [
+     "Whimper",
+     0.195
+    ],
+    [
+     "Wail, moan",
+     0.149
+    ],
+    [
+     "Crying, sobbing",
+     0.054
+    ],
+    [
+     "Groan",
+     0.05
+    ]
+   ],
+   "ast_katze": [
+    0.003,
+    "Domestic animals, pets"
+   ],
+   "ast_sprache": [
+    0.03,
+    "Speech"
+   ]
+  }
+ }
+}

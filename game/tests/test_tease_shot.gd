@@ -13,6 +13,9 @@ extends SceneTree
 # SERIE=1611 nach docs/module/optik_1611_baeh_*.png (Beta 1.6.11: fünfte Reaktion „Bäää“ 😝): wie 165 mit fünf Knöpfen, dazu
 #   reaktion_tag / reaktion_nacht  Bäää steigt auf · alle_tag  alle fünf gleichzeitig · rundenende mit Bäää
 #   (Aufruf mit -EnvPairs "SERIE=1611"; die Bilder heißen optik_1611_baeh_<name>.png)
+# SERIE=1613 nach docs/module/optik_1613_*.png (Beta 1.6.13: sieben Reaktionen mit „Heulen“ 😭 und „Facepalm“ 🤦, Block 4 + 3):
+#   wie 1611, reaktion_tag Heulen, reaktion_nacht Facepalm, alle_tag alle sieben, rundenende mit Facepalm, dazu
+#   applaus_tag / applaus_nacht  Applaus bei „Mau-Mau!“ mit dem Klatsch-Bild der Reaktionen (statt gezeichneter Hände)
 # SERIE=166 nach docs/module/optik_166_*.png (Furzkissen, eastereggs2.md 12.4):
 #   menue_tag / menue_nacht      Necken-Menü mit der Zeile „Furzkissen“ (Mit Namen / Geheim)
 #   menue_gesperrt               nach dem eigenen Kissen: grau, „Das Kissen muss sich erst wieder aufpusten.“ (und „Da liegt schon …“)
@@ -161,8 +164,8 @@ func run() -> void:
 	var kim := 1 if me != 1 else 2
 	show(kim)
 	await create_timer(0.5).timeout
-	if serie == "165" or serie == "166" or serie == "167" or serie == "1610" or serie == "1611":
-		if serie == "165" or serie == "1611":
+	if serie == "165" or serie == "166" or serie == "167" or serie == "1610" or serie == "1611" or serie == "1613":
+		if serie == "165" or serie == "1611" or serie == "1613":
 			await run_165(me, kim)
 		elif serie == "1610":
 			await run_1610(me, kim)
@@ -343,22 +346,22 @@ func run_165(me: int, kim: int) -> void:
 		await shot("tisch_" + tm)
 	ts.table.set_night(0.0)
 	clock += 20000
-	var rx := "baeh" if serie == "1611" else "daumen"     # Beta 1.6.11: die neue Reaktion „Bäää“
+	var rx := "baeh" if serie == "1611" else ("heulen" if serie == "1613" else "daumen")     # 1.6.11: „Bäää“; 1.6.13: „Heulen“
 	fx("react", me, -1, rx)
 	await create_timer(0.55).timeout
 	await shot("reaktion_tag")
 	await create_timer(1.5).timeout
-	if serie == "1611":
-		# nachts: Bäää steigt auf; dann alle fünf von verschiedenen Plätzen gleichzeitig
+	if serie == "1611" or serie == "1613":
+		# nachts: Bäää (1.6.13: Facepalm) steigt auf; dann alle von verschiedenen Plätzen gleichzeitig
 		ts.table.set_night(1.0)
 		clock += 20000
-		fx("react", me, -1, "baeh")
+		fx("react", me, -1, "facepalm" if serie == "1613" else "baeh")
 		await create_timer(0.55).timeout
 		await shot("reaktion_nacht")
 		await create_timer(1.5).timeout
 		ts.table.set_night(0.0)
 		clock += 20000
-		var who := [me, 1 if me != 1 else 0, 2, 3 if me != 3 else 0, me]
+		var who := [me, 1 if me != 1 else 0, 2, 3 if me != 3 else 0, me, 1 if me != 1 else 0, 2]
 		for i in TeaseMenu.REACT_ORDER.size():
 			clock += 3000
 			fx("react", int(who[i]), -1, TeaseMenu.REACT_ORDER[i])
@@ -406,9 +409,18 @@ func run_165(me: int, kim: int) -> void:
 	show(-1, "round_over")
 	await create_timer(0.8).timeout
 	clock += 20000
-	fx("react", me, -1, "baeh" if serie == "1611" else "klatschen")
+	fx("react", me, -1, "baeh" if serie == "1611" else ("facepalm" if serie == "1613" else "klatschen"))
 	await create_timer(0.5).timeout
 	await shot("rundenende")
+	if serie == "1613":
+		# Beta 1.6.13: Applaus bei „Mau-Mau!“ mit dem Klatsch-Bild der Reaktionen (Kim wird fertig), Tag und Nacht, kurz nach einem Klatscher
+		for tm in ["tag", "nacht"]:
+			ts.table.set_night(1.0 if tm == "nacht" else 0.0)
+			ts.table.fun.on_event({"e": "finish", "seat": kim})
+			await create_timer(0.42).timeout
+			await shot("applaus_" + tm)
+			await create_timer(1.2).timeout
+		ts.table.set_night(0.0)
 	fake.v.erase("ranking")
 	# Englisch
 	show(kim)

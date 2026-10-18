@@ -44,8 +44,9 @@ const REACT_RISE := 80.0
 const REACT_S := 1.6
 const REACT_SOUND_MAX := 2                 # je Gerät höchstens so viele Reaktionstöne gleichzeitig
 const REACT_SOUND_GAP_MS := 600            # je Reaktionsname
-const REACT_LEN_MS := {"lachen": 1920, "schreck": 610, "klatschen": 1920, "daumen": 620, "baeh": 980}   # Dateilängen (eastereggs2.md 7)
-const SOUND_OF := {"lachen": "lachen", "schreck": "schreck", "klatschen": "klatschen", "daumen": "daumen", "baeh": "baeh"}
+const REACT_LEN_MS := {"lachen": 1920, "schreck": 610, "klatschen": 1920, "daumen": 620, "baeh": 980, "heulen": 2100, "facepalm": 1080}   # Dateilängen (eastereggs2.md 7)
+const SOUND_OF := {"lachen": "lachen", "schreck": "schreck", "klatschen": "klatschen", "daumen": "daumen", "baeh": "baeh", "heulen": "heulen",
+	"facepalm": "facepalm"}
 const MENU_IDLE_S := 15.0                  # Beta 1.6.7 (Nutzerwunsch 16.10.2026): vorher 5 s, das Menü verschwand zu früh
 const RATE_GRAY_S := 1.2                   # fx_no "rate": Knöpfe kurz ausgegraut
 const REOPEN_GAP_MS := 400                 # derselbe Kopf direkt nach dem Schließen: nicht gleich wieder öffnen
@@ -644,6 +645,7 @@ func _place_cushion(fx: CushionFx, seat: int) -> void:
 	elif seat == _me():
 		add.call(c + Vector2(r * 0.2 + cw * 0.4, -r - cw * 0.75), 1.0)
 		add.call(c + Vector2(r * 0.2 + cw * 0.4, -r - cw * 1.1), 1.0)
+		add.call(c + Vector2(r * 0.2 + cw * 0.4, -r - cw * 2.05), 1.0)    # Beta 1.6.13: über dem zweireihigen Reaktionsblock (4 + 3)
 		add.call(Vector2(hr.end.x + cw * 1.3 + 8.0, c.y), 1.0)
 		add.call(c + Vector2(-r - cw * 1.4, -cw * 0.3), -1.0)
 	else:
@@ -1297,7 +1299,7 @@ func _on_react_chosen(r: String) -> void:
 	send({"k": "react", "r": r})
 
 
-# Beta 1.6.5: die Reaktionsknöpfe (ab 1.6.11 fünf) – nur mit Reaktionen in dieser Spielart, eigenem Platz und Necken an. Lage: normal neben dem
+# Beta 1.6.5: die Reaktionsknöpfe (ab 1.6.11 fünf, ab 1.6.13 sieben) – nur mit Reaktionen in dieser Spielart, eigenem Platz und Necken an. Lage: normal neben dem
 # eigenen Namen (Platzwahl _place_reactions), großer Modus in der Zeile „Du“ vor der Kartenzahl (_row_reactions).
 # full = auch die Regeln und die Platzwahl neu prüfen (alle SYNC_S); sonst nur Lage und Uhr (jedes Bild), gezeichnet nur bei Änderung.
 func _sync_reactions(full := true) -> void:
@@ -1323,7 +1325,9 @@ func _sync_reactions(full := true) -> void:
 	reactions.night = night
 	reactions.reduced = reduced
 	if badge.list_mode:
-		_row_reactions(badge)
+		if not _row_reactions(badge):
+			_set_row_reserve(badge, 0.0)
+			_block_reactions_big()
 	else:
 		reactions.squash = 1.0
 		if full or _react_rel.size() != TeaseMenu.REACT_ORDER.size():
@@ -1356,8 +1360,9 @@ func _set_row_reserve(badge: OpponentSeat, v: float) -> void:
 
 
 # Großer Modus: Knöpfe rechtsbündig in der Zeile „Du“ vor der großen Kartenzahl. Dem Wort „Du“ bleibt sein Platz, sonst werden die
-# Knöpfe kleiner (nie unter 22 px Radius). Die Zeile kürzt Namen und „dran“ um diesen Platz (OpponentSeat.row_reserve).
-func _row_reactions(badge: OpponentSeat) -> void:
+# Knöpfe kleiner (nie unter 22 px Radius). Die Zeile kürzt Namen und „dran“ um diesen Platz (OpponentSeat.row_reserve). Beta 1.6.13: false =
+# passt so nicht (sieben Knöpfe bei 16:9, Tablets oder großer Schrift) – dann stehen sie als Block 4 + 3 über „Sortieren“ (_block_reactions_big).
+func _row_reactions(badge: OpponentSeat) -> bool:
 	var rh := badge.row_size.y
 	var cr := badge.count_rect()
 	var ar := badge.avatar_radius()
@@ -1372,7 +1377,8 @@ func _row_reactions(badge: OpponentSeat) -> void:
 	if 2.0 * r * n + gap * (n - 1) > room:
 		gap = 8.0
 		r = (room - gap * (n - 1)) / (2.0 * n)
-	r = maxf(r, 22.0)
+	if r < 22.0:
+		return false                    # Beta 1.6.13: sieben Knöpfe passen nicht (16:9, Tablets, große Schrift) → _block_reactions_big
 	var inv := table.get_global_transform().affine_inverse()
 	var cs: Array[Vector2] = []
 	for i in n:
@@ -1382,6 +1388,58 @@ func _row_reactions(badge: OpponentSeat) -> void:
 	reactions.r = r
 	reactions.squash = badge.flip_y
 	_set_row_reserve(badge, 2.0 * r * n + gap * (n - 1) + 8.0)
+	return true
+
+
+# Beta 1.6.13: großer Modus, wenn die sieben Knöpfe (≥ 44 px) nicht vor die Kartenzahl passen: Block 4 + 3 (nach REACT_COLS umgebrochen)
+# über „Sortieren“ wie im Browser, sonst rechts daneben oder links über der Hinweisleiste; zuerst in der Größe des großen Modus (× k),
+# dann halb dazwischen, dann in normaler Größe. Hart gemieden wie in der normalen Ansicht (Hand, Stapel, Mau, Sortieren/Rückseiten,
+# „Erwischt!“) plus alle Zeilen der Spielerliste und die Hinweisleiste.
+func _block_reactions_big() -> void:
+	var n := TeaseMenu.REACT_ORDER.size()
+	var cols := mini(n, TeaseMenu.REACT_COLS)
+	var rows := ceili(float(n) / cols)
+	var sz := _screen()
+	var blk := _blockers(_me())
+	var hard: Array[Rect2] = blk.hard
+	var seat_nodes: Array = [table.me_badge]
+	for st in table.get("_seats"):
+		seat_nodes.append(table.seat_node(int(st)))
+	for sn: OpponentSeat in seat_nodes:
+		if sn != null and sn.is_visible_in_tree() and sn.list_mode:
+			var lr := sn.list_rect()
+			hard.append(_rect_of(_g2l(sn.to_global(lr.position)), _g2l(sn.to_global(lr.end))))
+	var hb := table.hint_bar
+	var hint_top := _g2l(hb.get_global_transform() * Vector2(0.0, hb.hint_y - hb.hint_h() * 0.5)).y - 6.0
+	hard.append(_rect_of(Vector2(0.0, hint_top), Vector2(sz.x, hint_top + hb.hint_h() + 12.0)))
+	var sort_btn: Variant = table.get("_sort_btn")
+	var sb := Rect2()
+	if sort_btn is Control and (sort_btn as Control).is_visible_in_tree():
+		sb = _g2l_rect((sort_btn as Control).get_global_rect())
+	var cands: Array = []
+	for f: float in [k(), lerpf(k(), 1.0, 0.5), 1.0]:
+		var r := TeaseMenu.REACT_BTN_R * f
+		var gap := REACT_GAP * f
+		var shape := Vector2(2.0 * r * cols + gap * (cols - 1), 2.0 * r * rows + gap * (rows - 1))
+		var add := func(top_left: Vector2) -> void:
+			cands.append({"pos": top_left, "rel": Rect2(Vector2.ZERO, shape), "r": r, "gap": gap})
+		if sb.has_area():
+			add.call(Vector2(sb.position.x, sb.position.y - 12.0 - shape.y))
+			add.call(Vector2(sb.end.x + 14.0, sb.end.y - shape.y))
+		add.call(Vector2(12.0, hint_top - 8.0 - shape.y))
+	var best := _choose(cands, {"hard": hard, "soft": blk.soft})
+	var tl: Vector2 = best.pos
+	var br := float(best.r)
+	var bg := float(best.gap)
+	var cs: Array[Vector2] = []
+	for i in n:
+		var row_i := i / cols
+		var in_row := mini(cols, n - row_i * cols)           # letzte Reihe kürzer: mittig unter der vollen
+		var x0 := float(cols - in_row) * (br + bg * 0.5)
+		cs.append(_g2r(tl + Vector2(x0 + br + float(i % cols) * (2.0 * br + bg), br + float(row_i) * (2.0 * br + bg))))
+	reactions.centers = cs
+	reactions.r = br
+	reactions.squash = 1.0
 
 
 # Großer Modus: liegt gerade eine andere Zeile über „Du“ (erwischbarer Spieler außerhalb der sichtbaren Zeilen), weichen die Knöpfe.
@@ -1396,8 +1454,9 @@ func _row_hidden(badge: OpponentSeat) -> bool:
 	return false
 
 
-# Normaler Modus: Lage nach TeaseFx._choose (wie die größeren Effekte) – (1) als Reihe rechts neben Name und Kartenzahl, (2) darüber,
-# (3) als Block rechts daneben (ab 1.6.11 3 + 2, vorher 2 × 2), (4) etwas weiter rechts, (5) Block darüber. Hart gemieden: Hand, Ziehstapel, Ablage, Mau, Sortieren/Rückseiten, Knöpfe oben
+# Normaler Modus: Lage nach TeaseFx._choose (wie die größeren Effekte) – ab 1.6.13 als Block 4 + 3 (nach 4 umgebrochen): (1) rechts
+# neben Name und Kartenzahl, (2) darüber, (3) rechts daneben etwas höher, (4) etwas weiter rechts; dann als Block 3 + 3 + 1 (5) rechts
+# daneben, (6) darüber (bis 1.6.12: Reihe 5 × 1 und Block 3 + 2). Hart gemieden: Hand, Ziehstapel, Ablage, Mau, Sortieren/Rückseiten, Knöpfe oben
 # links, „Erwischt!“-Felder aller Mitspieler (auch wenn gerade niemand erwischbar ist – sonst sprängen die Knöpfe), die Fächer der
 # Mitspieler, die Hinweisleiste (als Band über die ganze Breite, damit lange Hinweise nichts verschieben) und der Einsatzstapel im
 # Glücksspiel; weich die Köpfe. Ergebnis: Knopfmitten relativ zum eigenen Avatar (_react_rel).
@@ -1428,19 +1487,24 @@ func _place_reactions(badge: OpponentSeat) -> void:
 		var w := float(sp.get("card_w"))
 		var c := table._table_to(layer, (table.get("_world") as Node2D).transform * sp.position)
 		hard.append(Rect2(c - Vector2(w * 0.65, w * CardView.ASPECT * 0.65), Vector2(w * 1.3, w * CardView.ASPECT * 1.3)))
-	var row := Vector2(2.0 * r * n + gap * (n - 1), 2.0 * r)
-	# Beta 1.6.11: fünf Knöpfe – als Block 3 + 2 (zweite Reihe mittig), bis 1.6.10 bei vier 2 × 2
-	var g_cols := ceili(n / 2.0)
-	var g_rows := ceili(float(n) / g_cols)
-	var grid := Vector2(2.0 * r * g_cols + gap * (g_cols - 1), 2.0 * r * g_rows + gap * (g_rows - 1))
+	# Beta 1.6.13 (Nutzerwunsch, sieben Knöpfe): nach REACT_COLS (4) umbrechen – Block 4 + 3, zweite Reihe mittig; Ausweichform
+	# 3 + 3 + 1 für enge Lagen. Bis 1.6.12 eine Reihe (5 × 1) und Block 3 + 2, bis 1.6.10 bei vier 2 × 2.
+	var shape_of := func(cols: int) -> Vector2:
+		var rows := ceili(float(n) / cols)
+		return Vector2(2.0 * r * cols + gap * (cols - 1), 2.0 * r * rows + gap * (rows - 1))
+	var w_cols := mini(n, TeaseMenu.REACT_COLS)
+	var row: Vector2 = shape_of.call(w_cols)
+	var g_cols := maxi(1, mini(w_cols - 1, ceili(n / 2.0)))
+	var grid: Vector2 = shape_of.call(g_cols)
 	var y_max := hint_top - 4.0                        # Unterkante über der Hinweisleiste
 	var cands: Array = []
 	var add := func(top_left: Vector2, shape: Vector2, cols: int) -> void:
 		cands.append({"pos": Vector2(top_left.x, minf(top_left.y, y_max - shape.y)), "rel": Rect2(Vector2.ZERO, shape), "cols": cols})
-	add.call(Vector2(head.end.x + 14.0, a.y - r), row, n)
-	add.call(Vector2(a.x - ar, a.y - ar - 14.0 - row.y), row, n)
+	add.call(Vector2(head.end.x + 14.0, a.y - row.y * 0.5), row, w_cols)
+	add.call(Vector2(a.x - ar, a.y - ar - 14.0 - row.y), row, w_cols)
+	add.call(Vector2(head.end.x + 14.0, a.y + r - row.y), row, w_cols)
+	add.call(Vector2(head.end.x + 14.0 + 2.0 * r, a.y - row.y * 0.5), row, w_cols)
 	add.call(Vector2(head.end.x + 14.0, a.y - grid.y * 0.5), grid, g_cols)
-	add.call(Vector2(head.end.x + 14.0 + 2.0 * r, a.y - r), row, n)
 	add.call(Vector2(a.x - ar, a.y - ar - 14.0 - grid.y), grid, g_cols)
 	var best := _choose(cands, {"hard": hard, "soft": blk.soft})
 	var tl: Vector2 = best.pos
@@ -1583,6 +1647,8 @@ const REACT_TEX := {
 	"daumen": preload("res://assets/ui/reaktionen/daumen.svg"),
 	"schreck": preload("res://assets/ui/reaktionen/schreck.svg"),
 	"baeh": preload("res://assets/ui/reaktionen/baeh.svg"),     # Beta 1.6.11: 😝 „Squinting face with tongue“
+	"heulen": preload("res://assets/ui/reaktionen/heulen.svg"),     # Beta 1.6.13: 😭 „Loudly crying face“
+	"facepalm": preload("res://assets/ui/reaktionen/facepalm.svg"), # Beta 1.6.13: 🤦 „Person facepalming“ (Hautton Standard)
 }
 const REACT_IMG := 2.2          # Bildkante relativ zu s (≈ Radius): das Motiv (gut 28 von 32 Einheiten) füllt dann etwa 2 s
 

@@ -6,7 +6,7 @@
  * stelle(t) ist rein in t (gleicher Samen + gleiches t = gleiches Bild); Reaktionen auf Tipp und Abgang laufen ab der gemerkten Zeit.
  * Per Bild gesetzt werden nur transform (Stil oder SVG-Attribut) und opacity; Flügelschlag und Lichterkette sind CSS-Schleifen
  * (Klasse nt-schleife, unter body.reduziert still). Ruhige Varianten (Effekte reduziert): Mond mit Mütze, Polarlicht, Sternbild.
- * Zusätzlich zu den Schutzflächen des Kerns meiden Igel und Glühwürmchen die Reaktionsknöpfe (.nk-leiste, 5 Knöpfe inkl. „Bäää“).
+ * Zusätzlich zu den Schutzflächen des Kerns meiden Igel und Glühwürmchen die Reaktionsknöpfe (.nk-leiste, ab 1.6.13 sieben Knöpfe als Block 4 + 3).
  */
 (function (M) {
   'use strict';

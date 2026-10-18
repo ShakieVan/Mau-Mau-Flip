@@ -80,6 +80,14 @@ func act(g: MauGame, seat: int, action: Dictionary, msg: String) -> Array:
 	return r.events
 
 
+# Zug abgeben: ziehen und – passt die gezogene Karte – behalten. Gibt alle Ereignisse zurück.
+func _pass_turn(g: MauGame, seat: int, msg: String) -> Array:
+	var ev := act(g, seat, {"a": "draw"}, msg)
+	if g.current == seat and g.phase() == "drawn":
+		ev = ev + act(g, seat, {"a": "keep"}, msg + " (behalten)")
+	return ev
+
+
 func play(g: MauGame, seat: int, key: String, msg: String, color := "") -> Array:
 	var id := RulesFixture.card(g, seat, key)
 	check(id >= 0, "%s: Karte %s auf der Hand von %d" % [msg, key, seat])
@@ -421,18 +429,42 @@ func _c_swap() -> void:
 	var r0 := g.insert_player(0, {"name": "Neu", "kind": "human"})
 	check(bool(r0.ok) and g.counter_wait == [2] and g.counter_fresh == [2], "vier: Dazuholen verschiebt counter_fresh (%s)" % str(g.counter_fresh))
 	check(RulesFixture.invariants(g) == "", "vier: Dazuholen " + RulesFixture.invariants(g))
-	# Als eigene letzte Karte: Anna tauscht nicht mit, Ben und Cleo tauschen untereinander
+	# Als eigene letzte Karte (Beta 1.6.13, Nutzerwunsch 18.10.2026): Anna tauscht mit – sie bekommt Cleos Hand, ihre leere Hand
+	# wandert zu Ben, der nun wartet (frisch: Beim ersten Ankommen gleich danach geht der Zug weiter); Cleo bekommt Bens Hand
 	g = make({"hands": [["hell_rot_tausch"], ["hell_blau_1", "hell_blau_2"], ["hell_gelb_1"]], "top": "hell_rot_5"}, sw)
 	ev = play(g, 0, "hell_rot_tausch", "Tausch als letzte Karte")
-	check(at(ev, "counter_open", 0) < at(ev, "swap_hands") and (g.hands[0] as Array).is_empty() and g.counter_wait == [0]
-		and RulesFixture.hand_keys(g, 1) == ["hell_gelb_1"] and RulesFixture.hand_keys(g, 2) == ["hell_blau_1", "hell_blau_2"] and g.current == 1,
-		"letzte Karte Tausch: ohne Anna getauscht (%s)" % str(names(ev)))
+	check(at(ev, "counter_open", 0) < at(ev, "swap_hands") and at(ev, "swap_hands") < at(ev, "countered", 0)
+		and at(ev, "countered", 0) < at(ev, "counter_open", 1) and RulesFixture.hand_keys(g, 0) == ["hell_gelb_1"]
+		and (g.hands[1] as Array).is_empty() and RulesFixture.hand_keys(g, 2) == ["hell_blau_1", "hell_blau_2"]
+		and g.counter_wait == [1] and g.counter_fresh.is_empty() and g.current == 2,
+		"letzte Karte Tausch: Anna tauscht mit, die Lücke wandert zu Ben (%s, warten %s, frisch %s, dran %d)" % [str(names(ev)),
+			str(g.counter_wait), str(g.counter_fresh), g.current])
 	var sh := find(ev, "swap_hands")
-	check(sh.counts == [0, 1, 2], "letzte Karte Tausch: Zahlen im Ereignis")
-	# zu zweit als letzte Karte: kein Tausch
+	check(sh.counts == [1, 0, 2], "letzte Karte Tausch: Zahlen im Ereignis (%s)" % str(sh.counts))
+	check(RulesFixture.invariants(g) == "", "letzte Karte Tausch: " + RulesFixture.invariants(g))
+	# … Cleo zieht, Anna spielt normal weiter; kommt der Zug zum zweiten Mal bei Ben an (ohne Karten), ist er fertig
+	_pass_turn(g, 2, "letzte Karte Tausch: Cleo zieht")
+	check(g.current == 0 and g.phase() == "turn" and RulesFixture.hand_keys(g, 0).size() >= 1, "letzte Karte Tausch: Anna ist normal dran")
+	ev = _pass_turn(g, 0, "letzte Karte Tausch: Anna zieht")
+	check(at(ev, "finish", 1) >= 0 and bool(find(ev, "finish").get("survived", false)), "letzte Karte Tausch: Ben wird fertig (%s)" % str(names(ev)))
+	# gegen den Uhrzeigersinn: Annas leere Hand geht an Cleo, Anna bekommt Bens Hand
+	g = make({"hands": [["hell_rot_tausch"], ["hell_blau_1", "hell_blau_2"], ["hell_gelb_1"]], "top": "hell_rot_5"}, ccw)
+	play(g, 0, "hell_rot_tausch", "gegen: Tausch als letzte Karte")
+	check(RulesFixture.hand_keys(g, 0) == ["hell_blau_1", "hell_blau_2"] and (g.hands[2] as Array).is_empty()
+		and RulesFixture.hand_keys(g, 1) == ["hell_gelb_1"] and g.counter_wait == [2],
+		"gegen: Anna bekommt Bens Hand, die Lücke wandert zu Cleo (warten %s)" % str(g.counter_wait))
+	# zu zweit als letzte Karte: Anna bekommt Bens Hand, Ben die leere und wartet
 	g = make({"hands": [["hell_rot_tausch"], ["hell_blau_1", "hell_blau_2"]], "top": "hell_rot_5"}, sw, 2)
 	ev = play(g, 0, "hell_rot_tausch", "zu zweit: Tausch als letzte Karte")
-	check(at(ev, "swap_hands") < 0 and (g.hands[1] as Array).size() == 2 and g.counter_wait == [0] and g.current == 1, "zu zweit: kein Tausch")
+	check(at(ev, "swap_hands") >= 0 and RulesFixture.hand_keys(g, 0) == ["hell_blau_1", "hell_blau_2"] and (g.hands[1] as Array).is_empty()
+		and g.counter_wait == [1], "zu zweit: Tausch als letzte Karte, Ben hat die leere Hand (warten %s, dran %d)" % [str(g.counter_wait), g.current])
+	check(RulesFixture.invariants(g) == "", "zu zweit: letzte Karte Tausch " + RulesFixture.invariants(g))
+	# ohne Kontern bleibt es dabei: als letzte Karte fertig, die anderen tauschen untereinander
+	g = make({"hands": [["hell_rot_tausch"], ["hell_blau_1", "hell_blau_2"], ["hell_gelb_1"], ["hell_gruen_1"]], "top": "hell_rot_5"},
+		{"swap_cards": "on", "counter_round": "off", "round_end": "last"}, 4)
+	ev = play(g, 0, "hell_rot_tausch", "ohne Kontern: Tausch als letzte Karte")
+	check(at(ev, "finish", 0) >= 0 and (g.hands[0] as Array).is_empty() and RulesFixture.hand_keys(g, 2) == ["hell_blau_1", "hell_blau_2"],
+		"ohne Kontern: Anna fertig, die anderen tauschen untereinander (%s)" % str(names(ev)))
 	# zu zweit, Anna wartet, Ben tauscht: Anna bekommt Bens Rest, Ben wartet
 	g = make({"hands": [["hell_rot_7"], ["hell_rot_tausch", "hell_blau_1"]], "top": "hell_rot_5"}, sw, 2)
 	play(g, 0, "hell_rot_7", "zu zweit: Anna")
@@ -707,7 +739,7 @@ func _c_rules_and_texts() -> void:
 			"Kontern: Wer keine Karten mehr hat, ist damit fertig. Ist es deine letzte Karte, bist du gleich fertig, und der Nächste macht weiter.",
 			"Kontern: Kommt der Zug dadurch wieder zu jemandem ohne Karten, ist er fertig.",
 			"Kontern: Mit leerer Hand bist du erst fertig, wenn dich bis zu deinem nächsten Zug keiner kontert.",
-			"Auch als letzte Karte: Die anderen tauschen untereinander, du nicht. Fertig bist du erst, wenn dich keiner kontert.",
+			"Auch als letzte Karte tauschst du mit: Du bekommst eine Hand, deine leere Hand wandert zum Nächsten – der hat dann keine Karten mehr und wartet aufs Kontern.",
 			"Kontern: Wer keine Karten mehr hat, tauscht mit und spielt weiter; wer dabei die leere Hand bekommt, hat nun selbst keine Karten mehr.",
 			"Als letzte Karte wird der Flip noch ausgeführt und wirkt ganz normal; fertig bist du erst, wenn dich keiner kontert.",
 			"Zeigt er 0 und deine Hand ist leer, kommt der Einsatz unter den Ablagestapel; fertig bist du erst, wenn dich keiner kontert.",
@@ -744,6 +776,18 @@ func _c_bots() -> void:
 	spec.hands = [[], ["hell_blau_1", "hell_blau_2"], ["hell_rot_tausch", "hell_rot_9", "hell_rot_8"]]
 	g = RulesFixture.build(ccfg({"swap_cards": "on"}), 3, spec)
 	check(int(MauBot.choose(g.view_for(2), 7, 2).get("card", -1)) == RulesFixture.card(g, 2, "hell_rot_tausch"), "Bot kontert mit Kartentausch")
+	# Beta 1.6.13: Nur noch der Kartentausch auf der Hand (niemand wartet): Als letzte Karte bekäme der Bot die Hand seiner Vorgängerin –
+	# er zieht lieber; ohne Kontern legt er ihn (dann ist er fertig)
+	spec = {"hands": [["hell_gelb_1", "hell_gelb_2", "hell_gelb_3"], ["hell_blau_1", "hell_blau_2"], ["hell_rot_tausch"]], "top": "hell_rot_5",
+		"current": 2}
+	g = make(spec, {"swap_cards": "on"})
+	all_ok = true
+	for seed_i in 10:
+		if str(MauBot.choose(g.view_for(2), seed_i, 2).get("a", "")) != "draw":
+			all_ok = false
+	check(all_ok and MauBot.swap_value(g.view_for(2)) < -6.0, "Bot legt den Kartentausch nicht als letzte Karte (Kontern), er zieht")
+	g = RulesFixture.build(ccfg({"swap_cards": "on", "counter_round": "off"}), 3, spec)
+	check(int(MauBot.choose(g.view_for(2), 3, 2).get("card", -1)) == RulesFixture.card(g, 2, "hell_rot_tausch"), "ohne Kontern: letzte Karte Tausch, Bot legt ihn")
 	# Richtungswechsel zur wartenden Vorgängerin (Ben wartet, Cleo dran): lieber nicht
 	spec = {"hands": [["hell_gelb_1", "hell_gelb_2"], [], ["hell_rot_richtungswechsel", "hell_rot_9", "hell_blau_8"]], "top": "hell_rot_5",
 		"current": 2, "counter": [1]}

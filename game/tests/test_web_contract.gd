@@ -720,6 +720,7 @@ func serve_check() -> void:
 	for pair in [["sfx/mau.m4a", "audio/mp4"], ["sfx/mau.ogg", "audio/ogg"], ["sfx/mau_mau.m4a", "audio/mp4"], ["sfx/mau_mau.ogg", "audio/ogg"],
 			["cards/hell_rot_7.webp", "image/webp"], ["cards/rueckseite.webp", "image/webp"], ["bilder/katze.webp", "image/webp"], ["bilder/logo.webp", "image/webp"],
 			["bilder/reaktionen/daumen.svg", "image/svg+xml"], ["bilder/reaktionen/schreck.svg", "image/svg+xml"], ["bilder/reaktionen/baeh.svg", "image/svg+xml"],
+			["bilder/reaktionen/heulen.svg", "image/svg+xml"], ["bilder/reaktionen/facepalm.svg", "image/svg+xml"],
 			["fonts/" + woff, "font/woff2"], ["wach.mp4", "video/mp4"]]:
 		var r := await http_get(server, "/" + str(pair[0]))
 		check(int(r.status) == 200 and str(r.type).contains(pair[1]) and (r.body as PackedByteArray).size() > 500,
@@ -1087,10 +1088,10 @@ func pruefe_necken(tisch: String, app: String, seite: String) -> void:
 			and tisch.find("if (k) this.app.aktion({ a: 'catch'") < tisch.find("M.Necken.tippGegner("), "tisch.js: Erwischt geht vor, Kopf-Tipp → Necken-Menü, Reaktionsknopf nach jedem Abgleich")
 	# Beta 1.6.5 (Nutzer 15.10.2026): Reaktionen als Fluent-Emoji-Bilder, dieselben Dateien wie die App (game/assets/ui/reaktionen/),
 	# samt Lizenz; Reihenfolge der Knöpfe Lachen, Klatschen, Daumen hoch, Schreck; das Schrift-Emoji nur als Rückfall
-	check(nk.contains("const REAKT_REIHE = ['lachen', 'klatschen', 'daumen', 'schreck', 'baeh'];") and nk.contains("'bilder/reaktionen/' + r + '.svg'")
+	check(nk.contains("const REAKT_REIHE = ['lachen', 'klatschen', 'daumen', 'schreck', 'baeh', 'heulen', 'facepalm'];") and nk.contains("'bilder/reaktionen/' + r + '.svg'")
 			and nk.contains("img.addEventListener('error', () => img.remove());"), "necken.js: Reaktionsknöpfe in fester Reihenfolge mit Bildern, Emoji als Rückfall")
 	check(FileAccess.file_exists(web_dir.path_join("bilder/reaktionen/LIZENZ.md")), "webclient/bilder/reaktionen/LIZENZ.md (Fluent Emoji, MIT)")
-	for r in ["lachen", "klatschen", "daumen", "schreck", "baeh"]:
+	for r in ["lachen", "klatschen", "daumen", "schreck", "baeh", "heulen", "facepalm"]:
 		var web_svg := FileAccess.get_file_as_bytes(web_dir.path_join("bilder/reaktionen/%s.svg" % r))
 		var app_svg := FileAccess.get_file_as_bytes("res://assets/ui/reaktionen/%s.svg" % r)
 		check(web_svg.size() > 1000 and web_svg == app_svg, "webclient/bilder/reaktionen/%s.svg gleich dem Bild der App" % r)
@@ -1117,7 +1118,7 @@ func pruefe_necken(tisch: String, app: String, seite: String) -> void:
 	check(nk.contains("if (req.k === CUSHION) m.reveal = req.reveal === true;") and nk.contains("if (f.k === CUSHION && f.from !== v.seat) return false;")
 			and nk.contains("this._ton('furzkissen', ziel ? 1 : LEISE)"), "necken.js: Kissen-Wunsch mit reveal, Bestätigung nur vom eigenen Platz, Ton beim Ziel normal, sonst leise")
 	var ton := read_web("ton.js")
-	var toene := ["schnarchen", "wecker", "papier_wurf", "papier_plopp", "lachen", "schreck", "klatschen", "daumen", "furzkissen", "baeh"]
+	var toene := ["schnarchen", "wecker", "papier_wurf", "papier_plopp", "lachen", "schreck", "klatschen", "daumen", "furzkissen", "baeh", "heulen", "facepalm"]
 	check(ton.contains(liste.call("NECK_TOENE", toene)) and ton.contains("function stoppe(name, ms)") and ton.contains("function spiele(name, pegel)"),
 		"ton.js: Neck-Töne, spiele mit Pegel, stoppe mit Rampe")
 	check(nk.contains("const LEISE = 0.25;") and nk.contains("this._rt.length >= 2") and nk.contains("< 600"), "necken.js: leise −12 dB, Reaktionstöne höchstens 2 gleichzeitig, 600 ms je Name")
@@ -1136,11 +1137,18 @@ func pruefe_necken(tisch: String, app: String, seite: String) -> void:
 	# Beta 1.6.11: fünfte Reaktion „Bäää“ – derselbe Ton wie in der App, Dauer wie TeaseFx.REACT_LEN_MS (Deckel der Reaktionstöne)
 	check(FileAccess.get_file_as_bytes(web_dir.path_join("sfx/baeh.ogg")) == FileAccess.get_file_as_bytes("res://assets/sfx/baeh.ogg"), "webclient/sfx/baeh.ogg gleich dem Ton der App")
 	# (Quelltext statt TeaseFx: die Klasse lädt die Bilder, die beim Beenden als „still in use“ gemeldet würden)
-	var lm := RegEx.create_from_string('const REACT_LEN_MS := \\{"lachen": (\\d+), "schreck": (\\d+), "klatschen": (\\d+), "daumen": (\\d+), "baeh": (\\d+)\\}') \
+	# Beta 1.6.13: sechste und siebte Reaktion „Heulen“ (😭) und „Facepalm“ (🤦) ebenso
+	var lm := RegEx.create_from_string('const REACT_LEN_MS := \\{"lachen": (\\d+), "schreck": (\\d+), "klatschen": (\\d+), "daumen": (\\d+), "baeh": (\\d+), "heulen": (\\d+), "facepalm": (\\d+)\\}') \
 		.search(FileAccess.get_file_as_string("res://scripts/ui/tease_fx.gd"))
-	check(lm != null and nk.contains("const REAKT_MS = { lachen: %s, schreck: %s, klatschen: %s, daumen: %s, baeh: %s };" % [lm.get_string(1), lm.get_string(2),
-			lm.get_string(3), lm.get_string(4), lm.get_string(5)]) and nk.contains("baeh: ['😝', 'Bäää']"),
+	check(lm != null and nk.contains("const REAKT_MS = { lachen: %s, schreck: %s, klatschen: %s, daumen: %s, baeh: %s, heulen: %s, facepalm: %s };" % [lm.get_string(1),
+			lm.get_string(2), lm.get_string(3), lm.get_string(4), lm.get_string(5), lm.get_string(6), lm.get_string(7)]) and nk.contains("baeh: ['😝', 'Bäää']")
+			and nk.contains("heulen: ['😭', 'Heulen'], facepalm: ['🤦', 'Facepalm']"),
 		"necken.js: Tondauern und Rückfall-Emoji der Reaktionen wie die App")
+	for r_new in ["heulen", "facepalm"]:
+		check(FileAccess.get_file_as_bytes(web_dir.path_join("sfx/%s.ogg" % r_new)) == FileAccess.get_file_as_bytes("res://assets/sfx/%s.ogg" % r_new),
+			"webclient/sfx/%s.ogg gleich dem Ton der App" % r_new)
+	check(nk.contains("const REAKT_SPALTEN = %d;" % TeaseMenu.REACT_COLS) and nk.contains("reihe: [SP, Math.ceil(NR / SP)]") and nk.contains("zeile: [NR, 1]"),
+		"necken.js: Leiste nach %d Knöpfen umgebrochen wie die App (TeaseMenu.REACT_COLS), eine Reihe nur in der Zeile „Du“" % TeaseMenu.REACT_COLS)
 
 
 # Beta 1.6.12 „Natur-Überraschungen“ (docs/module/natur.md 8.3): Gleichlauf webclient/natur.js ↔ NatureTable.DATA, Ladereihenfolge in

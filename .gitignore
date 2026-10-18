@@ -43,3 +43,6 @@ docs/recherche/_lokal/
 
 # Bestätigungsbilder des Play-Protect-Einspruchs zeigen das Google-Konto – nur lokal
 docs/play_protect/*.jpg
+
+# Zwischendateien der Reaktions-Aufnahmen (tools/make_reaktion_aufnahmen.py, WAV)
+audio/entwurf/reaktion_aufnahmen/tmp/

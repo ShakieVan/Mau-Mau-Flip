@@ -223,7 +223,7 @@ func run() -> void:
 	# --- Aufbau
 	check(tf.layer != null and tf.layer.get_parent() == t.get("_overlay"), "Effekt-Ebene liegt in den Overlays des Tisches")
 	check(tf.reactions.get_index() > t.round_end.get_index() and tf.reactions.get_index() < t.handover.get_index(), "Reaktionsknöpfe über dem Rundenende, unter dem Sichtschutz")
-	check(tf.reactions.visible and tf.reactions.centers.size() == 5, "5 Reaktionsknöpfe am eigenen Platz sichtbar (Netz, Necken an; 1.6.11: mit Bäää)")
+	check(tf.reactions.visible and tf.reactions.centers.size() == 7, "7 Reaktionsknöpfe am eigenen Platz sichtbar (Netz, Necken an; 1.6.11: mit Bäää, 1.6.13: mit Heulen und Facepalm)")
 	# Gerätetest 1.6.3: nicht über Farbrad, Rückseiten-Großansicht, Kartenhilfe und Rückfragen/Menüs (modal_cb, TableScreen)
 	t.wish_picker.open_wheel("hell")
 	tf.tick(0.016)
@@ -588,18 +588,19 @@ func run() -> void:
 	check(t.backs_viewer.visible and tf.menu == null, "Rückseiten sichtbar: Fächer öffnet wie bisher die Großansicht")
 	t.backs_viewer.visible = false
 
-	# --- Beta 1.6.5: Reaktionsknöpfe (1.6.11: fünf), ein echter Tipp je Knopf sendet genau diese Reaktion; Hindernisse für die Sofort-Leiste
+	# --- Beta 1.6.5: Reaktionsknöpfe (1.6.11: fünf, 1.6.13: sieben), ein echter Tipp je Knopf sendet genau diese Reaktion; Hindernisse für die Sofort-Leiste
 	clock += 10000                   # eigener Reaktions-Eimer wieder voll
 	tf.tick(0.2)
 	src.sent.clear()
-	check(TeaseMenu.REACT_ORDER == ["lachen", "klatschen", "daumen", "schreck", "baeh"], "Reihenfolge Lachen, Klatschen, Daumen hoch, Schreck, Bäää")
+	check(TeaseMenu.REACT_ORDER == ["lachen", "klatschen", "daumen", "schreck", "baeh", "heulen", "facepalm"],
+		"Reihenfolge Lachen, Klatschen, Daumen hoch, Schreck, Bäää, Heulen, Facepalm")
 	# Beta 1.6.5: Reaktionen als feste Bilder (Fluent Emoji, SVG, wie im Browser), scharf genug für groß: ≥ 384 px, mit Mipmaps
-	var tex_ok := TeaseFx.REACT_TEX.keys().size() == 5
+	var tex_ok := TeaseFx.REACT_TEX.keys().size() == 7
 	for r_name in TeaseMenu.REACT_ORDER:
 		var tex: Texture2D = TeaseFx.REACT_TEX.get(r_name)
 		tex_ok = tex_ok and tex != null and tex.get_width() >= 384 and tex.get_height() == tex.get_width() \
 			and tex.get_image().has_mipmaps() and tex.resource_path == "res://assets/ui/reaktionen/%s.svg" % r_name
-	check(tex_ok, "5 Reaktionsbilder aus assets/ui/reaktionen (SVG, ≥ 384 px, Mipmaps)")
+	check(tex_ok, "7 Reaktionsbilder aus assets/ui/reaktionen (SVG, ≥ 384 px, Mipmaps)")
 	var img_d := (TeaseFx.REACT_TEX["daumen"] as Texture2D).get_image()
 	img_d.decompress()
 	var opaque := 0
@@ -619,10 +620,19 @@ func run() -> void:
 		var p1: Vector2 = rb.centers[i]
 		order_ok = order_ok and ((absf(p1.y - p0.y) < 1.0 and p1.x > p0.x) or p1.y > p0.y + rb.r)
 	check(order_ok, "Knöpfe in Lesereihenfolge (%s)" % str(rb.centers))
+	# Beta 1.6.13 (Nutzerwunsch): normale Ansicht nach 4 umgebrochen – höchstens 4 je Reihe, hier Block 4 + 3 mit mittiger zweiter Reihe
+	var per_row := {}
+	for c: Vector2 in rb.centers:
+		per_row[roundi(c.y)] = int(per_row.get(roundi(c.y), 0)) + 1
+	check(per_row.values().max() <= TeaseMenu.REACT_COLS and per_row.size() == 2, "nach 4 umgebrochen: Block 4 + 3 (%s)" % str(per_row))
+	var row1_mid := (rb.centers[0].x + rb.centers[3].x) * 0.5
+	var row2_mid := (rb.centers[4].x + rb.centers[6].x) * 0.5
+	check(absf(row1_mid - row2_mid) < 1.0 and is_equal_approx(rb.centers[0].y, rb.centers[3].y) and rb.centers[4].y > rb.centers[0].y + rb.r,
+		"zweite Reihe (Bäää, Heulen, Facepalm) mittig unter der ersten (%.0f / %.0f)" % [row1_mid, row2_mid])
 	var labels: Array = []
 	for i in TeaseMenu.REACT_ORDER.size():
 		labels.append(rb._get_tooltip(rb.centers[i]))
-	check(labels == ["Lachen", "Klatschen", "Daumen hoch", "Schreck", "Bäää"], "Hilfetexte je Knopf (%s)" % str(labels))
+	check(labels == ["Lachen", "Klatschen", "Daumen hoch", "Schreck", "Bäää", "Heulen", "Facepalm"], "Hilfetexte je Knopf (%s)" % str(labels))
 	for i in TeaseMenu.REACT_ORDER.size():
 		clock += 10000
 		tf.tick(0.2)
@@ -633,7 +643,7 @@ func run() -> void:
 	clock += 10000
 	tf.tick(0.2)
 	src.sent.clear()
-	tap_screen(rb.get_global_transform_with_canvas() * ((rb.centers[0] + rb.centers[1]) * 0.5 + Vector2(0, rb.r + 14.0)))
+	tap_screen(rb.get_global_transform_with_canvas() * ((rb.centers[0] + rb.centers[1]) * 0.5 - Vector2(0, rb.r + 14.0)))   # 1.6.13: darüber (darunter liegt die zweite Reihe)
 	check(src.sent.is_empty(), "Tipp neben die Knöpfe sendet nichts")
 	var me_p := t.get_global_transform().affine_inverse() * t.me_badge.avatar_global()
 	check(not t._tap(me_p) and src.sent.is_empty(), "Tipp aufs eigene Namensschild: kein Fächer, nichts gesendet")
@@ -707,12 +717,27 @@ func run() -> void:
 	var row_g := Rect2(badge.to_global(badge.list_rect().position), badge.list_rect().size)
 	var count_g := badge.to_global(badge.count_rect().position).x
 	var rbg := Rect2(tf.reactions.get_global_transform_with_canvas() * tf.reactions.bounds().position, tf.reactions.bounds().size)
-	check(tf.reactions.visible and row_g.grow(2.0).encloses(rbg.grow(-4.0)), "großer Modus: Knöpfe in der Zeile „Du“ (%s in %s)" % [rbg, row_g])
-	check(rbg.end.x - 4.0 <= count_g, "großer Modus: Knöpfe vor der großen Kartenzahl")
-	check(tf.reactions.r >= 22.0 and badge.row_reserve > tf.reactions.r * 2.0 * TeaseMenu.REACT_ORDER.size(), "großer Modus: Knöpfe ≥ 44 px, Zeile kürzt den Namen (r %.0f, Platz %.0f)" % [tf.reactions.r, badge.row_reserve])
-	var name_room: float = rbg.position.x - badge.to_global(Vector2(-badge.row_size.x * 0.5 + 12.0 + badge.avatar_radius() * 2.0 + 14.0, 0)).x
-	var du_w := UiFonts.text(800, 100.0).get_string_size("Du", HORIZONTAL_ALIGNMENT_LEFT, -1, mini(UiFonts.px(36), int(badge.row_size.y * 0.46))).x
-	check(name_room >= du_w, "großer Modus: „Du“ passt noch vor die Knöpfe (%.0f ≥ %.0f)" % [name_room, du_w])
+	check(tf.reactions.r >= 22.0, "großer Modus: Knöpfe ≥ 44 px (r %.0f)" % tf.reactions.r)
+	if badge.row_reserve > 0.0:
+		check(tf.reactions.visible and row_g.grow(2.0).encloses(rbg.grow(-4.0)), "großer Modus: Knöpfe in der Zeile „Du“ (%s in %s)" % [rbg, row_g])
+		check(rbg.end.x - 4.0 <= count_g, "großer Modus: Knöpfe vor der großen Kartenzahl")
+		check(badge.row_reserve > tf.reactions.r * 2.0 * TeaseMenu.REACT_ORDER.size(), "großer Modus: Zeile kürzt den Namen (Platz %.0f)" % badge.row_reserve)
+		var name_room: float = rbg.position.x - badge.to_global(Vector2(-badge.row_size.x * 0.5 + 12.0 + badge.avatar_radius() * 2.0 + 14.0, 0)).x
+		var du_w := UiFonts.text(800, 100.0).get_string_size("Du", HORIZONTAL_ALIGNMENT_LEFT, -1, mini(UiFonts.px(36), int(badge.row_size.y * 0.46))).x
+		check(name_room >= du_w, "großer Modus: „Du“ passt noch vor die Knöpfe (%.0f ≥ %.0f)" % [name_room, du_w])
+	else:
+		# Beta 1.6.13: sieben Knöpfe passen hier nicht in die Zeile – Block 4 + 3 außerhalb der Liste, Zeile „Du“ ungekürzt
+		var rows_ok := true
+		var by_row := {}
+		for c: Vector2 in tf.reactions.centers:
+			by_row[roundi(c.y)] = int(by_row.get(roundi(c.y), 0)) + 1
+		for sn in [badge] + (t.get("_seats") as Dictionary).values():
+			if sn != null and (sn as OpponentSeat).is_visible_in_tree():
+				var slr := (sn as OpponentSeat).list_rect()
+				rows_ok = rows_ok and not Rect2((sn as OpponentSeat).to_global(slr.position), slr.size).intersects(rbg.grow(-4.0))
+		var sort_g: Rect2 = (t.get("_sort_btn") as Control).get_global_rect()
+		check(rows_ok and not sort_g.intersects(rbg.grow(-4.0)) and by_row.size() == 2 and by_row.values().max() <= TeaseMenu.REACT_COLS,
+			"großer Modus, zu schmal für eine Reihe: Block 4 + 3 neben der Liste, nicht über Sortieren (%s, %s)" % [rbg, str(by_row)])
 	src.sent.clear()
 	clock += 10000
 	tf.tick(0.2)
@@ -1070,7 +1095,7 @@ func surprise_checks() -> void:
 				"Katze + Schmetterling: Tipp „%s“ sendet das Kissen, Katze bleibt (%s, %s)" % [keys[i], str(src.sent), fun.cat.st])
 		else:
 			check(src.sent == [{"k": keys[i], "to": 1}] and tf.menu == null and fun.cat.st == "sleep", "Katze: Tipp „%s“ sendet (%s)" % [keys[i], str(src.sent)])
-	# die 5 Reaktionsknöpfe (1.6.11: mit Bäää)
+	# die 7 Reaktionsknöpfe (1.6.11: mit Bäää, 1.6.13: mit Heulen und Facepalm)
 	var rb := tf.reactions
 	for i in TeaseMenu.REACT_ORDER.size():
 		clock += 10000

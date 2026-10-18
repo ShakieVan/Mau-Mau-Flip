@@ -1036,6 +1036,13 @@ msgstr "Thumbs up"
 msgid "Bäää"
 msgstr "Bleh!"
 
+# Beta 1.6.13: sechste und siebte Reaktion 😭 (Heulen) und 🤦 (Facepalm)
+msgid "Heulen"
+msgstr "Cry"
+
+msgid "Facepalm"
+msgstr "Facepalm"
+
 # --- Furzkissen (Beta 1.6.6, docs/module/eastereggs2.md 12.4; Glossar: Furzkissen → whoopee cushion)
 # Beta 1.6.10: zwei runde Menüknöpfe statt der Zeile „Furzkissen“ mit „Mit Namen“/„Geheim“
 msgid "Kissen geheim"

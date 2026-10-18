@@ -1,8 +1,9 @@
 # Reaktions-Emojis
 
-`lachen.svg` (😂), `klatschen.svg` (👏), `daumen.svg` (👍), `schreck.svg` (😱) und `baeh.svg` (😝, ab 1.6.11, „Squinting face with tongue“) sind unveränderte Bilder aus
+`lachen.svg` (😂), `klatschen.svg` (👏), `daumen.svg` (👍), `schreck.svg` (😱), `baeh.svg` (😝, ab 1.6.11, „Squinting face with tongue“), `heulen.svg` (😭, ab 1.6.13, „Loudly crying face“) und `facepalm.svg`
+(🤦, ab 1.6.13, „Person facepalming“, Hautton „Default“, Ordner `assets/Person facepalming/Default/Color/`) sind unveränderte Bilder aus
 **Microsoft Fluent Emoji**, Stil „Color“ (https://github.com/microsoft/fluentui-emoji, Ordner `assets/…/Color/`),
-geladen am 15.10.2026 auf Wunsch des Nutzers (gleiches Aussehen auf allen Geräten wie unter Windows 11).
+geladen am 15.10.2026 (Heulen und Facepalm am 18.10.2026) auf Wunsch des Nutzers (gleiches Aussehen auf allen Geräten wie unter Windows 11).
 
 Lizenz der Bilder (MIT):
 

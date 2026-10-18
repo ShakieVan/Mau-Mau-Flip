@@ -19,7 +19,8 @@
   // „leise“ (Absender, Zuschauer), stoppe(name, ms) blendet laufende Töne aus (Schnarchen beim Wecker-Abstellen).
   // Beta 1.6.6: dazu das Furzkissen (furzkissen = audio/entwurf/ostereier/furzkissen_02, Nutzerwahl)
   // Beta 1.6.11: fünfte Reaktion „Bäää“ (baeh, gewählt: audio/entwurf/ostereier/baeh_05, Prusten)
-  const NECK_TOENE = ['schnarchen', 'wecker', 'papier_wurf', 'papier_plopp', 'lachen', 'schreck', 'klatschen', 'daumen', 'furzkissen', 'baeh'];
+  // Beta 1.6.13: sechste und siebte Reaktion „Heulen“ (heulen) und „Facepalm“ (facepalm): Aufnahmen des Nutzers, +6 Halbtöne (nur6, tools/make_reaktion_aufnahmen.py)
+  const NECK_TOENE = ['schnarchen', 'wecker', 'papier_wurf', 'papier_plopp', 'lachen', 'schreck', 'klatschen', 'daumen', 'furzkissen', 'baeh', 'heulen', 'facepalm'];
   const JUBEL = ['jubel_1', 'jubel_2'];   // „sieg“ wählt zufällig eine der beiden Jubel-Aufnahmen (sonst synthetischer Ersatz)
   // Pegel je Stufe: Die Aufnahmen sind auf −1 dBTP ausgesteuert und verdichtet → „normal“ = volle Lautstärke (Handy-Lautsprecher)
   const STUFEN_MAU = { aus: 0, leise: 0.4, normal: 1.0 };

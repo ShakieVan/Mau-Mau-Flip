@@ -123,6 +123,10 @@ $bilder = [ordered]@{
     gross_hk = @{ q = '&dran=1&gross=1'; w = 390; h = 844; ms = 900; pre = '' }
     rundenende_baeh = @{ q = '&szene=rundenende'; w = 844; h = 390; ms = 1800; pre = (Z 900 "$N.zeige({k:'react',from:0,r:'baeh'})") }
     desktop_baeh = @{ q = '&dran=1'; w = 1600; h = 900; ms = 900; pre = (Z 300 "$N.zeige({k:'react',from:0,r:'baeh'})") }
+    # Beta 1.6.13 (-Stand 1613 -Nur quer_tag,…,heulen_facepalm): sieben Reaktionen mit „Heulen“ (😭) und „Facepalm“ (🤦), neben „Du“
+    # als Block 4 + 3 (nach 4 umgebrochen); dazu die neuen Bilder beim Aufsteigen
+    heulen_facepalm = @{ q = '&dran=1'; w = 844; h = 390; ms = 900; pre = (Z 300 "$N.zeige({k:'react',from:0,r:'heulen'});$N.zeige({k:'react',from:1,r:'facepalm'});$N.zeige({k:'react',from:3,r:'heulen'})") }
+    heulen_facepalm_nacht = @{ q = '&dran=1&seite=dunkel'; w = 844; h = 390; ms = 900; pre = (Z 300 "$N.zeige({k:'react',from:0,r:'facepalm'});$N.zeige({k:'react',from:2,r:'heulen'})") }
 }
 $auswahl = @($Nur.Split(',') | Where-Object { $_ })
 foreach ($name in $bilder.Keys) {
