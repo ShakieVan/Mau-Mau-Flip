@@ -112,14 +112,14 @@ static func card_help(key: String, config: RuleConfig = null) -> Array[String]:
 			out.append(_t("Passt auf %s und auf jedes Aussetzen.") % color)
 			out.append(_t("Zu zweit bist du gleich noch einmal dran."))
 			if cfg.counter_round == "on":
-				out.append(_t("Kontern: Hat der Nächste keine Karten mehr, ist er damit fertig – er wird ja übersprungen."))
+				out.append(_t("Kontern: Hat der Nächste keine Karten mehr, ist er damit fertig – er wird ja übersprungen. Als deine letzte Karte zu zweit setzt der andere nicht aus: Er darf noch kontern."))
 		"alle_aussetzen":
 			out.append(_t("Alle anderen setzen aus: Du bist sofort noch einmal dran und legst oder ziehst ganz normal."))
 			out.append(_t("Passt auf %s und auf jedes Alle aussetzen.") % color)
 			if cfg.round_end == "last" and cfg.counter_round != "on":
 				out.append(_t("Bist du damit fertig, macht der Nächste weiter."))
 			if cfg.counter_round == "on":
-				out.append(_t("Kontern: Wer keine Karten mehr hat, ist damit fertig. Ist es deine letzte Karte, bist du gleich fertig, und der Nächste macht weiter."))
+				out.append(_t("Kontern: Wer keine Karten mehr hat, ist damit fertig. Ist es deine letzte Karte, ist trotzdem der Nächste dran, damit er kontern kann."))
 		"richtungswechsel":
 			out.append(_t("Die Spielrichtung dreht sich um."))
 			out.append(_t("Passt auf %s und auf jeden Richtungswechsel.") % color)
@@ -128,7 +128,7 @@ static func card_help(key: String, config: RuleConfig = null) -> Array[String]:
 			else:
 				out.append(_t("Zu zweit hat er keine Wirkung."))
 			if cfg.counter_round == "on":
-				out.append(_t("Kontern: Kommt der Zug dadurch wieder zu jemandem ohne Karten, ist er fertig."))
+				out.append(_t("Kontern: Kommt der Zug dadurch wieder zu jemandem ohne Karten, ist er fertig. Als deine letzte Karte zu zweit ist der andere trotzdem dran: Er darf noch kontern."))
 		"flip":
 			if cfg.flip_mode == "card":
 				out.append(_t("Wendet Nachziehstapel, alle Hände und sich selbst. Danach gilt die %s.") % tr_side(other))
@@ -421,7 +421,7 @@ static func overview(config: RuleConfig = null) -> Array[Dictionary]:
 			mau = _t("In diesen Regeln wird nicht „Mau!“ gerufen.")
 	out.append({"title": "Mau!", "text": mau})
 	if cfg.counter_round == "on":
-		out.append({"title": _t("Kontern"), "text": _t("Hausregel: Wer keine Karten mehr hat, ist noch nicht fertig, sondern bleibt mit 0 Karten in der Runde. Bekommt er Karten, bevor der Zug wieder bei ihm ankommt – durch eine Ziehkarte, eine Strafe, einen Kartentausch oder eine Flip-Überraschung –, spielt er ganz normal weiter. Kommt der Zug wieder bei ihm an oder wird er übersprungen, ist er fertig. Ein Richtungswechsel kann das abkürzen oder verlängern. Das gilt für jede letzte Karte, auch beim Glücksspiel und beim Farbe-Ablegen.")})
+		out.append({"title": _t("Kontern"), "text": _t("Hausregel: Wer keine Karten mehr hat, ist noch nicht fertig, sondern bleibt mit 0 Karten in der Runde. Bekommt er Karten, bevor der Zug wieder bei ihm ankommt – durch eine Ziehkarte, eine Strafe, einen Kartentausch oder eine Flip-Überraschung –, spielt er ganz normal weiter. Kommt der Zug wieder bei ihm an oder wird er übersprungen, ist er fertig. Ein Richtungswechsel kann das abkürzen oder verlängern. Das gilt für jede letzte Karte, auch beim Glücksspiel und beim Farbe-Ablegen. Nach der letzten Karte ist immer noch mindestens ein anderer Spieler dran, auch wenn die Karte jemanden aussetzen lässt.")})
 	var special := _t("Ist der Nachziehstapel leer, wird die Ablage außer der obersten Karte gemischt. Sind beide leer, entfällt das Ziehen. Wiederholt sich bei fast leeren Stapeln dieselbe Lage zum dritten Mal, endet die Runde; vorn liegt, wer die wenigsten Karten hat.")
 	if cfg.two_player_reverse_skips:
 		special += " " + _t("Zu zweit wirkt der Richtungswechsel wie Aussetzen.")

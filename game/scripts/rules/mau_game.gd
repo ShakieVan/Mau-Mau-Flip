@@ -121,6 +121,9 @@ var counter_wait: Array = []     # Hausregel Kontern: Plätze ohne Karten in der
 var counter_done := -1           # Hausregel Kontern: eben nach überstandener Konter-Runde fertig (Hinweis bis zur nächsten Handlung)
 var counter_fresh: Array = []    # Hausregel Kontern: Wartende, die außerhalb ihres Zugs leer wurden (leere Hand beim Kartentausch);
                                  # der Zug kommt bei ihnen erst noch an: beim ersten Ankommen geht er weiter, beim nächsten sind sie fertig
+var counter_guard: Array = []    # Kontern (Beta 1.6.14, Nutzerbefund 18.10.2026): Wartende, die in ihrem eigenen Zug leer wurden und nach
+                                 # denen noch kein anderer dran war. Kommt der Zug zu ihnen zurück (z. B. zu zweit nach Aussetzen), geht er
+                                 # weiter – nach der letzten Karte ist immer noch mindestens ein anderer dran und kann kontern.
 
 var _valid := true              # false bei ungültiger Spielerzahl: start_round() und apply() lehnen ab
 var _forced_rolls: Array = []   # Testhaken (force_rolls): vorgegebene Ergebnisse der nächsten Drucke, nicht gespeichert
@@ -439,6 +442,12 @@ func _remap(map: Array, new_n: int) -> void:
 		if t >= 0 and counter_wait.has(t):
 			cf.append(t)
 	counter_fresh = cf
+	var cg: Array = []
+	for s in counter_guard:
+		var t: int = m.call(int(s))
+		if t >= 0 and counter_wait.has(t):
+			cg.append(t)
+	counter_guard = cg
 	counter_done = int(m.call(counter_done))
 	for id in dlog:
 		var e: Dictionary = dlog[id]
@@ -1074,6 +1083,7 @@ func _start(ev: Array) -> void:
 	dpick = {}
 	counter_wait = []
 	counter_fresh = []
+	counter_guard = []
 	counter_done = -1
 	for s in n:
 		mau_said[s] = false
@@ -1126,10 +1136,13 @@ func _reveal_start_card(ev: Array) -> void:
 func _new_turn(seat: int, ev: Array) -> void:
 	# Kontern: Käme der Zug wieder bei einem Wartenden an, hat er die Konter-Runde überstanden und ist fertig; dran ist der Nächste.
 	while counter_wait.has(seat):
-		if counter_fresh.has(seat):
+		if counter_fresh.has(seat) or counter_guard.has(seat):
 			# Leer geworden, ohne dran gewesen zu sein (Kartentausch): Der Zug kommt erst jetzt bei ihm an. Er wartet weiter,
 			# dran ist der Nächste; fertig ist er beim nächsten Ankommen (oder wenn er übersprungen wird).
+			# Beta 1.6.14: ebenso, wenn er in seinem Zug leer wurde und seitdem noch kein anderer dran war (Alle aussetzen als
+			# letzte Karte): Nach der letzten Karte ist immer noch mindestens ein anderer dran und kann kontern.
 			counter_fresh.erase(seat)
+			counter_guard.erase(seat)
 			seat = _next_in(seat, dir)
 			continue
 		_counter_final(seat, ev)
@@ -1137,6 +1150,7 @@ func _new_turn(seat: int, ev: Array) -> void:
 			_end_round("fertig", ev)
 			return
 		seat = _next_in(seat, dir)
+	counter_guard.clear()                # ein anderer ist dran: Ab jetzt beendet das Ankommen die Konter-Runde
 	current = seat
 	state = "turn"
 	turn_started = false
@@ -1173,6 +1187,10 @@ func _stalled() -> bool:
 # Weiter zum nächsten aktiven Platz nach from; skip überspringt einen.
 func _advance(from: int, skip: bool, ev: Array) -> void:
 	var nxt := _next_active(from)
+	if skip and counter_guard.has(from) and _next_active(nxt) == from:
+		# Kontern (Beta 1.6.14, Nutzerbefund): zu zweit Aussetzen bzw. Richtungswechsel als eigene letzte Karte – der andere setzt
+		# nicht aus, sonst hätte er keinen Zug mehr, um zu kontern
+		skip = false
 	if skip:
 		ev.append({"e": "skip", "seat": nxt})
 		if counter_wait.has(nxt):
@@ -1604,6 +1622,8 @@ func _emptied(p: int, ev: Array) -> bool:
 		return true
 	if not counter_wait.has(p):
 		counter_wait.append(p)
+	if p == current and not counter_guard.has(p):
+		counter_guard.append(p)          # im eigenen Zug leer geworden: Erst muss noch ein anderer dran sein (siehe _new_turn)
 	mau_said[p] = false
 	if mau_open == p:
 		mau_open = -1
@@ -1615,6 +1635,7 @@ func _emptied(p: int, ev: Array) -> bool:
 func _countered(s: int, ev: Array) -> void:
 	counter_wait.erase(s)
 	counter_fresh.erase(s)
+	counter_guard.erase(s)
 	ev.append({"e": "countered", "seat": s})
 
 
@@ -1623,6 +1644,7 @@ func _countered(s: int, ev: Array) -> void:
 func _counter_final(s: int, ev: Array) -> void:
 	counter_wait.erase(s)
 	counter_fresh.erase(s)
+	counter_guard.erase(s)
 	_finish(s, ev)
 	(ev.back() as Dictionary)["survived"] = true
 	counter_done = s
@@ -1709,6 +1731,7 @@ func _end_round(reason: String, ev: Array) -> void:
 	gamble = {}
 	counter_wait = []                # Kontern: Wartende sind oben nach ihren (0) Karten eingeordnet
 	counter_fresh = []
+	counter_guard = []
 	result = {"ranking": ranking, "points": pts, "gains": gains, "scores": scores.duplicate(), "hands": shown,
 		"reason": reason, "side": SIDES[side], "round": round_no}
 	ev.append({"e": "round_over", "ranking": ranking.duplicate(), "scores": scores.duplicate(), "points": pts.duplicate(),
@@ -2348,6 +2371,8 @@ func to_dict() -> Dictionary:
 		d["counter"] = {"wait": counter_wait.duplicate(), "done": counter_done}
 		if not counter_fresh.is_empty():
 			(d["counter"] as Dictionary)["fresh"] = counter_fresh.duplicate()
+		if not counter_guard.is_empty():
+			(d["counter"] as Dictionary)["guard"] = counter_guard.duplicate()   # Beta 1.6.14; ältere Gastgeber übergehen das Feld
 	if config.flip_mode == "card":       # nur in diesem Modus, sonst bleibt der Spielstand wie bisher
 		var ds: Array = []
 		for id in discard:
@@ -2454,6 +2479,7 @@ static func from_dict(d: Dictionary) -> MauGame:
 				"idx": int(u.get("idx", 0)), "mau": bool(u.get("mau", false))}
 	g.counter_wait = []
 	g.counter_fresh = []
+	g.counter_guard = []
 	g.counter_done = -1
 	var cd: Variant = d.get("counter", {})
 	if g.counter_on() and cd is Dictionary:
@@ -2464,6 +2490,9 @@ static func from_dict(d: Dictionary) -> MauGame:
 		for s in _ints((cd as Dictionary).get("fresh", [])):
 			if g.counter_wait.has(s) and not g.counter_fresh.has(s):
 				g.counter_fresh.append(s)
+		for s in _ints((cd as Dictionary).get("guard", [])):
+			if g.counter_wait.has(s) and not g.counter_guard.has(s):
+				g.counter_guard.append(s)
 		var done := _int_field(cd as Dictionary, "done", -1)
 		g.counter_done = done if done >= 0 and done < n else -1
 	return g

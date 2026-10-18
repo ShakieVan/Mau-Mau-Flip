@@ -239,11 +239,45 @@ func _c_skip() -> void:
 	play(g, 2, "hell_rot_9", "4: Cleo legt")
 	ev = play(g, 3, "hell_rot_aussetzen", "4: Dani setzt Anna aus")
 	check(int(g.place[0]) == 1 and g.current == 1 and g.phase() == "turn", "4 Plätze: Anna Platz 1, Ben dran")
-	# Aussetzen als eigene letzte Karte (zu zweit): Ben übersprungen, der Zug kommt zu Anna zurück → fertig
+	# Aussetzen als eigene letzte Karte (zu zweit). Beta 1.6.14 (Nutzerbefund 18.10.2026: „der andere Spieler hätte noch die Möglichkeit
+	# haben müssen, eine Karte zu ziehen“): Ben setzt nicht aus, sonst hätte er keinen Zug mehr zum Kontern (bis 1.6.13: Anna gleich fertig)
 	g = make({"hands": [["hell_rot_aussetzen"], ["hell_rot_plus1", "hell_blau_1"]], "top": "hell_rot_5"}, {}, 2)
 	ev = play(g, 0, "hell_rot_aussetzen", "zu zweit: Aussetzen als letzte Karte")
-	check(at(ev, "counter_open", 0) >= 0 and at(ev, "finish", 0) > at(ev, "skip", 1) and g.phase() == "round_over",
-		"zu zweit: Ben kann nicht kontern, Anna fertig (%s)" % str(names(ev)))
+	check(at(ev, "counter_open", 0) >= 0 and at(ev, "skip") < 0 and at(ev, "finish") < 0 and g.current == 1 and g.phase() == "turn"
+		and g.counter_wait == [0], "zu zweit: Ben setzt nicht aus und darf kontern (%s)" % str(names(ev)))
+	ev = play(g, 1, "hell_rot_plus1", "zu zweit: Ben kontert mit +1")
+	check(at(ev, "countered", 0) >= 0 and g.counter_wait.is_empty() and (g.hands[0] as Array).size() == 1, "zu zweit: Anna gekontert (%s)" % str(names(ev)))
+	# … oder Ben kann nicht kontern: Er zieht, der Zug kommt zu Anna zurück → fertig, Runde vorbei
+	g = make({"hands": [["hell_rot_aussetzen"], ["hell_blau_1", "hell_blau_2"]], "top": "hell_rot_5"}, {}, 2)
+	play(g, 0, "hell_rot_aussetzen", "zu zweit: Aussetzen als letzte Karte (ohne Konter)")
+	ev = _pass_turn(g, 1, "zu zweit: Ben zieht")
+	check(at(ev, "finish", 0) >= 0 and g.phase() == "round_over", "zu zweit: Ben kontert nicht, Anna fertig (%s)" % str(names(ev)))
+	# Richtungswechsel als eigene letzte Karte zu zweit (wirkt wie Aussetzen): Ben ist ebenso noch dran
+	g = make({"hands": [["hell_rot_richtungswechsel"], ["hell_blau_1", "hell_blau_2"]], "top": "hell_rot_5"},
+		{"two_player_reverse_skips": true}, 2)
+	ev = play(g, 0, "hell_rot_richtungswechsel", "zu zweit: Richtungswechsel als letzte Karte")
+	check(at(ev, "skip") < 0 and at(ev, "finish") < 0 and g.current == 1 and g.counter_wait == [0],
+		"zu zweit: nach Richtungswechsel als letzter Karte ist Ben dran (%s)" % str(names(ev)))
+	# Nutzerbefund nachgestellt: zu dritt, Cleo ist schon fertig, Anna legt Aussetzen als letzte Karte → Ben ist noch dran
+	g = make({"hands": [["hell_rot_aussetzen"], ["hell_blau_1", "hell_blau_2"], []], "top": "hell_rot_5", "finished": [2]},
+		{"round_end": "last"})
+	ev = play(g, 0, "hell_rot_aussetzen", "zu dritt, einer fertig: Aussetzen als letzte Karte")
+	check(g.phase() == "turn" and g.current == 1 and g.counter_wait == [0], "zu dritt, einer fertig: Ben darf noch kontern (%s)" % str(names(ev)))
+	check(RulesFixture.invariants(g) == "", "zu dritt, einer fertig: " + RulesFixture.invariants(g))
+	# zu dritt (alle spielen): Aussetzen als letzte Karte setzt Ben aus, Cleo ist dran – wie bisher
+	g = make({"hands": [["hell_rot_aussetzen"], ["hell_blau_1"], ["hell_gelb_1"]], "top": "hell_rot_5"})
+	ev = play(g, 0, "hell_rot_aussetzen", "zu dritt: Aussetzen als letzte Karte")
+	check(at(ev, "skip", 1) >= 0 and g.current == 2, "zu dritt: Ben setzt aus, Cleo dran (%s)" % str(names(ev)))
+	# Spielstand: Der Merker überlebt to_dict/from_dict (Gastgeber-Übergabe), ohne Kontern fehlt er
+	g = make({"hands": [[], ["hell_blau_1", "hell_blau_2"], ["hell_gelb_1"]], "top": "hell_rot_5", "counter": [0]})
+	g.counter_guard = [0]                    # wie mitten in einer mehrteiligen Aktion (Farbwahl, Ablege-Auswahl)
+	var dd := g.to_dict()
+	check(((dd.get("counter", {}) as Dictionary).get("guard", []) as Array) == [0], "Spielstand: Merker gespeichert (%s)" % str(dd.get("counter", {})))
+	var g2 := MauGame.from_dict(dd)
+	check(g2.counter_guard == [0], "Spielstand: Merker geladen")
+	dd = g2.to_dict()
+	(dd["counter"] as Dictionary)["guard"] = [1]
+	check(MauGame.from_dict(dd).counter_guard.is_empty(), "Spielstand: Merker nur für Wartende")
 
 
 func _c_skip_all() -> void:
@@ -259,13 +293,13 @@ func _c_skip_all() -> void:
 	play(g, 0, "dunkel_pink_7", "first: Anna letzte Karte")
 	play(g, 1, "dunkel_pink_alle_aussetzen", "first: Alle aussetzen")
 	check(g.phase() == "round_over" and int(g.result.ranking[0]) == 0, "first: Runde vorbei, Anna gewinnt")
-	# Als eigene letzte Karte: alle anderen übersprungen → Anna gleich fertig, der Nächste macht weiter
+	# Als eigene letzte Karte (Beta 1.6.14): Anna wartet, der Nächste ist trotzdem dran und kann kontern (bis 1.6.13: Anna gleich fertig)
 	spec = base.duplicate()
 	spec.hands = [["dunkel_pink_alle_aussetzen"], ["dunkel_lila_1"], ["dunkel_orange_1"], ["dunkel_orange_2"]]
 	g = make(spec, {"round_end": "last"}, 4)
 	ev = play(g, 0, "dunkel_pink_alle_aussetzen", "Alle aussetzen als letzte Karte")
-	check(at(ev, "counter_open", 0) < at(ev, "skip_all") and at(ev, "skip_all") < at(ev, "finish", 0) and int(g.place[0]) == 1
-		and g.current == 1, "letzte Karte Alle aussetzen: fertig, Ben dran (%s)" % str(names(ev)))
+	check(at(ev, "counter_open", 0) < at(ev, "skip_all") and at(ev, "finish") < 0 and int(g.place[0]) == 0 and g.counter_wait == [0]
+		and g.current == 1, "letzte Karte Alle aussetzen: Anna wartet, Ben dran (%s)" % str(names(ev)))
 	# Zwei Wartende, Cleo legt Alle aussetzen: beide fertig in ihrer Reihenfolge
 	spec = base.duplicate()
 	spec.hands = [["dunkel_pink_7"], ["dunkel_pink_8"], ["dunkel_pink_alle_aussetzen", "dunkel_lila_2"], ["dunkel_orange_2"]]
@@ -735,9 +769,9 @@ func _c_rules_and_texts() -> void:
 		"ohne Kontern bleibt der alte Text")
 	# … und im Browser (karten.js hilfe(): dieselben msgids, Übersetzungen in i18n_po.js)
 	for msg in ["Kontern: Hat der Nächste keine Karten mehr, zieht er und spielt weiter.",
-			"Kontern: Hat der Nächste keine Karten mehr, ist er damit fertig – er wird ja übersprungen.",
-			"Kontern: Wer keine Karten mehr hat, ist damit fertig. Ist es deine letzte Karte, bist du gleich fertig, und der Nächste macht weiter.",
-			"Kontern: Kommt der Zug dadurch wieder zu jemandem ohne Karten, ist er fertig.",
+			"Kontern: Hat der Nächste keine Karten mehr, ist er damit fertig – er wird ja übersprungen. Als deine letzte Karte zu zweit setzt der andere nicht aus: Er darf noch kontern.",
+			"Kontern: Wer keine Karten mehr hat, ist damit fertig. Ist es deine letzte Karte, ist trotzdem der Nächste dran, damit er kontern kann.",
+			"Kontern: Kommt der Zug dadurch wieder zu jemandem ohne Karten, ist er fertig. Als deine letzte Karte zu zweit ist der andere trotzdem dran: Er darf noch kontern.",
 			"Kontern: Mit leerer Hand bist du erst fertig, wenn dich bis zu deinem nächsten Zug keiner kontert.",
 			"Auch als letzte Karte tauschst du mit: Du bekommst eine Hand, deine leere Hand wandert zum Nächsten – der hat dann keine Karten mehr und wartet aufs Kontern.",
 			"Kontern: Wer keine Karten mehr hat, tauscht mit und spielt weiter; wer dabei die leere Hand bekommt, hat nun selbst keine Karten mehr.",

@@ -140,16 +140,16 @@
       }
       case 'aussetzen':
         z.push(tr('Der Nächste setzt aus.')); neben(tr('Passt auf %s oder auf jedes Aussetzen.', f));
-        if (kontern) z.push(tr('Kontern: Hat der Nächste keine Karten mehr, ist er damit fertig – er wird ja übersprungen.'));
+        if (kontern) z.push(tr('Kontern: Hat der Nächste keine Karten mehr, ist er damit fertig – er wird ja übersprungen. Als deine letzte Karte zu zweit setzt der andere nicht aus: Er darf noch kontern.'));
         break;
       case 'alle_aussetzen':
         z.push(tr('Alle anderen setzen aus – du bist sofort noch einmal dran.')); neben(tr('Passt auf %s oder auf jedes Alle aussetzen.', f));
-        if (kontern) z.push(tr('Kontern: Wer keine Karten mehr hat, ist damit fertig. Ist es deine letzte Karte, bist du gleich fertig, und der Nächste macht weiter.'));
+        if (kontern) z.push(tr('Kontern: Wer keine Karten mehr hat, ist damit fertig. Ist es deine letzte Karte, ist trotzdem der Nächste dran, damit er kontern kann.'));
         break;
       case 'richtungswechsel':
         z.push(tr('Die Spielrichtung dreht sich um.') + (r.two_player_reverse_skips !== false ? ' ' + tr('Zu zweit wirkt sie wie Aussetzen.') : ''));
         neben(tr('Passt auf %s oder auf jeden Richtungswechsel.', f));
-        if (kontern) z.push(tr('Kontern: Kommt der Zug dadurch wieder zu jemandem ohne Karten, ist er fertig.'));
+        if (kontern) z.push(tr('Kontern: Kommt der Zug dadurch wieder zu jemandem ohne Karten, ist er fertig. Als deine letzte Karte zu zweit ist der andere trotzdem dran: Er darf noch kontern.'));
         break;
       case 'flip':
         z.push(r.flip_mode === 'card'

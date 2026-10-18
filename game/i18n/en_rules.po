@@ -921,14 +921,14 @@ msgstr "Whoever has no cards left is only out once the turn comes back to them �
 msgid "Kontern: Hat der Nächste keine Karten mehr, zieht er und spielt weiter."
 msgstr "Counter: If the next player has no cards left, they draw and play on."
 
-msgid "Kontern: Hat der Nächste keine Karten mehr, ist er damit fertig – er wird ja übersprungen."
-msgstr "Counter: If the next player has no cards left, this makes them out – they are skipped, after all."
+msgid "Kontern: Hat der Nächste keine Karten mehr, ist er damit fertig – er wird ja übersprungen. Als deine letzte Karte zu zweit setzt der andere nicht aus: Er darf noch kontern."
+msgstr "Counter: If the next player has no cards left, this makes them out – they are skipped, after all. As your last card with two players left, the other is not skipped: they may still counter."
 
-msgid "Kontern: Wer keine Karten mehr hat, ist damit fertig. Ist es deine letzte Karte, bist du gleich fertig, und der Nächste macht weiter."
-msgstr "Counter: Everyone with no cards left is out. If it's your last card, you are out right away and the next player carries on."
+msgid "Kontern: Wer keine Karten mehr hat, ist damit fertig. Ist es deine letzte Karte, ist trotzdem der Nächste dran, damit er kontern kann."
+msgstr "Counter: Everyone with no cards left is out. If it's your last card, the next player still gets a turn so they can counter."
 
-msgid "Kontern: Kommt der Zug dadurch wieder zu jemandem ohne Karten, ist er fertig."
-msgstr "Counter: If this brings the turn back to someone with no cards, they are out."
+msgid "Kontern: Kommt der Zug dadurch wieder zu jemandem ohne Karten, ist er fertig. Als deine letzte Karte zu zweit ist der andere trotzdem dran: Er darf noch kontern."
+msgstr "Counter: If this brings the turn back to someone with no cards, they are out. As your last card with two players left, the other still gets a turn: they may counter."
 
 msgid "Kontern: Mit leerer Hand bist du erst fertig, wenn dich bis zu deinem nächsten Zug keiner kontert."
 msgstr "Counter: With an empty hand you are only out if nobody counters you before your next turn."
@@ -942,8 +942,8 @@ msgstr "Counter: Whoever has no cards left swaps too and plays on; whoever recei
 msgid "Als letzte Karte tauschst du mit: Du bekommst eine Hand, deine leere wandert weiter, und wer sie bekommt, wartet aufs Kontern. Wer schon auf das Kontern wartet, tauscht ebenso mit."
 msgstr "As your last card you swap too: you get a hand, your empty hand moves on, and whoever receives it waits to be countered. Anyone already waiting to be countered swaps as well."
 
-msgid "Hausregel: Wer keine Karten mehr hat, ist noch nicht fertig, sondern bleibt mit 0 Karten in der Runde. Bekommt er Karten, bevor der Zug wieder bei ihm ankommt – durch eine Ziehkarte, eine Strafe, einen Kartentausch oder eine Flip-Überraschung –, spielt er ganz normal weiter. Kommt der Zug wieder bei ihm an oder wird er übersprungen, ist er fertig. Ein Richtungswechsel kann das abkürzen oder verlängern. Das gilt für jede letzte Karte, auch beim Glücksspiel und beim Farbe-Ablegen."
-msgstr "House rule: Whoever has no cards left is not out yet but stays in the round with 0 cards. If they get cards before the turn comes back to them – from a draw card, a penalty, a Card Swap or a Flip Surprise – they play on as usual. If the turn comes back to them or they are skipped, they are out. A Reverse can make that shorter or longer. This applies to every last card, including Gamble and Discard Color."
+msgid "Hausregel: Wer keine Karten mehr hat, ist noch nicht fertig, sondern bleibt mit 0 Karten in der Runde. Bekommt er Karten, bevor der Zug wieder bei ihm ankommt – durch eine Ziehkarte, eine Strafe, einen Kartentausch oder eine Flip-Überraschung –, spielt er ganz normal weiter. Kommt der Zug wieder bei ihm an oder wird er übersprungen, ist er fertig. Ein Richtungswechsel kann das abkürzen oder verlängern. Das gilt für jede letzte Karte, auch beim Glücksspiel und beim Farbe-Ablegen. Nach der letzten Karte ist immer noch mindestens ein anderer Spieler dran, auch wenn die Karte jemanden aussetzen lässt."
+msgstr "House rule: Whoever has no cards left is not out yet but stays in the round with 0 cards. If they get cards before the turn comes back to them – from a draw card, a penalty, a Card Swap or a Flip Surprise – they play on as usual. If the turn comes back to them or they are skipped, they are out. A Reverse can make that shorter or longer. This applies to every last card, including Gamble and Discard Color. After the last card at least one other player always gets a turn, even if the card skips someone."
 
 msgid "%s ist fertig!"
 msgstr "%s is out!"

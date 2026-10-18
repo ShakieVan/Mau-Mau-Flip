@@ -14,7 +14,14 @@ Nutzerwunsch vom 16.10.2026. Schlüssel `counter_round` (`off` | `on`), offiziel
   `penalty_turn` wie sonst (aussetzen bzw. gleich dran).
 - **Fertig:** wenn der Zug wieder bei ihm ankäme (ein Richtungswechsel kann das verkürzen oder verlängern) oder wenn er
   übersprungen wird (Aussetzen, Alle aussetzen, eine Strafe mit Aussetzen, bei der er nichts ziehen konnte). Alle aussetzen als
-  eigene letzte Karte: Alle anderen sind übersprungen, der Leger ist gleich fertig.
+  eigene letzte Karte: Andere Wartende sind übersprungen und fertig; der Leger wartet, der Nächste ist dran (ab 1.6.14, s. u.; bis
+  1.6.13 war der Leger gleich fertig).
+- **Nach der letzten Karte ist immer noch mindestens ein anderer dran** (ab Beta 1.6.14, Nutzerbefund 18.10.2026: zu dritt, einer
+  fertig, Aussetzen als letzte Karte – die Runde war sofort vorbei, „der andere Spieler hätte noch die Möglichkeit haben müssen, eine
+  Karte zu ziehen“). Wer in seinem eigenen Zug leer wird, ist mit `counter_guard` markiert, bis ein anderer dran ist; kommt der Zug
+  vorher zu ihm zurück, geht er weiter. Zu zweit setzt der andere nach Aussetzen bzw. Richtungswechsel als letzter Karte deshalb nicht
+  aus (kein `skip`-Ereignis), nach „Alle aussetzen“ als letzter Karte ist der Nächste dran. Mit drei und mehr Spielern wirkt Aussetzen
+  wie bisher (der Übernächste ist dran). Im Spielstand als `counter.guard` (ältere Gastgeber übergehen es).
 - Mehrere Wartende gleichzeitig sind möglich; sie werden in der Reihenfolge fertig, in der der Zug zu ihnen käme.
 - **Kartentausch:** Wartende tauschen mit (sie bekommen eine Hand, ihre leere Hand wandert weiter). Wer die leere Hand bekommt,
   wartet nun selbst. Bekommt sie jemand, der gerade nicht dran war, kommt der Zug erst noch bei ihm an: Beim ersten Ankommen
