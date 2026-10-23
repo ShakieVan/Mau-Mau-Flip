@@ -1,4 +1,5 @@
-"""Reaktionstöne „Heulen“ und „Facepalm“ aus den Aufnahmen des Nutzers (18.10.2026): audio/aufnahmen/Weinen 2.m4a, Facepalm 2.m4a.
+"""Reaktionstöne „Heulen“ und „Facepalm“ aus den Aufnahmen des Nutzers (18.10.2026): audio/aufnahmen/Weinen 2.m4a, Facepalm 2.m4a;
+ab Beta 1.6.15 auch „Hmmm“ (🤔, Ton hmm) und „Knutschie“ (😘, Ton kuss), audio/aufnahmen/Hmmm.m4a, Knutschie.m4a (--nur hmm,kuss).
 
 Nutzerwunsch: „Beides bitte hochpitchen (Chipmunk).“ Je Aufnahme mehrere Stufen zum Vergleich, Wahl des Nutzers per Hörseite:
   original   unverändert (nur aufbereitet), zum Vergleich
@@ -36,7 +37,11 @@ ANALYSE_PY = r"E:\Draw2Race-AudioLab\analyse\.venv\Scripts\python.exe"
 AST_MODEL = "MIT/ast-finetuned-audioset-10-10-0.4593"
 
 # Ton, Quelle, Anfang, Ende (s; silencedetect −40 dB: Facepalm 0,627–1,605 s, Weinen 0,796–2,803 s; Vorlauf/Ausklang dazu)
-QUELLEN = {"facepalm": ("Facepalm 2.m4a", 0.60, 1.70), "heulen": ("Weinen 2.m4a", 0.77, 2.90)}
+# Beta 1.6.15 (Nutzer 23.10.2026: „Das klingt alles doof“ zu den MOSS-Kandidaten, stattdessen eigene Aufnahmen „Hmmm“ und
+# „Knutschie“, „bitte pitchen wie die anderen und dann anwenden“ = Stufe nur6): silencedetect −50 dB Hmmm 0,112–0,833 s,
+# Knutschie 0,240–0,925 s (davor bis 0,078 s ein leises Geräusch, abgeschnitten)
+QUELLEN = {"facepalm": ("Facepalm 2.m4a", 0.60, 1.70), "heulen": ("Weinen 2.m4a", 0.77, 2.90),
+           "hmm": ("Hmmm.m4a", 0.09, 0.90), "kuss": ("Knutschie.m4a", 0.22, 1.00)}
 # Stufe: (Halbtöne, Tempo mitnehmen)
 STUFEN = {"original": (0, True), "hoch4": (4, True), "hoch6": (6, True), "hoch8": (8, True), "hoch10": (10, True),
           "nur6": (6, False)}
@@ -53,14 +58,19 @@ def ff_err(*args):
                           encoding="utf-8", errors="replace").stderr
 
 
-def kette(st, tempo):
+# Tiefpass je Ton (Hz, zweifach; Standard 5500). Beta 1.6.15: Der Schmatzer „Knutschie“ hatte mit 5,5 kHz noch −27,9 dB über 6 kHz
+# (Katzen-Leitplanke: höchstens −30 dB)
+TIEFPASS = {"kuss": 4200}
+
+
+def kette(st, tempo, tp=5500):
     f = 2.0 ** (st / 12.0)
     teile = ["afftdn=nr=18:nf=-70", "highpass=f=120:poles=2"]
     if st:
         teile += [f"asetrate={FS * f:.0f}", f"aresample={FS}"]
         if not tempo:
             teile.append(f"atempo={1.0 / f:.6f}")
-    teile += ["highpass=f=220:poles=2", "equalizer=f=2200:t=q:w=1:g=3", "lowpass=f=5500:poles=2", "lowpass=f=5500:poles=2",
+    teile += ["highpass=f=220:poles=2", "equalizer=f=2200:t=q:w=1:g=3", f"lowpass=f={tp}:poles=2", f"lowpass=f={tp}:poles=2",
               "acompressor=threshold=0.1:ratio=3:attack=4:release=90:makeup=1.5"]
     return ",".join(teile)
 
@@ -109,16 +119,18 @@ def kodieren(wav, base):
     ff("-i", wav, "-c:a", "aac", "-b:a", "192k", "-cutoff", "8000", "-movflags", "+faststart", base + ".m4a")
 
 
-def toene():
+def toene(nur=None):
     os.makedirs(TMP, exist_ok=True)
     mess = {}
     for ton, (datei, anfang, ende) in QUELLEN.items():
+        if nur and ton not in nur:
+            continue
         for stufe, (st, tempo) in STUFEN.items():
             name = f"{ton}_{stufe}"
             roh = os.path.join(TMP, name + ".roh.wav")
             dauer = (ende - anfang) / (2.0 ** (st / 12.0) if tempo else 1.0)
             ff("-i", os.path.join(IN, datei), "-af",
-               f"atrim=start={anfang}:end={ende},asetpts=PTS-STARTPTS,{kette(st, tempo)},"
+               f"atrim=start={anfang}:end={ende},asetpts=PTS-STARTPTS,{kette(st, tempo, TIEFPASS.get(ton, 5500))},"
                f"afade=t=in:d=0.006,afade=t=out:st={max(0.0, dauer - 0.07):.3f}:d=0.07", "-ar", str(FS), "-ac", "1", roh)
             fertig = os.path.join(TMP, name + ".wav")
             lufs, tp = auf_lautheit(roh, fertig)
@@ -132,7 +144,8 @@ def toene():
             print(name, mess[name], flush=True)
             os.remove(roh)
     alt = _lesen()
-    alt.update({"stand": "18.10.2026", "toene": mess})
+    alt["toene"] = dict(alt.get("toene", {}), **mess)
+    alt["stand"] = "23.10.2026" if nur else "18.10.2026"
     _schreiben(alt)
 
 
@@ -172,9 +185,10 @@ def _schreiben(d):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--ast", action="store_true", help="nur die AudioSet-Prüfung (analyse-Umgebung)")
+    ap.add_argument("--nur", help="nur diese Töne, kommagetrennt (hmm,kuss); andere Einträge bleiben stehen")
     a = ap.parse_args()
     if a.ast:
         ast()
     else:
         os.makedirs(OUT, exist_ok=True)
-        toene()
+        toene([t.strip() for t in a.nur.split(",")] if a.nur else None)

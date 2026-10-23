@@ -78,7 +78,7 @@
   const sichtbar = e => !!e && !e.hidden && e.getBoundingClientRect().width > 0;
   const N = () => w.MMF.Necken;
   // Beta 1.6.5: Reaktionsleiste
-  const REIHE = ['lachen', 'klatschen', 'daumen', 'schreck', 'baeh', 'heulen', 'facepalm'];   // 1.6.11: + Bäää; 1.6.13: + Heulen, Facepalm
+  const REIHE = ['lachen', 'klatschen', 'daumen', 'schreck', 'baeh', 'heulen', 'facepalm', 'denken', 'schlafen', 'kuss'];   // 1.6.11: + Bäää; 1.6.13: + Heulen, Facepalm; 1.6.15: + Nachdenken, Schnarchen, Küsschen
   const rb = r => $('#nk-leiste button[data-r="' + r + '"]');
   const ueberR = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
   // Jeder Knopf mindestens 44 px, ganz im Fenster, über nichts Wichtigem (Hand nur, soweit sie im Tisch sichtbar ist)
@@ -108,13 +108,23 @@
     if (!inZeile && !(L0.dataset.form === 'zeile' && rb(REIHE[0]).offsetWidth < 44)) {
       const proReihe = {};
       REIHE.forEach(r => { const y = rb(r).offsetTop; proReihe[y] = (proReihe[y] || 0) + 1; });
-      ok(Math.max.apply(null, Object.values(proReihe)) <= 4, name + ': höchstens 4 Reaktionsknöpfe je Reihe (' + L0.dataset.form + ' ' + JSON.stringify(proReihe) + ')');
+      ok(Math.max.apply(null, Object.values(proReihe)) <= 5, name + ': höchstens 5 Reaktionsknöpfe je Reihe (' + L0.dataset.form + ' ' + JSON.stringify(proReihe) + ')');   // 1.6.15: zehn, Block 5 + 5
     }
     const wisch = L0.dataset.wisch === '1';   // 1.6.13: wischbare Reihe (kleine Handys) – es zählt nur, was gerade sichtbar ist
+    const wischV = L0.dataset.wisch === 'v';  // 1.6.15: senkrecht wischbare Spalte (großer Modus, kleine Handys) – ebenso
     REIHE.forEach(r => {
       const b = rb(r), L = $('#nk-leiste').getBoundingClientRect();   // ohne Transform (Einblenden läuft unter virtueller Zeit nicht ab)
-      const sx = wisch ? L0.scrollLeft : 0;
-      let k = { left: L.left + b.offsetLeft - sx, top: L.top + b.offsetTop, right: L.left + b.offsetLeft - sx + b.offsetWidth, bottom: L.top + b.offsetTop + b.offsetHeight, width: b.offsetWidth, height: b.offsetHeight };
+      const sx = wisch ? L0.scrollLeft : 0, sy = wischV ? L0.scrollTop : 0;
+      let k = { left: L.left + b.offsetLeft - sx, top: L.top + b.offsetTop - sy, right: L.left + b.offsetLeft - sx + b.offsetWidth, bottom: L.top + b.offsetTop - sy + b.offsetHeight, width: b.offsetWidth, height: b.offsetHeight };
+      if (wischV) {
+        if (k.top >= L.bottom - 1 || k.bottom <= L.top + 1) return;   // weggewischt
+        if (k.top < L.top - 0.5 || k.bottom > L.bottom + 0.5) {        // angeschnitten: nur der sichtbare Teil, keine Größenprüfung
+          k = Object.assign({}, k, { top: Math.max(k.top, L.top), bottom: Math.min(k.bottom, L.bottom) });
+          ok(k.left >= 0 && k.top >= 0 && k.right <= vw && k.bottom <= vh, name + ': ' + r + ' (angeschnitten) im Fenster');
+          hind.forEach(([sel, h]) => ok(!ueberR(k, h), name + ': ' + r + ' (angeschnitten) verdeckt ' + sel + ' nicht'));
+          return;
+        }
+      }
       if (wisch) {
         if (k.left >= L.right - 1 || k.right <= L.left + 1) return;   // weggewischt
         if (k.left < L.left - 0.5 || k.right > L.right + 0.5) {        // angeschnitten: nur der sichtbare Teil, keine Größenprüfung
@@ -167,7 +177,7 @@
     leeren();
     await lade('');
     const App = w.MMF.App;
-    ok(App.version === '1.6.12', 'Version 1.6.12 (' + App.version + ')');
+    ok(App.version === '1.6.15', 'Version 1.6.15 (' + App.version + ')');
     ok(!!N() && App.einstellungen.necken === true, 'necken.js geladen, Necken ab Werk an');
     let s = await beitreten('Kim');
     ok(JSON.stringify(s.msgs('fx_pref')) === '[{"t":"fx_pref","off":false}]', 'fx_pref nach welcome (' + JSON.stringify(s.msgs('fx_pref')) + ')');
@@ -179,15 +189,16 @@
     s.rx({ t: 'state', events: [], view: sicht(1) });
     await warte(400);
     // Beta 1.6.5: vier Reaktionsknöpfe direkt sichtbar (kein Lachgesicht-Knopf, kein Fächer), Reihenfolge Lachen, Klatschen, Daumen, Schreck
-    ok(App.screen === 'tisch' && sichtbar($('#nk-leiste')) && REIHE.every(r => sichtbar(rb(r))), 'am Tisch: sieben Reaktionsknöpfe sichtbar');
+    ok(App.screen === 'tisch' && sichtbar($('#nk-leiste')) && REIHE.every(r => sichtbar(rb(r))), 'am Tisch: zehn Reaktionsknöpfe sichtbar');
     ok(!$('#nk-reaktion') && !$('#nk-faecher'), 'kein Lachgesicht-Knopf und kein Fächer mehr');
     ok(JSON.stringify(Array.from(w.document.querySelectorAll('#nk-leiste button[data-r]')).map(b => b.dataset.r)) === JSON.stringify(REIHE), 'Reihenfolge Lachen, Klatschen, Daumen hoch, Schreck, Bäää, Heulen, Facepalm');
-    ok(JSON.stringify(Array.from(w.document.querySelectorAll('#nk-leiste button[data-r] span')).map(b => b.textContent)) === '["😂","👏","👍","😱","😝","😭","🤦"]', 'Symbole 😂 👏 👍 😱 😝 😭 🤦 (Rückfall ohne Bild)');
+    ok(JSON.stringify(Array.from(w.document.querySelectorAll('#nk-leiste button[data-r] span')).map(b => b.textContent)) === '["😂","👏","👍","😱","😝","😭","🤦","🤔","😴","😘"]', 'Symbole 😂 👏 👍 😱 😝 😭 🤦 🤔 😴 😘 (Rückfall ohne Bild)');
     // Nutzer 15.10.2026: Fluent-Emoji-Bilder wie in der App (bilder/reaktionen/<name>.svg), geladen und sichtbar, das Schrift-Emoji dann verborgen
     {
       const bilder = REIHE.map(r => rb(r).querySelector('img.nk-ri'));
       ok(bilder.every((b, i) => b && /bilder\/reaktionen\/(\w+)\.svg$/.test(b.src) && b.src.endsWith(REIHE[i] + '.svg')), 'Reaktionsknöpfe zeigen bilder/reaktionen/<name>.svg');
-      ok(bilder.every(b => b.complete && b.naturalWidth > 0 && b.offsetWidth >= 28), 'Reaktionsbilder geladen (' + bilder.map(b => b && b.naturalWidth + '/' + b.offsetWidth).join(', ') + ')');
+      // 1.6.15: mit zehn Knöpfen steht der Block 5 + 5 hier mit 36 px (kleinste sichtbare Größe) – Bild 74 % davon, also ≥ 24 px
+      ok(bilder.every(b => b.complete && b.naturalWidth > 0 && b.offsetWidth >= 24), 'Reaktionsbilder geladen (' + bilder.map(b => b && b.naturalWidth + '/' + b.offsetWidth).join(', ') + ')');
       ok(REIHE.every(r => w.getComputedStyle(rb(r).querySelector('span')).display === 'none'), 'mit Bild kein zusätzliches Schrift-Emoji');
     }
     await warte(500);   // Einblenden der Knöpfe (nkRbAuf) abwarten
@@ -308,9 +319,10 @@
     s.rx({ t: 'fx', k: 'react', from: 2, r: 'schreck' });
     s.rx({ t: 'fx', k: 'react', from: 3, r: 'baeh' });   // 1.6.11
     s.rx({ t: 'fx', k: 'react', from: 1, r: 'heulen' }); s.rx({ t: 'fx', k: 'react', from: 3, r: 'facepalm' });   // 1.6.13
+    s.rx({ t: 'fx', k: 'react', from: 2, r: 'denken' }); s.rx({ t: 'fx', k: 'react', from: 1, r: 'schlafen' }); s.rx({ t: 'fx', k: 'react', from: 0, r: 'kuss' });   // 1.6.15
     await warte(60);
-    ok(w.document.querySelectorAll('#tisch .nk-emoji').length === 7, 'sieben Reaktionen steigen auf (' + w.document.querySelectorAll('#tisch .nk-emoji').length + ')');
-    ok(JSON.stringify(Array.from(w.document.querySelectorAll('#tisch .nk-emoji img.nk-ri')).map(b => b.src.replace(/^.*\//, ''))) === '["lachen.svg","klatschen.svg","daumen.svg","schreck.svg","baeh.svg","heulen.svg","facepalm.svg"]', 'aufsteigende Reaktionen als Bilder wie die Knöpfe');
+    ok(w.document.querySelectorAll('#tisch .nk-emoji').length === 10, 'zehn Reaktionen steigen auf (' + w.document.querySelectorAll('#tisch .nk-emoji').length + ')');
+    ok(JSON.stringify(Array.from(w.document.querySelectorAll('#tisch .nk-emoji img.nk-ri')).map(b => b.src.replace(/^.*\//, ''))) === '["lachen.svg","klatschen.svg","daumen.svg","schreck.svg","baeh.svg","heulen.svg","facepalm.svg","denken.svg","schlafen.svg","kuss.svg"]', 'aufsteigende Reaktionen als Bilder wie die Knöpfe');
     ok(toene.filter(t => REIHE.indexOf(t[0]) >= 0).length === 2, 'höchstens 2 Reaktionstöne gleichzeitig (' + JSON.stringify(toene) + ')');
     ok(N().pruefe({ k: 'react', r: 'lachen' }) === 'rate', 'Spiegel: eigener Reaktions-Eimer leer → rate');
     N()._takt();
@@ -408,15 +420,15 @@
       await warte(400);
       N().layout();
       pruefeLage('quer ' + fw + ' × ' + fh);
-      // Beta 1.6.13: wischbare Reihe – bis zum Ende gewischt ist Facepalm ganz zu sehen, rechts blendet nichts mehr aus
+      // Beta 1.6.13: wischbare Reihe – bis zum Ende gewischt ist der letzte Knopf (1.6.13 Facepalm, ab 1.6.15 Küsschen) ganz zu sehen, rechts blendet nichts mehr aus
       const L = $('#nk-leiste');
       if (L.dataset.wisch === '1') {
         ok(L.scrollWidth > L.clientWidth + 20, 'quer ' + fw + ' × ' + fh + ': wischbare Reihe ist rollbar (' + L.scrollWidth + ' > ' + L.clientWidth + ')');
         L.scrollLeft = L.scrollWidth;
         N()._wischEnde();   // das scroll-Ereignis kommt unter virtueller Zeit nicht verlässlich
         await warte(80);
-        const lr = L.getBoundingClientRect(), fr = rb('facepalm').getBoundingClientRect();
-        ok(fr.left >= lr.left - 1 && fr.right <= lr.right + 1 && L.classList.contains('ende'), 'quer ' + fw + ' × ' + fh + ': ans Ende gewischt – Facepalm ganz sichtbar, keine Ausblendung');
+        const lr = L.getBoundingClientRect(), fr = rb(REIHE[REIHE.length - 1]).getBoundingClientRect();
+        ok(fr.left >= lr.left - 1 && fr.right <= lr.right + 1 && L.classList.contains('ende'), 'quer ' + fw + ' × ' + fh + ': ans Ende gewischt – letzter Knopf ganz sichtbar, keine Ausblendung');
         pruefeLage('quer ' + fw + ' × ' + fh + ' (gewischt)');
         L.scrollLeft = 0;
         await warte(50);

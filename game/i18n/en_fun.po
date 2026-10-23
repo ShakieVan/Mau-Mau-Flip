@@ -1043,6 +1043,13 @@ msgstr "Cry"
 msgid "Facepalm"
 msgstr "Facepalm"
 
+# Beta 1.6.15: Reaktionen „Nachdenken“ (🤔), „Schnarchen“ (😴, msgid oben) und „Küsschen“ (😘)
+msgid "Nachdenken"
+msgstr "Thinking"
+
+msgid "Küsschen"
+msgstr "Kiss"
+
 # --- Furzkissen (Beta 1.6.6, docs/module/eastereggs2.md 12.4; Glossar: Furzkissen → whoopee cushion)
 # Beta 1.6.10: zwei runde Menüknöpfe statt der Zeile „Furzkissen“ mit „Mit Namen“/„Geheim“
 msgid "Kissen geheim"

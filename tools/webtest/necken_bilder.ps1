@@ -127,6 +127,10 @@ $bilder = [ordered]@{
     # als Block 4 + 3 (nach 4 umgebrochen); dazu die neuen Bilder beim Aufsteigen
     heulen_facepalm = @{ q = '&dran=1'; w = 844; h = 390; ms = 900; pre = (Z 300 "$N.zeige({k:'react',from:0,r:'heulen'});$N.zeige({k:'react',from:1,r:'facepalm'});$N.zeige({k:'react',from:3,r:'heulen'})") }
     heulen_facepalm_nacht = @{ q = '&dran=1&seite=dunkel'; w = 844; h = 390; ms = 900; pre = (Z 300 "$N.zeige({k:'react',from:0,r:'facepalm'});$N.zeige({k:'react',from:2,r:'heulen'})") }
+    # Beta 1.6.15 (-Stand 1615 -Nur quer_tag,…,denken_kuss): zehn Reaktionen mit „Nachdenken“ (🤔), „Schnarchen“ (😴) und „Küsschen“ (😘),
+    # neben „Du“ als Block 5 + 5; dazu die neuen Bilder beim Aufsteigen
+    denken_kuss = @{ q = '&dran=1'; w = 844; h = 390; ms = 900; pre = (Z 300 "$N.zeige({k:'react',from:0,r:'denken'});$N.zeige({k:'react',from:1,r:'kuss'});$N.zeige({k:'react',from:3,r:'schlafen'})") }
+    denken_kuss_nacht = @{ q = '&dran=1&seite=dunkel'; w = 844; h = 390; ms = 900; pre = (Z 300 "$N.zeige({k:'react',from:0,r:'kuss'});$N.zeige({k:'react',from:2,r:'schlafen'})") }
 }
 $auswahl = @($Nur.Split(',') | Where-Object { $_ })
 foreach ($name in $bilder.Keys) {

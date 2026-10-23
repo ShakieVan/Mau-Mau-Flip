@@ -4,7 +4,10 @@ extends SceneTree
 #   - nature_check für jede Tag-id (4 Größen × 2/4/8 Spieler: Sichtbarkeit, deckt, Aufräumen, hit, leave ≤ 0,5 s, Bestimmtheit),
 #   - make: jede Tag-id liefert ein Tier, Nacht-ids und Unbekanntes nicht,
 #   - Antippen: Zustand danach je Tier (Marienkäfer fliegt weg, Libelle flitzt, Windstoß, Looping, Blase platzt, Spatz mit Federn,
-#     Ballon steigt, Schnecke zieht sich ein und kommt wieder), über NatureFx.tap an einer freien Stelle,
+#     Ballon steigt, Schnecke zieht sich ein und kommt wieder; 1.6.15: Hoppelhase Schreck-Sprung und davon, Palme schüttelt sich und
+#     verliert eine Kokosnuss, der Sand allein nimmt keinen Tipp), über NatureFx.tap an einer freien Stelle,
+#   - 1.6.15: Hoppelhase hüpft vorn am Plattformrand von einer Seite zur anderen (Stauchen/Strecken, nie unter der Hinweisleiste),
+#     Strand liegt in der Ecke unten rechts, die Palme steht links vom Mau-Knopf (Krone darüber), am Ende ist alles weggespült,
 #   - Scheu: Biene geht bei Berührung der Hand und in 130 px, landet oben rechts auf der mittleren Handkarte,
 #   - ruhig (Effekte reduziert): Wolke und Regenbogen bewegen sich nicht (gleiche Hülle über die Hauptphase),
 #   - Schnecke: Zugende → zieht sich ein (≤ 0,5 s), kriecht Richtung Platz, nie unter der Hinweisleiste,
@@ -50,6 +53,7 @@ func run() -> void:
 	bee_checks()
 	calm_checks()
 	snail_checks()
+	new_checks()
 	print("RESULT: %d ok, %d failed" % [ok, fails])
 	await CleanExit.finish(self, 0 if fails == 0 else 1)
 
@@ -68,7 +72,7 @@ func make_checks() -> void:
 		if str(e["seite"]) == "tag" and not bool(e["bestand"]):
 			count += 1
 			check(Day.IDS.has(str(e["id"])), "Tag-id %s hat ein Tier" % e["id"])
-	check(count == Day.IDS.size(), "alle 11 Tagtiere (%d)" % count)
+	check(count == Day.IDS.size() and count == 13, "alle 13 Tagtiere (%d)" % count)
 	for id in ["eule", "gluehwuermchen", "schmetterling", "sternschnuppe", "gibtsnicht", ""]:
 		check(Day.make(id) == null, "make(%s) = null" % id)
 
@@ -203,6 +207,34 @@ func tap_checks() -> void:
 	check(absf(float(c.get("dist")) - dd) < 3.0, "Schnecke: kriecht im Haus nicht weiter")
 	nf.seek(t0 + 3.2)
 	check(float(c.get("ext")) > 0.95, "Schnecke: wieder heraus")
+	# Hoppelhase (1.6.15): großer Schreck-Sprung, danach schnelle Hüpfer davon
+	c = start("hoppelhase", 13, 0.5)
+	t0 = c.t
+	var hp0 := center_of(c)
+	check(tap_at_free(c, "hoppelhase"), "Hoppelhase nimmt den Tipp")
+	nf.seek(t0 + 0.27)
+	check(nf.world_bounds().get_center().y < hp0.y - 40.0 and float(c.get("scared")) > 0.5, "Hoppelhase: Schreck-Sprung nach oben")
+	nf.seek(t0 + 1.0)
+	check(nf.world_bounds().get_center().distance_to(hp0) > 60.0, "Hoppelhase: hüpft schnell davon")
+	nf.seek(c.dur + 0.01)
+	check(c.is_done() and c.dur < t0 + 1.6, "Hoppelhase: danach weg")
+	# Strand (1.6.15): Tipp auf die Palme – schüttelt sich, eine Kokosnuss fällt; Sand ohne Palme nimmt keinen Tipp
+	c = start("strand", 14, 0.5)
+	t0 = c.t
+	check(float(c.get("leaves")) > 0.99 and absf(float(c.get("sway"))) < 0.08, "Strand: Palme steht, wiegt sich leicht")
+	var crown: Vector2 = c.call("_crown")
+	check(tap_at_free(c, "strand"), "Palme nimmt den Tipp")
+	nf.seek(t0 + 0.2)
+	check(absf(float(c.get("sway"))) > 0.1, "Palme schüttelt sich (%.2f)" % float(c.get("sway")))
+	check(float(c.get("nut_t")) > 0.15, "Palme: Kokosnuss fällt")
+	nf.seek(t0 + 3.0)
+	check(absf(float(c.get("sway"))) < 0.08, "Palme: beruhigt sich wieder")
+	check(crown.y < (c.get("base") as Vector2).y - 150.0, "Palme: Krone hoch über dem Fuß")
+	nf.spawn("strand", 14, {"still": false})
+	c = nf.creature() as NatureCreature
+	nf.seek(1.25)
+	var sand_p: Vector2 = (c.get("P") as Vector2) + Vector2(-330.0, -60.0)
+	check(not bool(c.call("hit", sand_p)) and not nf.tap(sand_p), "Strand: Sand allein nimmt keinen Tipp")
 	# Tiere ohne Tipp: Biene, Wolke, Regenbogen nehmen keinen Tipp
 	for id in ["wolke", "regenbogen"]:
 		c = start(id, 12, 0.5)
@@ -359,4 +391,58 @@ func snail_checks() -> void:
 	check(c.leaving(), "Schnecke: Zugende → geht")
 	nf.tick(0.5)
 	check(nf.current == null, "Schnecke: nach 0,5 s weg")
+	nf.clear()
+
+
+# 1.6.15: Hoppelhase (von einer Seite vorn herum zur anderen, Stauchen und Strecken) und Strand (Ecke unten rechts, Palme zwischen Hand
+# und Mau-Knopf, Krone darüber, am Ende alles weggespült; Ebene hinten)
+func new_checks() -> void:
+	NatureCheck.show(t, 4, 1)
+	for sd in [51, 52, 53]:
+		nf.spawn("hoppelhase", sd, {"still": true})
+		var c := nf.creature() as NatureCreature
+		var C := t.table_center()
+		var xs: Array = []
+		var squash := false
+		var stretch := false
+		var under := 0
+		var n := 0
+		var hint: Array = nf.obstacles().get("leiste", [])
+		var tt := c.in_s
+		while tt < c.dur - c.out_s:
+			nf.seek(tt)
+			var b := nf.world_bounds()
+			xs.append(b.get_center().x)
+			squash = squash or float(c.get("sy")) < 0.88
+			stretch = stretch or float(c.get("sy")) > 1.1
+			for r in hint:
+				if b.intersection(r).get_area() > b.get_area() * 0.3:
+					under += 1
+			n += 1
+			tt += 0.05
+		check(xs.size() > 10 and (float(xs[0]) - C.x) * (float(xs[xs.size() - 1]) - C.x) < 0.0,
+			"Hoppelhase (%d): hüpft von einer Seite zur anderen (%.0f → %.0f)" % [sd, float(xs[0]), float(xs[xs.size() - 1])])
+		check(squash and stretch, "Hoppelhase (%d): staucht und streckt sich" % sd)
+		check(under <= n / 10, "Hoppelhase (%d): kaum unter der Hinweisleiste (%d/%d)" % [sd, under, n])
+		check(c.dur >= 8.0 and c.dur <= 13.5, "Hoppelhase (%d): Dauer %.1f s" % [sd, c.dur])
+		nf.clear()
+	# Strand
+	nf.spawn("strand", 54, {"still": true})
+	var s := nf.creature() as NatureCreature
+	check(s.get_parent() == nf.layers["hinten"], "Strand: Ebene hinten (Hand und Mau-Knopf liegen darüber)")
+	var mau: Rect2 = (nf.obstacles().get("mau", [Rect2()]) as Array)[0]
+	nf.seek(0.5)
+	var b0 := nf.world_bounds()
+	check(b0.has_area() and b0.end.x >= 1599.0 and b0.end.y >= 719.0, "Strand: Welle kommt aus der Ecke unten rechts (%s)" % str(b0))
+	nf.seek(3.5)
+	var base: Vector2 = s.get("base")
+	var crown: Vector2 = s.call("_crown")
+	check(base.x < mau.position.x - 10.0 and base.x > 1600.0 - 270.0, "Strand: Palme zwischen Hand und Mau-Knopf (x %.0f, Mau ab %.0f)" % [base.x, mau.position.x])
+	check(crown.y < mau.position.y - 30.0, "Strand: Krone über dem Mau-Knopf (y %.0f, Mau ab %.0f)" % [crown.y, mau.position.y])
+	check(float(s.get("sea")) < 0.6 and float(s.get("sand")) > 0.99, "Strand: Meer in der Ecke, Sand davor")
+	var dd := s.dur
+	nf.seek(dd - 0.9)
+	check(float(s.get("palm_a")) < 0.1, "Strand: große Welle spült die Palme weg")
+	nf.seek(dd - 0.02)
+	check(float(s.get("sand")) <= 0.0 and float(s.get("sea")) < 0.1, "Strand: am Ende ist alles weg")
 	nf.clear()

@@ -535,10 +535,44 @@
     probe('cards/hell_rot_1.webp', 'karten');
     probe('cards/farbe_rot.webp', 'symbole');
   }
+  // Beta 1.6.15 (Browser-Tempo): Bildadressen tragen die Version des Gastgebers (?v=…). Der Gastgeber liefert sie dann als
+  // „immutable“ (NetServer.versioned), der Vermittler übergeht die Abfrage; so fragt der Browser nicht bei jeder neuen Karte nach.
+  let verQ = '';
+  function setzeVersion(v) { verQ = v ? '?v=' + encodeURIComponent(String(v)) : ''; }
+  // Gesichter vorab laden und entpacken (im Leerlauf, je 6), damit Flugkarten nicht leer oder spät erscheinen
+  const vorab = new Set();
+  function vorladen(keys) {
+    if (!Bilder.karten) return;
+    const offen = (keys || []).filter(k => k && !vorab.has(k));
+    let i = 0;
+    const naechste = () => {
+      for (let n = 0; n < 6 && i < offen.length; n++, i++) {
+        const k = offen[i];
+        vorab.add(k);
+        const img = new Image();
+        img.decoding = 'async';
+        img.src = 'cards/' + k + '.webp' + verQ;
+        if (img.decode) img.decode().catch(() => {});
+      }
+      if (i < offen.length) (window.requestIdleCallback || (f => setTimeout(f, 120)))(naechste);
+    };
+    naechste();
+  }
+  // alle Gesichter einer Seite ('hell' | 'dunkel') samt Farbsymbolen – zum Vorladen
+  function gesichterSeite(seite) {
+    const s = seite === 'dunkel' ? 'dunkel' : 'hell';
+    const k = [];
+    for (const f of FARBEN[s]) {
+      for (let n = 1; n <= 9; n++) k.push(s + '_' + f + '_' + n);
+      for (const a of ['ablegen', 'flip', 'richtungswechsel', 'tausch'].concat(s === 'hell' ? ['aussetzen', 'plus1'] : ['alle_aussetzen', 'plus5'])) k.push(s + '_' + f + '_' + a);
+    }
+    for (const a of ['wuenscher', 'gluecksspiel', 'ablegen_joker', s === 'hell' ? 'wuenscher_plus2' : 'farbjagd']) k.push(s + '_' + a);
+    return k;
+  }
   // Inhalt einer Kartenseite (Bild oder Ersatz)
   function gesichtHTML(key) {
     key = key || 'rueckseite';
-    if (Bilder.karten) return '<img class="kb" src="cards/' + key + '.webp" alt="" draggable="false" data-face="' + key + '">';
+    if (Bilder.karten) return '<img class="kb" src="cards/' + key + '.webp' + verQ + '" alt="" draggable="false" data-face="' + key + '">';
     return karteSVG(key);
   }
   // fehlendes Einzelbild → Ersatz
@@ -557,7 +591,7 @@
   }, true);
   // Farbsymbol (Bild oder SVG)
   function farbSymbolHTML(farbe, opt) {
-    if (Bilder.symbole) return '<img class="sym" src="cards/farbe_' + farbe + '.webp" alt="" draggable="false" data-farbe="' + farbe + '">';
+    if (Bilder.symbole) return '<img class="sym" src="cards/farbe_' + farbe + '.webp' + verQ + '" alt="" draggable="false" data-farbe="' + farbe + '">';
     return symbolSVG(farbe, opt);
   }
   // Kartenelement in Logik-Pixeln (w = Breite), Ursprung oben links
@@ -580,6 +614,6 @@
   M.Karten = {
     INK, PAPER, CREAM, NIGHT, MOON, FARBEN, FARB_INFO, VERHAELTNIS: CH / CW,
     zerlege, istJoker, punkte, farbName, artName, kartenName, passendText, kartenZahl, sortiere, hilfe, regelnText, besondereKarten,
-    symbolSVG, iconSVG, karteSVG, gesichtHTML, farbSymbolHTML, element, setzeGesicht, pruefeBilder, Bilder, mix,
+    symbolSVG, iconSVG, karteSVG, gesichtHTML, farbSymbolHTML, element, setzeGesicht, pruefeBilder, Bilder, mix, setzeVersion, vorladen, gesichterSeite,
   };
 })(window.MMF = window.MMF || {});

@@ -106,6 +106,11 @@ var _shake := 0.0
 var _zoom := 1.0
 var _press_pos := Vector2.ZERO
 var _pressing := false
+# Beta 1.6.15 (Nutzerbefund „bei +2 bekommt man 3“): eigener Zieh-Tipp unterwegs – bis zur nächsten Sicht (oder einer Ablehnung,
+# höchstens DRAW_SENT_MS) zählt ein weiterer Tipp auf den Stapel nicht; sonst zog ein Doppeltipp bzw. ein ungeduldiger zweiter Tipp
+# während der Zieh-Animation eine Karte mehr.
+const DRAW_SENT_MS := 4000
+var _draw_sent_at := -1
 var _rays_fx: Node2D
 var _round_key := ""
 var mau_variant_override := ""       # Tests/Kontrollbilder: feste Variante der Mau-Blase ("" = zufällig)
@@ -715,9 +720,11 @@ func _apply_me(v: Dictionary, turn: int, next: int) -> void:
 	_was_my_turn = _hand_halo_want
 
 
-# „Du bist dran“ (Beta 1.1.1): Dran-Ton nach der Einstellung Spieltöne (AppSound), kurze Vibration nur mit "zug_vibration" (ab Werk an)
+# „Du bist dran“ (Beta 1.1.1): Dran-Ton nach der Einstellung Spieltöne (AppSound) und nur mit "zug_ton" (Beta 1.6.15, ab Werk an),
+# kurze Vibration nur mit "zug_vibration" (ab Werk an)
 func _notify_my_turn() -> void:
-	UiApp.sound("dran")
+	if HandView.truthy(UiApp.setting("zug_ton", true)):
+		UiApp.sound("dran")
 	if HandView.truthy(UiApp.setting("zug_vibration", true)) and (OS.has_feature("mobile") or OS.get_name() == "Android"):
 		Input.vibrate_handheld(160)
 
@@ -807,6 +814,7 @@ func _apply_hints(h: Dictionary, turn: int) -> void:
 	_act_btns["keep"].visible = bool(h.get("can_keep", false))
 	_act_btns["challenge"].visible = bool(h.get("can_challenge", false))
 	_act_btns["accept"].visible = bool(h.get("can_challenge", false))
+	_draw_sent_at = -1                                             # neue Sicht: der eigene Zieh-Tipp ist angekommen
 	_pile.highlight = bool(h.get("can_draw", false)) and me_turn
 	if bool(h.get("need_color", false)) and _open_discard_wish(h):
 		pass
@@ -1407,9 +1415,13 @@ func _tap(p: Vector2) -> bool:
 	if fun.tap(wp):                                                # Mau-Katze auf dem Ziehstapel wegschieben (1.4.4)
 		return true
 	if Rect2(_draw_pos - Vector2(pile_w, pile_w * 1.6) * 0.62, Vector2(pile_w, pile_w * 1.6) * 1.24).has_point(wp):
-		if _pile.highlight and not input_locked:
-			_emit_action({"a": "draw"})
+		if _pile.highlight and not input_locked and not draw_pending():
+			_draw_sent_at = Time.get_ticks_msec()
+			_pile.highlight = false
+			_emit_action(draw_action(view, my_seat))
 			return true
+		if draw_pending():
+			return true                                            # zweiter Tipp während des Ziehens: verschlucken
 	# Mau-Mau Flip (Beta 1.6.3, Necken): Kopf → Necken-Menü (falls hier etwas geht). Beta 1.6.5: Die Reaktionen sind eigene Knöpfe
 	# (TeaseMenu.ReactionBar), das eigene Namensschild öffnet nichts mehr.
 	for s in _seats:
@@ -1431,6 +1443,29 @@ func _tap(p: Vector2) -> bool:
 	if nature.tap(wp):                                             # Beta 1.6.12: Tier antippen (nur Tipps ins Leere)
 		return true
 	return false
+
+
+# Ziehen; zeigt die Sicht eine offene Strafe auf mich, trägt es pen = true (Beta 1.6.15, MauGame._act_draw): Ein zweiter Tipp auf
+# dieselbe Sicht zieht dann keine weitere Karte.
+static func draw_action(v: Dictionary, seat: int) -> Dictionary:
+	var p: Variant = v.get("pending", {})
+	if p is Dictionary and not (p as Dictionary).is_empty() and int((p as Dictionary).get("victim", -1)) == seat and seat >= 0:
+		return {"a": "draw", "pen": true}
+	return {"a": "draw"}
+
+
+# Eigener Zieh-Tipp unterwegs (Beta 1.6.15)? Bis zur nächsten Sicht, einer Ablehnung (draw_retry) oder DRAW_SENT_MS.
+func draw_pending() -> bool:
+	return _draw_sent_at >= 0 and Time.get_ticks_msec() - _draw_sent_at < DRAW_SENT_MS
+
+
+# Ablehnung vom Gastgeber (Hinweis „Das geht gerade nicht …“): Stapel wieder wie in der letzten Sicht
+func draw_retry() -> void:
+	if _draw_sent_at < 0:
+		return
+	_draw_sent_at = -1
+	var h: Dictionary = view.get("hints", {}) if view.get("hints") is Dictionary else {}
+	_pile.highlight = bool(h.get("can_draw", false)) and int(view.get("turn", -1)) == my_seat and int(view.get("seat", 0)) >= 0
 
 
 # Glücksspielknopf: nur der Glücksspieler, nur wenn der Druck fällig ist, und nur einmal bis zur nächsten Sicht

@@ -241,6 +241,9 @@ msgstr "It's not your turn."
 msgid "Du hast schon gezogen – legen oder behalten."
 msgstr "You've already drawn – play or keep."
 
+msgid "Die Strafkarten hast du schon gezogen."
+msgstr "You've already drawn the penalty cards."
+
 msgid "Du hast schon „Mau!“ gerufen."
 msgstr "You've already called “Mau!”."
 

@@ -283,6 +283,29 @@ func pruefe_tag_details(css: String, tisch: String) -> void:
 		"Flip: ab der Mitte stehen Änderungen (z. B. wer dran ist) sofort in den Farben der neuen Seite; Layout-Aufrufe wechseln die Seite nicht")
 
 
+# Beta 1.6.15: „Bei deinem Zug: Ton“ (zug_ton, je Gerät, ab Werk an), Doppeltipp-Schutz am Stapel (pen, Regie), versionierte Bilder und
+# Töne, vorgeladene Gesichter, Puls ohne animierten Schatten, kein backdrop-filter, Tempo-Messung
+func pruefe_1615(css: String, tisch: String, app: String, seite: String) -> void:
+	var karten := read_web("karten.js")
+	var ton := read_web("ton.js")
+	check(app.contains("zug_vibration: true, zug_ton: true") and app.contains("Speicher.get('zug_ton', true) !== false")
+			and app.contains("if (this.einstellungen.zug_ton !== false) M.Ton.spiele('dran');") and seite.contains("data-set=\"zug_ton\" data-wert=\"true\"")
+			and seite.contains("data-set=\"zug_ton\" data-wert=\"false\"") and tisch.contains("if (this.app.zugTon) this.app.zugTon(); else M.Ton.spiele('dran');")
+			and tisch.contains("if (t.app.zugTon) t.app.zugTon(); else M.Ton.spiele('dran');"),
+		"„Bei deinem Zug: Ton“: Einstellung im Menü, localStorage, beide Dran-Töne des Tisches hören darauf")
+	check(app.contains("this.tisch.regie.leer)) this._sendeAkt(this.ziehAkt(v));") and app.contains("{ a: 'draw', pen: true }"),
+		"Ziehen: nicht während der Tischregie, Tipp auf eine offene Strafe trägt pen (wie TableView.draw_action)")
+	check(karten.contains("function setzeVersion(v) { verQ = v ? '?v='") and karten.contains("src=\"cards/' + key + '.webp' + verQ")
+			and karten.contains("function gesichterSeite(seite)") and ton.contains("fetch('sfx/' + datei + verQ)") and app.contains("_version(v) {")
+			and app.contains("M.Karten.vorladen(M.Karten.gesichterSeite(m.view.side))") and NetServer.versioned("/cards/hell_rot_1.webp", "v=1.6.15"),
+		"Kartenbilder und Töne mit ?v=<Version> (vom Gastgeber immutable), Gesichter der Seite vorgeladen")
+	check(not css.contains("backdrop-filter:") and css.contains("@keyframes mauPuls { 0%,100% { opacity: 0; } 50% { opacity: 1; } }")
+			and css.contains("@keyframes dranPuls { 0%,100% { opacity: 0; } 50% { opacity: 1; } }") and css.contains(".gg.dran .ava::after { animation: dranPuls"),
+		"style.css: Puls über die Deckkraft eines Scheins (kein animierter box-shadow), kein backdrop-filter")
+	check(app.contains("observe({ type: 'longtask' })") and app.contains("] Tempo: Antwort ") and tisch.contains("rueck >= 2 ? 0.15 : rueck ? 0.35 : 1"),
+		"Tempo-Messung (Antwortzeit, lange Aufgaben, Rückstau) und schnelleres Aufholen der Tischregie")
+
+
 # Beta 1.1.1: großer Modus (grosser_modus, Standard aus) und „Bei deinem Zug: Vibration“ (zug_vibration, Standard an seit 1.2.1), je Gerät
 func pruefe_111(css: String, tisch: String, autotest: String, app: String, seite: String) -> void:
 	var hand := read_web("hand.js")
@@ -435,6 +458,7 @@ func run() -> void:
 	pruefe_102(css, karten, app, seite)
 	pruefe_online(app, seite)
 	pruefe_111(css, tisch, autotest, app, seite)
+	pruefe_1615(css, tisch, app, seite)
 	pruefe_113(css, tisch, mock, autotest, app)
 	pruefe_i18n(seite)
 	pruefe_spass(tisch, app, seite)
@@ -721,6 +745,7 @@ func serve_check() -> void:
 			["cards/hell_rot_7.webp", "image/webp"], ["cards/rueckseite.webp", "image/webp"], ["bilder/katze.webp", "image/webp"], ["bilder/logo.webp", "image/webp"],
 			["bilder/reaktionen/daumen.svg", "image/svg+xml"], ["bilder/reaktionen/schreck.svg", "image/svg+xml"], ["bilder/reaktionen/baeh.svg", "image/svg+xml"],
 			["bilder/reaktionen/heulen.svg", "image/svg+xml"], ["bilder/reaktionen/facepalm.svg", "image/svg+xml"],
+			["bilder/reaktionen/denken.svg", "image/svg+xml"], ["bilder/reaktionen/schlafen.svg", "image/svg+xml"], ["bilder/reaktionen/kuss.svg", "image/svg+xml"],
 			["fonts/" + woff, "font/woff2"], ["wach.mp4", "video/mp4"]]:
 		var r := await http_get(server, "/" + str(pair[0]))
 		check(int(r.status) == 200 and str(r.type).contains(pair[1]) and (r.body as PackedByteArray).size() > 500,
@@ -1088,10 +1113,10 @@ func pruefe_necken(tisch: String, app: String, seite: String) -> void:
 			and tisch.find("if (k) this.app.aktion({ a: 'catch'") < tisch.find("M.Necken.tippGegner("), "tisch.js: Erwischt geht vor, Kopf-Tipp → Necken-Menü, Reaktionsknopf nach jedem Abgleich")
 	# Beta 1.6.5 (Nutzer 15.10.2026): Reaktionen als Fluent-Emoji-Bilder, dieselben Dateien wie die App (game/assets/ui/reaktionen/),
 	# samt Lizenz; Reihenfolge der Knöpfe Lachen, Klatschen, Daumen hoch, Schreck; das Schrift-Emoji nur als Rückfall
-	check(nk.contains("const REAKT_REIHE = ['lachen', 'klatschen', 'daumen', 'schreck', 'baeh', 'heulen', 'facepalm'];") and nk.contains("'bilder/reaktionen/' + r + '.svg'")
+	check(nk.contains("const REAKT_REIHE = ['lachen', 'klatschen', 'daumen', 'schreck', 'baeh', 'heulen', 'facepalm', 'denken', 'schlafen', 'kuss'];") and nk.contains("'bilder/reaktionen/' + r + '.svg'")
 			and nk.contains("img.addEventListener('error', () => img.remove());"), "necken.js: Reaktionsknöpfe in fester Reihenfolge mit Bildern, Emoji als Rückfall")
 	check(FileAccess.file_exists(web_dir.path_join("bilder/reaktionen/LIZENZ.md")), "webclient/bilder/reaktionen/LIZENZ.md (Fluent Emoji, MIT)")
-	for r in ["lachen", "klatschen", "daumen", "schreck", "baeh", "heulen", "facepalm"]:
+	for r in ["lachen", "klatschen", "daumen", "schreck", "baeh", "heulen", "facepalm", "denken", "schlafen", "kuss"]:
 		var web_svg := FileAccess.get_file_as_bytes(web_dir.path_join("bilder/reaktionen/%s.svg" % r))
 		var app_svg := FileAccess.get_file_as_bytes("res://assets/ui/reaktionen/%s.svg" % r)
 		check(web_svg.size() > 1000 and web_svg == app_svg, "webclient/bilder/reaktionen/%s.svg gleich dem Bild der App" % r)
@@ -1118,7 +1143,8 @@ func pruefe_necken(tisch: String, app: String, seite: String) -> void:
 	check(nk.contains("if (req.k === CUSHION) m.reveal = req.reveal === true;") and nk.contains("if (f.k === CUSHION && f.from !== v.seat) return false;")
 			and nk.contains("this._ton('furzkissen', ziel ? 1 : LEISE)"), "necken.js: Kissen-Wunsch mit reveal, Bestätigung nur vom eigenen Platz, Ton beim Ziel normal, sonst leise")
 	var ton := read_web("ton.js")
-	var toene := ["schnarchen", "wecker", "papier_wurf", "papier_plopp", "lachen", "schreck", "klatschen", "daumen", "furzkissen", "baeh", "heulen", "facepalm"]
+	var toene := ["schnarchen", "wecker", "papier_wurf", "papier_plopp", "lachen", "schreck", "klatschen", "daumen", "furzkissen", "baeh", "heulen", "facepalm",
+		"hmm", "kuss"]
 	check(ton.contains(liste.call("NECK_TOENE", toene)) and ton.contains("function stoppe(name, ms)") and ton.contains("function spiele(name, pegel)"),
 		"ton.js: Neck-Töne, spiele mit Pegel, stoppe mit Rampe")
 	check(nk.contains("const LEISE = 0.25;") and nk.contains("this._rt.length >= 2") and nk.contains("< 600"), "necken.js: leise −12 dB, Reaktionstöne höchstens 2 gleichzeitig, 600 ms je Name")
@@ -1138,13 +1164,18 @@ func pruefe_necken(tisch: String, app: String, seite: String) -> void:
 	check(FileAccess.get_file_as_bytes(web_dir.path_join("sfx/baeh.ogg")) == FileAccess.get_file_as_bytes("res://assets/sfx/baeh.ogg"), "webclient/sfx/baeh.ogg gleich dem Ton der App")
 	# (Quelltext statt TeaseFx: die Klasse lädt die Bilder, die beim Beenden als „still in use“ gemeldet würden)
 	# Beta 1.6.13: sechste und siebte Reaktion „Heulen“ (😭) und „Facepalm“ (🤦) ebenso
-	var lm := RegEx.create_from_string('const REACT_LEN_MS := \\{"lachen": (\\d+), "schreck": (\\d+), "klatschen": (\\d+), "daumen": (\\d+), "baeh": (\\d+), "heulen": (\\d+), "facepalm": (\\d+)\\}') \
+	# Beta 1.6.15: dazu „Nachdenken“ (🤔, Ton hmm), „Schnarchen“ (😴, Ton schnarchen) und „Küsschen“ (😘, Ton kuss)
+	var lm := RegEx.create_from_string('const REACT_LEN_MS := \\{"lachen": (\\d+), "schreck": (\\d+), "klatschen": (\\d+), "daumen": (\\d+), "baeh": (\\d+), "heulen": (\\d+), "facepalm": (\\d+),\\s*"denken": (\\d+), "schlafen": (\\d+), "kuss": (\\d+)\\}') \
 		.search(FileAccess.get_file_as_string("res://scripts/ui/tease_fx.gd"))
-	check(lm != null and nk.contains("const REAKT_MS = { lachen: %s, schreck: %s, klatschen: %s, daumen: %s, baeh: %s, heulen: %s, facepalm: %s };" % [lm.get_string(1),
-			lm.get_string(2), lm.get_string(3), lm.get_string(4), lm.get_string(5), lm.get_string(6), lm.get_string(7)]) and nk.contains("baeh: ['😝', 'Bäää']")
-			and nk.contains("heulen: ['😭', 'Heulen'], facepalm: ['🤦', 'Facepalm']"),
+	check(lm != null and nk.contains("const REAKT_MS = { lachen: %s, schreck: %s, klatschen: %s, daumen: %s, baeh: %s, heulen: %s, facepalm: %s, denken: %s, schlafen: %s, kuss: %s };" % [lm.get_string(1),
+			lm.get_string(2), lm.get_string(3), lm.get_string(4), lm.get_string(5), lm.get_string(6), lm.get_string(7), lm.get_string(8), lm.get_string(9),
+			lm.get_string(10)]) and nk.contains("baeh: ['😝', 'Bäää']")
+			and nk.contains("heulen: ['😭', 'Heulen'], facepalm: ['🤦', 'Facepalm'], denken: ['🤔', 'Nachdenken'], schlafen: ['😴', 'Schnarchen'], kuss: ['😘', 'Küsschen']"),
 		"necken.js: Tondauern und Rückfall-Emoji der Reaktionen wie die App")
-	for r_new in ["heulen", "facepalm"]:
+	check(nk.contains("const REAKT_TON = { denken: 'hmm', schlafen: 'schnarchen' };") and nk.contains("this._ton(REAKT_TON[r] || r)")
+			and FileAccess.get_file_as_string("res://scripts/ui/tease_fx.gd").contains('"denken": "hmm", "schlafen": "schnarchen", "kuss": "kuss"}'),
+		"necken.js: Ton je Reaktion wie TeaseFx.SOUND_OF (😴 schnarchen, 🤔 hmm)")
+	for r_new in ["heulen", "facepalm", "hmm", "kuss"]:
 		check(FileAccess.get_file_as_bytes(web_dir.path_join("sfx/%s.ogg" % r_new)) == FileAccess.get_file_as_bytes("res://assets/sfx/%s.ogg" % r_new),
 			"webclient/sfx/%s.ogg gleich dem Ton der App" % r_new)
 	check(nk.contains("const REAKT_SPALTEN = %d;" % TeaseMenu.REACT_COLS) and nk.contains("reihe: [SP, Math.ceil(NR / SP)]") and nk.contains("zeile: [NR, 1]"),
@@ -1187,7 +1218,7 @@ func pruefe_natur(app: String, seite: String) -> void:
 	var nacht := read_web("natur_nacht.js")
 	check(tag.contains("const N = M.Natur;") and nacht.contains("const N = M.Natur;"), "natur_tag.js/natur_nacht.js melden ihre Arten bei M.Natur an")
 	var ids: Array = nt_script.ids()
-	check(ids.size() == 25, "NatureTable: 25 Ereignisse (%d)" % ids.size())
+	check(ids.size() == 29, "NatureTable: 29 Ereignisse (%d)" % ids.size())
 	var ohne_app: Array = []
 	var ohne_lite: Array = []
 	for id in ids:

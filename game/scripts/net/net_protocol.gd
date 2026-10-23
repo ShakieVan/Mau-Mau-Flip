@@ -58,7 +58,8 @@ const TOKEN_LENGTH := 24
 const KINDS := ["app", "web"]
 const REJECT_CODES := ["version", "full", "running", "proto"]
 # Felder einer Spielaktion (Abschnitt 4) mit Typ: andere Felder werden verworfen.
-const ACTION_FIELDS := {"a": TYPE_STRING, "card": TYPE_INT, "color": TYPE_STRING, "target": TYPE_INT}
+# pen (Beta 1.6.15): {a:"draw", pen:true} = dieser Tipp galt einer offenen Strafe (MauGame._act_draw)
+const ACTION_FIELDS := {"a": TYPE_STRING, "card": TYPE_INT, "color": TYPE_STRING, "target": TYPE_INT, "pen": TYPE_BOOL}
 const MAX_DEPTH := 12
 
 # --- Online-Spiel über einen Vermittler (docs/online/ENTWURF.md) ---
@@ -474,7 +475,7 @@ static func clean_fx_offs(msg: Dictionary) -> Array:
 	return out
 
 static func clean_action(a: Dictionary) -> Dictionary:
-	# Spielaktion {a, card?, color?, target?}: nur bekannte Felder mit passendem Typ. {} = ungültig.
+	# Spielaktion {a, card?, color?, target?, pen?}: nur bekannte Felder mit passendem Typ. {} = ungültig.
 	if not a.get("a") is String or str(a.a) == "" or str(a.a).length() > 16:
 		return {}
 	var out := {}
@@ -486,6 +487,8 @@ static func clean_action(a: Dictionary) -> Dictionary:
 			out[key] = int(v)
 		elif ACTION_FIELDS[key] == TYPE_STRING and v is String and str(v).length() <= 16:
 			out[key] = str(v)
+		elif ACTION_FIELDS[key] == TYPE_BOOL and v is bool:
+			out[key] = v
 	# Kartenliste (discard_pick): nur ganze Zahlen, höchstens 120 Einträge.
 	var cards = a.get("cards")
 	if cards is Array and cards.size() <= 120:

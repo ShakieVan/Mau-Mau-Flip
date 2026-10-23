@@ -1,6 +1,7 @@
 /* Mau-Mau Flip (Beta 1.6.12): „Natur-Überraschungen“ im Browser-Client „Lite“ – die Tagseite (docs/module/natur.md, Aufgabe T5).
  * Elf Tagereignisse und der Schmetterling aus dem Bestand: Marienkäfer, Biene, Libelle, Pusteblume, Papierflieger, Seifenblasen, Spatz,
- * Wolke vor der Sonne, Regenbogen nach Flip, Heißluftballon, Schnecke bei Trödlern, Schmetterling.
+ * Wolke vor der Sonne, Regenbogen nach Flip, Heißluftballon, Schnecke bei Trödlern, Schmetterling; ab 1.6.15 dazu Hoppelhase und Strand
+ * mit Palme (Ecke unten rechts, hinter Hand und Mau-Knopf).
  * Jede Art meldet sich mit M.Natur.art(id, {baue(ctx, zufall)}) beim Kern (natur.js) an; Vertrag und ctx stehen im Dateikopf von natur.js.
  *
  * Stil „Papier & Neon“ (Tag): ausgeschnittenes Papier mit Druckfarben-Kontur (INK), kräftige Flächen, kleiner Glanz, ein weicher
@@ -1134,6 +1135,329 @@
         hulle(tt) { const p = this.pose(tt); return p.op < 0.03 ? null : kasten(p.x, p.y, 58, 50); },
         abgang() { if (!this.weg) this.weg = { at: this.t }; return 0.4; },
       };
+      return inst;
+    },
+  });
+
+  /* ---------- Hilfen für Hoppelhase und Strand (1.6.15) ---------- */
+  const TAU = Math.PI * 2;
+  const n1 = v => String(Math.round(v * 10) / 10);
+
+  /* ======================================================================== 12 Hoppelhase (1.6.15) */
+  // Nutzerwunsch 23.10.2026: „Ein Hoppelhase hüpft durch das Bild“. Wie die App (nature_day.gd Hoppelhase): hüpft von einer Seite auf den
+  // Plattformrand, vorn herum zur anderen Seite (Ducken, Strecken, Landen), zwei Pausen (Männchen, Ohrenzucken), hüpft hinaus.
+  // Antippen: Schreck-Sprung mit aufgestellten Ohren, danach schnell davon. Seitenansicht, Blick nach rechts (+x), Ursprung an den Füßen.
+  const HH_GR = 1.6;
+  const HH = { fell: '#D3AE87', fellD: '#B38B64', bauch: '#F8EDDC', ohr: '#F5A9BC', nase: '#EE7499' };
+  // Ohr als Ellipse ab dem Ansatz b in Richtung w (Grad), Länge l, Breite d
+  const hhOhr = (b, w, l, d, fill, rand) => {
+    const cx = b[0] + Math.cos(w * RAD) * l / 2, cy = b[1] + Math.sin(w * RAD) * l / 2;
+    return '<ellipse cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" rx="' + (l / 2).toFixed(1) + '" ry="' + (d / 2).toFixed(1) + '" transform="rotate(' + w.toFixed(1) + ' ' + cx.toFixed(1) + ' ' + cy.toFixed(1) + ')" fill="' + fill + '"'
+      + (rand ? ' stroke="' + INK + '" stroke-width="1.3"' : '') + '/>';
+  };
+  const HH_SVG = '<g class="nt-hh-oh">' + hhOhr([6.5, -28], -112, 16, 7, HH.fellD, true) + '</g>'
+    + '<circle cx="-15" cy="-12" r="5.4" fill="' + HH.bauch + '" stroke="' + INK + '" stroke-width="1.2"/><circle cx="-17" cy="-14" r="2.6" fill="#fff"/>'
+    + '<ellipse cx="-7" cy="-8" rx="8.6" ry="7.4" transform="rotate(-11 -7 -8)" fill="' + HH.fellD + '" stroke="' + INK + '" stroke-width="1.3"/>'
+    + '<ellipse class="nt-hh-fuss" cx="-4" cy="-1.8" rx="9.2" ry="3" fill="' + HH.fell + '" stroke="' + INK + '" stroke-width="1.2"/>'
+    + '<ellipse cx="-1" cy="-12.5" rx="13.5" ry="10.5" transform="rotate(-11 -1 -12.5)" fill="' + HH.fell + '" stroke="' + INK + '" stroke-width="1.4"/>'
+    + '<ellipse cx="5" cy="-9" rx="6.4" ry="5.2" transform="rotate(-17 5 -9)" fill="' + HH.bauch + '"/>'
+    + '<path d="M-12.4,-12.6 A7.6,6.4 0 0 1 -2.6,-15.4" fill="none" stroke="' + INK + '" stroke-opacity=".55" stroke-width="1.1"/>'
+    + '<ellipse class="nt-hh-pf" cx="8" cy="-1.8" rx="3.3" ry="2.3" fill="' + HH.fell + '" stroke="' + INK + '" stroke-width="1.1"/>'
+    + '<ellipse cx="10.5" cy="-21" rx="9.8" ry="9.2" fill="' + HH.fell + '" stroke="' + INK + '" stroke-width="1.4"/>'
+    + '<ellipse cx="16.4" cy="-17.8" rx="4.8" ry="3.6" fill="' + HH.bauch + '"/>'
+    + '<circle cx="13.6" cy="-16.8" r="2.7" fill="#FF8CAD" fill-opacity=".38"/>'
+    + '<g class="nt-hh-au"><ellipse cx="13.4" cy="-22.8" rx="2.2" ry="2.8" fill="' + INK + '"/><circle cx="14.2" cy="-23.9" r="1" fill="#fff"/><circle cx="12.9" cy="-21.7" r=".45" fill="#fff" fill-opacity=".8"/></g>'
+    + '<circle class="nt-hh-na" cx="20.6" cy="-19.2" r="1.6" fill="' + HH.nase + '"/>'
+    + '<path d="M18,-18.4 L24.5,-19.8 M18,-17.3 L24.5,-17.6" stroke="' + INK + '" stroke-opacity=".45" stroke-width=".7" stroke-linecap="round"/>'
+    + '<g class="nt-hh-ov">' + hhOhr([9, -28.6], -92.8, 17, 7.6, HH.fell, true) + hhOhr([9.3, -30.2], -92.8, 12.5, 3.6, HH.ohr, false) + '</g>';
+  N.stil('hoppelhase', [
+    '.nt-hh-ov{transform-origin:9px -28.6px}',
+    '.nt-hh-oh{transform-origin:6.5px -28px}',
+    '.nt-hh-au{transform-origin:13.4px -22.8px}',
+  ].join('\n'));
+  N.art('hoppelhase', {
+    baue(ctx, z) {
+      const e = ctx.eintrag, D0 = rnd(z, e.dauer[0], e.dauer[1]);
+      const Q = 0.62, HOP = 0.42, REST = 0.1, SCHRECK = 0.55, FLUCHT = 0.3;
+      const lr = leiste();
+      const hind = (ctx.schutz || []).filter(r => r.name !== 'hand').concat(lr ? [lr] : []);
+      const bedeckt = r => Math.min(1, hind.reduce((s, h) => s + flaeche(r, h), 0) / (r.w * r.h));
+      const g0 = ctx.ort && typeof ctx.ort.grad === 'number' ? ctx.ort.grad : 140;
+      // Weg: von einer Seite vorn herum zur anderen; die Seite des Ankers zuerst, sonst die freiere
+      let a0 = 168, a1 = 12, bk = Infinity;
+      [170, 164, 158, 10, 16, 22].forEach(st => [10, 16, 22, 28].forEach(en => {
+        const ee = st > 90 ? en : 180 - en;
+        let k = 0;
+        for (let m = 0; m < 16; m++) { const p = ctx.band(lerp(st, ee, (m + 0.5) / 16), Q); k += bedeckt(kasten(p.x, p.y - 26, 60, 58)); }
+        k = k / 16 + ((st > 90) === (g0 > 90) ? 0 : 0.04) + Math.abs(Math.abs(ee - st) - 160) * 0.0004 + z() * 0.01;
+        if (k < bk) { bk = k; a0 = st; a1 = ee; }
+      }));
+      const weg = bandWeg(ctx, a0, a1, Q), L = weg.L;
+      const pA = weg.an(0), pE = weg.an(L);
+      const norm = (p) => { const dx = p.x - ctx.cx, dy = p.y - ctx.cy, l = Math.hypot(dx, dy) || 1; return { x: dx / l, y: dy / l }; };
+      const vA = norm(pA), vE = norm(pE);
+      const pause = [rnd(z, 1.1, 1.5), rnd(z, 1.0, 1.4)];
+      let n = Math.max(6, Math.floor((D0 - 3 * HOP - pause[0] - pause[1]) / (HOP + REST)));
+      let hl = klemme(L / n, 40, 84);
+      n = Math.max(3, Math.ceil(L / hl)); hl = L / n;
+      const pausenBei = [0.33, 0.68].map(f => {
+        let bi = klemme(Math.round(n * f), 1, n - 1);
+        for (const dj of [0, 1, -1, 2, -2]) { const j = klemme(bi + dj, 1, n - 1), p = weg.an(hl * j); if (bedeckt(kasten(p.x, p.y - 26, 60, 58)) < 0.2) { bi = j; break; } }
+        return bi;
+      });
+      const pt = p => ({ x: p.x, y: p.y });
+      const akt = [];
+      let t = 0;
+      const dazu = (art, d, p0, p1, x) => { akt.push({ t0: t, t1: t + d, art, p0, p1, x: x || '' }); t += d; };
+      const pIn = { x: pA.x + vA.x * 60, y: pA.y + vA.y * 60 };
+      dazu('hop', HOP, pIn, pt(pA));
+      let s = 0;
+      for (let i = 0; i < n; i++) {
+        dazu('rest', REST, pt(weg.an(s)), pt(weg.an(s)));
+        dazu('hop', HOP, pt(weg.an(s)), pt(weg.an(s + hl)));
+        s += hl;
+        const pz = pausenBei.indexOf(i + 1);
+        if (pz >= 0) dazu('pause', pause[pz], pt(weg.an(s)), pt(weg.an(s)), pz === 0 ? 'maennchen' : 'ohren');
+      }
+      const pOut = { x: pE.x + vE.x * 62, y: pE.y + vE.y * 62 };
+      dazu('rest', REST, pt(pE), pt(pE));
+      dazu('hop', HOP, pt(pE), pOut);
+      const tFade = t;
+      dazu('hop', HOP, pOut, { x: pOut.x + vE.x * 62, y: pOut.y + vE.y * 62 });
+      const D = t;
+      const root = el('div', 'nt-hh', svg('nt-hh-sch', -22, -6, 44, 12, '<ellipse cx="0" cy="0" rx="18" ry="4.5" fill="' + INK + '" fill-opacity=".18"/>')
+        + svg('nt-hh-s', -26, -50, 56, 54, HH_SVG));
+      const sch = q(root, '.nt-hh-sch'), hase = q(root, '.nt-hh-s'), ov = q(root, '.nt-hh-ov'), oh = q(root, '.nt-hh-oh'), au = q(root, '.nt-hh-au'), na = q(root, '.nt-hh-na');
+      const hupf = (p0, p1, u, h) => {
+        const dx = p1.x - p0.x, dy = p1.y - p0.y, face = dx >= 0 ? 1 : -1;
+        const neig = klemme(Math.atan2(dy * face, Math.abs(dx) + 0.001), -0.45, 0.45);
+        if (u < 0.18) { const w = u / 0.18; return { x: p0.x, y: p0.y, hoch: 0, sy: 1 - 0.2 * Math.sin(Math.PI / 2 * w), sx: 1 + 0.12 * Math.sin(Math.PI / 2 * w), kipp: neig + 0.06 * w, ohr: 0.15 * w, face }; }
+        if (u < 0.82) {
+          const v = (u - 0.18) / 0.64, e2 = glatt(v), sy = 1 + 0.16 * Math.pow(1 - v, 2) + 0.06 * Math.pow(v, 3);
+          return { x: lerp(p0.x, p1.x, e2), y: lerp(p0.y, p1.y, e2), hoch: h * Math.sin(Math.PI * v), sy, sx: 1 / Math.sqrt(sy), kipp: neig - 0.3 * Math.cos(Math.PI * v), ohr: 0.15 + 0.45 * Math.sin(Math.PI * v), face };
+        }
+        const w = (u - 0.82) / 0.18;
+        return { x: p1.x, y: p1.y, hoch: 0, sy: 1 - 0.16 * Math.sin(Math.PI * w), sx: 1 + 0.1 * Math.sin(Math.PI * w), kipp: neig * (1 - 0.3 * w), ohr: 0.3 * (1 - w), face };
+      };
+      const grund = tt => {
+        let i = akt.findIndex(a => tt < a.t1);
+        if (i < 0) i = akt.length - 1;
+        const a = akt[i], u = klemme((tt - a.t0) / Math.max(1e-4, a.t1 - a.t0), 0, 1);
+        let r;
+        if (a.art === 'hop') r = hupf(a.p0, a.p1, u, 0.42 * hl + 6);
+        else {
+          const nx = i + 1 < akt.length ? akt[i + 1].p1 : { x: a.p0.x + vE.x, y: a.p0.y + vE.y };
+          const dx = nx.x - a.p0.x, dy = nx.y - a.p0.y, face = dx >= 0 ? 1 : -1;
+          r = { x: a.p0.x, y: a.p0.y, hoch: 0, sx: 1, sy: 1, kipp: klemme(Math.atan2(dy * face, Math.abs(dx) + 0.001), -0.45, 0.45), ohr: 0, face };
+        }
+        r.zuck = 0; r.sitz = 0; r.schnupp = 0; r.schreck = 0;
+        if (a.art === 'pause') {
+          const lt = tt - a.t0, len = a.t1 - a.t0;
+          r.schnupp = 1;
+          const b = x => Math.sin(Math.PI * klemme(x, 0, 1));
+          if (a.x === 'maennchen') { r.sitz = glatt(lt / 0.25) * (1 - glatt((lt - len + 0.25) / 0.25)); r.zuck = 0.35 * Math.sin(lt * 22) * b((lt - 0.4) / 0.35); }
+          else r.zuck = 0.4 * Math.sin(lt * 24) * (b((lt - 0.15) / 0.3) + b((lt - 0.7) / 0.3));
+        }
+        r.a = a;
+        return r;
+      };
+      const inst = { el: root, dauer: D, t: 0, tap: null, weg: null };
+      inst.pose = tt => {
+        const tp = inst.tap;
+        let r;
+        if (tp && tt >= tp.at) {
+          const k = tt - tp.at;
+          if (k < SCHRECK) {
+            const u = k / SCHRECK, sy = u < 0.5 ? 1.18 - 0.18 * u : 1 + 0.1 * Math.sin(Math.PI * (u - 0.5) * 2);
+            r = { x: tp.p.x, y: tp.p.y, hoch: 66 * Math.sin(Math.PI * u), sy, sx: 1 / Math.sqrt(sy), kipp: -0.35 * Math.sin(Math.PI * u) + 0.12 * Math.sin(u * 40) * (1 - u),
+              ohr: -0.55 * Math.sin(Math.PI * klemme(u * 1.4, 0, 1)), face: tp.dir.x >= 0 ? 1 : -1, zuck: 0, sitz: 0, schnupp: 0, schreck: Math.sin(Math.PI * klemme(u * 1.2, 0, 1)) };
+          } else {
+            const k2 = k - SCHRECK, i = Math.floor(k2 / FLUCHT), u = (k2 % FLUCHT) / FLUCHT;
+            const st = { x: tp.dir.x * hl * 1.5, y: tp.dir.y * hl * 1.5 }, p0 = { x: tp.p.x + st.x * i, y: tp.p.y + st.y * i };
+            r = hupf(p0, { x: p0.x + st.x, y: p0.y + st.y }, u, 0.5 * hl + 8);
+            r.ohr = 0.6; r.zuck = 0; r.sitz = 0; r.schnupp = 0; r.schreck = 0;
+          }
+          r.op = 1 - klemme((k - SCHRECK - FLUCHT * 1.2) / (FLUCHT * 1.8), 0, 1);
+        } else {
+          r = grund(tt);
+          r.op = Math.min(klemme(tt / (HOP * 0.7), 0, 1), 1 - klemme((tt - tFade) / HOP, 0, 1));
+        }
+        if (inst.weg && tt >= inst.weg.at) r.op *= 1 - klemme((tt - inst.weg.at) / 0.4, 0, 1);
+        return r;
+      };
+      inst.stelle = tt => {
+        inst.t = tt;
+        const r = inst.pose(tt);
+        setz(hase, r.x, r.y - r.hoch, (r.kipp - 0.5 * r.sitz) / RAD, r.face * r.sx * HH_GR, r.sy * HH_GR, r.op);
+        dreh(ov, (r.ohr + r.zuck - 0.2 * r.sitz) / RAD);
+        dreh(oh, (r.ohr - 0.25 * r.sitz) / RAD);
+        dreh(au, 0, 0, 0, 1 + 0.35 * r.schreck);
+        tf(na, 'translate(0px,' + (r.schnupp ? 0.5 * Math.sin(tt * 30) : 0).toFixed(2) + 'px)');
+        setz(sch, r.x, r.y + 2, 0, 1 - 0.4 * klemme(r.hoch / 70, 0, 1), 1, r.op * (1 - 0.6 * klemme(r.hoch / 60, 0, 1)));
+      };
+      inst.hulle = tt => { const r = inst.pose(tt); return r.op < 0.03 ? null : kasten(r.x, r.y - r.hoch - 19 * HH_GR, 42 * HH_GR, 42 * HH_GR); };
+      inst.tipp = () => {
+        if (inst.tap) return;
+        const r = grund(inst.t), a = r.a;
+        let dx = a.p1.x - a.p0.x, dy = a.p1.y - a.p0.y, l = Math.hypot(dx, dy);
+        if (l < 1) { dx = r.face; dy = 0; l = 1; }
+        inst.tap = { at: inst.t, p: { x: r.x, y: r.y }, dir: { x: dx / l, y: dy / l } };
+        inst.dauer = inst.t + SCHRECK + FLUCHT * 3 + 0.05;
+      };
+      inst.abgang = () => { if (!inst.weg) inst.weg = { at: inst.t }; return 0.4; };
+      return inst;
+    },
+  });
+
+  /* ======================================================================== 13 Strand mit Palme (1.6.15) */
+  // Nutzerwunsch 23.10.2026: „In der unteren rechten Ecke kommt mit einer Welle für ein paar Sekunden ein Strand ins Bild und eine Palme
+  // wächst“. Wie die App (nature_day.gd Strand): Welle aus der Ecke, Sand bleibt zurück, Meer in der Ecke, Palme wächst Stück für Stück,
+  // Wedel entfalten sich, sie wiegt sich; eine große Welle spült alles weg. Ebene hinten: Hand (#hand-zone) und Mau-Knopf liegen darüber.
+  // Die Palme steht zwischen Hand und Mau-Knopf (rechts 46, unten 40, 150 × 150), die Krone darüber. Antippen der Palme: sie schüttelt
+  // sich, eine Kokosnuss fällt. SVG mit Ursprung in der Ecke; Sand und Meer wachsen per scale um die Ecke.
+  const ST = { meer: '#2FBFD2', meerHell: '#86E6EF', sand: '#F3CC86', sandD: '#D9A85E', nass: '#D2A061', stamm: '#B47D46', stammD: '#7E5329',
+    blatt: '#3DBB6A', blattHell: '#5FD486', nuss: '#7A4A22', stern: '#FF8A5B', muschel: '#FFC9D6' };
+  const ST_WEDEL = [[-178, 86, 42], [-152, 82, 24], [-124, 66, 10], [-95, 56, 2], [-64, 64, 8], [-36, 80, 22], [-10, 86, 38], [16, 72, 44]];
+  N.art('strand', {
+    baue(ctx, z) {
+      const W = ctx.W, H = ctx.H, e = ctx.eintrag, D = rnd(z, e.dauer[0], e.dauer[1]);
+      const o = ctx.ort && typeof ctx.ort.x === 'number' ? ctx.ort : { x: W, y: H, mau: null };
+      const P = { x: o.x, y: o.y }, RX = 410, RY = 245, SEA = 0.5, T_IN = 1.0, T_BACK = 1.8, T_WASH = D - 1.7, SEGS = 8;
+      let bx = P.x - 233;
+      if (o.mau) bx = Math.min(bx, o.mau.x - 34);
+      const B = { x: bx - P.x, y: -52 }, TH = 250;   // Fuß der Palme (relativ zur Ecke)
+      const TOP = { x: B.x + 16, y: B.y - TH }, CT = { x: B.x - 38, y: B.y - 0.55 * TH };
+      const ph = z() * TAU;
+      // Strand-Form (Viertel-Ellipse um die Ecke mit leichtem Wellenrand), Radius r als Anteil
+      const rand = (r, wob, ph2) => { const pts = []; for (let i = 0; i <= 24; i++) { const th = Math.PI + Math.PI / 2 * i / 24, w = 1 + wob * Math.sin(5 * th + ph + (ph2 || 0)); pts.push([Math.cos(th) * RX * r * w, Math.sin(th) * RY * r * w]); } return pts; };
+      const P2 = a => a.map(p => n1(p[0]) + ',' + n1(p[1])).join(' L');
+      const form = (r, wob, ph2) => 'M' + n1(-RX * r * 1.2 - 20) + ',4 L' + P2(rand(r, wob, ph2)) + ' L4,' + n1(-RY * r * 1.2 - 20) + ' L4,4 Z';
+      const linie = (r, wob, ph2) => 'M' + P2(rand(r, wob, ph2));
+      // Sandkörnchen und Schaumbläschen als runde Punkte (Linien der Länge 0)
+      let koerner = '';
+      for (let i = 0; i < 16; i++) { const th = rnd(z, Math.PI * 1.03, Math.PI * 1.47), r = rnd(z, SEA + 0.08, 0.95); koerner += 'M' + n1(Math.cos(th) * RX * r) + ',' + n1(Math.sin(th) * RY * r) + ' l0,0 '; }
+      let blasen = '';
+      for (let i = 0; i < 9; i++) { const th = Math.PI + Math.PI / 2 * (i + 0.5) / 9; blasen += 'M' + n1(Math.cos(th) * (RX + 3)) + ',' + n1(Math.sin(th) * (RY + 3)) + ' l0,0 '; }
+      // Stamm: Stücke entlang der Bezierkurve (lokal: Fuß der Palme = 0,0)
+      const kurve = f => bez2({ x: 0, y: 0 }, { x: CT.x - B.x, y: CT.y - B.y }, { x: TOP.x - B.x, y: TOP.y - B.y }, f);
+      let stamm = '';
+      for (let j = 0; j < SEGS; j++) {
+        const p0 = kurve(j / SEGS), p1 = kurve((j + 1) / SEGS), w0 = lerp(9, 6, j / SEGS), w1 = lerp(9, 6, (j + 1) / SEGS) * 1.12;
+        const l = Math.hypot(p1.x - p0.x, p1.y - p0.y), wn = Math.atan2(p1.y - p0.y, p1.x - p0.x) / RAD + 90;
+        stamm += '<path class="nt-st-sg" data-tr="translate(' + n1(p0.x) + ' ' + n1(p0.y) + ') rotate(' + n1(wn) + ')" transform="translate(' + n1(p0.x) + ' ' + n1(p0.y) + ') rotate(' + n1(wn) + ') scale(1 0)" d="M' + (-w0) + ',0 L' + n1(-w1) + ',' + n1(-l) + ' L' + n1(w1) + ',' + n1(-l) + ' L' + w0 + ',0 Z" fill="' + ST.stamm + '" stroke="' + INK + '" stroke-opacity=".85" stroke-width="1.3" stroke-linejoin="round"/>';
+      }
+      // Wedel: Blatt mit gezackter Unterkante, in Endlage gezeichnet; die Gruppe dreht und wächst beim Entfalten
+      const wedel = ST_WEDEL.map((wd, i) => {
+        const a = wd[0] * RAD, ln = wd[1], dr = wd[2], d = { x: Math.cos(a), y: Math.sin(a) };
+        const tip = { x: d.x * ln, y: d.y * ln + dr }, cp = { x: d.x * ln * 0.55, y: d.y * ln * 0.55 - ln * 0.22 };
+        const mid = []; for (let j = 0; j <= 8; j++) mid.push(bez2({ x: 0, y: 0 }, cp, tip, j / 8));
+        const up = [], dn = [];
+        mid.forEach((m, j) => {
+          const f = j / 8, a2 = mid[Math.min(j + 1, 8)], b2 = mid[Math.max(j - 1, 0)], tl = Math.hypot(a2.x - b2.x, a2.y - b2.y) || 1;
+          const nx = -(a2.y - b2.y) / tl, ny = (a2.x - b2.x) / tl, w = 13 * Math.sin(Math.PI * Math.min(f * 1.12, 1)) * (0.55 + 0.45 * (1 - f));
+          up.push([m.x + nx * w * 0.6, m.y + ny * w * 0.6]); dn.push([m.x - nx * w * (j % 2 ? 0.5 : 1), m.y - ny * w * (j % 2 ? 0.5 : 1)]);
+        });
+        return '<g class="nt-st-wd" data-w="' + wd[0] + '"><path d="M' + P2(up) + ' L' + P2(dn.reverse()) + ' Z" fill="' + (i % 2 ? ST.blatt : ST.blattHell) + '" stroke="' + INK + '" stroke-opacity=".85" stroke-width="1.2" stroke-linejoin="round"/>'
+          + '<path d="M' + mid.map(m => n1(m.x) + ',' + n1(m.y)).join(' L') + '" fill="none" stroke="#227F44" stroke-width="1.5"/></g>';
+      });
+      const nuss = (x, y, cls) => '<g class="' + cls + '" transform="translate(' + x + ' ' + y + ')"><circle r="5.6" fill="' + ST.nuss + '" stroke="' + INK + '" stroke-opacity=".8" stroke-width="1.1"/><circle cx="-1.8" cy="-1.8" r="1.4" fill="#fff" fill-opacity=".35"/></g>';
+      const stern = (() => { let s = ''; for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + TAU * i / 10 + 0.2, r = i % 2 ? 4.3 : 9.5; s += (i ? ' L' : 'M') + n1(Math.cos(a) * r) + ',' + n1(Math.sin(a) * r); } return s + ' Z'; })();
+      const STERN = { x: B.x - 52, y: -26 }, MUSCHEL = { x: -128, y: -212 };
+      const html = svg('nt-st-s', -RX * 1.3 - 30, -TH - 140, RX * 1.3 + 40, TH + 150,
+        '<g class="nt-st-sa" transform="scale(0)"><path d="' + form(1, 0.025) + '" transform="translate(-3 -3)" fill="' + INK + '" fill-opacity=".07"/>'
+        + '<path d="' + form(1, 0.025) + '" fill="' + ST.sand + '"/>'
+        + '<path class="nt-st-na" d="' + form(1, 0.025) + '" fill="' + ST.nass + '" fill-opacity=".5"/>'
+        + '<path d="' + linie(1, 0.025) + '" fill="none" stroke="' + INK + '" stroke-opacity=".5" stroke-width="1.6" vector-effect="non-scaling-stroke"/>'
+        + '<path d="' + koerner + '" stroke="' + ST.sandD + '" stroke-opacity=".75" stroke-width="2.8" stroke-linecap="round" vector-effect="non-scaling-stroke"/></g>'
+        + '<g class="nt-st-deko" style="opacity:0"><path d="' + stern + '" transform="translate(' + n1(STERN.x) + ' ' + STERN.y + ')" fill="' + ST.stern + '" stroke="' + INK + '" stroke-opacity=".8" stroke-width="1.1" stroke-linejoin="round"/>'
+        + '<path d="M0,3.9 L-7,0 A7,5.6 0 0 1 7,0 Z" transform="translate(' + MUSCHEL.x + ' ' + MUSCHEL.y + ')" fill="' + ST.muschel + '" stroke="' + INK + '" stroke-opacity=".75" stroke-width="1"/></g>'
+        + '<g class="nt-st-me" transform="scale(0)"><path d="' + form(1, 0.03) + '" fill="' + ST.meerHell + '" fill-opacity=".95"/>'
+        + '<path d="' + form(0.86, 0.03, 0.6) + '" fill="' + ST.meer + '" fill-opacity=".95"/>'
+        + '<path d="' + linie(0.66, 0.04, 1.7) + '" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="2" vector-effect="non-scaling-stroke"/>'
+        + '<path d="' + linie(1, 0.03) + '" fill="none" stroke="#fff" stroke-opacity=".95" stroke-width="4" stroke-linecap="round" vector-effect="non-scaling-stroke"/>'
+        + '<path d="' + blasen + '" stroke="#fff" stroke-opacity=".9" stroke-width="5.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/></g>'
+        + '<g class="nt-st-pa" style="opacity:0" transform="translate(' + n1(B.x) + ' ' + B.y + ')">' + stamm
+        + '<g class="nt-st-kr" transform="translate(' + n1(TOP.x - B.x) + ' ' + n1(TOP.y - B.y) + ')"><g class="nt-st-nu" style="opacity:0">' + nuss(-6, 8, '') + nuss(5, 9, 'nt-st-n1') + nuss(-1, 14, '') + '</g>' + wedel.join('') + '</g></g>'
+        + '<g class="nt-st-fa" style="opacity:0">' + nuss(0, 0, '') + '</g>');
+      const root = el('div', 'nt-st', html);
+      const sv = q(root, '.nt-st-s'), sa = q(root, '.nt-st-sa'), na = q(root, '.nt-st-na'), me = q(root, '.nt-st-me'), deko = q(root, '.nt-st-deko');
+      const pa = q(root, '.nt-st-pa'), kr = q(root, '.nt-st-kr'), nu = q(root, '.nt-st-nu'), n1el = q(root, '.nt-st-n1'), fa = q(root, '.nt-st-fa');
+      const sg = qa(root, '.nt-st-sg'), wd = qa(root, '.nt-st-wd');
+      const T2 = (e2, s) => { if (e2._ntT !== s) { e2._ntT = s; e2.setAttribute('transform', s); } };
+      const inst = { el: root, dauer: D, t: 0, tapT: null, weg: null };
+      inst.pose = tt => {
+        let meer, wasser = 1;
+        if (tt < T_IN) meer = 1.08 * aus(tt / T_IN);
+        else if (tt < T_BACK) meer = lerp(1.08, SEA, glatt((tt - T_IN) / (T_BACK - T_IN)));
+        else if (tt < T_WASH) meer = SEA + 0.035 * Math.sin(6.283 * (tt - T_BACK) / 1.7) * klemme((tt - T_BACK) / 0.4, 0, 1);
+        else if (tt < T_WASH + 0.7) meer = lerp(SEA + 0.035 * Math.sin(6.283 * (T_WASH - T_BACK) / 1.7), 1.18, aus((tt - T_WASH) / 0.7));
+        else { meer = lerp(1.18, 0, glatt((tt - T_WASH - 0.7) / Math.max(0.1, D - T_WASH - 0.75))); wasser = 1 - klemme((tt - (D - 0.45)) / 0.45, 0, 1); }
+        let sand = tt < T_IN ? Math.min(1, meer * 0.96) : 1;
+        if (tt > T_WASH + 0.55) sand = 0;
+        const nass = tt >= T_IN ? 1 - klemme((tt - T_BACK) / 1.6, 0, 1) : 0;
+        const wachs = klemme((tt - 1.7) / 1.0, 0, 1), blaetter = klemme((tt - 2.5) / 0.8, 0, 1);
+        let wieg = 0.05 * Math.sin(6.283 * tt / 2.6 + ph) * blaetter, nussT = -1;
+        if (inst.tapT !== null && tt >= inst.tapT) { const s = tt - inst.tapT; wieg += 0.24 * Math.exp(-1.7 * s) * Math.sin(6.283 * 1.5 * s); nussT = s; }
+        let palme = wachs > 0 ? 1 : 0, kipp = 0;
+        const hitT = T_WASH + 0.32;
+        if (tt > hitT) { const u = klemme((tt - hitT) / 0.45, 0, 1); kipp = glatt(u); palme = 1 - u; }
+        let op = 1;
+        if (inst.weg && tt >= inst.weg.at) op = 1 - klemme((tt - inst.weg.at) / 0.4, 0, 1);
+        return { meer, wasser, sand, nass, wachs, blaetter, wieg, nussT, palme, kipp, op };
+      };
+      // Hülle der Palme (Bühnen-px), sonst Strand/Meer
+      const palmHulle = p => {
+        const x0 = P.x + B.x - 100, x1 = P.x + B.x + 105, y0 = P.y + TOP.y - 55;
+        return p.blaetter > 0 ? { x: x0, y: y0, w: x1 - x0, h: P.y + B.y + 6 - y0 } : { x: P.x + B.x - 14, y: P.y + B.y - TH * p.wachs - 10, w: 40, h: TH * p.wachs + 16 };
+      };
+      inst.stelle = tt => {
+        inst.t = tt;
+        const p = inst.pose(tt);
+        setz(sv, P.x, P.y, 0, 1, 1, p.op);
+        T2(sa, 'scale(' + Math.max(0.001, p.sand).toFixed(3) + ')');
+        deck(sa, p.sand > 0.02 ? 1 : 0);
+        deck(na, p.nass);
+        deck(deko, p.sand >= 0.99 ? 1 : 0);
+        T2(me, 'scale(' + Math.max(0.001, p.meer).toFixed(3) + ')');
+        deck(me, p.meer > 0.02 ? 0.98 * p.wasser : 0);
+        deck(pa, p.palme);
+        T2(pa, 'translate(' + n1(B.x) + ' ' + B.y + ') rotate(' + n1(-43 * p.kipp) + ')');
+        const nv = p.wachs * SEGS;
+        sg.forEach((e2, j) => { const pop = klemme(nv - j, 0, 1); T2(e2, e2.dataset.tr + ' scale(' + (0.75 + 0.25 * pop).toFixed(3) + ' ' + pop.toFixed(3) + ')'); });
+        T2(kr, 'translate(' + n1(TOP.x - B.x + TH * 0.06 * Math.sin(p.wieg)) + ' ' + n1(TOP.y - B.y) + ') rotate(' + n1(p.wieg / RAD * 1.4) + ')');
+        deck(kr, p.blaetter > 0 ? 1 : 0);
+        deck(nu, klemme((p.blaetter - 0.5) / 0.4, 0, 1));
+        deck(n1el, p.nussT >= 0 ? 0 : 1);
+        wd.forEach((e2, i) => {
+          const ee = aus(klemme((p.blaetter - i * 0.04) / 0.72, 0, 1)), w0 = +e2.dataset.w;
+          T2(e2, 'rotate(' + n1((-90 - w0) * (1 - ee)) + ') scale(' + lerp(0.25, 1, ee).toFixed(3) + ')');
+        });
+        if (p.nussT >= 0) {
+          // Kokosnuss fällt vom Kronenansatz auf den Sand, hüpft einmal, rollt ein Stück
+          const sx = P.x + TOP.x + 5 + TH * 0.06 * Math.sin(p.wieg), sy = P.y + TOP.y + 9, gy = P.y + B.y - 4, fh = Math.max(1, gy - sy), tf2 = Math.sqrt(2 * fh / 900);
+          let x = sx, y = sy, rot = 0;
+          if (p.nussT < tf2) y = sy + 450 * p.nussT * p.nussT;
+          else { const b = p.nussT - tf2, bh = fh * 0.12; y = gy - (b < 0.3 ? 4 * bh * (b / 0.3) * (1 - b / 0.3) : 0); const r = aus((b - 0.05) / 0.7); x += 34 * r; rot = 350 * r; }
+          setz(fa, x - P.x, y - P.y, rot, 1, 1, p.palme);
+        } else deck(fa, 0);
+      };
+      inst.hulle = tt => {
+        const p = inst.pose(tt);
+        if (p.op < 0.03) return null;
+        if (p.wachs > 0.25 && p.palme > 0.1) return palmHulle(p);
+        const r = Math.max(p.meer, p.sand);
+        if (r <= 0.02 || p.wasser <= 0.02) return null;
+        const x0 = P.x - RX * r, y0 = P.y - RY * r;
+        return { x: Math.max(0, x0), y: Math.max(0, y0), w: Math.min(W, P.x) - Math.max(0, x0), h: Math.min(H, P.y) - Math.max(0, y0) };
+      };
+      inst.treffer = pt2 => {
+        const p = inst.pose(inst.t);
+        if (p.wachs <= 0.25 || p.palme <= 0.1) return false;
+        const h = palmHulle(p);
+        return pt2.x >= h.x - 14 && pt2.x <= h.x + h.w + 14 && pt2.y >= h.y - 14 && pt2.y <= h.y + h.h + 14;
+      };
+      inst.tipp = () => { if (inst.tapT === null) inst.tapT = inst.t; };
+      inst.abgang = () => { if (!inst.weg) inst.weg = { at: inst.t }; return 0.4; };
       return inst;
     },
   });

@@ -1,5 +1,5 @@
 {
- "stand": "18.10.2026",
+ "stand": "23.10.2026",
  "toene": {
   "facepalm_original": {
    "ton": "facepalm",
@@ -490,6 +490,498 @@
    ],
    "ast_sprache": [
     0.03,
+    "Speech"
+   ]
+  },
+  "hmm_original": {
+   "ton": "hmm",
+   "stufe": "original",
+   "halbtoene": 0,
+   "tempo": true,
+   "quelle": "Hmmm.m4a",
+   "dauer_s": 0.81,
+   "lufs_momentan_max": -19.0,
+   "spitze_dbtp": -9.4,
+   "ueber_6k_db": -52.4,
+   "ast_top": [
+    [
+     "Sigh",
+     0.385
+    ],
+    [
+     "Gasp",
+     0.193
+    ],
+    [
+     "Speech",
+     0.124
+    ],
+    [
+     "Male speech, man speaking",
+     0.117
+    ],
+    [
+     "Grunt",
+     0.089
+    ]
+   ],
+   "ast_katze": [
+    0.0,
+    "Roaring cats (lions, tigers)"
+   ],
+   "ast_sprache": [
+    0.124,
+    "Speech"
+   ]
+  },
+  "hmm_hoch4": {
+   "ton": "hmm",
+   "stufe": "hoch4",
+   "halbtoene": 4,
+   "tempo": true,
+   "quelle": "Hmmm.m4a",
+   "dauer_s": 0.64,
+   "lufs_momentan_max": -19.0,
+   "spitze_dbtp": -8.4,
+   "ueber_6k_db": -47.8,
+   "ast_top": [
+    [
+     "Sigh",
+     0.198
+    ],
+    [
+     "Speech",
+     0.149
+    ],
+    [
+     "Groan",
+     0.121
+    ],
+    [
+     "Grunt",
+     0.105
+    ],
+    [
+     "Gasp",
+     0.095
+    ]
+   ],
+   "ast_katze": [
+    0.001,
+    "Meow"
+   ],
+   "ast_sprache": [
+    0.149,
+    "Speech"
+   ]
+  },
+  "hmm_hoch6": {
+   "ton": "hmm",
+   "stufe": "hoch6",
+   "halbtoene": 6,
+   "tempo": true,
+   "quelle": "Hmmm.m4a",
+   "dauer_s": 0.57,
+   "lufs_momentan_max": -19.0,
+   "spitze_dbtp": -7.8,
+   "ueber_6k_db": -45.8,
+   "ast_top": [
+    [
+     "Speech",
+     0.291
+    ],
+    [
+     "Grunt",
+     0.129
+    ],
+    [
+     "Sigh",
+     0.108
+    ],
+    [
+     "Groan",
+     0.071
+    ],
+    [
+     "Gasp",
+     0.063
+    ]
+   ],
+   "ast_katze": [
+    0.003,
+    "Meow"
+   ],
+   "ast_sprache": [
+    0.291,
+    "Speech"
+   ]
+  },
+  "hmm_hoch8": {
+   "ton": "hmm",
+   "stufe": "hoch8",
+   "halbtoene": 8,
+   "tempo": true,
+   "quelle": "Hmmm.m4a",
+   "dauer_s": 0.51,
+   "lufs_momentan_max": -19.0,
+   "spitze_dbtp": -7.3,
+   "ueber_6k_db": -47.9,
+   "ast_top": [
+    [
+     "Speech",
+     0.344
+    ],
+    [
+     "Sigh",
+     0.113
+    ],
+    [
+     "Gasp",
+     0.099
+    ],
+    [
+     "Wail, moan",
+     0.075
+    ],
+    [
+     "Grunt",
+     0.067
+    ]
+   ],
+   "ast_katze": [
+    0.002,
+    "Meow"
+   ],
+   "ast_sprache": [
+    0.344,
+    "Speech"
+   ]
+  },
+  "hmm_hoch10": {
+   "ton": "hmm",
+   "stufe": "hoch10",
+   "halbtoene": 10,
+   "tempo": true,
+   "quelle": "Hmmm.m4a",
+   "dauer_s": 0.45,
+   "lufs_momentan_max": -19.0,
+   "spitze_dbtp": -6.6,
+   "ueber_6k_db": -51.1,
+   "ast_top": [
+    [
+     "Speech",
+     0.21
+    ],
+    [
+     "Wail, moan",
+     0.136
+    ],
+    [
+     "Gasp",
+     0.086
+    ],
+    [
+     "Groan",
+     0.07
+    ],
+    [
+     "Sigh",
+     0.044
+    ]
+   ],
+   "ast_katze": [
+    0.002,
+    "Meow"
+   ],
+   "ast_sprache": [
+    0.21,
+    "Speech"
+   ]
+  },
+  "hmm_nur6": {
+   "ton": "hmm",
+   "stufe": "nur6",
+   "halbtoene": 6,
+   "tempo": false,
+   "quelle": "Hmmm.m4a",
+   "dauer_s": 0.79,
+   "lufs_momentan_max": -19.0,
+   "spitze_dbtp": -9.6,
+   "ueber_6k_db": -47.2,
+   "ast_top": [
+    [
+     "Speech",
+     0.208
+    ],
+    [
+     "Wail, moan",
+     0.17
+    ],
+    [
+     "Groan",
+     0.093
+    ],
+    [
+     "Gasp",
+     0.078
+    ],
+    [
+     "Sigh",
+     0.048
+    ]
+   ],
+   "ast_katze": [
+    0.003,
+    "Meow"
+   ],
+   "ast_sprache": [
+    0.208,
+    "Speech"
+   ]
+  },
+  "kuss_original": {
+   "ton": "kuss",
+   "stufe": "original",
+   "halbtoene": 0,
+   "tempo": true,
+   "quelle": "Knutschie.m4a",
+   "dauer_s": 0.78,
+   "lufs_momentan_max": -19.0,
+   "spitze_dbtp": -4.6,
+   "ueber_6k_db": -30.2,
+   "ast_top": [
+    [
+     "Speech",
+     0.158
+    ],
+    [
+     "Sound effect",
+     0.097
+    ],
+    [
+     "Grunt",
+     0.08
+    ],
+    [
+     "Fart",
+     0.06
+    ],
+    [
+     "Finger snapping",
+     0.03
+    ]
+   ],
+   "ast_katze": [
+    0.011,
+    "Domestic animals, pets"
+   ],
+   "ast_sprache": [
+    0.158,
+    "Speech"
+   ]
+  },
+  "kuss_hoch4": {
+   "ton": "kuss",
+   "stufe": "hoch4",
+   "halbtoene": 4,
+   "tempo": true,
+   "quelle": "Knutschie.m4a",
+   "dauer_s": 0.62,
+   "lufs_momentan_max": -19.0,
+   "spitze_dbtp": -6.4,
+   "ueber_6k_db": -34.8,
+   "ast_top": [
+    [
+     "Fart",
+     0.198
+    ],
+    [
+     "Grunt",
+     0.144
+    ],
+    [
+     "Speech",
+     0.134
+    ],
+    [
+     "Sound effect",
+     0.132
+    ],
+    [
+     "Groan",
+     0.026
+    ]
+   ],
+   "ast_katze": [
+    0.005,
+    "Domestic animals, pets"
+   ],
+   "ast_sprache": [
+    0.134,
+    "Speech"
+   ]
+  },
+  "kuss_hoch6": {
+   "ton": "kuss",
+   "stufe": "hoch6",
+   "halbtoene": 6,
+   "tempo": true,
+   "quelle": "Knutschie.m4a",
+   "dauer_s": 0.55,
+   "lufs_momentan_max": -19.0,
+   "spitze_dbtp": -7.2,
+   "ueber_6k_db": -34.1,
+   "ast_top": [
+    [
+     "Speech",
+     0.248
+    ],
+    [
+     "Sound effect",
+     0.097
+    ],
+    [
+     "Fart",
+     0.059
+    ],
+    [
+     "Grunt",
+     0.044
+    ],
+    [
+     "Frog",
+     0.023
+    ]
+   ],
+   "ast_katze": [
+    0.002,
+    "Meow"
+   ],
+   "ast_sprache": [
+    0.248,
+    "Speech"
+   ]
+  },
+  "kuss_hoch8": {
+   "ton": "kuss",
+   "stufe": "hoch8",
+   "halbtoene": 8,
+   "tempo": true,
+   "quelle": "Knutschie.m4a",
+   "dauer_s": 0.49,
+   "lufs_momentan_max": -19.0,
+   "spitze_dbtp": -7.5,
+   "ueber_6k_db": -33.8,
+   "ast_top": [
+    [
+     "Speech",
+     0.309
+    ],
+    [
+     "Fart",
+     0.199
+    ],
+    [
+     "Sound effect",
+     0.097
+    ],
+    [
+     "Grunt",
+     0.04
+    ],
+    [
+     "Zipper (clothing)",
+     0.022
+    ]
+   ],
+   "ast_katze": [
+    0.005,
+    "Meow"
+   ],
+   "ast_sprache": [
+    0.309,
+    "Speech"
+   ]
+  },
+  "kuss_hoch10": {
+   "ton": "kuss",
+   "stufe": "hoch10",
+   "halbtoene": 10,
+   "tempo": true,
+   "quelle": "Knutschie.m4a",
+   "dauer_s": 0.44,
+   "lufs_momentan_max": -19.0,
+   "spitze_dbtp": -6.9,
+   "ueber_6k_db": -37.5,
+   "ast_top": [
+    [
+     "Speech",
+     0.4
+    ],
+    [
+     "Fart",
+     0.174
+    ],
+    [
+     "Sound effect",
+     0.067
+    ],
+    [
+     "Grunt",
+     0.036
+    ],
+    [
+     "Frog",
+     0.03
+    ]
+   ],
+   "ast_katze": [
+    0.009,
+    "Meow"
+   ],
+   "ast_sprache": [
+    0.4,
+    "Speech"
+   ]
+  },
+  "kuss_nur6": {
+   "ton": "kuss",
+   "stufe": "nur6",
+   "halbtoene": 6,
+   "tempo": false,
+   "quelle": "Knutschie.m4a",
+   "dauer_s": 0.76,
+   "lufs_momentan_max": -19.0,
+   "spitze_dbtp": -7.8,
+   "ueber_6k_db": -35.4,
+   "ast_top": [
+    [
+     "Speech",
+     0.369
+    ],
+    [
+     "Fart",
+     0.147
+    ],
+    [
+     "Animal",
+     0.105
+    ],
+    [
+     "Grunt",
+     0.085
+    ],
+    [
+     "Sound effect",
+     0.074
+    ]
+   ],
+   "ast_katze": [
+    0.07,
+    "Domestic animals, pets"
+   ],
+   "ast_sprache": [
+    0.369,
     "Speech"
    ]
   }

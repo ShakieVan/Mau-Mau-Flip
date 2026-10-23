@@ -7,14 +7,17 @@
 /* Mau-Mau Flip (Beta 1.6.11, „Natur-Überraschungen“, docs/module/natur.md 8.2): der echte Lite-Ablauf (index.html?natur=test im iframe)
  * gegen einen Schein-WebSocket, Uhr manuell (MMF.Natur.tick), Arten als Probe (eine Art für alle ids), damit der Kern ohne die Tierdateien
  * (natur_tag.js / natur_nacht.js, Aufgaben T5/T6) prüfbar ist. Geprüft:
- *  - Tabelle (25 Einträge, ruhig, vorn), Ebenen (DOM-Reihenfolge, z-index, pointer-events, aria-hidden), ?natur=test/?natur=reihe
+ *  - Tabelle (29 Einträge seit 1.6.15, ruhig, vorn), Ebenen (DOM-Reihenfolge, z-index, pointer-events, aria-hidden), ?natur=test/?natur=reihe
  *  - Planer im Dauerlauf (10 h, Lage eingespritzt): Abstände, nie zwei gleichzeitig, Wiederholungssperre, je_partie/je_runde, Seite,
  *    fremder Zug, Flip-Anlass (≤ 1 je Runde und Seite, ≥ 25 s), Trödeln, Komet-Sperre, jedes Zufallsereignis kommt vor
  *  - Bedingungen am echten Tisch: großer Modus, Fenster, Erwischt-Fenster, Phasen, Regie < 2 s ruhig, reduziert (nur ruhige, Abstände ×2),
  *    fremder Zug, Lobby, enges Fenster (hochkant)
  *  - Abgang und Abbruch nach 4.5, Schnecke beim Trödeln (verdrängt ein laufendes Ereignis, einmal je Spieler und Partie)
- *  - Tippen: Stapel unter dem UFO zieht, Handkarte unter der Biene wird angetippt (Biene geht), Kopf öffnet das Necken-Menü, freie
- *    Stelle auf dem Spatz gibt eine Reaktion ohne App-Aktion; nie preventDefault; Vorführung per 7 Tipps
+ *  - Tippen: Stapel unter dem UFO zieht (das UFO bleibt, nicht mehr scheu), Handkarte unter der Biene wird angetippt (Biene geht), Kopf
+ *    öffnet das Necken-Menü, freie Stelle auf dem Spatz gibt eine Reaktion ohne App-Aktion; nie preventDefault; Vorführung per 7 Tipps
+ *  - 1.6.15 mit den echten Arten: UFO weicht beim 1. und 2. Tipp aus, der 3. verscheucht es; Feuerwerk zündet an der Tippstelle (höchstens
+ *    zweimal); Astronaut macht einen Salto; Hoppelhase springt erschrocken hoch; Palme schüttelt sich, eine Kokosnuss fällt; der Strand
+ *    liegt hinter dem Mau-Knopf
  *  - generisch für jede angemeldete Art (MMF.Natur.arten()) in 1180×720, 1558×720 und 2000×720: Sichtbarkeit, deckt, Aufräumen,
  *    Bestimmtheit, schneller Abgang (≤ 0,5 s); zur Kontrolle des Prüfers auch mit der Probe
  *  - nichts nach außen: kein Ton, keine Vibration, nichts an den WebSocket aus natur*.js
@@ -298,7 +301,7 @@
     // Tabelle
     {
       const D = N().DATEN, ids = D.ereignisse.map(e => e.id);
-      ok(ids.length === 25 && new Set(ids).size === 25, 'Tabelle: 25 Einträge, ids eindeutig');
+      ok(ids.length === 29 && new Set(ids).size === 29, 'Tabelle: 29 Einträge, ids eindeutig');
       ok(JSON.stringify(D.ereignisse.filter(e => e.ruhig).map(e => e.id).sort()) === '["mond_muetze","polarlicht","regenbogen","sternbild","wolke"]', 'Tabelle: ruhig genau Wolke, Regenbogen, Mütze, Polarlicht, Sternbild');
       ok(JSON.stringify(D.ereignisse.filter(e => e.ebene === 'vorn').map(e => e.id).sort()) === '["biene","ufo"]', 'Tabelle: vorn nur Biene und UFO');
       ok(['tag', 'nacht'].every(s => D.ereignisse.some(e => e.seite === s && e.zufall > 0)), 'Tabelle: jede Seite hat Zufallseinträge');
@@ -522,7 +525,10 @@
       // Ereignisse am Ort
       n.zeige('ufo', { seed: 1 }); n.tick(0.1);
       n.sicht([{ e: 'draw', seat: 2, count: 1 }], App().view);
-      weg('draw: UFO geht');
+      tick(0.5, 0.05);
+      ok(!!cur() && cur().id === 'ufo' && cur().ende === null, 'draw: UFO bleibt (1.6.15)');
+      n.sicht([{ e: 'shuffle' }], App().view);
+      weg('shuffle: UFO geht');
       n.zeige('motte', { seed: 1 }); n.tick(0.1);
       n.sicht([{ e: 'play', seat: 2, card: 9, face: 'hell_rot_3' }], App().view);
       weg('play: Motte geht');
@@ -641,7 +647,7 @@
       const d1 = druck(sm);
       z1.click();
       ok(spione.ziehen === 1, 'Tipp auf den Stapel unter dem UFO: ziehen');
-      ok(!!cur() && cur().ende !== null && cur().inst.scheue, 'UFO ist scheu und geht ' + info());
+      ok(!!cur() && cur().ende === null && !cur().inst.scheue, 'UFO ist nicht mehr scheu und bleibt (1.6.15) ' + info());
       ok(d1.frei, 'pointerdown nicht verhindert');
       tick(0.5, 0.1);
       // Biene auf der Handkarte: Hand wird angetippt, Biene geht
@@ -761,6 +767,125 @@
         const anim = sel => { const e = w.document.createElement('i'); e.className = sel; w.document.body.appendChild(e); const nm = w.getComputedStyle(e).animationName; e.remove(); return nm; };
         const kf = nm => { let k = null; Array.from(w.document.styleSheets).forEach(sh => { try { Array.from(sh.cssRules).forEach(r => { if (r.type === 7 && r.name === nm) k = r; }); } catch (e) { } }); return k; };
         ['nt-mk-flap', 'nt-bi-flap'].forEach(c => { const k = kf(anim(c)); ok(!!k && /transform/.test(k.cssText) && !/opacity/.test(k.cssText), c + ': Flügelschlag per transform (' + String(k && k.cssText).slice(0, 80) + ')'); });
+      }
+    }
+
+    /* ---------- 1.6.15: Antippen der neuen Arten (echte Arten, echter Druck auf eine freie Stelle) ---------- */
+    {
+      const n = N();
+      n.test({ probe: null, lage: null, faellig: 1e9 });   // kein Zufallsereignis dazwischen
+      const innenR = (p, r) => p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h;
+      // freier Punkt in der Hülle: Tipp ginge ins Leere (kein Spielelement, keine Schutzfläche) und träfe das Tier
+      const freierPunkt = () => {
+        const c = n.current, h = c && n._hulle(c);
+        if (!h) return null;
+        const sch = n.schutz();
+        for (const fy of [0.5, 0.3, 0.7, 0.15, 0.85, 0.05]) for (const fx of [0.5, 0.3, 0.7, 0.15, 0.85]) {
+          const p = { x: h.x + h.w * fx, y: h.y + h.h * fy }, cl = zuClient(p), z = w.document.elementFromPoint(cl.x, cl.y);
+          if (z && n._leer(z) && !sch.some(r => innenR(p, r)) && n._trifft(c, h, p)) return p;
+        }
+        return null;
+      };
+      // Art mit Samen 1…30 zur Zeit t starten, bis eine freie Stelle zum Antippen da ist
+      let befund = '';   // letzter Fehlversuch (für die Fehlermeldung)
+      const antippbar = (id, t) => {
+        for (let s = 1; s <= 30; s++) { n.zeige(id, { seed: s, t }); const p = freierPunkt(); if (p) return p; }
+        const c = n.current, h = c && n._hulle(c);   // Befund für die Fehlermeldung
+        if (h) { const m = { x: h.x + h.w / 2, y: h.y + h.h / 2 }, cl = zuClient(m), z = w.document.elementFromPoint(cl.x, cl.y);
+          befund = (id + ': Hülle ' + JSON.stringify({ x: Math.round(h.x), y: Math.round(h.y), w: Math.round(h.w), h: Math.round(h.h) }) + ' Mitte unter ' + (z && (z.id || z.className))
+            + ' leer ' + (z && n._leer(z)) + ' Schutz ' + n.schutz().filter(r => innenR(m, r)).map(r => r.name).join('/') + ' trifft ' + n._trifft(c, h, m)); }
+        else befund = id + ': keine Hülle (' + (c ? c.id + ' t ' + c.t : 'nichts') + ')';
+        return null;
+      };
+      const seite = async sd => {
+        topId++; S.rx({ t: 'state', events: [], view: sicht(1, { side: sd }) }); await warte(1800); n.tick(0.5);
+        // offene Fenster der vorigen Prüfungen (z. B. Kartenhilfe) schließen, sonst liegt der Tipp darauf
+        w.document.querySelectorAll('.modal:not([hidden])').forEach(m => { try { App().schliesse(m.id); } catch (e) { /* egal */ } if (!m.hidden) m.hidden = true; });
+      };
+      await seite('dunkel');
+      // UFO: 1. und 2. Tipp → weicht aus, 3. → davon
+      let p = antippbar('ufo', 2.6);
+      ok(!!p, 'UFO: freie Stelle zum Antippen (' + befund + ')');
+      if (p) {
+        const h0 = n.huelle();
+        druck(p);
+        ok(cur().tipps === 1 && cur().ende === null, 'UFO: 1. Tipp – bleibt');
+        tick(0.3, 0.05);
+        const h1 = n.huelle();
+        ok(!!h0 && !!h1 && Math.abs((h1.x + h1.w / 2) - (h0.x + h0.w / 2)) > 30, 'UFO: weicht zur Seite aus');
+        tick(1.9, 0.05);
+        p = freierPunkt();
+        ok(!!p, 'UFO: wieder antippbar');
+        if (p) { druck(p); ok(cur().tipps === 2 && cur().ende === null, 'UFO: 2. Tipp – bleibt'); }
+        tick(0.4, 0.05);
+        p = freierPunkt();
+        if (p) { druck(p); ok(!!cur() && cur().tipps === 3 && cur().inst.leaveT !== null, 'UFO: 3. Tipp – saust davon (' + JSON.stringify({ t: cur() && cur().t, tipps: cur() && cur().tipps, inst: cur() && cur().inst.tipps, leave: cur() && cur().inst.leaveT }) + ')'); }
+        else ok(false, 'UFO: Stelle für den 3. Tipp');
+        tick(0.5, 0.05);
+        ok(!cur() || cur().id !== 'ufo', 'UFO: danach weg');
+      }
+      // Feuerwerk: Tipp zündet einen Knall an der Stelle, höchstens zweimal
+      p = antippbar('feuerwerk', 2.2);
+      ok(!!p, 'Feuerwerk: freie Stelle zum Antippen (' + befund + ')');
+      if (p) {
+        druck(p);
+        ok(cur().tipps === 1, 'Feuerwerk: Tipp angenommen');
+        tick(0.25, 0.05);
+        ok(cur().inst.knalle(cur().t).some(k => Math.hypot(k.x - p.x, k.y - 12 - p.y + 12) < 30), 'Feuerwerk: Knall an der Tippstelle');
+        const p2 = freierPunkt();
+        if (p2) druck(p2);
+        tick(0.2, 0.05);
+        const p3 = freierPunkt();
+        if (p3) druck(p3);
+        ok(cur().tipps === 2 && cur().inst.tipps.length === 2, 'Feuerwerk: höchstens zwei Knalle per Tipp (' + cur().tipps + ')');
+        n._weg(cur(), 'test');
+      }
+      // Astronaut: Salto
+      p = antippbar('astronaut', 5);
+      ok(!!p, 'Astronaut: freie Stelle zum Antippen (' + befund + ')');
+      if (p) {
+        const tr0 = cur().el.style.transform;
+        druck(p);
+        ok(cur().inst.tapT !== null, 'Astronaut: Tipp angenommen');
+        tick(0.95, 0.05);
+        const tr1 = cur().el.style.transform;
+        const rot = s => { const m = /rotate\((-?[\d.]+)deg\)/.exec(s || ''); return m ? +m[1] : 0; };
+        ok(Math.abs(rot(tr1) - rot(tr0)) > 120, 'Astronaut: Salto (' + rot(tr0) + '° → ' + rot(tr1) + '°)');
+        tick(1.2, 0.05);
+        ok(!!cur() && cur().ende === null, 'Astronaut: schwebt danach weiter');
+        n._weg(cur(), 'test');
+      }
+      await seite('hell');
+      // Hoppelhase: Schreck-Sprung
+      p = null;
+      for (const t of [2.5, 3.5, 4.5, 6, 7.5]) { p = antippbar('hoppelhase', t); if (p) break; }
+      ok(!!p, 'Hoppelhase: freie Stelle zum Antippen (' + befund + ')');
+      if (p) {
+        const h0 = n.huelle();
+        druck(p);
+        ok(!!cur().inst.tap, 'Hoppelhase: Tipp angenommen');
+        tick(0.27, 0.03);
+        const h1 = n.huelle();
+        ok(!!h1 && h1.y < h0.y - 40, 'Hoppelhase: springt erschrocken hoch');
+        tick(1.4, 0.05);
+        ok(!cur(), 'Hoppelhase: danach schnell davon');
+      }
+      // Strand: Palme schüttelt sich, eine Kokosnuss fällt; der Mau-Knopf bleibt darüber und antippbar
+      p = antippbar('strand', 4.2);
+      ok(!!p, 'Strand: Palme antippbar (' + befund + ')');
+      if (p) {
+        const mau = buehneRect($('#mau')), mc = zuClient(mitte(mau)), oben = w.document.elementFromPoint(mc.x, mc.y);
+        ok(!!oben && !!oben.closest('#mau'), 'Strand: Mau-Knopf liegt darüber (' + (oben && (oben.id || oben.className)) + ')');
+        druck(p);
+        ok(cur().inst.tapT !== null, 'Strand: Tipp auf die Palme angenommen');
+        tick(0.3, 0.05);
+        const nuss = cur().el.querySelector('.nt-st-fa');
+        ok(+nuss.style.opacity > 0.5, 'Strand: Kokosnuss fällt');
+        n._weg(cur(), 'test');
+        n.zeige('strand', { seed: 3, t: 1.3 });
+        const h = n.huelle(), sp = { x: h.x + h.w * 0.3, y: h.y + h.h * 0.4 };
+        ok(!n._trifft(cur(), h, sp), 'Strand: Sand ohne Palme nimmt keinen Tipp');
+        n._weg(cur(), 'test');
       }
     }
 

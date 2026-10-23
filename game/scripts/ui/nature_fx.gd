@@ -26,8 +26,9 @@ const NIGHT_PATH := "res://scripts/ui/nature_night.gd"
 const TURN_PHASES := ["turn", "drawn"]
 const ALL_GO := ["round_over", "game_over", "round_start", "deal", "seats", "start"]
 const FRONT_GO := ["mau", "finish", "catch", "gamble_start"]
-# Ereignisse am Ort (4.5): UFO am Stapel, Motte am Ablage-Ring, Biene auf der Hand
-const PLACE_GO := {"stapel_oben": ["draw", "shuffle"], "ablage_ring": ["play", "flip", "discard_color", "stake_discard", "shuffle"],
+# Ereignisse am Ort (4.5): UFO am Stapel, Motte am Ablage-Ring, Biene auf der Hand. Ab 1.6.15 bleibt das UFO beim Ziehen (Nutzerwunsch:
+# „nicht so einfach verscheuchen“), nur das Mischen des Stapels vertreibt es.
+const PLACE_GO := {"stapel_oben": ["shuffle"], "ablage_ring": ["play", "flip", "discard_color", "stake_discard", "shuffle"],
 	"handkarte": ["swap_hands"]}
 const HAND_GO := ["play", "draw", "stake", "stake_back", "discard_color", "unplay"]   # eigene Hand ändert sich
 const TOP_LEFT := Rect2(0, 0, 280, 110)                 # Zurück- und ☰-Knopf (TableScreen)
@@ -822,13 +823,15 @@ func tap(wp: Vector2) -> bool:
 	if c != null and not c.still and not c.bridge:
 		var lp := _to_layer(c, wp)
 		if bool(c.node.call("hit", lp)):
-			if str(c.e["tipp"]) != "" and not c.tapped and not c.leaving():
+			# höchstens tap_limit() Reaktionen je Ereignis (Standard 1; UFO 3, Feuerwerk 2); tap_at/tap_pos = erster Tipp
+			if str(c.e["tipp"]) != "" and not c.leaving() and int(c.node.call("tap_count")) < int(c.node.call("tap_limit")):
 				c.tapped = true
-				c.node.set("tap_at", float(c.node.get("t")))
-				c.node.set("tap_pos", lp)
+				if float(c.node.get("tap_at")) < 0.0:
+					c.node.set("tap_at", float(c.node.get("t")))
+					c.node.set("tap_pos", lp)
 				c.node.call("on_tap", lp)
 				return true
-			return false                        # Tier ohne Reaktion: keine Vorführungs-Zählung
+			return false                        # Tier ohne (weitere) Reaktion: keine Vorführungs-Zählung
 	_demo_tap(wp)
 	return false
 
@@ -1221,6 +1224,8 @@ func anchors(z: RandomNumberGenerator = null, troedler := -1) -> Dictionary:
 		"stapel_oben": {"pos": Vector2(pr.get_center().x, pr.position.y - 62.0), "pile": pr},
 		"ablage_ring": {"pos": dp, "r": RING_R},
 		"aufsteigend": {"pos": Vector2((float(gap[0]) + z.randf() * (float(gap[1]) - float(gap[0]))) * W, C.y), "target_y": -80.0},
+		# 1.6.15: Ecke unten rechts (Strand mit Palme); dort liegt der Mau-Knopf (TableView._layout), er bleibt darüber
+		"ecke_unten_rechts": {"pos": Vector2(W, H), "mau": _ctl_rect(table.get("mau_button")) if table != null else Rect2()},
 	}
 
 

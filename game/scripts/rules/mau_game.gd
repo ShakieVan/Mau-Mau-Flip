@@ -498,7 +498,7 @@ func apply(seat: int, action: Dictionary) -> Dictionary:
 		"play":
 			why = _act_play(seat, action, ev)
 		"draw":
-			why = _act_draw(seat, ev)
+			why = _act_draw(seat, ev, action.get("pen") == true)
 		"keep":
 			why = _act_keep(seat, ev)
 		"challenge":
@@ -632,13 +632,18 @@ func _act_play(seat: int, action: Dictionary, ev: Array) -> String:
 	return ""
 
 
-func _act_draw(seat: int, ev: Array) -> String:
+# pen (Beta 1.6.15, Nutzerbefund „bei +2 bekommt man 3“): Der Tipp galt den Strafkarten (die Sicht des Absenders zeigte eine offene
+# Strafe auf ihn). Ist sie schon gezogen – zweiter Tipp auf dieselbe, veraltete Sicht –, zieht er keine weitere Karte. Ältere Clients
+# schicken pen nie; dann gilt wie bisher jedes Ziehen.
+func _act_draw(seat: int, ev: Array, pen := false) -> String:
 	if state == "challenge":
 		return _act_decide(seat, false, ev)      # Ziehen = Strafe annehmen
 	if state != "turn":
-		return _phase_reason()
+		return "Die Strafkarten hast du schon gezogen." if pen and state == "drawn" else _phase_reason()
 	if seat != current:
 		return "Du bist nicht dran."
+	if pen and pending.is_empty():
+		return "Die Strafkarten hast du schon gezogen."
 	if not pending.is_empty():
 		_begin_turn(ev)
 		_take_pending(seat, ev)

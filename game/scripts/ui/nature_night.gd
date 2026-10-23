@@ -10,12 +10,15 @@ extends RefCounted
 #   mond_muetze     Zipfelmütze fällt auf die Mondsichel, der Mond schläft („z“); Tipp: wacht kurz auf; ruhig: nur Blende
 #   polarlicht      drei wogende Vorhänge (additiv, höchstens 0,35); ruhig: ohne Wogen
 #   sternbild       Katze aus 11 Sternen (Form aus der Tabelle), Linien wachsen; Tipp: Funkeln, Schwanz wackelt; ruhig: Blende
-#   ufo             schwebt über den Ziehstapel, Lichtkegel ≤ 0,22, Funken; scheu; Tipp: saust davon
+#   ufo             schwebt über den Ziehstapel, Lichtkegel ≤ 0,22, Funken; ab 1.6.15 nicht mehr scheu: 1. und 2. Tipp → weicht zur
+#                   Seite aus (Kegel flackert), erst der 3. Tipp verscheucht es
 #   satellit        heller Punkt mit Solarflächen und rotem Blinklicht, blitzt einmal auf
 #   motte           taumelt heran und umkreist den Ablage-Ring (verweilt, wo sie zu sehen ist); scheu
 #   igel            tippelt am Plattformrand, schnüffelt, kehrt um; Tipp: rollt sich ein
 #   komet           blass und langsam, Staub- und Ionenschweif
 #   lampion         steigt hinter dem Tisch auf, flackert; Tipp: glüht auf und schaukelt
+#   feuerwerk       (1.6.15) 2–4 Raketen steigen mit Leuchtspur in freien Himmel und zerplatzen bunt; Tipp: noch ein Knall (zweimal)
+#   astronaut       (1.6.15) schwebt neben dem Mond, taumelt langsam, winkt; Tipp: langsamer Salto mit Winken
 
 const BASE_PATH := "res://scripts/ui/nature_creature.gd"
 
@@ -47,12 +50,16 @@ static func make(id: String) -> Node2D:
 			return Comet.new()
 		"lampion":
 			return Lantern.new()
+		"feuerwerk":
+			return Fireworks.new()
+		"astronaut":
+			return Astronaut.new()
 	return null
 
 
 static func ids() -> Array[String]:
 	return ["gluehwuermchen", "eule", "fledermaus", "mond_muetze", "polarlicht", "sternbild", "ufo", "satellit", "motte", "igel",
-		"komet", "lampion"]
+		"komet", "lampion", "feuerwerk", "astronaut"]
 
 
 # ===================================================================================================== gemeinsame Hilfen
@@ -1216,6 +1223,13 @@ class Ufo extends NightBase:
 	const ALIEN := Color("#7CFFB2")
 	const LIGHTS := [Color("#FF4FD8"), Color("#FFE14D"), Color("#3FF2E6"), Color("#FF4FD8"), Color("#FFE14D")]
 	const BEAM := Color("#B5FFF6")
+	# Ausweichen (1.6.15): 1. und 2. Tipp → kurzer Satz zur Seite (DODGE_S), bleibt zitternd dort (DODGE_HOLD), gleitet zurück (DODGE_BACK)
+	const DODGE_S := 0.22
+	const DODGE_HOLD := 0.9
+	const DODGE_BACK := 0.8
+	const DODGE_X := 62.0
+	var dodges: Array = []               # [[Zeit, Ziel-Versatz], …] je Ausweich-Tipp (aus on_tap, damit pose_at rein in t bleibt)
+	var free_side := 1.0                 # Seite mit mehr Platz neben dem Schwebepunkt (Ausweichen, wenn der Tipp mittig trifft)
 	var hover := Vector2.ZERO
 	var pile := Rect2()
 	var start := Vector2.ZERO
@@ -1283,9 +1297,57 @@ class Ufo extends NightBase:
 		for i in n:
 			sparks.append({"t0": t_beam0 + 0.2 + (float(i) + rng.randf() * 0.8) / float(n) * maxf(t_beam1 - t_beam0 - 1.3, 0.3),
 				"life": rng.randf_range(0.9, 1.3), "x": rng.randf_range(-0.55, 0.55), "sz": rng.randf_range(0.8, 1.3), "wob": rng.randf() * TAU})
+		# freiere Seite zum Ausweichen (Plätze und Knöpfe neben dem Stapel)
+		var cl := touches(box(hover + Vector2(-DODGE_X * s, -8.0 * s), he), ["stapel"])
+		var cr := touches(box(hover + Vector2(DODGE_X * s, -8.0 * s), he), ["stapel"])
+		free_side = -1.0 if cr and not cl else 1.0
 
-	func on_tap(_p: Vector2) -> void:
-		leave(true)
+	# Nicht mehr scheu (1.6.15): der 1. und 2. Tipp lassen es ausweichen, erst der 3. verscheucht es
+	func tap_limit() -> int:
+		return 3
+
+	func on_tap(p: Vector2) -> void:
+		add_tap(p)
+		if taps.size() >= 3:
+			leave(true)
+			return
+		# weg vom Finger, sonst zur freieren Seite; liegt dort ein Platz oder Knopf, zur anderen
+		var side := signf(pos.x - p.x)
+		if absf(pos.x - p.x) < 4.0 * s:
+			side = free_side if dodges.is_empty() else -signf(float((dodges[dodges.size() - 1][1] as Vector2).x))
+		if side == 0.0:
+			side = free_side
+		var off := Vector2(side * DODGE_X * s, (-8.0 if dodges.is_empty() else 5.0) * s)
+		if touches(box(hover + off, he), ["stapel"]) and not touches(box(hover + Vector2(-off.x, off.y), he), ["stapel"]):
+			off.x = -off.x
+		dodges.append([t, off])
+
+	# Versatz durch das Ausweichen zur Zeit tt (Abschnitt i beginnt beim Wert des vorigen zu seiner Startzeit)
+	func _dodge_seg(i: int, tt: float) -> Vector2:
+		var ti := float(dodges[i][0])
+		var goal: Vector2 = dodges[i][1]
+		var from := _dodge_seg(i - 1, ti) if i > 0 else Vector2.ZERO
+		var x := tt - ti
+		if x < DODGE_S:
+			return from.lerp(goal, e_out(x / DODGE_S))
+		if x < DODGE_S + DODGE_HOLD:
+			return goal
+		return goal.lerp(Vector2.ZERO, e_io(clampf((x - DODGE_S - DODGE_HOLD) / DODGE_BACK, 0.0, 1.0)))
+
+	func _dodge(tt: float) -> Vector2:
+		var last := -1
+		for i in dodges.size():
+			if float(dodges[i][0]) <= tt:
+				last = i
+		return _dodge_seg(last, tt) if last >= 0 else Vector2.ZERO
+
+	# Zeit seit dem letzten Ausweichen (−1 = keins)
+	func _since_dodge(tt: float) -> float:
+		var out := -1.0
+		for d in dodges:
+			if float(d[0]) <= tt:
+				out = tt - float(d[0])
+		return out
 
 	func pose_at(tt: float) -> void:
 		var sl := since_leave(tt)
@@ -1305,6 +1367,15 @@ class Ufo extends NightBase:
 			rot = exit_dir.x * 0.25 * u
 			alpha = 1.0 - smoothstep(0.75, 1.0, u)
 		beam = ramp(tl, t_beam0, t_beam0 + 0.15) * (1.0 - ramp(tl, t_beam1 - 0.15, t_beam1))
+		# Ausweichen: Satz zur Seite, Schaukeln, der Lichtkegel flackert
+		var sd := _since_dodge(tl)
+		if sd >= 0.0:
+			var off := _dodge(tl)
+			pos += off
+			var lean := signf(off.x) if absf(off.x) > 0.5 else 0.0
+			rot += -lean * 0.22 * bump(sd / (DODGE_S * 1.6)) + 0.16 * sin(sd * 26.0) * exp(-3.2 * sd)
+			if sd < 0.55:
+				beam *= 0.25 + 0.75 * (0.5 + 0.5 * signf(sin(sd * 58.0)))
 		if sl >= 0.0:
 			var u := sl / maxf(leave_s, 0.05)
 			pos += exit_dir * 420.0 * s * e_in(u)
@@ -2178,3 +2249,405 @@ class Lantern extends NightBase:
 		var dout := band(deg, 1.0).distance_to(C)
 		var d := p.distance_to(C)
 		return d > din - 14.0 * s and d < dout + 14.0 * s
+
+
+# ===================================================================================================== 24 Feuerwerk (1.6.15)
+
+# Nutzerwunsch 23.10.2026: „Ein Feuerwerk als zufällige Aktion bei Nacht“. 2–4 Raketen steigen mit dünner Leuchtspur in freien Himmel
+# (Stellen ohne Plätze, Knöpfe und Mond) und zerplatzen in bunte Funkensterne, die verglimmen und sinken. Antippen: an der Stelle noch
+# ein Knall (höchstens zweimal). Hülle = alles, was gerade leuchtet; ein Tipp in diese Hülle zündet den nächsten Knall dort.
+class Fireworks extends NightBase:
+	const COLS := [Color("#FF4FD8"), Color("#FFD65A"), Color("#3FF2E6"), Color("#A77BFF"), Color("#7CFFB2"), Color("#FF9A3C")]
+	const TRAIL := Color("#FFE2A8")
+	const DRAG := 3.2
+	const GRAV := 40.0
+	const STREAK := 0.12                 # Länge der Funkenstriche (s)
+	var s := 1.0
+	var bursts: Array = []               # {t (Knall), c (Mitte), r, from (Raketenstart), rise (Steigzeit, 0 = ohne Rakete), cols, grav, sparks}
+	var spare: Array = []                # vorbereitete Knalle für Tipps (Farben, Funken aus dem Samen; Ort und Zeit kommen vom Tipp)
+	var tc := 0.0
+
+	func setup(_c: Dictionary) -> void:
+		use_glow()
+		s = k()
+		in_s = 0.5
+		out_s = 1.2
+		var sz := table_size()
+		var mo: Variant = anchor("mond")
+		var moon: Vector2 = (mo as Dictionary).get("pos", Vector2(sz.x * 0.94, sz.y * 0.08)) if mo is Dictionary else Vector2(sz.x * 0.94, sz.y * 0.08)
+		var n := rng.randi_range(2, 4)
+		var b0 := rng.randf_range(1.05, 1.25)
+		var b1 := dur - 1.85
+		while n > 2 and (b1 - b0) / float(n - 1) < 0.55:
+			n -= 1
+		var spots: Array = []
+		for i in n:
+			var tb := lerpf(b0, b1, float(i) / float(maxi(n - 1, 1))) + rng.randf_range(-0.12, 0.12)
+			var r := rng.randf_range(84.0, 104.0) * s
+			var best := Vector2(sz.x * 0.5, sz.y * 0.16)
+			var bc := INF
+			for j in 40:
+				var p := Vector2(rng.randf_range(0.1, 0.9) * sz.x, rng.randf_range(0.1, 0.27) * sz.y)
+				var cost := spot_cost(p, Vector2(r, r) * 0.85) * 3.0
+				if p.distance_to(moon) < r + 70.0 * s:
+					cost += 2.0
+				for q in spots:
+					var dd := p.distance_to(q)
+					if dd < r * 1.9:
+						cost += 1.5 * (1.0 - dd / (r * 1.9))
+				cost += rng.randf() * 0.08
+				if cost < bc:
+					bc = cost
+					best = p
+			spots.append(best)
+			var rise := rng.randf_range(0.85, 1.05)
+			# Startpunkt der Rakete: unter dem Knall, Bahn möglichst frei (sie steigt hinter Plätzen und Karten auf)
+			var from := best + Vector2(0, 200.0 * s)
+			var fc := INF
+			for dx in [-50.0, -25.0, 0.0, 25.0, 50.0]:
+				for dy in [160.0, 200.0, 240.0]:
+					var f := best + Vector2(float(dx), float(dy)) * s
+					var cost := 0.0
+					for m in 6:
+						cost += cover_frac(box(f.lerp(best, (float(m) + 0.5) / 6.0), Vector2(10, 14) * s))
+					cost += absf(float(dx)) * 0.002 + rng.randf() * 0.05
+					if cost < fc:
+						fc = cost
+						from = f
+			bursts.append(_make_burst(tb, best, r, from, rise))
+		for i in 2:
+			spare.append(_make_burst(0.0, Vector2.ZERO, rng.randf_range(76.0, 90.0) * s, Vector2.ZERO, 0.0))
+
+	func _make_burst(tb: float, c: Vector2, r: float, from: Vector2, rise: float) -> Dictionary:
+		var style := rng.randi() % 3                    # 0 Pfingstrose, 1 Ring, 2 Trauerweide (gold, sinkt stärker)
+		var c0: Color = COLS[rng.randi() % COLS.size()]
+		var c1: Color = COLS[rng.randi() % COLS.size()]
+		if style == 2:
+			c0 = Color("#FFD65A")
+			c1 = Color("#FF9A3C")
+		var sparks: Array = []
+		var n := rng.randi_range(28, 34)
+		for i in n:
+			var v := 1.0 if style == 1 else rng.randf_range(0.78, 1.0)
+			sparks.append({"a": TAU * (float(i) + rng.randf_range(-0.25, 0.25)) / float(n), "v": v, "life": rng.randf_range(1.35, 1.8),
+				"ph": rng.randf() * TAU, "c": c0 if i % 2 == 0 else c1, "w": 1.0})
+		# innerer Kranz: kleinere, hellere Funken (zweite Farbe)
+		var m := rng.randi_range(10, 14)
+		for i in m:
+			sparks.append({"a": TAU * (float(i) + 0.5) / float(m), "v": rng.randf_range(0.4, 0.5), "life": rng.randf_range(1.0, 1.3),
+				"ph": rng.randf() * TAU, "c": c1.lerp(Color.WHITE, 0.35), "w": 0.7})
+		return {"t": tb, "c": c, "r": r, "from": from, "rise": rise, "cols": [c0, c1], "grav": 1.9 if style == 2 else 1.0,
+			"sparks": sparks, "life": 1.8}
+
+	func tap_limit() -> int:
+		return 2
+
+	func on_tap(p: Vector2) -> void:
+		add_tap(p)
+		dur = maxf(dur, t + 2.0)
+
+	# Knalle samt denen aus Tipps (Ort = Tipp, etwas über dem Finger, im Bild)
+	func _all() -> Array:
+		var out := bursts.duplicate()
+		var sz := table_size()
+		for i in mini(taps.size(), spare.size()):
+			var b: Dictionary = (spare[i] as Dictionary).duplicate()
+			var p: Vector2 = taps[i][1]
+			b["t"] = float(taps[i][0])
+			b["c"] = Vector2(clampf(p.x, 40.0, sz.x - 40.0), clampf(p.y - 12.0 * s, 40.0, sz.y * 0.6))
+			out.append(b)
+		return out
+
+	func _spark_pos(b: Dictionary, sp: Dictionary, age: float) -> Vector2:
+		var d := (1.0 - exp(-DRAG * age)) / (1.0 - exp(-DRAG * 1.1))
+		var dir := Vector2.from_angle(float(sp["a"]))
+		return (b["c"] as Vector2) + dir * float(b["r"]) * float(sp["v"]) * d + Vector2(0, GRAV * s * float(b["grav"]) * age * age)
+
+	func _rocket(b: Dictionary, tt: float) -> Vector2:
+		var u := clampf((tt - (float(b["t"]) - float(b["rise"]))) / maxf(float(b["rise"]), 0.01), 0.0, 1.0)
+		var e := 1.0 - (1.0 - u) * (1.0 - u)
+		var from: Vector2 = b["from"]
+		var c: Vector2 = b["c"]
+		return from.lerp(c, e) + Vector2(sin(u * PI) * 6.0 * s, 0)
+
+	# Mitten der Knalle, die gerade leuchten (Tests)
+	func active_bursts() -> Array:
+		var out: Array = []
+		for b in _all():
+			var age := tc - float(b["t"])
+			if age >= 0.0 and age < float(b["life"]):
+				out.append(b["c"])
+		return out
+
+	func pose_at(tt: float) -> void:
+		tc = tt
+		alpha = 1.0 - ramp(tt, dur - 0.2, dur)
+
+	# Sichtbare Hülle (wie Day.visible_hull): Vereinigung der Raketen und Knalle, die höchstens zur Hälfte hinter Plätzen, Karten und
+	# Knöpfen liegen; ist die Vereinigung selbst überwiegend bedeckt (Knalle links und rechts eines Platzes), der freieste Teil.
+	func bounds() -> Rect2:
+		if alpha <= 0.0:
+			return Rect2()
+		var scr := Rect2(Vector2.ZERO, table_size())
+		var u := Rect2()
+		var best := Rect2()
+		var best_c := 2.0
+		for b in _all():
+			var tb := float(b["t"])
+			var rise := float(b["rise"])
+			var r := Rect2()
+			if rise > 0.0 and tc >= tb - rise and tc < tb:
+				r = box(_rocket(b, tc), Vector2(10, 14) * s)
+			elif tc >= tb and tc < tb + float(b["life"]):
+				var age := tc - tb
+				var d := (1.0 - exp(-DRAG * age)) / (1.0 - exp(-DRAG * 1.1))
+				var rr := float(b["r"]) * maxf(d, 0.15) + 8.0 * s
+				r = box((b["c"] as Vector2) + Vector2(0, GRAV * s * float(b["grav"]) * age * age * 0.6), Vector2(rr, rr))
+			if not r.has_area() or not r.intersects(scr):
+				continue
+			var cv := cover_frac(r)
+			if cv < 0.5:
+				u = r if not u.has_area() else u.merge(r)
+				if cv < best_c:
+					best_c = cv
+					best = r
+		if u.has_area() and cover_frac(u) > 0.5:
+			return best
+		return u
+
+	# Ein Tipp in die leuchtende Hülle zündet einen Knall
+	func hit(p: Vector2) -> bool:
+		var b := bounds()
+		return b.has_area() and modulate.a >= 0.05 and b.grow(20.0 * s).has_point(p)
+
+	func _draw() -> void:
+		if alpha <= 0.0:
+			return
+		for b in _all():
+			var tb := float(b["t"])
+			var rise := float(b["rise"])
+			# Leuchtspur der Rakete
+			if rise > 0.0 and tc >= tb - rise and tc < tb + 0.15:
+				var pts := PackedVector2Array()
+				var cols := PackedColorArray()
+				var head := minf(tc, tb)
+				for j in 10:
+					var tj := head - float(j) * 0.035
+					if tj < tb - rise:
+						break
+					pts.append(_rocket(b, tj))
+					var a := (1.0 - float(j) / 10.0) * ramp(tc, tb - rise, tb - rise + 0.15) * (1.0 - ramp(tc, tb, tb + 0.15))
+					cols.append(ca(TRAIL, 0.85 * a))
+				if pts.size() >= 2:
+					draw_polyline_colors(pts, cols, 2.0 * s, true)
+			# Funkenstriche
+			var age := tc - tb
+			if age < 0.0 or age > float(b["life"]):
+				continue
+			for sp in b["sparks"]:
+				var life := float(sp["life"])
+				if age > life:
+					continue
+				var a := (1.0 - ramp(age, life * 0.55, life)) * ramp(age, 0.0, 0.05)
+				if age > life * 0.45:
+					a *= 0.55 + 0.45 * sin(age * 34.0 + float(sp["ph"]))
+				var p1 := _spark_pos(b, sp, age)
+				var p0 := _spark_pos(b, sp, maxf(age - STREAK, 0.0))
+				draw_line(p0, p1, ca(sp["c"], 0.9 * a), 2.6 * s * float(sp["w"]), true)
+
+	func _draw_glow() -> void:
+		if alpha <= 0.0:
+			return
+		for b in _all():
+			var tb := float(b["t"])
+			var rise := float(b["rise"])
+			if rise > 0.0 and tc >= tb - rise and tc < tb:
+				var hp := _rocket(b, tc)
+				var a := ramp(tc, tb - rise, tb - rise + 0.15)
+				glow(hp, 11.0 * s, ca(TRAIL, 0.9 * a))
+				glow(hp, 4.0 * s, Color(1, 1, 1, a))
+			var age := tc - tb
+			if age < 0.0 or age > float(b["life"]):
+				continue
+			if age < 0.35:                                  # Blitz beim Knall
+				var u := age / 0.35
+				glow(b["c"], float(b["r"]) * (0.35 + 0.5 * u), ca((b["cols"] as Array)[0], 0.55 * (1.0 - u)))
+				glow(b["c"], 26.0 * s, Color(1, 1, 1, 0.9 * (1.0 - u)))
+			for sp in b["sparks"]:
+				var life := float(sp["life"])
+				if age > life:
+					continue
+				var a := (1.0 - ramp(age, life * 0.5, life))
+				if age > life * 0.45:
+					a *= 0.5 + 0.5 * sin(age * 34.0 + float(sp["ph"]))
+				glow(_spark_pos(b, sp, age), 8.0 * s * float(sp["w"]), ca(sp["c"], 0.95 * a))
+
+
+# ===================================================================================================== 25 Astronaut am Mond (1.6.15)
+
+# Nutzerwunsch 23.10.2026: „Ein Astronaut schwebt neben dem Mond“. Kleiner, runder Astronaut (weißer Anzug, Visier mit Spiegelung),
+# schwebt schräg von oben neben den Mond, taumelt langsam, winkt einmal und treibt nach links oben davon. Antippen: langsamer Salto und
+# Winken. Der Schwebepunkt meidet Plätze, Knöpfe und den Mond selbst (spot_cost).
+class Astronaut extends NightBase:
+	const SUIT := Color("#F6F4FF")
+	const SUIT_D := Color("#D2CCEE")
+	const VISOR := Color("#1B2147")
+	const VISOR_2 := Color("#2E3A78")
+	const SHEEN := Color("#5FE3F0")
+	const PACK := Color("#B9B2DC")
+	const PINK := Color("#FF4FD8")
+	const GOLD := Color("#FFD65A")
+	const CYAN := Color("#3FF2E6")
+	const LINE := Color("#8A80C8")          # Kontur (Lavendel, dunkler als RING: der Anzug bleibt weiß)
+	const SALTO_S := 1.9
+	var sc := 1.0
+	var M := Vector2.ZERO
+	var home := Vector2.ZERO
+	var from := Vector2.ZERO
+	var ctrl_in := Vector2.ZERO
+	var to := Vector2.ZERO
+	var ph: Array = [0.0, 0.0, 0.0, 0.0]
+	var t_wave := 4.0
+	var spin0 := 0.0
+	var he := Vector2(26, 32)
+	# Pose
+	var pos := Vector2.ZERO
+	var rot := 0.0
+	var wave := 0.0                      # 0 Arm locker … 1 Arm oben, winkt
+	var wave_ph := 0.0
+	var kick := 0.0
+	var lamp := 0.0                      # Helmlicht
+
+	func setup(c: Dictionary) -> void:
+		use_glow()
+		sc = 1.35 * k()
+		in_s = 2.2
+		out_s = 2.0
+		var sz := table_size()
+		var o: Dictionary = c.get("ort", {}) if c.get("ort") is Dictionary else {}
+		M = o.get("pos", Vector2(sz.x * 0.94, sz.y * 0.08))
+		he = Vector2(26, 32) * sc
+		var best := INF
+		home = M + Vector2(-140, 40) * sc
+		for ang in [165.0, 150.0, 180.0, 135.0, 195.0, 120.0]:
+			for dist in [115.0, 145.0, 180.0, 220.0]:
+				var p := M + Vector2.from_angle(deg_to_rad(float(ang))) * float(dist) * sc
+				p.x = clampf(p.x, he.x + 8.0, sz.x - he.x - 8.0)
+				p.y = maxf(p.y, he.y + 8.0)
+				var cost := spot_cost(p, he) * 4.0 + float(dist) / 500.0 + absf(float(ang) - 160.0) / 400.0 + rng.randf() * 0.02
+				if p.distance_to(M) < 85.0 * sc:
+					cost += 3.0
+				if cost < best:
+					best = cost
+					home = p
+		from = Vector2(minf(sz.x + 40.0 * sc, home.x + 230.0 * sc), -60.0 * sc)
+		ctrl_in = Vector2(home.x + 120.0 * sc, home.y - 10.0 * sc)
+		to = home + Vector2(-250.0, -230.0) * sc
+		for i in 4:
+			ph[i] = rng.randf() * TAU
+		t_wave = rng.randf_range(in_s + 1.0, maxf(in_s + 1.1, dur - out_s - 2.0))
+		spin0 = rng.randf_range(-0.2, 0.2)
+
+	func on_tap(_p: Vector2) -> void:
+		# Der Salto braucht Zeit: in der Hauptphase so lange bleiben (beim Abflug nur noch der Salto im Wegtreiben)
+		var t_out := dur - out_s
+		if t < t_out and t + SALTO_S + 0.3 > t_out:
+			dur = t + SALTO_S + 0.3 + out_s
+
+	func pose_at(tt: float) -> void:
+		var drift := Vector2(14.0 * sin(TAU * tt / 5.3 + float(ph[0])), 9.0 * sin(TAU * tt / 3.9 + float(ph[1]))) * sc
+		var base_rot := spin0 + 0.3 * sin(TAU * tt / 6.5 + float(ph[2]))
+		var t_out := dur - out_s
+		if tt < in_s:
+			var u := e_out(tt / in_s)
+			pos = bez2(from, ctrl_in, home, u) + drift * u
+			rot = base_rot + (1.0 - u) * 1.1
+		elif tt < t_out:
+			pos = home + drift
+			rot = base_rot
+		else:
+			var u := clampf((tt - t_out) / out_s, 0.0, 1.0)
+			pos = home.lerp(to, e_in(u)) + drift
+			rot = base_rot - 0.9 * e_in(u)
+		alpha = ramp(tt, 0.0, 0.4) * (1.0 - ramp(tt, dur - 0.5, dur))
+		wave = ramp(tt, t_wave, t_wave + 0.3) * (1.0 - ramp(tt, t_wave + 1.5, t_wave + 1.8))
+		wave_ph = tt * TAU * 2.2
+		kick = sin(tt * 1.7 + float(ph[3]))
+		lamp = 0.35 + 0.65 * maxf(0.0, sin(tt * TAU * 0.7))
+		var st := since_tap(tt)
+		if st >= 0.0:
+			var u := clampf(st / SALTO_S, 0.0, 1.0)
+			rot -= TAU * e_io(u)                               # langsamer Salto
+			pos.y -= 12.0 * sc * bump(u)
+			wave = maxf(wave, bump(clampf(st / (SALTO_S + 0.5), 0.0, 1.0)))
+
+	func bounds() -> Rect2:
+		return box(pos, he) if alpha > 0.0 else Rect2()
+
+	static func _capsule(a: Vector2, b: Vector2, r: float, n := 7) -> PackedVector2Array:
+		var ang := (b - a).angle()
+		var pts := PackedVector2Array()
+		for i in n + 1:
+			pts.append(b + Vector2.from_angle(ang - PI * 0.5 + PI * float(i) / float(n)) * r)
+		for i in n + 1:
+			pts.append(a + Vector2.from_angle(ang + PI * 0.5 + PI * float(i) / float(n)) * r)
+		return pts
+
+	func _limb(a: Vector2, b: Vector2, r: float, end_col: Color) -> void:
+		var pts := _capsule(a, b, r)
+		draw_colored_polygon(pts, SUIT)
+		outline_poly(pts, LINE, 1.2)
+		draw_circle(b, r * 1.05, end_col)
+		draw_arc(b, r * 1.05, 0.0, TAU, 14, LINE, 1.0, true)
+
+	func _draw() -> void:
+		if alpha <= 0.0:
+			return
+		draw_set_transform(pos, rot, Vector2(sc, sc))
+		# Rucksack
+		var pack := PackedVector2Array([Vector2(-15, -8), Vector2(-4, -11), Vector2(-3, 11), Vector2(-14, 12)])
+		draw_colored_polygon(pack, PACK)
+		outline_poly(pack, LINE, 1.2)
+		draw_line(Vector2(-13, -3), Vector2(-5, -5), ca(INK, 0.35), 1.2, true)
+		# Beine (strampeln langsam)
+		_limb(Vector2(-4.5, 10), Vector2(-6.5 + 2.0 * kick, 20.5), 4.4, SUIT_D)
+		_limb(Vector2(4.5, 10), Vector2(6.5 - 2.0 * kick, 19.5), 4.4, SUIT_D)
+		# Körper mit Brustteil (drei Knöpfe)
+		ellipse_outlined(Vector2(0, 4), 11.0, 11.5, SUIT, LINE, 1.3, 0.0, 26)
+		var panel := PackedVector2Array([Vector2(-5.5, 0.5), Vector2(5.5, 0.5), Vector2(5.0, 8.0), Vector2(-5.0, 8.0)])
+		draw_colored_polygon(panel, SUIT_D)
+		outline_poly(panel, ca(LINE, 0.8), 0.9)
+		draw_circle(Vector2(-2.6, 3.0), 1.4, PINK)
+		draw_circle(Vector2(0.6, 3.0), 1.4, GOLD)
+		draw_circle(Vector2(3.4, 3.0), 1.4, CYAN)
+		draw_line(Vector2(-3.5, 6.0), Vector2(3.5, 6.0), ca(INK, 0.35), 1.0, true)
+		# linker Arm treibt locker, rechter winkt (erhoben über dem Helm gezeichnet, damit der Handschuh zu sehen ist)
+		_limb(Vector2(-9, -1), Vector2(-17, 6 + 2.0 * sin(wave_ph * 0.25)), 3.8, SUIT_D)
+		var a_rest := deg_to_rad(55.0)
+		var a_up := deg_to_rad(-48.0) + 0.42 * sin(wave_ph)
+		var ang := lerpf(a_rest, a_up, wave)
+		var hand := Vector2(9, -1) + Vector2.from_angle(ang) * lerpf(10.5, 15.0, wave)
+		if wave < 0.5:
+			_limb(Vector2(9, -1), hand, 3.8, SUIT_D)
+		# Helm mit Visier und Spiegelung (Mondsichel, Lichtbogen)
+		ellipse_outlined(Vector2(0, -14), 13.0, 12.5, SUIT, LINE, 1.4, 0.0, 30)
+		ellipse_outlined(Vector2(1.2, -14), 9.6, 7.6, VISOR, LINE, 1.1, 0.0, 26)
+		poly_ellipse(Vector2(2.4, -12.4), 7.0, 4.4, ca(VISOR_2, 0.9), 0.0, 20)
+		draw_arc(Vector2(1.2, -14), 7.4, 0.15, 1.25, 10, ca(SHEEN, 0.85), 1.6, true)
+		draw_arc(Vector2(1.2, -14), 7.0, PI + 0.5, PI + 1.35, 8, Color(1, 1, 1, 0.9), 1.8, true)
+		draw_circle(Vector2(5.4, -17.0), 2.1, Color(1, 1, 1, 0.85))
+		draw_circle(Vector2(6.3, -17.6), 1.8, VISOR)
+		draw_circle(Vector2(-3.2, -17.6), 0.9, Color(1, 1, 1, 0.9))
+		# Helmlicht oben
+		draw_line(Vector2(-4, -25.5), Vector2(-5, -29), LINE, 1.2, true)
+		draw_circle(Vector2(-5, -29.5), 1.8, PINK.lerp(Color.WHITE, 0.3 * lamp))
+		if wave >= 0.5:
+			_limb(Vector2(9, -1), hand, 3.8, SUIT_D)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+	func _draw_glow() -> void:
+		if alpha <= 0.0:
+			return
+		var xf := Transform2D(rot, pos)
+		glow(pos, 44.0 * sc, ca(RING, 0.09))
+		glow(xf * (Vector2(-5, -29.5) * sc), 7.0 * sc, ca(PINK, 0.8 * lamp))

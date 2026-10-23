@@ -44,9 +44,10 @@ const REACT_RISE := 80.0
 const REACT_S := 1.6
 const REACT_SOUND_MAX := 2                 # je Gerät höchstens so viele Reaktionstöne gleichzeitig
 const REACT_SOUND_GAP_MS := 600            # je Reaktionsname
-const REACT_LEN_MS := {"lachen": 1920, "schreck": 610, "klatschen": 1920, "daumen": 620, "baeh": 980, "heulen": 2100, "facepalm": 1080}   # Dateilängen (eastereggs2.md 7)
+const REACT_LEN_MS := {"lachen": 1920, "schreck": 610, "klatschen": 1920, "daumen": 620, "baeh": 980, "heulen": 2100, "facepalm": 1080,
+	"denken": 790, "schlafen": 4170, "kuss": 765}   # Dateilängen (eastereggs2.md 7)
 const SOUND_OF := {"lachen": "lachen", "schreck": "schreck", "klatschen": "klatschen", "daumen": "daumen", "baeh": "baeh", "heulen": "heulen",
-	"facepalm": "facepalm"}
+	"facepalm": "facepalm", "denken": "hmm", "schlafen": "schnarchen", "kuss": "kuss"}   # 1.6.15: 😴 nimmt den Schnarch-Ton (Nutzer: „haben wir ja schon“)
 const MENU_IDLE_S := 15.0                  # Beta 1.6.7 (Nutzerwunsch 16.10.2026): vorher 5 s, das Menü verschwand zu früh
 const RATE_GRAY_S := 1.2                   # fx_no "rate": Knöpfe kurz ausgegraut
 const REOPEN_GAP_MS := 400                 # derselbe Kopf direkt nach dem Schließen: nicht gleich wieder öffnen
@@ -646,6 +647,7 @@ func _place_cushion(fx: CushionFx, seat: int) -> void:
 		add.call(c + Vector2(r * 0.2 + cw * 0.4, -r - cw * 0.75), 1.0)
 		add.call(c + Vector2(r * 0.2 + cw * 0.4, -r - cw * 1.1), 1.0)
 		add.call(c + Vector2(r * 0.2 + cw * 0.4, -r - cw * 2.05), 1.0)    # Beta 1.6.13: über dem zweireihigen Reaktionsblock (4 + 3)
+		add.call(c + Vector2(r * 0.2 + cw * 0.4, -r - cw * 3.0), 1.0)     # Beta 1.6.15: über dem dreireihigen Block (4 + 4 + 2)
 		add.call(Vector2(hr.end.x + cw * 1.3 + 8.0, c.y), 1.0)
 		add.call(c + Vector2(-r - cw * 1.4, -cw * 0.3), -1.0)
 	else:
@@ -1398,7 +1400,6 @@ func _row_reactions(badge: OpponentSeat) -> bool:
 func _block_reactions_big() -> void:
 	var n := TeaseMenu.REACT_ORDER.size()
 	var cols := mini(n, TeaseMenu.REACT_COLS)
-	var rows := ceili(float(n) / cols)
 	var sz := _screen()
 	var blk := _blockers(_me())
 	var hard: Array[Rect2] = blk.hard
@@ -1420,17 +1421,26 @@ func _block_reactions_big() -> void:
 	for f: float in [k(), lerpf(k(), 1.0, 0.5), 1.0]:
 		var r := TeaseMenu.REACT_BTN_R * f
 		var gap := REACT_GAP * f
-		var shape := Vector2(2.0 * r * cols + gap * (cols - 1), 2.0 * r * rows + gap * (rows - 1))
-		var add := func(top_left: Vector2) -> void:
-			cands.append({"pos": top_left, "rel": Rect2(Vector2.ZERO, shape), "r": r, "gap": gap})
-		if sb.has_area():
-			add.call(Vector2(sb.position.x, sb.position.y - 12.0 - shape.y))
-			add.call(Vector2(sb.end.x + 14.0, sb.end.y - shape.y))
-		add.call(Vector2(12.0, hint_top - 8.0 - shape.y))
+		# Beta 1.6.15 (zehn Knöpfe): zuletzt je Größe auch zwei Spalten am linken Rand über „Sortieren“ (unter dem Menüknopf;
+		# der Block 5 + 5 läge dort auf dem Ziehstapel)
+		for c: int in [cols, 2]:
+			var rws := ceili(float(n) / c)
+			var shape := Vector2(2.0 * r * c + gap * (c - 1), 2.0 * r * rws + gap * (rws - 1))
+			var add := func(top_left: Vector2) -> void:
+				cands.append({"pos": top_left, "rel": Rect2(Vector2.ZERO, shape), "r": r, "gap": gap, "cols": c})
+			if sb.has_area():
+				add.call(Vector2(sb.position.x, sb.position.y - 12.0 - shape.y))
+				if c == cols:
+					add.call(Vector2(sb.end.x + 14.0, sb.end.y - shape.y))
+			if c == cols:
+				add.call(Vector2(12.0, hint_top - 8.0 - shape.y))
+			else:
+				add.call(Vector2(12.0, (sb.position.y if sb.has_area() else hint_top) - 12.0 - shape.y))
 	var best := _choose(cands, {"hard": hard, "soft": blk.soft})
 	var tl: Vector2 = best.pos
 	var br := float(best.r)
 	var bg := float(best.gap)
+	cols = int(best.cols)
 	var cs: Array[Vector2] = []
 	for i in n:
 		var row_i := i / cols
@@ -1649,6 +1659,9 @@ const REACT_TEX := {
 	"baeh": preload("res://assets/ui/reaktionen/baeh.svg"),     # Beta 1.6.11: 😝 „Squinting face with tongue“
 	"heulen": preload("res://assets/ui/reaktionen/heulen.svg"),     # Beta 1.6.13: 😭 „Loudly crying face“
 	"facepalm": preload("res://assets/ui/reaktionen/facepalm.svg"), # Beta 1.6.13: 🤦 „Person facepalming“ (Hautton Standard)
+	"denken": preload("res://assets/ui/reaktionen/denken.svg"),     # Beta 1.6.15: 🤔 „Thinking face“
+	"schlafen": preload("res://assets/ui/reaktionen/schlafen.svg"), # Beta 1.6.15: 😴 „Sleeping face“
+	"kuss": preload("res://assets/ui/reaktionen/kuss.svg"),         # Beta 1.6.15: 😘 „Face blowing a kiss“
 }
 const REACT_IMG := 2.2          # Bildkante relativ zu s (≈ Radius): das Motiv (gut 28 von 32 Einheiten) füllt dann etwa 2 s
 

@@ -1,10 +1,11 @@
 extends SceneTree
 # Mau-Mau Flip (Beta 1.6.12): Natur-Überraschungen, App-Kern (docs/module/natur.md Abschnitt 8.1, Aufgabe T1). Headless mit Probe-Tier
 # (make_cb), eingespritzter Uhr (auto_process = false, tick) und festem Zufall, an einer echten TableView mit HandView.
-#   Tabelle (25 Einträge, Felder, ruhig, vorn, Shader-Formeln), Plattform-Punkt = DirectionRing.point_at, Dauerlauf 10 h (Abstände,
-#   nie zwei gleichzeitig, auch nicht mit Katze/Himmel/Necken, Wiederholungssperre, Obergrenzen, Seite, alle Zufallsereignisse),
+#   Tabelle (29 Einträge seit 1.6.15, Felder, ruhig, vorn, Shader-Formeln), Plattform-Punkt = DirectionRing.point_at, Dauerlauf 10 h
+#   (Abstände, nie zwei gleichzeitig, auch nicht mit Katze/Himmel/Necken, Wiederholungssperre, Obergrenzen, Seite, alle Zufallsereignisse),
 #   Bedingungen (großer Modus, Dialog, Erwischt, Rundenende, Phasen, Regie < 2 s ruhig, reduziert, fremder Zug), Flip-Anlass,
-#   Trödeln (Schnecke, Katze), Abbruch (eigener Zug, mau, Dialog, Necken, draw, play, Hand, Größe, großer Modus, reduziert),
+#   Trödeln (Schnecke, Katze), Abbruch (eigener Zug, mau, Dialog, Necken, shuffle – UFO bleibt beim Ziehen –, play, Hand, Größe, großer
+#   Modus, reduziert), Anker ecke_unten_rechts (Strand),
 #   Tippen am echten Tisch (Stapel unter dem UFO, Ablage neben der Motte, Kopf, Biene über der Hand, freier Spatz, Leere),
 #   Ebenen, Aufräumen (1000 Ereignisse), Bestand-Brücke, keine Töne/kein Netz im Quelltext, Vorführung, nature_check am Probe-Tier.
 
@@ -139,12 +140,13 @@ func run() -> void:
 
 func table_checks() -> void:
 	var all: Array = NT.entries()
-	check(all.size() == 25, "Tabelle: 25 Einträge (%d)" % all.size())
+	check(all.size() == 29, "Tabelle: 29 Einträge (%d)" % all.size())
 	var ids := {}
 	var keys := ["id", "seite", "zufall", "nach_flip", "troedeln", "ebene", "ort", "dauer", "ruhig", "tipp", "scheu", "fremder_zug",
 		"je_partie", "je_runde", "deckt", "deckt_max_s", "bestand"]
 	var places := ["himmel", "himmel_oben", "himmel_fern", "himmel_frei", "himmel_bogen", "sonne", "mond", "band_hinten", "band_schulter",
-		"band_vorn_seite", "band_zum_platz", "tisch_quer", "tisch_rund", "handkarte", "stapel_oben", "ablage_ring", "aufsteigend"]
+		"band_vorn_seite", "band_zum_platz", "tisch_quer", "tisch_rund", "handkarte", "stapel_oben", "ablage_ring", "aufsteigend",
+		"ecke_unten_rechts"]
 	var calm: Array = []
 	var front: Array = []
 	var rand := {"tag": 0, "nacht": 0}
@@ -165,8 +167,9 @@ func table_checks() -> void:
 			calm.append(id)
 		if str(e["ebene"]) == "vorn":
 			front.append(id)
-			check(bool(e["fremder_zug"]) and bool(e["scheu"]) and not (e["deckt"] as Array).is_empty() and float(e["deckt_max_s"]) > 0.0,
-				"Tabelle: vorn %s nur im fremden Zug, scheu, mit deckt" % id)
+			# 1.6.15: das UFO ist nicht mehr scheu (weicht beim Antippen aus), die Biene bleibt scheu
+			check(bool(e["fremder_zug"]) and (bool(e["scheu"]) or id == "ufo") and not (e["deckt"] as Array).is_empty()
+				and float(e["deckt_max_s"]) > 0.0, "Tabelle: vorn %s nur im fremden Zug, scheu (außer UFO), mit deckt" % id)
 		else:
 			check((e["deckt"] as Array).is_empty(), "Tabelle: %s (nicht vorn) deckt nichts" % id)
 		if float(e["zufall"]) > 0.0:
@@ -176,7 +179,9 @@ func table_checks() -> void:
 	front.sort()
 	check(front == ["biene", "ufo"], "Tabelle: vorn nur Biene und UFO (%s)" % str(front))
 	check(int(rand["tag"]) >= 5 and int(rand["nacht"]) >= 5, "Tabelle: jede Seite hat Zufallseinträge (%s)" % str(rand))
-	check(NT.ids("tag").size() == 12 and NT.ids("nacht").size() == 13, "Tabelle: 12 Tag, 13 Nacht")
+	check(NT.ids("tag").size() == 14 and NT.ids("nacht").size() == 15, "Tabelle: 14 Tag, 15 Nacht")
+	check(not bool(NT.entry("ufo")["scheu"]) and str(NT.entry("ufo")["tipp"]) != "" and bool(NT.entry("biene")["scheu"]),
+		"Tabelle: UFO nicht scheu, mit Tipp (1.6.15); Biene scheu")
 	check(bool(NT.entry("schmetterling")["bestand"]) and bool(NT.entry("sternschnuppe")["bestand"]), "Tabelle: Bestand")
 	check(NT.entry("sternbild").has("form") and (NT.entry("sternbild")["form"]["punkte"] as Array).size() == 11, "Tabelle: Sternbild mit 11 Sternen")
 	# JSON-Rundreise (so vergleicht test_web_contract mit natur.js)
@@ -240,6 +245,10 @@ func band_checks() -> void:
 	check(fr.size == Vector2(240, 160) and not fr.intersects(NatureFx.TOP_LEFT), "Anker himmel_frei 240 × 160, nicht über den Knöpfen oben links (%s)" % fr)
 	check((an["mond"]["pos"] as Vector2).is_equal_approx(Vector2(1600 * 0.94, 720 * 0.08)) and (an["sonne"]["pos"] as Vector2).is_equal_approx(Vector2(112, 21.6)),
 		"Anker Sonne und Mond wie im Shader")
+	var ecke: Dictionary = an["ecke_unten_rechts"]
+	var mr: Rect2 = ecke["mau"]
+	check((ecke["pos"] as Vector2).is_equal_approx(Vector2(1600, 720)) and mr.has_area() and mr.end.x > 1500.0 and mr.end.y > 640.0,
+		"Anker ecke_unten_rechts: Ecke und Mau-Knopf (%s)" % str(mr))
 	var obs := nf.obstacles()
 	for key in ["hand", "stapel", "ablage", "platz", "name", "leiste", "mau", "sortieren", "rueckseiten", "stapelzahl", "oben_links"]:
 		check(obs.has(key), "Schutzfläche %s vorhanden (%s)" % [key, str(obs.keys())])
@@ -631,7 +640,14 @@ func abort_checks() -> void:
 	await fresh(4, 1)
 	var u := spawned("ufo")
 	nf.on_event({"e": "draw", "seat": 2, "count": 1})
-	check(u.leaving(), "Abbruch: UFO geht bei draw")
+	check(not u.leaving() and nf.current != null, "Abbruch: UFO bleibt bei draw (1.6.15)")
+	nf.on_event({"e": "shuffle"})
+	check(u.leaving(), "Abbruch: UFO geht bei shuffle")
+	await fresh(4, 1)
+	u = spawned("ufo")
+	nf.notice_press(nf.world_bounds().get_center() + Vector2(60, 0))
+	nf.notice_press(t.draw_pile_position())
+	check(not u.leaving() and int(u.get("pressed")) == 0, "Abbruch: UFO nicht scheu (Druck daneben und auf den Stapel, 1.6.15)")
 	await fresh(4, 1)
 	var m := spawned("motte")
 	nf.on_event({"e": "play", "seat": 2})

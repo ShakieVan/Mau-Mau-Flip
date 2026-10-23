@@ -393,6 +393,8 @@ window.MMF_I18N_EN = {
   "Bäää": "Bleh!",
   "Heulen": "Cry",
   "Facepalm": "Facepalm",
+  "Nachdenken": "Thinking",
+  "Küsschen": "Kiss",
 
   "Necken (Papierkugel, Furzkissen, Schnarchen, Wecker, Reaktionen)": "Teasing (paper ball, whoopee cushion, snoring, alarm clock, reactions)",
   "Mitspieler können dir Schnarchen, einen Wecker, eine Papierkugel oder ein Furzkissen schicken.": "Other players can send you snoring, an alarm clock, a paper ball or a whoopee cushion.",

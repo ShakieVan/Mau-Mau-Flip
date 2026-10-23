@@ -597,6 +597,7 @@ func _on_notice(text: String) -> void:
 		_last_play = -1
 	table.gamble_machine.press_sent = false
 	table.gamble_machine.queue_redraw()      # „Aufhören“ wieder zeigen
+	table.draw_retry()                        # Beta 1.6.15: abgelehnter Zieh-Tipp → Stapel wieder antippbar
 	table.pick_retry()                        # „Farbe mit ablegen“: Auswahl wieder anbieten
 	table.show_notice(text, "warn")
 

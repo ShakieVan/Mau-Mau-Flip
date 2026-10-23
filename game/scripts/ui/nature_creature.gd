@@ -15,7 +15,8 @@ extends Node2D
 #   bounds()     sichtbare Hülle (Koordinaten der Ebene) zur aktuellen Pose; Rect2() = nichts zu sehen (Tests: Sichtbarkeit, deckt,
 #                Scheu, Treffer).
 #   optional: hit(p) (Standard: Abstand zur Mitte der Hülle ≤ max(treffer_min_r, halbe Hüllengröße)), on_tap(p) (Reaktion, nur bei
-#                „tipp“ in der Tabelle, höchstens einmal; tap_at/tap_pos sind dann schon gesetzt), on_press(p) (Scheu: gleich danach
+#                „tipp“ in der Tabelle, höchstens tap_limit()-mal (Standard 1); tap_at/tap_pos sind dann schon gesetzt (erster Tipp);
+#                Arten mit mehreren Tipps merken sich jeden mit add_tap(p) in taps [[Zeit, Punkt], …]), on_press(p) (Scheu: gleich danach
 #                geht das Tier schnell), on_event(ev) -> bool (Spielereignis; true = schnell abgehen), on_leave() (Beginn des schnellen
 #                Abgangs), leave_time(fast) (Dauer des schnellen Abgangs, Standard abgang_s; höchstens 0,5 s), own_leave = true, wenn
 #                pose_at den Abgang selbst zeichnet (sonst blendet die Basis in leave_s aus).
@@ -33,7 +34,7 @@ extends Node2D
 # Anker (anchors): himmel/himmel_oben/himmel_fern/tisch_quer Rect2; himmel_frei Rect2 (240 × 160); himmel_bogen {center, r};
 #   sonne {pos, r}; mond {pos, r, cut} (Sichel: Kreis r um pos minus Kreis um pos + cut); band_hinten/band_schulter/band_vorn_seite
 #   {deg}; band_zum_platz {deg, seat}; tisch_rund {center, radii, f0, f1, ymax}; handkarte (wie hand()); stapel_oben {pos, pile
-#   (Rect2)}; ablage_ring {pos, r}; aufsteigend {pos, target_y}.
+#   (Rect2)}; ablage_ring {pos, r}; aufsteigend {pos, target_y}; ecke_unten_rechts {pos (Ecke W, H), mau (Rect2 des Mau-Knopfs)}.
 
 const NT := preload("res://scripts/ui/nature_table.gd")
 const INK := UiPalette.INK
@@ -60,8 +61,9 @@ var layer := "mitte"
 var in_s := 1.0                       # Anflug bzw. Einblenden (danach beginnt die Hauptphase)
 var out_s := 1.0                      # Abflug bzw. Ausblenden am Ende (Hauptphase endet bei dur − out_s)
 var alpha := 1.0                      # Deckkraft aus pose_at (die Basis multipliziert die Blende des schnellen Abgangs)
-var tap_at := -1.0                    # Zeit des Tipps (Reaktion), −1 = keiner
+var tap_at := -1.0                    # Zeit des (ersten) Tipps (Reaktion), −1 = keiner
 var tap_pos := Vector2.ZERO
+var taps: Array = []                  # alle angenommenen Tipps [[Zeit, Punkt], …] (Arten mit tap_limit() > 1, über add_tap)
 var leave_at := -1.0                  # Beginn des schnellen Abgangs, −1 = keiner
 var leave_s := 0.4
 var leave_fast := true
@@ -122,6 +124,22 @@ func on_leave() -> void:
 
 func leave_time(_fast: bool) -> float:
 	return float(NT.timing("abgang_s"))
+
+
+# Wie viele Tipps das Tier annimmt (Beta 1.6.15: UFO 3, Feuerwerk 2; sonst 1)
+func tap_limit() -> int:
+	return 1
+
+
+# Bisher angenommene Tipps (auch ohne add_tap: ein gesetztes tap_at zählt als einer)
+func tap_count() -> int:
+	return maxi(taps.size(), 1 if tap_at >= 0.0 else 0)
+
+
+# Tipp zur jetzigen Zeit merken (in on_tap der Arten mit mehreren Tipps; doppelt zur selben Zeit zählt einmal)
+func add_tap(p: Vector2) -> void:
+	if taps.is_empty() or not is_equal_approx(float(taps[taps.size() - 1][0]), t):
+		taps.append([t, p])
 
 
 func _draw_glow() -> void:

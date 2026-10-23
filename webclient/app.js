@@ -5,7 +5,7 @@
 (function (M) {
   'use strict';
 
-  const VERSION = '1.6.12';
+  const VERSION = '1.6.15';   // nur für die Protokollzeilen an den Gastgeber; die Spielversion kommt vom Gastgeber (/info)
   const PROTO = 1;
   // wach.mp4 (32×32, 2 s, H.264 Baseline, ohne Ton; erzeugt mit ffmpeg) als data:-URI
   const WACH_VIDEO = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAMzbW9vdgAAAGxtdmhkAAAAAAAAAAAAAAAAAAAD6AAAB9AAAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAl50cmFrAAAAXHRraGQAAAADAAAAAAAAAAAAAAABAAAAAAAAB9AAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAACAAAAAgAAAAAAAkZWR0cwAAABxlbHN0AAAAAAAAAAEAAAfQAAAAAAABAAAAAAHWbWRpYQAAACBtZGhkAAAAAAAAAAAAAAAAAABAAAAAgABVxAAAAAAALWhkbHIAAAAAAAAAAHZpZGUAAAAAAAAAAAAAAABWaWRlb0hhbmRsZXIAAAABgW1pbmYAAAAUdm1oZAAAAAEAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAAUFzdGJsAAAAuXN0c2QAAAAAAAAAAQAAAKlhdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAACAAIABIAAAASAAAAAAAAAABFExhdmM2My4xLjEwMSBsaWJ4MjY0AAAAAAAAAAAAAAAAGP//AAAAL2F2Y0MBQsAe/+EAFmdCwB7ZCWwEQAAAAwBAAAADAQPFi5IBAAZoy4DkTIAAAAAQcGFzcAAAAAEAAAABAAAAFGJ0cnQAAAAAAAAKpAAAAAAAAAAYc3R0cwAAAAAAAAABAAAABAAAIAAAAAAUc3RzcwAAAAAAAAABAAAAAQAAABxzdHNjAAAAAAAAAAEAAAABAAAABAAAAAEAAAAkc3RzegAAAAAAAAAAAAAABAAAAogAAAALAAAACwAAAAsAAAAUc3RjbwAAAAAAAAABAAADYwAAAGF1ZHRhAAAAWW1ldGEAAAAAAAAAIWhkbHIAAAAAAAAAAG1kaXJhcHBsAAAAAAAAAAAAAAAALGlsc3QAAAAkqXRvbwAAABxkYXRhAAAAAQAAAABMYXZmNjMuMS4xMDEAAAAIZnJlZQAAArFtZGF0AAACcgYF//9u3EXpvebZSLeWLNgg2SPu73gyNjQgLSBjb3JlIDE2NSByMzIyMyAwNDgwY2IwIC0gSC4yNjQvTVBFRy00IEFWQyBjb2RlYyAtIENvcHlsZWZ0IDIwMDMtMjAyNSAtIGh0dHA6Ly93d3cudmlkZW9sYW4ub3JnL3gyNjQuaHRtbCAtIG9wdGlvbnM6IGNhYmFjPTAgcmVmPTMgZGVibG9jaz0xOi0zOi0zIGFuYWx5c2U9MHgxOjB4MTExIG1lPWhleCBzdWJtZT03IHBzeT0xIHBzeV9yZD0yLjAwOjAuNzAgbWl4ZWRfcmVmPTEgbWVfcmFuZ2U9MTYgY2hyb21hX21lPTEgdHJlbGxpcz0xIDh4OGRjdD0wIGNxbT0wIGRlYWR6b25lPTIxLDExIGZhc3RfcHNraXA9MSBjaHJvbWFfcXBfb2Zmc2V0PS00IHRocmVhZHM9MSBsb29rYWhlYWRfdGhyZWFkcz0xIHNsaWNlZF90aHJlYWRzPTAgbnI9MCBkZWNpbWF0ZT0xIGludGVybGFjZWQ9MCBibHVyYXlfY29tcGF0PTAgY29uc3RyYWluZWRfaW50cmE9MCBiZnJhbWVzPTAgd2VpZ2h0cD0wIGtleWludD0yNTAga2V5aW50X21pbj0yIHNjZW5lY3V0PTQwIGludHJhX3JlZnJlc2g9MCByY19sb29rYWhlYWQ9NDAgcmM9Y3JmIG1idHJlZT0xIGNyZj00MC4wIHFjb21wPTAuNjAgcXBtaW49MCBxcG1heD02OSBxcHN0ZXA9NCBpcF9yYXRpbz0xLjQwIGFxPTE6MS4yMACAAAAADmWIhAXznJigACX3J114AAAAB0GaOAvnOWAAAAAHQZpUAvnOWAAAAAdBmmAVznLA';
@@ -49,7 +49,8 @@
     // ton = Mau-Ton (Aufnahmen, Standard normal), toene = übrige Spieltöne (Dateien aus sfx/, sonst synthetisch; Standard aus), stumm = Ton-Knopf in der Ecke
     // hervorheben = spielbare Karten hervorheben (persönliche Einstellung je Gerät, AGENTS.md Nr. 24; Standard an)
     // grosser_modus = großer Modus (Standard aus), zug_vibration = „Bei deinem Zug: Vibration“ (Standard an seit 1.2.1); beide je Gerät, wie App.settings
-    einstellungen: { ton: 'normal', toene: 'normal', stumm: false, effekte: 'voll', sort: 'farbe', vibration: true, vollbild: true, hervorheben: true, schrift: 'normal', grosser_modus: false, zug_vibration: true, sprache: 'auto', sprueche: 'frech', sprueche_oft: 'oft', necken: true },
+    // zug_ton = „Bei deinem Zug: Ton“ (Dran-Ton allein abschaltbar, Beta 1.6.15, Standard an; Lautstärke wie Spieltöne)
+    einstellungen: { ton: 'normal', toene: 'normal', stumm: false, effekte: 'voll', sort: 'farbe', vibration: true, vollbild: true, hervorheben: true, schrift: 'normal', grosser_modus: false, zug_vibration: true, zug_ton: true, sprache: 'auto', sprueche: 'frech', sprueche_oft: 'oft', necken: true },
     _mauZuletzt: {},       // „art:Platz“ → Zeitpunkt des letzten Mau-Tons (Entprellung)
     // Online-Spiel (docs/online/ENTWURF.md): ?r=CODE auf einer vom Vermittler ausgelieferten Seite. Vermittler = eigener Ursprung.
     online: false,         // ?r= vorhanden
@@ -94,6 +95,7 @@
       this._schrift(e.schrift);
       e.grosser_modus = params.get('gross') ? params.get('gross') === '1' : Speicher.get('grosser_modus', false) === true;   // ?gross=1 für Test und Kontrollbilder
       e.zug_vibration = Speicher.get('zug_vibration', true) !== false;   // ab Werk an (Nutzerentscheidung 1.2.1), wirkt nur mit navigator.vibrate
+      e.zug_ton = Speicher.get('zug_ton', true) !== false;   // Beta 1.6.15: Dran-Ton allein abschaltbar, ab Werk an
       e.sprueche = Speicher.get('sprueche', 'frech');   // freche Sprüche (Beta 1.4.4, spass.js): aus | nett | frech, je Gerät
       if (M.Spass) M.Spass.setzeStufe(e.sprueche);
       e.sprueche_oft = Speicher.get('sprueche_oft', 'oft');   // Häufigkeit der Sprüche (Beta 1.4.5): selten | normal | oft | immer, je Gerät
@@ -109,6 +111,7 @@
       document.body.classList.toggle('reduziert', e.effekte === 'reduziert');
       if (params.get('ruhig')) document.body.classList.add('ruhig');
       this._fehlerFangen();
+      this._tempoStart();   // Beta 1.6.15: Tempo-Messung (eine Protokollzeile je Minute am Tisch)
       this._startseite();
       this._ereignisse();
       M.Karten.pruefeBilder(() => { if (this.tisch && this.view) this.tisch.zeige(this.view, true); });
@@ -136,7 +139,7 @@
         fetch('/info', ctl ? { signal: ctl.signal, cache: 'no-store' } : { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(info => {
           clearTimeout(t);
           if (!info) return;
-          if (info.version) this.version = String(info.version);
+          if (info.version) this._version(info.version);
           if (info.name) {
             const n = Array.isArray(info.players) ? info.players.length : (info.players | 0);
             this.hostName = info.name;
@@ -164,7 +167,7 @@
         const r = info && info.room;
         if (!r) return;
         if (r.open === false) { this._startFehler(M.t('Raum nicht gefunden. Prüfe den Raumcode oder frage den Gastgeber.')); return; }
-        if (r.version) this.version = String(r.version);   // der Gastgeber verlangt genau seine Version (check_hello)
+        if (r.version) this._version(r.version);   // der Gastgeber verlangt genau seine Version (check_hello)
         // room.host ist beim Vermittler nur „Gastgeber verbunden ja/nein“ (er kennt keine Namen); einen Namen gibt es erst mit „welcome“
         if (typeof r.host === 'string' && r.host) { this.hostName = r.host; this._hostZeile.name = this.hostName; }
         this._startTexte();
@@ -498,8 +501,14 @@
           if (M.Natur) M.Natur.sicht(m.events || [], m.view);     // Beta 1.6.11: Flip-Anlass, Abgang, Trödel-Uhr
           { const h = (m.view.players || []).find(p => p.host && p.away); this.hostApp(h ? h.name : ''); }
           if (this.screen !== 'tisch') this.zeigeScreen('tisch');
-          if (this.offen && (m.seq_ack === undefined || m.seq_ack >= this.offen.seq)) this.offen = null;
+          if (this.offen && (m.seq_ack === undefined || m.seq_ack >= this.offen.seq)) {
+            if (m.seq_ack !== undefined) this._tempoAntwort(Date.now() - this.offen.zeit);
+            this.offen = null;
+          }
           this.tisch.regie.neu(m.events || [], m.view);
+          this._tempoStau(this.tisch.regie.schlange.length);
+          // Beta 1.6.15: Gesichter der aktuellen Seite im Leerlauf vorladen (einmal je Seite, Flugkarten erscheinen sofort)
+          if (M.Karten.vorladen) M.Karten.vorladen(M.Karten.gesichterSeite(m.view.side));
           if (M.Autotest && M.Autotest.zustand) M.Autotest.zustand(m);
           break;
         case 'err':
@@ -938,11 +947,18 @@
       const ich = (v.players || []).find(p => p.seat === v.seat);
       return !!ich && !(ich.place > 0);
     },
+    // Ziehen; offene Strafe auf mich → pen: true (Beta 1.6.15): ein zweiter Tipp auf dieselbe Sicht zieht keine weitere Karte
+    ziehAkt(v) {
+      const p = v && v.pending;
+      return p && typeof p.victim === 'number' && p.victim === v.seat && v.seat >= 0 ? { a: 'draw', pen: true } : { a: 'draw' };
+    },
     ziehen() {
       const v = this.view;
       if (!v) return;
       const h = v.hints || {};
-      if (h.can_draw) { if (!this.offen) this._sendeAkt({ a: 'draw' }); return; }
+      // Beta 1.6.15 (Nutzerbefund „bei +2 bekommt man 3“): nicht ziehen, solange die Tischregie noch abspielt – sonst zog ein
+      // ungeduldiger zweiter Tipp während der Zieh-Animation (die neue Sicht ist schon da, der Stapel leuchtet noch) eine Karte mehr
+      if (h.can_draw) { if (!this.offen && (!this.tisch || !this.tisch.regie || this.tisch.regie.leer)) this._sendeAkt(this.ziehAkt(v)); return; }
       if (this.imAblegen()) this.toast(M.t('Wähl erst die Karten zum Mitablegen und tippe auf „Ablegen“.'));
       else if (this.imGluecksspiel()) this.toast(h.can_press ? M.t('Im Glücksspiel wird nicht gezogen – drück den Knopf.') : M.t('Im Glücksspiel wird nicht gezogen – setz eine Karte.'));
       else if (v.turn === v.seat && v.phase === 'drawn') this.toast(this.beliebigNachZiehen(v) ? M.t('Leg eine passende Karte oder tippe auf „Behalten“.') : M.t('Leg die gezogene Karte oder tippe auf „Behalten“.'));
@@ -1149,7 +1165,7 @@
     },
     einstellen(k, wert) {
       const e = this.einstellungen;
-      if (k === 'vibration' || k === 'vollbild' || k === 'hervorheben' || k === 'grosser_modus' || k === 'zug_vibration' || k === 'necken') wert = wert === 'true';
+      if (k === 'vibration' || k === 'vollbild' || k === 'hervorheben' || k === 'grosser_modus' || k === 'zug_vibration' || k === 'zug_ton' || k === 'necken') wert = wert === 'true';
       if (k === 'vollbild') { this.vollbild(wert); if (wert) setTimeout(() => this._querSperren(), 300); }
       e[k] = wert;
       Speicher.set(k, wert);
@@ -1165,6 +1181,7 @@
       if (k === 'schrift') { this._schrift(wert); if (this.tisch && this.view) this.tisch.zeige(this.view, true); }
       if (k === 'grosser_modus') this._gross(wert);
       if (k === 'zug_vibration' && wert) this.zugVibration();   // zum Ausprobieren
+      if (k === 'zug_ton' && wert) { M.Ton.freischalten(); this.zugTon(); }   // zum Probehören
       if (k === 'sprueche' && M.Spass) { M.Spass.setzeStufe(wert); if (this.tisch && this.view) this.tisch.zeige(this.view, true); }
       if (k === 'sprueche_oft' && M.Spass) { M.Spass.setzeHaeufigkeit(wert); if (this.tisch && this.view) this.tisch.zeige(this.view, true); }
       if (k === 'necken' && M.Necken) M.Necken.setzeAus(!wert);   // Beta 1.6.3: geht als fx_pref an den Gastgeber
@@ -1183,6 +1200,16 @@
       document.documentElement.classList.toggle('gross', an);
       document.querySelectorAll('.gross-wahl button[data-gross]').forEach(b => b.classList.toggle('an', b.dataset.gross === String(an)));
       if (this.tisch) this.tisch.setzeGross(an);
+    },
+    // „Bei deinem Zug: Ton“ (Beta 1.6.15): Dran-Ton nur, wenn eingeschaltet; Lautstärke und Stummschalten wie die Spieltöne
+    // Version des Gastgebers (/info): Er verlangt genau sie (check_hello); Kartenbilder und Töne tragen sie als ?v= (Beta 1.6.15)
+    _version(v) {
+      this.version = String(v);
+      if (M.Karten.setzeVersion) M.Karten.setzeVersion(this.version);
+      if (M.Ton.setzeVersion) M.Ton.setzeVersion(this.version);
+    },
+    zugTon() {
+      if (this.einstellungen.zug_ton !== false) M.Ton.spiele('dran');
     },
     // „Bei deinem Zug: Vibration“ (eigene Einstellung, unabhängig von „Vibration“; nur wo navigator.vibrate da ist)
     zugVibration() {
@@ -1214,6 +1241,37 @@
       window.addEventListener('unhandledrejection', e => { const r = e.reason; M.meldeFehler('Promise: ' + (r && (r.stack || r.message) || r)); });
     },
     _logLeeren() { while (this.logPuffer.length && this.sende(this.logPuffer[0])) this.logPuffer.shift(); },
+
+    /* ---------------- Tempo-Messung (Beta 1.6.15, Nutzerbefund „Browser im Spiel-WLAN oft langsam“) ----------------
+       Antwortzeit eigener Aktionen (Senden → Sicht mit seq_ack), Ping, lange Aufgaben des Browsers (PerformanceObserver
+       „longtask“, nur Chrome/Android) und Rückstau der Tischregie; jede Minute am Tisch eine Zeile ins Protokoll des Gastgebers
+       („[web …] Tempo: …“, adb logcat -s godot). Nur Messwerte, keine Inhalte. */
+    _tempo: null,
+    _tempoNeu() { return { n: 0, summe: 0, max: 0, lang: 0, langSumme: 0, langMax: 0, stau: 0 }; },
+    _tempoAntwort(ms) {
+      const t = this._tempo || (this._tempo = this._tempoNeu());
+      if (!(ms >= 0) || ms > 60000) return;
+      t.n++; t.summe += ms; t.max = Math.max(t.max, ms);
+    },
+    _tempoStau(n) { const t = this._tempo || (this._tempo = this._tempoNeu()); t.stau = Math.max(t.stau, n); },
+    _tempoStart() {
+      if (this._tempoUhr) return;
+      try {
+        new PerformanceObserver(list => {
+          const t = this._tempo || (this._tempo = this._tempoNeu());
+          for (const e of list.getEntries()) { t.lang++; t.langSumme += e.duration; t.langMax = Math.max(t.langMax, e.duration); }
+        }).observe({ type: 'longtask' });
+      } catch (e) { /* Browser ohne longtask */ }
+      this._tempoUhr = setInterval(() => {
+        const t = this._tempo;
+        if (!t || this.screen !== 'tisch' || (!t.n && !t.lang)) return;
+        const r = Math.round;
+        const msg = { t: 'log', text: '[web ' + VERSION + '] Tempo: Antwort ' + (t.n ? 'Ø ' + r(t.summe / t.n) + ' ms (max ' + r(t.max) + ', n=' + t.n + ')' : '–')
+          + ', Ping ' + (this.latenz >= 0 ? r(this.latenz) + ' ms' : '–') + ', lange Aufgaben ' + t.lang + (t.lang ? ' (Σ ' + r(t.langSumme) + ' ms, max ' + r(t.langMax) + ')' : '')
+          + ', Rückstau max ' + t.stau + ' | ' + ua.slice(0, 80) };
+        if (this.verbindung && this.verbindung.offen && this.sende(msg)) this._tempo = this._tempoNeu();
+      }, 60000);
+    },
   };
 
   // Sprachwechsel: alles Dynamische neu beschriften (Titel, Startseite, Lobby, Tisch, offene Fenster)

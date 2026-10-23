@@ -28,7 +28,8 @@
  *                    der gemerkten Zeit (die Art merkt sie sich selbst).
  *     hulle(t),      {x, y, w, h} in Bühnen-px (Höhe 720) oder null, wenn nichts zu sehen ist (Tests: Sichtbarkeit, deckt, Scheu, Treffer)
  *     treffer?(p),   Tipp p {x, y} trifft das Tier (fehlt: Abstand zur Mitte der Hülle ≤ max(treffer_min_r, halbe Hüllengröße))
- *     tipp?(p),      Reaktion auf einen Tipp ins Leere (nur Arten mit „tipp“ in der Tabelle, höchstens einmal je Ereignis)
+ *     tipp?(p),      Reaktion auf einen Tipp ins Leere (nur Arten mit „tipp“ in der Tabelle, höchstens tippMax-mal je Ereignis)
+ *     tippMax?,      so viele Tipps nimmt die Art (Standard 1; 1.6.15: UFO 3 – weicht zweimal aus, der dritte verscheucht es –, Feuerwerk 2)
  *     scheu?(p),     wird vor dem schnellen Abgang einer scheuen Art gerufen (Berührung in scheu_r)
  *     ereignis?(e),  Spielereignis {e, …} gesehen; true = schnell abgehen (Ereignisse am Ort ergänzt der Kern selbst, siehe ORT_WEG)
  *     abgang(),      schnell abgehen (wegfliegen bzw. ausblenden); Rückgabe Sekunden bis zum Ende (Standard abgang_s, höchstens 1,5)
@@ -41,7 +42,8 @@
  *     meist unter dem Bildrand) oder null, troedler (Platz der Schnecke), meinPlatz, demo}
  *   Anker in orte: himmel/himmel_oben/himmel_fern/tisch_quer {x0, x1, y0, y1}, himmel_frei {x, y, w, h}, himmel_bogen {cx, cy, r},
  *     sonne {x, y, r}, mond {x, y, w, h, rot}, band_hinten/band_schulter/band_vorn_seite/band_zum_platz {grad (, seat)},
- *     tisch_rund {cx, cy, rx, ry, f0, f1, ymax}, handkarte, stapel_oben {x, y, stapel}, ablage_ring {x, y, R}, aufsteigend {x, y, ziel_y}
+ *     tisch_rund {cx, cy, rx, ry, f0, f1, ymax}, handkarte, stapel_oben {x, y, stapel}, ablage_ring {x, y, R}, aufsteigend {x, y, ziel_y},
+ *     ecke_unten_rechts {x, y (= W, H: Ecke), mau (Rechteck des Mau-Knopfs oder null)} (1.6.15, Strand)
  *   Hilfen: M.Natur.h = {el, klemme, lerp, glatt, setze(el, x, y, rot, sk, op)}.
  *   Regeln: keine Bilddateien, keine fremden Grafiken, kein Ton (M.Ton), kein navigator.vibrate, kein Netz; kein filter/backdrop-filter,
  *   kein animierter box-shadow; innere Schleifen als CSS-Keyframes mit der Klasse nt-schleife (steht unter body.reduziert still);
@@ -77,6 +79,8 @@
   {"id": "heissluftballon", "seite": "tag", "zufall": 1, "nach_flip": 0, "troedeln": false, "ebene": "hinten", "ort": "himmel_fern", "dauer": [18, 22], "ruhig": false, "tipp": "aufsteigen", "scheu": false, "fremder_zug": false, "je_partie": 1, "je_runde": 0, "deckt": [], "deckt_max_s": 0, "bestand": false},
   {"id": "schnecke", "seite": "tag", "zufall": 0, "nach_flip": 0, "troedeln": true, "ebene": "mitte", "ort": "band_zum_platz", "dauer": [40, 40], "ruhig": false, "tipp": "einziehen", "scheu": false, "fremder_zug": false, "je_partie": 0, "je_runde": 0, "deckt": [], "deckt_max_s": 0, "bestand": false},
   {"id": "schmetterling", "seite": "tag", "zufall": 3, "nach_flip": 0, "troedeln": false, "ebene": "hinten", "ort": "himmel", "dauer": [9, 9], "ruhig": false, "tipp": "", "scheu": false, "fremder_zug": false, "je_partie": 0, "je_runde": 0, "deckt": [], "deckt_max_s": 0, "bestand": true},
+  {"id": "hoppelhase", "seite": "tag", "zufall": 2, "nach_flip": 0, "troedeln": false, "ebene": "mitte", "ort": "band_vorn_seite", "dauer": [9, 12], "ruhig": false, "tipp": "hochspringen", "scheu": false, "fremder_zug": false, "je_partie": 0, "je_runde": 0, "deckt": [], "deckt_max_s": 0, "bestand": false},
+  {"id": "strand", "seite": "tag", "zufall": 1, "nach_flip": 0, "troedeln": false, "ebene": "hinten", "ort": "ecke_unten_rechts", "dauer": [7, 8], "ruhig": false, "tipp": "palme_schuetteln", "scheu": false, "fremder_zug": false, "je_partie": 1, "je_runde": 0, "deckt": [], "deckt_max_s": 0, "bestand": false},
   {"id": "gluehwuermchen", "seite": "nacht", "zufall": 3, "nach_flip": 3, "troedeln": false, "ebene": "mitte", "ort": "tisch_rund", "dauer": [12, 15], "ruhig": false, "tipp": "auseinander", "scheu": false, "fremder_zug": false, "je_partie": 0, "je_runde": 0, "deckt": [], "deckt_max_s": 0, "bestand": false},
   {"id": "eule", "seite": "nacht", "zufall": 3, "nach_flip": 1, "troedeln": false, "ebene": "mitte", "ort": "band_schulter", "dauer": [12, 16], "ruhig": false, "tipp": "kopf_blinzeln", "scheu": false, "fremder_zug": false, "je_partie": 0, "je_runde": 0, "deckt": [], "deckt_max_s": 0, "bestand": false},
   {"id": "fledermaus", "seite": "nacht", "zufall": 2, "nach_flip": 2, "troedeln": false, "ebene": "hinten", "ort": "himmel", "dauer": [4, 6], "ruhig": false, "tipp": "", "scheu": false, "fremder_zug": false, "je_partie": 0, "je_runde": 0, "deckt": [], "deckt_max_s": 0, "bestand": false},
@@ -85,13 +89,15 @@
   {"id": "sternbild", "seite": "nacht", "zufall": 1, "nach_flip": 0, "troedeln": false, "ebene": "hinten", "ort": "himmel_frei", "dauer": [9, 10], "ruhig": true, "tipp": "funkeln", "scheu": false, "fremder_zug": false, "je_partie": 1, "je_runde": 0, "deckt": [], "deckt_max_s": 0, "bestand": false,
    "form": {"punkte": [[0.12, 0.06], [0.22, 0.20], [0.32, 0.04], [0.08, 0.38], [0.38, 0.34], [0.18, 0.64], [0.22, 0.96], [0.62, 0.48], [0.78, 0.92], [0.97, 0.72], [0.90, 0.38]],
             "linien": [[0, 1], [1, 2], [0, 3], [2, 4], [3, 5], [4, 7], [5, 6], [6, 8], [7, 8], [8, 9], [9, 10]]}},
-  {"id": "ufo", "seite": "nacht", "zufall": 1, "nach_flip": 0, "troedeln": false, "ebene": "vorn", "ort": "stapel_oben", "dauer": [6, 7], "ruhig": false, "tipp": "davon", "scheu": true, "fremder_zug": true, "je_partie": 1, "je_runde": 0, "deckt": ["stapel"], "deckt_max_s": 3, "bestand": false},
+  {"id": "ufo", "seite": "nacht", "zufall": 1, "nach_flip": 0, "troedeln": false, "ebene": "vorn", "ort": "stapel_oben", "dauer": [7, 8], "ruhig": false, "tipp": "ausweichen", "scheu": false, "fremder_zug": true, "je_partie": 1, "je_runde": 0, "deckt": ["stapel"], "deckt_max_s": 3, "bestand": false},
   {"id": "satellit", "seite": "nacht", "zufall": 2, "nach_flip": 0, "troedeln": false, "ebene": "hinten", "ort": "himmel_oben", "dauer": [9, 11], "ruhig": false, "tipp": "", "scheu": false, "fremder_zug": false, "je_partie": 0, "je_runde": 0, "deckt": [], "deckt_max_s": 0, "bestand": false},
   {"id": "motte", "seite": "nacht", "zufall": 2, "nach_flip": 0, "troedeln": false, "ebene": "mitte", "ort": "ablage_ring", "dauer": [6, 8], "ruhig": false, "tipp": "", "scheu": true, "fremder_zug": true, "je_partie": 0, "je_runde": 0, "deckt": [], "deckt_max_s": 0, "bestand": false},
   {"id": "igel", "seite": "nacht", "zufall": 2, "nach_flip": 0, "troedeln": false, "ebene": "mitte", "ort": "band_vorn_seite", "dauer": [10, 14], "ruhig": false, "tipp": "einrollen", "scheu": false, "fremder_zug": false, "je_partie": 0, "je_runde": 0, "deckt": [], "deckt_max_s": 0, "bestand": false},
   {"id": "komet", "seite": "nacht", "zufall": 1, "nach_flip": 0, "troedeln": false, "ebene": "hinten", "ort": "himmel_oben", "dauer": [14, 16], "ruhig": false, "tipp": "", "scheu": false, "fremder_zug": false, "je_partie": 0, "je_runde": 0, "deckt": [], "deckt_max_s": 0, "bestand": false},
   {"id": "lampion", "seite": "nacht", "zufall": 2, "nach_flip": 0, "troedeln": false, "ebene": "hinten", "ort": "aufsteigend", "dauer": [11, 13], "ruhig": false, "tipp": "leuchten", "scheu": false, "fremder_zug": false, "je_partie": 0, "je_runde": 0, "deckt": [], "deckt_max_s": 0, "bestand": false},
-  {"id": "sternschnuppe", "seite": "nacht", "zufall": 3, "nach_flip": 0, "troedeln": false, "ebene": "hinten", "ort": "himmel", "dauer": [1.2, 1.2], "ruhig": false, "tipp": "", "scheu": false, "fremder_zug": false, "je_partie": 0, "je_runde": 0, "deckt": [], "deckt_max_s": 0, "bestand": true}
+  {"id": "sternschnuppe", "seite": "nacht", "zufall": 3, "nach_flip": 0, "troedeln": false, "ebene": "hinten", "ort": "himmel", "dauer": [1.2, 1.2], "ruhig": false, "tipp": "", "scheu": false, "fremder_zug": false, "je_partie": 0, "je_runde": 0, "deckt": [], "deckt_max_s": 0, "bestand": true},
+  {"id": "feuerwerk", "seite": "nacht", "zufall": 1, "nach_flip": 0, "troedeln": false, "ebene": "hinten", "ort": "himmel", "dauer": [5, 6], "ruhig": false, "tipp": "knallen", "scheu": false, "fremder_zug": false, "je_partie": 1, "je_runde": 0, "deckt": [], "deckt_max_s": 0, "bestand": false},
+  {"id": "astronaut", "seite": "nacht", "zufall": 1, "nach_flip": 0, "troedeln": false, "ebene": "hinten", "ort": "mond", "dauer": [9, 12], "ruhig": false, "tipp": "salto", "scheu": false, "fremder_zug": false, "je_partie": 1, "je_runde": 0, "deckt": [], "deckt_max_s": 0, "bestand": false}
  ]
 }/*ENDE*/;
 
@@ -103,8 +109,9 @@
   const ZUG_PHASEN = ['turn', 'drawn'];
   const ALLE_WEG = ['round_over', 'game_over', 'round_start', 'deal', 'seats', 'start'];
   const VORN_WEG = ['mau', 'finish', 'catch', 'gamble_start'];
-  // Ereignisse am Ort (Abschnitt 4.5): UFO am Stapel, Motte am Ablage-Ring, Biene auf der Hand
-  const ORT_WEG = { stapel_oben: ['draw', 'shuffle'], ablage_ring: ['play', 'flip', 'discard_color', 'stake_discard', 'shuffle'], handkarte: ['swap_hands'] };
+  // Ereignisse am Ort (Abschnitt 4.5): UFO am Stapel, Motte am Ablage-Ring, Biene auf der Hand. Ab 1.6.15 bleibt das UFO beim Ziehen
+  // (Nutzerwunsch: „nicht so einfach verscheuchen“), nur das Mischen des Stapels vertreibt es.
+  const ORT_WEG = { stapel_oben: ['shuffle'], ablage_ring: ['play', 'flip', 'discard_color', 'stake_discard', 'shuffle'], handkarte: ['swap_hands'] };
   const HAND_WEG = ['play', 'draw', 'stake', 'stake_back', 'discard_color', 'unplay'];   // eigene Hand ändert sich
   const PROTOKOLL_MAX = 60;
   const KW = 190, KH = Math.round(KW * 870 / 560);   // Handkarte (hand.js)
@@ -244,7 +251,7 @@
       const c = this.current, L = this.app && this.app.tisch ? this._lage() : null;
       return {
         now: this.now, faellig: this.faellig, letztesEnde: this.letztesEnde, aktiv: !!L && this._aktiv(L), ruhe: !!L && this._ruhe(L),
-        current: c ? { id: c.id, t: c.t, dauer: this._dauer(c), ebene: c.ebene, ende: c.ende, getippt: c.getippt, seed: c.seed, anlass: c.anlass, stehen: c.stehen } : null,
+        current: c ? { id: c.id, t: c.t, dauer: this._dauer(c), ebene: c.ebene, ende: c.ende, getippt: c.getippt, tipps: c.tipps, seed: c.seed, anlass: c.anlass, stehen: c.stehen } : null,
         verlauf: { tag: this.verlauf.tag.slice(), nacht: this.verlauf.nacht.slice() }, zaehler: JSON.parse(JSON.stringify(this.zaehler)),
         flip: this.flip, wartet: this.trWartet, demo: this.demo.an, protokoll: this.protokoll.slice(),
       };
@@ -589,7 +596,7 @@
       inst.el.dataset.natur = id;
       inst.el.setAttribute('aria-hidden', 'true');
       this.ebenen[ebene].appendChild(inst.el);
-      const c = { id, e, inst, el: inst.el, ebene, seed, t: 0, ende: null, getippt: false, stehen: false, anlass: o.anlass || '', grund: '', ctx };
+      const c = { id, e, inst, el: inst.el, ebene, seed, t: 0, ende: null, getippt: false, tipps: 0, stehen: false, anlass: o.anlass || '', grund: '', ctx };
       this.current = c;
       try { inst.stelle(0); } catch (err) { this._weg(c, 'fehler'); if (M.meldeFehler) M.meldeFehler('Natur ' + id + ': ' + (err && err.stack || err)); return false; }
       if (c.anlass !== 'zeige' && c.anlass !== 'demo') {
@@ -635,8 +642,9 @@
       }
       if (!this._leer(ziel)) return;
       if (this._schutz().some(r => innen(p, r))) return;
-      if (c && c.ende === null && c.e.tipp && !c.getippt && h && this._trifft(c, h, p)) {
+      if (c && c.ende === null && c.e.tipp && c.tipps < this._tippMax(c) && h && this._trifft(c, h, p)) {
         c.getippt = true;
+        c.tipps++;
         try { if (c.inst.tipp) c.inst.tipp(p); } catch (e) { /* egal */ }
         return;
       }
@@ -649,6 +657,8 @@
       return z.id === 'tisch' || z.id === 'buehne' || z.classList.contains('buehne') || !!z.closest('.himmel') || !!z.closest('.richtung');
     },
     _hulle(c) { try { return c.inst.hulle ? c.inst.hulle(c.t) : null; } catch (e) { return null; } },
+    // so viele Tipps nimmt die Art (inst.tippMax, Standard 1)
+    _tippMax(c) { const m = +c.inst.tippMax; return isFinite(m) && m >= 1 ? Math.floor(m) : 1; },
     _trifft(c, h, p) {
       if (c.inst.treffer) { try { return !!c.inst.treffer(p); } catch (e) { return false; } }
       const r = Math.max(Z.treffer_min_r, Math.max(h.w, h.h) / 2);
@@ -829,6 +839,8 @@
         stapel_oben: { x: g.stapel.x, y: stapelTop - 62, stapel: stapelR },
         ablage_ring: { x: g.ablage.x, y: g.ablage.y, R: ringR },
         aufsteigend: { x: (sp.a + z() * (sp.b - sp.a)) * W, y: cy, ziel_y: -80 },
+        // 1.6.15: Ecke unten rechts (Strand mit Palme); der Mau-Knopf liegt dort (rechts 46, unten 40, 150 × 150) und bleibt darüber
+        ecke_unten_rechts: { x: W, y: H, mau: this._rect(t.knMau) },
       };
     },
   };

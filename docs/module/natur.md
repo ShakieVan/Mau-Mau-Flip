@@ -3,7 +3,7 @@
 Stand 16.10.2026, Entwurf (noch ohne Gegenprüfung). Nutzerwunsch vom 16.10.2026: „alle, und auch im Browser“. Gemeint sind zufällige, seltene Bild-Ereignisse ohne Ton, wie heute Schmetterling und Sternschnuppe (`fun_fx.gd`), jetzt auch im Lite. Ideen des Nutzers: Marienkäfer, Glühwürmchen, Eule, dazu die Reaktionen beim Antippen von Marienkäfer, Glühwürmchen und Eule.
 
 Kurz:
-- 23 neue Ereignisse (11 tags, 12 nachts). Schmetterling und Sternschnuppe kommen als „Bestand“ in denselben Takt, macht 25.
+- 23 neue Ereignisse (11 tags, 12 nachts). Schmetterling und Sternschnuppe kommen als „Bestand“ in denselben Takt, macht 25. Ab Beta 1.6.15 vier weitere (Hoppelhase, Strand mit Palme, Feuerwerk, Astronaut am Mond), macht 29; das UFO ist nicht mehr scheu (Abschnitt 13).
 - Ein gemeinsamer Planer je Gerät mit einer gemeinsamen Datentabelle (App und Lite gleich). Es läuft nie mehr als ein Ereignis, im Schnitt etwa alle 3 Minuten eins.
 - Drei Ebenen. Fast alles liegt **unter** den Spielelementen. Nur Biene und UFO liegen über Hand bzw. Stapel, und nur kurz, durchscheinend und nie im eigenen Zug.
 - Kein Ton, kein Text, nichts übers Netz, keine fremden Grafiken.
@@ -55,6 +55,7 @@ Koordinaten in Tisch- bzw. Bühnenpixeln (Höhe 720). W×H = Tischgröße (App `
 | `stapel_oben` | Schwebepunkt (Stapel.x, Stapeloberkante − 62) |
 | `ablage_ring` | Ablage-Mitte, R = 116 (App `ColorRingView.R`), Lite Radius von `.farbring` |
 | `aufsteigend` | Start (x, C.y) mit x in 0,25–0,40 W oder 0,60–0,75 W (der Spalt mit mehr Abstand zu Plätzen), Ziel oberhalb des Bilds |
+| `ecke_unten_rechts` | (1.6.15, Strand) Ecke (W, H) und das Rechteck des Mau-Knopfs (`mau`; App `TableView.mau_button`, Lite `#mau` = `.mau-knopf`, rechts 46, unten 40, 150 × 150). App `{pos, mau}`, Lite `{x, y, mau}`. Der Strand liegt in der Ebene `hinten`, Hand und Mau-Knopf bleiben darüber. |
 
 Bei neuer Tischgröße (App `_layout`, Lite neue `W`/`H`/`s`) endet das laufende Ereignis sofort. Orte werden nur beim Start berechnet.
 
@@ -69,7 +70,7 @@ Schutzflächen sind: Hand (`cards_rect`), Ziehstapel (+12 px), Ablage mit Farbri
 - `hinten`/`mitte` liegen unter allem und decken nichts. Ein Ort muss aber so gewählt sein, dass das Tier in der Hauptphase zu mindestens 60 % der Zeit sichtbar ist.
 - `vorn`:
   - **Biene:** Hand ≤ 2 s, ≤ 26 px, nie im linken oberen Viertel einer Karte (Eckindex, AGENTS 8).
-  - **UFO:** Ziehstapel ≤ 3 s, nur mit dem durchscheinenden Lichtkegel (Deckkraft ≤ 0,22), der Körper schwebt darüber.
+  - **UFO:** Ziehstapel ≤ 3 s, nur mit dem durchscheinenden Lichtkegel (Deckkraft ≤ 0,22), der Körper schwebt darüber. Ab 1.6.15 nicht mehr scheu (siehe 3.3 Nr. 18).
   - Beide **nur außerhalb des eigenen Zugs**.
 
 ## 3. Die Ereignisse
@@ -92,19 +93,23 @@ Größen in Pixeln bei Höhe 720. „Fremder Zug“ heißt: startet nur, wenn ma
 | 10 | `heissluftballon` | Tag | Zufall 1, 1 je Partie | hinten · `himmel_fern` | 18–22 | steigt auf | aus |
 | 11 | `schnecke` | Tag | Trödeln ≥ 35 s (Chance 0,35) | mitte · `band_zum_platz` | bis Zugende, ≤ 40 | zieht sich ein | aus |
 | B1 | `schmetterling` | Tag | Zufall 3 (Bestand) | hinten · `himmel` | 9 | – | aus |
+| 24 | `hoppelhase` | Tag | Zufall 2 (1.6.15) | mitte · `band_vorn_seite` | 9–12 | Schreck-Sprung, schnell davon | aus |
+| 25 | `strand` | Tag | Zufall 1, 1 je Partie (1.6.15) | hinten · `ecke_unten_rechts` | 7–8 | Palme schüttelt sich, Kokosnuss fällt | aus |
 | 12 | `gluehwuermchen` | Nacht | Zufall 3, nach Flip 3 | mitte · `tisch_rund` | 12–15 | stieben auseinander (Nutzer) | aus |
 | 13 | `eule` | Nacht | Zufall 3, nach Flip 1 | mitte · `band_schulter` | 12–16 | Kopf drehen, blinzeln (Nutzer) | aus |
 | 14 | `fledermaus` | Nacht | Zufall 2, nach Flip 2 | hinten · `himmel` | 4–6 | – | aus |
 | 15 | `mond_muetze` | Nacht | Zufall 1, 1 je Partie | hinten · `mond` | 10–12 | wacht kurz auf | ruhig |
 | 16 | `polarlicht` | Nacht | Zufall 1, 1 je Partie | hinten · `himmel_oben` | 12–14 | – | ruhig |
 | 17 | `sternbild` | Nacht | Zufall 1, 1 je Partie | hinten · `himmel_frei` | 9–10 | funkelt | ruhig |
-| 18 | `ufo` | Nacht | Zufall 1, 1 je Partie, fremder Zug | vorn · `stapel_oben` | 6–7 | saust davon; scheu | aus |
+| 18 | `ufo` | Nacht | Zufall 1, 1 je Partie, fremder Zug | vorn · `stapel_oben` | 7–8 (bis 1.6.14: 6–7) | 1. und 2. Tipp: weicht aus, 3. Tipp: saust davon (bis 1.6.14: sofort davon; scheu) | aus |
 | 19 | `satellit` | Nacht | Zufall 2 | hinten · `himmel_oben` | 9–11 | – | aus |
 | 20 | `motte` | Nacht | Zufall 2, fremder Zug | mitte · `ablage_ring` | 6–8 | scheu | aus |
 | 21 | `igel` | Nacht | Zufall 2 | mitte · `band_vorn_seite` | 10–14 | rollt sich ein | aus |
 | 22 | `komet` | Nacht | Zufall 1 | hinten · `himmel_oben` | 14–16 | – | aus |
 | 23 | `lampion` | Nacht | Zufall 2 | hinten · `aufsteigend` | 11–13 | glüht auf | aus |
 | B2 | `sternschnuppe` | Nacht | Zufall 3 (Bestand) | hinten · `himmel` | 1,2 | – | aus |
+| 26 | `feuerwerk` | Nacht | Zufall 1, 1 je Partie (1.6.15) | hinten · `himmel` | 5–6 | Knall an der Tippstelle (höchstens 2) | aus |
+| 27 | `astronaut` | Nacht | Zufall 1, 1 je Partie (1.6.15) | hinten · `mond` | 9–12 | langsamer Salto, winkt | aus |
 
 Bestand: In der App zeichnet weiter `FunFx.SkyNode` (Abschnitt 7.1), im Lite kommen Schmetterling und Sternschnuppe neu hinzu (gleiche Bahn wie `SkyNode.launch`).
 
@@ -221,6 +226,27 @@ Bestand: In der App zeichnet weiter `FunFx.SkyNode` (Abschnitt 7.1), im Lite kom
 - **App:** Haus als Spirale (Linienzug, 3 Windungen) auf #C9803E, Körper #B9C7A0 mit Fußwellen, 2 Fühler mit Kugeln, Spur Weiß α 0,25.
 - **Lite:** SVG.
 
+**24 Hoppelhase** (1.6.15, Nutzerwunsch: „Ein Hoppelhase hüpft durch das Bild als zufällige Aktion bei Tag“)
+- **Bewegung:**
+  - Hüpft von außen auf den Plattformrand (quer 0,62) einer Seite (Startseite aus `band_vorn_seite`, sonst die freiere) und vorn herum zur anderen Seite (Start 158–170° bzw. 10–22°, Ziel spiegelbildlich), dort zwei Hüpfer hinaus und Ausblenden.
+  - Jeder Hüpfer 0,42 s: Ducken (Stauchen y 0,8), Flug mit Strecken (y bis 1,16) und Bogen (Höhe 0,42 × Hüpfweite), Landen mit Stauchen; Hüpfweite so, dass der Weg in die Tabellendauer passt (App 34–72 px, Lite 40–84).
+  - Nach etwa einem und zwei Dritteln eine Pause (1–1,5 s) an einer gut sichtbaren Stelle: einmal Männchen mit Ohrenzucken, einmal nur Ohrenzucken; das Näschen schnuppert.
+  - Meidet Plätze, Knöpfe, Hinweisleiste und (Lite) die Reaktionsknöpfe.
+- **Antippen:** Großer Schreck-Sprung (0,55 s, 66 px hoch, Ohren steil, Augen groß), danach drei schnelle, weite Hüpfer (je 0,3 s) in Laufrichtung, Ausblenden.
+- **App:** Seitenansicht (Ursprung an den Füßen) mit Fell #D3AE87/#B38B64, Bauch und Schnäuzchen #F8EDDC, Wattebausch-Schwänzchen, großer Kopf mit Bäckchen, rosa Innenohr, Näschen #EE7499, INK-Kontur; Schatten wie beim Spatz.
+- **Lite:** SVG, Stauchen und Strecken über `scale`, Ohren und Auge über eigene Gruppen.
+
+**25 Strand mit Palme** (1.6.15, Nutzerwunsch: „In der unteren rechten Ecke kommt mit einer Welle für ein paar Sekunden ein Strand ins Bild und eine Palme wächst“; höchstens einmal je Partie)
+- **Ort:** `ecke_unten_rechts`, Ebene `hinten`: Hand und Mau-Knopf (rechts 46, unten 40, 150 × 150) liegen darüber, der Knopf bleibt sichtbar und antippbar. Strand = Viertel-Ellipse 410 × 245 um die Ecke (App × min(k, 1,15)), Meer bis zur halben Größe.
+- **Ablauf (7–8 s):**
+  - Eine Welle rollt aus der Ecke herein (1 s, bis 1,08), weicht bis zur Meereslinie zurück (bis 1,8 s) und lässt nassen Sand zurück, der in 1,6 s trocknet; kleine Wellen lecken am Ufer (Schaumkante mit Bläschen).
+  - Die Palme wächst ab 1,7 s Stück für Stück (8 Stammstücke in 1 s), die 8 Wedel entfalten sich (ab 2,5 s), drei Kokosnüsse; sie wiegt sich leicht. Seestern und Muschel liegen im Sand.
+  - Der Palmenfuß steht zwischen Hand (höchstens bis W − 270) und Mau-Knopf (ab W − 196), die Krone über dem Knopf.
+  - 1,7 s vor Schluss spült eine große Welle (bis 1,18) alles weg: Die Palme kippt und verschwindet, dann weicht das Wasser ganz zurück.
+- **Antippen** (nur die Palme; der Sand allein nimmt keinen Tipp): Die Palme schüttelt sich kräftig (abklingend), eine Kokosnuss fällt, hüpft einmal und rollt ein Stück.
+- **App:** Sand #F3CC86 mit Papierkante und Schatten, Körnchen, Meer #2FBFD2/#86E6EF, Schaum Weiß, Stamm #B47D46 mit Ringen, Wedel #3DBB6A/#5FD486 mit Mittelrippe #227F44 (als Vierecke je Abschnitt gezeichnet, damit die Triangulierung nie scheitert).
+- **Lite:** SVG mit Ursprung in der Ecke; Sand und Meer wachsen per `scale` um die Ecke (Kanten mit `vector-effect: non-scaling-stroke`), Stammstücke und Wedel über Transform-Attribute.
+
 ### 3.3 Nacht
 
 **12 Glühwürmchen** (Idee des Nutzers)
@@ -286,12 +312,16 @@ Bestand: In der App zeichnet weiter `FunFx.SkyNode` (Abschnitt 7.1), im Lite kom
   - Schwebt 3 s und wippt ±3 px, die Lichterkette läuft.
   - Nach 0,4 s fällt für 2,5 s ein Lichtkegel auf den Stapel: Deckkraft ≤ 0,22, unten Kartenbreite + 20, 4–6 Funken steigen auf.
   - Danach geht der Kegel aus, das UFO beschleunigt schräg nach oben (0,8 s). Größe 72×34.
-- **Scheu und Abbruch:** Kegel aus und sofort hinaus bei:
-  - Ereignis `draw` oder `shuffle`,
+- **Abbruch:** Kegel aus und sofort hinaus bei:
+  - Ereignis `shuffle` (bis 1.6.14 auch `draw`),
   - Beginn des eigenen Zugs,
-  - Berührung im Umkreis von 130 px,
   - die Mau-Katze will kommen.
-- **Antippen** (das UFO selbst schwebt über dem Stapel, nicht auf ihm): saust sofort davon.
+- **Nicht mehr scheu (ab 1.6.15, Nutzerwunsch „Das Ufo bitte nicht so einfach verscheuchen lassen“):** Ein Druck in der Nähe oder auf den Stapel und das Ziehen eines Mitspielers stören es nicht mehr (bis 1.6.14: Berührung im Umkreis von 130 px und `draw` → sofort hinaus; weil es über dem Stapel schwebt, vertrieb es fast jedes Ziehen).
+- **Antippen** (das UFO selbst schwebt über dem Stapel, nicht auf ihm; Tabelle `tipp: "ausweichen"`, höchstens 3 Tipps):
+  - 1. und 2. Tipp: Es weicht aus – ein kurzer Satz zur Seite (0,22 s, 62 px, weg vom Finger bzw. zur freieren Seite, nie auf einen Platz oder Knopf), es schaukelt, der Lichtkegel flackert (0,55 s); 0,9 s später gleitet es in 0,8 s zurück über den Stapel.
+  - 3. Tipp: saust davon (wie bisher beim ersten Tipp).
+  - Die Tippzeiten werden gemerkt (App `taps`/`dodges`, Lite `ausweich`), die Pose bleibt rein in t.
+  - Kern: `NatureCreature.tap_limit()` (Standard 1) bzw. Lite `inst.tippMax`; `NatureFx.tap` bzw. `_druck` zählen die Tipps je Ereignis.
 - **App:** Untertasse aus 2 Ellipsen (#B8C0D8/#6B7394) mit Rand #19C6D4, Kuppel Cyan α 0,45 mit Glanz, 5 Lichter abwechselnd Pink/Gelb/Türkis. Kegel als Trapez mit `draw_polygon` und Eckfarben (oben α 0,22, unten α 0,06), additiv.
 - **Lite:** SVG, Kegel als `<div>` mit `clip-path: polygon()`, `linear-gradient` und `mix-blend-mode: screen`.
 
@@ -337,6 +367,22 @@ Bestand: In der App zeichnet weiter `FunFx.SkyNode` (Abschnitt 7.1), im Lite kom
 - **Antippen:** Glüht hell auf (0,6 s) und schaukelt stärker.
 - **App:** Ellipse #FF8A24 mit 4 Rippen (#C45A10), Ringe oben und unten INK, innen ein additives Glühen #FFD27A.
 - **Lite:** `<div>` mit radial-gradient und SVG-Rippen.
+
+**26 Feuerwerk** (1.6.15, Nutzerwunsch: „Ein Feuerwerk als zufällige Aktion bei Nacht“; höchstens einmal je Partie)
+- **Bewegung (5–6 s):**
+  - 2–4 Raketen steigen mit dünner, warmer Leuchtspur 160–240 px auf (0,85–1,05 s, bremsen ab) und zerplatzen in freiem Himmel (y 0,10–0,27 H; Stellen ohne Plätze, Knöpfe, Mond; Abstand zueinander).
+  - Je Knall 28–34 Funkenstriche in zwei Farben (Pfingstrose, Ring oder goldene Trauerweide) und ein innerer Kranz; sie fliegen mit Luftwiderstand auseinander (Radius 84–104 px), sinken, funkeln am Ende und verglimmen (1,35–1,8 s). Blitz beim Knall.
+- **Antippen:** Ein Tipp in die leuchtende Hülle zündet an der Stelle einen weiteren Knall (ohne Rakete), höchstens zweimal (`tap_limit` 2 bzw. `tippMax` 2); das Ereignis läuft dann mindestens 2 s weiter.
+- **Hülle:** Raketen und Knalle, die höchstens zur Hälfte hinter Plätzen liegen (wie `visible_hull`), damit Tipps und Sichtprüfung stimmen.
+- **App:** Striche normal gemischt, Köpfe, Raketen und Blitz additiv (`glow`).
+- **Lite:** ein SVG über die Bühne mit `mix-blend-mode: screen`; je Knall eine Gruppe (Lichthof, Blitz, Strich-Pfad, Spitzen als runde Punkte, innerer Kranz), die per `scale` wächst und per `translate` sinkt. Etwa 40 Knoten (die zwei Tipp-Knalle sind vorbereitet).
+
+**27 Astronaut am Mond** (1.6.15, Nutzerwunsch: „Ein Astronaut schwebt neben dem Mond als zufällige Aktion bei Nacht“; höchstens einmal je Partie)
+- **Bewegung (9–12 s):** Schwebt schräg von oben rechts (vor dem Mond vorbei) neben den Mond (2,2 s), treibt dort sanft (±14/±9 px), taumelt langsam (±17°), strampelt leicht, winkt einmal (1,5 s) und treibt nach links oben davon (2 s).
+- **Ort:** freiester Punkt links bzw. unterhalb des Monds (115–220 px, 120–195°), meidet Plätze, Menü- und Ton-Knopf (Lite) und den Mond selbst.
+- **Antippen:** langsamer Salto (1,9 s) mit Winken; danach schwebt er weiter.
+- **App:** weißer Anzug #F6F4FF mit Lavendel-Kontur #8A80C8, Rucksack, Brustteil mit drei bunten Knöpfen, großer Helm, Visier #1B2147 mit Spiegelung (Lichtbogen, Mondsichel, Türkis-Schimmer), blinkendes Helmlicht; zarter Lichthof.
+- **Lite:** SVG, Arm und Beine als Gruppen.
 
 ## 4. Häufigkeit und Mischung (Planer)
 
@@ -425,7 +471,7 @@ beende(c): faellig = now + zufall(abstand_s) × (reduziert ? 2 : 1); letztes_end
 | Dialog oder Menü öffnet (4.4 Nr. 3) | Ebene `vorn` | schnell; `hinten`/`mitte` laufen hinter dem Dialog weiter |
 | Necken-Effekt beginnt | Ebene `vorn` | schnell |
 | Mau-Katze will kommen (`FunFx`, 7.1) | alle | schnell, die Katze kommt danach |
-| Ereignisse am Ort: UFO bei `draw`/`shuffle`, Motte bei `play`/`flip`/`discard_color`/`stake_discard`/`shuffle`, Biene bei Kartenverlust/Sortieren/`swap_hands` | dieses | schnell |
+| Ereignisse am Ort: UFO bei `shuffle` (ab 1.6.15 nicht mehr bei `draw`), Motte bei `play`/`flip`/`discard_color`/`stake_discard`/`shuffle`, Biene bei Kartenverlust/Sortieren/`swap_hands` | dieses | schnell |
 | Größe, großer Modus an, „reduziert“ an (nicht ruhige Einträge) | alle betroffenen | sofort entfernen |
 | App im Hintergrund bzw. Lite-Tab verdeckt | – | Uhr steht. Nach mehr als 2 s Pause wird `faellig` frühestens `erst_s` später. |
 
@@ -433,7 +479,7 @@ beende(c): faellig = now + zufall(abstand_s) × (reduziert ? 2 : 1); letztes_end
 
 - **App:**
   - `TableView._tap` ruft `nature.tap(wp)` als **letzten** Fall vor `return false`. Erwischt, Ablage, Glücksspiel, Mau-Katze, Ziehen, Kopf und Fächer sind also schon geprüft.
-  - `nature.tap` gibt false zurück, wenn der Punkt in einer Schutzfläche liegt (2.3), sonst true nur bei einem Treffer auf ein Tier mit `tipp` (Radius mindestens `treffer_min_r`). Höchstens eine Reaktion je Ereignis.
+  - `nature.tap` gibt false zurück, wenn der Punkt in einer Schutzfläche liegt (2.3), sonst true nur bei einem Treffer auf ein Tier mit `tipp` (Radius mindestens `treffer_min_r`). Höchstens eine Reaktion je Ereignis; ab 1.6.15 höchstens `NatureCreature.tap_limit()` (UFO 3, Feuerwerk 2), im Lite `inst.tippMax`. `tap_at`/`tap_pos` gelten für den ersten Tipp, weitere merkt sich das Tier selbst (`add_tap`/`taps`).
   - Zusätzlich meldet `_gui_input` jeden Druck an `nature.notice_press(wp)` (Scheu). Diese Meldung verbraucht nie etwas.
 - **Lite:**
   - Ein `pointerdown`-Hörer in der Einfangphase am Tischwurzel-Element meldet jeden Druck als Scheu.
@@ -507,6 +553,8 @@ Felder:
   {"id": "heissluftballon", "seite": "tag", "zufall": 1, "nach_flip": 0, "troedeln": false, "ebene": "hinten", "ort": "himmel_fern", "dauer": [18, 22], "ruhig": false, "tipp": "aufsteigen", "scheu": false, "fremder_zug": false, "je_partie": 1, "je_runde": 0, "deckt": [], "deckt_max_s": 0, "bestand": false},
   {"id": "schnecke", "seite": "tag", "zufall": 0, "nach_flip": 0, "troedeln": true, "ebene": "mitte", "ort": "band_zum_platz", "dauer": [40, 40], "ruhig": false, "tipp": "einziehen", "scheu": false, "fremder_zug": false, "je_partie": 0, "je_runde": 0, "deckt": [], "deckt_max_s": 0, "bestand": false},
   {"id": "schmetterling", "seite": "tag", "zufall": 3, "nach_flip": 0, "troedeln": false, "ebene": "hinten", "ort": "himmel", "dauer": [9, 9], "ruhig": false, "tipp": "", "scheu": false, "fremder_zug": false, "je_partie": 0, "je_runde": 0, "deckt": [], "deckt_max_s": 0, "bestand": true},
+  {"id": "hoppelhase", "seite": "tag", "zufall": 2, "nach_flip": 0, "troedeln": false, "ebene": "mitte", "ort": "band_vorn_seite", "dauer": [9, 12], "ruhig": false, "tipp": "hochspringen", "scheu": false, "fremder_zug": false, "je_partie": 0, "je_runde": 0, "deckt": [], "deckt_max_s": 0, "bestand": false},
+  {"id": "strand", "seite": "tag", "zufall": 1, "nach_flip": 0, "troedeln": false, "ebene": "hinten", "ort": "ecke_unten_rechts", "dauer": [7, 8], "ruhig": false, "tipp": "palme_schuetteln", "scheu": false, "fremder_zug": false, "je_partie": 1, "je_runde": 0, "deckt": [], "deckt_max_s": 0, "bestand": false},
   {"id": "gluehwuermchen", "seite": "nacht", "zufall": 3, "nach_flip": 3, "troedeln": false, "ebene": "mitte", "ort": "tisch_rund", "dauer": [12, 15], "ruhig": false, "tipp": "auseinander", "scheu": false, "fremder_zug": false, "je_partie": 0, "je_runde": 0, "deckt": [], "deckt_max_s": 0, "bestand": false},
   {"id": "eule", "seite": "nacht", "zufall": 3, "nach_flip": 1, "troedeln": false, "ebene": "mitte", "ort": "band_schulter", "dauer": [12, 16], "ruhig": false, "tipp": "kopf_blinzeln", "scheu": false, "fremder_zug": false, "je_partie": 0, "je_runde": 0, "deckt": [], "deckt_max_s": 0, "bestand": false},
   {"id": "fledermaus", "seite": "nacht", "zufall": 2, "nach_flip": 2, "troedeln": false, "ebene": "hinten", "ort": "himmel", "dauer": [4, 6], "ruhig": false, "tipp": "", "scheu": false, "fremder_zug": false, "je_partie": 0, "je_runde": 0, "deckt": [], "deckt_max_s": 0, "bestand": false},
@@ -515,13 +563,15 @@ Felder:
   {"id": "sternbild", "seite": "nacht", "zufall": 1, "nach_flip": 0, "troedeln": false, "ebene": "hinten", "ort": "himmel_frei", "dauer": [9, 10], "ruhig": true, "tipp": "funkeln", "scheu": false, "fremder_zug": false, "je_partie": 1, "je_runde": 0, "deckt": [], "deckt_max_s": 0, "bestand": false,
    "form": {"punkte": [[0.12, 0.06], [0.22, 0.20], [0.32, 0.04], [0.08, 0.38], [0.38, 0.34], [0.18, 0.64], [0.22, 0.96], [0.62, 0.48], [0.78, 0.92], [0.97, 0.72], [0.90, 0.38]],
             "linien": [[0, 1], [1, 2], [0, 3], [2, 4], [3, 5], [4, 7], [5, 6], [6, 8], [7, 8], [8, 9], [9, 10]]}},
-  {"id": "ufo", "seite": "nacht", "zufall": 1, "nach_flip": 0, "troedeln": false, "ebene": "vorn", "ort": "stapel_oben", "dauer": [6, 7], "ruhig": false, "tipp": "davon", "scheu": true, "fremder_zug": true, "je_partie": 1, "je_runde": 0, "deckt": ["stapel"], "deckt_max_s": 3, "bestand": false},
+  {"id": "ufo", "seite": "nacht", "zufall": 1, "nach_flip": 0, "troedeln": false, "ebene": "vorn", "ort": "stapel_oben", "dauer": [7, 8], "ruhig": false, "tipp": "ausweichen", "scheu": false, "fremder_zug": true, "je_partie": 1, "je_runde": 0, "deckt": ["stapel"], "deckt_max_s": 3, "bestand": false},
   {"id": "satellit", "seite": "nacht", "zufall": 2, "nach_flip": 0, "troedeln": false, "ebene": "hinten", "ort": "himmel_oben", "dauer": [9, 11], "ruhig": false, "tipp": "", "scheu": false, "fremder_zug": false, "je_partie": 0, "je_runde": 0, "deckt": [], "deckt_max_s": 0, "bestand": false},
   {"id": "motte", "seite": "nacht", "zufall": 2, "nach_flip": 0, "troedeln": false, "ebene": "mitte", "ort": "ablage_ring", "dauer": [6, 8], "ruhig": false, "tipp": "", "scheu": true, "fremder_zug": true, "je_partie": 0, "je_runde": 0, "deckt": [], "deckt_max_s": 0, "bestand": false},
   {"id": "igel", "seite": "nacht", "zufall": 2, "nach_flip": 0, "troedeln": false, "ebene": "mitte", "ort": "band_vorn_seite", "dauer": [10, 14], "ruhig": false, "tipp": "einrollen", "scheu": false, "fremder_zug": false, "je_partie": 0, "je_runde": 0, "deckt": [], "deckt_max_s": 0, "bestand": false},
   {"id": "komet", "seite": "nacht", "zufall": 1, "nach_flip": 0, "troedeln": false, "ebene": "hinten", "ort": "himmel_oben", "dauer": [14, 16], "ruhig": false, "tipp": "", "scheu": false, "fremder_zug": false, "je_partie": 0, "je_runde": 0, "deckt": [], "deckt_max_s": 0, "bestand": false},
   {"id": "lampion", "seite": "nacht", "zufall": 2, "nach_flip": 0, "troedeln": false, "ebene": "hinten", "ort": "aufsteigend", "dauer": [11, 13], "ruhig": false, "tipp": "leuchten", "scheu": false, "fremder_zug": false, "je_partie": 0, "je_runde": 0, "deckt": [], "deckt_max_s": 0, "bestand": false},
-  {"id": "sternschnuppe", "seite": "nacht", "zufall": 3, "nach_flip": 0, "troedeln": false, "ebene": "hinten", "ort": "himmel", "dauer": [1.2, 1.2], "ruhig": false, "tipp": "", "scheu": false, "fremder_zug": false, "je_partie": 0, "je_runde": 0, "deckt": [], "deckt_max_s": 0, "bestand": true}
+  {"id": "sternschnuppe", "seite": "nacht", "zufall": 3, "nach_flip": 0, "troedeln": false, "ebene": "hinten", "ort": "himmel", "dauer": [1.2, 1.2], "ruhig": false, "tipp": "", "scheu": false, "fremder_zug": false, "je_partie": 0, "je_runde": 0, "deckt": [], "deckt_max_s": 0, "bestand": true},
+  {"id": "feuerwerk", "seite": "nacht", "zufall": 1, "nach_flip": 0, "troedeln": false, "ebene": "hinten", "ort": "himmel", "dauer": [5, 6], "ruhig": false, "tipp": "knallen", "scheu": false, "fremder_zug": false, "je_partie": 1, "je_runde": 0, "deckt": [], "deckt_max_s": 0, "bestand": false},
+  {"id": "astronaut", "seite": "nacht", "zufall": 1, "nach_flip": 0, "troedeln": false, "ebene": "hinten", "ort": "mond", "dauer": [9, 12], "ruhig": false, "tipp": "salto", "scheu": false, "fremder_zug": false, "je_partie": 1, "je_runde": 0, "deckt": [], "deckt_max_s": 0, "bestand": false}
  ]
 }
 ```
@@ -759,3 +809,15 @@ Umgesetzt wie oben, veröffentlicht als **Beta 1.6.12** (nicht 1.6.11; dort kam 
 **Kontrollbilder:** App je Tier `optik_1612_natur_<id>.png`, Übersichten `optik_1612_natur_tag.jpg`/`_nacht.png`, ruhige Varianten, 8 Spieler, 1600 × 900; Flip `optik_1612_natur_flip.jpg` (`game/tests/test_nature_flip_shot.gd`: Tag mit Marienkäfer → Flip, der Käfer geht in ≤ 0,45 s ab → Glühwürmchen → Flip zum Tag mit Regenbogen). Lite je Art `optik_1612_lite_natur_<id>.png` (`tools/webtest/natur_bilder.ps1 -Stand 1612`), Flip `optik_1612_lite_natur_flip_tag_nacht.jpg`, `_gluehwuermchen.png`, `_nacht_tag.png` (Chrome headless über `cdp.ps1`, `?natur=test`, `MMF.Natur.sicht([{e:'flip'…}])`).
 
 **Offen:** Gerätetest (8.5, S21/S10 gesperrt, Vorführung per 7 Tipps, Ruckeln am S10), iPhone/Safari ungetestet.
+
+## 13. Nachtrag: Beta 1.6.15 – UFO bleibt, vier neue Ereignisse (23.10.2026)
+
+Nutzerwünsche vom 23.10.2026: „Das Ufo bitte nicht so einfach verscheuchen lassen“ und „Ein Feuerwerk als zufällige Aktion bei Nacht; Ein Astronaut schwebt neben dem Mond als zufällige Aktion bei Nacht; Ein Hoppelhase hüpft durch das Bild als zufällige Aktion bei Tag; In der unteren rechten Ecke kommt mit einer Welle für ein paar Sekunden ein Strand ins Bild und eine Palme wächst. Als zufällige Aktion bei Tag“.
+
+- **Tabelle:** 29 Einträge (14 Tag, 15 Nacht). Neu `hoppelhase` (Zufall 2), `strand` (Zufall 1, je Partie 1, neuer Ort `ecke_unten_rechts`), `feuerwerk` und `astronaut` (je Zufall 1, je Partie 1). UFO: `scheu: false`, `tipp: "ausweichen"`, Dauer 7–8 s. Die neuen Einträge stehen am Ende ihrer Seite, die Vorführung (4.7) zeigt sie also nach den bisherigen.
+- **UFO** (3.3 Nr. 18): nicht mehr scheu, `draw` vertreibt es nicht mehr (`PLACE_GO`/`ORT_WEG` nur noch `shuffle`), 1. und 2. Tipp: Ausweichen, 3. Tipp: davon.
+- **Kern:** `NatureCreature.tap_limit()`, `tap_count()`, `add_tap(p)`/`taps`; `NatureFx.tap` lässt bis zu `tap_limit()` Reaktionen zu. Lite: `inst.tippMax`, `c.tipps` im Kern (auch in `zustand()`). Anker `ecke_unten_rechts` in `NatureFx.anchors()` und `_orte()`.
+- **Beschreibungen:** 3.2 Nr. 24 (Hoppelhase), Nr. 25 (Strand), 3.3 Nr. 26 (Feuerwerk), Nr. 27 (Astronaut).
+- **Tests:** `test_nature_fx` (29 Einträge, UFO nicht scheu, bleibt bei `draw`, geht bei `shuffle`, Anker), `test_nature_tag` (nature_check für alle 13 Tagtiere, Schreck-Sprung, Palme schüttelt sich und verliert eine Kokosnuss, Sand allein nimmt keinen Tipp, Hase von einer Seite zur anderen mit Stauchen/Strecken und kaum unter der Hinweisleiste, Strand in der Ecke, Palme zwischen Hand und Mau-Knopf, am Ende alles weg), `test_nature_nacht` (14 Nachttiere, UFO-Ausweichen bestimmt und erst der 3. Tipp vertreibt es, Feuerwerk-Knall an der Tippstelle und höchstens zwei, Astronaut-Salto), `test_web_contract` (29 Ereignisse), Lite `lite_natur.html` (29 Einträge, UFO bleibt bei `draw`/Stapel-Tipp, neuer Block mit echten Arten und echtem Druck auf eine freie Stelle).
+- **Kontrollbilder:** Die Shot-Tests schreiben jetzt `optik_<STAND>_…` (Umgebung `STAND`, Standard 1615; `SHOT_DIR` auch für die Tagbilder); `tools/webtest/natur_bilder.ps1` kann mit `-TippNach <s>` die Reaktion zeigen (Zusatz `_tipp`) und macht für Strand und Feuerwerk zusätzlich ein Desktop-Bild. Abgelegt als JPEG: App `optik_1615_natur_{hoppelhase,strand,ufo,feuerwerk,astronaut}.jpg`, Übersichten `optik_1615_natur_tag.jpg`/`_nacht.jpg`, `optik_1615_natur_8spieler.jpg`, `optik_1615_natur_nacht_8sp.jpg`, `optik_1615_natur_900.jpg`; Lite `optik_1615_lite_natur_{hoppelhase,strand,feuerwerk,astronaut}[_tipp].jpg`, `optik_1615_lite_natur_ufo_tipp.jpg`, `optik_1615_lite_natur_strand_desktop.jpg`.
+- **Offen:** Gerätetest (S21/S10, Ruckeln des Feuerwerks am S10), iPhone/Safari. Im Lite-Desktop-Fenster (Bühne schmaler, z. B. 1280 × 800) reicht die Palmenkrone hinter das rechte Ende der Plattform; sie liegt dahinter (Ebene hinten), das wirkt wie „der Tisch steht am Strand“. Der Hase ist im Lite vorn auf dem Rand nicht antippbar, solange er über `#hand-zone` (untere 270 px) hüpft – an den Seiten schon.

@@ -240,7 +240,7 @@
       const breite = Math.max(200, vw - links - rechts);
       let s = vh / H0, W = breite / s, H = H0;
       if (W < W_MIN) { s = breite / W_MIN; W = W_MIN; H = vh / s; }
-      this.s = s; this.W = W; this.H = H; this.ox = links; this.oy = 0;
+      this.s = s; this.W = W; this.H = H; this.ox = links; this.or = rechts; this.oy = 0;   // or: rechte Aussparung (1.6.15, Necken-Leiste am Rand)
       const b = this.buehne;
       b.style.width = W + 'px'; b.style.height = H + 'px';
       b.style.transform = 'translate(' + links + 'px,0) scale(' + s + ')';
@@ -472,7 +472,7 @@
       else if (pick) this.hand.setze(reihe, { spielbar: pick, dran: true, kandidaten: h.can_pick || [] });
       else this.hand.setze(reihe, { spielbar: hervor ? markiert : [], dran: hervor && aktiv });
       if (!nurLayout && alt && alt.turn !== ich && v.turn === ich && dran) {
-        M.Ton.spiele('dran');
+        if (this.app.zugTon) this.app.zugTon(); else M.Ton.spiele('dran');   // eigene Einstellung „Bei deinem Zug: Ton“
         if (this.app.zugVibration) this.app.zugVibration();   // eigene Einstellung „Bei deinem Zug: Vibration“
       }
       this._buzzerPlatz(this._fangbar || new Set());   // Beta 1.6.7
@@ -1240,7 +1240,10 @@
       this.laeuft = true;
       while (this.schlange.length) {
         const { events, view } = this.schlange.shift();
-        const tempo = (this.schlange.length ? 0.35 : 1) * (this.t.app.effekteReduziert() ? 0.6 : 1) / TEMPO;
+        // Rückstand: schneller abspielen (wartet schon eine weitere Sicht 0,35-fach, ab zwei weiteren 0,15-fach – Beta 1.6.15,
+        // damit ein langsamer Browser nach einem Ruckler rasch wieder beim Stand des Gastgebers ist)
+        const rueck = this.schlange.length;
+        const tempo = (rueck >= 2 ? 0.15 : rueck ? 0.35 : 1) * (this.t.app.effekteReduziert() ? 0.6 : 1) / TEMPO;
         for (const e of events) {
           if (!this.t.v) break;
           try { await this._spiele(e, view, tempo); } catch (err) { if (M.meldeFehler) M.meldeFehler('Regie ' + (e && e.e) + ': ' + err); }
@@ -1407,7 +1410,7 @@
           }
           setTimeout(() => t.gegnerEls.forEach(x => x.e.classList.remove('rueckt', 'neu')), 700);
           if (!altDran && view.turn === view.seat && view.phase === 'turn') {   // durch das Herausnehmen bin ich plötzlich dran
-            M.Ton.spiele('dran');
+            if (t.app.zugTon) t.app.zugTon(); else M.Ton.spiele('dran');
             if (t.app.zugVibration) t.app.zugVibration();
           }
           await schlaf(d(reduziert ? 100 : 500));

@@ -436,16 +436,23 @@ body.reduziert .himmel .mond { transform: rotate(-24deg); }
 
 /* Knöpfe am Tisch */
 .pill { left: 46px; display: flex; align-items: center; gap: 10px; padding: 12px 20px; border-radius: 40px; font: 700 calc(24px * var(--fs)) var(--f-ui);
-  background: var(--t-fill); border: 2px solid var(--t-line); color: var(--t-text); z-index: 60; -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+  background: var(--t-fill); border: 2px solid var(--t-line); color: var(--t-text); z-index: 60; }
+/* Beta 1.6.15 (Browser-Tempo): kein backdrop-filter mehr – der Weichzeichner hinter den Knöpfen musste bei jeder Bewegung darunter
+   (Karten, Natur, Strahlen) neu gerechnet werden */
 .pill svg { width: 26px; height: 26px; }
 .pill.aktiv { background: var(--t-chip); color: var(--t-chip-fg); }
 .mau-knopf { right: 46px; bottom: 40px; width: 150px; height: 150px; border-radius: 50%; background: var(--cream); border: 5px solid var(--ink); color: var(--ink); z-index: 60; padding: 0;
   box-shadow: 0 0 0 6px rgba(255,127,207,.3), 0 10px 30px rgba(0,0,0,.5); display: grid; place-items: center; transition: box-shadow .3s; }
 .mau-knopf span { font: italic 900 46px/1 var(--f-brand); font-variation-settings: 'SOFT' 100, 'WONK' 1, 'opsz' 72; letter-spacing: -.01em; }
-.mau-knopf.bereit { box-shadow: 0 0 0 9px rgba(255,127,207,.75), 0 0 40px rgba(255,127,207,.7), 0 10px 30px rgba(0,0,0,.5); animation: mauPuls 1.1s ease-in-out infinite; }
+/* Beta 1.6.15 (Browser-Tempo): Puls ohne animierten Schatten – fester Grundschein, darüber der stärkste Schein als ::after, der nur
+   seine Deckkraft ändert (läuft auf der Grafikkarte statt jedes Bild neu zu zeichnen); sieht aus wie der frühere box-shadow-Puls */
+.mau-knopf::after { content: ''; position: absolute; top: -5px; right: -5px; bottom: -5px; left: -5px; border-radius: 50%; pointer-events: none; opacity: 0;
+  box-shadow: 0 0 0 12px rgba(255,127,207,.9), 0 0 50px rgba(255,127,207,.85); }
+.mau-knopf.bereit { box-shadow: 0 0 0 7px rgba(255,127,207,.6), 0 0 26px rgba(255,127,207,.55), 0 10px 30px rgba(0,0,0,.5); }
+.mau-knopf.bereit::after { animation: mauPuls 1.1s ease-in-out infinite; will-change: opacity; }
 .mau-knopf.gerufen { box-shadow: 0 0 0 6px rgba(79,211,110,.6), 0 10px 30px rgba(0,0,0,.5); }
 .mau-knopf.drueck span { animation: drueck .32s ease; display: inline-block; }
-@keyframes mauPuls { 0%,100% { box-shadow: 0 0 0 7px rgba(255,127,207,.6), 0 0 26px rgba(255,127,207,.55), 0 10px 30px rgba(0,0,0,.5); } 50% { box-shadow: 0 0 0 12px rgba(255,127,207,.9), 0 0 50px rgba(255,127,207,.85), 0 10px 30px rgba(0,0,0,.5); } }
+@keyframes mauPuls { 0%,100% { opacity: 0; } 50% { opacity: 1; } }
 @keyframes drueck { 0% { transform: scale(1); } 40% { transform: scale(.82) rotate(-6deg); } 100% { transform: scale(1); } }
 /* runde Knöpfe: am Tisch Druckfarbe auf Papier bzw. Papier auf Nacht (--t-*); außerhalb (Fenster) setzen sie eigene Farben */
 .rund { border-radius: 50%; background: var(--t-fill, rgba(244,234,218,.1)); border: 2px solid var(--t-line2, rgba(244,234,218,.3)); color: var(--t-text, var(--paper)); display: grid; place-items: center; padding: 0; }
@@ -475,7 +482,12 @@ body.reduziert .himmel .mond { transform: rotate(-24deg); }
 .gg .marke.weg { background: #5A1E2A; color: #FFD0D4; }
 .gg .marke.weg.app { background: #4A3A10; color: #FFE7A3; }
 .gg .marke svg { width: 14px; height: 14px; }
-.gg.dran .ava { box-shadow: 0 0 0 5px var(--gold), 0 0 24px rgba(255,214,90,.75); animation: dranPuls 1.2s ease-in-out infinite; }
+/* Beta 1.6.15 (Browser-Tempo): Puls wie beim Mau-Knopf über die Deckkraft eines vorgezeichneten Scheins (::after) statt box-shadow */
+.gg .ava { position: relative; }
+.gg .ava::after { content: ''; position: absolute; top: -3px; right: -3px; bottom: -3px; left: -3px; border-radius: 50%; pointer-events: none; opacity: 0;
+  box-shadow: 0 0 0 8px var(--gold), 0 0 34px rgba(255,214,90,.9); }
+.gg.dran .ava { box-shadow: 0 0 0 4px var(--gold), 0 0 16px rgba(255,214,90,.6); }
+.gg.dran .ava::after { animation: dranPuls 1.2s ease-in-out infinite; will-change: opacity; }
 .gg.dran .name { color: var(--t-zug); }
 /* Wer dran ist (wie in der App): Strahlenkranz hinter Namen und Fächer, Tag golden, Nacht bläulich. Sparsam für schwache
    Geräte: ein Element je Platz, Strahlen als Verlauf mit runder Maske (kein Weichzeichner), nur am aktiven Platz dreht es
@@ -550,7 +562,7 @@ body.reduziert .gg.dran .denk { animation: denkAuf .01s 5s both; }
 .gg.kompakt .ava { width: 44px; height: 44px; font-size: 20px; }
 .gg.kompakt .name { font-size: calc(23px * var(--fs)); max-width: 120px; }
 .gg.kompakt .faecher { width: 150px; height: 76px; }
-@keyframes dranPuls { 0%,100% { box-shadow: 0 0 0 4px var(--gold), 0 0 16px rgba(255,214,90,.6); } 50% { box-shadow: 0 0 0 8px var(--gold), 0 0 34px rgba(255,214,90,.9); } }
+@keyframes dranPuls { 0%,100% { opacity: 0; } 50% { opacity: 1; } }
 
 /* Farbwahl um die Ablage */
 .farbwahl { width: 0; height: 0; z-index: 400; }
@@ -863,7 +875,8 @@ body.tag .host-app { background: rgba(33,27,44,.96); color: var(--cream); }
 #wach { position: fixed; left: 0; bottom: 0; width: 2px; height: 2px; opacity: .01; pointer-events: none; z-index: -1; }
 
 /* Effekte reduziert bzw. Kontrollbilder ohne Bewegung */
-body.reduziert .richtung .w, body.reduziert .stapel.ziehbar .oben::after, body.reduziert .gg.dran .ava, body.reduziert .mau-knopf.bereit, body.reduziert .gg.fangbar .erwischen, body.reduziert .gg.fangbar .erwischen::after { animation: none; }
+body.reduziert .richtung .w, body.reduziert .stapel.ziehbar .oben::after, body.reduziert .gg.dran .ava::after, body.reduziert .mau-knopf.bereit::after, body.reduziert .gg.fangbar .erwischen, body.reduziert .gg.fangbar .erwischen::after { animation: none; }
+body.reduziert .gg.dran .ava::after, body.reduziert .mau-knopf.bereit::after { opacity: .5; }   /* fester Schein in der Mitte des Pulses */
 @media (prefers-reduced-motion: reduce) { .richtung .w, .quer .handy, .gg.fangbar .erwischen, .gg.fangbar .erwischen::after { animation: none; } }
 body.ruhig *, body.ruhig *::before, body.ruhig *::after { animation: none !important; transition: none !important; }
 
@@ -990,6 +1003,7 @@ body.ruhig *, body.ruhig *::before, body.ruhig *::after { animation: none !impor
 #tisch.gross .gg.dran .name, #tisch.gross .gg.dran .zug { color: var(--t-dran-fg); text-shadow: none; }
 #tisch.gross .gg.dran .zahl { background: var(--t-dran-fg); color: var(--t-dran); }
 #tisch.gross .gg.dran .ava { animation: none; box-shadow: none; }
+#tisch.gross .gg.dran .ava::after { animation: none; opacity: 0; }
 #tisch.gross .gg.ich:not(.dran) { border-style: dashed; }
 /* Beta 1.6.5: Reaktionsknöpfe in der Zeile „Du“ (necken.js setzt --nk-res = ihre Breite in Bühnen-px): Name und „dran“ machen Platz */
 #tisch.gross .gg.ich .name, #tisch.gross .gg.ich .zug { margin-right: var(--nk-res, 0px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1124,6 +1138,14 @@ body[data-screen="tisch"] .necken-ebene { display: block; }
 .nk-leiste.wisch.ende { -webkit-mask-image: none; mask-image: none; }
 .nk-leiste.wisch::-webkit-scrollbar { display: none; }
 .nk-leiste.wisch > .nk-rb { scroll-snap-align: start; box-shadow: none; }   /* der Schatten würde am Rand der Reihe gerade abgeschnitten */
+/* Beta 1.6.15 (zehn Knöpfe, Nutzervorschlag): im großen Modus auf kleinen Handys eine senkrecht wischbare Spalte am linken Rand;
+   Rand links und rechts für die Trefferfläche, unten blendet sie aus (es geht weiter) */
+.nk-leiste.wisch-v { pointer-events: auto !important; overflow-y: auto; overflow-x: hidden; overscroll-behavior-y: contain; scrollbar-width: none;
+  scroll-snap-type: y proximity; padding: 0 var(--nk-tx, 0px); margin-left: calc(-1 * var(--nk-tx, 0px)); touch-action: pan-y;
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 22px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 22px), transparent); }
+.nk-leiste.wisch-v.ende { -webkit-mask-image: none; mask-image: none; }
+.nk-leiste.wisch-v::-webkit-scrollbar { display: none; }
+.nk-leiste.wisch-v > .nk-rb { scroll-snap-align: start; box-shadow: none; }
 .nk-rb { position: relative; width: 48px; height: 48px; padding: 0; border-radius: 50%; display: grid; place-items: center; line-height: 1; background: var(--nk-grund); border: 3px solid var(--nk-rand); box-shadow: var(--nk-schein);
   animation: nkRbAuf .22s cubic-bezier(.3,1.5,.5,1) both; animation-delay: calc(var(--i, 0) * 40ms); }
 .nk-rb::before { content: ''; position: absolute; inset: calc(-3px - var(--nk-ty, 0px)) calc(-3px - var(--nk-tx, 0px)); border-radius: 22px; }   /* Trefferfläche ≥ 44 px (necken.js) */

@@ -38,8 +38,9 @@ const CUSHION_POP := "kissen_pop"               # Beta 1.6.6: Furzkissen löst a
 const CUSHION_BLOCK_MIN_MS := 60000             # Sperre des Legers nach jedem Kissen: zufällig 1 …
 const CUSHION_BLOCK_MAX_MS := 180000            # … bis 3 min (beim Gastgeber ausgelost, Restzeit geheim)
 const CUSHION_TRIGGERS := ["play", "draw", "accept", "stake"]   # angenommene Aktionen des Ziels, die das Kissen auslösen
-const FX_REACTS := ["lachen", "schreck", "klatschen", "daumen", "baeh", "heulen", "facepalm"]   # 1.6.11: + „Bäää“ (😝); Geräte bis 1.6.10
+const FX_REACTS := ["lachen", "schreck", "klatschen", "daumen", "baeh", "heulen", "facepalm", "denken", "schlafen", "kuss"]   # 1.6.11: + „Bäää“ (😝); Geräte bis 1.6.10
 # verwerfen sie. Beta 1.6.13: + „Heulen“ (😭) und „Facepalm“ (🤦); Geräte bis 1.6.12 verwerfen diese beiden ebenso still
+# Beta 1.6.15 (Nutzerwunsch 23.10.2026): + „Nachdenken“ (🤔), „Schnarchen“ (😴) und „Küsschen“ (😘); Geräte bis 1.6.14 verwerfen sie still
 const WAKE_KINDS := ["snore", "alarm"]
 const FX_SLOW_MS := 10000                       # Schnarchen/Wecker erst, wenn das Ziel so lange nichts getan hat
 const WAKE_BUSY_MS := {"snore": 4500, "alarm": 5000}   # so lange nimmt der Gastgeber für dieses Ziel keine zweite Weckaktion an

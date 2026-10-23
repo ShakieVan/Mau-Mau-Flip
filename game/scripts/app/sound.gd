@@ -37,13 +37,15 @@ extends Node
 # Beta 1.6.13: sechste und siebte Reaktion "heulen" (😭) und "facepalm" (🤦): Aufnahmen des Nutzers (audio/aufnahmen/Weinen 2.m4a,
 # Facepalm 2.m4a), auf Wunsch „hochgepitcht (Chipmunk)“, gewählt die Stufe nur6 (+6 Halbtöne, gleiche Länge; tools/make_reaktion_aufnahmen.py,
 # −19 LUFS, 2,10 s bzw. 1,08 s).
+# Beta 1.6.15: Reaktionen "denken" (🤔, Ton hmm) und "kuss" (😘, Ton kuss): ebenso Aufnahmen des Nutzers (Hmmm.m4a, Knutschie.m4a; die
+# MOSS-Kandidaten klangen ihm „doof“), Stufe nur6, 0,79 s bzw. 0,76 s; "schlafen" (😴) nimmt den Schnarch-Ton.
 
 const DIR := "res://assets/sfx/"
 const TEASE_NAMES := ["schnarchen", "wecker", "papier_wurf", "papier_plopp", "lachen", "schreck", "klatschen", "daumen",
-	"furzkissen", "baeh", "heulen", "facepalm"]   # Beta 1.6.3; 1.6.6: Furzkissen (eastereggs2.md 12.4); 1.6.11: Bäää; 1.6.13: 😭 🤦
+	"furzkissen", "baeh", "heulen", "facepalm", "hmm", "kuss"]   # Beta 1.6.3; 1.6.6: Furzkissen (eastereggs2.md 12.4); 1.6.11: Bäää; 1.6.13: 😭 🤦; 1.6.15: 🤔 😘
 const NAMES := ["mau", "mau_mau", "karte", "ziehen", "mischen", "flip", "jubel_1", "jubel_2", "fehler", "dran", "schnurren",
 	"schnarchen", "wecker", "papier_wurf", "papier_plopp", "lachen", "schreck", "klatschen", "daumen", "furzkissen", "baeh",
-	"heulen", "facepalm"]
+	"heulen", "facepalm", "hmm", "kuss"]
 const QUIET_DB := -12.0                    # Beta 1.6.3: „leise“ für Absender/Zuschauer beim Necken (relativ zur Stufe „Spieltöne“)
 const JUBEL := ["jubel_1", "jubel_2"]       # Ereignis "sieg" spielt zufällig eine der beiden Jubel-Dateien (Nutzerentscheidung 10.10.2026)
 const JUBEL_FADE_S := 0.6

@@ -1,26 +1,30 @@
 extends SceneTree
-# Kontrollbilder der Tagtiere (Beta 1.6.12, docs/module/natur.md Abschnitt 8.4, Aufgabe T3; „_shot“: vom Testlauf ausgenommen):
+# Kontrollbilder der Tagtiere (Beta 1.6.12, ab 1.6.15 mit Hoppelhase und Strand; docs/module/natur.md Abschnitt 8.4; „_shot“: vom
+# Testlauf ausgenommen):
 #   tools/godot_run.ps1 -Script res://tests/test_nature_tag_shot.gd -Resolution 1600x720 -Extra '--rendering-driver','opengl3_angle'
 #   tools/godot_run.ps1 -Script res://tests/test_nature_tag_shot.gd -Resolution 1600x900 -Extra '--rendering-driver','opengl3_angle' -EnvPairs 'SHOT_MODE=900'
 # Echte TableScreen (Übung, 4 Spieler, Tagseite), die Uhr steht (Engine.time_scale = 0, die Tiere werden mit seek gestellt):
-#   docs/module/optik_1612_natur_<id>.png   oben links der ganze Tisch (Hauptphase), daneben vergrößert die Hauptphase, unten
+#   docs/module/optik_<Stand>_natur_<id>.png   oben links der ganze Tisch (Hauptphase), daneben vergrößert die Hauptphase, unten
 #                                           vergrößert Anflug bzw. Einblenden und die Reaktion nach dem Tipp bzw. der Abgang
-#   docs/module/optik_1612_natur_tag.png    Übersicht: alle Tagtiere vergrößert in der Hauptphase
-#   docs/module/optik_1612_natur_ruhig.png  Wolke und Regenbogen bei „Effekte reduziert“
-#   docs/module/optik_1612_natur_8spieler.png  Marienkäfer, Spatz, Libelle, Schnecke, Biene bei 8 Spielern (Plätze gemieden)
-#   SHOT_MODE=900: docs/module/optik_1612_natur_900.png (1600 × 900: Biene auf der Karte, Spatz, Pusteblume, Wolke)
-# NUR=<id,…> beschränkt die Einzelbilder.
+#   docs/module/optik_<Stand>_natur_tag.png    Übersicht: alle Tagtiere vergrößert in der Hauptphase
+#   docs/module/optik_<Stand>_natur_ruhig.png  Wolke und Regenbogen bei „Effekte reduziert“
+#   docs/module/optik_<Stand>_natur_8spieler.png  Marienkäfer, Spatz, Libelle, Schnecke, Biene, Seifenblasen, Hoppelhase, Strand
+#                                           bei 8 Spielern (Plätze gemieden)
+#   SHOT_MODE=900: docs/module/optik_<Stand>_natur_900.png (1600 × 900: Biene auf der Karte, Spatz, Pusteblume, Wolke, Hoppelhase, Strand)
+# NUR=<id,…> beschränkt die Einzelbilder, STAND=<Zahl> (Standard 1615; die Bilder bis 1.6.12 heißen optik_1612_…), SHOT_DIR=<Ordner>
+# statt docs/module (z. B. Arbeitsordner, danach als JPEG nach docs/module).
 
 const IDS := ["marienkaefer", "biene", "libelle", "pusteblume", "papierflieger", "seifenblasen", "spatz", "wolke", "regenbogen",
-	"heissluftballon", "schnecke"]
+	"heissluftballon", "schnecke", "hoppelhase", "strand"]
 const SEED := {"marienkaefer": 3, "biene": 21, "libelle": 4, "pusteblume": 6, "papierflieger": 7, "seifenblasen": 8, "spatz": 9,
-	"wolke": 12, "regenbogen": 13, "heissluftballon": 10, "schnecke": 11}
-const BIG := ["pusteblume", "seifenblasen", "wolke", "regenbogen", "heissluftballon", "papierflieger"]
+	"wolke": 12, "regenbogen": 13, "heissluftballon": 10, "schnecke": 11, "hoppelhase": 15, "strand": 16}
+const BIG := ["pusteblume", "seifenblasen", "wolke", "regenbogen", "heissluftballon", "papierflieger", "strand"]
 
 var nav: ScreenNav
 var ts: TableScreen
 var nf: NatureFx
 var dir := ""
+var stand := "1615"
 
 
 func _initialize() -> void:
@@ -28,7 +32,10 @@ func _initialize() -> void:
 
 
 func run() -> void:
-	dir = ProjectSettings.globalize_path("res://").path_join("../docs/module").simplify_path()
+	dir = OS.get_environment("SHOT_DIR")
+	if dir == "":
+		dir = ProjectSettings.globalize_path("res://").path_join("../docs/module").simplify_path()
+	stand = OS.get_environment("STAND") if OS.get_environment("STAND") != "" else "1615"
 	var mode := OS.get_environment("SHOT_MODE")
 	await open_table(4)
 	if mode == "900":
@@ -40,7 +47,7 @@ func run() -> void:
 			var img := await shoot(id, only == "" or only.split(",").has(id))
 			overview.append(img)
 		if only == "":
-			_sheet(overview, 4, 400, dir.path_join("optik_1612_natur_tag.png"))
+			_sheet(overview, 4, 400, dir.path_join("optik_%s_natur_tag.png" % stand))
 			await calm_sheet()
 			await open_table(8)
 			await players8()
@@ -148,7 +155,12 @@ func shoot(id: String, save: bool) -> Image:
 		"papierflieger":
 			mid = dur * 0.45
 			t_in = dur * 0.2
-	if not ["biene", "wolke", "regenbogen", "schnecke"].has(id):
+		"strand":
+			mid = 4.2
+			t_in = 2.25
+		"hoppelhase":
+			t_in = in_s + 0.25
+	if not ["biene", "wolke", "regenbogen", "schnecke", "strand"].has(id):
 		mid = best_time(in_s, dur - out_s, mid)
 	var size := Vector2(800, 450) if big else Vector2(400, 225)
 	# Hauptphase: ganzer Tisch und vergrößert
@@ -172,7 +184,7 @@ func shoot(id: String, save: bool) -> Image:
 			p = (c.get("poses") as Array)[0][0] if not (c.get("poses") as Array).is_empty() else p
 		tap(c, mid, p)
 		var dt := {"marienkaefer": 0.18, "libelle": 0.12, "pusteblume": 0.5, "papierflieger": 0.45, "seifenblasen": 0.08,
-			"spatz": 0.3, "heissluftballon": 0.3, "schnecke": 0.25}
+			"spatz": 0.3, "heissluftballon": 0.3, "schnecke": 0.25, "hoppelhase": 0.27, "strand": 0.42}
 		nf.seek(mid + float(dt.get(id, 0.3)))
 		await frames()
 		zoom_r = _crop_at(focus(c) if id != "seifenblasen" else _screen(c, p), size)
@@ -191,8 +203,8 @@ func shoot(id: String, save: bool) -> Image:
 			var im: Image = pair[0]
 			im.resize(800, 450, Image.INTERPOLATE_BILINEAR)
 			sheet.blit_rect(im, Rect2i(0, 0, 800, 450), pair[1])
-		sheet.save_png(dir.path_join("optik_1612_natur_%s.png" % id))
-		print("Bild: optik_1612_natur_%s.png" % id)
+		sheet.save_png(dir.path_join("optik_%s_natur_%s.png" % [stand, id]))
+		print("Bild: optik_%s_natur_%s.png" % [stand, id])
 	var ov := zoom_main.duplicate() as Image
 	ov.resize(400, 225, Image.INTERPOLATE_BILINEAR)
 	return ov
@@ -240,12 +252,12 @@ func calm_sheet() -> void:
 		imgs.append(_shot(Rect2i(0, 0, 1600, 720)))
 		nf.clear()
 	nf.set_reduced(false)
-	_sheet(imgs, 1, 1600, dir.path_join("optik_1612_natur_ruhig.png"))
+	_sheet(imgs, 1, 1600, dir.path_join("optik_%s_natur_ruhig.png" % stand))
 
 
 func players8() -> void:
 	var imgs: Array[Image] = []
-	for id in ["marienkaefer", "spatz", "libelle", "schnecke", "biene", "seifenblasen"]:
+	for id in ["marienkaefer", "spatz", "libelle", "schnecke", "biene", "seifenblasen", "hoppelhase", "strand"]:
 		nf.spawn(id, int(SEED[id]) + 1, {"still": true, "troedler": 3})
 		var c := nf.creature()
 		var mid := (float(c.get("in_s")) + float(c.get("dur")) - float(c.get("out_s"))) * 0.5
@@ -257,12 +269,12 @@ func players8() -> void:
 		await frames()
 		imgs.append(_shot(Rect2i(0, 0, 1600, 720)))
 		nf.clear()
-	_sheet(imgs, 2, 800, dir.path_join("optik_1612_natur_8spieler.png"))
+	_sheet(imgs, 2, 800, dir.path_join("optik_%s_natur_8spieler.png" % stand))
 
 
 func extra_900() -> void:
 	var imgs: Array[Image] = []
-	for id in ["biene", "spatz", "pusteblume", "wolke"]:
+	for id in ["biene", "spatz", "pusteblume", "wolke", "hoppelhase", "strand"]:
 		nf.spawn(id, int(SEED[id]), {"still": true})
 		var c := nf.creature()
 		var mid := (float(c.get("in_s")) + float(c.get("dur")) - float(c.get("out_s"))) * 0.5
@@ -274,7 +286,7 @@ func extra_900() -> void:
 		await frames()
 		imgs.append(_shot(Rect2i(0, 0, 1600, 900)))
 		nf.clear()
-	_sheet(imgs, 2, 800, dir.path_join("optik_1612_natur_900.png"))
+	_sheet(imgs, 2, 800, dir.path_join("optik_%s_natur_900.png" % stand))
 
 
 func _shot(r: Rect2i) -> Image:

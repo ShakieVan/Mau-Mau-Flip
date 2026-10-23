@@ -40,7 +40,7 @@
   const CUSHION = 'kissen', CUSHION_POP = 'kissen_pop';
   const CUSHION_BLOCK_MIN_MS = 60000, CUSHION_BLOCK_MAX_MS = 180000;
   const CUSHION_TRIGGERS = ['play', 'draw', 'accept', 'stake'];
-  const FX_REACTS = ['lachen', 'schreck', 'klatschen', 'daumen', 'baeh', 'heulen', 'facepalm'];   // Beta 1.6.11: + „Bäää“ (😝); 1.6.13: + 😭 🤦
+  const FX_REACTS = ['lachen', 'schreck', 'klatschen', 'daumen', 'baeh', 'heulen', 'facepalm', 'denken', 'schlafen', 'kuss'];   // Beta 1.6.11: + „Bäää“ (😝); 1.6.13: + 😭 🤦; 1.6.15: + 🤔 😴 😘
   const WAKE_KINDS = ['snore', 'alarm'];
   const FX_SLOW_MS = 10000;
   const WAKE_BUSY_MS = { snore: 4500, alarm: 5000 };
@@ -235,11 +235,11 @@
   // [data-kissen, Abzeichen, Beschriftung]; Reihenfolge wie im Wunsch des Nutzers: erst geheim, dann mit Namen
   const KISSEN_KNOEPFE = [['geheim', SVG_ABZ_GEHEIM, 'Kissen geheim'], ['name', SVG_ABZ_NAME, 'Kissen mit Namen']];
   const REAKT = { lachen:['😂', 'Lachen'], schreck: ['😱', 'Schreck'], klatschen: ['👏', 'Klatschen'], daumen: ['👍', 'Daumen hoch'], baeh: ['😝', 'Bäää'],
-    heulen: ['😭', 'Heulen'], facepalm: ['🤦', 'Facepalm'] };   // Beta 1.6.13
+    heulen: ['😭', 'Heulen'], facepalm: ['🤦', 'Facepalm'], denken: ['🤔', 'Nachdenken'], schlafen: ['😴', 'Schnarchen'], kuss: ['😘', 'Küsschen'] };   // Beta 1.6.13; 1.6.15
   // Beta 1.6.5 (Nutzer 15.10.2026): Reihenfolge der Reaktionsknöpfe überall Lachen, Klatschen, Daumen hoch, Schreck
   // (FX_REACTS bleibt die Liste des Protokolls, Spiegel von TeaseRules)
-  const REAKT_REIHE = ['lachen', 'klatschen', 'daumen', 'schreck', 'baeh', 'heulen', 'facepalm'];   // Beta 1.6.11: + Bäää; 1.6.13: + Heulen, Facepalm
-  const REAKT_SPALTEN = 4;   // Beta 1.6.13 (Nutzerwunsch): Leiste neben „Du“ nach 4 Knöpfen umbrechen (Block 4 + 3)
+  const REAKT_REIHE = ['lachen', 'klatschen', 'daumen', 'schreck', 'baeh', 'heulen', 'facepalm', 'denken', 'schlafen', 'kuss'];   // Beta 1.6.11: + Bäää; 1.6.13: + Heulen, Facepalm; 1.6.15: + Nachdenken, Schnarchen, Küsschen
+  const REAKT_SPALTEN = 5;   // Beta 1.6.13 (Nutzerwunsch): Leiste neben „Du“ nach 4 Knöpfen umbrechen (Block 4 + 3); ab 1.6.15 mit zehn nach 5 (5 + 5)
   const LEISTE_ABST = 6;   // Abstand zwischen den Reaktionsknöpfen (CSS-px)
   // Beta 1.6.5 (Nutzer 15.10.2026: „Die sind doch viel schöner.“): Reaktionen als Bilder aus Microsoft Fluent Emoji (MIT,
   // bilder/reaktionen/LIZENZ.md; dieselben Dateien wie game/assets/ui/reaktionen/ der App), damit sie auf jedem Gerät gleich aussehen.
@@ -255,7 +255,9 @@
     f.appendChild(el('span', 'nk-re', REAKT[r][0]));
     return f;
   }
-  const REAKT_MS = { lachen: 1920, schreck: 610, klatschen: 1920, daumen: 620, baeh: 980, heulen: 2100, facepalm: 1080 };   // Dauer der Töne (Deckel: höchstens 2 gleichzeitig)
+  const REAKT_MS = { lachen: 1920, schreck: 610, klatschen: 1920, daumen: 620, baeh: 980, heulen: 2100, facepalm: 1080, denken: 790, schlafen: 4170, kuss: 765 };   // Dauer der Töne (Deckel: höchstens 2 gleichzeitig)
+  // Beta 1.6.15: Ton je Reaktion, wo er anders heißt (wie TeaseFx.SOUND_OF): 😴 nimmt den Schnarch-Ton, 🤔 das „Hmmm“
+  const REAKT_TON = { denken: 'hmm', schlafen: 'schnarchen' };
   const KNOEPFE = [['ball', SVG_KUGEL, 'Papierkugel'], ['snore', SVG_ZZZ, 'Schnarchen'], ['alarm', SVG_WECKER, 'Wecker'], ['ansehen', SVG_KARTEN, 'Karten ansehen']];
   const LEISE = 0.25;            // −12 dB (Absender, Zuschauer beim Plopp)
   const FLUG_MS = 700, LIEGT_MS = 3000, LIEGT_SK = 0.78, SCHNARCH_MS = 4200, TICK_MS = 3000, KLINGEL_MS = 1800, REAKT_AUF_MS = 1600, MENUE_ZU_MS = 15000;   // Beta 1.6.7: Menü schließt nach 15 s ohne Tipp (vorher 5 s)
@@ -604,7 +606,8 @@
     // Beta 1.6.13: wischbare Reihe – am Ende angekommen (oder gar nicht rollbar), blendet sie rechts nicht mehr aus
     _wischEnde() {
       const L = this.leiste;
-      if (L) L.classList.toggle('ende', L.scrollLeft + L.clientWidth >= L.scrollWidth - 2);
+      if (L) L.classList.toggle('ende', L.dataset.wisch === 'v' ? L.scrollTop + L.clientHeight >= L.scrollHeight - 2
+        : L.scrollLeft + L.clientWidth >= L.scrollWidth - 2);
     },
     // Großer Modus: restlicher Weg einer rollenden Zeile (Viewport-px) bis zu ihrem Ziel (translateY aus tisch.js minus laufende Lage)
     _rollRest(e, t) {
@@ -787,10 +790,14 @@
         if (s) { dazu('reihe', s.left, s.top - mass('reihe').h - 10); dazu('quadrat', s.left, s.top - mass('quadrat').h - 10); }
       } else {
         const ank = rect(t.ichZahl);
+        // 1.6.15 (zehn Knöpfe, Block 5 + 5): linke Kante von Stapel samt Stapelzahl – der Block darf rechtsbündig davor stehen
+        const stapelL = Math.min.apply(null, [huelle(t.stapel), rect(t.stapelZahl)].filter(Boolean).map(r => r.left).concat([1e9]));
         // Lagen an „Du“; dd/gg nur für die Ausweichgrößen (kleine Handys quer: in voller Größe läge der Block auf einem Kartenfächer)
         const amIch = (dd, gg) => {
           const r = mass('reihe', dd, gg), q = mass('quadrat', dd, gg);
           dazu('reihe', ank.right + 10, Math.min(ank.top + ank.height / 2 - r.h / 2, ank.bottom + 6 - r.h), false, dd, gg);   // etwas höher: Sortieren liegt knapp darunter
+          // 1.6.15: dieselbe Höhe, rechtsbündig vor dem Stapel (Handy quer 844 × 390: 10 px neben „Du“ streifte der Block 5 + 5 die Stapelzahl)
+          if (stapelL < 1e9 && stapelL - 6 - r.w >= ank.right + 5) dazu('reihe', stapelL - 6 - r.w, Math.min(ank.top + ank.height / 2 - r.h / 2, ank.bottom + 6 - r.h), false, dd, gg);
           dazu('reihe', ank.left, ank.top - r.h - 8, false, dd, gg);
           dazu('reihe', ank.right + 10, ank.top - r.h - 8, false, dd, gg);
           dazu('quadrat', ank.right + 10, ank.bottom - q.h, false, dd, gg);
@@ -832,25 +839,37 @@
         }
       }
       // Notlagen (z. B. Rundenende-Tafel über der Mitte): Spalte am linken bzw. rechten Rand zwischen den Eckknöpfen
-      { const m = mass('spalte'), oben = (rect(t.knMenue) || { bottom: root.top }).bottom + 10;
+      // 1.6.15 (Gerätetest S10, Nutzer: „da ist auch das Kamera-Loch“): Lagen am Rand hinter der Aussparung (Safe Area, wie die Bühne: t.ox/t.or)
+      { const li = root.left + (t.ox || 0), re = root.right - (t.or || 0);
+        const m = mass('spalte'), oben = (rect(t.knMenue) || { bottom: root.top }).bottom + 10;
         const unten = Math.min((rect(t.knSort) || { top: root.bottom }).top - 10, t.gross ? 1e9 : (rect(t.ichZahl) || { top: 1e9 }).top - 8);
-        dazu('spalte', root.left + 6, Math.max(oben, unten - m.h));
+        dazu('spalte', li + 6, Math.max(oben, unten - m.h));
         const rOben = (rect(t.knTon) || { bottom: root.top }).bottom + 10;
-        dazu('spalte', root.right - m.w - 6, rOben);
+        dazu('spalte', re - m.w - 6, rOben);
         // Beta 1.6.11 (Bildprüfung Rundenende, fünf Knöpfe): passt die Spalte nicht ganz zwischen die Eckknöpfe (links: Menü und „Du“,
         // rechts: Ton und Mau), dieselbe Spalte mit etwas kleineren Knöpfen (≥ 36 px) – vorher lag der fünfte auf dem Mau-Knopf
         const enger = (left, von, bis, rechts) => {
           const dd = Math.floor((bis - von - (NR - 1) * gap) / NR);
           if (dd >= d || dd < 36) return;
           const h = NR * dd + (NR - 1) * gap;
-          kand.push({ form: 'spalte', left: rechts ? root.right - dd - 6 : left, top: rechts ? von : Math.max(von, bis - h), unten: false, w: dd, h, d: dd });
+          kand.push({ form: 'spalte', left: rechts ? re - dd - 6 : left, top: rechts ? von : Math.max(von, bis - h), unten: false, w: dd, h, d: dd });
         };
-        enger(root.left + 6, oben, unten, false);
+        enger(li + 6, oben, unten, false);
         enger(0, rOben, (rect(t.knMau) || { top: root.bottom }).top - 10, true);
         // Beta 1.6.13: sieben Knöpfe passen als Spalte selten zwischen die Eckknöpfe – dann zwei Spalten (2 × 4) an denselben Rändern
         const m2 = mass('doppel');
-        dazu('doppel', root.left + 6, Math.max(oben, unten - m2.h));
-        dazu('doppel', root.right - m2.w - 6, rOben); }
+        dazu('doppel', li + 6, Math.max(oben, unten - m2.h));
+        dazu('doppel', re - m2.w - 6, rOben);
+        // 1.6.15 (zehn Knöpfe, Gerätetest S10 760 × 360, Nutzervorschlag „die Emojis am linken Rand scrollbar machen“): großer Modus auf
+        // kleinen Handys – passt sonst nirgends ein Block, eine senkrecht wischbare Spalte am linken Rand zwischen Menü und Sortieren
+        // (44 px, sichtbar n½ Knöpfe, unten blendet sie aus); mit Aufschlag, damit jede freie Lage sonst vorgeht
+        if (t.gross) {
+          const dv = 44, sicht = Math.floor((unten - oben - dv / 2) / (dv + gap));
+          if (sicht >= 2 && sicht < NR) {
+            kand.push({ form: 'spalte', left: li + 6, top: oben, unten: false, w: dv, h: sicht * (dv + gap) + Math.round(dv / 2), d: dv, gap,
+              wischV: true, strafe: 30000 });
+          }
+        } }
       const vw = window.innerWidth, vh = window.innerHeight;
       const flaeche = (a, b, x) => ueber(a, b, x) ? Math.max(0, Math.min(a.right, b.right + x) - Math.max(a.left, b.left - x)) * Math.max(0, Math.min(a.bottom, b.bottom + x) - Math.max(a.top, b.top - x)) : 0;
       let wahl = null, beste = Infinity;
@@ -861,6 +880,7 @@
         let kosten = i * 300 + (Math.abs(left - c.left) + Math.abs(top - c.top)) * 50;
         (c.inZeile ? hart : hart.concat(zeilen, eigen)).forEach(h => { const f = flaeche(r, h, 4); if (f > 0) kosten += 1e6 + f * 40; });
         if (c.notfall) kosten += 1200;   // kleine Knöpfe in der Zeile: schlechter als der Block daneben, besser als die Notlagen am Rand
+        if (c.strafe) kosten += c.strafe;   // 1.6.15: wischbare Reihe in der Zeile „Du“ nur, wenn keine andere Lage frei ist
         if (c.klein) kosten += 1500 + (d - c.d) * 40;   // 1.6.11: Ausweichgröße an „Du“ nur, wenn keine Lage in voller Größe frei ist
         weich.forEach(h => { kosten += flaeche(r, h, 0) * 2; });
         c.kosten = kosten;
@@ -884,9 +904,12 @@
       L.style.gridTemplateColumns = 'repeat(' + sp + ', ' + dd + 'px)';
       // 1.6.13: wischbare Reihe (kleine Handys): feste Breite, waagerecht rollbar (style.css .nk-leiste.wisch)
       L.classList.toggle('wisch', !!wahl.wisch);
-      L.dataset.wisch = wahl.wisch ? '1' : '';
+      L.classList.toggle('wisch-v', !!wahl.wischV);   // 1.6.15: senkrecht wischbare Spalte (großer Modus, kleine Handys)
+      L.dataset.wisch = wahl.wisch ? '1' : wahl.wischV ? 'v' : '';
       L.style.width = wahl.wisch ? Math.round(wahl.w) + 'px' : '';
+      L.style.height = wahl.wischV ? Math.round(wahl.h) + 'px' : '';
       if (!wahl.wisch && L.scrollLeft) L.scrollLeft = 0;
+      if (!wahl.wischV && L.scrollTop) L.scrollTop = 0;
       this._wischEnde();
       L.style.gap = (wahl.rgap || gg) + 'px ' + gg + 'px';   // Zeilen- und Spaltenabstand (1.6.13: rgap nur in den Ecken oben)
       const rand = Math.max(0, (44 - dd) / 2);   // Trefferfläche: unsichtbarer Rand bis 44 px, seitlich höchstens bis zur Mitte des Abstands
@@ -1298,7 +1321,7 @@
       const now = this.uhr();
       this._rt = this._rt.filter(e => e > now);
       if (this._rt.length >= 2 || now - (this._rtName[r] === undefined ? -1e9 : this._rtName[r]) < 600) return;   // höchstens 2 gleichzeitig, je Name 600 ms
-      if (this._ton(r)) { this._rt.push(now + REAKT_MS[r]); this._rtName[r] = now; }
+      if (this._ton(REAKT_TON[r] || r)) { this._rt.push(now + REAKT_MS[r]); this._rtName[r] = now; }
     },
   };
 

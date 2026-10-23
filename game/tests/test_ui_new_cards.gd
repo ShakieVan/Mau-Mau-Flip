@@ -65,6 +65,7 @@ func run() -> void:
 	await color_phase_test()
 	await highlight_test()
 	await plain_rules_test()
+	await pile_double_tap_test()
 	if app != null:
 		if had_hl:
 			app.settings.set_value("hervorheben", hl_backup)
@@ -759,4 +760,42 @@ func color_phase_test() -> void:
 	tv.wish_picker.color_chosen.emit("pink")
 	await settle(ts, 0.5)
 	check(g.state == "turn" and g.color == "pink", "Phase color: Farbe gewählt, es geht weiter")
+	await close_table(ts)
+
+
+# Beta 1.6.15 (Nutzerbefund „bei +2 bekommt man 3“): Hausregel „Nach dem Strafziehen weiterspielen“ – ein zweiter Tipp auf den Stapel
+# während der Zieh-Animation (Doppeltipp, Ungeduld) zieht keine weitere Karte; erst mit der neuen Sicht leuchtet der Stapel wieder
+# (freies Ziehen bleibt nach der Strafe erlaubt). Der Tipp auf die Strafe trägt pen.
+func pile_double_tap_test() -> void:
+	var cfg := RuleConfig.new()
+	cfg.stacking = "same"
+	cfg.penalty_turn = "play"
+	var ts := await make_table(cfg, 3, {"hands": [["hell_gelb_3", "hell_gelb_4"], ["hell_blau_1", "hell_blau_2"],
+		["hell_rot_plus1", "hell_gelb_9"]], "top": "hell_rot_5", "current": 2,
+		"draw": ["hell_blau_4", "hell_gruen_6", "hell_blau_8", "hell_gruen_1", "hell_blau_9", "hell_gruen_2"]})
+	var g := game_of(ts)
+	var tv := ts.table
+	var deadline := Time.get_ticks_msec() + 15000
+	while not (g.current_seat() == 0 and not g.pending.is_empty()) and Time.get_ticks_msec() < deadline:
+		(ts.source as LocalTable).pump()
+		await frames(1)
+	await settle(ts)
+	check(g.current_seat() == 0 and not g.pending.is_empty(), "Doppeltipp: Strafe liegt auf Platz 0")
+	check(TableView.draw_action(tv.view, 0).get("pen") == true, "Doppeltipp: Zieh-Tipp auf die Strafe trägt pen")
+	var before := (g.hands[0] as Array).size()
+	var p := tv.get_global_transform().affine_inverse() * (tv._world.get_global_transform() * tv._draw_pos)
+	check(tv._pile.highlight, "Doppeltipp: Stapel leuchtet vor dem ersten Tipp")
+	check(tv._tap(p), "Doppeltipp: erster Tipp zieht")
+	check(tv.draw_pending() and not tv._pile.highlight, "Doppeltipp: Tipp unterwegs, Stapel leuchtet nicht mehr")
+	check(tv._tap(p), "Doppeltipp: zweiter Tipp wird verschluckt")
+	await frames(2)
+	tv._tap(p)
+	await settle(ts)
+	check((g.hands[0] as Array).size() == before + 1, "Doppeltipp: genau 1 Strafkarte (%d → %d)" % [before, (g.hands[0] as Array).size()])
+	check(g.current_seat() == 0 and g.phase() == "turn", "Doppeltipp: danach weiter am Zug (Hausregel)")
+	check(not tv.draw_pending() and tv._pile.highlight, "Doppeltipp: neue Sicht – Stapel wieder antippbar")
+	check(not TableView.draw_action(tv.view, 0).has("pen"), "Doppeltipp: freies Ziehen ohne pen")
+	check(tv._tap(p), "Doppeltipp: freies Ziehen geht danach wie bisher")
+	await settle(ts)
+	check((g.hands[0] as Array).size() == before + 2, "Doppeltipp: freiwillig 1 gezogen (%d)" % (g.hands[0] as Array).size())
 	await close_table(ts)

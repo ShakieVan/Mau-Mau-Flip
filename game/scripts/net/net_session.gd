@@ -764,7 +764,9 @@ func _on_message(conn: int, text: String) -> void:
 			if msg.t == "back" and not running:
 				send_to(id, lobby_message())       # voller Stand der Lobby (in der Partie schickt die Spielsteuerung „state“)
 		"log":
-			_log("Gast %d „%s“: %s" % [id, players[id].name, str(msg.text).left(300)])
+			var zeile := "Gast %d „%s“: %s" % [id, players[id].name, str(msg.text).left(300)]
+			_log(zeile)
+			print(zeile)   # Beta 1.6.15: auch ins Systemprotokoll (adb logcat -s godot), z. B. die Tempo-Zeilen des Browsers
 		_:
 			message.emit(id, msg)
 

@@ -20,7 +20,9 @@
   // Beta 1.6.6: dazu das Furzkissen (furzkissen = audio/entwurf/ostereier/furzkissen_02, Nutzerwahl)
   // Beta 1.6.11: fünfte Reaktion „Bäää“ (baeh, gewählt: audio/entwurf/ostereier/baeh_05, Prusten)
   // Beta 1.6.13: sechste und siebte Reaktion „Heulen“ (heulen) und „Facepalm“ (facepalm): Aufnahmen des Nutzers, +6 Halbtöne (nur6, tools/make_reaktion_aufnahmen.py)
-  const NECK_TOENE = ['schnarchen', 'wecker', 'papier_wurf', 'papier_plopp', 'lachen', 'schreck', 'klatschen', 'daumen', 'furzkissen', 'baeh', 'heulen', 'facepalm'];
+  // Beta 1.6.15: Reaktionen „Nachdenken“ (hmm) und „Küsschen“ (kuss): Aufnahmen des Nutzers, +6 Halbtöne (nur6, tools/make_reaktion_aufnahmen.py);
+  // „Schnarchen“ (😴) nimmt schnarchen
+  const NECK_TOENE = ['schnarchen', 'wecker', 'papier_wurf', 'papier_plopp', 'lachen', 'schreck', 'klatschen', 'daumen', 'furzkissen', 'baeh', 'heulen', 'facepalm', 'hmm', 'kuss'];
   const JUBEL = ['jubel_1', 'jubel_2'];   // „sieg“ wählt zufällig eine der beiden Jubel-Aufnahmen (sonst synthetischer Ersatz)
   // Pegel je Stufe: Die Aufnahmen sind auf −1 dBTP ausgesteuert und verdichtet → „normal“ = volle Lautstärke (Handy-Lautsprecher)
   const STUFEN_MAU = { aus: 0, leise: 0.4, normal: 1.0 };
@@ -72,6 +74,9 @@
   function setzeToene(s) { stufeSpiel = STUFEN_SPIEL[s] !== undefined ? s : 'normal'; _pegel(); }     // Spieltöne
   function setzeStumm(an) { stumm = !!an; _pegel(); }
 
+  // Beta 1.6.15 (Browser-Tempo): Version des Gastgebers an den Dateinamen (?v=…), dann liefert er sie „immutable“ (wie die Kartenbilder)
+  let verQ = '';
+  function setzeVersion(v) { verQ = v ? '?v=' + encodeURIComponent(String(v)) : ''; }
   // Klangdateien aus sfx/. Je Eintrag erst die Endung, die der Browser sicher kann (m4a/AAC für Safari, sonst ogg), dann die andere.
   function ladeDateien() {
     if (!window.fetch || location.protocol === 'file:') return Promise.resolve([]);
@@ -84,7 +89,7 @@
         if (p && p.catch) p.catch(() => ok(null));
       } catch (e) { ok(null); }
     });
-    const lade = datei => fetch('sfx/' + datei).then(r => (r.ok ? r.arrayBuffer() : null)).then(ab => (ab ? dekodiere(ab) : null)).catch(() => null);
+    const lade = datei => fetch('sfx/' + datei + verQ).then(r => (r.ok ? r.arrayBuffer() : null)).then(ab => (ab ? dekodiere(ab) : null)).catch(() => null);
     const reihe = datei => {
       const m = /^(.*)\.(m4a|ogg)$/i.exec(datei);
       if (!m) return [datei];
@@ -276,7 +281,7 @@
   }
 
   M.Ton = {
-    freischalten, wecken, spiele, stoppe, setzeStufe, setzeToene, setzeStumm, pruefe, istMau,
+    freischalten, wecken, spiele, stoppe, setzeStufe, setzeToene, setzeStumm, pruefe, istMau, setzeVersion,
     geladen() { return ladeVersprechen || Promise.resolve([]); },
     get stufe() { return stufeMau; }, get toene() { return stufeSpiel; }, get stumm() { return stumm; },
     get bereit() { return !!ctx; }, get dateien() { return Object.keys(dateien); }, get zaehler() { return zaehler; },

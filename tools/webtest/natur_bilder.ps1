@@ -7,8 +7,9 @@
 # Aufruf: powershell -NoProfile -File tools\webtest\natur_bilder.ps1 [-Nur marienkaefer,eule] [-Stand 1611] [-Anteil 0.45]
 #         [-Zeiten 0.1,0.45,0.95] (mehrere Zeitpunkte: Zusatz _t10, _t45, …) [-Ruhig] (Effekte reduziert, nur ruhige; Zusatz _ruhig)
 #         [-Gegner 3] [-Seed 7] [-Breite 844 -Hoehe 390] [-OhneDesktop] [-Ziel Ordner] (Standard docs\module)
+#         [-TippNach 0.3] (1.6.15: nach dem Start ein Tipp auf die Mitte der Hülle, dann so viele Sekunden weiter; Zusatz _tipp)
 param([string]$Nur = '', [string]$Stand = '1611', [double]$Anteil = 0.45, [string]$Zeiten = '', [switch]$Ruhig, [int]$Gegner = 3,
-    [int]$Seed = 7, [int]$Breite = 844, [int]$Hoehe = 390, [switch]$OhneDesktop, [string]$Ziel = '')
+    [int]$Seed = 7, [int]$Breite = 844, [int]$Hoehe = 390, [switch]$OhneDesktop, [string]$Ziel = '', [double]$TippNach = -1)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 $cdp = Join-Path $PSScriptRoot 'cdp.ps1'
@@ -21,7 +22,7 @@ if ($a -lt 0 -or $b -lt $a) { throw 'natur.js: Tabelle zwischen /*NATUR-DATEN*/ 
 $daten = $js.Substring($a + 15, $b - $a - 15) | ConvertFrom-Json
 $auswahl = @($Nur.Split(',') | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 $anteile = @(if ($Zeiten) { $Zeiten.Split(',') | ForEach-Object { [double]::Parse($_.Trim(), [Globalization.CultureInfo]::InvariantCulture) } } else { $Anteil })
-$desktopIds = @('regenbogen', 'polarlicht', 'ufo')
+$desktopIds = @('regenbogen', 'polarlicht', 'ufo', 'strand', 'feuerwerk')
 $warte = "!!(window.MMF && MMF.Natur && MMF.App && MMF.App.tisch && MMF.App.tisch.v && document.querySelector('#natur-mitte'))"
 $inv = [Globalization.CultureInfo]::InvariantCulture
 foreach ($e in $daten.ereignisse) {
@@ -37,8 +38,13 @@ foreach ($e in $daten.ereignisse) {
             $zusatz = $f.zusatz
             if ($anteile.Count -gt 1) { $zusatz += '_t' + [Math]::Round($an * 100) }
             if ($Ruhig) { $zusatz += '_ruhig' }
+            $tipp = ''
+            if ($TippNach -ge 0) {
+                $zusatz += '_tipp'
+                $tipp = "const c=MMF.Natur.current,h=MMF.Natur.huelle();if(c&&h&&c.inst.tipp){c.inst.tipp({x:h.x+h.w/2,y:h.y+h.h/2});MMF.Natur._seek(c,c.t+$($TippNach.ToString($inv)))}"
+            }
             $reduziert = if ($Ruhig) { "MMF.App.einstellungen.effekte='reduziert';document.body.classList.add('reduziert');" } else { '' }
-            $pre = "setTimeout(()=>{try{${reduziert}MMF.Natur.zeige('$id',{seed:$Seed,anteil:$($an.ToString($inv)),stehen:true})}catch(e){console.error(e)}},700);"
+            $pre = "setTimeout(()=>{try{${reduziert}MMF.Natur.zeige('$id',{seed:$Seed,anteil:$($an.ToString($inv)),stehen:true});${tipp}}catch(e){console.error(e)}},700);"
             $datei = Join-Path $out "optik_$($Stand)_lite_natur_$id$zusatz.png"
             & $cdp -Url ($seite + $q) -Out $datei -Width $f.w -Height $f.h -Scale 2 -Mobile -WaitExpr $warte -Pre $pre -WaitMs 1200 -TimeoutMs 30000 `
                 -Eval "JSON.stringify({gezeigt: MMF.Natur.current ? MMF.Natur.current.id : '', t: MMF.Natur.current ? +MMF.Natur.current.t.toFixed(2) : 0, fehler: MMF.App.fehler})"

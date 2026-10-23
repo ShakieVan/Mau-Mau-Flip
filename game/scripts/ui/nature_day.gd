@@ -14,11 +14,15 @@ extends RefCounted
 #   regenbogen    nach Flip zu Tag: Bogen über dem Tisch, wächst von links; ruhig: nur Deckkraft
 #   heissluftballon  ferner Himmel: schwebt quer, Brenner flackert; Tipp: Brenner flammt auf, steigt davon
 #   schnecke      bei Trödlern: kriecht am Band Richtung Platz, Schleimspur; Tipp: zieht sich ein und kommt wieder
+#   hoppelhase    (1.6.15) hüpft vorn am Plattformrand von einer Seite zur anderen, Pausen mit Ohrenzucken und Männchen; Tipp:
+#                 Schreck-Sprung, dann schnell davon
+#   strand        (1.6.15) Ecke unten rechts (hinter Hand und Mau-Knopf): Welle bringt einen Sandstrand, eine Palme wächst und wiegt
+#                 sich, eine große Welle spült alles weg; Tipp auf die Palme: schüttelt sich, eine Kokosnuss fällt
 # Alles selbst gezeichnet (Polygone, Bögen, Linien; Stil „Papier & Neon“: Tusche-Kontur INK, kräftige Farben), kein Ton, kein Text.
 # Pose nur aus Samen und Zeit (pose_at), Reaktionen ab tap_at, schneller Abgang ab leave_at.
 
 const IDS := ["marienkaefer", "biene", "libelle", "pusteblume", "papierflieger", "seifenblasen", "spatz", "wolke", "regenbogen",
-	"heissluftballon", "schnecke"]
+	"heissluftballon", "schnecke", "hoppelhase", "strand"]
 
 
 static func make(id: String) -> NatureCreature:
@@ -45,6 +49,10 @@ static func make(id: String) -> NatureCreature:
 			return Heissluftballon.new()
 		"schnecke":
 			return Schnecke.new()
+		"hoppelhase":
+			return Hoppelhase.new()
+		"strand":
+			return Strand.new()
 	return null
 
 
@@ -2203,3 +2211,630 @@ class Schnecke extends Day:
 		draw_arc(hc, 10.5, 0.0, TAU, 32, INK, 1.4, true)
 		draw_arc(hc + Vector2(-1.5, -1.5), 7.2, PI * 1.05, PI * 1.45, 8, Color(1, 1, 1, 0.55), 1.6, true)
 		reset_xf()
+
+
+# ================================================================================ 12 Hoppelhase (1.6.15)
+
+# Nutzerwunsch 23.10.2026: „Ein Hoppelhase hüpft durch das Bild“. Kommt von der Seite auf den Plattformrand gehüpft, hoppelt vorn am
+# Rand entlang zur anderen Seite (Hüpfer mit Ducken, Strecken und Landen), hält zweimal an (Ohren zucken, Näschen, einmal Männchen) und
+# hüpft dort hinaus. Antippen: großer Schreck-Sprung, danach schnell davon. Seitenansicht wie der Spatz, Ursprung an den Füßen.
+class Hoppelhase extends Day:
+	const FUR := Color("#D3AE87")
+	const FUR_D := Color("#B38B64")
+	const BELLY := Color("#F8EDDC")
+	const EAR_IN := Color("#F5A9BC")
+	const NOSE := Color("#EE7499")
+	const BLUSH := Color(1.0, 0.55, 0.68, 0.38)
+	const QUER := 0.62
+	const HOP_S := 0.42              # ein Hüpfer: Ducken, Flug, Landen
+	const SCARE_S := 0.55            # Schreck-Sprung
+	const FLEE_S := 0.3              # schnelle Hüpfer danach
+	var bt: Dictionary = {}          # Weg auf dem Band von der Startseite über vorn zur anderen Seite (band_track)
+	var acts: Array = []             # [t0, t1, art, p0, p1, extra]  art: hop | rest | pause (extra: "ohren" | "maennchen")
+	var hop_len := 46.0
+	var enter_v := Vector2.LEFT      # nach außen am Start (Einhüpfen)
+	var exit_v := Vector2.RIGHT      # nach außen am Ende (Hinaushüpfen)
+	var t_fade := 8.0                # ab hier blendet er beim Hinaushüpfen aus
+	var tap_p := Vector2.ZERO
+	var tap_dir := Vector2.RIGHT
+	# Pose
+	var pos := Vector2.ZERO
+	var ground := Vector2.ZERO
+	var face := 1.0
+	var tilt := 0.0
+	var sx := 1.0
+	var sy := 1.0
+	var hop_h := 0.0
+	var ear := 0.0                   # Ohren: + nach hinten (Flug), − steil hoch (Schreck)
+	var twitch := 0.0
+	var sit := 0.0                   # Männchen 0 … 1
+	var sniff := 0.0
+	var scared := 0.0
+
+	static func _eo(u: float) -> float:
+		var v := clampf(u, 0.0, 1.0)
+		return 1.0 - (1.0 - v) * (1.0 - v)
+
+	static func _bmp(u: float) -> float:
+		return sin(PI * clampf(u, 0.0, 1.0))
+
+	func setup(c: Dictionary) -> void:
+		s = 1.25 * k()
+		own_leave = false
+		var o: Variant = c.get("ort")
+		var deg := float((o as Dictionary).get("deg", 140.0)) if o is Dictionary else 140.0
+		var he := Vector2(20, 20) * s
+		# Weg wählen: von einer Seite vorn herum zur anderen; die Seite des Ankers zuerst, sonst die freiere
+		var best := INF
+		var a0 := 168.0
+		var a1 := 12.0
+		for st in [170.0, 164.0, 158.0, 10.0, 16.0, 22.0]:
+			for en in [10.0, 16.0, 22.0, 28.0]:
+				var s0 := float(st)
+				var e0 := float(en) if s0 > 90.0 else 180.0 - float(en)
+				var cost := 0.0
+				for m in 16:
+					var p := band(lerpf(s0, e0, (float(m) + 0.5) / 16.0), QUER)
+					cost += covered(box(p + Vector2(0, -18) * s, he))
+				cost /= 16.0
+				cost += (0.0 if (s0 > 90.0) == (deg > 90.0) else 0.04) + absf(absf(e0 - s0) - 160.0) * 0.0004 + rng.randf() * 0.01
+				if cost < best:
+					best = cost
+					a0 = s0
+					a1 = e0
+		bt = band_track(a0, a1, QUER)
+		var L := float(bt["len"])
+		var C: Vector2 = c.get("center", table_size() * Vector2(0.5, 0.445))
+		var p_start := along(bt, 0.0)
+		var p_end := along(bt, L)
+		enter_v = (p_start - C).normalized()
+		exit_v = (p_end - C).normalized()
+		# Hüpfer und Pausen in die Dauer der Tabelle einpassen
+		var pause_t := [rng.randf_range(1.1, 1.5), rng.randf_range(1.0, 1.4)]
+		var rest_t := 0.1
+		var avail := dur - 3.0 * HOP_S - float(pause_t[0]) - float(pause_t[1])
+		var n := maxi(6, int(avail / (HOP_S + rest_t)))
+		hop_len = clampf(L / float(n), 34.0 * k(), 72.0 * k())
+		n = maxi(3, int(ceil(L / hop_len)))
+		hop_len = L / float(n)
+		# Pausen nach etwa einem Drittel und zwei Dritteln, an einer gut sichtbaren Stelle
+		var pause_at: Array = []
+		for f in [0.33, 0.68]:
+			var bi := clampi(int(round(float(n) * float(f))), 1, n - 1)
+			for dj in [0, 1, -1, 2, -2]:
+				var j := clampi(bi + int(dj), 1, n - 1)
+				if covered(box(along(bt, hop_len * j) + Vector2(0, -18) * s, he)) < 0.2:
+					bi = j
+					break
+			pause_at.append(bi)
+		var tt := 0.0
+		var p_in := p_start + enter_v * 52.0 * k()
+		acts.append([tt, tt + HOP_S, "hop", p_in, p_start, ""])
+		tt += HOP_S
+		var d := 0.0
+		for i in n:
+			acts.append([tt, tt + rest_t, "rest", along(bt, d), along(bt, d), ""])
+			tt += rest_t
+			acts.append([tt, tt + HOP_S, "hop", along(bt, d), along(bt, d + hop_len), ""])
+			tt += HOP_S
+			d += hop_len
+			var pz := pause_at.find(i + 1)
+			if pz >= 0:
+				acts.append([tt, tt + float(pause_t[pz]), "pause", along(bt, d), along(bt, d), "maennchen" if pz == 0 else "ohren"])
+				tt += float(pause_t[pz])
+		var p_out := p_end + exit_v * 54.0 * k()
+		acts.append([tt, tt + rest_t, "rest", p_end, p_end, ""])
+		tt += rest_t
+		acts.append([tt, tt + HOP_S, "hop", p_end, p_out, ""])
+		tt += HOP_S
+		acts.append([tt, tt + HOP_S, "hop", p_out, p_out + exit_v * 54.0 * k(), ""])
+		t_fade = tt
+		tt += HOP_S
+		dur = tt
+		in_s = HOP_S
+		out_s = HOP_S * 2.0 + rest_t
+
+	func _act(tb: float) -> Array:
+		for a in acts:
+			if tb < float(a[1]):
+				return a
+		return acts[acts.size() - 1]
+
+	# Hüpfer von p0 nach p1, u = 0 … 1: Ducken (bis 0,18), Flug, Landen (ab 0,82)
+	func _hop(p0: Vector2, p1: Vector2, u: float, h: float) -> void:
+		var dv := p1 - p0
+		face = 1.0 if dv.x >= 0.0 else -1.0
+		var slope := clampf(atan2(dv.y * face, absf(dv.x) + 0.001), -0.45, 0.45)
+		if u < 0.18:
+			var w := u / 0.18
+			ground = p0
+			hop_h = 0.0
+			sy = 1.0 - 0.2 * sin(PI * 0.5 * w)
+			sx = 1.0 + 0.12 * sin(PI * 0.5 * w)
+			tilt = slope + 0.06 * w
+			ear = 0.15 * w
+		elif u < 0.82:
+			var v := (u - 0.18) / 0.64
+			var e := smoothstep(0.0, 1.0, v)
+			ground = p0.lerp(p1, e)
+			hop_h = h * sin(PI * v)
+			sy = 1.0 + 0.16 * pow(1.0 - v, 2.0) + 0.06 * pow(v, 3.0)
+			sx = 1.0 / sqrt(sy)
+			tilt = slope - 0.3 * cos(PI * v)
+			ear = 0.15 + 0.45 * sin(PI * v)
+		else:
+			var w := (u - 0.82) / 0.18
+			ground = p1
+			hop_h = 0.0
+			sy = 1.0 - 0.16 * sin(PI * w)
+			sx = 1.0 + 0.1 * sin(PI * w)
+			tilt = slope * (1.0 - 0.3 * w)
+			ear = 0.3 * (1.0 - w)
+
+	func _base(tb: float) -> void:
+		sx = 1.0
+		sy = 1.0
+		hop_h = 0.0
+		ear = 0.0
+		twitch = 0.0
+		sit = 0.0
+		sniff = 0.0
+		var a := _act(tb)
+		var u := clampf((tb - float(a[0])) / maxf(float(a[1]) - float(a[0]), 1e-4), 0.0, 1.0)
+		var p0: Vector2 = a[3]
+		var p1: Vector2 = a[4]
+		match str(a[2]):
+			"hop":
+				_hop(p0, p1, u, 0.42 * hop_len + 6.0 * k())
+			_:
+				ground = p0
+				var nxt := acts.find(a) + 1
+				var q: Vector2 = (acts[nxt][4] as Vector2) if nxt < acts.size() else p0 + exit_v
+				var dv := q - p0
+				face = 1.0 if dv.x >= 0.0 else -1.0
+				tilt = clampf(atan2(dv.y * face, absf(dv.x) + 0.001), -0.45, 0.45)
+				if str(a[2]) == "pause":
+					var lt := tb - float(a[0])
+					var len_t := float(a[1]) - float(a[0])
+					sniff = 1.0
+					if str(a[5]) == "maennchen":
+						sit = smoothstep(0.0, 0.25, lt) * (1.0 - smoothstep(len_t - 0.25, len_t, lt))
+						twitch = 0.35 * sin(lt * 22.0) * _bmp((lt - 0.4) / 0.35)
+					else:
+						twitch = 0.4 * sin(lt * 24.0) * (_bmp((lt - 0.15) / 0.3) + _bmp((lt - 0.7) / 0.3))
+		pos = ground - Vector2(0.0, hop_h)
+
+	func pose_at(tt: float) -> void:
+		scared = 0.0
+		var tp := since_tap(tt)
+		var tb := tt if tp < 0.0 else tap_at
+		_base(tb)
+		alpha = minf(clampf(tt / (HOP_S * 0.7), 0.0, 1.0), 1.0 - ramp(tt, t_fade, t_fade + HOP_S))
+		if tp >= 0.0:
+			# Schreck: steil hoch, Ohren aufgestellt; danach schnelle, weite Hüpfer davon
+			face = 1.0 if tap_dir.x >= 0.0 else -1.0
+			if tp < SCARE_S:
+				var u := tp / SCARE_S
+				ground = tap_p
+				hop_h = 66.0 * k() * sin(PI * u)
+				sy = 1.18 - 0.18 * u if u < 0.5 else 1.0 + 0.1 * sin(PI * (u - 0.5) * 2.0)
+				sx = 1.0 / sqrt(sy)
+				tilt = -0.35 * sin(PI * u) + 0.12 * sin(u * 40.0) * (1.0 - u)
+				ear = -0.55 * _bmp(u * 1.4)
+				scared = _bmp(u * 1.2)
+			else:
+				var k2 := tp - SCARE_S
+				var i := int(k2 / FLEE_S)
+				var u := fmod(k2, FLEE_S) / FLEE_S
+				var step := tap_dir * hop_len * 1.5
+				var p0 := tap_p + step * float(i)
+				_hop(p0, p0 + step, u, 0.5 * hop_len + 8.0 * k())
+				face = 1.0 if tap_dir.x >= 0.0 else -1.0
+				ear = 0.6
+			pos = ground - Vector2(0.0, hop_h)
+			alpha = 1.0 - ramp(tp, SCARE_S + FLEE_S * 1.2, SCARE_S + FLEE_S * 3.0)
+			if tt < HOP_S:
+				alpha *= clampf(tt / (HOP_S * 0.7), 0.0, 1.0)
+
+	func on_tap(_p: Vector2) -> void:
+		_base(tap_at)
+		tap_p = ground
+		var a := _act(tap_at)
+		var p0: Vector2 = a[3]
+		var p1: Vector2 = a[4]
+		var dv := p1 - p0
+		if dv.length() < 1.0:
+			dv = Vector2(face, 0.0)
+		tap_dir = dv.normalized()
+		dur = tap_at + SCARE_S + FLEE_S * 3.0 + 0.05
+		pose_at(t)
+
+	func bounds() -> Rect2:
+		if alpha <= 0.01:
+			return Rect2()
+		return box(pos + Vector2(0.0, -19.0) * s, Vector2(21.0, 21.0) * s)
+
+	func _draw() -> void:
+		if alpha <= 0.003:
+			return
+		shadow(ground + Vector2(0.0, 1.5) * s, 15.0 * s * (1.0 - clampf(hop_h / (90.0 * s), 0.0, 0.45)), 3.6 * s,
+			0.15 * (1.0 - clampf(hop_h / (60.0 * s), 0.0, 0.6)))
+		draw_set_transform(pos, tilt - 0.5 * sit, Vector2(s * face * sx, s * sy))
+		# Schwänzchen (Wattebausch)
+		draw_circle(Vector2(-15.0, -12.0), 5.4, BELLY)
+		draw_circle(Vector2(-17.0, -14.0), 2.6, Color.WHITE)
+		draw_arc(Vector2(-15.0, -12.0), 5.4, 0.0, TAU, 18, INK, 1.2, true)
+		# fernes Ohr
+		var ear_a := -1.83 + ear - 0.25 * sit
+		wing(Vector2(6.5, -28.0), 16.0, 7.0, ear_a - 0.12, FUR_D, INK, 1.2)
+		# Hinterlauf und Fuß
+		ellipse_outlined(Vector2(-7.0, -8.0), 8.6, 7.4, FUR_D, INK, 1.3, -0.2, 20)
+		ellipse_outlined(Vector2(-4.0 + 2.0 * sit, -1.8), 9.2, 3.0, FUR, INK, 1.2, 0.0, 18)
+		# Körper mit Bauch
+		ellipse_outlined(Vector2(-1.0, -12.5), 13.5, 10.5, FUR, INK, 1.4, -0.2, 28)
+		poly_ellipse(Vector2(5.0, -9.0), 6.4, 5.2, BELLY, -0.3, 18)
+		ellipse_outlined(Vector2(-6.5, -10.0), 7.6, 6.4, FUR_D, Color(0, 0, 0, 0), 1.0, -0.2, 18)
+		draw_arc(Vector2(-6.5, -10.0), 7.6, PI * 1.1, PI * 1.85, 10, ca(INK, 0.55), 1.1, true)
+		# Vorderpfote (beim Männchen angezogen)
+		var paw := Vector2(8.0, -1.8).lerp(Vector2(10.5, -9.0), sit)
+		ellipse_outlined(paw, 3.3, 2.3, FUR, INK, 1.1, 0.0, 14)
+		# Kopf (groß und rund), Schnäuzchen, Bäckchen
+		ellipse_outlined(Vector2(10.5, -21.0), 9.8, 9.2, FUR, INK, 1.4, 0.0, 28)
+		poly_ellipse(Vector2(16.4, -17.8), 4.8, 3.6, BELLY, 0.0, 16)
+		draw_circle(Vector2(13.6, -16.8), 2.7, BLUSH)
+		# Auge (beim Schreck groß und rund)
+		var er := 2.4 + 0.8 * scared
+		poly_ellipse(Vector2(13.4, -22.8), er * 0.92, er * 1.18, INK, 0.0, 16)
+		draw_circle(Vector2(14.2, -23.9), 0.95 + 0.2 * scared, Color.WHITE)
+		draw_circle(Vector2(12.9, -21.7), 0.45, ca(Color.WHITE, 0.8))
+		# Näschen (schnuppert) und Schnurrhaare
+		var nz := Vector2(20.6, -19.2) + Vector2(0.0, 0.5 * sin(t * 30.0)) * sniff
+		draw_circle(nz, 1.6, NOSE)
+		for wy in [-0.8, 1.4]:
+			draw_line(Vector2(18.0, -18.0 + float(wy) * 0.5), Vector2(24.5, -19.0 + float(wy)), ca(INK, 0.45), 0.7, true)
+		# nahes Ohr mit rosa Innenseite (zuckt)
+		var ea := -1.62 + ear + twitch - 0.2 * sit
+		wing(Vector2(9.0, -28.6), 17.0, 7.6, ea, FUR, INK, 1.3)
+		wing(Vector2(9.3, -30.2), 12.5, 3.6, ea, EAR_IN)
+		reset_xf()
+
+
+# ================================================================================ 13 Strand mit Palme (1.6.15)
+
+# Nutzerwunsch 23.10.2026: „In der unteren rechten Ecke kommt mit einer Welle für ein paar Sekunden ein Strand ins Bild und eine Palme
+# wächst“. Eine Welle rollt aus der Ecke herein und lässt beim Zurückweichen einen kleinen Sandstrand zurück (Meer bleibt in der Ecke,
+# kleine Wellen lecken am Ufer); eine Palme wächst Stück für Stück, die Wedel entfalten sich, sie wiegt sich; am Ende spült eine große
+# Welle alles weg. Ebene hinten: Hand und Mau-Knopf (rechts 46, unten 40, 150 × 150) liegen darüber. Die Palme steht zwischen der Hand
+# (höchstens bis W − 270) und dem Mau-Knopf (ab W − 196), ihre Krone über dem Knopf. Antippen der Palme: sie schüttelt sich kräftig,
+# eine Kokosnuss fällt.
+class Strand extends Day:
+	const SEA := Color("#2FBFD2")
+	const SEA_HI := Color("#86E6EF")
+	const FOAM := Color("#FFFFFF")
+	const SAND := Color("#F3CC86")
+	const SAND_D := Color("#D9A85E")
+	const WET := Color("#D2A061")
+	const TRUNK := Color("#B47D46")
+	const TRUNK_D := Color("#7E5329")
+	const LEAF := Color("#3DBB6A")
+	const LEAF_HI := Color("#5FD486")
+	const LEAF_D := Color("#227F44")
+	const NUT := Color("#7A4A22")
+	const STAR := Color("#FF8A5B")
+	const SHELL := Color("#FFC9D6")
+	const SEGS := 8
+	const T_IN := 1.0                 # Welle rollt herein
+	const T_BACK := 1.8               # Wasser ist zurück an der Meereslinie
+	const SEA_R := 0.5                # Meereslinie (Anteil am Strand)
+	# Wedel: [Winkel (Grad, 0 = rechts, −90 = oben), Länge, Durchhang]
+	const FRONDS := [[-178.0, 86.0, 42.0], [-152.0, 82.0, 24.0], [-124.0, 66.0, 10.0], [-95.0, 56.0, 2.0], [-64.0, 64.0, 8.0],
+		[-36.0, 80.0, 22.0], [-10.0, 86.0, 38.0], [16.0, 72.0, 44.0]]
+	var P := Vector2.ZERO             # Ecke unten rechts
+	var R := Vector2(410, 245)        # Strand (Ellipse um die Ecke)
+	var kk := 1.0
+	var base := Vector2.ZERO          # Fuß der Palme
+	var top := Vector2.ZERO           # Krone
+	var ctrl := Vector2.ZERO
+	var TH := 250.0
+	var star_p := Vector2.ZERO
+	var shell_p := Vector2.ZERO
+	var dots: Array = []              # Sandkörnchen [Winkel, Radius-Anteil]
+	var ph := 0.0
+	var t_wash := 6.0
+	# Pose
+	var sea := 0.0                    # Wasserlinie (Anteil von R)
+	var sand := 0.0                   # Sand (Anteil von R; 0 = keiner)
+	var wet := 0.0                    # nasser Rand (Deckkraft)
+	var grow := 0.0                   # Stamm 0 … 1
+	var leaves := 0.0                 # Wedel 0 … 1
+	var sway := 0.0                   # Neigung der Krone (rad)
+	var palm_a := 0.0
+	var palm_tip := 0.0               # Kippen beim Wegspülen
+	var water_a := 1.0
+	var nut_t := -1.0                 # Zeit seit dem Kokosnuss-Fall (−1 = keiner)
+	var tc := 0.0
+
+	func setup(c: Dictionary) -> void:
+		kk = clampf(k(), 0.9, 1.15)
+		var sz := table_size()
+		var o: Variant = c.get("ort")
+		P = (o as Dictionary).get("pos", sz) if o is Dictionary else sz
+		R = Vector2(410.0, 245.0) * kk
+		# Fuß zwischen Hand und Mau-Knopf (feste Pixel wie TableView.hand_rect / Mau-Knopf)
+		var mau: Rect2 = (o as Dictionary).get("mau", Rect2()) if o is Dictionary else Rect2()
+		var bx := P.x - 233.0
+		if mau.has_area():
+			bx = minf(bx, mau.position.x - 34.0)
+		base = Vector2(bx, P.y - 52.0)
+		TH = 250.0 * minf(kk, 1.05)
+		top = base + Vector2(16.0, -TH)
+		ctrl = base + Vector2(-38.0, -0.55 * TH)
+		# Seestern links vom Palmenfuß (zwischen Hand und Mau-Knopf), Muschel über dem Mau-Knopf
+		star_p = Vector2(base.x - 52.0, P.y - 26.0)
+		shell_p = Vector2(P.x - 128.0, P.y - 212.0 * kk)
+		ph = rng.randf() * TAU
+		for i in 16:
+			dots.append([rng.randf_range(PI * 1.03, PI * 1.47), rng.randf_range(SEA_R + 0.08, 0.95)])
+		in_s = T_IN
+		out_s = 1.7
+		t_wash = dur - out_s
+
+	static func _eo(u: float) -> float:
+		var v := clampf(u, 0.0, 1.0)
+		return 1.0 - (1.0 - v) * (1.0 - v)
+
+	static func _eio(u: float) -> float:
+		return smoothstep(0.0, 1.0, u)
+
+	func pose_at(tt: float) -> void:
+		tc = tt
+		alpha = 1.0
+		water_a = 1.0
+		# Wasserlinie: Welle herein, zurück zur Meereslinie, kleine Wellen, große Welle, ganz zurück
+		if tt < T_IN:
+			sea = 1.08 * _eo(tt / T_IN)
+		elif tt < T_BACK:
+			sea = lerpf(1.08, SEA_R, _eio((tt - T_IN) / (T_BACK - T_IN)))
+		elif tt < t_wash:
+			sea = SEA_R + 0.035 * sin(TAU * (tt - T_BACK) / 1.7) * ramp(tt, T_BACK, T_BACK + 0.4)
+		elif tt < t_wash + 0.7:
+			var s0 := SEA_R + 0.035 * sin(TAU * (t_wash - T_BACK) / 1.7)
+			sea = lerpf(s0, 1.18, _eo((tt - t_wash) / 0.7))
+		else:
+			sea = lerpf(1.18, 0.0, _eio((tt - t_wash - 0.7) / maxf(dur - t_wash - 0.75, 0.1)))
+			water_a = 1.0 - ramp(tt, dur - 0.45, dur)
+		# Sand: wächst unter der ersten Welle, verschwindet unter der großen
+		sand = minf(1.0, sea * 0.96) if tt < T_IN else 1.0
+		if tt > t_wash + 0.55:
+			sand = 0.0
+		wet = (1.0 - ramp(tt, T_BACK, T_BACK + 1.6)) if tt >= T_IN else 0.0
+		# Palme wächst (Stamm Stück für Stück, dann die Wedel), wiegt sich
+		grow = ramp(tt, 1.7, 2.7)
+		leaves = ramp(tt, 2.5, 3.3)
+		palm_a = 1.0 if grow > 0.0 else 0.0
+		sway = 0.05 * sin(TAU * tt / 2.6 + ph) * leaves
+		var st := since_tap(tt)
+		nut_t = -1.0
+		if st >= 0.0:
+			sway += 0.24 * exp(-1.7 * st) * sin(TAU * 1.5 * st)
+			nut_t = st
+		# Wegspülen: die Welle erreicht den Fuß, die Palme kippt und verschwindet
+		var hit_t := t_wash + 0.32
+		if tt > hit_t:
+			var u := clampf((tt - hit_t) / 0.45, 0.0, 1.0)
+			palm_tip = _eio(u)
+			palm_a = 1.0 - u
+		else:
+			palm_tip = 0.0
+
+	# Punkt am Rand der Strand-Ellipse (Winkel th ∈ [π, 1,5π], Anteil r) mit leichtem Wellenrand
+	func _rim(th: float, r: float, wob := 0.025, tt := 0.0) -> Vector2:
+		var w := 1.0 + wob * sin(5.0 * th + ph + tt * 1.3)
+		return P + Vector2(cos(th) * R.x, sin(th) * R.y) * r * w
+
+	func _shape(r: float, wob := 0.025, tt := 0.0) -> PackedVector2Array:
+		var pts := PackedVector2Array()
+		pts.append(P + Vector2(-R.x * r * 1.2 - 20.0, 4.0))
+		for i in 25:
+			pts.append(_rim(PI + PI * 0.5 * float(i) / 24.0, r, wob, tt))
+		pts.append(P + Vector2(4.0, -R.y * r * 1.2 - 20.0))
+		pts.append(P + Vector2(4.0, 4.0))
+		return pts
+
+	func _edge(r: float, wob := 0.025, tt := 0.0) -> PackedVector2Array:
+		var pts := PackedVector2Array()
+		for i in 25:
+			pts.append(_rim(PI + PI * 0.5 * float(i) / 24.0, r, wob, tt))
+		return pts
+
+	# Stamm: Punkt bei Anteil f (0 Fuß … 1 Krone), mit Neigung der Krone und Kippen beim Wegspülen
+	func _trunk(f: float) -> Vector2:
+		var tp := top + Vector2(TH * 0.06 * sin(sway), 0.0)
+		var p := bez2(base, ctrl, tp, f)
+		return base + (p - base).rotated(-0.75 * palm_tip)
+
+	func _crown() -> Vector2:
+		return _trunk(1.0)
+
+	# Wedel i: Punkte der Mittelrippe (entfaltet sich mit leaves, neigt sich mit sway)
+	func _frond(i: int) -> PackedVector2Array:
+		var fd: Array = FRONDS[i]
+		var e := clampf((leaves - float(i) * 0.04) / 0.72, 0.0, 1.0)
+		e = 1.0 - (1.0 - e) * (1.0 - e)
+		var ang := deg_to_rad(lerpf(-90.0, float(fd[0]), e)) + sway * 1.4 - 0.75 * palm_tip
+		var ln := float(fd[1]) * lerpf(0.25, 1.0, e) * minf(kk, 1.05)
+		var droop := float(fd[2]) * e * minf(kk, 1.05)
+		var c0 := _crown()
+		var dv := Vector2.from_angle(ang)
+		var tip := c0 + dv * ln + Vector2(0.0, droop)
+		var cp := c0 + dv * ln * 0.55 + Vector2(0.0, -ln * 0.22 * e)
+		var pts := PackedVector2Array()
+		for j in 9:
+			pts.append(bez2(c0, cp, tip, float(j) / 8.0))
+		return pts
+
+	func _palm_hull() -> Rect2:
+		var u := Rect2(base - Vector2(8, 8), Vector2(16, 12))
+		u = u.expand(_crown())
+		if leaves > 0.0:
+			for i in FRONDS.size():
+				var f := _frond(i)
+				u = u.expand(f[f.size() - 1])
+		return u.grow(6.0)
+
+	func bounds() -> Rect2:
+		if alpha <= 0.0:
+			return Rect2()
+		if grow > 0.25 and palm_a > 0.1:
+			return _palm_hull()
+		var r := maxf(sea, sand)
+		if r <= 0.02 or water_a <= 0.02:
+			return Rect2()
+		var b := Rect2(P - R * r, R * r)
+		return b.intersection(Rect2(Vector2.ZERO, table_size()))
+
+	# Getroffen wird die Palme (sonst nichts)
+	func hit(p: Vector2) -> bool:
+		if modulate.a < 0.05 or grow <= 0.25 or palm_a <= 0.1:
+			return false
+		return _palm_hull().grow(14.0).has_point(p)
+
+	func _draw() -> void:
+		if alpha <= 0.0:
+			return
+		# Sand mit Papierkante, nasser Rand, Körnchen, Seestern und Muschel
+		if sand > 0.02:
+			var sh := _shape(sand)
+			var shadow_pts := PackedVector2Array()
+			for q in sh:
+				shadow_pts.append(q + Vector2(-3.0, -3.0))
+			draw_colored_polygon(shadow_pts, ca(INK, 0.07))
+			draw_colored_polygon(sh, SAND)
+			if wet > 0.0:
+				draw_colored_polygon(_shape(minf(sand, 1.0)), ca(WET, 0.5 * wet))
+			draw_polyline(_edge(sand), ca(INK, 0.5), 1.6, true)
+			for d in dots:
+				var q := _rim(float(d[0]), float(d[1]) * sand, 0.0)
+				draw_circle(q, 1.4, ca(SAND_D, 0.75))
+			if sand >= 0.99:
+				_starfish(star_p, 9.5 * kk)
+				_shell(shell_p, 7.0 * kk)
+		# Meer: helle Uferzone, tieferes Wasser, Schaumkante mit Bläschen
+		if sea > 0.02 and water_a > 0.0:
+			var wob := 0.03
+			draw_colored_polygon(_shape(sea, wob, tc), ca(SEA_HI, 0.95 * water_a))
+			if sea > 0.12:
+				draw_colored_polygon(_shape(sea - 0.07, wob, tc + 0.6), ca(SEA, 0.95 * water_a))
+				draw_polyline(_edge(maxf(sea - 0.18, 0.05), 0.04, tc + 1.7), ca(FOAM, 0.35 * water_a), 2.0, true)
+			draw_polyline(_edge(sea, wob, tc), ca(FOAM, 0.95 * water_a), 4.0 * kk, true)
+			for i in 9:
+				var th := PI + PI * 0.5 * (float(i) + 0.5) / 9.0
+				var q := _rim(th, sea, wob, tc) + Vector2(cos(th), sin(th)) * 3.0
+				draw_circle(q, (2.2 + 1.2 * sin(tc * 3.0 + float(i))) * kk, ca(FOAM, 0.9 * water_a))
+		# Palme
+		if palm_a > 0.0 and grow > 0.0:
+			_palm()
+			_nut_drop()
+
+	func _palm() -> void:
+		var a := palm_a
+		var n_vis := grow * float(SEGS)
+		for j in SEGS:
+			if float(j) >= n_vis:
+				break
+			var pop := clampf(n_vis - float(j), 0.0, 1.0)
+			var f0 := float(j) / float(SEGS)
+			var f1 := (float(j) + pop) / float(SEGS)
+			var p0 := _trunk(f0)
+			var p1 := _trunk(f1)
+			var w0 := lerpf(9.0, 6.0, f0) * kk
+			var w1 := lerpf(9.0, 6.0, f1) * kk * (0.75 + 0.25 * pop)
+			var nv := (p1 - p0).normalized().orthogonal()
+			var seg := PackedVector2Array([p0 + nv * w0, p1 + nv * w1 * 1.12, p1 - nv * w1 * 1.12, p0 - nv * w0])
+			draw_colored_polygon(seg, ca(TRUNK, a))
+			draw_line(p1 + nv * w1 * 1.12, p1 - nv * w1 * 1.12, ca(TRUNK_D, a), 2.0, true)
+			outline_poly(seg, ca(INK, 0.85 * a), 1.3)
+		if leaves <= 0.0:
+			return
+		var c0 := _crown()
+		# Kokosnüsse (eine fällt beim Antippen)
+		var nuts := [Vector2(-6, 8), Vector2(5, 9), Vector2(-1, 14)]
+		for i in nuts.size():
+			if i == 1 and nut_t >= 0.0:
+				continue
+			var q: Vector2 = c0 + (nuts[i] as Vector2).rotated(-0.75 * palm_tip) * kk
+			var na := a * ramp(leaves, 0.5, 0.9)
+			draw_circle(q, 5.6 * kk, ca(NUT, na))
+			draw_arc(q, 5.6 * kk, 0.0, TAU, 14, ca(INK, 0.8 * na), 1.1, true)
+			draw_circle(q + Vector2(-1.8, -1.8) * kk, 1.4 * kk, ca(Color.WHITE, 0.35 * na))
+		# Wedel: Blatt mit gezackter Unterkante (als Vierecke je Abschnitt, damit nichts an der Triangulierung scheitert), Mittelrippe
+		for i in FRONDS.size():
+			var mid := _frond(i)
+			var up := PackedVector2Array()
+			var dn := PackedVector2Array()
+			for j in mid.size():
+				var f := float(j) / float(mid.size() - 1)
+				var tg := (mid[mini(j + 1, mid.size() - 1)] - mid[maxi(j - 1, 0)]).normalized()
+				var nv := tg.orthogonal()
+				var w := 13.0 * kk * sin(PI * minf(f * 1.12, 1.0)) * (0.55 + 0.45 * (1.0 - f))
+				up.append(mid[j] + nv * w * 0.6)
+				var zig := 1.0 if j % 2 == 0 else 0.5
+				dn.append(mid[j] - nv * w * zig)
+			var col := LEAF_HI if i % 2 == 0 else LEAF
+			for j in mid.size() - 1:
+				draw_colored_polygon(PackedVector2Array([mid[j], up[j], up[j + 1], mid[j + 1]]), ca(col, a))
+				draw_colored_polygon(PackedVector2Array([mid[j], mid[j + 1], dn[j + 1], dn[j]]), ca(col.darkened(0.08), a))
+			var leaf := PackedVector2Array()
+			leaf.append_array(up)
+			for j in range(dn.size() - 1, -1, -1):
+				leaf.append(dn[j])
+			draw_polyline(mid, ca(LEAF_D, a), 1.6, true)
+			outline_poly(leaf, ca(INK, 0.85 * a), 1.2)
+
+	func _nut_drop() -> void:
+		if nut_t < 0.0:
+			return
+		var c0 := _crown()
+		var start := c0 + Vector2(5, 9) * kk
+		var ground_y := base.y - 4.0
+		var fall_h := maxf(ground_y - start.y, 1.0)
+		var t_fall := sqrt(2.0 * fall_h / 900.0)
+		var q := start
+		var rot := 0.0
+		if nut_t < t_fall:
+			q.y = start.y + 0.5 * 900.0 * nut_t * nut_t
+		else:
+			var b := nut_t - t_fall
+			var bh := fall_h * 0.12
+			var tb := 0.3
+			q.y = ground_y - (4.0 * bh * (b / tb) * (1.0 - b / tb) if b < tb else 0.0)
+			var roll := clampf((b - 0.05) / 0.7, 0.0, 1.0)
+			q.x += 34.0 * kk * (1.0 - (1.0 - roll) * (1.0 - roll))
+			rot = 34.0 * (1.0 - (1.0 - roll) * (1.0 - roll)) / 5.6
+		var a := palm_a
+		draw_circle(q, 5.6 * kk, ca(NUT, a))
+		draw_arc(q, 5.6 * kk, 0.0, TAU, 14, ca(INK, 0.8 * a), 1.1, true)
+		draw_circle(q + Vector2(-1.8, -1.8).rotated(rot) * kk, 1.4 * kk, ca(Color.WHITE, 0.35 * a))
+
+	func _starfish(c: Vector2, r: float) -> void:
+		var pts := PackedVector2Array()
+		for i in 10:
+			var a := -PI * 0.5 + TAU * float(i) / 10.0 + 0.2
+			pts.append(c + Vector2.from_angle(a) * (r if i % 2 == 0 else r * 0.45))
+		draw_colored_polygon(pts, STAR)
+		outline_poly(pts, ca(INK, 0.8), 1.1)
+		for i in 5:
+			var a := -PI * 0.5 + TAU * float(i) / 5.0 + 0.2
+			draw_circle(c + Vector2.from_angle(a) * r * 0.5, 0.9, Color("#FFE0C8"))
+
+	func _shell(c: Vector2, r: float) -> void:
+		var pts := PackedVector2Array()
+		pts.append(c + Vector2(0, r * 0.55))
+		for i in 9:
+			var a := PI + PI * float(i) / 8.0
+			pts.append(c + Vector2(cos(a) * r, sin(a) * r * 0.8))
+		draw_colored_polygon(pts, SHELL)
+		outline_poly(pts, ca(INK, 0.75), 1.0)
+		for i in 4:
+			var a := PI + PI * (float(i) + 0.5) / 4.0
+			draw_line(c + Vector2(0, r * 0.45), c + Vector2(cos(a) * r * 0.85, sin(a) * r * 0.7), ca(INK, 0.35), 0.8, true)

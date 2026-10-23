@@ -1,5 +1,5 @@
 {
- "stand": "2026-10-18",
+ "stand": "2026-10-23",
  "modell": "OpenMOSS-Team/MOSS-SoundEffect-v2.0",
  "lizenz_modell": "Apache-2.0",
  "skript": "tools/make_ostereier.py",
@@ -1755,6 +1755,120 @@
    },
    "behalten": 8
   },
+  "heulen3": {
+   "titel": "Heulen, Runde 3 (Reaktion 😭)",
+   "ziel_s": [
+    0.8,
+    1.9
+   ],
+   "ziel_lufs": -19.0,
+   "daueransage_s": 1.1,
+   "prompts": {
+    "drama": {
+     "prompt": "a drama queen weeps theatrically, exaggerated loud sobbing with shaky trembling breaths, boo hoo hoo, overacted fake crying, comedic, close-up, quiet room, no words",
+     "seeds": [
+      7231,
+      7232,
+      7233,
+      7234,
+      7235,
+      7236,
+      7237,
+      7238
+     ],
+     "negativ": "baby, infant, newborn, toddler, tantrum, screaming, scream, shriek, laughter, laughing, giggling, speech, words, talking, sentence, singing, music, moaning, groaning, straining, grunting, sexual, animal, dog, wolf, howl, cat, meow, kitten, bird, siren, alarm, whistle, desperate, despair, terror, fear, panic, horror scream, shriek of pain, yelling, howling",
+     "kategorie": "drama",
+     "ziel": [
+      1.0,
+      1.95
+     ],
+     "sekunden": 1.3,
+     "cfg": 6.0
+    },
+    "seifenoper": {
+     "prompt": "melodramatic soap opera weeping, a woman sobs and cries dramatically with a trembling voice, exaggerated tearful crying, sad but theatrical, close-up, no words",
+     "seeds": [
+      7231,
+      7232,
+      7233,
+      7234,
+      7235,
+      7236,
+      7237,
+      7238
+     ],
+     "negativ": "baby, infant, newborn, toddler, tantrum, screaming, scream, shriek, laughter, laughing, giggling, speech, words, talking, sentence, singing, music, moaning, groaning, straining, grunting, sexual, animal, dog, wolf, howl, cat, meow, kitten, bird, siren, alarm, whistle, desperate, despair, terror, fear, panic, horror scream, shriek of pain, yelling, howling",
+     "kategorie": "waeh",
+     "ziel": [
+      1.0,
+      1.95
+     ],
+     "sekunden": 1.2
+    },
+    "blubbern": {
+     "prompt": "a man blubbers and weeps theatrically, exaggerated tearful crying with hiccuping sobs, boo hoo hoo, comedic overacting, close-up, quiet room, no words",
+     "seeds": [
+      7231,
+      7232,
+      7233,
+      7234,
+      7235,
+      7236,
+      7237,
+      7238
+     ],
+     "negativ": "baby, infant, newborn, toddler, tantrum, screaming, scream, shriek, laughter, laughing, giggling, speech, words, talking, sentence, singing, music, moaning, groaning, straining, grunting, sexual, animal, dog, wolf, howl, cat, meow, kitten, bird, siren, alarm, whistle, desperate, despair, terror, fear, panic, horror scream, shriek of pain, yelling, howling",
+     "kategorie": "drama",
+     "ziel": [
+      1.0,
+      1.95
+     ],
+     "sekunden": 1.3
+    },
+    "schluchzer": {
+     "prompt": "exaggerated theatrical sobbing, several loud rhythmic sobs one after another, uh-huh-huh-huh, a person weeps dramatically, tearful, close-up, no words",
+     "seeds": [
+      7231,
+      7232,
+      7233,
+      7234,
+      7235,
+      7236,
+      7237,
+      7238
+     ],
+     "negativ": "baby, infant, newborn, toddler, tantrum, screaming, scream, shriek, laughter, laughing, giggling, speech, words, talking, sentence, singing, music, moaning, groaning, straining, grunting, sexual, animal, dog, wolf, howl, cat, meow, kitten, bird, siren, alarm, whistle, desperate, despair, terror, fear, panic, horror scream, shriek of pain, yelling, howling",
+     "kategorie": "drama",
+     "ziel": [
+      1.0,
+      1.95
+     ],
+     "sekunden": 1.3,
+     "cfg": 6.0
+    },
+    "waeh_frau": {
+     "prompt": "a young woman jokingly whines and cries waaah for a moment, a short melodramatic fake cry, funny, close-up, quiet room, no words",
+     "seeds": [
+      7221,
+      7222,
+      7223,
+      7224,
+      7225,
+      7226,
+      7227,
+      7228
+     ],
+     "negativ": "baby, infant, newborn, toddler, tantrum, screaming, scream, shriek, laughter, laughing, giggling, speech, words, talking, sentence, singing, music, moaning, groaning, straining, grunting, sexual, animal, dog, wolf, howl, cat, meow, kitten, bird, siren, alarm, whistle, desperate, despair, terror, fear, panic, horror scream, shriek of pain, yelling, howling",
+     "kategorie": "waeh",
+     "ziel": [
+      1.0,
+      1.95
+     ],
+     "sekunden": 1.2
+    }
+   },
+   "behalten": 8
+  },
   "facepalm": {
    "titel": "Facepalm (Reaktion 🤦)",
    "ziel_s": [
@@ -1909,6 +2023,369 @@
       1.7
      ],
      "sekunden": 1.0
+    }
+   },
+   "behalten": 8
+  },
+  "facepalm2": {
+   "titel": "Facepalm, Runde 2 (Reaktion 🤦)",
+   "ziel_s": [
+    0.3,
+    1.8
+   ],
+   "ziel_lufs": -19.0,
+   "daueransage_s": 1.0,
+   "prompts": {
+    "aeh": {
+     "prompt": "a hand slaps a forehead, immediately followed by a long deep annoyed voiced aaaah, a low drawn-out exasperated human groan of disbelief, comedic, close-up, dry room, no words",
+     "seeds": [
+      7311,
+      7312,
+      7313,
+      7314,
+      7315,
+      7316,
+      7317,
+      7318
+     ],
+     "negativ": "speech, words, talking, sentence, sexual, moaning in pleasure, laughter, laughing, applause, clapping hands, crowd, cheering, crying, sobbing, screaming, music, singing, cow, cattle, moo, mooing, animal, farm animal, sheep, goat, dog, cat, meow, explosion, gunshot, wet, liquid, splash, toilet, burp, fart",
+     "kategorie": "klatsch_aeh",
+     "ziel": [
+      0.9,
+      1.9
+     ],
+     "sekunden": 1.3
+    },
+    "ugh": {
+     "prompt": "facepalm, one quick flat slap on the forehead and right after it a long low frustrated uuugh, a deep nasal droning human voice, annoyed, funny, close-up, no words",
+     "seeds": [
+      7311,
+      7312,
+      7313,
+      7314,
+      7315,
+      7316,
+      7317,
+      7318
+     ],
+     "negativ": "speech, words, talking, sentence, sexual, moaning in pleasure, laughter, laughing, applause, clapping hands, crowd, cheering, crying, sobbing, screaming, music, singing, cow, cattle, moo, mooing, animal, farm animal, sheep, goat, dog, cat, meow, explosion, gunshot, wet, liquid, splash, toilet, burp, fart",
+     "kategorie": "klatsch_aeh",
+     "ziel": [
+      0.9,
+      1.9
+     ],
+     "sekunden": 1.3
+    },
+    "brummen": {
+     "prompt": "a slap on the forehead followed by a drawn-out low bored human voice, a deep droning annoyed aaaaeh, grumpy and slow, comedic sound effect, close-up, no words",
+     "seeds": [
+      7311,
+      7312,
+      7313,
+      7314,
+      7315,
+      7316,
+      7317,
+      7318
+     ],
+     "negativ": "speech, words, talking, sentence, sexual, moaning in pleasure, laughter, laughing, applause, clapping hands, crowd, cheering, crying, sobbing, screaming, music, singing, cow, cattle, moo, mooing, animal, farm animal, sheep, goat, dog, cat, meow, explosion, gunshot, wet, liquid, splash, toilet, burp, fart",
+     "kategorie": "klatsch_aeh",
+     "ziel": [
+      0.9,
+      1.9
+     ],
+     "sekunden": 1.3,
+     "cfg": 6.0
+    },
+    "genervt": {
+     "prompt": "human vocal sound effect, a smack of a palm on a forehead, then a long deep exasperated nasal aaaah of annoyance, like a grumpy teenager, close-up, dry room, no words",
+     "seeds": [
+      7311,
+      7312,
+      7313,
+      7314,
+      7315,
+      7316,
+      7317,
+      7318
+     ],
+     "negativ": "speech, words, talking, sentence, sexual, moaning in pleasure, laughter, laughing, applause, clapping hands, crowd, cheering, crying, sobbing, screaming, music, singing, cow, cattle, moo, mooing, animal, farm animal, sheep, goat, dog, cat, meow, explosion, gunshot, wet, liquid, splash, toilet, burp, fart",
+     "kategorie": "klatsch_aeh",
+     "ziel": [
+      0.9,
+      1.9
+     ],
+     "sekunden": 1.3,
+     "cfg": 6.0
+    }
+   },
+   "behalten": 8
+  },
+  "hmm": {
+   "titel": "Nachdenken „Hmmm“ (Reaktion 🤔)",
+   "ziel_s": [
+    0.7,
+    1.95
+   ],
+   "ziel_lufs": -19.0,
+   "daueransage_s": 1.1,
+   "prompts": {
+    "denken": {
+     "prompt": "a person thinks hard and goes hmmm with the mouth closed, one thoughtful hummed hmm that starts high and slowly glides down in pitch, pondering, close-up, dry room, no words",
+     "seeds": [
+      7401,
+      7402,
+      7403,
+      7404,
+      7405,
+      7406
+     ],
+     "negativ": "speech, words, talking, sentence, singing, song, melody, music, musical instrument, moaning, groaning, grunting, straining, sexual, pleasure, sigh, laughter, laughing, giggling, crying, animal, cat, meow, purr, dog, cow, moo, bee, buzzing, engine, motor, electrical hum, siren, whistle",
+     "kategorie": "fallend",
+     "ziel": [
+      0.7,
+      1.6
+     ],
+     "sekunden": 1.1
+    },
+    "denken_mann": {
+     "prompt": "a man ponders a tricky decision, a single voiced hmmm through the nose, high at the start and falling lower at the end, skeptical and curious, close-up, quiet room, no words",
+     "seeds": [
+      7401,
+      7402,
+      7403,
+      7404,
+      7405,
+      7406
+     ],
+     "negativ": "speech, words, talking, sentence, singing, song, melody, music, musical instrument, moaning, groaning, grunting, straining, sexual, pleasure, sigh, laughter, laughing, giggling, crying, animal, cat, meow, purr, dog, cow, moo, bee, buzzing, engine, motor, electrical hum, siren, whistle",
+     "kategorie": "fallend",
+     "ziel": [
+      0.7,
+      1.6
+     ],
+     "sekunden": 1.1
+    },
+    "denken_frau": {
+     "prompt": "a woman considers her options, a curious hummed hmmmm with closed lips, the pitch starts high and drifts downward, playful thinking sound, close-up, quiet room, no words",
+     "seeds": [
+      7401,
+      7402,
+      7403,
+      7404,
+      7405,
+      7406
+     ],
+     "negativ": "speech, words, talking, sentence, singing, song, melody, music, musical instrument, moaning, groaning, grunting, straining, sexual, pleasure, sigh, laughter, laughing, giggling, crying, animal, cat, meow, purr, dog, cow, moo, bee, buzzing, engine, motor, electrical hum, siren, whistle",
+     "kategorie": "fallend",
+     "ziel": [
+      0.7,
+      1.6
+     ],
+     "sekunden": 1.1
+    },
+    "gruebeln": {
+     "prompt": "a long drawn-out pondering hmmmmm, a person hums thoughtfully with closed mouth, starting on a higher note and sinking slowly, as if solving a puzzle, close-up, dry room, no words",
+     "seeds": [
+      7401,
+      7402,
+      7403,
+      7404,
+      7405,
+      7406
+     ],
+     "negativ": "speech, words, talking, sentence, singing, song, melody, music, musical instrument, moaning, groaning, grunting, straining, sexual, pleasure, sigh, laughter, laughing, giggling, crying, animal, cat, meow, purr, dog, cow, moo, bee, buzzing, engine, motor, electrical hum, siren, whistle",
+     "kategorie": "lang",
+     "ziel": [
+      1.0,
+      1.95
+     ],
+     "sekunden": 1.5
+    },
+    "comic": {
+     "prompt": "a cartoon character strokes its chin and goes hmmmm, a comedic thoughtful humming sound with a downward pitch glide, human voice, close-up, no words",
+     "seeds": [
+      7401,
+      7402,
+      7403,
+      7404,
+      7405,
+      7406
+     ],
+     "negativ": "speech, words, talking, sentence, singing, song, melody, music, musical instrument, moaning, groaning, grunting, straining, sexual, pleasure, sigh, laughter, laughing, giggling, crying, animal, cat, meow, purr, dog, cow, moo, bee, buzzing, engine, motor, electrical hum, siren, whistle",
+     "kategorie": "comic",
+     "ziel": [
+      0.6,
+      1.6
+     ],
+     "sekunden": 1.0,
+     "cfg": 6.0
+    },
+    "sfx": {
+     "prompt": "human vocal sound effect, a single thinking hmm, closed-mouth hum, high pitch at the beginning falling down at the end, close-up, dry room, no words",
+     "seeds": [
+      7401,
+      7402,
+      7403,
+      7404,
+      7405,
+      7406
+     ],
+     "negativ": "speech, words, talking, sentence, singing, song, melody, music, musical instrument, moaning, groaning, grunting, straining, sexual, pleasure, sigh, laughter, laughing, giggling, crying, animal, cat, meow, purr, dog, cow, moo, bee, buzzing, engine, motor, electrical hum, siren, whistle",
+     "kategorie": "fallend",
+     "ziel": [
+      0.7,
+      1.6
+     ],
+     "sekunden": 1.1,
+     "cfg": 6.0
+    }
+   },
+   "behalten": 8
+  },
+  "kuss": {
+   "titel": "Knutschen (Reaktion 😘)",
+   "ziel_s": [
+    0.15,
+    1.1
+   ],
+   "ziel_lufs": -20.0,
+   "daueransage_s": 0.7,
+   "prompts": {
+    "mwah": {
+     "prompt": "a person blows a loving air kiss, one short smooch with a voiced mwah, lips pressed and released, sweet and playful, close-up, dry room, no words",
+     "seeds": [
+      7501,
+      7502,
+      7503,
+      7504,
+      7505,
+      7506
+     ],
+     "negativ": "speech, words, talking, sentence, wet, slurping, saliva, spit, liquid, splash, chewing, eating, sexual, moaning, groaning, breathing heavily, laughter, laughing, giggling, music, singing, animal, cat, meow, dog, bird, fish, gunshot, explosion, clapping, applause, fart, burp",
+     "kategorie": "mwah",
+     "ziel": [
+      0.3,
+      1.1
+     ],
+     "sekunden": 0.7,
+     "ausblenden": 0.12
+    },
+    "mwah_frau": {
+     "prompt": "a woman blows a kiss, a cute short mwah smooch sound, affectionate and funny, close-up, quiet room, no words",
+     "seeds": [
+      7501,
+      7502,
+      7503,
+      7504,
+      7505,
+      7506
+     ],
+     "negativ": "speech, words, talking, sentence, wet, slurping, saliva, spit, liquid, splash, chewing, eating, sexual, moaning, groaning, breathing heavily, laughter, laughing, giggling, music, singing, animal, cat, meow, dog, bird, fish, gunshot, explosion, clapping, applause, fart, burp",
+     "kategorie": "mwah",
+     "ziel": [
+      0.3,
+      1.1
+     ],
+     "sekunden": 0.7,
+     "ausblenden": 0.12
+    },
+    "schmatz": {
+     "prompt": "a single quick kiss sound, a short dry lip smack smooch, no voice, close-up, dry room",
+     "seeds": [
+      7501,
+      7502,
+      7503,
+      7504,
+      7505,
+      7506
+     ],
+     "negativ": "speech, words, talking, sentence, wet, slurping, saliva, spit, liquid, splash, chewing, eating, sexual, moaning, groaning, breathing heavily, laughter, laughing, giggling, music, singing, animal, cat, meow, dog, bird, fish, gunshot, explosion, clapping, applause, fart, burp",
+     "kategorie": "schmatz",
+     "ziel": [
+      0.15,
+      0.6
+     ],
+     "sekunden": 0.5,
+     "ausblenden": 0.08
+    },
+    "schmatz_wange": {
+     "prompt": "a quick peck on the cheek, one short soft kiss smack, close-up, quiet room, no voice",
+     "seeds": [
+      7501,
+      7502,
+      7503,
+      7504,
+      7505,
+      7506
+     ],
+     "negativ": "speech, words, talking, sentence, wet, slurping, saliva, spit, liquid, splash, chewing, eating, sexual, moaning, groaning, breathing heavily, laughter, laughing, giggling, music, singing, animal, cat, meow, dog, bird, fish, gunshot, explosion, clapping, applause, fart, burp",
+     "kategorie": "schmatz",
+     "ziel": [
+      0.15,
+      0.6
+     ],
+     "sekunden": 0.5,
+     "ausblenden": 0.08
+    },
+    "doppelt": {
+     "prompt": "two quick affectionate kisses, smooch smooch, short lip smacks one after another, playful, close-up, dry room, no voice",
+     "seeds": [
+      7501,
+      7502,
+      7503,
+      7504,
+      7505,
+      7506
+     ],
+     "negativ": "speech, words, talking, sentence, wet, slurping, saliva, spit, liquid, splash, chewing, eating, sexual, moaning, groaning, breathing heavily, laughter, laughing, giggling, music, singing, animal, cat, meow, dog, bird, fish, gunshot, explosion, clapping, applause, fart, burp",
+     "kategorie": "doppelt",
+     "ziel": [
+      0.4,
+      1.1
+     ],
+     "sekunden": 0.8,
+     "ausblenden": 0.1
+    },
+    "comic": {
+     "prompt": "cartoon kiss sound effect, an exaggerated comedic smooch, a loud pucker and a pop, mwah, close-up, no words",
+     "seeds": [
+      7501,
+      7502,
+      7503,
+      7504,
+      7505,
+      7506
+     ],
+     "negativ": "speech, words, talking, sentence, wet, slurping, saliva, spit, liquid, splash, chewing, eating, sexual, moaning, groaning, breathing heavily, laughter, laughing, giggling, music, singing, animal, cat, meow, dog, bird, fish, gunshot, explosion, clapping, applause, fart, burp",
+     "kategorie": "comic",
+     "ziel": [
+      0.3,
+      1.1
+     ],
+     "sekunden": 0.7,
+     "ausblenden": 0.12,
+     "cfg": 6.0
+    },
+    "sfx": {
+     "prompt": "human vocal sound effect, a kiss blown into the air, pucker and mwah, short and cute, close-up, dry room, no words",
+     "seeds": [
+      7501,
+      7502,
+      7503,
+      7504,
+      7505,
+      7506
+     ],
+     "negativ": "speech, words, talking, sentence, wet, slurping, saliva, spit, liquid, splash, chewing, eating, sexual, moaning, groaning, breathing heavily, laughter, laughing, giggling, music, singing, animal, cat, meow, dog, bird, fish, gunshot, explosion, clapping, applause, fart, burp",
+     "kategorie": "mwah",
+     "ziel": [
+      0.3,
+      1.1
+     ],
+     "sekunden": 0.7,
+     "ausblenden": 0.12,
+     "cfg": 6.0
     }
    },
    "behalten": 8
@@ -11596,6 +12073,1723 @@
    "punkte": -0.04,
    "id": "facepalm_08",
    "notiz": "Art: genervter Seufzer. Prompt „seufzer_frau“: Frau: kurzer, müder, enttäuschter Seufzer. AudioSet: „Sigh“ 0,22 (Spitze: „Gasp“ 0,31). Kontrolle Stöhnen: „Groan“ 0,04, „Grunt“ 0,00, „Wail, moan“ 0,05. Hinweis: ähnlich wie facepalm_07 (gleicher Seed, Spektrogramm r = 0,88)."
+  },
+  {
+   "roh": "hmm_sfx_7401",
+   "ton": "hmm",
+   "variante": "sfx",
+   "prompt": "human vocal sound effect, a single thinking hmm, closed-mouth hum, high pitch at the beginning falling down at the end, close-up, dry room, no words",
+   "seed": 7401,
+   "sekunden_prompt": 1.1,
+   "roh_spitze_dbfs": -2.7,
+   "roh_leer": false,
+   "roh_leise": false,
+   "ziel": [
+    0.7,
+    1.6
+   ],
+   "kategorie": "fallend",
+   "negativ": "speech, words, talking, sentence, singing, song, melody, music, musical instrument, moaning, groaning, grunting, straining, sexual, pleasure, sigh, laughter, laughing, giggling, crying, animal, cat, meow, purr, dog, cow, moo, bee, buzzing, engine, motor, electrical hum, siren, whistle",
+   "cfg": 6.0,
+   "dauer_s": 1.62,
+   "lufs": -18.9,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -11.8,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -43.3,
+   "ueber_6k_db": -59.7,
+   "ueber_10k_db": -140.4,
+   "ueber_12k_db": -142.1,
+   "mitten_500_4k_db": -9.6,
+   "unter_300_db": -13.5,
+   "linien_2_6k": [
+    [
+     2789,
+     19.0,
+     -48.3
+    ],
+    [
+     2800,
+     18.0,
+     -49.3
+    ],
+    [
+     2712,
+     14.5,
+     -52.9
+    ]
+   ],
+   "puls_15_50": {
+    "hz": 16.7,
+    "schaerfe": 15.1
+   },
+   "natuerliche_dauer_s": 1.812,
+   "gekuerzt": true,
+   "einblenden_s": 0.01,
+   "ausblenden_s": 0.2,
+   "sim_lufs": -19.3,
+   "sim_mitten_500_4k_db": -7.8,
+   "sim_pegelverlust_db": -0.4,
+   "ast_meiden": {
+    "Groan": 0.006,
+    "Grunt": 0.0,
+    "Wail, moan": 0.018,
+    "Singing": 0.035,
+    "Music": 0.034,
+    "Laughter": 0.001,
+    "Giggle": 0.001,
+    "Crying, sobbing": 0.001,
+    "Sigh": 0.002,
+    "Animal": 0.02,
+    "Domestic animals, pets": 0.024,
+    "Cattle, bovinae": 0.0,
+    "Moo": 0.0,
+    "Bee, wasp, etc.": 0.0,
+    "Insect": 0.0,
+    "Buzz": 0.001,
+    "Mains hum": 0.0,
+    "Engine": 0.0,
+    "Burping, eructation": 0.0
+   },
+   "stimme": {
+    "stimmhaft_anteil": 0.85,
+    "schwerpunkt_hz": 595.0,
+    "ende_stimmhaft": 0.84,
+    "ende_schwerpunkt_hz": 535.0,
+    "f0_median_hz": 204.0,
+    "f0_p10_hz": 159.0,
+    "f0_p90_hz": 233.0,
+    "anstieg_ht": 0.2,
+    "abfall_ht": 6.9,
+    "gipfel_lage": 0.25
+   },
+   "ast_erwartet": [
+    "Humming",
+    0.344
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.022
+   ],
+   "ast_katze": [
+    "Meow",
+    0.002
+   ],
+   "ast_top": [
+    [
+     "Humming",
+     0.344
+    ],
+    [
+     "Howl",
+     0.042
+    ],
+    [
+     "Singing",
+     0.035
+    ],
+    [
+     "Music",
+     0.034
+    ],
+    [
+     "Male singing",
+     0.027
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "schmale Linie bei 2789 Hz (+19,0 dB über der Umgebung): auf Piepen achten",
+    "natürlich 1,8 s, auf 1,60 s gekürzt und ausgeblendet"
+   ],
+   "punkte": 0.84,
+   "id": "hmm_01",
+   "notiz": "Art: „Hmmm“, hoch anfangend und abwärts gleitend. Prompt „sfx“: „human vocal sound effect“: ein „Hmm“, oben anfangend, unten endend. Gemessen: mittlere Stimme (Grundton im Mittel 204 Hz), überwiegend Stimme, Tonhöhe fällt um 7 Halbtöne, endet summend (kleines „mm“?). AudioSet: „Humming“ 0,34 (Spitze: „Humming“ 0,34). Kontrolle Stöhnen: „Groan“ 0,01, „Grunt“ 0,00, „Wail, moan“ 0,02. Hinweis: schmale Linie bei 2789 Hz (+19,0 dB über der Umgebung): auf Piepen achten; natürlich 1,8 s, auf 1,60 s gekürzt und ausgeblendet."
+  },
+  {
+   "roh": "hmm_denken_frau_7405",
+   "ton": "hmm",
+   "variante": "denken_frau",
+   "prompt": "a woman considers her options, a curious hummed hmmmm with closed lips, the pitch starts high and drifts downward, playful thinking sound, close-up, quiet room, no words",
+   "seed": 7405,
+   "sekunden_prompt": 1.1,
+   "roh_spitze_dbfs": -2.2,
+   "roh_leer": false,
+   "roh_leise": false,
+   "ziel": [
+    0.7,
+    1.6
+   ],
+   "kategorie": "fallend",
+   "negativ": "speech, words, talking, sentence, singing, song, melody, music, musical instrument, moaning, groaning, grunting, straining, sexual, pleasure, sigh, laughter, laughing, giggling, crying, animal, cat, meow, purr, dog, cow, moo, bee, buzzing, engine, motor, electrical hum, siren, whistle",
+   "dauer_s": 1.62,
+   "lufs": -18.9,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -13.0,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -62.0,
+   "ueber_6k_db": -80.1,
+   "ueber_10k_db": -140.9,
+   "ueber_12k_db": -142.3,
+   "mitten_500_4k_db": -29.3,
+   "unter_300_db": -0.1,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 20.6,
+    "schaerfe": 12.2
+   },
+   "natuerliche_dauer_s": 1.602,
+   "gekuerzt": true,
+   "einblenden_s": 0.01,
+   "ausblenden_s": 0.2,
+   "sim_lufs": -38.0,
+   "sim_mitten_500_4k_db": -9.8,
+   "sim_pegelverlust_db": -19.1,
+   "ast_meiden": {
+    "Groan": 0.007,
+    "Grunt": 0.0,
+    "Wail, moan": 0.008,
+    "Singing": 0.021,
+    "Music": 0.027,
+    "Laughter": 0.001,
+    "Giggle": 0.001,
+    "Crying, sobbing": 0.001,
+    "Sigh": 0.051,
+    "Animal": 0.003,
+    "Domestic animals, pets": 0.001,
+    "Cattle, bovinae": 0.0,
+    "Moo": 0.0,
+    "Bee, wasp, etc.": 0.0,
+    "Insect": 0.0,
+    "Buzz": 0.0,
+    "Mains hum": 0.0,
+    "Engine": 0.0,
+    "Burping, eructation": 0.0
+   },
+   "stimme": {
+    "stimmhaft_anteil": 0.97,
+    "schwerpunkt_hz": 373.0,
+    "ende_stimmhaft": 1.0,
+    "ende_schwerpunkt_hz": 385.0,
+    "f0_median_hz": 224.0,
+    "f0_p10_hz": 211.0,
+    "f0_p90_hz": 236.0,
+    "anstieg_ht": 0.0,
+    "abfall_ht": 3.2,
+    "gipfel_lage": 0.0
+   },
+   "ast_erwartet": [
+    "Humming",
+    0.251
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.1
+   ],
+   "ast_katze": [
+    "Meow",
+    0.004
+   ],
+   "ast_top": [
+    [
+     "Humming",
+     0.251
+    ],
+    [
+     "Speech",
+     0.1
+    ],
+    [
+     "Gasp",
+     0.079
+    ],
+    [
+     "Sigh",
+     0.051
+    ],
+    [
+     "Music",
+     0.027
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "Hüllkurve pulsiert mit 21 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 12,2)"
+   ],
+   "punkte": 0.62,
+   "id": "hmm_02",
+   "notiz": "Art: „Hmmm“, hoch anfangend und abwärts gleitend. Prompt „denken_frau“: Frau: neugieriges „Hmmmm“ mit geschlossenen Lippen, Tonhöhe sinkt. Gemessen: mittlere Stimme (Grundton im Mittel 224 Hz), überwiegend Stimme, Tonhöhe fällt um 3 Halbtöne, endet summend (kleines „mm“?). AudioSet: „Humming“ 0,25 (Spitze: „Humming“ 0,25). Kontrolle Stöhnen: „Groan“ 0,01, „Grunt“ 0,00, „Wail, moan“ 0,01. Hinweis: Hüllkurve pulsiert mit 21 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 12,2)."
+  },
+  {
+   "roh": "hmm_denken_frau_7401",
+   "ton": "hmm",
+   "variante": "denken_frau",
+   "prompt": "a woman considers her options, a curious hummed hmmmm with closed lips, the pitch starts high and drifts downward, playful thinking sound, close-up, quiet room, no words",
+   "seed": 7401,
+   "sekunden_prompt": 1.1,
+   "roh_spitze_dbfs": -8.7,
+   "roh_leer": false,
+   "roh_leise": false,
+   "ziel": [
+    0.7,
+    1.6
+   ],
+   "kategorie": "fallend",
+   "negativ": "speech, words, talking, sentence, singing, song, melody, music, musical instrument, moaning, groaning, grunting, straining, sexual, pleasure, sigh, laughter, laughing, giggling, crying, animal, cat, meow, purr, dog, cow, moo, bee, buzzing, engine, motor, electrical hum, siren, whistle",
+   "dauer_s": 1.15,
+   "lufs": -18.9,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -11.6,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -39.6,
+   "ueber_6k_db": -71.6,
+   "ueber_10k_db": -113.9,
+   "ueber_12k_db": -142.2,
+   "mitten_500_4k_db": -22.3,
+   "unter_300_db": -0.9,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 15.0,
+    "schaerfe": 11.8
+   },
+   "natuerliche_dauer_s": 1.135,
+   "gekuerzt": false,
+   "einblenden_s": 0.01,
+   "ausblenden_s": 0.2,
+   "sim_lufs": -35.7,
+   "sim_mitten_500_4k_db": -1.5,
+   "sim_pegelverlust_db": -16.8,
+   "ast_meiden": {
+    "Groan": 0.019,
+    "Grunt": 0.002,
+    "Wail, moan": 0.029,
+    "Singing": 0.022,
+    "Music": 0.041,
+    "Laughter": 0.001,
+    "Giggle": 0.003,
+    "Crying, sobbing": 0.003,
+    "Sigh": 0.025,
+    "Animal": 0.008,
+    "Domestic animals, pets": 0.005,
+    "Cattle, bovinae": 0.002,
+    "Moo": 0.001,
+    "Bee, wasp, etc.": 0.0,
+    "Insect": 0.0,
+    "Buzz": 0.0,
+    "Mains hum": 0.0,
+    "Engine": 0.0,
+    "Burping, eructation": 0.001
+   },
+   "stimme": {
+    "stimmhaft_anteil": 0.96,
+    "schwerpunkt_hz": 424.0,
+    "ende_stimmhaft": 1.0,
+    "ende_schwerpunkt_hz": 422.0,
+    "f0_median_hz": 277.0,
+    "f0_p10_hz": 241.0,
+    "f0_p90_hz": 294.0,
+    "anstieg_ht": 0.0,
+    "abfall_ht": 4.0,
+    "gipfel_lage": 0.0
+   },
+   "ast_erwartet": [
+    "Speech",
+    0.146
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.146
+   ],
+   "ast_katze": [
+    "Meow",
+    0.011
+   ],
+   "ast_top": [
+    [
+     "Speech",
+     0.146
+    ],
+    [
+     "Humming",
+     0.104
+    ],
+    [
+     "Gasp",
+     0.062
+    ],
+    [
+     "Whimper",
+     0.054
+    ],
+    [
+     "Music",
+     0.041
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 0.05,
+   "id": "hmm_03",
+   "notiz": "Art: „Hmmm“, hoch anfangend und abwärts gleitend. Prompt „denken_frau“: Frau: neugieriges „Hmmmm“ mit geschlossenen Lippen, Tonhöhe sinkt. Gemessen: hohe Stimme (Grundton im Mittel 277 Hz), überwiegend Stimme, Tonhöhe fällt um 4 Halbtöne, endet summend (kleines „mm“?). AudioSet: „Speech“ 0,15 (Spitze: „Speech“ 0,15). Kontrolle Stöhnen: „Groan“ 0,02, „Grunt“ 0,00, „Wail, moan“ 0,03."
+  },
+  {
+   "roh": "hmm_denken_frau_7403",
+   "ton": "hmm",
+   "variante": "denken_frau",
+   "prompt": "a woman considers her options, a curious hummed hmmmm with closed lips, the pitch starts high and drifts downward, playful thinking sound, close-up, quiet room, no words",
+   "seed": 7403,
+   "sekunden_prompt": 1.1,
+   "roh_spitze_dbfs": -29.7,
+   "roh_leer": false,
+   "roh_leise": false,
+   "ziel": [
+    0.7,
+    1.6
+   ],
+   "kategorie": "fallend",
+   "negativ": "speech, words, talking, sentence, singing, song, melody, music, musical instrument, moaning, groaning, grunting, straining, sexual, pleasure, sigh, laughter, laughing, giggling, crying, animal, cat, meow, purr, dog, cow, moo, bee, buzzing, engine, motor, electrical hum, siren, whistle",
+   "dauer_s": 1.62,
+   "lufs": -18.9,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -12.4,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -47.2,
+   "ueber_6k_db": -66.5,
+   "ueber_10k_db": -120.0,
+   "ueber_12k_db": -137.9,
+   "mitten_500_4k_db": -33.4,
+   "unter_300_db": -0.0,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 15.3,
+    "schaerfe": 8.1
+   },
+   "natuerliche_dauer_s": 1.674,
+   "gekuerzt": true,
+   "einblenden_s": 0.01,
+   "ausblenden_s": 0.2,
+   "sim_lufs": -44.5,
+   "sim_mitten_500_4k_db": -4.2,
+   "sim_pegelverlust_db": -25.6,
+   "ast_meiden": {
+    "Groan": 0.022,
+    "Grunt": 0.003,
+    "Wail, moan": 0.033,
+    "Singing": 0.001,
+    "Music": 0.01,
+    "Laughter": 0.004,
+    "Giggle": 0.004,
+    "Crying, sobbing": 0.004,
+    "Sigh": 0.128,
+    "Animal": 0.005,
+    "Domestic animals, pets": 0.002,
+    "Cattle, bovinae": 0.0,
+    "Moo": 0.0,
+    "Bee, wasp, etc.": 0.0,
+    "Insect": 0.0,
+    "Buzz": 0.001,
+    "Mains hum": 0.0,
+    "Engine": 0.0,
+    "Burping, eructation": 0.001
+   },
+   "stimme": {
+    "stimmhaft_anteil": 0.92,
+    "schwerpunkt_hz": 461.0,
+    "ende_stimmhaft": 0.96,
+    "ende_schwerpunkt_hz": 585.0,
+    "f0_median_hz": 175.0,
+    "f0_p10_hz": 163.0,
+    "f0_p90_hz": 187.0,
+    "anstieg_ht": -0.1,
+    "abfall_ht": 3.4,
+    "gipfel_lage": 0.0
+   },
+   "ast_erwartet": [
+    "Speech",
+    0.051
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.051
+   ],
+   "ast_katze": [
+    "Cat",
+    0.002
+   ],
+   "ast_top": [
+    [
+     "Sigh",
+     0.128
+    ],
+    [
+     "Gasp",
+     0.084
+    ],
+    [
+     "Sound effect",
+     0.072
+    ],
+    [
+     "Speech",
+     0.051
+    ],
+    [
+     "Wail, moan",
+     0.033
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": -1.02,
+   "id": "hmm_04",
+   "notiz": "Art: „Hmmm“, hoch anfangend und abwärts gleitend. Prompt „denken_frau“: Frau: neugieriges „Hmmmm“ mit geschlossenen Lippen, Tonhöhe sinkt. Gemessen: mittlere Stimme (Grundton im Mittel 175 Hz), überwiegend Stimme, Tonhöhe fällt um 3 Halbtöne, endet summend (kleines „mm“?). AudioSet: „Speech“ 0,05 (Spitze: „Sigh“ 0,13). Kontrolle Stöhnen: „Groan“ 0,02, „Grunt“ 0,00, „Wail, moan“ 0,03."
+  },
+  {
+   "roh": "hmm_denken_7403",
+   "ton": "hmm",
+   "variante": "denken",
+   "prompt": "a person thinks hard and goes hmmm with the mouth closed, one thoughtful hummed hmm that starts high and slowly glides down in pitch, pondering, close-up, dry room, no words",
+   "seed": 7403,
+   "sekunden_prompt": 1.1,
+   "roh_spitze_dbfs": -18.5,
+   "roh_leer": false,
+   "roh_leise": false,
+   "ziel": [
+    0.7,
+    1.6
+   ],
+   "kategorie": "fallend",
+   "negativ": "speech, words, talking, sentence, singing, song, melody, music, musical instrument, moaning, groaning, grunting, straining, sexual, pleasure, sigh, laughter, laughing, giggling, crying, animal, cat, meow, purr, dog, cow, moo, bee, buzzing, engine, motor, electrical hum, siren, whistle",
+   "dauer_s": 1.62,
+   "lufs": -18.9,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -13.2,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -50.1,
+   "ueber_6k_db": -61.6,
+   "ueber_10k_db": -140.6,
+   "ueber_12k_db": -142.2,
+   "mitten_500_4k_db": -37.1,
+   "unter_300_db": -0.0,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 18.8,
+    "schaerfe": 7.3
+   },
+   "natuerliche_dauer_s": 1.602,
+   "gekuerzt": true,
+   "einblenden_s": 0.01,
+   "ausblenden_s": 0.2,
+   "sim_lufs": -48.0,
+   "sim_mitten_500_4k_db": -4.9,
+   "sim_pegelverlust_db": -29.1,
+   "ast_meiden": {
+    "Groan": 0.09,
+    "Grunt": 0.028,
+    "Wail, moan": 0.067,
+    "Singing": 0.002,
+    "Music": 0.018,
+    "Laughter": 0.001,
+    "Giggle": 0.001,
+    "Crying, sobbing": 0.001,
+    "Sigh": 0.192,
+    "Animal": 0.013,
+    "Domestic animals, pets": 0.002,
+    "Cattle, bovinae": 0.003,
+    "Moo": 0.002,
+    "Bee, wasp, etc.": 0.0,
+    "Insect": 0.0,
+    "Buzz": 0.002,
+    "Mains hum": 0.0,
+    "Engine": 0.0,
+    "Burping, eructation": 0.003
+   },
+   "stimme": {
+    "stimmhaft_anteil": 0.96,
+    "schwerpunkt_hz": 331.0,
+    "ende_stimmhaft": 1.0,
+    "ende_schwerpunkt_hz": 332.0,
+    "f0_median_hz": 131.0,
+    "f0_p10_hz": 114.0,
+    "f0_p90_hz": 199.0,
+    "anstieg_ht": -0.1,
+    "abfall_ht": 10.8,
+    "gipfel_lage": 0.0
+   },
+   "ast_erwartet": [
+    "Speech",
+    0.054
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.054
+   ],
+   "ast_katze": [
+    "Roaring cats (lions, tigers)",
+    0.003
+   ],
+   "ast_top": [
+    [
+     "Sound effect",
+     0.199
+    ],
+    [
+     "Sigh",
+     0.192
+    ],
+    [
+     "Groan",
+     0.09
+    ],
+    [
+     "Wail, moan",
+     0.067
+    ],
+    [
+     "Speech",
+     0.054
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "etwas „Groan“ (AudioSet 0,09)",
+    "etwas „Sigh“ (AudioSet 0,19)"
+   ],
+   "punkte": -1.33,
+   "id": "hmm_05",
+   "notiz": "Art: „Hmmm“, hoch anfangend und abwärts gleitend. Prompt „denken“: nachdenkliches „Hmmm“ mit geschlossenem Mund, hoch anfangend, abwärts gleitend. Gemessen: mittlere Stimme (Grundton im Mittel 131 Hz), überwiegend Stimme, Tonhöhe fällt um 11 Halbtöne, endet summend (kleines „mm“?). AudioSet: „Speech“ 0,05 (Spitze: „Sound effect“ 0,20). Kontrolle Stöhnen: „Groan“ 0,09, „Grunt“ 0,03, „Wail, moan“ 0,07. Hinweis: etwas „Groan“ (AudioSet 0,09); etwas „Sigh“ (AudioSet 0,19)."
+  },
+  {
+   "roh": "hmm_denken_7406",
+   "ton": "hmm",
+   "variante": "denken",
+   "prompt": "a person thinks hard and goes hmmm with the mouth closed, one thoughtful hummed hmm that starts high and slowly glides down in pitch, pondering, close-up, dry room, no words",
+   "seed": 7406,
+   "sekunden_prompt": 1.1,
+   "roh_spitze_dbfs": -9.3,
+   "roh_leer": false,
+   "roh_leise": false,
+   "ziel": [
+    0.7,
+    1.6
+   ],
+   "kategorie": "fallend",
+   "negativ": "speech, words, talking, sentence, singing, song, melody, music, musical instrument, moaning, groaning, grunting, straining, sexual, pleasure, sigh, laughter, laughing, giggling, crying, animal, cat, meow, purr, dog, cow, moo, bee, buzzing, engine, motor, electrical hum, siren, whistle",
+   "dauer_s": 1.59,
+   "lufs": -19.0,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -11.0,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -53.7,
+   "ueber_6k_db": -69.4,
+   "ueber_10k_db": -140.7,
+   "ueber_12k_db": -142.1,
+   "mitten_500_4k_db": -34.9,
+   "unter_300_db": -0.0,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 15.9,
+    "schaerfe": 3.9
+   },
+   "natuerliche_dauer_s": 1.575,
+   "gekuerzt": false,
+   "einblenden_s": 0.01,
+   "ausblenden_s": 0.2,
+   "sim_lufs": -42.9,
+   "sim_mitten_500_4k_db": -6.2,
+   "sim_pegelverlust_db": -23.9,
+   "ast_meiden": {
+    "Groan": 0.031,
+    "Grunt": 0.009,
+    "Wail, moan": 0.022,
+    "Singing": 0.002,
+    "Music": 0.015,
+    "Laughter": 0.001,
+    "Giggle": 0.001,
+    "Crying, sobbing": 0.001,
+    "Sigh": 0.203,
+    "Animal": 0.001,
+    "Domestic animals, pets": 0.001,
+    "Cattle, bovinae": 0.0,
+    "Moo": 0.0,
+    "Bee, wasp, etc.": 0.0,
+    "Insect": 0.0,
+    "Buzz": 0.001,
+    "Mains hum": 0.0,
+    "Engine": 0.0,
+    "Burping, eructation": 0.002
+   },
+   "stimme": {
+    "stimmhaft_anteil": 0.86,
+    "schwerpunkt_hz": 321.0,
+    "ende_stimmhaft": 1.0,
+    "ende_schwerpunkt_hz": 284.0,
+    "f0_median_hz": 111.0,
+    "f0_p10_hz": 98.0,
+    "f0_p90_hz": 126.0,
+    "anstieg_ht": 0.8,
+    "abfall_ht": 4.9,
+    "gipfel_lage": 0.23
+   },
+   "ast_erwartet": [
+    "Male speech, man speaking",
+    0.104
+   ],
+   "ast_sprache": [
+    "Male speech, man speaking",
+    0.104
+   ],
+   "ast_katze": [
+    "Meow",
+    0.001
+   ],
+   "ast_top": [
+    [
+     "Sigh",
+     0.203
+    ],
+    [
+     "Gasp",
+     0.12
+    ],
+    [
+     "Male speech, man speaking",
+     0.104
+    ],
+    [
+     "Speech",
+     0.098
+    ],
+    [
+     "Sound effect",
+     0.067
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "etwas „Sigh“ (AudioSet 0,20)",
+    "tiefe, stimmhafte Stimme (Grundton im Mittel 111 Hz): auf Stöhnen achten",
+    "ähnlich wie hmm_05 (Spektrogramm r = 0,85)",
+    "ähnlich wie hmm_07 (gleicher Seed, Spektrogramm r = 0,90)"
+   ],
+   "punkte": -1.95,
+   "id": "hmm_06",
+   "notiz": "Art: „Hmmm“, hoch anfangend und abwärts gleitend. Prompt „denken“: nachdenkliches „Hmmm“ mit geschlossenem Mund, hoch anfangend, abwärts gleitend. Gemessen: tiefe Stimme (Grundton im Mittel 111 Hz), überwiegend Stimme, Tonhöhe fällt um 5 Halbtöne, endet summend (kleines „mm“?). AudioSet: „Male speech, man speaking“ 0,10 (Spitze: „Sigh“ 0,20). Kontrolle Stöhnen: „Groan“ 0,03, „Grunt“ 0,01, „Wail, moan“ 0,02. Hinweis: etwas „Sigh“ (AudioSet 0,20); tiefe, stimmhafte Stimme (Grundton im Mittel 111 Hz): auf Stöhnen achten; ähnlich wie hmm_05 (Spektrogramm r = 0,85); ähnlich wie hmm_07 (gleicher Seed, Spektrogramm r = 0,90)."
+  },
+  {
+   "roh": "hmm_gruebeln_7406",
+   "ton": "hmm",
+   "variante": "gruebeln",
+   "prompt": "a long drawn-out pondering hmmmmm, a person hums thoughtfully with closed mouth, starting on a higher note and sinking slowly, as if solving a puzzle, close-up, dry room, no words",
+   "seed": 7406,
+   "sekunden_prompt": 1.5,
+   "roh_spitze_dbfs": -2.7,
+   "roh_leer": false,
+   "roh_leise": false,
+   "ziel": [
+    1.0,
+    1.95
+   ],
+   "kategorie": "lang",
+   "negativ": "speech, words, talking, sentence, singing, song, melody, music, musical instrument, moaning, groaning, grunting, straining, sexual, pleasure, sigh, laughter, laughing, giggling, crying, animal, cat, meow, purr, dog, cow, moo, bee, buzzing, engine, motor, electrical hum, siren, whistle",
+   "dauer_s": 1.91,
+   "lufs": -19.0,
+   "ziel_lufs": -19.0,
+   "spitze_dbtp": -11.2,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -61.9,
+   "ueber_6k_db": -75.9,
+   "ueber_10k_db": -140.6,
+   "ueber_12k_db": -142.1,
+   "mitten_500_4k_db": -33.8,
+   "unter_300_db": -0.0,
+   "linien_2_6k": [
+    [
+     2144,
+     13.8,
+     -46.9
+    ]
+   ],
+   "puls_15_50": {
+    "hz": 16.5,
+    "schaerfe": 4.3
+   },
+   "natuerliche_dauer_s": 1.894,
+   "gekuerzt": false,
+   "einblenden_s": 0.01,
+   "ausblenden_s": 0.2,
+   "sim_lufs": -41.1,
+   "sim_mitten_500_4k_db": -7.5,
+   "sim_pegelverlust_db": -22.1,
+   "ast_meiden": {
+    "Groan": 0.049,
+    "Grunt": 0.03,
+    "Wail, moan": 0.052,
+    "Singing": 0.002,
+    "Music": 0.013,
+    "Laughter": 0.001,
+    "Giggle": 0.001,
+    "Crying, sobbing": 0.0,
+    "Sigh": 0.141,
+    "Animal": 0.004,
+    "Domestic animals, pets": 0.001,
+    "Cattle, bovinae": 0.001,
+    "Moo": 0.001,
+    "Bee, wasp, etc.": 0.0,
+    "Insect": 0.0,
+    "Buzz": 0.001,
+    "Mains hum": 0.0,
+    "Engine": 0.0,
+    "Burping, eructation": 0.003
+   },
+   "stimme": {
+    "stimmhaft_anteil": 0.93,
+    "schwerpunkt_hz": 219.0,
+    "ende_stimmhaft": 0.94,
+    "ende_schwerpunkt_hz": 182.0,
+    "f0_median_hz": 111.0,
+    "f0_p10_hz": 86.0,
+    "f0_p90_hz": 146.0,
+    "anstieg_ht": -0.1,
+    "abfall_ht": 11.1,
+    "gipfel_lage": 0.0
+   },
+   "ast_erwartet": [
+    "Male speech, man speaking",
+    0.145
+   ],
+   "ast_sprache": [
+    "Male speech, man speaking",
+    0.145
+   ],
+   "ast_katze": [
+    "Cat",
+    0.001
+   ],
+   "ast_top": [
+    [
+     "Male speech, man speaking",
+     0.145
+    ],
+    [
+     "Sigh",
+     0.141
+    ],
+    [
+     "Speech",
+     0.104
+    ],
+    [
+     "Sound effect",
+     0.095
+    ],
+    [
+     "Gasp",
+     0.083
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "schmale Linie bei 2144 Hz (+13,8 dB über der Umgebung): auf Piepen achten",
+    "tiefe, stimmhafte Stimme (Grundton im Mittel 111 Hz): auf Stöhnen achten"
+   ],
+   "punkte": -1.28,
+   "id": "hmm_07",
+   "notiz": "Art: langes, grübelndes „Hmmmmm“. Prompt „gruebeln“: langes, grübelndes „Hmmmmm“, sinkt langsam. Gemessen: tiefe Stimme (Grundton im Mittel 111 Hz), überwiegend Stimme, Tonhöhe fällt um 11 Halbtöne, endet summend (kleines „mm“?). AudioSet: „Male speech, man speaking“ 0,14 (Spitze: „Male speech, man speaking“ 0,14). Kontrolle Stöhnen: „Groan“ 0,05, „Grunt“ 0,03, „Wail, moan“ 0,05. Hinweis: schmale Linie bei 2144 Hz (+13,8 dB über der Umgebung): auf Piepen achten; tiefe, stimmhafte Stimme (Grundton im Mittel 111 Hz): auf Stöhnen achten."
+  },
+  {
+   "roh": "kuss_mwah_frau_7502",
+   "ton": "kuss",
+   "variante": "mwah_frau",
+   "prompt": "a woman blows a kiss, a cute short mwah smooch sound, affectionate and funny, close-up, quiet room, no words",
+   "seed": 7502,
+   "sekunden_prompt": 0.7,
+   "roh_spitze_dbfs": -3.4,
+   "roh_leer": false,
+   "roh_leise": false,
+   "ziel": [
+    0.3,
+    1.1
+   ],
+   "kategorie": "mwah",
+   "negativ": "speech, words, talking, sentence, wet, slurping, saliva, spit, liquid, splash, chewing, eating, sexual, moaning, groaning, breathing heavily, laughter, laughing, giggling, music, singing, animal, cat, meow, dog, bird, fish, gunshot, explosion, clapping, applause, fart, burp",
+   "dauer_s": 0.55,
+   "lufs": -19.9,
+   "ziel_lufs": -20.0,
+   "spitze_dbtp": -8.7,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -51.7,
+   "ueber_6k_db": -69.8,
+   "ueber_10k_db": -130.0,
+   "ueber_12k_db": -142.6,
+   "mitten_500_4k_db": -22.1,
+   "unter_300_db": -2.8,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 16.8,
+    "schaerfe": 4.7
+   },
+   "natuerliche_dauer_s": 0.508,
+   "gekuerzt": false,
+   "einblenden_s": 0.003,
+   "ausblenden_s": 0.12,
+   "sim_lufs": -24.7,
+   "sim_mitten_500_4k_db": -15.5,
+   "sim_pegelverlust_db": -4.8,
+   "ast_meiden": {
+    "Chewing, mastication": 0.0,
+    "Liquid": 0.0,
+    "Splash, splatter": 0.0,
+    "Drip": 0.0,
+    "Groan": 0.013,
+    "Wail, moan": 0.007,
+    "Laughter": 0.002,
+    "Giggle": 0.002,
+    "Applause": 0.0,
+    "Clapping": 0.0,
+    "Music": 0.019,
+    "Animal": 0.005,
+    "Bird": 0.0,
+    "Dog": 0.001,
+    "Gunshot, gunfire": 0.0,
+    "Explosion": 0.0,
+    "Fart": 0.002,
+    "Burping, eructation": 0.001,
+    "Breathing": 0.002
+   },
+   "ast_erwartet": [
+    "Speech",
+    0.599
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.599
+   ],
+   "ast_katze": [
+    "Cat",
+    0.002
+   ],
+   "ast_top": [
+    [
+     "Speech",
+     0.599
+    ],
+    [
+     "Gasp",
+     0.309
+    ],
+    [
+     "Male speech, man speaking",
+     0.116
+    ],
+    [
+     "Throat clearing",
+     0.048
+    ],
+    [
+     "Sound effect",
+     0.036
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "etwas Sprache-Verdacht (AudioSet „Speech“ 0,60), auf Wörter achten"
+   ],
+   "punkte": 0.99,
+   "id": "kuss_01",
+   "notiz": "Art: Luftkuss „mwah“. Prompt „mwah_frau“: Frau wirft einen Kuss, kurzes süßes „mwah“. AudioSet: „Speech“ 0,60 (Spitze: „Speech“ 0,60). Kontrolle Stöhnen: „Groan“ 0,01, „Wail, moan“ 0,01. Hinweis: etwas Sprache-Verdacht (AudioSet „Speech“ 0,60), auf Wörter achten."
+  },
+  {
+   "roh": "kuss_mwah_7502",
+   "ton": "kuss",
+   "variante": "mwah",
+   "prompt": "a person blows a loving air kiss, one short smooch with a voiced mwah, lips pressed and released, sweet and playful, close-up, dry room, no words",
+   "seed": 7502,
+   "sekunden_prompt": 0.7,
+   "roh_spitze_dbfs": -4.3,
+   "roh_leer": false,
+   "roh_leise": false,
+   "ziel": [
+    0.3,
+    1.1
+   ],
+   "kategorie": "mwah",
+   "negativ": "speech, words, talking, sentence, wet, slurping, saliva, spit, liquid, splash, chewing, eating, sexual, moaning, groaning, breathing heavily, laughter, laughing, giggling, music, singing, animal, cat, meow, dog, bird, fish, gunshot, explosion, clapping, applause, fart, burp",
+   "dauer_s": 0.5,
+   "lufs": -20.0,
+   "ziel_lufs": -20.0,
+   "spitze_dbtp": -11.3,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -46.0,
+   "ueber_6k_db": -60.0,
+   "ueber_10k_db": -140.5,
+   "ueber_12k_db": -142.2,
+   "mitten_500_4k_db": -25.1,
+   "unter_300_db": -0.2,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 21.1,
+    "schaerfe": 5.9
+   },
+   "natuerliche_dauer_s": 0.478,
+   "gekuerzt": false,
+   "einblenden_s": 0.003,
+   "ausblenden_s": 0.12,
+   "sim_lufs": -34.9,
+   "sim_mitten_500_4k_db": -8.5,
+   "sim_pegelverlust_db": -14.9,
+   "ast_meiden": {
+    "Chewing, mastication": 0.0,
+    "Liquid": 0.0,
+    "Splash, splatter": 0.0,
+    "Drip": 0.0,
+    "Groan": 0.003,
+    "Wail, moan": 0.0,
+    "Laughter": 0.001,
+    "Giggle": 0.0,
+    "Applause": 0.0,
+    "Clapping": 0.0,
+    "Music": 0.114,
+    "Animal": 0.002,
+    "Bird": 0.0,
+    "Dog": 0.0,
+    "Gunshot, gunfire": 0.0,
+    "Explosion": 0.003,
+    "Fart": 0.102,
+    "Burping, eructation": 0.001,
+    "Breathing": 0.001
+   },
+   "ast_erwartet": [
+    "Sound effect",
+    0.612
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.028
+   ],
+   "ast_katze": [
+    "Cat",
+    0.001
+   ],
+   "ast_top": [
+    [
+     "Sound effect",
+     0.612
+    ],
+    [
+     "Grunt",
+     0.16
+    ],
+    [
+     "Music",
+     0.114
+    ],
+    [
+     "Fart",
+     0.102
+    ],
+    [
+     "Boing",
+     0.084
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "etwas „Fart“ (AudioSet 0,10)"
+   ],
+   "punkte": 0.29,
+   "id": "kuss_02",
+   "notiz": "Art: Luftkuss „mwah“. Prompt „mwah“: Luftkuss mit stimmhaftem „mwah“, lieb und verspielt. AudioSet: „Sound effect“ 0,61 (Spitze: „Sound effect“ 0,61). Kontrolle Stöhnen: „Groan“ 0,00, „Wail, moan“ 0,00. Hinweis: etwas „Fart“ (AudioSet 0,10)."
+  },
+  {
+   "roh": "kuss_schmatz_wange_7501",
+   "ton": "kuss",
+   "variante": "schmatz_wange",
+   "prompt": "a quick peck on the cheek, one short soft kiss smack, close-up, quiet room, no voice",
+   "seed": 7501,
+   "sekunden_prompt": 0.5,
+   "roh_spitze_dbfs": -0.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "ziel": [
+    0.15,
+    0.6
+   ],
+   "kategorie": "schmatz",
+   "negativ": "speech, words, talking, sentence, wet, slurping, saliva, spit, liquid, splash, chewing, eating, sexual, moaning, groaning, breathing heavily, laughter, laughing, giggling, music, singing, animal, cat, meow, dog, bird, fish, gunshot, explosion, clapping, applause, fart, burp",
+   "dauer_s": 0.22,
+   "lufs": -25.6,
+   "ziel_lufs": -20.0,
+   "spitze_dbtp": -1.2,
+   "begrenzer_db": 4.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -16.1,
+   "ueber_6k_db": -31.1,
+   "ueber_10k_db": -73.8,
+   "ueber_12k_db": -92.5,
+   "mitten_500_4k_db": -0.2,
+   "unter_300_db": -51.5,
+   "linien_2_6k": [],
+   "puls_15_50": null,
+   "natuerliche_dauer_s": 0.207,
+   "gekuerzt": false,
+   "einblenden_s": 0.003,
+   "ausblenden_s": 0.08,
+   "sim_lufs": -23.3,
+   "sim_mitten_500_4k_db": -0.2,
+   "sim_pegelverlust_db": 2.3,
+   "ast_meiden": {
+    "Chewing, mastication": 0.0,
+    "Liquid": 0.0,
+    "Splash, splatter": 0.0,
+    "Drip": 0.0,
+    "Groan": 0.0,
+    "Wail, moan": 0.0,
+    "Laughter": 0.0,
+    "Giggle": 0.0,
+    "Applause": 0.0,
+    "Clapping": 0.003,
+    "Music": 0.01,
+    "Animal": 0.001,
+    "Bird": 0.001,
+    "Dog": 0.0,
+    "Gunshot, gunfire": 0.005,
+    "Explosion": 0.002,
+    "Fart": 0.001,
+    "Burping, eructation": 0.0,
+    "Breathing": 0.001
+   },
+   "ast_erwartet": [
+    "Slap, smack",
+    0.18
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.006
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Whip",
+     0.236
+    ],
+    [
+     "Slap, smack",
+     0.18
+    ],
+    [
+     "Sound effect",
+     0.034
+    ],
+    [
+     "Whack, thwack",
+     0.015
+    ],
+    [
+     "Whoosh, swoosh, swish",
+     0.014
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "nur −25,6 LUFS statt −20,0: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser"
+   ],
+   "punkte": -0.63,
+   "id": "kuss_03",
+   "notiz": "Art: kurzer Schmatzer. Prompt „schmatz_wange“: Küsschen auf die Wange, kurz und weich. AudioSet: „Slap, smack“ 0,18 (Spitze: „Whip“ 0,24). Kontrolle Stöhnen: „Groan“ 0,00, „Wail, moan“ 0,00. Hinweis: nur −25,6 LUFS statt −20,0: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser."
+  },
+  {
+   "roh": "kuss_schmatz_7502",
+   "ton": "kuss",
+   "variante": "schmatz",
+   "prompt": "a single quick kiss sound, a short dry lip smack smooch, no voice, close-up, dry room",
+   "seed": 7502,
+   "sekunden_prompt": 0.5,
+   "roh_spitze_dbfs": -11.5,
+   "roh_leer": false,
+   "roh_leise": false,
+   "ziel": [
+    0.15,
+    0.6
+   ],
+   "kategorie": "schmatz",
+   "negativ": "speech, words, talking, sentence, wet, slurping, saliva, spit, liquid, splash, chewing, eating, sexual, moaning, groaning, breathing heavily, laughter, laughing, giggling, music, singing, animal, cat, meow, dog, bird, fish, gunshot, explosion, clapping, applause, fart, burp",
+   "dauer_s": 0.62,
+   "lufs": -20.0,
+   "ziel_lufs": -20.0,
+   "spitze_dbtp": -3.0,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -39.2,
+   "ueber_6k_db": -55.1,
+   "ueber_10k_db": -104.9,
+   "ueber_12k_db": -138.5,
+   "mitten_500_4k_db": -31.6,
+   "unter_300_db": -0.0,
+   "linien_2_6k": [
+    [
+     3914,
+     16.8,
+     -41.2
+    ],
+    [
+     3890,
+     16.2,
+     -41.7
+    ],
+    [
+     4001,
+     15.6,
+     -42.4
+    ]
+   ],
+   "puls_15_50": {
+    "hz": 22.1,
+    "schaerfe": 7.0
+   },
+   "natuerliche_dauer_s": 0.617,
+   "gekuerzt": true,
+   "einblenden_s": 0.003,
+   "ausblenden_s": 0.08,
+   "sim_lufs": -39.0,
+   "sim_mitten_500_4k_db": -5.7,
+   "sim_pegelverlust_db": -19.0,
+   "ast_meiden": {
+    "Chewing, mastication": 0.0,
+    "Liquid": 0.0,
+    "Splash, splatter": 0.0,
+    "Drip": 0.0,
+    "Groan": 0.0,
+    "Wail, moan": 0.0,
+    "Laughter": 0.0,
+    "Giggle": 0.0,
+    "Applause": 0.0,
+    "Clapping": 0.0,
+    "Music": 0.02,
+    "Animal": 0.002,
+    "Bird": 0.001,
+    "Dog": 0.0,
+    "Gunshot, gunfire": 0.001,
+    "Explosion": 0.02,
+    "Fart": 0.0,
+    "Burping, eructation": 0.0,
+    "Breathing": 0.0
+   },
+   "ast_erwartet": [
+    "Sound effect",
+    0.09
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.029
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Rumble",
+     0.175
+    ],
+    [
+     "Sound effect",
+     0.09
+    ],
+    [
+     "Vehicle",
+     0.087
+    ],
+    [
+     "Car",
+     0.04
+    ],
+    [
+     "Speech",
+     0.029
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "schmale Linie bei 3914 Hz (+16,8 dB über der Umgebung): auf Piepen achten"
+   ],
+   "punkte": -1.39,
+   "id": "kuss_04",
+   "notiz": "Art: kurzer Schmatzer. Prompt „schmatz“: ein kurzer, trockener Schmatzer der Lippen, ohne Stimme. AudioSet: „Sound effect“ 0,09 (Spitze: „Rumble“ 0,17). Kontrolle Stöhnen: „Groan“ 0,00, „Wail, moan“ 0,00. Hinweis: schmale Linie bei 3914 Hz (+16,8 dB über der Umgebung): auf Piepen achten."
+  },
+  {
+   "roh": "kuss_doppelt_7506",
+   "ton": "kuss",
+   "variante": "doppelt",
+   "prompt": "two quick affectionate kisses, smooch smooch, short lip smacks one after another, playful, close-up, dry room, no voice",
+   "seed": 7506,
+   "sekunden_prompt": 0.8,
+   "roh_spitze_dbfs": -14.1,
+   "roh_leer": false,
+   "roh_leise": false,
+   "ziel": [
+    0.4,
+    1.1
+   ],
+   "kategorie": "doppelt",
+   "negativ": "speech, words, talking, sentence, wet, slurping, saliva, spit, liquid, splash, chewing, eating, sexual, moaning, groaning, breathing heavily, laughter, laughing, giggling, music, singing, animal, cat, meow, dog, bird, fish, gunshot, explosion, clapping, applause, fart, burp",
+   "dauer_s": 1.12,
+   "lufs": -20.1,
+   "ziel_lufs": -20.0,
+   "spitze_dbtp": -1.7,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -33.4,
+   "ueber_6k_db": -44.6,
+   "ueber_10k_db": -100.0,
+   "ueber_12k_db": -130.1,
+   "mitten_500_4k_db": -0.5,
+   "unter_300_db": -13.6,
+   "linien_2_6k": [
+    [
+     2068,
+     17.9,
+     -10.3
+    ],
+    [
+     2179,
+     14.2,
+     -9.2
+    ],
+    [
+     2091,
+     13.4,
+     -12.8
+    ]
+   ],
+   "puls_15_50": {
+    "hz": 17.2,
+    "schaerfe": 5.5
+   },
+   "natuerliche_dauer_s": 1.102,
+   "gekuerzt": true,
+   "einblenden_s": 0.003,
+   "ausblenden_s": 0.1,
+   "sim_lufs": -19.2,
+   "sim_mitten_500_4k_db": -0.2,
+   "sim_pegelverlust_db": 0.9,
+   "ast_meiden": {
+    "Chewing, mastication": 0.001,
+    "Liquid": 0.0,
+    "Splash, splatter": 0.0,
+    "Drip": 0.0,
+    "Groan": 0.004,
+    "Wail, moan": 0.001,
+    "Laughter": 0.008,
+    "Giggle": 0.004,
+    "Applause": 0.0,
+    "Clapping": 0.001,
+    "Music": 0.01,
+    "Animal": 0.008,
+    "Bird": 0.001,
+    "Dog": 0.0,
+    "Gunshot, gunfire": 0.0,
+    "Explosion": 0.0,
+    "Fart": 0.003,
+    "Burping, eructation": 0.032,
+    "Breathing": 0.0
+   },
+   "ast_erwartet": [
+    "Speech",
+    0.173
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.173
+   ],
+   "ast_katze": [
+    "Meow",
+    0.001
+   ],
+   "ast_top": [
+    [
+     "Speech",
+     0.173
+    ],
+    [
+     "Throat clearing",
+     0.107
+    ],
+    [
+     "Male speech, man speaking",
+     0.089
+    ],
+    [
+     "Sound effect",
+     0.063
+    ],
+    [
+     "Grunt",
+     0.046
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "schmale Linie bei 2068 Hz (+17,9 dB über der Umgebung): auf Piepen achten"
+   ],
+   "punkte": -0.31,
+   "id": "kuss_05",
+   "notiz": "Art: zwei Küsschen. Prompt „doppelt“: zwei schnelle Küsschen hintereinander. AudioSet: „Speech“ 0,17 (Spitze: „Speech“ 0,17). Kontrolle Stöhnen: „Groan“ 0,00, „Wail, moan“ 0,00. Hinweis: schmale Linie bei 2068 Hz (+17,9 dB über der Umgebung): auf Piepen achten."
+  },
+  {
+   "roh": "kuss_doppelt_7503",
+   "ton": "kuss",
+   "variante": "doppelt",
+   "prompt": "two quick affectionate kisses, smooch smooch, short lip smacks one after another, playful, close-up, dry room, no voice",
+   "seed": 7503,
+   "sekunden_prompt": 0.8,
+   "roh_spitze_dbfs": -0.2,
+   "roh_leer": false,
+   "roh_leise": false,
+   "ziel": [
+    0.4,
+    1.1
+   ],
+   "kategorie": "doppelt",
+   "negativ": "speech, words, talking, sentence, wet, slurping, saliva, spit, liquid, splash, chewing, eating, sexual, moaning, groaning, breathing heavily, laughter, laughing, giggling, music, singing, animal, cat, meow, dog, bird, fish, gunshot, explosion, clapping, applause, fart, burp",
+   "dauer_s": 1.12,
+   "lufs": -26.1,
+   "ziel_lufs": -20.0,
+   "spitze_dbtp": -1.3,
+   "begrenzer_db": 4.0,
+   "tiefpass_hz": 4800.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -6.0,
+   "ueber_6k_db": -32.3,
+   "ueber_10k_db": -85.4,
+   "ueber_12k_db": -99.2,
+   "mitten_500_4k_db": -0.2,
+   "unter_300_db": -17.3,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 17.6,
+    "schaerfe": 3.7
+   },
+   "natuerliche_dauer_s": 1.134,
+   "gekuerzt": true,
+   "einblenden_s": 0.003,
+   "ausblenden_s": 0.1,
+   "sim_lufs": -22.2,
+   "sim_mitten_500_4k_db": -0.0,
+   "sim_pegelverlust_db": 3.9,
+   "ast_meiden": {
+    "Chewing, mastication": 0.0,
+    "Liquid": 0.0,
+    "Splash, splatter": 0.0,
+    "Drip": 0.001,
+    "Groan": 0.001,
+    "Wail, moan": 0.0,
+    "Laughter": 0.0,
+    "Giggle": 0.0,
+    "Applause": 0.0,
+    "Clapping": 0.0,
+    "Music": 0.011,
+    "Animal": 0.002,
+    "Bird": 0.001,
+    "Dog": 0.001,
+    "Gunshot, gunfire": 0.001,
+    "Explosion": 0.001,
+    "Fart": 0.001,
+    "Burping, eructation": 0.003,
+    "Breathing": 0.0
+   },
+   "ast_erwartet": [
+    "Speech",
+    0.03
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.03
+   ],
+   "ast_katze": [
+    "Meow",
+    0.001
+   ],
+   "ast_top": [
+    [
+     "Ping",
+     0.036
+    ],
+    [
+     "Speech",
+     0.03
+    ],
+    [
+     "Sound effect",
+     0.027
+    ],
+    [
+     "Finger snapping",
+     0.023
+    ],
+    [
+     "Slap, smack",
+     0.02
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen",
+    "nur −26,1 LUFS statt −20,0: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser"
+   ],
+   "punkte": -1.47,
+   "id": "kuss_06",
+   "notiz": "Art: zwei Küsschen. Prompt „doppelt“: zwei schnelle Küsschen hintereinander. AudioSet: „Speech“ 0,03 (Spitze: „Ping“ 0,04). Kontrolle Stöhnen: „Groan“ 0,00, „Wail, moan“ 0,00. Tiefpass 4,80 kHz (Leitplanke). Hinweis: AudioSet erkennt keine der erwarteten Klassen; nur −26,1 LUFS statt −20,0: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser."
+  },
+  {
+   "roh": "kuss_comic_7505",
+   "ton": "kuss",
+   "variante": "comic",
+   "prompt": "cartoon kiss sound effect, an exaggerated comedic smooch, a loud pucker and a pop, mwah, close-up, no words",
+   "seed": 7505,
+   "sekunden_prompt": 0.7,
+   "roh_spitze_dbfs": -0.0,
+   "roh_leer": false,
+   "roh_leise": false,
+   "ziel": [
+    0.3,
+    1.1
+   ],
+   "kategorie": "comic",
+   "negativ": "speech, words, talking, sentence, wet, slurping, saliva, spit, liquid, splash, chewing, eating, sexual, moaning, groaning, breathing heavily, laughter, laughing, giggling, music, singing, animal, cat, meow, dog, bird, fish, gunshot, explosion, clapping, applause, fart, burp",
+   "cfg": 6.0,
+   "dauer_s": 0.92,
+   "lufs": -20.0,
+   "ziel_lufs": -20.0,
+   "spitze_dbtp": -12.1,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -20.8,
+   "ueber_6k_db": -30.9,
+   "ueber_10k_db": -80.4,
+   "ueber_12k_db": -104.5,
+   "mitten_500_4k_db": -1.8,
+   "unter_300_db": -7.4,
+   "linien_2_6k": [],
+   "puls_15_50": {
+    "hz": 21.0,
+    "schaerfe": 6.7
+   },
+   "natuerliche_dauer_s": 0.902,
+   "gekuerzt": false,
+   "einblenden_s": 0.003,
+   "ausblenden_s": 0.12,
+   "sim_lufs": -19.1,
+   "sim_mitten_500_4k_db": -0.3,
+   "sim_pegelverlust_db": 0.9,
+   "ast_meiden": {
+    "Chewing, mastication": 0.0,
+    "Liquid": 0.0,
+    "Splash, splatter": 0.0,
+    "Drip": 0.001,
+    "Groan": 0.002,
+    "Wail, moan": 0.0,
+    "Laughter": 0.0,
+    "Giggle": 0.0,
+    "Applause": 0.0,
+    "Clapping": 0.0,
+    "Music": 0.076,
+    "Animal": 0.006,
+    "Bird": 0.0,
+    "Dog": 0.0,
+    "Gunshot, gunfire": 0.0,
+    "Explosion": 0.001,
+    "Fart": 0.005,
+    "Burping, eructation": 0.0,
+    "Breathing": 0.003
+   },
+   "ast_erwartet": [
+    "Sound effect",
+    0.204
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.021
+   ],
+   "ast_katze": [
+    "Meow",
+    0.002
+   ],
+   "ast_top": [
+    [
+     "Sound effect",
+     0.204
+    ],
+    [
+     "Whoosh, swoosh, swish",
+     0.112
+    ],
+    [
+     "Music",
+     0.076
+    ],
+    [
+     "Zipper (clothing)",
+     0.034
+    ],
+    [
+     "Gasp",
+     0.022
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [],
+   "punkte": 0.15,
+   "id": "kuss_07",
+   "notiz": "Art: Zeichentrick-Kuss. Prompt „comic“: Comic: übertriebener Schmatzer mit Plopp, „mwah“. AudioSet: „Sound effect“ 0,20 (Spitze: „Sound effect“ 0,20). Kontrolle Stöhnen: „Groan“ 0,00, „Wail, moan“ 0,00."
+  },
+  {
+   "roh": "kuss_comic_7504",
+   "ton": "kuss",
+   "variante": "comic",
+   "prompt": "cartoon kiss sound effect, an exaggerated comedic smooch, a loud pucker and a pop, mwah, close-up, no words",
+   "seed": 7504,
+   "sekunden_prompt": 0.7,
+   "roh_spitze_dbfs": -0.3,
+   "roh_leer": false,
+   "roh_leise": false,
+   "ziel": [
+    0.3,
+    1.1
+   ],
+   "kategorie": "comic",
+   "negativ": "speech, words, talking, sentence, wet, slurping, saliva, spit, liquid, splash, chewing, eating, sexual, moaning, groaning, breathing heavily, laughter, laughing, giggling, music, singing, animal, cat, meow, dog, bird, fish, gunshot, explosion, clapping, applause, fart, burp",
+   "cfg": 6.0,
+   "dauer_s": 0.4,
+   "lufs": -20.1,
+   "ziel_lufs": -20.0,
+   "spitze_dbtp": -15.2,
+   "begrenzer_db": 0.0,
+   "tiefpass_hz": 6000.0,
+   "leitplanke_ok": true,
+   "ueber_6k_ohne_tiefpass_db": -21.1,
+   "ueber_6k_db": -35.4,
+   "ueber_10k_db": -86.8,
+   "ueber_12k_db": -116.3,
+   "mitten_500_4k_db": -0.1,
+   "unter_300_db": -51.5,
+   "linien_2_6k": [
+    [
+     4658,
+     14.8,
+     -18.4
+    ],
+    [
+     4611,
+     14.7,
+     -18.5
+    ],
+    [
+     4693,
+     13.3,
+     -20.3
+    ]
+   ],
+   "puls_15_50": {
+    "hz": 28.8,
+    "schaerfe": 1.9
+   },
+   "natuerliche_dauer_s": 0.383,
+   "gekuerzt": false,
+   "einblenden_s": 0.003,
+   "ausblenden_s": 0.12,
+   "sim_lufs": -18.6,
+   "sim_mitten_500_4k_db": -0.1,
+   "sim_pegelverlust_db": 1.5,
+   "ast_meiden": {
+    "Chewing, mastication": 0.0,
+    "Liquid": 0.0,
+    "Splash, splatter": 0.0,
+    "Drip": 0.0,
+    "Groan": 0.0,
+    "Wail, moan": 0.0,
+    "Laughter": 0.001,
+    "Giggle": 0.0,
+    "Applause": 0.0,
+    "Clapping": 0.0,
+    "Music": 0.015,
+    "Animal": 0.013,
+    "Bird": 0.036,
+    "Dog": 0.001,
+    "Gunshot, gunfire": 0.0,
+    "Explosion": 0.0,
+    "Fart": 0.0,
+    "Burping, eructation": 0.0,
+    "Breathing": 0.0
+   },
+   "ast_erwartet": [
+    "Speech",
+    0.018
+   ],
+   "ast_sprache": [
+    "Speech",
+    0.018
+   ],
+   "ast_katze": [
+    "Cat",
+    0.0
+   ],
+   "ast_top": [
+    [
+     "Whistle",
+     0.39
+    ],
+    [
+     "Squawk",
+     0.074
+    ],
+    [
+     "Bird",
+     0.036
+    ],
+    [
+     "Squeal",
+     0.035
+    ],
+    [
+     "Whistling",
+     0.029
+    ]
+   ],
+   "ausschluss": [],
+   "hinweise": [
+    "AudioSet „Whistle“ 0,39: auf Quietschen/Piepen/Tierähnliches achten",
+    "schmale Linie bei 4658 Hz (+14,8 dB über der Umgebung): auf Piepen achten",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ],
+   "punkte": -0.9,
+   "id": "kuss_08",
+   "notiz": "Art: Zeichentrick-Kuss. Prompt „comic“: Comic: übertriebener Schmatzer mit Plopp, „mwah“. AudioSet: „Speech“ 0,02 (Spitze: „Whistle“ 0,39). Kontrolle Stöhnen: „Groan“ 0,00, „Wail, moan“ 0,00. Hinweis: AudioSet „Whistle“ 0,39: auf Quietschen/Piepen/Tierähnliches achten; schmale Linie bei 4658 Hz (+14,8 dB über der Umgebung): auf Piepen achten; AudioSet erkennt keine der erwarteten Klassen."
   },
   {
    "roh": "furzkissen_kurz_6102",
@@ -22243,6 +24437,764 @@
     "fast gleich wie facepalm_comic_7306 (Spektrogramm r = 0,92)"
    ],
    "hinweise": []
+  },
+  {
+   "roh": "hmm_denken_7401",
+   "ton": "hmm",
+   "punkte": -4.88,
+   "gruende": [
+    "klingt nach „Groan“ (AudioSet 0,55, Grenze 0,15)",
+    "klingt nach „Wail, moan“ (AudioSet 0,32, Grenze 0,15)",
+    "AudioSet erkennt keine der erwarteten Klassen (Humming, Hum, Male speech, man speaking, Female speech, woman speaking, Speech; höchstens 0,02)"
+   ],
+   "hinweise": [
+    "etwas „Grunt“ (AudioSet 0,12)",
+    "steigt vorn erst 11,1 Halbtöne an"
+   ]
+  },
+  {
+   "roh": "hmm_denken_7402",
+   "ton": "hmm",
+   "punkte": -2.26,
+   "gruende": [
+    "klingt nach „Groan“ (AudioSet 0,15, Grenze 0,15)",
+    "kaum gesummt (36 % stimmhaft)"
+   ],
+   "hinweise": [
+    "natürlich 1,9 s, auf 1,60 s gekürzt und ausgeblendet",
+    "tiefe, stimmhafte Stimme (Grundton im Mittel 95 Hz): auf Stöhnen achten"
+   ]
+  },
+  {
+   "roh": "hmm_denken_7404",
+   "ton": "hmm",
+   "punkte": -0.86,
+   "gruende": [
+    "Tonhöhe fängt nicht oben an (Gipfel bei 58 % der Stimme)"
+   ],
+   "hinweise": [
+    "natürlich 1,8 s, auf 1,60 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "hmm_denken_7405",
+   "ton": "hmm",
+   "punkte": 0.4,
+   "gruende": [
+    "Tonhöhe fängt nicht oben an (Gipfel bei 93 % der Stimme)"
+   ],
+   "hinweise": [
+    "steigt vorn erst 5,0 Halbtöne an"
+   ]
+  },
+  {
+   "roh": "hmm_denken_mann_7401",
+   "ton": "hmm",
+   "punkte": 1.38,
+   "gruende": [
+    "Sprache? (AudioSet „Speech“ 0,76)",
+    "kaum gesummt (26 % stimmhaft)",
+    "Tonhöhe fängt nicht oben an (Gipfel bei 72 % der Stimme)",
+    "Tonhöhe fällt kaum (0,5 Halbtöne vom Gipfel bis zum Ende)"
+   ],
+   "hinweise": [
+    "steigt vorn erst 3,2 Halbtöne an"
+   ]
+  },
+  {
+   "roh": "hmm_denken_mann_7402",
+   "ton": "hmm",
+   "punkte": 0.49,
+   "gruende": [
+    "Sprache? (AudioSet „Speech“ 0,76)",
+    "Tonhöhe nicht messbar"
+   ],
+   "hinweise": [
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "hmm_denken_mann_7403",
+   "ton": "hmm",
+   "punkte": 1.28,
+   "gruende": [
+    "kaum gesummt (41 % stimmhaft)"
+   ],
+   "hinweise": [
+    "etwas Sprache-Verdacht (AudioSet „Speech“ 0,67), auf Wörter achten",
+    "tiefe, stimmhafte Stimme (Grundton im Mittel 127 Hz): auf Stöhnen achten"
+   ]
+  },
+  {
+   "roh": "hmm_denken_mann_7404",
+   "ton": "hmm",
+   "punkte": 2.5,
+   "gruende": [
+    "kaum gesummt (16 % stimmhaft)"
+   ],
+   "hinweise": [
+    "etwas Sprache-Verdacht (AudioSet „Speech“ 0,72), auf Wörter achten"
+   ]
+  },
+  {
+   "roh": "hmm_denken_mann_7405",
+   "ton": "hmm",
+   "punkte": 2.51,
+   "gruende": [
+    "kaum gesummt (19 % stimmhaft)",
+    "Tonhöhe fängt nicht oben an (Gipfel bei 38 % der Stimme)"
+   ],
+   "hinweise": [
+    "etwas Sprache-Verdacht (AudioSet „Speech“ 0,75), auf Wörter achten",
+    "steigt vorn erst 5,7 Halbtöne an"
+   ]
+  },
+  {
+   "roh": "hmm_denken_mann_7406",
+   "ton": "hmm",
+   "punkte": 1.25,
+   "gruende": [
+    "Sprache? (AudioSet „Speech“ 0,81)",
+    "kaum gesummt (28 % stimmhaft)",
+    "Tonhöhe fängt nicht oben an (Gipfel bei 57 % der Stimme)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2144 Hz (+13,1 dB über der Umgebung): auf Piepen achten",
+    "steigt vorn erst 3,2 Halbtöne an"
+   ]
+  },
+  {
+   "roh": "hmm_denken_frau_7402",
+   "ton": "hmm",
+   "punkte": -3.14,
+   "gruende": [
+    "klingt nach „Groan“ (AudioSet 0,16, Grenze 0,15)",
+    "klingt nach „Wail, moan“ (AudioSet 0,27, Grenze 0,15)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "hmm_denken_frau_7404",
+   "ton": "hmm",
+   "punkte": 0.63,
+   "gruende": [
+    "Tonhöhe fällt kaum (0,5 Halbtöne vom Gipfel bis zum Ende)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "hmm_denken_frau_7406",
+   "ton": "hmm",
+   "punkte": -1.66,
+   "gruende": [
+    "Tonhöhe fällt kaum (0,7 Halbtöne vom Gipfel bis zum Ende)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "hmm_gruebeln_7401",
+   "ton": "hmm",
+   "punkte": -3.07,
+   "gruende": [
+    "klingt nach „Wail, moan“ (AudioSet 0,21, Grenze 0,15)"
+   ],
+   "hinweise": [
+    "etwas „Groan“ (AudioSet 0,09)",
+    "etwas „Animal“ (AudioSet 0,13)",
+    "schmale Linie bei 2789 Hz (+15,7 dB über der Umgebung): auf Piepen achten",
+    "natürlich 2,1 s, auf 1,95 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "hmm_gruebeln_7402",
+   "ton": "hmm",
+   "punkte": -2.08,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Humming, Hum, Male speech, man speaking, Female speech, woman speaking, Speech; höchstens 0,02)",
+    "kaum gesummt (12 % stimmhaft)",
+    "Tonhöhe fängt nicht oben an (Gipfel bei 70 % der Stimme)",
+    "Tonhöhe fällt kaum (2,4 Halbtöne vom Gipfel bis zum Ende)"
+   ],
+   "hinweise": [
+    "natürlich 2,2 s, auf 1,95 s gekürzt und ausgeblendet",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "hmm_gruebeln_7403",
+   "ton": "hmm",
+   "punkte": -2.17,
+   "gruende": [
+    "AudioSet erkennt keine der erwarteten Klassen (Humming, Hum, Male speech, man speaking, Female speech, woman speaking, Speech; höchstens 0,03)"
+   ],
+   "hinweise": [
+    "natürlich 2,2 s, auf 1,95 s gekürzt und ausgeblendet",
+    "tiefe, stimmhafte Stimme (Grundton im Mittel 113 Hz): auf Stöhnen achten"
+   ]
+  },
+  {
+   "roh": "hmm_gruebeln_7404",
+   "ton": "hmm",
+   "punkte": 1.09,
+   "gruende": [
+    "Katzen-Leitplanke: schmale Linie bei 2167 Hz (+20,4 dB über der Umgebung), Piepen",
+    "Tonhöhe fällt kaum (0,8 Halbtöne vom Gipfel bis zum Ende)"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "hmm_gruebeln_7405",
+   "ton": "hmm",
+   "punkte": 2.22,
+   "gruende": [
+    "Tonhöhe fällt kaum (1,8 Halbtöne vom Gipfel bis zum Ende)"
+   ],
+   "hinweise": [
+    "natürlich 2,3 s, auf 1,95 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "hmm_comic_7401",
+   "ton": "hmm",
+   "punkte": -4.14,
+   "gruende": [
+    "klingt nach „Groan“ (AudioSet 0,26, Grenze 0,15)",
+    "kaum gesummt (10 % stimmhaft)",
+    "Tonhöhe fängt nicht oben an (Gipfel bei 45 % der Stimme)",
+    "Tonhöhe fällt kaum (0,0 Halbtöne vom Gipfel bis zum Ende)"
+   ],
+   "hinweise": [
+    "etwas „Grunt“ (AudioSet 0,10)",
+    "etwas „Wail, moan“ (AudioSet 0,13)",
+    "AudioSet erkennt keine der erwarteten Klassen",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?",
+    "Ende hell (Schwerpunkt 1504 Hz): eher „Hääh“ als „Hmmm“?"
+   ]
+  },
+  {
+   "roh": "hmm_comic_7402",
+   "ton": "hmm",
+   "punkte": -6.02,
+   "gruende": [
+    "klingt nach „Grunt“ (AudioSet 0,26, Grenze 0,20)",
+    "klingt nach „Burping, eructation“ (AudioSet 0,45, Grenze 0,15)",
+    "Tonhöhe nicht messbar"
+   ],
+   "hinweise": [
+    "etwas „Groan“ (AudioSet 0,09)",
+    "AudioSet erkennt keine der erwarteten Klassen",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "hmm_comic_7403",
+   "ton": "hmm",
+   "punkte": -3.17,
+   "gruende": [
+    "klingt nach „Groan“ (AudioSet 0,29, Grenze 0,15)",
+    "klingt nach „Wail, moan“ (AudioSet 0,15, Grenze 0,15)"
+   ],
+   "hinweise": [
+    "etwas „Grunt“ (AudioSet 0,18)",
+    "AudioSet erkennt keine der erwarteten Klassen",
+    "tiefe, stimmhafte Stimme (Grundton im Mittel 120 Hz): auf Stöhnen achten"
+   ]
+  },
+  {
+   "roh": "hmm_comic_7404",
+   "ton": "hmm",
+   "punkte": -4.71,
+   "gruende": [
+    "klingt nach „Grunt“ (AudioSet 0,34, Grenze 0,20)",
+    "Tonhöhe nicht messbar"
+   ],
+   "hinweise": [
+    "etwas „Groan“ (AudioSet 0,12)",
+    "etwas „Burping, eructation“ (AudioSet 0,11)",
+    "AudioSet erkennt keine der erwarteten Klassen",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "hmm_comic_7405",
+   "ton": "hmm",
+   "punkte": -7.18,
+   "gruende": [
+    "klingt nach „Groan“ (AudioSet 0,31, Grenze 0,15)",
+    "klingt nach „Grunt“ (AudioSet 0,54, Grenze 0,20)",
+    "Tonhöhe nicht messbar"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "hmm_comic_7406",
+   "ton": "hmm",
+   "punkte": -2.12,
+   "gruende": [
+    "kaum gesummt (12 % stimmhaft)",
+    "Tonhöhe fällt kaum (2,1 Halbtöne vom Gipfel bis zum Ende)"
+   ],
+   "hinweise": [
+    "etwas „Sigh“ (AudioSet 0,19)",
+    "fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?"
+   ]
+  },
+  {
+   "roh": "hmm_sfx_7402",
+   "ton": "hmm",
+   "punkte": -1.09,
+   "gruende": [
+    "kaum gesummt (21 % stimmhaft)",
+    "Tonhöhe fällt kaum (0,2 Halbtöne vom Gipfel bis zum Ende)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2654 Hz (+13,1 dB über der Umgebung): auf Piepen achten",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "hmm_sfx_7403",
+   "ton": "hmm",
+   "punkte": -1.73,
+   "gruende": [
+    "fast gleich wie hmm_denken_7403 (Spektrogramm r = 0,93)"
+   ],
+   "hinweise": [
+    "etwas „Groan“ (AudioSet 0,10)",
+    "etwas „Grunt“ (AudioSet 0,16)"
+   ]
+  },
+  {
+   "roh": "hmm_sfx_7404",
+   "ton": "hmm",
+   "punkte": -2.27,
+   "gruende": [
+    "Katzen-Leitplanke: schmale Linie bei 2507 Hz (+20,0 dB über der Umgebung), Piepen",
+    "AudioSet erkennt keine der erwarteten Klassen (Humming, Hum, Male speech, man speaking, Female speech, woman speaking, Speech; höchstens 0,01)",
+    "Tonhöhe fällt kaum (1,7 Halbtöne vom Gipfel bis zum Ende)"
+   ],
+   "hinweise": [
+    "etwas „Animal“ (AudioSet 0,13)",
+    "etwas „Domestic animals, pets“ (AudioSet 0,09)",
+    "natürlich 1,7 s, auf 1,60 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "hmm_sfx_7405",
+   "ton": "hmm",
+   "punkte": -2.56,
+   "gruende": [
+    "Tonhöhe fällt kaum (2,3 Halbtöne vom Gipfel bis zum Ende)"
+   ],
+   "hinweise": [
+    "etwas „Sigh“ (AudioSet 0,35)",
+    "schmale Linie bei 4962 Hz (+12,4 dB über der Umgebung): auf Piepen achten"
+   ]
+  },
+  {
+   "roh": "hmm_sfx_7406",
+   "ton": "hmm",
+   "punkte": -5.36,
+   "gruende": [
+    "klingt nach „Groan“ (AudioSet 0,35, Grenze 0,15)",
+    "klingt nach „Wail, moan“ (AudioSet 0,49, Grenze 0,15)"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "kuss_schmatz_7501",
+   "ton": "kuss",
+   "punkte": null,
+   "gruende": [
+    "Original leer"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "kuss_schmatz_7504",
+   "ton": "kuss",
+   "punkte": null,
+   "gruende": [
+    "Original leer"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "kuss_doppelt_7504",
+   "ton": "kuss",
+   "punkte": null,
+   "gruende": [
+    "Original leer"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "kuss_mwah_7501",
+   "ton": "kuss",
+   "punkte": -0.16,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen",
+    "Original sehr leise"
+   ]
+  },
+  {
+   "roh": "kuss_mwah_7503",
+   "ton": "kuss",
+   "punkte": -1.53,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "natürlich 1,3 s, auf 1,10 s gekürzt und ausgeblendet"
+   ]
+  },
+  {
+   "roh": "kuss_mwah_7504",
+   "ton": "kuss",
+   "punkte": -0.36,
+   "gruende": [
+    "Katzen-Leitplanke verfehlt (über 6 kHz −28,4 dB)"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "kuss_mwah_7505",
+   "ton": "kuss",
+   "punkte": -2.52,
+   "gruende": [
+    "fast gleich wie kuss_mwah_frau_7505 (Spektrogramm r = 0,95)"
+   ],
+   "hinweise": [
+    "natürlich 1,2 s, auf 1,10 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "kuss_mwah_7506",
+   "ton": "kuss",
+   "punkte": -2.62,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "natürlich 1,3 s, auf 1,10 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "kuss_mwah_frau_7501",
+   "ton": "kuss",
+   "punkte": -7.73,
+   "gruende": [
+    "klingt nach „Animal“ (AudioSet 0,56, Grenze 0,15)",
+    "klingt nach „Dog“ (AudioSet 0,46, Grenze 0,12)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 3714 Hz (+13,5 dB über der Umgebung): auf Piepen achten",
+    "natürlich 1,2 s, auf 1,10 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "kuss_mwah_frau_7503",
+   "ton": "kuss",
+   "punkte": -0.7,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "kuss_mwah_frau_7504",
+   "ton": "kuss",
+   "punkte": -0.81,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "kuss_mwah_frau_7505",
+   "ton": "kuss",
+   "punkte": -1.08,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "kuss_mwah_frau_7506",
+   "ton": "kuss",
+   "punkte": -1.96,
+   "gruende": [
+    "Katzen-Leitplanke: schmale Linie bei 5660 Hz (+26,2 dB über der Umgebung), Piepen"
+   ],
+   "hinweise": []
+  },
+  {
+   "roh": "kuss_schmatz_7503",
+   "ton": "kuss",
+   "punkte": -3.4,
+   "gruende": [
+    "zu kurz (0,07 s)"
+   ],
+   "hinweise": [
+    "nur −26,0 LUFS statt −20,0: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser"
+   ]
+  },
+  {
+   "roh": "kuss_schmatz_7505",
+   "ton": "kuss",
+   "punkte": -3.98,
+   "gruende": [
+    "zu kurz (0,02 s)"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen",
+    "Original sehr leise",
+    "nur −27,0 LUFS statt −20,0: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser"
+   ]
+  },
+  {
+   "roh": "kuss_schmatz_7506",
+   "ton": "kuss",
+   "punkte": -3.8,
+   "gruende": [
+    "zu kurz (0,06 s)"
+   ],
+   "hinweise": [
+    "nur −27,7 LUFS statt −20,0: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser"
+   ]
+  },
+  {
+   "roh": "kuss_schmatz_wange_7502",
+   "ton": "kuss",
+   "punkte": -1.46,
+   "gruende": [
+    "fast gleich wie kuss_schmatz_7502 (Spektrogramm r = 0,96)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 4001 Hz (+13,6 dB über der Umgebung): auf Piepen achten",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "kuss_schmatz_wange_7503",
+   "ton": "kuss",
+   "punkte": -3.35,
+   "gruende": [
+    "zu kurz (0,09 s)"
+   ],
+   "hinweise": [
+    "nur −26,0 LUFS statt −20,0: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser"
+   ]
+  },
+  {
+   "roh": "kuss_schmatz_wange_7504",
+   "ton": "kuss",
+   "punkte": -1.74,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "schmale Linie bei 4599 Hz (+16,0 dB über der Umgebung): auf Piepen achten",
+    "natürlich 1,4 s, auf 0,60 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen",
+    "Original sehr leise"
+   ]
+  },
+  {
+   "roh": "kuss_schmatz_wange_7505",
+   "ton": "kuss",
+   "punkte": -4.68,
+   "gruende": [
+    "zu kurz (0,08 s)"
+   ],
+   "hinweise": [
+    "nur −30,6 LUFS statt −20,0: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser"
+   ]
+  },
+  {
+   "roh": "kuss_schmatz_wange_7506",
+   "ton": "kuss",
+   "punkte": -4.84,
+   "gruende": [
+    "zu kurz (0,07 s)"
+   ],
+   "hinweise": [
+    "nur −31,0 LUFS statt −20,0: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser"
+   ]
+  },
+  {
+   "roh": "kuss_doppelt_7501",
+   "ton": "kuss",
+   "punkte": -4.38,
+   "gruende": [
+    "zu kurz (0,05 s)"
+   ],
+   "hinweise": [
+    "nur −29,6 LUFS statt −20,0: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser"
+   ]
+  },
+  {
+   "roh": "kuss_doppelt_7502",
+   "ton": "kuss",
+   "punkte": -1.93,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "Hüllkurve pulsiert mit 22 Hz (Schnurr-Bereich 15–50 Hz, Schärfe 11,5)",
+    "schmale Linie bei 4001 Hz (+17,0 dB über der Umgebung): auf Piepen achten",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "kuss_doppelt_7505",
+   "ton": "kuss",
+   "punkte": -4.41,
+   "gruende": [
+    "zu kurz (0,08 s)"
+   ],
+   "hinweise": [
+    "nur −29,1 LUFS statt −20,0: sehr kurzer, spitzer Schlag, die Spitzengrenze (−1 dBTP) hält ihn leiser"
+   ]
+  },
+  {
+   "roh": "kuss_comic_7501",
+   "ton": "kuss",
+   "punkte": -3.78,
+   "gruende": [
+    "klingt nach „Animal“ (AudioSet 0,23, Grenze 0,15)",
+    "klingt nach „Dog“ (AudioSet 0,13, Grenze 0,12)",
+    "Katzen-Leitplanke: schmale Linie bei 2718 Hz (+20,8 dB über der Umgebung), Piepen"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "kuss_comic_7502",
+   "ton": "kuss",
+   "punkte": -1.37,
+   "gruende": [
+    "klingt nach „Fart“ (AudioSet 0,16, Grenze 0,15)"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "kuss_comic_7503",
+   "ton": "kuss",
+   "punkte": -7.08,
+   "gruende": [
+    "katzenähnlich (AudioSet „Meow“ 0,21)",
+    "klingt nach „Animal“ (AudioSet 0,20, Grenze 0,15)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2179 Hz (+15,7 dB über der Umgebung): auf Piepen achten",
+    "natürlich 1,2 s, auf 1,10 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "kuss_comic_7506",
+   "ton": "kuss",
+   "punkte": -1.93,
+   "gruende": [
+    "Katzen-Leitplanke: schmale Linie bei 2021 Hz (+20,8 dB über der Umgebung), Piepen"
+   ],
+   "hinweise": [
+    "etwas „Animal“ (AudioSet 0,09)"
+   ]
+  },
+  {
+   "roh": "kuss_sfx_7501",
+   "ton": "kuss",
+   "punkte": -2.06,
+   "gruende": [
+    "Katzen-Leitplanke verfehlt (über 6 kHz −29,6 dB)"
+   ],
+   "hinweise": [
+    "etwas „Breathing“ (AudioSet 0,16)",
+    "natürlich 1,4 s, auf 1,10 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "kuss_sfx_7502",
+   "ton": "kuss",
+   "punkte": -0.94,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "kuss_sfx_7503",
+   "ton": "kuss",
+   "punkte": -1.28,
+   "gruende": [
+    "Katzen-Leitplanke verfehlt (über 6 kHz −25,4 dB)"
+   ],
+   "hinweise": [
+    "natürlich 1,5 s, auf 1,10 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "kuss_sfx_7504",
+   "ton": "kuss",
+   "punkte": -1.75,
+   "gruende": [
+    "Katzen-Leitplanke verfehlt (über 6 kHz −5,7 dB)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 4400 Hz (+16,7 dB über der Umgebung): auf Piepen achten",
+    "natürlich 1,2 s, auf 1,10 s gekürzt und ausgeblendet",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "kuss_sfx_7505",
+   "ton": "kuss",
+   "punkte": -1.11,
+   "gruende": [
+    "Katzen-Leitplanke verfehlt (über 6 kHz −20,4 dB)"
+   ],
+   "hinweise": [
+    "schmale Linie bei 4400 Hz (+16,4 dB über der Umgebung): auf Piepen achten",
+    "AudioSet erkennt keine der erwarteten Klassen"
+   ]
+  },
+  {
+   "roh": "kuss_sfx_7506",
+   "ton": "kuss",
+   "punkte": -0.99,
+   "gruende": [
+    "weniger Punkte"
+   ],
+   "hinweise": [
+    "schmale Linie bei 2162 Hz (+19,2 dB über der Umgebung): auf Piepen achten"
+   ]
   },
   {
    "roh": "furzkissen_kurz_6101",

@@ -1,6 +1,7 @@
 /* Mau-Mau Flip (Beta 1.6.12): „Natur-Überraschungen“ im Browser-Client „Lite“ – die Nachttiere (docs/module/natur.md 3.3, Aufgabe T6).
  * Glühwürmchen, Eule, Fledermaus, Mond mit Schlafmütze, Polarlicht, Katzen-Sternbild, UFO, Satellit, Motte, Igel, Komet, Lampion und
- * die Sternschnuppe (Bestand, im leuchtenden Stil der App: game/scripts/ui/shooting_star_fx.gd).
+ * die Sternschnuppe (Bestand, im leuchtenden Stil der App: game/scripts/ui/shooting_star_fx.gd); ab 1.6.15 Feuerwerk und Astronaut am
+ * Mond, das UFO ist nicht mehr scheu (weicht zweimal aus, der dritte Tipp verscheucht es).
  * Vertrag und Hilfen: Dateikopf von webclient/natur.js (M.Natur.art(id, {baue(ctx, zufall)}), M.Natur.stil, M.Natur.h).
  * Alles selbst gezeichnet (Inline-SVG und CSS-Verläufe), kein Ton, kein Text, kein Netz, kein filter/backdrop-filter.
  * stelle(t) ist rein in t (gleicher Samen + gleiches t = gleiches Bild); Reaktionen auf Tipp und Abgang laufen ab der gemerkten Zeit.
@@ -638,7 +639,9 @@
     },
   });
 
-  /* ================================================================ 18 UFO leuchtet den Stapel an */
+  /* ================================================================ 18 UFO leuchtet den Stapel an
+   * 1.6.15 (Nutzer: „nicht so einfach verscheuchen“): nicht mehr scheu, Ziehen stört es nicht; der 1. und 2. Tipp lassen es zur Seite
+   * ausweichen (Kegel flackert), erst der 3. verscheucht es. */
   N.art('ufo', {
     baue(ctx, z) {
       const o = ctx.ort, st = o.stapel || { x: o.x - 60, y: o.y + 62, w: 120, h: 180 };
@@ -670,7 +673,20 @@
       const E = { kg: q('.kg'), kp: q('.kp'), bl: q('.bl'), fk: Array.from(root.querySelectorAll('.fk')) };
       const fz = E.fk.map(() => ({ ph: z(), x: zz(z, -0.6, 0.6), v: zz(z, 0.5, 0.8) }));
       const tAn = 1.9, tAus = 4.4;
-      const inst = { el: root, dauer, cur: 0, leaveT: null };
+      // 1.6.15: nicht mehr scheu; 1. und 2. Tipp → Satz zur Seite (DS), zitternd dort (DH), zurück über den Stapel (DB); 3. Tipp → davon
+      const DS = 0.22, DH = 0.9, DB = 0.8, DX = 64;
+      const ausweich = [];   // [{at, x, y}] je Ausweich-Tipp (rein in t: stelle liest nur diese Liste)
+      const blockiert = x => ctx.schutz.some(q => q.name !== 'stapel' && flaeche(kasten(H0.x + x, H0.y - 2 * SK, 76 * SK, 36 * SK), q) > 0);
+      const freieSeite = blockiert(DX) && !blockiert(-DX) ? -1 : 1;
+      const segment = (i, t) => {
+        const d = ausweich[i], von = i > 0 ? segment(i - 1, d.at) : { x: 0, y: 0 }, x = t - d.at;
+        if (x < DS) { const u = raus(x / DS); return { x: lerp(von.x, d.x, u), y: lerp(von.y, d.y, u) }; }
+        if (x < DS + DH) return { x: d.x, y: d.y };
+        const u = glatt((x - DS - DH) / DB);
+        return { x: d.x * (1 - u), y: d.y * (1 - u) };
+      };
+      const versatz = t => { let i = -1; ausweich.forEach((d, j) => { if (d.at <= t) i = j; }); return i < 0 ? null : { off: segment(i, t), seit: t - ausweich[i].at }; };
+      const inst = { el: root, dauer, cur: 0, leaveT: null, tippMax: 3, tipps: 0 };
       const grund = t => {
         const tL = inst.dauer - 0.8;
         if (t < 1.5) {
@@ -681,12 +697,25 @@
         const u = rein(klemme((t - tL) / 0.8, 0, 1));
         return { x: H0.x + seite * 330 * u, y: H0.y - (H0.y + 130) * u, rot: seite * 12 * u };
       };
+      // Grundbahn samt Ausweichen: Versatz, Schaukeln; der Lichtkegel flackert und bleibt aus, solange das UFO neben dem Stapel ist
+      const mitAusweichen = (t, g, kegel) => {
+        const v = versatz(t);
+        if (!v) return { g, kegel };
+        const lean = Math.abs(v.off.x) > 0.5 ? Math.sign(v.off.x) : 0;
+        const rot = g.rot - lean * 13 * Math.sin(Math.PI * klemme(v.seit / (DS * 1.6), 0, 1)) + 9 * Math.sin(v.seit * 26) * Math.exp(-3.2 * v.seit);
+        let k = kegel * klemme(1 - Math.abs(v.off.x) / DX * 1.3, 0, 1);
+        if (v.seit < 0.55) k *= Math.sin(v.seit * 58) > 0 ? 1 : 0.25;
+        return { g: { x: g.x + v.off.x, y: g.y + v.off.y, rot }, kegel: k };
+      };
       const lage = t => {
         let g = grund(t), kegel = ein(t, tAn, 0.25) * klemme((tAus - t) / 0.2, 0, 1), op = 1;
         if (inst.leaveT !== null && t >= inst.leaveT) {
-          const g0 = grund(inst.leaveT), u = rein(klemme((t - inst.leaveT) / 0.4, 0, 1));
+          const g0 = mitAusweichen(inst.leaveT, grund(inst.leaveT), 0).g, u = rein(klemme((t - inst.leaveT) / 0.4, 0, 1));
           g = { x: g0.x + seite * 260 * u, y: g0.y - 280 * u, rot: seite * 16 * u };
           kegel = 0; op = 1 - ein(t - inst.leaveT, 0.25, 0.15);
+        } else {
+          const a = mitAusweichen(t, g, kegel);
+          g = a.g; kegel = a.kegel;
         }
         return { g, kegel, op };
       };
@@ -713,7 +742,17 @@
         return k;
       };
       inst.treffer = p => { const { g } = lage(inst.cur); return Math.hypot(p.x - g.x, (p.y - g.y) * 1.6) <= 60; };
-      inst.tipp = () => { inst.leaveT = inst.cur; inst.dauer = Math.min(inst.dauer, inst.cur + 0.42); };
+      inst.tipp = p => {
+        inst.tipps++;
+        if (inst.tipps >= 3) { inst.leaveT = inst.cur; inst.dauer = Math.min(inst.dauer, inst.cur + 0.42); return; }
+        // weg vom Finger, sonst zur freieren Seite; liegt dort ein Platz oder Knopf, zur anderen
+        const { g } = lage(inst.cur);
+        let s = p && Math.abs(g.x - p.x) >= 5 ? Math.sign(g.x - p.x) : (ausweich.length ? -Math.sign(ausweich[ausweich.length - 1].x) : freieSeite);
+        if (!s) s = freieSeite;
+        if (blockiert(s * DX) && !blockiert(-s * DX)) s = -s;
+        ausweich.push({ at: inst.cur, x: s * DX, y: ausweich.length ? 6 : -10 });
+      };
+      inst.ausweichen = () => ausweich.length;
       inst.abgang = () => { if (inst.leaveT === null) inst.leaveT = inst.cur; return Math.max(0.05, inst.leaveT + 0.42 - inst.cur); };
       return inst;
     },
@@ -1096,6 +1135,224 @@
         return { x: x0, y: y0, w: Math.max(h.x, ex) + 16 - x0, h: Math.max(h.y, ey) + 16 - y0 };
       };
       inst.abgang = () => { inst.leaveT = inst.cur; return 0.35; };
+      return inst;
+    },
+  });
+
+  /* ================================================================ 24 Feuerwerk (1.6.15)
+   * Nutzerwunsch 23.10.2026: „Ein Feuerwerk als zufällige Aktion bei Nacht“. 2–4 Raketen steigen mit Leuchtspur in freien Himmel und
+   * zerplatzen in bunte Funkensterne, die sinken und verglimmen (wie game/scripts/ui/nature_night.gd Fireworks). Je Knall eine Gruppe
+   * mit zwei Strich-Pfaden (äußerer Stern, innerer Kranz) und einem Blitz; die Gruppe wächst per scale und sinkt per translate.
+   * Antippen: an der Stelle noch ein Knall (höchstens zweimal, tippMax 2). Hülle = was gerade leuchtet (ohne Teile unter Plätzen). */
+  N.stil('feuerwerk', [
+    '.nt-fw{mix-blend-mode:screen}',
+  ].join('\n'));
+  N.art('feuerwerk', {
+    baue(ctx, z) {
+      const W = ctx.W, H = ctx.H, dauer0 = zz(z, 5, 6), DRAG = 3.2, GRAV = 40;
+      const FARBEN = ['#FF4FD8', '#FFD65A', '#3FF2E6', '#A77BFF', '#7CFFB2', '#FF9A3C'];
+      const schutz = ctx.schutz.concat(extraSchutz());
+      const deckung = r => { const a = r.w * r.h; return a > 0 ? Math.min(1, ueberdeckt(r, schutz) / a) : 0; };
+      const draussen = r => { const a = r.w * r.h, x0 = Math.max(0, r.x), y0 = Math.max(0, r.y), x1 = Math.min(W, r.x + r.w), y1 = Math.min(H, r.y + r.h); return a > 0 ? 1 - Math.max(0, x1 - x0) * Math.max(0, y1 - y0) / a : 1; };
+      const mond = ctx.orte && ctx.orte.mond ? ctx.orte.mond : { x: W * 0.93, y: H * 0.1 };
+      let n = 2 + Math.floor(z() * 3);
+      const b0 = zz(z, 1.05, 1.25), b1 = dauer0 - 1.85;
+      while (n > 2 && (b1 - b0) / (n - 1) < 0.55) n--;
+      const knalle = [], stellen = [];
+      const neuerKnall = (tb, c, R, von, steig) => {
+        const stil = Math.floor(z() * 3);   // 0 Pfingstrose, 1 Ring, 2 Trauerweide (gold, sinkt stärker)
+        let c0 = FARBEN[Math.floor(z() * FARBEN.length)], c1 = FARBEN[Math.floor(z() * FARBEN.length)];
+        if (stil === 2) { c0 = '#FFD65A'; c1 = '#FF9A3C'; }
+        const m = 28 + Math.floor(z() * 7), aussen = [], innen = [], spitzen = [];
+        for (let i = 0; i < m; i++) {
+          const a = TAU * (i + zz(z, -0.25, 0.25)) / m, v = stil === 1 ? 1 : zz(z, 0.78, 1);
+          aussen.push('M' + n1(Math.cos(a) * R * v * 0.66) + ',' + n1(Math.sin(a) * R * v * 0.66) + ' L' + n1(Math.cos(a) * R * v) + ',' + n1(Math.sin(a) * R * v));
+          spitzen.push('M' + n1(Math.cos(a) * R * v) + ',' + n1(Math.sin(a) * R * v) + ' l0,0');
+        }
+        const k = 10 + Math.floor(z() * 5);
+        for (let i = 0; i < k; i++) {
+          const a = TAU * (i + 0.5) / k, v = zz(z, 0.4, 0.5);
+          innen.push('M' + n1(Math.cos(a) * R * v * 0.62) + ',' + n1(Math.sin(a) * R * v * 0.62) + ' L' + n1(Math.cos(a) * R * v) + ',' + n1(Math.sin(a) * R * v));
+        }
+        return { t: tb, c, R, von, steig, c0, c1, grav: stil === 2 ? 1.9 : 1, life: 1.8, ph: z() * TAU, aussen: aussen.join(' '), innen: innen.join(' '), spitzen: spitzen.join(' ') };
+      };
+      for (let i = 0; i < n; i++) {
+        const tb = lerp(b0, b1, i / Math.max(1, n - 1)) + zz(z, -0.12, 0.12), R = zz(z, 84, 104);
+        let best = { x: W / 2, y: H * 0.16 }, bk = Infinity;
+        for (let j = 0; j < 40; j++) {
+          const p = { x: zz(z, 0.1, 0.9) * W, y: zz(z, 0.1, 0.27) * H }, r = kasten(p.x, p.y, R * 1.7, R * 1.7);
+          let k = (deckung(r) + draussen(r)) * 3;
+          if (Math.hypot(p.x - mond.x, p.y - mond.y) < R + 80) k += 2;
+          stellen.forEach(q => { const d = Math.hypot(p.x - q.x, p.y - q.y); if (d < R * 1.9) k += 1.5 * (1 - d / (R * 1.9)); });
+          k += z() * 0.08;
+          if (k < bk) { bk = k; best = p; }
+        }
+        stellen.push(best);
+        let von = { x: best.x, y: best.y + 200 }, vk = Infinity;
+        [-50, -25, 0, 25, 50].forEach(dx => [160, 200, 240].forEach(dy => {
+          const f = { x: best.x + dx, y: best.y + dy };
+          let k = 0;
+          for (let m = 0; m < 6; m++) { const u = (m + 0.5) / 6; k += deckung(kasten(lerp(f.x, best.x, u), lerp(f.y, best.y, u), 20, 28)); }
+          k += Math.abs(dx) * 0.002 + z() * 0.05;
+          if (k < vk) { vk = k; von = f; }
+        }));
+        knalle.push(neuerKnall(tb, best, R, von, zz(z, 0.85, 1.05)));
+      }
+      const extra = [neuerKnall(0, null, zz(z, 76, 90), null, 0), neuerKnall(0, null, zz(z, 76, 90), null, 0)];
+      const id = uid('fw');
+      const hoefe = Array.from(new Set(knalle.concat(extra).map(k => k.c0))).map(c => '<radialGradient id="' + id + 'h' + c.slice(1) + '"><stop offset="0" stop-color="' + c + '" stop-opacity=".32"/><stop offset=".55" stop-color="' + c + '" stop-opacity=".1"/><stop offset="1" stop-color="' + c + '" stop-opacity="0"/></radialGradient>').join('');
+      let inner = '<defs>' + hoefe + '<radialGradient id="' + id + 'b"><stop offset="0" stop-color="#fff" stop-opacity="1"/><stop offset=".25" stop-color="#FFF3C8" stop-opacity=".7"/><stop offset="1" stop-color="#FFF3C8" stop-opacity="0"/></radialGradient>'
+        + '<linearGradient id="' + id + 's" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FFE2A8" stop-opacity="0"/><stop offset="1" stop-color="#FFE2A8" stop-opacity=".95"/></linearGradient></defs>';
+      knalle.concat(extra).forEach(k => {
+        inner += '<g class="kn" style="opacity:0"><circle r="' + n1(k.R * 1.15) + '" fill="url(#' + id + 'h' + k.c0.slice(1) + ')"/><circle class="bl" r="' + n1(k.R * 0.55) + '" fill="url(#' + id + 'b)"/>'
+          + '<path d="' + k.aussen + '" stroke="' + k.c0 + '" stroke-width="4.6" stroke-linecap="round" fill="none"/>'
+          + '<path d="' + k.spitzen + '" stroke="#FFFBEA" stroke-width="7" stroke-linecap="round" fill="none"/>'
+          + '<path d="' + k.innen + '" stroke="' + k.c1 + '" stroke-width="3.4" stroke-linecap="round" fill="none"/></g>';
+      });
+      knalle.forEach(() => { inner += '<g class="ra" style="opacity:0"><rect x="-40" y="-1.4" width="40" height="2.8" rx="1.4" fill="url(#' + id + 's)"/><circle r="3.2" fill="#fff"/><circle r="8" fill="#FFE2A8" fill-opacity=".35"/></g>'; });
+      const root = wesen(svg(0, 0, Math.round(W), Math.round(H), inner, 'nt-fw'));
+      const gk = Array.from(root.querySelectorAll('.kn')), gr = Array.from(root.querySelectorAll('.ra')), bl = gk.map(g => g.querySelector('.bl'));
+      const inst = { el: root, dauer: dauer0, cur: 0, leaveT: null, tippMax: 2, tipps: [] };
+      const alle = () => knalle.concat(inst.tipps.map((tp, i) => Object.assign({}, extra[i], { t: tp.at, c: { x: klemme(tp.x, 40, W - 40), y: klemme(tp.y - 12, 40, H * 0.6) } })));
+      const weite = a => (1 - Math.exp(-DRAG * a)) / (1 - Math.exp(-DRAG * 1.1));
+      const rakete = (k, t) => {
+        const u = klemme((t - (k.t - k.steig)) / k.steig, 0, 1), e = raus(u);
+        return { x: lerp(k.von.x, k.c.x, e) + Math.sin(u * Math.PI) * 6, y: lerp(k.von.y, k.c.y, e), u };
+      };
+      const fade = t => { let a = 1 - ein(t, inst.dauer - 0.2, 0.2); if (inst.leaveT !== null) a *= klemme(1 - (t - inst.leaveT) / 0.38, 0, 1); return a; };
+      inst.stelle = t => {
+        inst.cur = t;
+        O(root, fade(t));
+        const ks = alle();
+        ks.forEach((k, i) => {
+          const g = gk[i], age = t - k.t;
+          if (age < 0 || age > k.life) { O(g, 0); return; }
+          const d = Math.max(0.12, weite(age)), sag = GRAV * k.grav * age * age;
+          let a = ausAb(age, k.life * 0.55, k.life * 0.45);
+          if (age > k.life * 0.45) a *= 0.6 + 0.4 * Math.sin(age * 34 + k.ph);
+          T(g, tr(k.c.x, k.c.y + sag, 0, d));
+          O(g, a);
+          O(bl[i], age < 0.35 ? 1 - age / 0.35 : 0);
+        });
+        knalle.forEach((k, i) => {
+          const g = gr[i];
+          if (t < k.t - k.steig || t >= k.t) { O(g, 0); return; }
+          const p = rakete(k, t), q = rakete(k, Math.max(k.t - k.steig, t - 0.05));
+          T(g, tr(p.x, p.y, Math.atan2(p.y - q.y, p.x - q.x) / RAD));
+          O(g, ein(t, k.t - k.steig, 0.15));
+        });
+      };
+      inst.hulle = t => {
+        if (fade(t) < 0.05) return null;
+        let u = null, best = null, bc = 2;
+        const add = r => {
+          if (r.x + r.w < 0 || r.x > W || r.y + r.h < 0 || r.y > H) return;
+          const cv = deckung(r);
+          if (cv >= 0.5) return;
+          if (cv < bc) { bc = cv; best = r; }
+          u = u ? { x: Math.min(u.x, r.x), y: Math.min(u.y, r.y), w: Math.max(u.x + u.w, r.x + r.w) - Math.min(u.x, r.x), h: Math.max(u.y + u.h, r.y + r.h) - Math.min(u.y, r.y) } : r;
+        };
+        alle().forEach(k => {
+          if (k.steig > 0 && t >= k.t - k.steig && t < k.t) { const p = rakete(k, t); add(kasten(p.x, p.y, 20, 28)); }
+          else if (t >= k.t && t < k.t + k.life) { const age = t - k.t, rr = k.R * Math.max(0.15, weite(age)) + 8; add(kasten(k.c.x, k.c.y + GRAV * k.grav * age * age * 0.6, rr * 2, rr * 2)); }
+        });
+        return u && deckung(u) > 0.5 ? best : u;
+      };
+      inst.treffer = p => { const h = inst.hulle(inst.cur); return !!h && p.x >= h.x - 20 && p.x <= h.x + h.w + 20 && p.y >= h.y - 20 && p.y <= h.y + h.h + 20; };
+      inst.tipp = p => { if (inst.tipps.length < 2 && p) { inst.tipps.push({ at: inst.cur, x: p.x, y: p.y }); inst.dauer = Math.max(inst.dauer, inst.cur + 2.0); } };
+      inst.knalle = t => alle().filter(k => t - k.t >= 0 && t - k.t < k.life).map(k => k.c);
+      inst.abgang = () => { inst.leaveT = inst.cur; return 0.4; };
+      return inst;
+    },
+  });
+
+  /* ================================================================ 25 Astronaut am Mond (1.6.15)
+   * Nutzerwunsch 23.10.2026: „Ein Astronaut schwebt neben dem Mond“. Kleiner, runder Astronaut (weißer Anzug, Visier mit Spiegelung) wie
+   * in der App (nature_night.gd Astronaut): schwebt schräg von oben neben den Mond, taumelt langsam, winkt einmal, treibt nach links oben
+   * davon. Antippen: langsamer Salto mit Winken. Meidet Menü- und Ton-Knopf, Plätze und den Mond selbst. */
+  function astronautSvg() {
+    const L = '#8A80C8', ANZ = '#F6F4FF', ANZ_D = '#D2CCEE', id = uid('as');
+    const glied = (a, b, r, cls) => {
+      const w = Math.atan2(b[1] - a[1], b[0] - a[0]) / RAD, l = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      return '<g class="' + (cls || '') + '" transform="translate(' + a[0] + ' ' + a[1] + ')"><g transform="rotate(' + n1(w) + ')">'
+        + '<rect x="' + (-r) + '" y="' + (-r) + '" width="' + n1(l + 2 * r) + '" height="' + 2 * r + '" rx="' + r + '" fill="' + ANZ + '" stroke="' + L + '" stroke-width="1.3"/>'
+        + '<circle cx="' + n1(l) + '" cy="0" r="' + n1(r * 1.05) + '" fill="' + ANZ_D + '" stroke="' + L + '" stroke-width="1.1"/></g></g>';
+    };
+    return svg(-40, -46, 80, 86,
+      '<defs><radialGradient id="' + id + 'g"><stop offset="0" stop-color="#9A86FF" stop-opacity=".22"/><stop offset="1" stop-color="#9A86FF" stop-opacity="0"/></radialGradient></defs>'
+      + '<circle cx="0" cy="-4" r="38" fill="url(#' + id + 'g)"/>'
+      + '<path d="M-15,-8 L-4,-11 L-3,11 L-14,12 Z" fill="#B9B2DC" stroke="' + L + '" stroke-width="1.2" stroke-linejoin="round"/>'
+      + '<g class="bl">' + glied([-4.5, 10], [-6.5, 20.5], 4.4) + '</g><g class="br">' + glied([4.5, 10], [6.5, 19.5], 4.4) + '</g>'
+      + '<ellipse cx="0" cy="4" rx="11" ry="11.5" fill="' + ANZ + '" stroke="' + L + '" stroke-width="1.3"/>'
+      + '<path d="M-5.5,0.5 L5.5,0.5 L5,8 L-5,8 Z" fill="' + ANZ_D + '" stroke="' + L + '" stroke-opacity=".8" stroke-width=".9"/>'
+      + '<circle cx="-2.6" cy="3" r="1.4" fill="#FF4FD8"/><circle cx="0.6" cy="3" r="1.4" fill="#FFD65A"/><circle cx="3.4" cy="3" r="1.4" fill="#3FF2E6"/>'
+      + glied([-9, -1], [-17, 6], 3.8)
+      + '<ellipse cx="0" cy="-14" rx="13" ry="12.5" fill="' + ANZ + '" stroke="' + L + '" stroke-width="1.4"/>'
+      + '<ellipse cx="1.2" cy="-14" rx="9.6" ry="7.6" fill="#1B2147" stroke="' + L + '" stroke-width="1.1"/>'
+      + '<ellipse cx="2.4" cy="-12.4" rx="7" ry="4.4" fill="#2E3A78" fill-opacity=".9"/>'
+      + '<path d="M8.5,-12.7 A7.4,7.4 0 0 1 3.7,-7.0" fill="none" stroke="#5FE3F0" stroke-opacity=".85" stroke-width="1.6" stroke-linecap="round"/>'
+      + '<path d="M-4.9,-17.8 A7,7 0 0 1 -0.3,-20.8" fill="none" stroke="#fff" stroke-opacity=".9" stroke-width="1.8" stroke-linecap="round"/>'
+      + '<circle cx="5.4" cy="-17" r="2.1" fill="#fff" fill-opacity=".85"/><circle cx="6.3" cy="-17.6" r="1.8" fill="#1B2147"/><circle cx="-3.2" cy="-17.6" r=".9" fill="#fff"/>'
+      + '<path d="M-4,-25.5 L-5,-29" stroke="' + L + '" stroke-width="1.2"/><circle class="la" cx="-5" cy="-29.5" r="2" fill="#FF4FD8"/>'
+      + '<g class="ar" transform="translate(9 -1)">' + glied([0, 0], [10.5, 0], 3.8) + '</g>');
+  }
+  N.art('astronaut', {
+    baue(ctx, z) {
+      const W = ctx.W, H = ctx.H, SK = 1.5;
+      let dauer = zz(z, 9, 12);
+      const IN = 2.2, OUT = 2.0, SALTO = 1.9;
+      const m = ctx.ort && typeof ctx.ort.x === 'number' ? ctx.ort : { x: W * 0.93 - 52, y: 0.04 * H + 52, w: 104 };
+      const mr = (m.w || 104) / 2, he = { w: 52 * SK, h: 64 * SK };
+      const schutz = ctx.schutz.concat(extraSchutz());
+      const kosten = r => { const a = r.w * r.h, x0 = Math.max(0, r.x), y0 = Math.max(0, r.y), x1 = Math.min(W, r.x + r.w), y1 = Math.min(H, r.y + r.h);
+        const drin = Math.max(0, x1 - x0) * Math.max(0, y1 - y0); return Math.min(1, ueberdeckt(r, schutz) / a) + (1 - drin / a); };
+      let heim = { x: m.x - 150, y: m.y + 50 }, bk = Infinity;
+      [165, 150, 180, 135, 195, 120].forEach(w => [mr + 70, mr + 100, mr + 135, mr + 175].forEach(d => {
+        const p = { x: klemme(m.x + Math.cos(w * RAD) * d, he.w / 2 + 8, W - he.w / 2 - 8), y: Math.max(m.y + Math.sin(w * RAD) * d, he.h / 2 + 8) };
+        let k = kosten(kasten(p.x, p.y, he.w, he.h)) * 4 + d / 500 + Math.abs(w - 160) / 400 + z() * 0.02;
+        if (Math.hypot(p.x - m.x, p.y - m.y) < mr + 40) k += 3;
+        if (k < bk) { bk = k; heim = p; }
+      }));
+      const von = { x: Math.min(W + 50, heim.x + 260), y: -70 }, ctrl = { x: heim.x + 130, y: heim.y - 10 }, nach = { x: heim.x - 280, y: heim.y - 260 };
+      const ph = [z() * TAU, z() * TAU, z() * TAU, z() * TAU], tWink = zz(z, IN + 1.0, Math.max(IN + 1.1, dauer - OUT - 2.0)), dreh0 = zz(z, -11, 11);
+      const root = wesen(astronautSvg());
+      const q = s => root.querySelector(s);
+      const E = { bl: q('.bl'), br: q('.br'), ar: q('.ar'), la: q('.la') };
+      const inst = { el: root, dauer, cur: 0, tapT: null, leaveT: null };
+      const lage = t => {
+        const D = inst.dauer, tOut = D - OUT;
+        const drift = { x: 14 * Math.sin(TAU * t / 5.3 + ph[0]), y: 9 * Math.sin(TAU * t / 3.9 + ph[1]) };
+        const basis = dreh0 + 17 * Math.sin(TAU * t / 6.5 + ph[2]);
+        let x, y, rot;
+        if (t < IN) { const u = raus(t / IN), p = bez2(von, ctrl, heim, u); x = p.x + drift.x * u; y = p.y + drift.y * u; rot = basis + (1 - u) * 63; }
+        else if (t < tOut) { x = heim.x + drift.x; y = heim.y + drift.y; rot = basis; }
+        else { const u = rein(klemme((t - tOut) / OUT, 0, 1)); x = lerp(heim.x, nach.x, u) + drift.x; y = lerp(heim.y, nach.y, u) + drift.y; rot = basis - 52 * u; }
+        let wink = ein(t, tWink, 0.3) * ausAb(t, tWink + 1.5, 0.3), op = ein(t, 0, 0.4) * klemme((D - t) / 0.5, 0, 1);
+        if (inst.tapT !== null && t >= inst.tapT) {
+          const u = klemme((t - inst.tapT) / SALTO, 0, 1);
+          rot -= 360 * glatt(u); y -= 12 * Math.sin(Math.PI * u);
+          wink = Math.max(wink, Math.sin(Math.PI * klemme((t - inst.tapT) / (SALTO + 0.5), 0, 1)));
+        }
+        if (inst.leaveT !== null) op *= klemme(1 - (t - inst.leaveT) / 0.38, 0, 1);
+        return { x, y, rot, wink, op };
+      };
+      inst.stelle = t => {
+        inst.cur = t;
+        const L = lage(t);
+        S(root, L.x, L.y, L.rot, SK, L.op);
+        const kick = Math.sin(t * 1.7 + ph[3]);
+        T(E.bl, 'rotate(' + n1(-10 * kick) + ' -4.5 10)');
+        T(E.br, 'rotate(' + n1(10 * kick) + ' 4.5 10)');
+        T(E.ar, 'translate(9 -1) rotate(' + n1(lerp(55, -48 + 24 * Math.sin(t * TAU * 2.2), L.wink)) + ')');
+        O(E.la, 0.35 + 0.65 * Math.max(0, Math.sin(t * TAU * 0.7)));
+      };
+      inst.hulle = t => { const L = lage(t); return L.op < 0.03 ? null : kasten(L.x, L.y - 2 * SK, he.w, he.h); };
+      inst.tipp = () => {
+        inst.tapT = inst.cur;
+        const tOut = inst.dauer - OUT;
+        if (inst.cur < tOut && inst.cur + SALTO + 0.3 > tOut) inst.dauer = inst.cur + SALTO + 0.3 + OUT;
+      };
+      inst.abgang = () => { inst.leaveT = inst.cur; return 0.4; };
       return inst;
     },
   });

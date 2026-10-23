@@ -2,7 +2,9 @@ extends SceneTree
 # Mau-Mau Flip (Beta 1.6.12): Nachttiere der Natur-Überraschungen (docs/module/natur.md Abschnitt 8.1, Aufgabe T4). Headless an einer
 # echten TableView (nature_check.gd, Uhren aus):
 #   - nature_check für jede Nacht-id (4 Größen × 2/4/8 Spieler: Sichtbarkeit, deckt, Aufräumen, hit, leave ≤ 0,5 s, Bestimmtheit),
-#   - Reaktion beim Antippen über NatureFx.tap (Zustand danach), Scheu von UFO und Motte (notice_press), Ortsereignisse,
+#   - Reaktion beim Antippen über NatureFx.tap (Zustand danach), Scheu der Motte (notice_press), Ortsereignisse,
+#   - 1.6.15: UFO nicht mehr scheu (Druck daneben/auf den Stapel und draw lassen es bleiben, shuffle nicht), weicht beim 1. und 2. Tipp
+#     aus, erst der 3. verscheucht es; Feuerwerk: Tipp zündet einen Knall an der Stelle (höchstens zweimal); Astronaut: Salto,
 #   - ruhige Varianten (Mond mit Mütze, Polarlicht, Sternbild): keine Bewegung (Hülle und Pose über die Zeit gleich),
 #   - make(id) liefert genau die Nachttiere, Quelltext ohne Ton, Vibration und Netz.
 # Umgebungsvariable NUR=<id,…> prüft nur diese ids (schneller beim Nachbessern).
@@ -66,7 +68,7 @@ func table_checks() -> void:
 	for e in NT.entries():
 		if str(e["seite"]) == "nacht" and not bool(e["bestand"]):
 			night_ids.append(str(e["id"]))
-	check(night_ids.size() == 12, "12 Nacht-Einträge ohne Bestand (%d)" % night_ids.size())
+	check(night_ids.size() == 14, "14 Nacht-Einträge ohne Bestand (%d)" % night_ids.size())
 	for id in night_ids:
 		check(Night.ids().has(id), "ids() enthält " + id)
 		var n := Night.make(id)
@@ -113,6 +115,17 @@ func free_of_obstacles(p: Vector2) -> bool:
 			if (r as Rect2).has_point(p):
 				return false
 	return true
+
+
+# freier Punkt (keine Schutzfläche) in der Hülle des laufenden Tiers, (−1, −1) wenn keiner
+func free_in_hull() -> Vector2:
+	var b := nf.world_bounds()
+	for fy in [0.5, 0.3, 0.7, 0.15, 0.85]:
+		for fx in [0.5, 0.3, 0.7, 0.15, 0.85]:
+			var p := b.position + b.size * Vector2(float(fx), float(fy))
+			if free_of_obstacles(p):
+				return p
+	return Vector2(-1, -1)
 
 
 # Samen suchen, bei dem das Tier zur Zeit tt an einer freien Stelle sitzt (sonst nimmt der Tisch den Tipp)
@@ -188,13 +201,70 @@ func tap_checks() -> void:
 			var p: Array = c.get("P")
 			check(not (q[10] as Vector2).is_equal_approx(p[10]), "Sternbild: Schwanz wackelt")
 	if ids.has("ufo"):
-		var c := tappable("ufo", 3.0)
+		# 1.6.15: 1. und 2. Tipp → weicht zur Seite aus (bleibt), erst der 3. verscheucht es
+		var c := tappable("ufo", 2.6)
 		check(c != null, "UFO: freie Stelle über dem Stapel")
 		if c != null:
-			check(nf.tap(tap_point("ufo")), "UFO: Tipp trifft")
-			check(c.leaving(), "UFO: saust davon")
-			nf.seek(3.0 + 0.5)
+			var p0 := tap_point("ufo")
+			check(nf.tap(p0 + Vector2(-8, 0)), "UFO: 1. Tipp trifft")
+			check(not c.leaving(), "UFO: 1. Tipp verscheucht es nicht")
+			nf.seek(2.6 + 0.3)
+			var p1 := tap_point("ufo")
+			check(absf(p1.x - p0.x) > 35.0, "UFO: weicht zur Seite aus (%.0f px)" % (p1.x - p0.x))
+			check(float(c.get("beam")) < 1.0, "UFO: Lichtkegel flackert beim Ausweichen")
+			nf.seek(2.6 + 2.2)
+			check(tap_point("ufo").distance_to(p0) < 12.0, "UFO: gleitet zurück über den Stapel")
+			var sd := c.seed_value
+			check(nf.tap(tap_point("ufo")), "UFO: 2. Tipp trifft")
+			check(not c.leaving(), "UFO: 2. Tipp verscheucht es nicht")
+			nf.seek(2.6 + 2.6)
+			check(nf.tap(tap_point("ufo")), "UFO: 3. Tipp trifft")
+			check(c.leaving(), "UFO: 3. Tipp – saust davon")
+			nf.seek(2.6 + 2.6 + 0.5)
 			check(c.is_done(), "UFO: nach 0,5 s weg")
+			# rein in t: gleicher Samen, gleiche Tipps → gleiche Lage
+			nf.spawn("ufo", sd)
+			nf.seek(2.6)
+			var c2 := nf.creature() as NatureCreature
+			nf.tap(tap_point("ufo") + Vector2(-8, 0))
+			nf.seek(2.9)
+			check(tap_point("ufo").is_equal_approx(p1), "UFO: Ausweichen bestimmt (seek)")
+			check(c2 != null and c2.tap_count() == 1, "UFO: Tipps gezählt")
+	if ids.has("feuerwerk"):
+		var c := tappable("feuerwerk", 2.2)
+		check(c != null, "Feuerwerk: freie Stelle")
+		if c != null:
+			var n0 := (c.call("active_bursts") as Array).size()
+			check(n0 >= 1, "Feuerwerk: ein Knall leuchtet (%d)" % n0)
+			var p := tap_point("feuerwerk")
+			var d0 := c.dur
+			check(nf.tap(p), "Feuerwerk: Tipp trifft")
+			nf.seek(2.2 + 0.25)
+			var near := false
+			for q in c.call("active_bursts"):
+				near = near or (nf._layer_to_world("hinten") * (q as Vector2)).distance_to(p) < 30.0
+			check(near, "Feuerwerk: neuer Knall an der Tippstelle")
+			check(c.dur >= d0 and c.dur >= 2.2 + 2.0 - 0.01, "Feuerwerk: läuft lang genug für den Knall")
+			nf.seek(2.6)
+			var p2 := free_in_hull()
+			check(p2.x >= 0.0 and nf.tap(p2), "Feuerwerk: 2. Tipp zündet noch einen")
+			nf.seek(2.9)
+			var p3 := free_in_hull()
+			check(p3.x >= 0.0 and not nf.tap(p3), "Feuerwerk: höchstens zwei Knalle per Tipp")
+			check(c.tap_count() == 2, "Feuerwerk: zwei Tipps gezählt (%d)" % c.tap_count())
+	if ids.has("astronaut"):
+		var c := tappable("astronaut", 5.0)
+		check(c != null, "Astronaut: freie Stelle neben dem Mond")
+		if c != null:
+			var r0 := float(c.get("rot"))
+			check(nf.tap(tap_point("astronaut")), "Astronaut: Tipp trifft")
+			nf.seek(5.0 + 0.95)
+			check(absf(float(c.get("rot")) - r0) > 2.0, "Astronaut: Salto (%.2f → %.2f)" % [r0, float(c.get("rot"))])
+			check(float(c.get("wave")) > 0.5, "Astronaut: winkt dabei")
+			nf.seek(5.0 + 2.1)
+			check(not c.is_done(), "Astronaut: schwebt danach weiter")
+			var mo: Vector2 = nf.anchors()["mond"]["pos"]
+			check(nf.world_bounds().get_center().distance_to(mo) < 330.0, "Astronaut: schwebt neben dem Mond")
 	if ids.has("igel"):
 		var c := tappable("igel", 3.0)
 		check(c != null, "Igel: freie Stelle")
@@ -231,12 +301,15 @@ func shy_checks() -> void:
 	var ids := only()
 	NatureCheck.show(t, 4, 1)
 	if ids.has("ufo"):
+		# 1.6.15: nicht mehr scheu – Druck daneben, auf den Stapel und Ziehen lassen es bleiben; Mischen vertreibt es
 		var c := spawn_at("ufo", 5, 3.0)
 		nf.notice_press(nf.world_bounds().get_center() + Vector2(100, 0))
-		check(c.leaving(), "UFO: scheu bei Druck in 130 px")
-		c = spawn_at("ufo", 5, 3.0)
+		nf.notice_press(t.draw_pile_position())
+		check(not c.leaving(), "UFO: nicht scheu bei Druck in 130 px und auf den Stapel")
 		nf.on_event({"e": "draw", "seat": 2, "count": 1})
-		check(c.leaving(), "UFO: geht bei draw")
+		check(not c.leaving(), "UFO: bleibt bei draw")
+		nf.on_event({"e": "shuffle"})
+		check(c.leaving(), "UFO: geht bei shuffle")
 		c = spawn_at("ufo", 5, 3.0)
 		check(float(c.get("beam")) > 0.9, "UFO: Lichtkegel an")
 		nf.seek(3.2)

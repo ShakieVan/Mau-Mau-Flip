@@ -150,6 +150,9 @@ static func personal(parent: Control, section: Callable, tempo := true) -> void:
 	var toene := ScreenKit.choice(levels, toene_val if AppSettings.TOENE.has(toene_val) else "normal", _on_toene, UiFonts.size("text"))
 	toene.name = "Toene"
 	sound.add_child(ScreenKit.row("Spieltöne", toene, 190.0, "Karte, Ziehen, Mischen, Flip, Sieg"))
+	# Dran-Ton allein abschaltbar (Beta 1.6.15, Nutzerwunsch 23.10.2026); die übrigen Spieltöne bleiben, Lautstärke wie Spieltöne
+	sound.add_child(ScreenKit.switch_row("Bei deinem Zug: Ton", "Kurzer Klang, wenn du dran bist. Aus: nur dieser Klang schweigt, die übrigen Spieltöne bleiben.",
+		bool(UiApp.setting("zug_ton", true)), func(on: bool) -> void: _store("zug_ton", on), "ZugTon"))
 	var app_node := UiApp.app()
 	if app_node != null and app_node.sound != null and app_node.sound.dnd_muted():
 		var dnd := ScreenKit.hint(AppSound.dnd_text(), UiFonts.size("hinweis"))
@@ -177,7 +180,7 @@ static func personal(parent: Control, section: Callable, tempo := true) -> void:
 			big_hint.visible = str(UiApp.setting("schrift", "normal")) == "sehr_gross" and not on
 	look.add_child(ScreenKit.switch_row("Großer Modus", "Riesige Karten, Ablage und Farbe, Mitspieler als Liste rechts. Für schlechte Augen oder schlechtes Licht.",
 		bool(UiApp.setting("grosser_modus", false)), on_big, "GrosserModus"))
-	look.add_child(ScreenKit.switch_row("Bei deinem Zug: Vibration", "Kurz vibrieren, wenn du dran bist. Den Dran-Ton schaltest du mit den Spieltönen.",
+	look.add_child(ScreenKit.switch_row("Bei deinem Zug: Vibration", "Kurz vibrieren, wenn du dran bist. Den Klang dazu schaltest du unter „Ton“.",
 		bool(UiApp.setting("zug_vibration", true)), func(on: bool) -> void: _store("zug_vibration", on), "ZugVibration"))
 	# Persönliche Hilfe, nie eine Regel des Gastgebers (AGENTS.md 24); der Tisch (HandView) hört auf App.settings.changed.
 	look.add_child(ScreenKit.switch_row("Spielbare Karten hervorheben", "Nur auf diesem Gerät: Karten, die du gerade legen kannst, werden in deiner Hand hervorgehoben.",

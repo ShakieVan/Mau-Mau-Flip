@@ -288,8 +288,9 @@ func modulate_icon(icon: String, c: Vector2, s: float, mod: Color) -> void:
 # ================================================================= Reaktionsknöpfe am eigenen Platz
 
 # Beta 1.6.5 (Nutzerwunsch nach der Familienrunde): Reihenfolge der Knöpfe (TeaseRules.FX_REACTS bleibt die Liste des Protokolls)
-const REACT_ORDER := ["lachen", "klatschen", "daumen", "schreck", "baeh", "heulen", "facepalm"]   # 1.6.11: + Bäää (😝); 1.6.13: + 😭 🤦
-const REACT_COLS := 4                 # Beta 1.6.13 (Nutzerwunsch): in der normalen Ansicht nach 4 Knöpfen umbrechen (Block 4 + 3)
+const REACT_ORDER := ["lachen", "klatschen", "daumen", "schreck", "baeh", "heulen", "facepalm", "denken", "schlafen", "kuss"]   # 1.6.11: + Bäää (😝); 1.6.13: + 😭 🤦; 1.6.15: + 🤔 😴 😘
+const REACT_COLS := 5                 # Beta 1.6.13 (Nutzerwunsch): in der normalen Ansicht nach 4 Knöpfen umbrechen (Block 4 + 3); ab 1.6.15 mit zehn
+                                      # nach 5 (Block 5 + 5, so hoch wie vorher 4 + 3 – drei Reihen reichten bis an den Fächer links)
 const REACT_BTN_R := 24.0             # Knopfradius (Trefferfläche ≥ 48 px), großer Modus × k
 const REACT_ICON := 0.76              # Bildgröße relativ zum Knopfradius (Fluent-Emoji-Bild, TeaseFx.draw_reaction)
 
@@ -334,6 +335,12 @@ class ReactionBar:
 				return I18n.t("Heulen")
 			"facepalm":
 				return I18n.t("Facepalm")
+			"denken":
+				return I18n.t("Nachdenken")
+			"schlafen":
+				return I18n.t("Schnarchen")
+			"kuss":
+				return I18n.t("Küsschen")
 		return I18n.t("Reaktion")
 
 	func _get_tooltip(at_position: Vector2) -> String:

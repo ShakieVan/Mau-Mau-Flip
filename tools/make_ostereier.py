@@ -898,13 +898,118 @@ TOENE["facepalm2"] = dict(TOENE["facepalm"], **{
          "„human vocal sound effect“: Klatsch, dann genervtes, tiefes „Aaaah“", FP2_SEEDS, None, dict(FP2, cfg=6.0)),
     ],
 })
+# Nutzer 23.10.2026 nach dem Hören: „Das klingt alles doof“ – „Hmmm“ und „Küsschen“ kommen aus eigenen Aufnahmen
+# (tools/make_reaktion_aufnahmen.py --nur hmm,kuss, Stufe nur6); die Einträge hmm/kuss hier bleiben als Beleg der verworfenen Runde.
+# Nachdenken (23.10.2026, Reaktion 🤔 „Hmmm“): nachdenkliches, gesummtes „Hmmm“ mit geschlossenem Mund, das hoch anfängt
+# und etwas nach unten gleitet (Nutzerwunsch). Gemessen mit stimme_messen („hmm“ in bewerten): überwiegend stimmhaft,
+# Gipfel der Tonhöhe vorn, danach mindestens HMM_FALL_HT Halbtöne abwärts, kaum Anstieg. Kein Stöhnen (siehe Gähnen),
+# keine Wörter, kein Gesang/keine Melodie, kein Tier.
+HMM_FALL_HT = 2.5
+HMM_NEGATIV = ("speech, words, talking, sentence, singing, song, melody, music, musical instrument, moaning, groaning, "
+               "grunting, straining, sexual, pleasure, sigh, laughter, laughing, giggling, crying, animal, cat, meow, purr, "
+               "dog, cow, moo, bee, buzzing, engine, motor, electrical hum, siren, whistle")
+HMM_ARTEN = {"fallend": "„Hmmm“, hoch anfangend und abwärts gleitend", "lang": "langes, grübelndes „Hmmmmm“",
+             "comic": "Zeichentrick-„Hmmm“"}
+HM_SEEDS = list(range(7401, 7407))
+HM_FALL = {"kategorie": "fallend", "ziel": (0.7, 1.6), "sekunden": 1.1}
+HM_LANG = {"kategorie": "lang", "ziel": (1.0, 1.95), "sekunden": 1.5}
+HM_COMIC = {"kategorie": "comic", "ziel": (0.6, 1.6), "sekunden": 1.0}
+TOENE["hmm"] = {
+    "titel": "Nachdenken „Hmmm“ (Reaktion 🤔)", "zweck": "Reaktion (🤔)",
+    "ziel_text": "0,7–1,95 s: nachdenkliches, gesummtes „Hmmm“ (Mund zu), fängt hoch an und gleitet etwas nach unten; keine "
+                 "Wörter, kein Gesang, kein Stöhnen, kein Tier",
+    "hinweis": "Neue Reaktion. Sprache, Gesang/Melodie, Stöhnen/Ächzen, Seufzen, Lachen, Weinen, Tiere und Brummen von Maschinen "
+               "stehen als Negativ-Prompt. Behalten wurde nur, was überwiegend stimmhaft ist, den Tonhöhengipfel vorn hat und "
+               "danach mindestens 2,5 Halbtöne fällt (pyin), und was AudioSet nicht deutlich als Stöhnen, Sprache, "
+               "Gesang, Tier oder Katze hört. Dubletten über alle Paare aussortiert, Auswahl reihum über die Arten. "
+               "Beschreibungen stammen aus Messungen, nicht vom Hören.",
+    "sekunden": 1.1, "ziel": (0.7, 1.95), "modus": "anfang", "vorlauf": 0.06, "einblenden": 0.01, "ausblenden": 0.2,
+    "lufs": -19.0, "begrenzer": 3.0, "hochpass": 80.0, "stimme": True, "behalten": 8, "tonhoehe": True, "hmm": True,
+    "erwartet": ["Humming", "Hum", "Male speech, man speaking", "Female speech, woman speaking", "Speech"],
+    "erwartet_mindestens": 0.03,
+    "arten": HMM_ARTEN, "ausgewogen": True, "nur_ok": True, "dubletten_alle": True, "streng": True,
+    "puls_purr": True, "sprache_grenze": (0.75, 0.5),
+    "meiden": {"Groan": 0.15, "Grunt": 0.2, "Wail, moan": 0.15, "Singing": 0.25, "Music": 0.3, "Laughter": 0.12,
+               "Giggle": 0.12, "Crying, sobbing": 0.12, "Sigh": 0.35, "Animal": 0.15, "Domestic animals, pets": 0.12,
+               "Cattle, bovinae": 0.12, "Moo": 0.12, "Bee, wasp, etc.": 0.12, "Insect": 0.12, "Buzz": 0.2,
+               "Mains hum": 0.15, "Engine": 0.12, "Burping, eructation": 0.15},
+    "beobachten": ["Speech", "Humming", "Hum", "Sigh", "Breathing", "Groan", "Male speech, man speaking",
+                   "Female speech, woman speaking", "Sound effect", "Cartoon"],
+    "negativ": HMM_NEGATIV,
+    "seeds": HM_SEEDS,
+    "prompts": [
+        ("denken", "a person thinks hard and goes hmmm with the mouth closed, one thoughtful hummed hmm that starts high and slowly glides down in pitch, pondering, close-up, dry room, " + NO_WORDS,
+         "nachdenkliches „Hmmm“ mit geschlossenem Mund, hoch anfangend, abwärts gleitend", HM_SEEDS, None, HM_FALL),
+        ("denken_mann", "a man ponders a tricky decision, a single voiced hmmm through the nose, high at the start and falling lower at the end, skeptical and curious, close-up, quiet room, " + NO_WORDS,
+         "Mann: „Hmmm“ durch die Nase, oben anfangend, unten endend", HM_SEEDS, None, HM_FALL),
+        ("denken_frau", "a woman considers her options, a curious hummed hmmmm with closed lips, the pitch starts high and drifts downward, playful thinking sound, close-up, quiet room, " + NO_WORDS,
+         "Frau: neugieriges „Hmmmm“ mit geschlossenen Lippen, Tonhöhe sinkt", HM_SEEDS, None, HM_FALL),
+        ("gruebeln", "a long drawn-out pondering hmmmmm, a person hums thoughtfully with closed mouth, starting on a higher note and sinking slowly, as if solving a puzzle, close-up, dry room, " + NO_WORDS,
+         "langes, grübelndes „Hmmmmm“, sinkt langsam", HM_SEEDS, None, HM_LANG),
+        ("comic", "a cartoon character strokes its chin and goes hmmmm, a comedic thoughtful humming sound with a downward pitch glide, human voice, close-up, " + NO_WORDS,
+         "Comic: Zeichentrickfigur reibt sich das Kinn, „Hmmmm“ nach unten", HM_SEEDS, None, dict(HM_COMIC, cfg=6.0)),
+        ("sfx", "human vocal sound effect, a single thinking hmm, closed-mouth hum, high pitch at the beginning falling down at the end, close-up, dry room, " + NO_WORDS,
+         "„human vocal sound effect“: ein „Hmm“, oben anfangend, unten endend", HM_SEEDS, None, dict(HM_FALL, cfg=6.0)),
+    ],
+}
+# Knutschen (23.10.2026, Reaktion 😘 „Kuss“): ein Luftkuss/Schmatzer wie „mwah“ – lieb und lustig, nicht feucht, nicht
+# sexuell. AudioSet kennt keinen Kuss; am nächsten liegen „Squish“, „Slap, smack“, „Burst, pop“. Darum nur schwach
+# erwartet; über die Auswahl entscheidet der Nutzer beim Hören. Kurz (0,25–1,1 s).
+KUSS_NEGATIV = ("speech, words, talking, sentence, wet, slurping, saliva, spit, liquid, splash, chewing, eating, sexual, moaning, "
+                "groaning, breathing heavily, laughter, laughing, giggling, music, singing, animal, cat, meow, dog, bird, "
+                "fish, gunshot, explosion, clapping, applause, fart, burp")
+KUSS_ARTEN = {"mwah": "Luftkuss „mwah“", "schmatz": "kurzer Schmatzer", "doppelt": "zwei Küsschen", "comic": "Zeichentrick-Kuss"}
+K_SEEDS = list(range(7501, 7507))
+K_MWAH = {"kategorie": "mwah", "ziel": (0.3, 1.1), "sekunden": 0.7, "ausblenden": 0.12}
+K_SCHMATZ = {"kategorie": "schmatz", "ziel": (0.15, 0.6), "sekunden": 0.5, "ausblenden": 0.08}
+K_DOPPELT = {"kategorie": "doppelt", "ziel": (0.4, 1.1), "sekunden": 0.8, "ausblenden": 0.1}
+K_COMIC = {"kategorie": "comic", "ziel": (0.3, 1.1), "sekunden": 0.7, "ausblenden": 0.12}
+TOENE["kuss"] = {
+    "titel": "Knutschen (Reaktion 😘)", "zweck": "Reaktion (😘)",
+    "ziel_text": "0,15–1,1 s: Luftkuss oder Schmatzer („mwah“), lieb und lustig; nicht feucht, nicht sexuell, keine Wörter",
+    "hinweis": "Neue Reaktion. Sprache, Nasses/Schlürfen/Kauen, Sexuelles, Stöhnen, Lachen, Musik, Tiere, Knall und Applaus "
+               "stehen als Negativ-Prompt. AudioSet kennt keinen Kuss: behalten wurde, was die Zieldauer einhält und nicht "
+               "deutlich nach Sprache, Kauen/Schlürfen, Stöhnen, Lachen, Knall, Applaus, Tier oder Katze klingt. Dubletten über "
+               "alle Paare aussortiert, Auswahl reihum über die Arten. Beschreibungen stammen aus Messungen, nicht vom Hören.",
+    "sekunden": 0.7, "ziel": (0.15, 1.1), "modus": "anfang", "vorlauf": 0.03, "einblenden": 0.003, "ausblenden": 0.12,
+    "lufs": -20.0, "begrenzer": 4.0, "hochpass": 120.0, "stimme": True, "behalten": 8,
+    "erwartet": ["Squish", "Slap, smack", "Burst, pop", "Speech", "Sound effect"], "erwartet_mindestens": 0.0,
+    "arten": KUSS_ARTEN, "ausgewogen": True, "nur_ok": True, "dubletten_alle": True, "streng": True,
+    "puls_purr": True, "sprache_grenze": (0.6, 0.35),
+    "meiden": {"Chewing, mastication": 0.15, "Liquid": 0.15, "Splash, splatter": 0.15, "Drip": 0.15, "Groan": 0.12,
+               "Wail, moan": 0.12, "Laughter": 0.12, "Giggle": 0.12, "Applause": 0.15, "Clapping": 0.2, "Music": 0.25,
+               "Animal": 0.15, "Bird": 0.15, "Dog": 0.12, "Gunshot, gunfire": 0.1, "Explosion": 0.1, "Fart": 0.15,
+               "Burping, eructation": 0.15, "Breathing": 0.3},
+    "beobachten": ["Speech", "Squish", "Slap, smack", "Burst, pop", "Tap", "Sound effect", "Cartoon", "Whistle",
+                   "Chewing, mastication", "Breathing", "Sniff"],
+    "negativ": KUSS_NEGATIV,
+    "seeds": K_SEEDS,
+    "prompts": [
+        ("mwah", "a person blows a loving air kiss, one short smooch with a voiced mwah, lips pressed and released, sweet and playful, close-up, dry room, " + NO_WORDS,
+         "Luftkuss mit stimmhaftem „mwah“, lieb und verspielt", K_SEEDS, None, K_MWAH),
+        ("mwah_frau", "a woman blows a kiss, a cute short mwah smooch sound, affectionate and funny, close-up, quiet room, " + NO_WORDS,
+         "Frau wirft einen Kuss, kurzes süßes „mwah“", K_SEEDS, None, K_MWAH),
+        ("schmatz", "a single quick kiss sound, a short dry lip smack smooch, no voice, close-up, dry room",
+         "ein kurzer, trockener Schmatzer der Lippen, ohne Stimme", K_SEEDS, None, K_SCHMATZ),
+        ("schmatz_wange", "a quick peck on the cheek, one short soft kiss smack, close-up, quiet room, no voice",
+         "Küsschen auf die Wange, kurz und weich", K_SEEDS, None, K_SCHMATZ),
+        ("doppelt", "two quick affectionate kisses, smooch smooch, short lip smacks one after another, playful, close-up, dry room, no voice",
+         "zwei schnelle Küsschen hintereinander", K_SEEDS, None, K_DOPPELT),
+        ("comic", "cartoon kiss sound effect, an exaggerated comedic smooch, a loud pucker and a pop, mwah, close-up, " + NO_WORDS,
+         "Comic: übertriebener Schmatzer mit Plopp, „mwah“", K_SEEDS, None, dict(K_COMIC, cfg=6.0)),
+        ("sfx", "human vocal sound effect, a kiss blown into the air, pucker and mwah, short and cute, close-up, dry room, " + NO_WORDS,
+         "„human vocal sound effect“: Luftkuss, spitzen und „mwah“", K_SEEDS, None, dict(K_MWAH, cfg=6.0)),
+    ],
+}
 _ORDNUNG = ["gaehnen", "gaehnen2", "gaehnen3"] + [k for k in TOENE if not k.startswith("gaehnen") and k not in
-                                                  ("baeh", "heulen", "heulen3", "facepalm", "facepalm2")]
+                                                  ("baeh", "heulen", "heulen3", "facepalm", "facepalm2", "hmm", "kuss")]
 _ORDNUNG.insert(_ORDNUNG.index("daumen") + 1, "baeh")      # bei den Reaktionen
 _ORDNUNG.insert(_ORDNUNG.index("baeh") + 1, "heulen")
 _ORDNUNG.insert(_ORDNUNG.index("heulen") + 1, "heulen3")
 _ORDNUNG.insert(_ORDNUNG.index("heulen3") + 1, "facepalm")
 _ORDNUNG.insert(_ORDNUNG.index("facepalm") + 1, "facepalm2")
+_ORDNUNG.insert(_ORDNUNG.index("facepalm2") + 1, "hmm")
+_ORDNUNG.insert(_ORDNUNG.index("hmm") + 1, "kuss")
 TOENE = {k: TOENE[k] for k in _ORDNUNG}
 # Einziger Versuch „gaehnen3_02umgestellt“: in gaehnen2_02 (Rohdatei gaehnen2_frau_4110) Einatmen und „aaah“ tauschen,
 # an der natürlichen Pause dazwischen und mit weicher Blende in der Stille (siehe umstellen). Nur, wenn die Pause klar ist
@@ -2146,8 +2251,28 @@ def bewerten(r, a):
             # Gähnen hat ein „haaah“ mit Tonhöhe; nur Hauchen klingt eher nach Ausatmen/Seufzen
             hinweise.append("fast nur Atem, kaum Stimme: eher Ausatmen/Seufzen als Gähnen?")
             punkte -= 1.0
-        elif f0 is not None and sa <= 0.95 and max(st.get("anstieg_ht", 0.0), st.get("abfall_ht", 0.0)) >= 2:
+        elif f0 is not None and sa <= 0.95 and max(st.get("anstieg_ht", 0.0), st.get("abfall_ht", 0.0)) >= 2 \
+                and not t.get("hmm"):
             punkte += 0.5                 # Stimme mit Tonhöhenbewegung und etwas Hauch: typisch für Gähnen
+    if t.get("hmm"):
+        # „Hmmm“: überwiegend stimmhaft (gesummt), Gipfel vorn, danach deutlich abwärts, kaum Anstieg davor
+        if st is None:
+            gruende.append("ohne Tonhöhen-Messung")
+        elif "abfall_ht" not in st:
+            gruende.append("Tonhöhe nicht messbar")
+        else:
+            if st["stimmhaft_anteil"] < 0.55:
+                gruende.append(f"kaum gesummt ({z(100 * st['stimmhaft_anteil'], 0)} % stimmhaft)")
+            if st["gipfel_lage"] > 0.35:
+                gruende.append(f"Tonhöhe fängt nicht oben an (Gipfel bei {z(100 * st['gipfel_lage'], 0)} % der Stimme)")
+            if st["abfall_ht"] < HMM_FALL_HT:
+                gruende.append(f"Tonhöhe fällt kaum ({z(st['abfall_ht'])} Halbtöne vom Gipfel bis zum Ende)")
+            if st["anstieg_ht"] > 2.5:
+                hinweise.append(f"steigt vorn erst {z(st['anstieg_ht'])} Halbtöne an")
+                punkte -= 0.5
+            punkte += 0.15 * min(st["abfall_ht"], 12.0) + 1.0 * min(st["stimmhaft_anteil"], 0.9)
+            if st.get("ende_schwerpunkt_hz") and st["ende_schwerpunkt_hz"] > 1500:
+                hinweise.append(f"Ende hell (Schwerpunkt {z(st['ende_schwerpunkt_hz'], 0)} Hz): eher „Hääh“ als „Hmmm“?")
     if t.get("reihenfolge"):
         rf = (a or {}).get("reihenfolge")
         if rf is None:

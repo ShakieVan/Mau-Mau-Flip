@@ -40,6 +40,7 @@ func _init() -> void:
 	_stacked()
 	_wild_accept_and_challenge()
 	_presets_and_texts()
+	_pen_double_tap()
 	print("RESULT: %d ok" % ok if fails == 0 else "RESULT: %d ok, %d FAIL" % [ok, fails])
 	quit(0 if fails == 0 else 1)
 
@@ -123,3 +124,28 @@ func _presets_and_texts() -> void:
 	help = "\n".join(RulesText.card_help("dunkel_pink_plus5", RuleConfig.new()))
 	check(help.contains("setzt aus"), "Kartenhilfe +5 offiziell")
 	check("\n".join(c.describe()).contains("trotzdem dran"), "Regelübersicht nennt die Hausregel")
+
+
+# Beta 1.6.15 (Nutzerbefund „bei +2 bekommt man 3“): Ein zweiter Zieh-Tipp auf dieselbe Sicht (pen = true, die Sicht zeigte die
+# offene Strafe) zieht keine weitere Karte; ohne pen bleibt das freie Ziehen danach wie bisher erlaubt (Hausregel „play“).
+func _pen_double_tap() -> void:
+	var spec := {"hands": [["hell_rot_plus1", "hell_rot_1"], ["hell_gelb_3", "hell_gelb_4"], ["hell_rot_2", "hell_blau_7"]],
+		"top": "hell_rot_5", "draw": ["hell_blau_4", "hell_gruen_6", "hell_blau_8", "hell_gruen_1"]}
+	for mode in ["play", "skip"]:
+		var g := RulesFixture.build(cfg({"stacking": "same", "penalty_turn": mode}), 3, spec)
+		act(g, 0, {"a": "play", "card": RulesFixture.card(g, 0, "hell_rot_plus1")}, "+1 legen (%s)" % mode)
+		var v := g.view_for(1)
+		check(int((v.pending as Dictionary).get("victim", -1)) == 1, "%s: Sicht zeigt die Strafe auf Platz 1" % mode)
+		var a := {"a": "draw", "pen": true}   # so schicken App (TableView.draw_action) und Lite (ziehAkt) den Tipp
+		act(g, 1, a, "Strafe ziehen (%s)" % mode)
+		check(g.hands[1].size() == 3, "%s: 1 Strafkarte gezogen (%d)" % [mode, g.hands[1].size()])
+		var r := g.apply(1, a)                # zweiter Tipp auf dieselbe, veraltete Sicht
+		check(not bool(r.ok), "%s: zweiter Tipp mit pen abgelehnt" % mode)
+		check(g.hands[1].size() == 3, "%s: keine weitere Karte (%d)" % [mode, g.hands[1].size()])
+		if mode == "play":
+			check(str(r.reason) == "Die Strafkarten hast du schon gezogen.", "play: Begründung (%s)" % str(r.reason))
+			act(g, 1, {"a": "draw"}, "play: freies Ziehen ohne pen geht weiter")
+			check(g.hands[1].size() == 4, "play: freiwillig 1 gezogen (%d)" % g.hands[1].size())
+	# Protokoll: pen kommt durch clean_action, nur als bool
+	check(NetProtocol.clean_action({"a": "draw", "pen": true}).get("pen") == true, "clean_action lässt pen durch")
+	check(not NetProtocol.clean_action({"a": "draw", "pen": "ja"}).has("pen"), "clean_action: pen nur als bool")

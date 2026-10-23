@@ -2,13 +2,14 @@ extends SceneTree
 # Kontrollbilder Nachttiere der Natur-Überraschungen (Beta 1.6.12, Aufgabe T4; mit Renderer, „_shot“: vom Testlauf ausgenommen):
 #   tools/godot_run.ps1 -Script res://tests/test_nature_nacht_shot.gd -Resolution 1600x720 -Extra '--rendering-driver','opengl3_angle'
 # Echte TableView mit Hand (4 Spieler, Nachtseite), Tiere über nature.spawn(id, seed, {t, still}) zu festen Zeitpunkten:
-#   docs/module/optik_1612_natur_<id>.png      je Ereignis drei Augenblicke: Anflug/Beginn, Hauptphase, Reaktion auf Tipp bzw. Abgang
-#   docs/module/optik_1612_natur_nacht.png     Übersicht: Hauptphase aller zwölf Nachtereignisse
-#   docs/module/optik_1612_natur_nacht_ruhig.png  „Effekte reduziert“: Mond mit Mütze, Polarlicht, Sternbild (ruhige Fassung)
-#   docs/module/optik_1612_natur_nacht_8sp.png    8 Spieler: Eule, Igel, Glühwürmchen, Motte, Lampion, UFO meiden die Plätze
-#   docs/module/optik_1612_natur_nacht_tisch.png  ganzer Tisch mit UFO-Lichtkegel (Stapel bleibt lesbar)
+#   docs/module/optik_<Stand>_natur_<id>.png      je Ereignis drei Augenblicke: Anflug/Beginn, Hauptphase, Reaktion auf Tipp bzw. Abgang
+#                                                 (UFO ab 1.6.15: Ausweichen nach dem 1. Tipp)
+#   docs/module/optik_<Stand>_natur_nacht.png     Übersicht: Hauptphase aller vierzehn Nachtereignisse
+#   docs/module/optik_<Stand>_natur_nacht_ruhig.png  „Effekte reduziert“: Mond mit Mütze, Polarlicht, Sternbild (ruhige Fassung)
+#   docs/module/optik_<Stand>_natur_nacht_8sp.png    8 Spieler: Eule, Igel, Glühwürmchen, Motte, Lampion, UFO, Feuerwerk, Astronaut
+#   docs/module/optik_<Stand>_natur_nacht_tisch.png  ganzer Tisch mit UFO-Lichtkegel (Stapel bleibt lesbar)
 # Umgebung: NUR=<id,…> nur diese ids, SHOT_SUFFIX=<text> hängt an die Dateinamen an (z. B. „_1600x900“ bei anderer Auflösung),
-# SHOT_DIR=<Ordner> statt docs/module.
+# SHOT_DIR=<Ordner> statt docs/module, STAND=<Zahl> (Standard 1615; die Bilder bis 1.6.12 heißen optik_1612_…).
 
 const Night := preload("res://scripts/ui/nature_night.gd")
 const SD := 1612
@@ -19,6 +20,7 @@ var t: TableView
 var nf: NatureFx
 var out_dir := ""
 var suffix := ""
+var stand := "1615"
 
 
 func _initialize() -> void:
@@ -39,6 +41,8 @@ func run() -> void:
 	if out_dir == "":
 		out_dir = ProjectSettings.globalize_path("res://").path_join("../docs/module").simplify_path()
 	suffix = OS.get_environment("SHOT_SUFFIX")
+	if OS.get_environment("STAND") != "":
+		stand = OS.get_environment("STAND")
 	near = OS.get_environment("SHOT_NAH") != ""
 	if near:
 		CROP_H = 420
@@ -46,30 +50,30 @@ func run() -> void:
 	var overview: Array[Image] = []
 	for id in ids():
 		var shots := await triple(id)
-		_row(shots, out_dir.path_join("optik_1612_natur_%s%s.png" % [id, suffix]))
+		_row(shots, out_dir.path_join("optik_%s_natur_%s%s.png" % [stand, id, suffix]))
 		overview.append(shots[1])
 	if ids().size() == Night.ids().size():
-		_grid(overview, 3, out_dir.path_join("optik_1612_natur_nacht%s.png" % suffix))
+		_grid(overview, 3, out_dir.path_join("optik_%s_natur_nacht%s.png" % [stand, suffix]))
 		# ruhige Fassung
 		nf.set_reduced(true)
 		var calm: Array[Image] = []
 		for id in ["mond_muetze", "polarlicht", "sternbild"]:
 			calm.append(await single(id, -1.0, Rect2()))
 		nf.set_reduced(false)
-		_row(calm, out_dir.path_join("optik_1612_natur_nacht_ruhig%s.png" % suffix))
+		_row(calm, out_dir.path_join("optik_%s_natur_nacht_ruhig%s.png" % [stand, suffix]))
 		# ganzer Tisch mit dem UFO-Kegel
 		nf.spawn("ufo", SD, {"t": 3.0, "still": true})
 		await frames(3)
 		var full := root.get_texture().get_image()
 		full.convert(Image.FORMAT_RGBA8)
-		full.save_png(out_dir.path_join("optik_1612_natur_nacht_tisch%s.png" % suffix))
-		print("Bild: optik_1612_natur_nacht_tisch%s.png" % suffix)
+		full.save_png(out_dir.path_join("optik_%s_natur_nacht_tisch%s.png" % [stand, suffix]))
+		print("Bild: optik_%s_natur_nacht_tisch%s.png" % [stand, suffix])
 		# 8 Spieler
 		await make_table(8)
 		var many: Array[Image] = []
-		for id in ["eule", "igel", "gluehwuermchen", "motte", "lampion", "ufo"]:
+		for id in ["eule", "igel", "gluehwuermchen", "motte", "lampion", "ufo", "feuerwerk", "astronaut"]:
 			many.append(await single(id, -1.0, Rect2()))
-		_grid(many, 3, out_dir.path_join("optik_1612_natur_nacht_8sp%s.png" % suffix))
+		_grid(many, 3, out_dir.path_join("optik_%s_natur_nacht_8sp%s.png" % [stand, suffix]))
 	nf.clear()
 	print("RESULT: 1 ok")
 	quit(0)
@@ -128,7 +132,13 @@ func plan(id: String, c: Node) -> Array:
 		"sternbild":
 			return [1.6, in_s - 0.6, ["tap", in_s + 1.2, 0.18]]
 		"ufo":
-			return [0.85, 3.0, ["leave", 3.6, 0.2]]
+			return [0.85, 3.0, ["tap", 3.0, 0.3]]
+		"feuerwerk":
+			var bs: Array = c.get("bursts")
+			var t1 := float((bs[0] as Dictionary)["t"])
+			return [t1 - 0.45, t1 + 0.55, ["tap", t1 + 0.9, 0.45]]
+		"astronaut":
+			return [1.3, float(c.get("t_wave")) + 0.8, ["tap", float(c.get("t_wave")) + 2.4, 0.8]]
 		"satellit":
 			return [dur * 0.25, float(c.get("t_flash")) + 0.2, ["time", dur * 0.8]]
 		"motte":

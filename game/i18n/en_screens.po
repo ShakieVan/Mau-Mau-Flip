@@ -115,6 +115,12 @@ msgstr "Game sounds"
 msgid "Karte, Ziehen, Mischen, Flip, Sieg"
 msgstr "Card, draw, shuffle, Flip, win"
 
+msgid "Bei deinem Zug: Ton"
+msgstr "Sound on your turn"
+
+msgid "Kurzer Klang, wenn du dran bist. Aus: nur dieser Klang schweigt, die übrigen Spieltöne bleiben."
+msgstr "A short chime when it's your turn. Off: only this chime stays silent, the other game sounds stay on."
+
 msgid "Bedienung und Optik"
 msgstr "Controls and look"
 
@@ -139,8 +145,8 @@ msgstr "Huge cards, discard pile and color, other players as a list on the right
 msgid "Bei deinem Zug: Vibration"
 msgstr "Vibrate on your turn"
 
-msgid "Kurz vibrieren, wenn du dran bist. Den Dran-Ton schaltest du mit den Spieltönen."
-msgstr "A short buzz when it's your turn. The turn sound comes with the game sounds."
+msgid "Kurz vibrieren, wenn du dran bist. Den Klang dazu schaltest du unter „Ton“."
+msgstr "A short buzz when it's your turn. The sound for it is under “Sound”."
 
 msgid "Spielbare Karten hervorheben"
 msgstr "Highlight playable cards"

@@ -164,8 +164,8 @@ func run() -> void:
 	var kim := 1 if me != 1 else 2
 	show(kim)
 	await create_timer(0.5).timeout
-	if serie == "165" or serie == "166" or serie == "167" or serie == "1610" or serie == "1611" or serie == "1613":
-		if serie == "165" or serie == "1611" or serie == "1613":
+	if serie == "165" or serie == "166" or serie == "167" or serie == "1610" or serie == "1611" or serie == "1613" or serie == "1615":
+		if serie == "165" or serie == "1611" or serie == "1613" or serie == "1615":
 			await run_165(me, kim)
 		elif serie == "1610":
 			await run_1610(me, kim)
@@ -346,25 +346,25 @@ func run_165(me: int, kim: int) -> void:
 		await shot("tisch_" + tm)
 	ts.table.set_night(0.0)
 	clock += 20000
-	var rx := "baeh" if serie == "1611" else ("heulen" if serie == "1613" else "daumen")     # 1.6.11: „Bäää“; 1.6.13: „Heulen“
+	var rx := "baeh" if serie == "1611" else ("heulen" if serie == "1613" else ("denken" if serie == "1615" else "daumen"))     # 1.6.11: „Bäää“; 1.6.13: „Heulen“; 1.6.15: 🤔
 	fx("react", me, -1, rx)
 	await create_timer(0.55).timeout
 	await shot("reaktion_tag")
 	await create_timer(1.5).timeout
-	if serie == "1611" or serie == "1613":
-		# nachts: Bäää (1.6.13: Facepalm) steigt auf; dann alle von verschiedenen Plätzen gleichzeitig
+	if serie == "1611" or serie == "1613" or serie == "1615":
+		# nachts: Bäää (1.6.13: Facepalm, 1.6.15: Küsschen) steigt auf; dann alle von verschiedenen Plätzen gleichzeitig
 		ts.table.set_night(1.0)
 		clock += 20000
-		fx("react", me, -1, "facepalm" if serie == "1613" else "baeh")
+		fx("react", me, -1, "facepalm" if serie == "1613" else ("kuss" if serie == "1615" else "baeh"))
 		await create_timer(0.55).timeout
 		await shot("reaktion_nacht")
 		await create_timer(1.5).timeout
 		ts.table.set_night(0.0)
 		clock += 20000
-		var who := [me, 1 if me != 1 else 0, 2, 3 if me != 3 else 0, me, 1 if me != 1 else 0, 2]
+		var who := [me, 1 if me != 1 else 0, 2, 3 if me != 3 else 0]     # reihum über die Plätze
 		for i in TeaseMenu.REACT_ORDER.size():
 			clock += 3000
-			fx("react", int(who[i]), -1, TeaseMenu.REACT_ORDER[i])
+			fx("react", int(who[i % who.size()]), -1, TeaseMenu.REACT_ORDER[i])
 		await create_timer(0.6).timeout
 		await shot("alle_tag")
 		await create_timer(1.8).timeout
@@ -409,7 +409,7 @@ func run_165(me: int, kim: int) -> void:
 	show(-1, "round_over")
 	await create_timer(0.8).timeout
 	clock += 20000
-	fx("react", me, -1, "baeh" if serie == "1611" else ("facepalm" if serie == "1613" else "klatschen"))
+	fx("react", me, -1, "baeh" if serie == "1611" else ("facepalm" if serie == "1613" else ("schlafen" if serie == "1615" else "klatschen")))
 	await create_timer(0.5).timeout
 	await shot("rundenende")
 	if serie == "1613":
