@@ -99,7 +99,9 @@ Versendet wird `z = Marshalls.raw_to_base64(JSON.to_utf8_buffer().compress(FileA
 
 - `NetRelayHost.close(end_room := false)`: Der Standard dreht sich um, und `NOTIFICATION_PREDELETE` (`net_relay_host.gd:162`) schickt **kein** `end` mehr.
 - `NetHostSession.stop(text := "", end_room := false)` und `_close_relay(end_room)`. `{k:"end"}` geht nur noch bei ausdrücklichem Ende hinaus:
-  - `HostTable.leave()` → `session.stop("Der Gastgeber hat das Spiel beendet.", true)`
+  - `HostTable.leave()` → `session.stop("Der Gastgeber hat das Spiel beendet.", true)` – **seit Beta 1.6.16** übergibt `leave()` den
+    Raum vorher dem RoomKeeper (Gäste bekommen „bye“, der Raum bleibt bis zu 30 min für die nächste Lobby; Gäste mit einer Sicherung
+    der beendeten Partie bekommen dort „bye“ statt 4503, damit niemand übernimmt). Siehe `docs/module/raum_behalten.md`.
   - `close_online()` in der Lobby
 - Folge: Schließt der Gastgeber die App ohne „Tisch verlassen“, bleibt der Raum 10 min offen. Die Gäste sehen 4503 und die Übernahme greift (4.3). Genau das ist gewünscht.
 - Der offene Punkt aus 1.3.3 („Raum blieb nach Verlassen ~10 min offen“) betrifft nur das **ausdrückliche** Verlassen. Dort geht `end` weiter hinaus.

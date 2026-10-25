@@ -112,21 +112,8 @@ func shot_farbwahl() -> void:
 	var s := _sample_light()
 	var t := _table(s)
 	var hand: DemoHand = t.hand
-	var joker := s.find_any(0, "hell_wuenscher")
-	hand.dragged = joker
-	hand.dragged_pos = t.discard_position() + Vector2(70, -70)
-	hand.selected = joker
+	# Farbrad nach dem Legen eines Jokers (die Farbfelder beim Ziehen – früher Bild „farbwahl“ – entfallen, Nutzerwunsch 25.10.2026)
 	hand.apply_view(s.view_for(0))
-	t.open_color_fields()
-	await _wait(0.4)
-	t.wish_picker.hover(t.wish_picker.to_global(t.wish_picker.field_center(1)))
-	await _wait(0.2)
-	await _save("farbwahl")
-	# Farbrad (Rückfall) als zweites Bild
-	hand.dragged = -1
-	hand.selected = -1
-	hand.apply_view(s.view_for(0))
-	t.wish_picker.close()
 	t.open_color_wheel()
 	await _wait(0.4)
 	t.wish_picker.hover(t.wish_picker.to_global(t.wish_picker.wheel_center + Vector2(120, 90)))

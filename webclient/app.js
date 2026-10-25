@@ -545,6 +545,8 @@
           $('#ende-text').textContent = M.I18n.msgText(m, M.t('Der Gastgeber hat das Spiel beendet.'));
           // Herausgenommen: Wiedereinstieg ist möglich (der Gastgeber holt ihn von der Warteliste an den Tisch)
           $('#ende-hinweis').hidden = !(m.text === 'Der Gastgeber hat dich aus dem Spiel genommen.' || m.text === 'Der Gastgeber hat dich nicht dazugeholt.');
+          // Beta 1.6.16 (Raum behalten): Online behält der Gastgeber seinen Raum eine Weile – „Zur Startseite“ führt wieder hinein
+          $('#ende-online').hidden = !(this.online && m.text === 'Der Gastgeber hat das Spiel beendet.');
           this.zeigeScreen('ende');
           break;
         case 'hosts': {   // Beta 1.6.2: mögliche Nachfolger des Gastgebers (nur WLAN; online folgt Lite dem Vermittler)

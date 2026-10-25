@@ -13,9 +13,16 @@ Nutzerwunsch vom 16.10.2026. Schlüssel `counter_round` (`off` | `on`), offiziel
   Eine Ziehkarte auf einen Wartenden zieht er sofort (ohne Karten kann er nichts drauflegen und nichts anzweifeln); danach gilt
   `penalty_turn` wie sonst (aussetzen bzw. gleich dran).
 - **Fertig:** wenn der Zug wieder bei ihm ankäme (ein Richtungswechsel kann das verkürzen oder verlängern) oder wenn er
-  übersprungen wird (Aussetzen, Alle aussetzen, eine Strafe mit Aussetzen, bei der er nichts ziehen konnte). Alle aussetzen als
-  eigene letzte Karte: Andere Wartende sind übersprungen und fertig; der Leger wartet, der Nächste ist dran (ab 1.6.14, s. u.; bis
-  1.6.13 war der Leger gleich fertig).
+  übersprungen wird und der Zug an ihm vorbei zu einem anderen geht (Aussetzen mit drei und mehr Spielern, eine Strafe mit
+  Aussetzen, bei der er nichts ziehen konnte). Alle aussetzen als eigene letzte Karte: Andere Wartende sind übersprungen und fertig;
+  der Leger wartet, der Nächste ist dran (ab 1.6.14, s. u.; bis 1.6.13 war der Leger gleich fertig).
+- **Bleibt der Zug beim Leger, setzt der Wartende nur aus** (ab der Beta nach 1.6.15, Nutzerbefund 25.10.2026: zu zweit, der andere
+  hatte eben seine letzte Karte gelegt, ein Flip mit Richtungswechsel auf der Rückseite – Flip-Überraschung – machte ihn sofort
+  fertig, „obwohl er aussetzt und man noch dran wäre“). Das gilt zu zweit für Aussetzen und Richtungswechsel (gelegt oder aus der
+  Flip-Überraschung) und für Alle aussetzen mit beliebig vielen Spielern: Der Leger ist noch einmal dran und kann kontern; legt er
+  normal, kommt der Zug zum Wartenden, und der ist fertig. Nutzerentscheidung: „immer, wenn der Leger dran bleibt“. Code:
+  `MauGame._skip_keeps_turn`, `_counter_skip_all` (finisht nur noch, wenn der Leger selbst wartet). Bis 1.6.15 war der Wartende in
+  diesen Fällen sofort fertig.
 - **Nach der letzten Karte ist immer noch mindestens ein anderer dran** (ab Beta 1.6.14, Nutzerbefund 18.10.2026: zu dritt, einer
   fertig, Aussetzen als letzte Karte – die Runde war sofort vorbei, „der andere Spieler hätte noch die Möglichkeit haben müssen, eine
   Karte zu ziehen“). Wer in seinem eigenen Zug leer wird, ist mit `counter_guard` markiert, bis ein anderer dran ist; kommt der Zug
@@ -47,7 +54,9 @@ Nutzerwunsch vom 16.10.2026. Schlüssel `counter_round` (`off` | `on`), offiziel
   Legen der letzten Karte zeigt der Hinweis die Konter-Runde („Kim hat keine Karten mehr – wer kontert?“). Ein eigener Ton oder
   Effekt beim Legen bräuchte eine Änderung in `table_view.gd` bzw. `webclient/tisch.js` (nicht Teil dieser Stufe).
 - Bots: Der Vorgänger (und jeder, dessen Nächster wartet) kontert bevorzugt mit Ziehkarten, ein Kartentausch kontert alle
-  Wartenden; Aussetzen, Alle aussetzen und ein Richtungswechsel zum Wartenden werden gemieden.
+  Wartenden; Aussetzen (mit drei und mehr Spielern) und ein Richtungswechsel zum Wartenden werden gemieden. Zu zweit und bei Alle
+  aussetzen bleibt der Bot dran, der Wartende wartet nur weiter – dort gibt es keinen Abzug mehr (zu zweit ohne
+  `two_player_reverse_skips` kommt der Zug nach einem Richtungswechsel zum Wartenden: weiter gemieden).
 - Furzkissen: Der Wartende macht keine Aktion (`play`/`draw`/`accept`/`stake`), ein Kissen auf ihm pupst also erst, wenn er
   gekontert wurde und wieder handelt; sonst verfällt es am Rundenende wie bisher.
 

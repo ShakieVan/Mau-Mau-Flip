@@ -1079,3 +1079,13 @@ msgstr "The game is kept – you can continue it from the main menu."
 
 msgid "Zum Hauptmenü"
 msgstr "To the main menu"
+
+# --- Beta 1.6.16: eigene Aktion kam nicht beim Gastgeber an (Verbindung still abgerissen, ClientTable.act_lost)
+msgid "Deine Karte kam nicht beim Gastgeber an – sie ist wieder in deiner Hand. Leg sie noch einmal."
+msgstr "Your card didn't reach the host – it's back in your hand. Play it again."
+
+msgid "Dein Ziehen kam nicht beim Gastgeber an – tipp noch einmal auf den Stapel."
+msgstr "Your draw didn't reach the host – tap the draw pile again."
+
+msgid "Deine Aktion kam nicht beim Gastgeber an – bitte noch einmal."
+msgstr "Your move didn't reach the host – please try again."

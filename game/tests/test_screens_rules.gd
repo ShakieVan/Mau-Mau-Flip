@@ -181,7 +181,7 @@ func card_help() -> void:
 	check(tf.contains("gewinnst die Runde") and not tf.contains("Mau"), "Kartentausch, Erster fertig, ohne Mau")
 	# Glücksspiel
 	var g := "\n".join(PackedStringArray(RulesText.card_help("hell_gluecksspiel", on)))
-	check(RulesText.card_help("hell_gluecksspiel", on)[0].begins_with("Joker: passt immer") and g.contains("1:1 und 1:10")
+	check(RulesText.card_help("hell_gluecksspiel", on)[0].begins_with("Joker: passt immer") and g.contains("1:1 und 1:5")   # Familie: Treffer „Mittel“
 		and g.contains("Glücksspielknopf") and g.contains("1 bis 10") and g.contains("darfst du auch aufhören"), "Glücksspiel: Ablauf (mit Aufhören)")
 	check(g.contains("Ziehstrafe"), "Glücksspiel mit Stapeln: passt nicht unter einer Ziehstrafe")
 	# Farbe mit ablegen
@@ -203,7 +203,7 @@ func rules_editor() -> void:
 	rs.start_tab = "anpassen"
 	nav.push(rs, false)
 	await frames(3)
-	for key in ["swap_cards", "swap_direction", "gamble_cards", "discard_color"]:
+	for key in ["swap_cards", "swap_direction", "gamble_cards", "gamble_odds", "discard_color"]:
 		check(rs._controls.has(key), "Editor: Zeile %s" % key)
 	if not rs._controls.has("swap_cards"):
 		return
@@ -235,12 +235,16 @@ func rules_editor() -> void:
 	check(sw.has_theme_icon_override("checked") and sw.has_theme_icon_override("unchecked"), "großer Schalter (eigene Symbole)")
 	# Kartenbilder der Hausregeln
 	var thumbs := rs.find_children("Karten", "", true, false)
-	var keys_ok := thumbs.size() == 4
+	var keys_ok := thumbs.size() == 5
 	for th in thumbs:
 		for k in th.get("keys"):
 			if not CardTextures.has_image(str(k)):
 				keys_ok = false
-	check(keys_ok, "Kartenbilder: 4 Zeilen, alle Bilder vorhanden (%d)" % thumbs.size())
+	check(keys_ok, "Kartenbilder: 5 Zeilen, alle Bilder vorhanden (%d)" % thumbs.size())
+	# Glücksspiel-Treffer (Nutzer 25.10.2026): ohne Glücksspiel gesperrt, Standard „Selten“
+	var odds := rs._controls["gamble_odds"] as Container
+	check(locked(odds) and chosen(odds) == "rare" and choice_button(odds, "medium").text == "Mittel (bis 1:5)",
+		"Glücksspiel-Treffer ohne Glücksspiel gesperrt, Selten")
 	# Voreinstellung Familie (0.1.4): alle Zusatzkarten an, 124 Karten, Tausch in Spielrichtung
 	choice_button(rs._preset_row, "familie").pressed.emit()
 	await frames(1)
@@ -305,6 +309,13 @@ func rules_editor() -> void:
 	await frames(1)
 	check(ga.button_pressed and dc.button_pressed and sw.button_pressed and count.call() == "124 Karten" and RulesBar.current().flip_surprise == "on",
 		"Familie: Schalter an, Flip-Überraschung an")
+	check(not locked(odds) and chosen(odds) == "medium", "Familie: Glücksspiel-Treffer „Mittel“, bedienbar")
+	choice_button(odds, "often").pressed.emit()
+	await frames(1)
+	check(RulesBar.current().gamble_odds == "often" and chosen(rs._preset_row) == "", "Oft: eigene Regeln")
+	choice_button(odds, "medium").pressed.emit()
+	await frames(1)
+	check(chosen(rs._preset_row) == "familie", "zurück auf Mittel: wieder Familie")
 	# Flip dreht (1.0.2): Familie „Nur die gelegte Karte“; „Ganze Ablage“ macht eigene Regeln daraus
 	var fm := rs._controls["flip_mode"] as Container
 	check(chosen(fm) == "card" and choice_button(fm, "pile").text == "Ganze Ablage (offiziell)" and choice_button(fm, "card").text == "Nur die gelegte Karte",

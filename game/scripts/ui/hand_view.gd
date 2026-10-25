@@ -594,7 +594,7 @@ func set_input_locked(on: bool) -> void:
 	set_enabled(not on)
 
 
-# Anzahl eigener Karten je Farbe der aktiven Seite (Farbfelder des Wünschers).
+# Anzahl eigener Karten je Farbe der aktiven Seite (Farbrad des Wünschers).
 # Auswahl „Farbe mit ablegen“ (Phase discard_pick): candidates sind wählbar und anfangs alle gewählt. Tippen (oder Hochziehen)
 # wählt ab bzw. wieder an; übrige Karten sind abgedunkelt. Leere Liste bzw. clear_pick() beendet die Auswahl.
 # open (Ablegen-Joker, 1.4.9): Die Ablegefarbe ist noch offen. candidates sind alle farbigen Karten, anfangs keine gewählt; das

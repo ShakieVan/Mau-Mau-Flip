@@ -73,7 +73,7 @@ static func random_config(rng: RandomNumberGenerator, with_swap := false, with_g
 		with_counter := false) -> RuleConfig:
 	var d := {}
 	for k in RuleConfig.CHOICES:
-		if k in ["swap_cards", "swap_direction", "gamble_cards", "discard_color", "counter_round"]:
+		if k in ["swap_cards", "swap_direction", "gamble_cards", "gamble_odds", "discard_color", "counter_round"]:
 			continue
 		var vals: Array = RuleConfig.CHOICES[k]
 		d[k] = vals[rng.randi_range(0, vals.size() - 1)]

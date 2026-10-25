@@ -33,7 +33,7 @@ extends RefCounted
 #   Tauschrichtung weiter (Ereignis swap_hands), danach ist der Nächste in Spielrichtung dran. Mau-Fenster und Rufe verfallen.
 #   Als letzte Karte: fertig wie sonst; der Tausch läuft nur unter den Übrigen und entfällt, wenn die Runde damit endet.
 # - Glücksspiel (gamble_cards = on): Joker mit Farbwahl, danach Phase "gamble" für den Leger. Je Glücksspiel wird geheim eine
-#   Trefferquote q (1–10) gelost (nur in to_dict, nie in Sicht oder Ereignissen). Reihum {a:"stake"} (eine Handkarte verdeckt auf
+#   Trefferquote q (1–10, mit gamble_odds medium 1–5, often 1–3) gelost (nur in to_dict, nie in Sicht oder Ereignissen). Reihum {a:"stake"} (eine Handkarte verdeckt auf
 #   den Einsatz) und {a:"press"}: Treffer (Wahrscheinlichkeit 1/q) → 1–10 Karten ziehen, Einsatz zurück, Zug vorbei; sonst 0 →
 #   ist die Hand leer, kommt der Einsatz unter die Ablage und der Spieler ist fertig, sonst der nächste Einsatz.
 #   {a:"stop"} (Aufhören, immer erlaubt): nach mindestens einem Druck ohne Treffer statt weiterzusetzen. Der Einsatz kommt unter
@@ -64,7 +64,8 @@ extends RefCounted
 #   mitabgelegt, beim Kartentausch eine leere Hand bekommen), ist noch nicht fertig, sondern wartet mit 0 Karten in der Zugfolge
 #   (counter_wait, Ereignis counter_open). Bekommt er Karten (Ziehkarte, Strafe, Kartentausch, Flip-Überraschung …), ist er wieder
 #   normal im Spiel (Ereignis countered). Fertig (finish mit survived = true) ist er, wenn der Zug wieder bei ihm ankäme (_new_turn)
-#   oder er übersprungen wird (Aussetzen, Alle aussetzen, Strafe mit Aussetzen ohne Karten). Eine Ziehkarte auf einen Wartenden
+#   oder er übersprungen wird (Aussetzen, Alle aussetzen, Strafe mit Aussetzen ohne Karten) und der Zug an ihm vorbei zu einem anderen
+#   geht; bleibt er beim Leger (zu zweit Aussetzen/Richtungswechsel, Alle aussetzen), wartet er weiter. Eine Ziehkarte auf einen Wartenden
 #   zieht er sofort (er kann nichts drauflegen); den eigenen Kartentausch macht der Leger nicht mit. Endet die Runde anders
 #   (blockiert, zu wenige Spieler), zählen Wartende wie alle Übrigen nach ihren (0) Karten.
 
@@ -1198,13 +1199,21 @@ func _advance(from: int, skip: bool, ev: Array) -> void:
 		skip = false
 	if skip:
 		ev.append({"e": "skip", "seat": nxt})
-		if counter_wait.has(nxt):
+		if counter_wait.has(nxt) and not _skip_keeps_turn(from, nxt):
 			_counter_final(nxt, ev)          # Kontern: übersprungen = Konter-Runde überstanden
 			if _round_should_end():
 				_end_round("fertig", ev)
 				return
 		nxt = _next_active(nxt)
 	_new_turn(nxt, ev)
+
+
+# Kontern (Nutzerbefund 25.10.2026: zu zweit, Flip-Überraschung mit Richtungswechsel – „obwohl er aussetzt und man noch dran wäre“):
+# Bleibt der Zug nach dem Überspringen beim Leger (zu zweit Aussetzen bzw. Richtungswechsel, gelegt oder aus der Flip-Überraschung),
+# setzt der Wartende nur aus und wartet weiter; fertig ist er, wenn der Zug danach zu ihm kommt. Geht der Zug an ihm vorbei zu einem
+# anderen, ist er wie bisher fertig.
+func _skip_keeps_turn(from: int, skipped: int) -> bool:
+	return not counter_wait.has(from) and _next_active(skipped) == from
 
 
 func _next_active(from: int) -> int:
@@ -1362,9 +1371,10 @@ func _after_hand_shrinks(p: int) -> void:
 		mau_open = p
 
 
-# Glücksspiel beginnt: geheime Trefferquote 1:q (q = 1–10 gleich wahrscheinlich) aus dem Spielzufall, Phase "gamble" für den Leger.
+# Glücksspiel beginnt: geheime Trefferquote 1:q (q gleich wahrscheinlich 1 … 10, 5 oder 3 nach gamble_odds, Nutzer 25.10.2026) aus
+# dem Spielzufall, Phase "gamble" für den Leger.
 func _start_gamble(p: int, ev: Array) -> void:
-	gamble = {"seat": p, "q": _rng.randi_range(1, 10), "stake": [], "need": "stake", "last": -1}
+	gamble = {"seat": p, "q": _rng.randi_range(1, config.gamble_max_q()), "stake": [], "need": "stake", "last": -1}
 	state = "gamble"
 	current = p
 	drawn_id = -1
@@ -1655,8 +1665,12 @@ func _counter_final(s: int, ev: Array) -> void:
 	counter_done = s
 
 
-# Alle aussetzen von p: Alle anderen Wartenden werden übersprungen und sind damit fertig. true = die Runde ist dadurch zu Ende.
+# Alle aussetzen von p. Als eigene letzte Karte (p wartet, der Nächste ist dran) sind alle anderen Wartenden übersprungen und damit
+# fertig. Bleibt p dran (Nutzerbefund 25.10.2026, wie _skip_keeps_turn), setzen sie nur aus und warten weiter. true = die Runde ist
+# dadurch zu Ende.
 func _counter_skip_all(p: int, ev: Array) -> bool:
+	if not counter_wait.has(p):
+		return false
 	for s in counter_wait.duplicate():
 		if int(s) == p:
 			continue

@@ -1093,7 +1093,7 @@ body:not([data-seite="dunkel"]) #lobby .lobby-seite .schrift-wahl .seg button.an
 @keyframes platzAuf { from { opacity: 0; scale: .6; } to { opacity: 1; scale: 1; } }
 @keyframes platzAb { from { opacity: 1; scale: 1; } to { opacity: 0; scale: .6; } }
 body.reduziert .gg.neu, body.reduziert .gg.abgang { animation-duration: .01s; }
-#ende-hinweis { font-size: 16px; font-weight: 600; opacity: .85; max-width: 32em; }
+#ende-hinweis, #ende-online { font-size: 16px; font-weight: 600; opacity: .85; max-width: 32em; }
 #lobby.wartet .lobby-status { font-weight: 800; }
 #lobby.wartet #bereit { display: none; }
 .lz .marke.wartet { background: var(--gold, #FFD65A); color: var(--ink, #211B2C); border-color: transparent; }

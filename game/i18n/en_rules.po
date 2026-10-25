@@ -349,8 +349,8 @@ msgstr "Flip Surprise: The card that ends up on top after the Flip takes effect 
 msgid "Flip-Überraschung: Die Karte, die danach oben liegt, wirkt, als hättest du sie gelegt. Bei Jokern wählst du zuerst die Farbe."
 msgstr "Flip Surprise: The card that ends up on top afterward takes effect as if you had played it. With wild cards you choose the color first."
 
-msgid "Für jedes Glücksspiel wird geheim eine Trefferquote zwischen 1:1 und 1:10 ausgelost."
-msgstr "For each gamble, a hit rate between 1:1 and 1:10 is drawn in secret."
+msgid "Für jedes Glücksspiel wird geheim eine Trefferquote zwischen 1:1 und 1:%d ausgelost."
+msgstr "For each gamble, a hit rate between 1:1 and 1:%d is drawn in secret."
 
 msgid "Gehört zur Hausregel Farbe ablegen (gerade nicht im Spiel)."
 msgstr "Part of the Discard Color house rule (not in play right now)."
@@ -376,6 +376,30 @@ msgstr "Gamble wild card (two per side): You stake cards face down in turn and p
 msgid "Glücksspiel: 2 zusätzliche Joker%s. Wer einen legt, setzt Karte um Karte verdeckt und drückt den Glücksspielknopf – bei einem Treffer 1 bis 10 Karten ziehen und den Einsatz zurücknehmen. Nach einem Druck ohne Treffer weiter riskieren oder aufhören (der Einsatz kommt unter die Ablage); mit leerer Hand bist du fertig."
 msgstr "Gamble: 2 extra wild cards%s. Whoever plays one stakes card after card face down and presses the gamble button – on a hit, draw 1 to 10 cards and take the stake back. After a press without a hit, keep risking it or stop (the stake goes under the discard pile); with an empty hand you are out."
 
+msgid "Glücksspiel-Treffer: %s – je Glücksspiel wird geheim eine Trefferquote zwischen 1:1 und 1:%d ausgelost."
+msgstr "Gamble hits: %s – for each gamble, a hit rate between 1:1 and 1:%d is drawn in secret."
+
+msgid "Glücksspiel-Treffer"
+msgstr "Gamble hits"
+
+msgid "Wie oft der Glücksspielknopf trifft (1 bis 10 Karten ziehen) statt 0 zu zeigen – nur mit Glücksspiel"
+msgstr "How often the gamble button hits (draw 1 to 10 cards) instead of showing 0 – Gamble only"
+
+msgid "Selten (bis 1:10)"
+msgstr "Rare (up to 1:10)"
+
+msgid "Mittel (bis 1:5)"
+msgstr "Medium (up to 1:5)"
+
+msgid "Oft (bis 1:3)"
+msgstr "Often (up to 1:3)"
+
+msgid "Mittel"
+msgstr "Medium"
+
+msgid "Glücksspiel-Treffer: %s"
+msgstr "Gamble hits: %s"
+
 msgid "Halte den Rückseiten-Knopf, dann siehst du die Rückseiten deiner Karten."
 msgstr "Hold the backs button to see the backs of your cards."
 
@@ -391,8 +415,8 @@ msgstr "If you have only 2 cards left and it's your turn, tap “Mau!” – bef
 msgid "Hast du nur noch 2 Karten und bist dran, tipp auf „Mau!“ – vor oder nach dem Legen. Vergisst es jemand, erscheint über seinen Karten der rote Knopf „Erwischt!“: schnell antippen, bevor der Nächste legt oder zieht."
 msgstr "If you have only 2 cards left and it's your turn, tap “Mau!” – before or after playing. If someone forgets, a red “Caught!” button appears above their cards: tap it quickly, before the next player plays or draws."
 
-msgid "Hausregel: Der Glücksspiel-Joker passt immer; du wünschst eine Farbe, die nach dem Glücksspiel gilt. Dann legst du reihum eine beliebige Karte verdeckt auf deinen Einsatz und drückst den Glücksspielknopf. Je Glücksspiel wird geheim eine Trefferquote zwischen 1:1 und 1:10 ausgelost. Bei einem Treffer zeigt der Knopf 1 bis 10: So viele Karten ziehst du, nimmst den ganzen Einsatz zurück, und dein Zug ist vorbei. Zeigt er 0, geht es weiter; ist deine Hand dann leer, kommt der Einsatz unter den Ablagestapel und du %s. Nach einer 0 darfst du statt weiterzusetzen auch aufhören: Der ganze Einsatz kommt unter den Ablagestapel, dein Zug ist vorbei. Die Einsatzkarten wirken nicht."
-msgstr "House rule: The Gamble wild card always fits; you wish for a color that applies after the gamble. Then, in turn, you put any card face down on your stake and press the gamble button. For each Gamble, a hit rate between 1:1 and 1:10 is drawn in secret. On a hit the button shows 1 to 10: You draw that many cards, take your whole stake back, and your turn is over. If it shows 0, play goes on; if your hand is empty by then, the stake goes under the discard pile and you %s. After a 0 you may also stop instead of staking more: The whole stake goes under the discard pile and your turn is over. The stake cards have no effect."
+msgid "Hausregel: Der Glücksspiel-Joker passt immer; du wünschst eine Farbe, die nach dem Glücksspiel gilt. Dann legst du reihum eine beliebige Karte verdeckt auf deinen Einsatz und drückst den Glücksspielknopf. Je Glücksspiel wird geheim eine Trefferquote zwischen 1:1 und 1:%d ausgelost. Bei einem Treffer zeigt der Knopf 1 bis 10: So viele Karten ziehst du, nimmst den ganzen Einsatz zurück, und dein Zug ist vorbei. Zeigt er 0, geht es weiter; ist deine Hand dann leer, kommt der Einsatz unter den Ablagestapel und du %s. Nach einer 0 darfst du statt weiterzusetzen auch aufhören: Der ganze Einsatz kommt unter den Ablagestapel, dein Zug ist vorbei. Die Einsatzkarten wirken nicht."
+msgstr "House rule: The Gamble wild card always fits; you wish for a color that applies after the gamble. Then, in turn, you put any card face down on your stake and press the gamble button. For each Gamble, a hit rate between 1:1 and 1:%d is drawn in secret. On a hit the button shows 1 to 10: You draw that many cards, take your whole stake back, and your turn is over. If it shows 0, play goes on; if your hand is empty by then, the stake goes under the discard pile and you %s. After a 0 you may also stop instead of staking more: The whole stake goes under the discard pile and your turn is over. The stake cards have no effect."
 
 msgid "Hausregel: Wer eine Ablegen-Karte legt, wählt danach, welche eigenen Karten derselben Farbe er mit ablegt (alle, einige oder keine). Beim Ablegen-Joker tippst du auf eine Karte der Farbe, die du mit ablegen willst (alle Karten dieser Farbe werden gewählt), und wählst zum Schluss getrennt die Farbe, mit der es weitergeht. Die Karten kommen unter die Ablegen-Karte, die oben bleibt. Joker bleiben auf der Hand, mitabgelegte Aktionskarten wirken nicht. Die farbige Ablegen-Karte passt auf ihre Farbe und auf jede andere Ablegen-Karte, der Ablegen-Joker immer."
 msgstr "House rule: Whoever plays a Discard Color card then chooses which of their own cards of the same color to discard with it (all, some or none). With the Discard Wild you tap a card of the color you want to discard (all cards of that color get selected) and finally choose, separately, the color to continue with. The cards go under the Discard Color card, which stays on top. Wild cards stay in your hand, and action cards discarded along with it have no effect. The colored Discard Color card fits its color and any other Discard Color card; the Discard Wild always fits."
@@ -921,14 +945,17 @@ msgstr "Whoever has no cards left is only out once the turn comes back to them �
 msgid "Kontern: Hat der Nächste keine Karten mehr, zieht er und spielt weiter."
 msgstr "Counter: If the next player has no cards left, they draw and play on."
 
-msgid "Kontern: Hat der Nächste keine Karten mehr, ist er damit fertig – er wird ja übersprungen. Als deine letzte Karte zu zweit setzt der andere nicht aus: Er darf noch kontern."
-msgstr "Counter: If the next player has no cards left, this makes them out – they are skipped, after all. As your last card with two players left, the other is not skipped: they may still counter."
+msgid "Kontern: Hat der Nächste keine Karten mehr, ist er damit fertig – er wird ja übersprungen. Zu zweit setzt er nur aus und wartet weiter, denn du bist noch einmal dran. Als deine letzte Karte zu zweit setzt der andere nicht aus: Er darf noch kontern."
+msgstr "Counter: If the next player has no cards left, this makes them out – they are skipped, after all. With two players left they just sit out and keep waiting, since it is your turn again. As your last card with two players left, the other is not skipped: they may still counter."
 
-msgid "Kontern: Wer keine Karten mehr hat, ist damit fertig. Ist es deine letzte Karte, ist trotzdem der Nächste dran, damit er kontern kann."
-msgstr "Counter: Everyone with no cards left is out. If it's your last card, the next player still gets a turn so they can counter."
+msgid "Kontern: Wer keine Karten mehr hat, setzt nur aus und wartet weiter, denn du bist noch einmal dran. Ist es deine letzte Karte, sind die anderen ohne Karten damit fertig, und der Nächste ist dran, damit er kontern kann."
+msgstr "Counter: Anyone with no cards left just sits out and keeps waiting, since it is your turn again. If it's your last card, the others with no cards are out, and the next player gets a turn so they can counter."
 
 msgid "Kontern: Kommt der Zug dadurch wieder zu jemandem ohne Karten, ist er fertig. Als deine letzte Karte zu zweit ist der andere trotzdem dran: Er darf noch kontern."
 msgstr "Counter: If this brings the turn back to someone with no cards, they are out. As your last card with two players left, the other still gets a turn: they may counter."
+
+msgid "Kontern zu zweit: Hat der andere keine Karten mehr, setzt er nur aus und wartet weiter, denn du bist noch einmal dran."
+msgstr "Counter with two players left: If the other has no cards left, they just sit out and keep waiting, since it is your turn again."
 
 msgid "Kontern: Mit leerer Hand bist du erst fertig, wenn dich bis zu deinem nächsten Zug keiner kontert."
 msgstr "Counter: With an empty hand you are only out if nobody counters you before your next turn."
@@ -942,8 +969,8 @@ msgstr "Counter: Whoever has no cards left swaps too and plays on; whoever recei
 msgid "Als letzte Karte tauschst du mit: Du bekommst eine Hand, deine leere wandert weiter, und wer sie bekommt, wartet aufs Kontern. Wer schon auf das Kontern wartet, tauscht ebenso mit."
 msgstr "As your last card you swap too: you get a hand, your empty hand moves on, and whoever receives it waits to be countered. Anyone already waiting to be countered swaps as well."
 
-msgid "Hausregel: Wer keine Karten mehr hat, ist noch nicht fertig, sondern bleibt mit 0 Karten in der Runde. Bekommt er Karten, bevor der Zug wieder bei ihm ankommt – durch eine Ziehkarte, eine Strafe, einen Kartentausch oder eine Flip-Überraschung –, spielt er ganz normal weiter. Kommt der Zug wieder bei ihm an oder wird er übersprungen, ist er fertig. Ein Richtungswechsel kann das abkürzen oder verlängern. Das gilt für jede letzte Karte, auch beim Glücksspiel und beim Farbe-Ablegen. Nach der letzten Karte ist immer noch mindestens ein anderer Spieler dran, auch wenn die Karte jemanden aussetzen lässt."
-msgstr "House rule: Whoever has no cards left is not out yet but stays in the round with 0 cards. If they get cards before the turn comes back to them – from a draw card, a penalty, a Card Swap or a Flip Surprise – they play on as usual. If the turn comes back to them or they are skipped, they are out. A Reverse can make that shorter or longer. This applies to every last card, including Gamble and Discard Color. After the last card at least one other player always gets a turn, even if the card skips someone."
+msgid "Hausregel: Wer keine Karten mehr hat, ist noch nicht fertig, sondern bleibt mit 0 Karten in der Runde. Bekommt er Karten, bevor der Zug wieder bei ihm ankommt – durch eine Ziehkarte, eine Strafe, einen Kartentausch oder eine Flip-Überraschung –, spielt er ganz normal weiter. Kommt der Zug wieder bei ihm an oder wird er übersprungen und der Zug geht weiter, ist er fertig. Bleibt der Zug beim Überspringen beim Leger (zu zweit, Alle aussetzen), setzt er nur aus und wartet weiter. Ein Richtungswechsel kann das abkürzen oder verlängern. Das gilt für jede letzte Karte, auch beim Glücksspiel und beim Farbe-Ablegen. Nach der letzten Karte ist immer noch mindestens ein anderer Spieler dran, auch wenn die Karte jemanden aussetzen lässt."
+msgstr "House rule: Whoever has no cards left is not out yet but stays in the round with 0 cards. If they get cards before the turn comes back to them – from a draw card, a penalty, a Card Swap or a Flip Surprise – they play on as usual. If the turn comes back to them, or they are skipped and play moves on, they are out. If the skip keeps the turn with the player who caused it (two players left, Skip All), they just sit out and keep waiting. A Reverse can make that shorter or longer. This applies to every last card, including Gamble and Discard Color. After the last card at least one other player always gets a turn, even if the card skips someone."
 
 msgid "%s ist fertig!"
 msgstr "%s is out!"

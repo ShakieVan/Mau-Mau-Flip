@@ -3,8 +3,8 @@ extends AppScreen
 # Der Spieltisch als Bildschirm: TableView (F1b) + HandView (F1a) an einer TableSource (Modul G).
 #   source.state_changed → TableView.handle_state (Regie spielt die Ereignisse, danach Abgleich; der Hand-Adapter
 #                          HandView.apply_view setzt Karten und spielbare Karten aus view.hand/hints.playable)
-#   HandView.play_requested → source.act(play); Wünscher: beim Ziehen Farbfelder um die Ablage (drag_started/moved/ended),
-#                             sonst (Doppeltipp, Schnippen, daneben fallen gelassen) das Farbrad
+#   HandView.play_requested → source.act(play); Wünscher: danach das Farbrad (Doppeltipp, Ziehen, Schnippen). Die Farbfelder um
+#                             die Ablage beim Ziehen entfallen (Nutzerwunsch 25.10.2026: man landete zu oft versehentlich darauf)
 #   TableView.action → source.act (ziehen, behalten, anzweifeln, annehmen, erwischen, nächste Runde, Farbwahl)
 #   Mau-Knopf → act mau (ohne Ton); Ton und Sprechblase kommen mit dem Ereignis „mau“ auf allen Geräten (TableView, MauSound)
 #   help_requested → Kartenhilfe (RulesText zur aktiven RuleConfig aus view.rules)
@@ -13,6 +13,7 @@ extends AppScreen
 #   „Spielbare Karten hervorheben“ aus: eine unpassende Karte springt zurück, Hinweis „Die Karte passt nicht.“
 #   Sortierknopf → HandView.set_sort_mode + App.settings "sortierung"; Rückseiten-Knopf: halten = eigene Rückseiten
 #   handover → Sichtschutz (HandoverScreen), Aufdecken → source.reveal(); notice → Meldung; connection_changed → „Verbinde neu …“
+#   act_lost (Beta 1.6.16, App-Gast) → Karte zurück in die Hand bzw. Stapel/Knöpfe wieder an, Meldung „… kam nicht beim Gastgeber an“
 #   App-Gast: jede Sicht merkt sich view.rules als Regeln des Gastgebers (RuleSets.remember_host, schreibt nur bei Änderung;
 #             nur hier, nicht schon in der Lobby). „Regeln speichern“ im Spielmenü („Partie verlassen?“ bleibt dabei offen) und in
 #             der Leiste „Verbindung zum Gastgeber beendet.“; beide zeigen „Gespeichert: …“, wenn die Regeln schon einem Satz
@@ -35,6 +36,7 @@ const SORT_MODES := ["farbe", "wert", "punkte", "manuell"]
 const SORT_LABELS := {"farbe": "Farbe", "wert": "Wert", "punkte": "Punkte", "manuell": "Eigene"}
 const PEEK_TAP_MS := 300
 const BAR_BTN_H := 58.0              # Knöpfe der Sofort-Leiste (flacher, damit der obere Gegner sichtbar bleibt)
+const ACT_LOST_TOAST_S := 6.0        # Beta 1.6.16: Meldung „… kam nicht beim Gastgeber an“ (länger als die üblichen 2,8 s)
 
 var source: TableSource
 var starter := Callable()
@@ -65,7 +67,6 @@ var _help: IngameHelp                # Spielmenü: „Regeln ansehen“ / „So 
 var _burger: Button                  # ☰ neben dem Zurück-Knopf: Menü im Spiel (Beta 1.1.2)
 var _ingame_menu: IngameMenu
 var _settings_ov: IngameSettings     # ☰ → „Einstellungen“: persönliche Einstellungen über dem Tisch
-var _wild_drag := -1                # Wünscher, der gerade gezogen wird (Farbfelder offen)
 var _pending_wild := -1              # Wünscher wartet auf das Farbrad
 var _last_play := -1                 # optimistisch ausgespielt, Antwort steht aus
 var _last_seat := -1                 # zuletzt gezeigter Platz (Sichtschutz: von wem kommt das Handy)
@@ -167,9 +168,6 @@ func build() -> void:
 	table.handover.revealed.connect(_on_revealed)
 	table.help_popup.closed.connect(func() -> void: hand.close_big_view())
 	hand.play_requested.connect(_on_play_requested)
-	hand.drag_started.connect(_on_drag_started)
-	hand.drag_moved.connect(_on_drag_moved)
-	hand.drag_ended.connect(_on_drag_ended)
 	hand.help_requested.connect(_on_help)
 	hand.play_denied.connect(_on_play_denied)
 	hand.sort_mode_changed.connect(_on_sort_mode_changed)
@@ -185,6 +183,7 @@ func build() -> void:
 		source.notice.connect(_on_notice)
 		source.handover.connect(_on_handover)
 		source.connection_changed.connect(_on_connection)
+		source.act_lost.connect(_on_act_lost)     # Beta 1.6.16 (nur ClientTable sendet es)
 		if source.mode() == "client":
 			source.lobby_changed.connect(_on_client_lobby)
 		if source is GameTable:
@@ -602,6 +601,45 @@ func _on_notice(text: String) -> void:
 	table.show_notice(text, "warn")
 
 
+# Beta 1.6.16 (Nutzerbefund 25.10.2026, online: Joker mit Türkis blieb oben, der Mitspieler meinte, er habe eine 4 gelegt): Eigene
+# Aktionen kamen nicht beim Gastgeber an (ClientTable.act_lost – die Verbindung war still abgerissen, der Gastgeber hat danach ohne sie
+# geantwortet). Bisher kam die Karte nach 4 s still zurück in die Hand und der Stapel blieb aus. Jetzt: alles, was diese Aktionen
+# optimistisch gezeigt haben, zurücknehmen (nur dieses – eine neuere Aktion kann schon unterwegs sein), die Karte noch einmal
+# schütteln, deutliche Meldung und Vibration.
+func _on_act_lost(actions: Array) -> void:
+	if leaving or table == null:
+		return
+	var card := -1
+	var drew := false
+	for a in actions:
+		var act: Dictionary = a if a is Dictionary else {}
+		match str(act.get("a", "")):
+			"play", "stake":
+				var id := int(act.get("card", -1))
+				hand.cancel_play(id)                   # noch unterwegs (vor den 4 s der Hand entschieden): jetzt zurück
+				var cv := hand.card_view(id)
+				if cv != null:
+					cv.shake(0.45, 12.0)               # kam sie schon still zurück: zeigen, welche
+				if _last_play == id:
+					_last_play = -1
+				card = id
+			"draw":
+				table.draw_retry()
+				drew = true
+			"press", "stop":
+				table.gamble_machine.press_sent = false
+				table.gamble_machine.queue_redraw()
+			"discard_pick":
+				table.pick_retry()
+	var text := "Deine Aktion kam nicht beim Gastgeber an – bitte noch einmal."
+	if card >= 0:
+		text = "Deine Karte kam nicht beim Gastgeber an – sie ist wieder in deiner Hand. Leg sie noch einmal."
+	elif drew:
+		text = "Dein Ziehen kam nicht beim Gastgeber an – tipp noch einmal auf den Stapel."
+	table.hint_bar.toast(text, "error", ACT_LOST_TOAST_S)
+	UiApp.vibrate(40, 0.7)
+
+
 # Weitergeben: Sichtschutz vor dem nächsten Menschen; die alte Hand verschwindet darunter
 func _on_handover(next_seat: int, player_name: String) -> void:
 	_handover_pending = true
@@ -649,6 +687,8 @@ func _on_connection(state: String) -> void:
 			var removed := ct != null and ct.was_removed() and state != "ended"
 			if removed:
 				_conn_label.text = I18n.t("Der Gastgeber hat dich aus dem Spiel genommen.")
+			elif state == "closed" and ct != null and ct.client != null and ct.client.bye_id != "":
+				GuestReturn.remember(ct)   # Beta 1.6.16: Gastgeber hat beendet – eröffnet er neu, gilt oft derselbe Raumcode
 			_conn_menu.visible = true
 			_conn_rejoin.visible = removed
 			var guest := _guest_rules() != null and not removed
@@ -669,7 +709,7 @@ func _on_client_lobby(l: Dictionary) -> void:
 	leaving = true
 	var ct := source as ClientTable
 	for c in [[ct.state_changed, _on_state], [ct.notice, _on_notice], [ct.handover, _on_handover],
-			[ct.connection_changed, _on_connection], [ct.lobby_changed, _on_client_lobby]]:
+			[ct.connection_changed, _on_connection], [ct.lobby_changed, _on_client_lobby], [ct.act_lost, _on_act_lost]]:
 		if (c[0] as Signal).is_connected(c[1]):
 			(c[0] as Signal).disconnect(c[1])
 	source = null
@@ -693,7 +733,7 @@ func _on_switch_swapped(new_src: TableSource, note: String) -> void:
 	leaving = true
 	if source != null:
 		for c in [[source.state_changed, _on_state], [source.notice, _on_notice], [source.handover, _on_handover],
-				[source.connection_changed, _on_connection], [source.lobby_changed, _on_client_lobby]]:
+				[source.connection_changed, _on_connection], [source.lobby_changed, _on_client_lobby], [source.act_lost, _on_act_lost]]:
 			if (c[0] as Signal).is_connected(c[1]):
 				(c[0] as Signal).disconnect(c[1])
 	source = null
@@ -739,7 +779,7 @@ func _card_face(id: int) -> String:
 
 
 # Ablegen-Joker: Ablegefarbe per Antippen einer Handkarte (hints.pick_tap, ab 1.4.9), bei alten Gastgebern zuerst im Farbrad (mit
-# Frage); Farbfelder beim Ziehen gibt es für ihn nicht
+# Frage)
 static func is_discard_joker(face: String) -> bool:
 	return str(CardDB.parse_key(face).get("kind", "")) == CardDB.DISCARD_WILD
 
@@ -762,22 +802,14 @@ func _staking() -> bool:
 	return me >= 0 and int(gb.get("seat", -2)) == me and str(gb.get("need", "")) == "stake"
 
 
-func _on_play_requested(id: int, drop_global: Vector2) -> void:
+func _on_play_requested(id: int, _drop_global: Vector2) -> void:
 	if _staking():
 		_last_play = id
 		_act({"a": "stake", "card": id})
 		return
 	var face := _card_face(id)
 	if _is_wild(id, face):
-		var col := ""
-		if _wild_drag == id and table.wish_picker.mode == "fields":
-			col = table.wish_picker.color_at(drop_global)
-			table.wish_picker.close()
-		_wild_drag = -1
-		if col != "":
-			_last_play = id
-			_act({"a": "play", "card": id, "color": col})
-		elif is_discard_joker(face) and bool((view.get("hints", {}) as Dictionary).get("pick_tap", false)):
+		if is_discard_joker(face) and bool((view.get("hints", {}) as Dictionary).get("pick_tap", false)):
 			# Gastgeber ab 1.4.9: kein Farbrad für die Ablegefarbe – der Joker wird gelegt, die Farbe wählt man per Antippen
 			_last_play = id
 			_act({"a": "play", "card": id, "color": ""})
@@ -790,27 +822,6 @@ func _on_play_requested(id: int, drop_global: Vector2) -> void:
 		return
 	_last_play = id
 	_act({"a": "play", "card": id})
-
-
-func _on_drag_started(id: int, face: String) -> void:
-	if _staking():
-		return
-	var playable: Array = (view.get("hints", {}) as Dictionary).get("playable", [])
-	if _is_wild(id, face) and not is_discard_joker(face) and (playable.has(id) or playable.has(float(id))):
-		_wild_drag = id
-		table.open_color_fields()
-
-
-func _on_drag_moved(global: Vector2) -> void:
-	if _wild_drag >= 0 and table.wish_picker.mode == "fields":
-		table.wish_picker.hover(global)
-
-
-func _on_drag_ended(id: int, _global: Vector2, played: bool) -> void:
-	if _wild_drag == id or (not played and table.wish_picker.mode == "fields"):
-		if table.wish_picker.mode == "fields":
-			table.wish_picker.close()
-		_wild_drag = -1
 
 
 func _on_color_chosen(color: String) -> void:
@@ -1159,7 +1170,7 @@ func _drop_source() -> void:
 	leaving = true
 	if source != null:
 		for c in [[source.state_changed, _on_state], [source.notice, _on_notice], [source.handover, _on_handover],
-				[source.connection_changed, _on_connection], [source.lobby_changed, _on_client_lobby]]:
+				[source.connection_changed, _on_connection], [source.lobby_changed, _on_client_lobby], [source.act_lost, _on_act_lost]]:
 			if (c[0] as Signal).is_connected(c[1]):
 				(c[0] as Signal).disconnect(c[1])
 	if _switch_ok() and _switch.swapped.is_connected(_on_switch_swapped):
@@ -1335,6 +1346,10 @@ func on_back() -> bool:
 		_leave_now()
 		return true
 	var text := "Die Partie endet für alle." if source != null and source.mode() == "host" else ("Du verlässt das Spiel des Gastgebers." if source != null and source.mode() == "client" else "Der Spielstand geht verloren.")
+	var kept := (source as HostTable).keepable_room() if is_net_host() else ""
+	if kept != "":
+		# Beta 1.6.16 (Raum behalten): Der Raumcode bleibt (RoomKeeper)
+		text = I18n.t(text) + " " + I18n.t("Eröffnest du gleich wieder ein Spiel, gilt derselbe Raumcode %s.") % kept
 	_confirm = ConfirmBox.ask(_top, "Partie verlassen?", text, "Verlassen", "Weiterspielen")
 	_confirm.answered.connect(func(yes: bool) -> void:
 		_confirm = null
@@ -1537,6 +1552,8 @@ func _leave_now() -> void:
 	if leaving:
 		return
 	leaving = true
+	if source is ClientTable:
+		GuestReturn.remember(source as ClientTable)   # Beta 1.6.16: Hauptmenü „Zurück ins Spiel“ (nur online)
 	if source != null:
 		source.leave()
 	if nav != null:

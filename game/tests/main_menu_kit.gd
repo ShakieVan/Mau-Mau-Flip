@@ -16,9 +16,13 @@ const NOW := 1_800_000_000
 class FakeMenu:
 	extends MainMenuScreen
 	var offer := {}
+	var rejoin := {}                 # Beta 1.6.16: „Zurück ins Spiel“
 
 	func _offer() -> Dictionary:
 		return offer
+
+	func _rejoin_offer() -> Dictionary:
+		return rejoin
 
 
 var vp: SubViewport
@@ -38,6 +42,11 @@ static func resume_offer() -> Dictionary:
 		"seats": [{"name": "Du"}, {"name": "Maximiliane"}, {"name": "Bartholomäus"}, {"name": "Kim"}]}
 
 
+# Beta 1.6.16: Angebot „Zurück ins Spiel“ mit langem Gastgebernamen
+static func rejoin_offer() -> Dictionary:
+	return {"room": "KATZE-42", "relay": "https://vermittler.example", "host": "Maximiliane", "t": NOW - 7 * 60}
+
+
 # Updater-Zustand simulieren: release gesetzt = „Update bereit“ (Updater.available), dann changed wie nach einer Suche
 func set_update(on: bool) -> void:
 	var app := root.get_node_or_null("App")
@@ -49,7 +58,7 @@ func set_update(on: bool) -> void:
 
 
 # Hauptmenü in einer SubViewport aufbauen (Größe = virtuelle Größe des Formats) und Layout abwarten
-func open_menu(w: int, h: int, font: String, lang: String, update: bool, resume: bool) -> FakeMenu:
+func open_menu(w: int, h: int, font: String, lang: String, update: bool, resume: bool, rejoin := false) -> FakeMenu:
 	close_menu()
 	I18n.set_language(lang)
 	set_update(update)
@@ -64,6 +73,8 @@ func open_menu(w: int, h: int, font: String, lang: String, update: bool, resume:
 	menu = FakeMenu.new()
 	menu.now_unix = NOW
 	menu.offer = resume_offer() if resume else {}
+	menu.rejoin = rejoin_offer() if rejoin else {}
+	menu.rejoin_check = false
 	nav.push(menu, false)
 	for i in 6:
 		await process_frame

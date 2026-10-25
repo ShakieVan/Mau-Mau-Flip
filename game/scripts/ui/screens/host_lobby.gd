@@ -31,6 +31,7 @@ var _focus_last := false            # … bzw. zum letzten (neuer Computergegner
 
 
 func build() -> void:
+	GuestReturn.forget()            # Beta 1.6.16: wer selbst eröffnet, braucht „Zurück ins Spiel“ (als Gast) nicht mehr
 	host = GameStarter.host()
 	add_child(host)
 	var who := str(UiApp.setting("name", ""))
@@ -337,7 +338,11 @@ func on_back() -> bool:
 	var guests := guest_count(lobby)
 	if guests == 0:
 		return false
-	_confirm = ConfirmBox.ask(self, "Lobby schließen?", close_text(guests), "Schließen", "Bleiben")
+	var text := close_text(guests)
+	if host != null and host.keepable_room() != "":
+		# Beta 1.6.16 (Raum behalten): Der Raumcode bleibt (RoomKeeper)
+		text += " " + I18n.t("Eröffnest du gleich wieder ein Spiel, gilt derselbe Raumcode %s.") % host.keepable_room()
+	_confirm = ConfirmBox.ask(self, "Lobby schließen?", text, "Schließen", "Bleiben")
 	_confirm.answered.connect(func(yes: bool) -> void:
 		_confirm = null
 		if yes:

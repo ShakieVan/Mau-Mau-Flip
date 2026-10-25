@@ -400,14 +400,21 @@ Nutzerwunsch (AGENTS.md Nr. 26), Festlegung des Koordinators, umgesetzt im Regel
 
 ### Regeln
 
-- **Option** `gamble_cards`: **`off`** / `on`, in keiner Voreinstellung.
+- **Option** `gamble_cards`: **`off`** / `on`, in keiner Voreinstellung (seit 0.1.4 in „Familie“).
+- **Option** `gamble_odds` „Glücksspiel-Treffer“ (Nutzer 25.10.2026: „Das Glücksrad macht viel zu oft "0". Unsere Einstellung ist zu
+  hoch.“, gewählt „als Hausregel wählbar“): **`rare`** „Selten“ = q 1–10 (Stand bis 1.6.15, im Mittel 71 % der Drucke 0), `medium`
+  „Mittel“ = q 1–5 (54 % Nullen, in „Familie“), `often` „Oft“ = q 1–3 (39 % Nullen). `RuleConfig.GAMBLE_MAX_Q`, `gamble_max_q()`,
+  `gamble_odds_title()`. Zählt nur mit `gamble_cards=on` (Voreinstellungs-Erkennung und `RuleSets.same` übergehen sie sonst, die Zeile
+  im Regel-Editor ist dann gesperrt). Gespeicherte Regeln ohne den Schlüssel, die sonst genau der „Familie“ entsprechen, hebt
+  `migrate_dict` auf die heutige (Mittel); alle anderen bleiben bei Selten. Ältere Gastgeber kennen den Schlüssel nicht und losen
+  weiter bis 1:10; ältere Gäste übergehen ihn. `from_dict` klemmt eine geladene Quote weiterhin auf 1–10.
 - **Karten:** 2 zusätzliche doppelseitige Karten, je Seite zweimal `hell_gluecksspiel` bzw. `dunkel_gluecksspiel` (Art `gluecksspiel`, Joker, 50 Punkte). Deck 114, mit allen Hausregeln 124. Prüfsummen je Seite +100.
 - **Legen:** `{a:"play", card, color}` wie ein Wünscher; die gewählte Farbe gilt nach dem Glücksspiel.
   - Passt immer, außer unter einer offenen Ziehstrafe (Stapeln) und beim Anzweifeln, wie jeder Joker. Zählt bei `wild_counts_for_bluff` als „anderer Joker“.
   - Als Startkarte bleibt es liegen. Liegt es nach einem Flip oben, wählt der Flip-Spieler nur die Farbe (Phase `color`); ein Glücksspiel gibt es dann nicht.
   - **Als letzte Karte** ist der Spieler fertig wie bei jeder letzten Karte; es gibt kein Glücksspiel, weil nichts zu setzen ist.
 - **Ablauf:** Danach ist der Leger in der Phase **`gamble`** (`current_seat()` bleibt der Leger).
-  - Je Glücksspiel wird geheim eine **Trefferquote q** (1–10, gleich wahrscheinlich) aus dem Spielzufall gelost. Sie steht in `to_dict()`, nie in einer Sicht oder einem Ereignis.
+  - Je Glücksspiel wird geheim eine **Trefferquote q** (1–10, gleich wahrscheinlich; mit `gamble_odds` 1–5 bzw. 1–3) aus dem Spielzufall gelost. Sie steht in `to_dict()`, nie in einer Sicht oder einem Ereignis.
   - `{a:"stake", card}`: eine beliebige eigene Handkarte verdeckt auf den Einsatz (Pflicht vor jedem Druck), dann `{a:"press"}`.
   - **Treffer** (Wahrscheinlichkeit 1/q): Wert 1–10, gleich wahrscheinlich. Der Spieler zieht so viele Karten (übliches Ziehen, Grund `gluecksspiel`; leerer Nachziehstapel → Ablage mischen, der Einsatz nicht; sind beide Stapel leer, entfällt das Ziehen), nimmt den ganzen Einsatz zurück (hinten an die Hand), und der Zug ist vorbei: Nächster in Spielrichtung.
   - **Kein Treffer** (Wert 0): Ist die Hand leer, kommt der Einsatz unter die Ablage (die zuerst gesetzte Karte ganz unten) und der Spieler ist fertig wie bei einer letzten Karte (Rundenende bzw. Platzierung bei `round_end=last`). Sonst folgt der nächste Einsatz – oder der Spieler hört auf.
@@ -457,12 +464,16 @@ Nutzerwunsch (AGENTS.md Nr. 26), Festlegung des Koordinators, umgesetzt im Regel
 - Legt den Glücksspiel-Joker gern mit kleiner Hand (höchstens 4 Karten: Wert 32, bis 6 Karten 10, sonst 2) und immer, wenn sonst nichts passt (statt zu ziehen). Gezogen behält er ihn bei mehr als 6 Karten.
 - Setzt zuerst Karten mit hohen Punkten bzw. schwer spielbare (Punkte + 12 / (1 + weitere Karten derselben Farbe)), Joker zuletzt; drückt sofort.
 - **Aufhören** (`MauBot.stop_chance`, ohne Kenntnis der Quote, Zufall aus dem übergebenen Seed): Stufe 0 mit 30 %, sonst 10 % + 18 % je weiterer Einsatzkarte (höchstens 90 %), mit 2 Karten 20 % weniger; mit 1 Karte nie (kein Treffer = fertig), nach einem „Mau!“-Ruf mit 2 Karten auch nicht (er setzt dann die vorletzte Karte).
+- **Trefferstufe** (`gamble_odds` aus `view.rules`, ab der Beta nach 1.6.15): Der Aufhör-Wert wird mit `ODDS_RISK` (Selten 1, Mittel 1,5, Oft 2 – mittlere Trefferchance je Druck 29 / 46 / 61 %) malgenommen; den Joker legt er bei Mittel erst ab 3 (sonst 5) Karten, bei Oft ab 2 (sonst 4) Karten bevorzugt (Chance aufs Fertigwerden mit 3 Restkarten: 47 / 27 / 14 %).
 - Ruft „Mau!“ vor dem Setzen der vorletzten Karte (und vor dem Glücksspiel als vorletzte Karte).
 - **Stärke** zu dritt gegen zwei Zufallsbots mit Glücksspiel: 257 von 600 Partien (43 %), Schwelle im Test 36 %.
 
 ### Texte
 
-- `card_help` für `*_gluecksspiel`: Joker und Farbe, Ablauf, Quote 1:1 bis 1:10, Treffer 1 bis 10, Ende bei leerer Hand (je nach `round_end`), Aufhören nach einer 0, Einsatzkarten wirken nicht, Mau-Hinweis (nicht bei `mau_call=off`), Ziehstrafe (bei `stacking=same`), letzte Karte, Punkte; ohne Hausregel der Zusatz „gerade nicht im Spiel“.
+- Trefferstufe: Kartenhilfe und Übersicht nennen die Obergrenze („zwischen 1:1 und 1:%d“), `describe()` hat bei `on` die Zeile
+  „Glücksspiel-Treffer: Mittel – …“, die Kurzbeschreibung (`RulesBar.summary`) „Glücksspiel-Treffer: Mittel“; Lite `karten.js`
+  (`glueckMax`, `glueckStufe`) mit denselben msgids.
+- `card_help` für `*_gluecksspiel`: Joker und Farbe, Ablauf, Quote 1:1 bis 1:10 (nach `gamble_odds`), Treffer 1 bis 10, Ende bei leerer Hand (je nach `round_end`), Aufhören nach einer 0, Einsatzkarten wirken nicht, Mau-Hinweis (nicht bei `mau_call=off`), Ziehstrafe (bei `stacking=same`), letzte Karte, Punkte; ohne Hausregel der Zusatz „gerade nicht im Spiel“.
 - `overview`: Absatz „Glücksspiel“ (mit Aufhören), im Absatz Karten „zwei Glücksspiel-Joker“, in der Punkteliste „… Glücksspiel … 50“, jeweils nur bei `on`. Ist eine der Hausregeln mit Zusatzkarten aus, stellt der Absatz „Weitere besondere Karten“ deren Karten kurz vor (Nutzerwunsch: Anleitung „Regeln“ mit allen besonderen Karten).
 - Namen: `kind_name("gluecksspiel")` und `face_title` „Glücksspiel“, `match_phrase` „ein Glücksspiel“.
 

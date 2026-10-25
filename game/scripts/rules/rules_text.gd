@@ -112,14 +112,14 @@ static func card_help(key: String, config: RuleConfig = null) -> Array[String]:
 			out.append(_t("Passt auf %s und auf jedes Aussetzen.") % color)
 			out.append(_t("Zu zweit bist du gleich noch einmal dran."))
 			if cfg.counter_round == "on":
-				out.append(_t("Kontern: Hat der Nächste keine Karten mehr, ist er damit fertig – er wird ja übersprungen. Als deine letzte Karte zu zweit setzt der andere nicht aus: Er darf noch kontern."))
+				out.append(_t("Kontern: Hat der Nächste keine Karten mehr, ist er damit fertig – er wird ja übersprungen. Zu zweit setzt er nur aus und wartet weiter, denn du bist noch einmal dran. Als deine letzte Karte zu zweit setzt der andere nicht aus: Er darf noch kontern."))
 		"alle_aussetzen":
 			out.append(_t("Alle anderen setzen aus: Du bist sofort noch einmal dran und legst oder ziehst ganz normal."))
 			out.append(_t("Passt auf %s und auf jedes Alle aussetzen.") % color)
 			if cfg.round_end == "last" and cfg.counter_round != "on":
 				out.append(_t("Bist du damit fertig, macht der Nächste weiter."))
 			if cfg.counter_round == "on":
-				out.append(_t("Kontern: Wer keine Karten mehr hat, ist damit fertig. Ist es deine letzte Karte, ist trotzdem der Nächste dran, damit er kontern kann."))
+				out.append(_t("Kontern: Wer keine Karten mehr hat, setzt nur aus und wartet weiter, denn du bist noch einmal dran. Ist es deine letzte Karte, sind die anderen ohne Karten damit fertig, und der Nächste ist dran, damit er kontern kann."))
 		"richtungswechsel":
 			out.append(_t("Die Spielrichtung dreht sich um."))
 			out.append(_t("Passt auf %s und auf jeden Richtungswechsel.") % color)
@@ -129,6 +129,8 @@ static func card_help(key: String, config: RuleConfig = null) -> Array[String]:
 				out.append(_t("Zu zweit hat er keine Wirkung."))
 			if cfg.counter_round == "on":
 				out.append(_t("Kontern: Kommt der Zug dadurch wieder zu jemandem ohne Karten, ist er fertig. Als deine letzte Karte zu zweit ist der andere trotzdem dran: Er darf noch kontern."))
+				if cfg.two_player_reverse_skips:
+					out.append(_t("Kontern zu zweit: Hat der andere keine Karten mehr, setzt er nur aus und wartet weiter, denn du bist noch einmal dran."))
 		"flip":
 			if cfg.flip_mode == "card":
 				out.append(_t("Wendet Nachziehstapel, alle Hände und sich selbst. Danach gilt die %s.") % tr_side(other))
@@ -192,7 +194,7 @@ static func _gamble_lines(cfg: RuleConfig) -> Array[String]:
 	var out: Array[String] = []
 	out.append(_t("Joker: passt immer. Du wünschst eine Farbe; sie gilt nach dem Glücksspiel."))
 	out.append(_t("Dann spielst du um dein Glück: Leg eine beliebige Karte deiner Hand verdeckt auf deinen Einsatz und drück den Glücksspielknopf. Das geht reihum weiter."))
-	out.append(_t("Für jedes Glücksspiel wird geheim eine Trefferquote zwischen 1:1 und 1:10 ausgelost."))
+	out.append(_t("Für jedes Glücksspiel wird geheim eine Trefferquote zwischen 1:1 und 1:%d ausgelost.") % cfg.gamble_max_q())
 	out.append(_t("Treffer: Der Knopf zeigt 1 bis 10. So viele Karten ziehst du, nimmst deinen ganzen Einsatz zurück, und dein Zug ist vorbei."))
 	var counter := cfg.counter_round == "on"
 	if counter:
@@ -374,7 +376,7 @@ static func overview(config: RuleConfig = null) -> Array[Dictionary]:
 		var done := _t("bist fertig und gewinnst die Runde") if cfg.round_end == "first" else _t("bist fertig")
 		if cfg.counter_round == "on":
 			done = _t("wartest, ob dich jemand kontert")
-		var gamble_text := _t("Hausregel: Der Glücksspiel-Joker passt immer; du wünschst eine Farbe, die nach dem Glücksspiel gilt. Dann legst du reihum eine beliebige Karte verdeckt auf deinen Einsatz und drückst den Glücksspielknopf. Je Glücksspiel wird geheim eine Trefferquote zwischen 1:1 und 1:10 ausgelost. Bei einem Treffer zeigt der Knopf 1 bis 10: So viele Karten ziehst du, nimmst den ganzen Einsatz zurück, und dein Zug ist vorbei. Zeigt er 0, geht es weiter; ist deine Hand dann leer, kommt der Einsatz unter den Ablagestapel und du %s. Nach einer 0 darfst du statt weiterzusetzen auch aufhören: Der ganze Einsatz kommt unter den Ablagestapel, dein Zug ist vorbei. Die Einsatzkarten wirken nicht.") % done
+		var gamble_text := _t("Hausregel: Der Glücksspiel-Joker passt immer; du wünschst eine Farbe, die nach dem Glücksspiel gilt. Dann legst du reihum eine beliebige Karte verdeckt auf deinen Einsatz und drückst den Glücksspielknopf. Je Glücksspiel wird geheim eine Trefferquote zwischen 1:1 und 1:%d ausgelost. Bei einem Treffer zeigt der Knopf 1 bis 10: So viele Karten ziehst du, nimmst den ganzen Einsatz zurück, und dein Zug ist vorbei. Zeigt er 0, geht es weiter; ist deine Hand dann leer, kommt der Einsatz unter den Ablagestapel und du %s. Nach einer 0 darfst du statt weiterzusetzen auch aufhören: Der ganze Einsatz kommt unter den Ablagestapel, dein Zug ist vorbei. Die Einsatzkarten wirken nicht.") % [cfg.gamble_max_q(), done]
 		if cfg.mau_call != "off":
 			gamble_text += " " + _t("Bleibt nach dem Setzen 1 Karte, gilt „Mau!“ wie beim Legen.")
 		out.append({"title": _t("Glücksspiel"), "text": gamble_text})
@@ -421,7 +423,7 @@ static func overview(config: RuleConfig = null) -> Array[Dictionary]:
 			mau = _t("In diesen Regeln wird nicht „Mau!“ gerufen.")
 	out.append({"title": "Mau!", "text": mau})
 	if cfg.counter_round == "on":
-		out.append({"title": _t("Kontern"), "text": _t("Hausregel: Wer keine Karten mehr hat, ist noch nicht fertig, sondern bleibt mit 0 Karten in der Runde. Bekommt er Karten, bevor der Zug wieder bei ihm ankommt – durch eine Ziehkarte, eine Strafe, einen Kartentausch oder eine Flip-Überraschung –, spielt er ganz normal weiter. Kommt der Zug wieder bei ihm an oder wird er übersprungen, ist er fertig. Ein Richtungswechsel kann das abkürzen oder verlängern. Das gilt für jede letzte Karte, auch beim Glücksspiel und beim Farbe-Ablegen. Nach der letzten Karte ist immer noch mindestens ein anderer Spieler dran, auch wenn die Karte jemanden aussetzen lässt.")})
+		out.append({"title": _t("Kontern"), "text": _t("Hausregel: Wer keine Karten mehr hat, ist noch nicht fertig, sondern bleibt mit 0 Karten in der Runde. Bekommt er Karten, bevor der Zug wieder bei ihm ankommt – durch eine Ziehkarte, eine Strafe, einen Kartentausch oder eine Flip-Überraschung –, spielt er ganz normal weiter. Kommt der Zug wieder bei ihm an oder wird er übersprungen und der Zug geht weiter, ist er fertig. Bleibt der Zug beim Überspringen beim Leger (zu zweit, Alle aussetzen), setzt er nur aus und wartet weiter. Ein Richtungswechsel kann das abkürzen oder verlängern. Das gilt für jede letzte Karte, auch beim Glücksspiel und beim Farbe-Ablegen. Nach der letzten Karte ist immer noch mindestens ein anderer Spieler dran, auch wenn die Karte jemanden aussetzen lässt.")})
 	var special := _t("Ist der Nachziehstapel leer, wird die Ablage außer der obersten Karte gemischt. Sind beide leer, entfällt das Ziehen. Wiederholt sich bei fast leeren Stapeln dieselbe Lage zum dritten Mal, endet die Runde; vorn liegt, wer die wenigsten Karten hat.")
 	if cfg.two_player_reverse_skips:
 		special += " " + _t("Zu zweit wirkt der Richtungswechsel wie Aussetzen.")

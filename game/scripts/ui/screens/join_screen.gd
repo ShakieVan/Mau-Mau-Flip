@@ -626,6 +626,7 @@ func _on_client_state(_events: Array, v: Dictionary) -> void:
 func _on_connection(state: String) -> void:
 	match state:
 		"open":
+			GuestReturn.forget()                 # Beta 1.6.16: wieder drin (bzw. in einem anderen Spiel)
 			_status.text = "Verbunden. Warte auf den Gastgeber …"
 			_search_box.visible = false
 			_lobby_box.visible = true
@@ -634,8 +635,10 @@ func _on_connection(state: String) -> void:
 			QrJoin.attach(client)                # Spiel-WLAN aus dem QR-Code gehört jetzt zu dieser Verbindung
 			_stop_search()
 		"connecting":
-			# schon in der Lobby (Beta 1.3.3): klarer Hinweis statt nur „Verbinde …“
-			_status.text = client.connection_hint() if client != null and _lobby_box.visible else "Verbinde …"
+			# schon in der Lobby (Beta 1.3.3): klarer Hinweis statt nur „Verbinde …“; Beta 1.6.16: auch vor der Lobby, wenn der Gastgeber
+			# gerade weg ist (4503, z. B. sein Raum wartet auf die neue Lobby) – die Seite versucht es von selbst weiter
+			var away := client != null and client.client != null and client.client.host_away
+			_status.text = client.connection_hint() if client != null and (_lobby_box.visible or away) else "Verbinde …"
 		"rejected", "closed":
 			if not _started:
 				# Grund behalten (z. B. „Der Gastgeber hat das Spiel beendet.“); sonst bliebe „Verbunden. Warte …“ stehen.
@@ -651,6 +654,8 @@ func _back_to_search() -> void:
 	if client != null:
 		var c := client
 		client = null
+		if c.client != null and c.client.welcomes > 0:
+			GuestReturn.remember(c)          # Beta 1.6.16: Lobby verlassen bzw. vom Gastgeber beendet – „Zurück ins Spiel“
 		c.leave()
 		c.queue_free()
 	_lobby_box.visible = false
@@ -826,6 +831,8 @@ func on_leave() -> void:
 	if nav != null and not nav.stack.has(self):
 		_stop_search()
 		if client != null and not _started:
+			if client.client != null and client.client.welcomes > 0:
+				GuestReturn.remember(client)     # Beta 1.6.16
 			client.leave()
 		if not _started:
 			QrJoin.wifi_release()             # Seite ohne Partie verlassen: Spiel-WLAN aus dem QR-Code freigeben

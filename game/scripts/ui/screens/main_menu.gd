@@ -22,6 +22,14 @@ var _resume_sub: Label
 var _resume_sw: HostSwitch
 var _resume_box: ConfirmBox          # Warten bzw. Rückfrage des Ablaufs
 var _right: VBoxContainer            # Knopfspalte (mit „Partie fortsetzen“ etwas dichter)
+# Mau-Mau Flip (Beta 1.6.16, Raum behalten, docs/module/raum_behalten.md 3): „Zurück ins Spiel“ (GuestReturn) mit „KATZE-42 · bei Lena ·
+# vor 3 min“ und „Nicht mehr anzeigen“ – an derselben Stelle wie „Partie fortsetzen“, nie beide zugleich (Fortsetzen geht vor). Beim
+# Anzeigen fragt das Menü den Vermittler (/info?room=); ist der Raum weg, verschwindet die Zeile.
+var rejoin_row: VBoxContainer
+var rejoin_check := true             # Tests: false = den Vermittler nicht fragen
+var _rejoin_sub: Label
+var _rejoin_http: HTTPRequest
+var _rejoin_asked := ""              # Raum der letzten /info-Frage (room + t)
 
 
 func build() -> void:
@@ -98,6 +106,7 @@ func build() -> void:
 	drop.add_theme_font_size_override("font_size", UiFonts.size("hinweis"))
 	drop.pressed.connect(ask_discard)
 	drop_row.add_child(drop)
+	_build_rejoin(right)
 	var solo := _big("Übungsspiel", "gegen Computergegner", "start", "PrimaryButton")
 	solo.name = "Uebungsspiel"
 	solo.pressed.connect(func() -> void: nav.push(SoloSetupScreen.new()))
@@ -232,6 +241,98 @@ func _share() -> void:
 		toast("Teilen geht nur in der Android-App.")
 
 
+# --- „Zurück ins Spiel“ (Beta 1.6.16, Raum behalten) ---
+
+func _build_rejoin(right: VBoxContainer) -> void:
+	rejoin_row = ScreenKit.vbox(2)
+	rejoin_row.name = "Zurueck"
+	rejoin_row.visible = false
+	right.add_child(rejoin_row)
+	var btn := _big("Zurück ins Spiel", "", "start", "PrimaryButton")
+	btn.name = "ZurueckInsSpiel"
+	btn.pressed.connect(rejoin_game)
+	rejoin_row.add_child(btn)
+	_rejoin_sub = btn.find_child("Unterzeile", true, false) as Label
+	_rejoin_sub.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	for l: Label in [btn.find_child("Titel", true, false), _rejoin_sub]:
+		l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	(_rejoin_sub.get_parent() as Control).size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var drop_row := ScreenKit.hbox(0)
+	rejoin_row.add_child(drop_row)
+	drop_row.add_child(ScreenKit.spacer())
+	var drop := ScreenKit.button("Nicht mehr anzeigen", "GhostButton", "", 0.0)
+	drop.name = "ZurueckVergessen"
+	drop.custom_minimum_size.y = 52
+	drop.add_theme_font_size_override("font_size", UiFonts.size("hinweis"))
+	drop.pressed.connect(forget_rejoin)
+	drop_row.add_child(drop)
+
+
+# Gemerktes Online-Spiel als Gast (Tests überschreiben das)
+func _rejoin_offer() -> Dictionary:
+	return GuestReturn.current(now_unix)
+
+
+# Zeile zeigen, wenn es ein gemerktes Spiel gibt und „Partie fortsetzen“ nicht da ist (und kein Fortsetzen-Ablauf läuft)
+func refresh_rejoin() -> void:
+	if rejoin_row == null:
+		return
+	var d := _rejoin_offer()
+	var busy := _resume_sw != null and is_instance_valid(_resume_sw)
+	rejoin_row.visible = not d.is_empty() and not resume_row.visible and not busy
+	if not rejoin_row.visible:
+		return
+	_rejoin_sub.text = GuestReturn.subline(d, now_unix)
+	_ask_rejoin_room(d)
+
+
+func rejoin_game() -> void:
+	var d := _rejoin_offer()
+	if d.is_empty() or nav == null:
+		refresh_resume()
+		return
+	GuestReturn.open(nav, d)
+
+
+func forget_rejoin() -> void:
+	GuestReturn.forget()
+	refresh_resume()
+
+
+# Gibt es den Raum noch? /info?room= beim Vermittler (einmal je gemerktem Raum und Menü); open:false → vergessen.
+func _ask_rejoin_room(d: Dictionary) -> void:
+	var key := "%s@%d" % [str(d.room), int(d.t)]
+	if not rejoin_check or key == _rejoin_asked:
+		return
+	_rejoin_asked = key
+	if _rejoin_http == null:
+		_rejoin_http = HTTPRequest.new()
+		_rejoin_http.name = "ZurueckPruefung"
+		_rejoin_http.timeout = 8.0
+		add_child(_rejoin_http)
+		_rejoin_http.request_completed.connect(_on_rejoin_info)
+	_rejoin_http.cancel_request()
+	NetAddresses.hold_unbound(_rejoin_hold(), 10000)   # Android: ins Internet, nicht ins Spiel-WLAN
+	if _rejoin_http.request(str(d.relay) + "/info?room=" + str(d.room)) != OK:
+		NetAddresses.release_hold(_rejoin_hold())
+
+
+func _rejoin_hold() -> String:
+	return "rejoin_check:%d" % get_instance_id()
+
+
+func _on_rejoin_info(result: int, status: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+	NetAddresses.release_hold(_rejoin_hold())
+	if result != HTTPRequest.RESULT_SUCCESS or status != 200:
+		return                           # Vermittler nicht erreichbar: Zeile bleibt (der Tipp sagt dann, was los ist)
+	var info: Variant = JSON.parse_string(body.get_string_from_utf8())
+	var room: Variant = info.get("room") if info is Dictionary else null
+	if room is Dictionary and not bool(room.get("open", false)):
+		GuestReturn.forget()
+		refresh_resume()
+
+
 # --- „Partie fortsetzen“ (Beta 1.6.1, Gastgeber-Übergabe) ---
 
 func _offer() -> Dictionary:
@@ -244,8 +345,9 @@ func refresh_resume() -> void:
 		return
 	var d := _offer()
 	resume_row.visible = not d.is_empty() and (_resume_sw == null or not is_instance_valid(_resume_sw))
+	refresh_rejoin()
 	if _right != null:
-		_right.add_theme_constant_override("separation", 10 if resume_row.visible else 16)
+		_right.add_theme_constant_override("separation", 10 if resume_row.visible or rejoin_row.visible else 16)
 	if d.is_empty() or _resume_sub == null:
 		return
 	var mine := int(d.host_seat) if str(d.role) == "host" else int(d.my_seat)

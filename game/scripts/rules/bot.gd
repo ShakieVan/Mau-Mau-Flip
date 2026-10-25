@@ -288,9 +288,14 @@ static func _gamble(view: Dictionary, hints: Dictionary, rng: RandomNumberGenera
 	return {"a": "stake", "card": best_id}
 
 
+# Glücksspiel-Treffer (gamble_odds): mittlere Trefferchance je Druck im Verhältnis zu „Selten“ (29 / 46 / 61 %), gerundet.
+const ODDS_RISK := {"rare": 1.0, "medium": 1.5, "often": 2.0}
+
+
 # Wahrscheinlichkeit, beim Glücksspiel aufzuhören (die Trefferquote kennt der Bot nicht): Je größer der Einsatz, desto eher
 # aufhören (ein Treffer brächte alles zurück und dazu bis zu 10 Karten); mit nur noch 1 Karte weiter (kein Treffer = fertig), mit 2
-# eher weiter. Einfacher Bot: fester Wurf.
+# eher weiter. Einfacher Bot: fester Wurf. Bekannt ist die Trefferstufe der Regeln (Nutzer 25.10.2026): Je öfter es trifft, desto
+# eher aufhören (ODDS_RISK).
 static func stop_chance(view: Dictionary, level: int) -> float:
 	var hand := (view.get("hand", []) as Array).size()
 	if hand <= 1 or (hand == 2 and _said_mau(view)):      # „Mau!“ gerufen heißt: Die vorletzte Karte wird gesetzt
@@ -298,10 +303,15 @@ static func stop_chance(view: Dictionary, level: int) -> float:
 	if level <= 0:
 		return 0.3
 	var stake := int((view.get("gamble", {}) as Dictionary).get("stake", 0))
-	var p := 0.1 + 0.18 * float(stake - 1)
+	var p := (0.1 + 0.18 * float(stake - 1)) * float(ODDS_RISK.get(_gamble_odds(view), 1.0))
 	if hand == 2:
 		p -= 0.2
 	return clampf(p, 0.0, 0.9)
+
+
+# Trefferstufe des Glücksspiels aus den Regeln der Sicht ("rare" ohne Angabe, z. B. bei einem älteren Gastgeber).
+static func _gamble_odds(view: Dictionary) -> String:
+	return str((view.get("rules", {}) as Dictionary).get("gamble_odds", "rare"))
 
 
 # Wert einer Ablegen-Karte, die n weitere Karten mitnimmt, bei hand Karten auf der Hand: leert sie die Hand, sehr hoch; nimmt sie
@@ -478,11 +488,12 @@ static func _turn(view: Dictionary, hints: Dictionary, rng: RandomNumberGenerato
 	var next_count := int(nxt.get("count", 99))
 	var prev_count := int(prv.get("count", 99))
 	# Hausregel Kontern: Wartet der Nächste ohne Karten, holt ihn eine Ziehkarte zurück ins Spiel; Aussetzen und ein
-	# Richtungswechsel zu einem Wartenden machen ihn dagegen fertig. Ein Kartentausch kontert alle Wartenden.
+	# Richtungswechsel zu einem Wartenden machen ihn dagegen fertig, wenn der Zug danach weiterläuft. Ein Kartentausch kontert alle Wartenden.
 	var next_wait := waiting(nxt)
 	var prev_wait := waiting(prv)
 	var any_wait := _anyone_waiting(view)
 	var two := (view.get("players", []) as Array).filter(func(p: Dictionary) -> bool: return int(p.get("place", 0)) == 0).size() == 2
+	var reverse_skips := bool((view.get("rules", {}) as Dictionary).get("two_player_reverse_skips", true))
 	var hand: Array = view.get("hand", [])
 	var ctab := CardDB.color_table()
 	var ktab := CardDB.kind_table()
@@ -537,8 +548,10 @@ static func _turn(view: Dictionary, hints: Dictionary, rng: RandomNumberGenerato
 				s = 8.0 + swap_value(view)
 			"gluecksspiel":
 				# Mit kleiner Hand ist die Chance aufs Fertigwerden gut (bei 3 Restkarten fast 50 %); sonst aufsparen – passt
-				# nichts anderes, wird er trotzdem gelegt (statt zu ziehen).
-				s = 2.0 + (30.0 if hand.size() <= 4 else (8.0 if hand.size() <= 6 else 0.0))
+				# nichts anderes, wird er trotzdem gelegt (statt zu ziehen). Trifft es öfter (gamble_odds), lohnt es erst mit
+				# weniger Karten (3 Restkarten: Selten 47 %, Mittel 27 %, Oft 14 %).
+				var shift := int({"medium": 1, "often": 2}.get(_gamble_odds(view), 0))
+				s = 2.0 + (30.0 if hand.size() <= 4 - shift else (8.0 if hand.size() <= 6 - shift else 0.0))
 			"ablegen":
 				s = _discard_value(_color_count(view, ctab[code], id), hand.size(), 5.0)
 			"ablegen_joker":
@@ -553,13 +566,16 @@ static func _turn(view: Dictionary, hints: Dictionary, rng: RandomNumberGenerato
 						s += 60.0                  # kontern: der Wartende zieht und spielt weiter
 				"tausch":
 					s += 50.0                      # alle Wartenden bekommen eine Hand
+				# Nutzerbefund 25.10.2026: Bleibe ich nach dem Überspringen dran (zu zweit, Alle aussetzen), wartet der Wartende nur
+				# weiter – ich habe noch einen Zug zum Kontern. Fertig macht ihn das Überspringen nur, wenn der Zug weiterläuft.
 				"aussetzen":
-					if next_wait:
+					if next_wait and not two:
 						s -= 40.0
-				"alle_aussetzen":
-					s -= 40.0                      # überspringt alle Wartenden: fertig
 				"richtungswechsel":
-					if prev_wait or (two and next_wait):
+					if two and next_wait:
+						if not reverse_skips:
+							s -= 40.0              # zu zweit ohne Aussetzen: Der Zug kommt bei ihm an, er ist fertig
+					elif prev_wait:
 						s -= 40.0
 					elif next_wait:
 						s += 6.0                   # der Zug läuft erst von ihm weg: Zeit für andere zum Kontern

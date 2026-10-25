@@ -28,8 +28,17 @@ extends TableSource
 #  - Beta 1.6.6 (Furzkissen): fx kissen (nur als Leger: Bestätigung, Spiegel sperrt die Mindestzeit) und kissen_pop (alle) → fx_event;
 #    fx_no mit k:"kissen" setzt fx_refused_kind. Beta 1.6.8: left in Bestätigung bzw. fx_no rate = Restdauer der eigenen Sperre
 #    (Spiegel sperrt genau so lange; ohne left wie bisher die Mindestzeit 60 s bzw. keine Änderung).
+# Mau-Mau Flip (Beta 1.6.16, Nutzerbefund 25.10.2026: Joker mit Türkis lag oben, der Gast meinte, er habe eine 4 gelegt): verlorene
+# Aktionen. Jede gesendete Aktion wartet auf die Quittung des Gastgebers (seq_ack in state/err; der Gastgeber setzt sie beim Empfang,
+# vor dem Anwenden). Kommt binnen act_check_ms keine, prüft der NetClient sofort die Verbindung (check_now: „back“ + „ping“, still tot →
+# nach 3 s neu verbinden), statt erst nach 10–15 s. Verloren ist die Aktion erst, wenn der Gastgeber danach ohne sie antwortet:
+#  - nach einer neuen Anmeldung (welcome) sofort beim ersten Stand ohne Quittung (die alte Verbindung ist ersetzt, nichts kommt nach);
+#  - auf derselben Verbindung, wenn nach der Prüfung ein Stand ohne Quittung kommt und binnen act_settle_ms keine nachfolgt (nach einem
+#    Funkloch kommen ältere Stände gebündelt an, die Quittung direkt dahinter).
+# Dann act_lost(actions); die Oberfläche holt die Karte zurück und meldet es deutlich. Kommt die Antwort nur spät, bleibt es still.
+# Ein Legen bzw. Setzen, dessen Karte nicht mehr in der Hand ist, gilt nicht als verloren (nichts zurückzuholen).
 
-signal backup_changed                              # Beta 1.6.1: neue Sicherung (bk) liegt in backup
+signal backup_changed                             # Beta 1.6.1: neue Sicherung (bk) liegt in backup
 signal handover_received(msg: Dictionary)          # Beta 1.6.1: geprüftes {t:"handover"} (z oder own:true) → HostSwitch
 signal host_message(msg: Dictionary)               # Beta 1.6.1: jede Nachricht des Gastgebers nach dem welcome (Tests, Protokoll)
 signal moved(host_address: String, host_port: int) # Beta 1.6.2: move_to/follow_room – neuer NetClient zur neuen Adresse
@@ -60,6 +69,15 @@ var clock := Callable()           # Tests: () -> Wanduhr in ms (an NetClient wei
 # --- WLAN und Spiel-WLAN (Beta 1.6.2) ---
 var listen_port := NetProtocol.PORT   # hello.hp: Port, auf dem dieses Gerät als Gastgeber lauschen würde (HostSwitch.port_first)
 var ap_info := Callable()             # () -> {ok, perm} für hello.ap (ungültig: NetClient.ap_info_default aus app/)
+# --- Verlorene Aktionen (Beta 1.6.16) ---
+const ACT_CHECK_MS := 4000            # so lange ohne Quittung → Verbindung sofort prüfen (wie HandView.PLAY_TIMEOUT_MS)
+const ACT_SETTLE_MS := 800            # nach der Prüfung: Stand ohne Quittung → so lange auf eine nachfolgende warten
+var act_check_ms := ACT_CHECK_MS      # Tests
+var act_settle_ms := ACT_SETTLE_MS
+var act_checks := 0                   # angestoßene Prüfungen (Tests)
+var _unacked: Array = []              # gesendet, noch ohne Quittung: {seq, a, ms, w (client.welcomes beim Senden)}
+var _check_ms := -1                   # Prüfung läuft seit (ms); −1 = keine
+var _settle_at := -1                  # bis dahin muss die Quittung kommen, sonst verloren; −1 = kein Stand ohne Quittung seit der Prüfung
 
 var _seat := -1
 var _view := {}
@@ -154,6 +172,8 @@ func act(action: Dictionary) -> void:
 	_seq += 1
 	if client.send({"t": "act", "seq": _seq, "a": action}) != OK:
 		notice.emit("Senden fehlgeschlagen – die Verbindung wird erneuert.")
+		return
+	_unacked.append({"seq": _seq, "a": action.duplicate(true), "ms": Time.get_ticks_msec(), "w": client.welcomes})
 
 
 # Mau-Mau Flip (Beta 1.6.3, Necken): Wunsch an den Gastgeber; das Ergebnis kommt als fx (fx_event, auch für den Absender) oder fx_no.
@@ -199,6 +219,7 @@ func pump() -> void:
 	if client != null:
 		client.poll()
 		_check_give_up()
+		_check_acts()
 	QrJoin.check_lost(self)   # Beta 1.4.3: Spiel-WLAN aus dem QR-Code weg → freigeben (Handy kommt wieder ins normale WLAN)
 
 
@@ -445,6 +466,86 @@ func _check_give_up() -> void:
 		connection_changed.emit("ended")
 
 
+# --- Verlorene Aktionen (Beta 1.6.16) ---
+
+# Offene Aktionen (Tests): Anzahl der gesendeten ohne Quittung.
+func unacked_acts() -> int:
+	return _unacked.size()
+
+
+func _check_acts() -> void:
+	if _unacked.is_empty() or client == null:
+		return
+	var now := Time.get_ticks_msec()
+	if _check_ms < 0 and now - int(_unacked[0].ms) >= act_check_ms:
+		_check_ms = now
+		act_checks += 1
+		print("ClientTable: Aktion %s (seq %d) nach %d ms ohne Quittung – prüfe die Verbindung" \
+			% [str((_unacked[0].a as Dictionary).get("a", "")), int(_unacked[0].seq), now - int(_unacked[0].ms)])
+		client.check_now()
+	if _settle_at >= 0 and now >= _settle_at:
+		var since := _check_ms
+		_declare_lost(func(e: Dictionary) -> bool: return int(e.ms) <= since)
+
+
+# state bzw. err vom Gastgeber: seq_ack quittiert alle Aktionen bis dahin (der Gastgeber merkt sich die seq beim Empfang). Ein seq_ack
+# über der eigenen seq stammt aus einer früheren Verbindung desselben Platzes (neuer Tisch zählt von vorn) und quittiert nichts.
+func _note_answer(msg: Dictionary) -> void:
+	if _unacked.is_empty() or client == null:
+		return
+	var raw: Variant = msg.get("seq_ack")
+	var ack := int(raw) if raw is int or raw is float else -1
+	if ack >= 0 and ack <= _seq:
+		while not _unacked.is_empty() and int(_unacked[0].seq) <= ack:
+			_unacked.pop_front()
+	if _unacked.is_empty() or int(_unacked[0].ms) > _check_ms:
+		_check_ms = -1             # alles Geprüfte ist quittiert; spätere Aktionen bekommen ihre eigene Prüfung
+		_settle_at = -1
+	if _unacked.is_empty():
+		return
+	var w := client.welcomes
+	if int(_unacked[0].w) < w:
+		# Seit dem Senden neu angemeldet: Die alte Verbindung ist ersetzt, dieser Stand ist frisch – was er nicht quittiert, kam nie an.
+		_declare_lost(func(e: Dictionary) -> bool: return int(e.w) < w)
+	elif _check_ms >= 0 and _settle_at < 0:
+		_settle_at = Time.get_ticks_msec() + act_settle_ms
+
+
+func _declare_lost(which: Callable) -> void:
+	var lost: Array = []
+	var keep: Array = []
+	for e in _unacked:
+		if which.call(e):
+			lost.append(e)
+		else:
+			keep.append(e)
+	_unacked = keep
+	_check_ms = -1
+	_settle_at = -1
+	var acts: Array = []
+	for e in lost:
+		var a: Dictionary = e.a
+		if str(a.get("a", "")) in ["play", "stake"] and not _hand_has(int(a.get("card", -1))):
+			continue
+		acts.append(a)
+		print("ClientTable: Aktion %s (seq %d) kam nicht beim Gastgeber an" % [str(a.get("a", "")), int(e.seq)])
+	if not acts.is_empty():
+		act_lost.emit(acts)
+
+
+func _forget_acts() -> void:
+	_unacked.clear()
+	_check_ms = -1
+	_settle_at = -1
+
+
+func _hand_has(card: int) -> bool:
+	for c in _view.get("hand", []):
+		if c is Dictionary and int((c as Dictionary).get("id", -1)) == card:
+			return true
+	return false
+
+
 # --- intern ---
 
 func _connect_client() -> void:
@@ -456,6 +557,7 @@ func _connect_client() -> void:
 
 
 func _drop_client() -> void:
+	_forget_acts()             # Beta 1.6.16: neue bzw. keine Verbindung – offene Aktionen gehören zur alten
 	if client == null:
 		return
 	for c in [[client.state_changed, _on_state], [client.welcomed, _on_welcomed], [client.message, _on_message],
@@ -471,6 +573,10 @@ func _drop_client() -> void:
 
 
 func _on_state(st: String) -> void:
+	if st == "connecting":
+		_settle_at = -1            # Beta 1.6.16: entschieden wird mit dem ersten Stand nach der neuen Anmeldung
+	elif st == "closed":
+		_forget_acts()             # endgültig zu: der Streifen am Tisch sagt es, keine Meldung je Aktion
 	if st == "closed" and _rejected:
 		return
 	connection_changed.emit(st)
@@ -511,10 +617,12 @@ func _on_message(msg: Dictionary) -> void:
 			_seat = -1
 			tease.reset()                # Beta 1.6.3
 			_clear_fx_offs()
+			_forget_acts()               # Beta 1.6.16: die Partie dieser Aktionen ist vorbei
 			lobby_changed.emit(msg)
 		"start":
 			_seat = int(msg.get("seat", -1))
 			waiting = false
+			_forget_acts()
 			# Beta 1.6.1: neue Partie (bzw. dazugeholt in eine andere als die gesicherte) – alte Sicherung weg
 			if not backup.is_empty() and str(backup.gid) != host_gid():
 				_clear_backup()
@@ -532,6 +640,7 @@ func _on_message(msg: Dictionary) -> void:
 			tease.note_events(evs, now)  # Beta 1.6.3: Spiegel der Necken-Regeln (Uhr wie die Denkblase, Zugwechsel)
 			tease.note_view(_view, now)
 			state_changed.emit(evs, _view)
+			_note_answer(msg)            # Beta 1.6.16: Quittung bzw. verlorene Aktion (nach dem Stand: Karte zurück in die neue Hand)
 		"fx":
 			var m := NetProtocol.clean_fx(msg)   # Beta 1.6.3: Necken (an alle Sitzenden, auch an den Absender)
 			# Beta 1.6.6: die Kissen-Bestätigung gilt nur für den eigenen Platz (sie geht nur an den Leger)
@@ -553,6 +662,8 @@ func _on_message(msg: Dictionary) -> void:
 				fx_offs_changed.emit(offs.duplicate())
 		"err", "notice":
 			notice.emit(I18n.msg_text(msg, "Das geht gerade nicht."))   # eigene Sprache (I18n: lt oder msgid)
+			if str(msg.t) == "err":
+				_note_answer(msg)        # Beta 1.6.16: abgelehnt ist angekommen (die Meldung holt schon alles zurück)
 		"bk", "alive":
 			_on_bk(msg)                  # Beta 1.6.1: Sicherung bzw. Lebenszeichen
 		"handover":

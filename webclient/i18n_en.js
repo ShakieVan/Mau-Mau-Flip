@@ -301,7 +301,7 @@ window.MMF_I18N_EN = {
   "Joker: passt immer. Du wünschst eine Farbe; sie gilt nach dem Glücksspiel.": "Wild card: always matches. You wish for a color; it applies after the gamble.",
   "Dann spielst du um dein Glück: Leg eine beliebige Karte verdeckt auf deinen Einsatz und drück den Glücksspielknopf. Zeigt er 0, setzt du die nächste Karte.": "Then you play your luck: put any card face down on your stake and press the gamble button. If it shows 0, you stake the next card.",
   "Aufhören darfst du immer nach einem Druck ohne Treffer: Dein Einsatz kommt unter den Ablagestapel, dein Zug ist vorbei.": "You may always stop after a press with no hit: your stake goes under the discard pile and your turn is over.",
-  "Für jedes Glücksspiel wird geheim eine Trefferquote zwischen 1:1 und 1:10 ausgelost.": "For each gamble, a hit rate between 1:1 and 1:10 is drawn in secret.",
+  "Für jedes Glücksspiel wird geheim eine Trefferquote zwischen 1:1 und 1:%d ausgelost.": "For each gamble, a hit rate between 1:1 and 1:%d is drawn in secret.",
   "Treffer: Der Knopf zeigt 1 bis 10. So viele Karten ziehst du, nimmst deinen ganzen Einsatz zurück, und dein Zug ist vorbei.": "Hit: The button shows 1 to 10. You draw that many cards, take your whole stake back, and your turn is over.",
   "Zeigt er 0 und deine Hand ist leer, kommt der Einsatz unter den Ablagestapel und du bist fertig.": "If it shows 0 and your hand is empty, the stake goes under the discard pile and you're out.",
   "Zeigt er 0 und deine Hand ist leer, kommt der Einsatz unter den Ablagestapel und du bist fertig – du gewinnst die Runde.": "If it shows 0 and your hand is empty, the stake goes under the discard pile and you're out – you win the round.",
@@ -368,6 +368,7 @@ window.MMF_I18N_EN = {
   "wartet auf einen Platz": "waiting for a seat",
   "Du bist auf der Warteliste. Der Gastgeber holt dich gleich dazu.": "You are on the waiting list. The host will bring you to the table in a moment.",
   "Du kannst jederzeit wieder beitreten: Öffne den Link oder scanne den QR-Code noch einmal. Der Gastgeber holt dich dann wieder an den Tisch.": "You can rejoin at any time: open the link or scan the QR code again. The host will then bring you back to the table.",
+  "Eröffnet der Gastgeber gleich wieder ein Spiel, kommst du über „Zur Startseite“ mit demselben Raumcode wieder hinein.": "If the host starts a new game soon, “Back to start” takes you back in with the same room code.",
 
   "Necken": "Tease",
   "Necken (Papierkugel, Schnarchen, Wecker, Reaktionen)": "Teasing (paper ball, snoring, alarm clock, reactions)",

@@ -3,7 +3,7 @@ extends "res://tests/test_rules_views.gd"
 # hat, wartet in der Konter-Runde; fertig erst, wenn der Zug wieder bei ihm ankäme oder er übersprungen wird; wer ihm vorher Karten
 # gibt, kontert. Gebaute Fälle: Grundablauf (erster fertig / bis zum Letzten), Kontern mit +1, +5, Wünscher +2, Farbjagd (auch mit
 # Stapeln und penalty_turn = play), Aussetzen, Alle aussetzen (fremd und als eigene letzte Karte), Richtungswechsel (verkürzt und
-# verlängert), zwei Wartende gleichzeitig (beide fertig in Reihenfolge, einer gekontert), Kartentausch (Wartender tauscht mit, leere
+# verlängert), Leger bleibt dran (zu zweit Aussetzen/Richtungswechsel, auch per Flip-Überraschung: Wartende setzt nur aus), zwei Wartende gleichzeitig (beide fertig in Reihenfolge, einer gekontert), Kartentausch (Wartender tauscht mit, leere
 # Hand wandert; als letzte Karte ohne den Leger; zu zweit; gegen den Uhrzeigersinn), Flip-Überraschung (+5 auf den Wartenden, eigener
 # Flip als letzte Karte, Joker oben, flip_last_card = ignore), Glücksspiel (leere Hand nach 0, Glücksspiel als letzte Karte), Farbe
 # mit ablegen, Anzweifeln (bluff), Mau und Erwischen, Hinweise und Sicht, Speichern/Laden, Dazuholen/Entfernen, Statistik, Regeln und
@@ -33,6 +33,7 @@ func _initialize() -> void:
 	_c_skip()
 	_c_skip_all()
 	_c_reverse()
+	_c_keeps_turn()
 	_c_two_waiting()
 	_c_swap()
 	_c_flip_surprise()
@@ -282,17 +283,25 @@ func _c_skip() -> void:
 
 func _c_skip_all() -> void:
 	var base := {"side": "dunkel", "top": "dunkel_pink_5"}
-	# Alle aussetzen von Ben: Anna wartet, wird übersprungen → fertig, Ben noch einmal dran
+	# Alle aussetzen von Ben: Anna wartet und setzt nur aus, Ben ist noch einmal dran (Nutzerbefund 25.10.2026: Bleibt der Zug beim
+	# Leger, ist der Wartende nicht fertig; bis 1.6.15 war Anna damit fertig). Fertig ist sie, wenn der Zug danach zu ihr kommt.
 	var spec := base.duplicate()
-	spec.hands = [["dunkel_pink_7"], ["dunkel_pink_alle_aussetzen", "dunkel_lila_1"], ["dunkel_orange_1"], ["dunkel_orange_2"]]
+	spec.hands = [["dunkel_pink_7"], ["dunkel_pink_alle_aussetzen", "dunkel_pink_1", "dunkel_lila_1"], ["dunkel_pink_2", "dunkel_orange_1"],
+		["dunkel_pink_3", "dunkel_orange_2"]]
 	var g := make(spec, {"round_end": "last"}, 4)
 	play(g, 0, "dunkel_pink_7", "Anna letzte Karte")
 	var ev := play(g, 1, "dunkel_pink_alle_aussetzen", "Ben: Alle aussetzen")
-	check(at(ev, "finish", 0) > at(ev, "skip_all") and int(g.place[0]) == 1 and g.current == 1, "Alle aussetzen: Anna fertig, Ben wieder dran")
+	check(at(ev, "skip_all") >= 0 and at(ev, "finish") < 0 and int(g.place[0]) == 0 and g.counter_wait == [0] and g.current == 1
+		and g.phase() == "turn", "Alle aussetzen: Anna wartet weiter, Ben wieder dran (%s)" % str(names(ev)))
+	play(g, 1, "dunkel_pink_1", "Ben legt")
+	play(g, 2, "dunkel_pink_2", "Cleo legt")
+	ev = play(g, 3, "dunkel_pink_3", "Dani legt")
+	check(at(ev, "finish", 0) >= 0 and bool(find(ev, "finish", 0).get("survived", false)) and int(g.place[0]) == 1 and g.current == 1,
+		"Alle aussetzen: Anna fertig, als der Zug zu ihr kommt (%s)" % str(names(ev)))
 	g = make(spec, {}, 4)
 	play(g, 0, "dunkel_pink_7", "first: Anna letzte Karte")
 	play(g, 1, "dunkel_pink_alle_aussetzen", "first: Alle aussetzen")
-	check(g.phase() == "round_over" and int(g.result.ranking[0]) == 0, "first: Runde vorbei, Anna gewinnt")
+	check(g.phase() == "turn" and g.current == 1 and g.counter_wait == [0], "first: Runde läuft weiter, Ben dran, Anna wartet")
 	# Als eigene letzte Karte (Beta 1.6.14): Anna wartet, der Nächste ist trotzdem dran und kann kontern (bis 1.6.13: Anna gleich fertig)
 	spec = base.duplicate()
 	spec.hands = [["dunkel_pink_alle_aussetzen"], ["dunkel_lila_1"], ["dunkel_orange_1"], ["dunkel_orange_2"]]
@@ -300,7 +309,16 @@ func _c_skip_all() -> void:
 	ev = play(g, 0, "dunkel_pink_alle_aussetzen", "Alle aussetzen als letzte Karte")
 	check(at(ev, "counter_open", 0) < at(ev, "skip_all") and at(ev, "finish") < 0 and int(g.place[0]) == 0 and g.counter_wait == [0]
 		and g.current == 1, "letzte Karte Alle aussetzen: Anna wartet, Ben dran (%s)" % str(names(ev)))
-	# Zwei Wartende, Cleo legt Alle aussetzen: beide fertig in ihrer Reihenfolge
+	# … mit einer anderen Wartenden: Der Zug geht weiter (zu Ben), Cleo ist übersprungen und damit fertig
+	spec = base.duplicate()
+	spec.hands = [["dunkel_pink_7"], ["dunkel_lila_1"], ["dunkel_pink_8"], ["dunkel_pink_alle_aussetzen"]]
+	spec.current = 2
+	g = make(spec, {"round_end": "last"}, 4)
+	play(g, 2, "dunkel_pink_8", "letzte, andere wartet: Cleo")
+	ev = play(g, 3, "dunkel_pink_alle_aussetzen", "letzte, andere wartet: Dani Alle aussetzen")
+	check(at(ev, "finish", 2) >= 0 and int(g.place[2]) == 1 and g.counter_wait == [3] and g.current == 0,
+		"letzte Karte Alle aussetzen: Cleo fertig, Dani wartet, Anna dran (%s)" % str(names(ev)))
+	# Zwei Wartende, Cleo legt Alle aussetzen und bleibt dran: beide setzen nur aus und warten weiter (bis 1.6.15: beide fertig)
 	spec = base.duplicate()
 	spec.hands = [["dunkel_pink_7"], ["dunkel_pink_8"], ["dunkel_pink_alle_aussetzen", "dunkel_lila_2"], ["dunkel_orange_2"]]
 	g = make(spec, {"round_end": "last"}, 4)
@@ -308,8 +326,8 @@ func _c_skip_all() -> void:
 	play(g, 1, "dunkel_pink_8", "zwei: Ben")
 	check(g.counter_wait == [0, 1], "zwei Wartende")
 	ev = play(g, 2, "dunkel_pink_alle_aussetzen", "zwei: Cleo Alle aussetzen")
-	check(int(g.place[0]) == 1 and int(g.place[1]) == 2 and at(ev, "finish", 0) < at(ev, "finish", 1) and g.current == 2,
-		"zwei: Anna 1., Ben 2., Cleo wieder dran")
+	check(at(ev, "finish") < 0 and g.counter_wait == [0, 1] and int(g.place[0]) == 0 and int(g.place[1]) == 0 and g.current == 2,
+		"zwei: Anna und Ben warten weiter, Cleo wieder dran (%s)" % str(names(ev)))
 
 
 func _c_reverse() -> void:
@@ -330,11 +348,60 @@ func _c_reverse() -> void:
 		"lang: Ben noch einmal dran, Anna wartet")
 	ev = play(g, 1, "hell_rot_plus1", "lang: Ben kontert")
 	check((g.hands[0] as Array).size() == 1 and g.counter_wait.is_empty() and at(ev, "countered", 0) >= 0, "lang: Anna gekontert")
-	# Zu zweit wirkt der Richtungswechsel wie Aussetzen: Anna fertig
-	g = make({"hands": [["hell_rot_7"], ["hell_rot_richtungswechsel", "hell_blau_1"]], "top": "hell_rot_5"}, {}, 2)
+	# Zu zweit wirkt der Richtungswechsel wie Aussetzen: Anna setzt aus und wartet weiter, Ben ist noch einmal dran (Nutzerbefund
+	# 25.10.2026; bis 1.6.15 war Anna damit fertig). Legt Ben danach normal, kommt der Zug zu Anna: fertig.
+	g = make({"hands": [["hell_rot_7"], ["hell_rot_richtungswechsel", "hell_rot_3", "hell_blau_1"]], "top": "hell_rot_5"}, {}, 2)
 	play(g, 0, "hell_rot_7", "2: Anna letzte Karte")
-	play(g, 1, "hell_rot_richtungswechsel", "2: Ben dreht")
-	check(g.phase() == "round_over" and int(g.result.ranking[0]) == 0, "zu zweit: Richtungswechsel macht Anna fertig")
+	ev = play(g, 1, "hell_rot_richtungswechsel", "2: Ben dreht")
+	check(at(ev, "skip", 0) >= 0 and at(ev, "finish") < 0 and g.counter_wait == [0] and g.current == 1 and g.phase() == "turn",
+		"zu zweit: Richtungswechsel – Anna wartet weiter, Ben dran (%s)" % str(names(ev)))
+	ev = play(g, 1, "hell_rot_3", "2: Ben legt")
+	check(at(ev, "finish", 0) >= 0 and g.phase() == "round_over" and int(g.result.ranking[0]) == 0,
+		"zu zweit: danach kommt der Zug zu Anna – fertig (%s)" % str(names(ev)))
+	# … ohne two_player_reverse_skips kommt der Zug gleich zu Anna: fertig
+	g = make({"hands": [["hell_rot_7"], ["hell_rot_richtungswechsel", "hell_blau_1"]], "top": "hell_rot_5"}, {"two_player_reverse_skips": false}, 2)
+	play(g, 0, "hell_rot_7", "2 ohne Aussetzen: Anna letzte Karte")
+	play(g, 1, "hell_rot_richtungswechsel", "2 ohne Aussetzen: Ben dreht")
+	check(g.phase() == "round_over" and int(g.result.ranking[0]) == 0, "zu zweit ohne Aussetzen: Richtungswechsel macht Anna fertig")
+
+
+# Nutzerbefund 25.10.2026: Zu zweit, Anna hat eben ihre letzte Karte gelegt, Ben legt einen Flip mit Richtungswechsel auf der Rückseite
+# (Flip-Überraschung, Flip dreht nur die gelegte Karte wie in „Familie“) – Anna war sofort fertig, „obwohl er aussetzt und man noch dran
+# wäre“. Jetzt: Bleibt der Zug beim Leger, setzt die Wartende nur aus; fertig ist sie, wenn der Zug danach zu ihr kommt.
+func _c_keeps_turn() -> void:
+	var over := {"flip_surprise": "on", "flip_mode": "card"}
+	var g := make({"hands": [["hell_rot_7"], ["hell_rot_flip/dunkel_pink_richtungswechsel", "hell_blau_1/dunkel_pink_3", "hell_blau_2/dunkel_pink_plus5"]],
+		"top": "hell_rot_5", "draw": ["hell_gruen_9", "hell_gruen_8", "hell_gelb_9", "hell_gelb_8", "hell_blau_9"]}, over, 2)
+	play(g, 0, "hell_rot_7", "Nutzerfall: Anna letzte Karte")
+	var ev := play(g, 1, "hell_rot_flip", "Nutzerfall: Ben flipt")
+	check(g.side == 1 and RulesFixture.top_key(g) == "dunkel_pink_richtungswechsel" and at(ev, "flip_surprise", 1) >= 0
+		and at(ev, "skip", 0) > at(ev, "flip_surprise", 1), "Nutzerfall: Richtungswechsel aus der Flip-Überraschung setzt Anna aus (%s)" % str(names(ev)))
+	check(at(ev, "finish") < 0 and g.counter_wait == [0] and int(g.place[0]) == 0 and g.current == 1 and g.phase() == "turn",
+		"Nutzerfall: Anna wartet weiter, Ben noch einmal dran (%s)" % str(names(ev)))
+	check(hint(g, 1).begins_with("Anna hat keine Karten mehr – wer kontert?"), "Nutzerfall: Hinweis Konter-Runde: " + hint(g, 1))
+	# Ben legt normal: Der Zug kommt zu Anna → fertig
+	var g2 := MauGame.from_dict(g.to_dict())
+	ev = play(g2, 1, "dunkel_pink_3", "Nutzerfall: Ben legt normal")
+	check(at(ev, "finish", 0) >= 0 and bool(find(ev, "finish", 0).get("survived", false)) and g2.phase() == "round_over"
+		and int(g2.result.ranking[0]) == 0, "Nutzerfall: danach Anna fertig (%s)" % str(names(ev)))
+	# … oder Ben kontert im Zusatzzug mit +5
+	ev = play(g, 1, "dunkel_pink_plus5", "Nutzerfall: Ben kontert mit +5")
+	check(at(ev, "countered", 0) >= 0 and g.counter_wait.is_empty() and (g.hands[0] as Array).size() == 5, "Nutzerfall: Anna gekontert (%s)" % str(names(ev)))
+	# Direkt gelegtes Aussetzen zu zweit: ebenso
+	g = make({"hands": [["hell_rot_7"], ["hell_rot_aussetzen", "hell_rot_3", "hell_blau_1"]], "top": "hell_rot_5"}, {}, 2)
+	play(g, 0, "hell_rot_7", "zu zweit: Anna letzte Karte")
+	ev = play(g, 1, "hell_rot_aussetzen", "zu zweit: Ben setzt aus")
+	check(at(ev, "skip", 0) >= 0 and at(ev, "finish") < 0 and g.counter_wait == [0] and g.current == 1,
+		"zu zweit: Aussetzen – Anna wartet weiter, Ben dran (%s)" % str(names(ev)))
+	ev = play(g, 1, "hell_rot_3", "zu zweit: Ben legt normal")
+	check(at(ev, "finish", 0) >= 0 and g.phase() == "round_over", "zu zweit: danach Anna fertig (%s)" % str(names(ev)))
+	# Zu dritt, einer schon fertig (es spielen nur noch zwei): wie zu zweit
+	g = make({"hands": [["hell_rot_7"], ["hell_rot_aussetzen", "hell_rot_3"], []], "top": "hell_rot_5", "finished": [2]}, {"round_end": "last"})
+	play(g, 0, "hell_rot_7", "zwei übrig: Anna letzte Karte")
+	ev = play(g, 1, "hell_rot_aussetzen", "zwei übrig: Ben setzt aus")
+	check(at(ev, "finish") < 0 and g.counter_wait == [0] and g.current == 1 and g.phase() == "turn",
+		"zwei übrig: Anna wartet weiter, Ben dran (%s)" % str(names(ev)))
+	check(RulesFixture.invariants(g) == "", "zwei übrig: " + RulesFixture.invariants(g))
 
 
 func _c_two_waiting() -> void:
@@ -523,13 +590,14 @@ func _c_flip_surprise() -> void:
 	var ev := play(g, 2, "hell_rot_flip", "Flip: Cleo flipt")
 	check(at(ev, "flip_surprise") >= 0 and at(ev, "draw", 0) > at(ev, "flip_surprise") and at(ev, "countered", 0) >= 0
 		and (g.hands[0] as Array).size() == 5 and g.counter_wait.is_empty(), "Flip-Überraschung +5 kontert Anna (%s)" % str(names(ev)))
-	# … oben liegt Aussetzen: Anna übersprungen → fertig
+	# … oben liegt Alle aussetzen: Cleo bleibt dran, Anna setzt nur aus und wartet weiter (bis 1.6.15: fertig)
 	g = make({"hands": [["hell_rot_7"], ["hell_rot_8", "hell_blau_1"], ["hell_rot_flip", "hell_gelb_1"]], "top": "hell_rot_5",
 		"discard": ["hell_blau_4/dunkel_pink_alle_aussetzen"]}, fs)
 	play(g, 0, "hell_rot_7", "Flip AA: Anna")
 	play(g, 1, "hell_rot_8", "Flip AA: Ben")
-	play(g, 2, "hell_rot_flip", "Flip AA: Cleo flipt")
-	check(g.phase() == "round_over" and int(g.result.ranking[0]) == 0, "Flip-Überraschung Alle aussetzen: Anna fertig")
+	ev = play(g, 2, "hell_rot_flip", "Flip AA: Cleo flipt")
+	check(at(ev, "flip_surprise") >= 0 and at(ev, "finish") < 0 and g.phase() == "turn" and g.current == 2 and g.counter_wait == [0],
+		"Flip-Überraschung Alle aussetzen: Anna wartet weiter, Cleo dran (%s)" % str(names(ev)))
 	# Eigener Flip als letzte Karte (wird ausgeführt): oben +5 → Ben zieht, Anna wartet
 	g = make({"hands": [["hell_rot_flip"], ["hell_blau_1"], ["hell_gelb_1"]], "top": "hell_rot_5", "discard": ["hell_blau_4/dunkel_pink_plus5"]}, fs)
 	ev = play(g, 0, "hell_rot_flip", "Flip als letzte Karte")
@@ -731,6 +799,11 @@ func _c_rules_and_texts() -> void:
 	check("\n".join(RulesText.card_help("hell_rot_plus1", on)).contains("Kontern: Hat der Nächste keine Karten mehr, zieht er")
 		and not "\n".join(RulesText.card_help("hell_rot_plus1", RuleConfig.new())).contains("Kontern"), "Kartenhilfe +1")
 	check("\n".join(RulesText.card_help("hell_rot_aussetzen", on)).contains("übersprungen"), "Kartenhilfe Aussetzen")
+	check("\n".join(RulesText.card_help("hell_rot_aussetzen", on)).contains("Zu zweit setzt er nur aus und wartet weiter"), "Kartenhilfe Aussetzen zu zweit")
+	check("\n".join(RulesText.card_help("hell_rot_richtungswechsel", on)).contains("Kontern zu zweit")
+		and not "\n".join(RulesText.card_help("hell_rot_richtungswechsel", ccfg({"two_player_reverse_skips": false}))).contains("Kontern zu zweit"),
+		"Kartenhilfe Richtungswechsel zu zweit (nur, wenn er dort wie Aussetzen wirkt)")
+	check(str(RulesText.overview(on)).contains("Bleibt der Zug beim Überspringen beim Leger"), "Regelübersicht: Leger bleibt dran")
 	check("\n".join(RulesText.card_help("dunkel_farbjagd", on)).contains("Kontern"), "Kartenhilfe Farbjagd")
 	check("\n".join(RulesText.card_help("hell_rot_tausch", ccfg({"swap_cards": "on"}))).contains("leere Hand"), "Kartenhilfe Kartentausch")
 	check("\n".join(RulesText.card_help("hell_gluecksspiel", ccfg({"gamble_cards": "on"}))).contains("keiner kontert"), "Kartenhilfe Glücksspiel")
@@ -769,9 +842,10 @@ func _c_rules_and_texts() -> void:
 		"ohne Kontern bleibt der alte Text")
 	# … und im Browser (karten.js hilfe(): dieselben msgids, Übersetzungen in i18n_po.js)
 	for msg in ["Kontern: Hat der Nächste keine Karten mehr, zieht er und spielt weiter.",
-			"Kontern: Hat der Nächste keine Karten mehr, ist er damit fertig – er wird ja übersprungen. Als deine letzte Karte zu zweit setzt der andere nicht aus: Er darf noch kontern.",
-			"Kontern: Wer keine Karten mehr hat, ist damit fertig. Ist es deine letzte Karte, ist trotzdem der Nächste dran, damit er kontern kann.",
+			"Kontern: Hat der Nächste keine Karten mehr, ist er damit fertig – er wird ja übersprungen. Zu zweit setzt er nur aus und wartet weiter, denn du bist noch einmal dran. Als deine letzte Karte zu zweit setzt der andere nicht aus: Er darf noch kontern.",
+			"Kontern: Wer keine Karten mehr hat, setzt nur aus und wartet weiter, denn du bist noch einmal dran. Ist es deine letzte Karte, sind die anderen ohne Karten damit fertig, und der Nächste ist dran, damit er kontern kann.",
 			"Kontern: Kommt der Zug dadurch wieder zu jemandem ohne Karten, ist er fertig. Als deine letzte Karte zu zweit ist der andere trotzdem dran: Er darf noch kontern.",
+			"Kontern zu zweit: Hat der andere keine Karten mehr, setzt er nur aus und wartet weiter, denn du bist noch einmal dran.",
 			"Kontern: Mit leerer Hand bist du erst fertig, wenn dich bis zu deinem nächsten Zug keiner kontert.",
 			"Auch als letzte Karte tauschst du mit: Du bekommst eine Hand, deine leere Hand wandert zum Nächsten – der hat dann keine Karten mehr und wartet aufs Kontern.",
 			"Kontern: Wer keine Karten mehr hat, tauscht mit und spielt weiter; wer dabei die leere Hand bekommt, hat nun selbst keine Karten mehr.",
@@ -807,6 +881,13 @@ func _c_bots() -> void:
 		if int(MauBot.choose(g.view_for(2), seed_i, 2).get("card", -1)) == RulesFixture.card(g, 2, "hell_rot_aussetzen"):
 			all_ok = false
 	check(all_ok, "Bot setzt die Wartende nicht aus (das machte sie fertig)")
+	# Zu zweit (Nutzerbefund 25.10.2026): Aussetzen lässt sie nur weiter warten, der Bot ist noch einmal dran – kein Grund mehr, es zu meiden
+	g = make({"hands": [[], ["hell_rot_aussetzen", "hell_rot_9", "hell_blau_8"]], "top": "hell_rot_5", "current": 1, "counter": [0]}, {}, 2)
+	all_ok = true
+	for seed_i in 20:
+		if int(MauBot.choose(g.view_for(1), seed_i, 2).get("card", -1)) != RulesFixture.card(g, 1, "hell_rot_aussetzen"):
+			all_ok = false
+	check(all_ok, "Bot zu zweit: Aussetzen auf die Wartende ist erlaubt (er bleibt dran)")
 	spec.hands = [[], ["hell_blau_1", "hell_blau_2"], ["hell_rot_tausch", "hell_rot_9", "hell_rot_8"]]
 	g = RulesFixture.build(ccfg({"swap_cards": "on"}), 3, spec)
 	check(int(MauBot.choose(g.view_for(2), 7, 2).get("card", -1)) == RulesFixture.card(g, 2, "hell_rot_tausch"), "Bot kontert mit Kartentausch")

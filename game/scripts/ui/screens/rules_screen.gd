@@ -4,7 +4,7 @@ extends AppScreen
 # Bezeichnungen, Voreinstellungen). Jede Änderung landet sofort in App.settings "regeln".
 # Die Hausregeln mit Zusatzkarten (Kartentausch samt Tauschrichtung, Glücksspiel, Farbe mit ablegen) stehen in einem eigenen
 # Abschnitt mit kleinen Kartenbildern; die Kartenzahl der Partie (112–124) steht oben neben den Voreinstellungen und im
-# Abschnittskopf. Die Tauschrichtung ist nur mit Kartentausch bedienbar.
+# Abschnittskopf. Die Tauschrichtung ist nur mit Kartentausch bedienbar, die Glücksspiel-Treffer (Nutzer 25.10.2026) nur mit Glücksspiel.
 # Gespeicherte Regelsätze (RuleSets, Nutzerwunsch 06.10.2026): Abschnitt „Gespeichert“ unter den Voreinstellungen. Kopfreihe:
 # Bezeichnung, Hinweis „Antippen lädt, × löscht“ und rechts „Speichern unter …“ (RuleSetSaveBox). Darunter die Knöpfe über die
 # ganze Breite, umbrechend: zuerst – falls vorhanden – „Zuletzt gespielt bei <Gastgeber>“ (Regeln des letzten Gastgebers, von
@@ -44,6 +44,8 @@ const EXTRA_OPTIONS := [
 	["swap_cards", "Kartentausch", "4 Zusatzkarten: Alle geben ihre ganze Hand weiter", "an_aus", ["hell_rot_tausch", "dunkel_tuerkis_tausch"]],
 	["swap_direction", "Tauschrichtung", "Wohin die Hände wandern (nur mit Kartentausch)", [["clockwise", "Im Uhrzeigersinn"], ["counter", "Gegen den Uhrzeigersinn"], ["play", "In Spielrichtung"], ["against", "Gegen die Spielrichtung"]], []],
 	["gamble_cards", "Glücksspiel", "2 Joker: verdeckt setzen und drücken – weiter riskieren oder aufhören", "an_aus", ["hell_gluecksspiel", "dunkel_gluecksspiel"]],
+	["gamble_odds", "Glücksspiel-Treffer", "Wie oft der Glücksspielknopf trifft (1 bis 10 Karten ziehen) statt 0 zu zeigen – nur mit Glücksspiel",
+		[["rare", "Selten (bis 1:10)"], ["medium", "Mittel (bis 1:5)"], ["often", "Oft (bis 1:3)"]], []],
 	["discard_color", "Farbe mit ablegen", "6 Zusatzkarten: Karten der Farbe mit ablegen, du wählst aus", "an_aus", ["hell_gruen_ablegen", "hell_ablegen_joker"]],
 ]
 const LABEL_W := 380.0
@@ -480,6 +482,7 @@ func _refresh_enabled() -> void:
 	_dim("scoring", cfg.round_end == "first")
 	_dim("mau_penalty", cfg.mau_call != "off")
 	_dim("swap_direction", cfg.swap_cards == "on", true)
+	_dim("gamble_odds", cfg.gamble_cards == "on", true)
 	var n := cfg.card_count()
 	for l in _count_labels:
 		l.text = I18n.t("%d Karten") % n

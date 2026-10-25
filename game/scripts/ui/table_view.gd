@@ -1317,11 +1317,7 @@ func show_help(face: String, title: String, body: String) -> void:
 	help_popup.show_help(face, title, body)
 
 
-# Farbwahl: Felder beim Ziehen eines Jokers (die Hand meldet hover/drop direkt an wish_picker), Farbrad als Rückfall
-func open_color_fields() -> void:
-	wish_picker.open_fields(side, _own_counts())
-
-
+# Farbwahl nach dem Legen eines Jokers: Farbrad (die Felder beim Ziehen entfallen, Nutzerwunsch 25.10.2026)
 func open_color_wheel() -> void:
 	# Flip-Überraschung mit Ablegen-Joker oben: Die Farbwahl ist die Ablegefarbe (die Spielfarbe folgt nach der Auswahl).
 	wish_picker.open_wheel(side, _own_counts(), "Welche Farbe legst du mit ab?" if MauBot.discard_wish(view) else "")

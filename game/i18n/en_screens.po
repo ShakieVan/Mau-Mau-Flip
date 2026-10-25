@@ -1452,3 +1452,22 @@ msgstr "Continue in a new room"
 
 msgid "Mit neuem Code beitreten"
 msgstr "Join with a new code"
+
+# Beta 1.6.16: Raum behalten (docs/module/raum_behalten.md)
+msgid "Zurück ins Spiel"
+msgstr "Back to the game"
+
+msgid "Nicht mehr anzeigen"
+msgstr "Don't show again"
+
+msgid "%s · bei %s · vor %d min"
+msgstr "%s · at %s's · %d min ago"
+
+msgid "%s · vor %d min"
+msgstr "%s · %d min ago"
+
+msgid "Gleicher Raumcode wie vorhin – warte auf Mitspieler …"
+msgstr "Same room code as before – waiting for players …"
+
+msgid "Eröffnest du gleich wieder ein Spiel, gilt derselbe Raumcode %s."
+msgstr "If you host again soon, the room code %s stays the same."

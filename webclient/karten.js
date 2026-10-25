@@ -115,6 +115,10 @@
     return n === 1 ? tr('Der Nächste zieht 1 Karte und setzt aus.') : tr('Der Nächste zieht %d Karten und setzt aus.', n);
   }
   // Kartenhilfe passend zu den aktiven Regeln: {titel, zeilen, kern} (kern = ohne „Passt auf“, Wert und Hausregel-Hinweis)
+  // Glücksspiel-Treffer (Hausregel gamble_odds, Nutzer 25.10.2026; wie RuleConfig.GAMBLE_MAX_Q): größte geheime Quote 1:q und Kurzname.
+  // Ohne Angabe (älterer Gastgeber) „Selten“ bis 1:10.
+  const glueckMax = r => ({ rare: 10, medium: 5, often: 3 })[r && r.gamble_odds] || 10;
+  const glueckStufe = r => tr({ medium: 'Mittel', often: 'Oft' }[r && r.gamble_odds] || 'Selten');
   function hilfe(key, regeln) {
     const r = regeln || {};
     const k = zerlege(key);
@@ -140,16 +144,17 @@
       }
       case 'aussetzen':
         z.push(tr('Der Nächste setzt aus.')); neben(tr('Passt auf %s oder auf jedes Aussetzen.', f));
-        if (kontern) z.push(tr('Kontern: Hat der Nächste keine Karten mehr, ist er damit fertig – er wird ja übersprungen. Als deine letzte Karte zu zweit setzt der andere nicht aus: Er darf noch kontern.'));
+        if (kontern) z.push(tr('Kontern: Hat der Nächste keine Karten mehr, ist er damit fertig – er wird ja übersprungen. Zu zweit setzt er nur aus und wartet weiter, denn du bist noch einmal dran. Als deine letzte Karte zu zweit setzt der andere nicht aus: Er darf noch kontern.'));
         break;
       case 'alle_aussetzen':
         z.push(tr('Alle anderen setzen aus – du bist sofort noch einmal dran.')); neben(tr('Passt auf %s oder auf jedes Alle aussetzen.', f));
-        if (kontern) z.push(tr('Kontern: Wer keine Karten mehr hat, ist damit fertig. Ist es deine letzte Karte, ist trotzdem der Nächste dran, damit er kontern kann.'));
+        if (kontern) z.push(tr('Kontern: Wer keine Karten mehr hat, setzt nur aus und wartet weiter, denn du bist noch einmal dran. Ist es deine letzte Karte, sind die anderen ohne Karten damit fertig, und der Nächste ist dran, damit er kontern kann.'));
         break;
       case 'richtungswechsel':
         z.push(tr('Die Spielrichtung dreht sich um.') + (r.two_player_reverse_skips !== false ? ' ' + tr('Zu zweit wirkt sie wie Aussetzen.') : ''));
         neben(tr('Passt auf %s oder auf jeden Richtungswechsel.', f));
         if (kontern) z.push(tr('Kontern: Kommt der Zug dadurch wieder zu jemandem ohne Karten, ist er fertig. Als deine letzte Karte zu zweit ist der andere trotzdem dran: Er darf noch kontern.'));
+        if (kontern && r.two_player_reverse_skips !== false) z.push(tr('Kontern zu zweit: Hat der andere keine Karten mehr, setzt er nur aus und wartet weiter, denn du bist noch einmal dran.'));
         break;
       case 'flip':
         z.push(r.flip_mode === 'card'
@@ -193,7 +198,7 @@
         z.push(tr('Joker: passt immer. Du wünschst eine Farbe; sie gilt nach dem Glücksspiel.'));
         z.push(tr('Dann spielst du um dein Glück: Leg eine beliebige Karte verdeckt auf deinen Einsatz und drück den Glücksspielknopf. Zeigt er 0, setzt du die nächste Karte.'));
         z.push(tr('Aufhören darfst du immer nach einem Druck ohne Treffer: Dein Einsatz kommt unter den Ablagestapel, dein Zug ist vorbei.'));
-        z.push(tr('Für jedes Glücksspiel wird geheim eine Trefferquote zwischen 1:1 und 1:10 ausgelost.'));
+        z.push(tr('Für jedes Glücksspiel wird geheim eine Trefferquote zwischen 1:1 und 1:%d ausgelost.', glueckMax(r)));
         z.push(tr('Treffer: Der Knopf zeigt 1 bis 10. So viele Karten ziehst du, nimmst deinen ganzen Einsatz zurück, und dein Zug ist vorbei.'));
         z.push(kontern ? tr('Zeigt er 0 und deine Hand ist leer, kommt der Einsatz unter den Ablagestapel; fertig bist du erst, wenn dich keiner kontert.')
           : r.round_end === 'last' ? tr('Zeigt er 0 und deine Hand ist leer, kommt der Einsatz unter den Ablagestapel und du bist fertig.')
@@ -250,7 +255,10 @@
     if (r.backs_visible === false) z.push(tr('Rückseiten der Mitspieler sind verdeckt.'));
     // Hausregeln mit Zusatzkarten (wie RuleConfig.describe)
     if (r.swap_cards === 'on') z.push(tr('Kartentausch: Wer einen legt, lässt alle ihre ganze Hand an den Nächsten weitergeben, %s.', tauschRichtung(r)));
-    if (r.gamble_cards === 'on') z.push(tr('Glücksspiel (2 Joker): verdeckt setzen und drücken – weiter riskieren oder aufhören. Treffer: 1 bis 10 Karten ziehen, Einsatz zurück; Aufhören: Einsatz unter die Ablage.'));
+    if (r.gamble_cards === 'on') {
+      z.push(tr('Glücksspiel (2 Joker): verdeckt setzen und drücken – weiter riskieren oder aufhören. Treffer: 1 bis 10 Karten ziehen, Einsatz zurück; Aufhören: Einsatz unter die Ablage.'));
+      z.push(tr('Glücksspiel-Treffer: %s – je Glücksspiel wird geheim eine Trefferquote zwischen 1:1 und 1:%d ausgelost.', glueckStufe(r), glueckMax(r)));
+    }
     if (r.discard_color === 'on') z.push(tr('Farbe ablegen: Wer eine Ablegen-Karte legt, wählt eigene Karten dieser Farbe zum Mitablegen; Joker bleiben auf der Hand. Beim Ablegen-Joker tippst du eine Karte der Ablegefarbe an und wählst zum Schluss die Spielfarbe.'));
     if (r.flip_mode === 'card') z.push(tr('Flip dreht nur die gelegte Karte: Oben liegt ihre andere Seite, die übrige Ablage bleibt zur Seite gelegt.'));
     if (r.flip_surprise === 'on') z.push(tr('Flip-Überraschung: Die Karte, die nach dem Flip oben liegt, wirkt, als hätte der Flip-Spieler sie gelegt.'));

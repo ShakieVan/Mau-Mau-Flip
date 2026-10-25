@@ -1345,11 +1345,17 @@ func _poll_resume(now: int) -> void:
 		return
 	var lan := c != null and not c.is_online()
 	if c == null or ct.connection_state() in ["closed", "rejected", "ended"] or (lan and _check == "join" and now - _probe_at >= probe_ms):
+		# Beta 1.6.16 (Raum behalten): „bye“ – der Gastgeber hat die Partie beendet und hält nur noch seinen Raum (RoomKeeper). Die
+		# Sicherung ist damit gelöscht; nicht „In neuem Raum fortsetzen“ anbieten.
+		var bye := c != null and c.bye_id != "" and not c.removed
 		_free_flow_ct()
 		if lan:
 			_decide_wlan()                   # Beta 1.6.2: gefunden, aber keine Antwort – wie „niemand führt“
 			return
 		last_error = "Der Online-Raum ist abgelaufen. Die Partie lässt sich nicht mehr fortsetzen."
+		if bye:
+			last_error = "Der Gastgeber hat das Spiel beendet."
+			_saved = {}
 		_go("expired")
 		return
 	if state == "confirm" or lan:

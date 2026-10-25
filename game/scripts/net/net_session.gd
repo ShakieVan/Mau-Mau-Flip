@@ -38,6 +38,10 @@ extends Node
 #  - drain(max_ms): Gesendetes vor dem Abtreten wirklich hinausschreiben (NetServer.drain, Vermittler flush).
 #  - send_hosts(msg): Liste der Erben an die Browser-Gäste im WLAN; die letzte Liste geht nach jedem welcome während der Partie mit.
 #  - set_extra_origins(list): zusätzliche erlaubte Ursprünge (frühere Gastgeber) an den Server durchreichen, auch nach Neustart.
+# Mau-Mau Flip (Beta 1.6.16, Raum behalten, docs/module/raum_behalten.md):
+#  - detach_online(text): Online-Raum herauslösen, ohne ihn zu beenden (Online-Gäste bekommen „bye“); der Anschluss geht an den
+#    RoomKeeper. adopt_online(r) übernimmt einen gehaltenen Anschluss, open_online_kept(url, d) holt den Raum aus der Datei per
+#    open_existing zurück und öffnet bei Fehlschlag (Raum weg, Token falsch) in poll() einen neuen. online_kept: gleicher Raumcode.
 #
 # Nutzung: var s := NetHostSession.new(); add_child(s); s.start("Lena"); var me := s.host_id; s.message.connect(…)
 
@@ -92,6 +96,8 @@ var _unaway_until := 0                   # … höchstens bis dahin (ms); danach
 var unaway_max_ms := NetProtocol.RELAY_INFO_TIMEOUT_MS + NetProtocol.RESUME_PROBE_MS
 var _extra_origins: Array = []           # Beta 1.6.2: zusätzliche erlaubte Ursprünge (http://ip:port früherer Gastgeber), bleibt über stop()
 var _hosts_msg := {}                     # Beta 1.6.2: letzte {t:"hosts"} (geht nach jedem welcome während der Partie an Browser-Gäste)
+var online_kept := false                 # Beta 1.6.16: der Online-Raum ist der gemerkte eigene Raum von vorhin (gleicher Raumcode)
+var _kept_fallback := ""                 # Beta 1.6.16: open_online_kept – scheitert die Übernahme, neuen Raum bei diesem Vermittler öffnen
 
 # ---------- Lebenszyklus ----------
 
@@ -164,6 +170,8 @@ func stop(text := "", end_room := false) -> void:
 				relay.poll()
 			OS.delay_msec(5)
 	_close_relay(end_room)
+	online_kept = false
+	_kept_fallback = ""
 	if server != null:
 		server.stop()
 		_drop_node(server)
@@ -368,6 +376,14 @@ func poll() -> void:
 		server.poll()
 	if relay != null:
 		relay.poll()
+		if _kept_fallback != "" and relay != null:
+			if relay.state == "failed":
+				# Beta 1.6.16: der gemerkte Raum ist weg (4404) bzw. das Token gilt nicht mehr (4403) – neuer Raum, neuer Code
+				var url := _kept_fallback
+				_log("Gemerkter Online-Raum nicht mehr da – öffne einen neuen.")
+				open_online(url)
+			elif relay.state == "open":
+				_kept_fallback = ""
 	if discovery != null:
 		discovery.poll()
 	var now := Time.get_ticks_msec()
@@ -877,11 +893,74 @@ func _welcome(id: int, player_token: String) -> Dictionary:
 
 func open_online(relay_url: String) -> Error:
 	# Raum beim Vermittler öffnen (zusätzlich zum WLAN). Fortschritt über online_changed.
+	online_kept = false
+	_kept_fallback = ""
 	return _new_relay().open(relay_url)
+
+# Beta 1.6.16 (Raum behalten): gemerkten eigenen Raum aus der Datei zurückholen (RoomKeeper.take ohne laufenden Halter). kept: {room,
+# token, max_c, created_unix}. Ist er weg oder das Token falsch (failed), öffnet poll() einen neuen Raum bei relay_url.
+func open_online_kept(relay_url: String, kept: Dictionary) -> Error:
+	var r := _new_relay()
+	online_kept = true
+	_kept_fallback = NetProtocol.normalize_relay_url(relay_url)
+	return r.open_existing(relay_url, str(kept.get("room", "")), str(kept.get("token", "")), [], int(kept.get("max_c", 0)),
+		int(kept.get("created_unix", 0)))
+
+# Beta 1.6.16 (Raum behalten): offenen Anschluss des RoomKeeper übernehmen (gleicher Raum, ohne Neuverbinden).
+func adopt_online(r: NetRelayHost) -> void:
+	if r == null:
+		return
+	_close_relay()
+	if r.get_parent() != null:
+		r.get_parent().remove_child(r)
+	r.auto_poll = false
+	r.game_version = game_version
+	relay = r
+	add_child(r)
+	_wire_relay(r)
+	online_kept = true
+	_kept_fallback = ""
+	online_changed.emit(r.state, r.info())
+	_changed()
+
+# Beta 1.6.16 (Raum behalten): Online-Raum herauslösen, ohne ihn zu beenden. Die Online-Gäste bekommen „bye“ (text) und werden nach
+# CLOSE_GRACE_MS geschlossen (das erledigt der Anschluss selbst in poll); Gäste ohne hello bekommen 4503. Ihre Plätze gelten still als
+# getrennt (kein player_left: die Sitzung endet gleich). Rückgabe: Anschluss ohne Elternknoten (für den RoomKeeper) bzw. null, wenn
+# es keinen Raum gibt.
+func detach_online(text: String) -> NetRelayHost:
+	if relay == null or relay.room == "" or relay.token == "" or not relay.state in ["open", "away", "check"]:
+		return null
+	var r := relay
+	relay = null
+	online_kept = false
+	_kept_fallback = ""
+	var conns := _connected_conns().filter(func(c): return int(c) >= NetProtocol.RELAY_CONN_BASE)
+	r.send_text_many(conns, NetProtocol.encode({"t": "bye", "text": text}))
+	for conn in conns:
+		r.close_ws(conn, NetWs.CLOSE_GOING_AWAY, "Gastgeber beendet", CLOSE_GRACE_MS)
+	for conn in _pending.keys():
+		if int(conn) >= NetProtocol.RELAY_CONN_BASE:
+			_pending.erase(conn)
+			r.close_ws(conn, NetProtocol.CLOSE_HOST_AWAY, "host away")
+	for conn in _conn_player.keys():
+		if int(conn) >= NetProtocol.RELAY_CONN_BASE:
+			var id: int = _conn_player[conn]
+			_conn_player.erase(conn)
+			if players.has(id):
+				players[id].conn = -1
+				players[id].connected = false
+	_unwire_relay(r)
+	r.flush()
+	if r.get_parent() == self:
+		remove_child(r)
+	_changed()
+	return r
 
 # Mau-Mau Flip (Beta 1.6.1, Gastgeber-Übergabe): bestehenden Online-Raum als Gastgeber übernehmen (Gegenstück zu open_online,
 # docs/module/uebergabe.md 3.2). conns: c der Online-Gäste aus dem Spielstand (ohne RELAY_CONN_BASE), sie bekommen 4012.
 func open_online_existing(relay_url: String, room: String, room_token: String, conns: Array, max_c := 0, created_unix := 0) -> Error:
+	online_kept = false
+	_kept_fallback = ""
 	return _new_relay().open_existing(relay_url, room, room_token, conns, max_c, created_unix)
 
 func _new_relay() -> NetRelayHost:
@@ -892,22 +971,39 @@ func _new_relay() -> NetRelayHost:
 	r.game_version = game_version
 	relay = r
 	add_child(r)
+	_wire_relay(r)
+	return r
+
+func _wire_relay(r: NetRelayHost) -> void:
 	r.ws_opened.connect(_on_open)
 	r.ws_message.connect(_on_message)
 	r.ws_closed.connect(_on_closed)
 	r.ws_dropped.connect(_on_dropped)
 	r.log_line.connect(_log)
-	r.state_changed.connect(func(st: String) -> void:
-		if relay == r:
-			_on_relay_state(st)
-			online_changed.emit(st, r.info()))
-	r.replaced.connect(func() -> void:
-		if relay == r:
-			_on_relay_replaced())
-	r.needs_check.connect(func(i: Dictionary) -> void:
-		if relay == r:
-			_on_relay_check(i))
-	return r
+	r.state_changed.connect(_on_state_of.bind(r))
+	r.replaced.connect(_on_replaced_of.bind(r))
+	r.needs_check.connect(_on_check_of.bind(r))
+
+# Beta 1.6.16: alle Verbindungen zum Anschluss lösen (detach_online, der RoomKeeper übernimmt ihn)
+func _unwire_relay(r: NetRelayHost) -> void:
+	for c in [[r.ws_opened, _on_open], [r.ws_message, _on_message], [r.ws_closed, _on_closed], [r.ws_dropped, _on_dropped],
+			[r.log_line, _log], [r.state_changed, _on_state_of.bind(r)], [r.replaced, _on_replaced_of.bind(r)],
+			[r.needs_check, _on_check_of.bind(r)]]:
+		if (c[0] as Signal).is_connected(c[1]):
+			(c[0] as Signal).disconnect(c[1])
+
+func _on_state_of(st: String, r: NetRelayHost) -> void:
+	if relay == r:
+		_on_relay_state(st)
+		online_changed.emit(st, r.info())
+
+func _on_replaced_of(r: NetRelayHost) -> void:
+	if relay == r:
+		_on_relay_replaced()
+
+func _on_check_of(i: Dictionary, r: NetRelayHost) -> void:
+	if relay == r:
+		_on_relay_check(i)
 
 func _on_relay_state(st: String) -> void:
 	# Beta 1.6.1: aufgeschobenes „Gastgeber wieder da“ (app_resumed)
@@ -938,6 +1034,8 @@ func close_online() -> void:
 		return
 	var conns := _connected_conns().filter(func(c): return int(c) >= NetProtocol.RELAY_CONN_BASE)
 	relay.send_text_many(conns, NetProtocol.encode({"t": "bye", "text": "Der Gastgeber hat das Online-Spiel geschlossen."}))
+	online_kept = false
+	_kept_fallback = ""
 	_close_relay(true)
 	online_changed.emit("off", {})
 	_changed()

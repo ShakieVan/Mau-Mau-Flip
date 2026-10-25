@@ -90,7 +90,7 @@ func _config() -> void:
 	var want := {"round_end": "first", "scoring": "none", "target": 500, "hand_size": 7, "draw_rule": "one", "drawn_card": "may",
 		"draw_play": "drawn", "stacking": "off", "penalty_turn": "skip", "wild_restriction": "free", "wild_counts_for_bluff": true, "jagd_wild_stops": false,
 		"mau_call": "catch", "mau_penalty": 2, "backs_visible": true, "peek_own_backs": true, "two_player_reverse_skips": true,
-		"flip_last_card": "execute", "swap_cards": "off", "swap_direction": "clockwise", "gamble_cards": "off",
+		"flip_last_card": "execute", "swap_cards": "off", "swap_direction": "clockwise", "gamble_cards": "off", "gamble_odds": "rare",
 		"discard_color": "off", "flip_surprise": "off", "flip_mode": "pile", "counter_round": "off"}
 	for k in want:
 		check(d.has(k) and d[k] == want[k], "Standard %s = %s (%s)" % [k, str(want[k]), str(d.get(k))])

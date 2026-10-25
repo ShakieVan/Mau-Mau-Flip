@@ -17,6 +17,8 @@ signal fx_event(msg: Dictionary)          # angenommenes Necken {t:"fx", k, from
 signal fx_refused(why: String)            # eigener Wunsch abgelehnt: "late" | "busy" | "rate" (kein Fehlerton, leise Zeile bzw. ausgrauen);
                                           # Beta 1.6.6: fx_refused_kind sagt, ob es ein Furzkissen war
 signal fx_offs_changed(seats: Array)      # Plätze mit Necken aus (fx_offs) haben sich geändert
+# Beta 1.6.16: eigene Aktionen kamen nicht beim Gastgeber an (nur ClientTable; Verbindung still abgerissen). actions = die act-Wörterbücher
+signal act_lost(actions: Array)
 
 # Necken (Beta 1.6.3): Gastgeber = maßgebliche Regeln, sonst lokaler Spiegel (gleiche Sichten, Ereignisse und fx) für fx_check().
 var tease := TeaseRules.new()

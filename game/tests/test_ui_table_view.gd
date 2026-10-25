@@ -270,15 +270,18 @@ func _wish_picker() -> void:
 	await process_frame
 	var chosen: Array = []
 	t.wish_picker.color_chosen.connect(func(c: String) -> void: chosen.append(c))
-	t.open_color_fields()
+	t.open_color_wheel()
 	for i in 20:
 		await process_frame
 	var wp := t.wish_picker
 	var cols := wp.colors()
 	check(cols == UiPalette.LIGHT_COLORS, "Farben der aktiven Seite")
-	check(wp.hover(wp.to_global(wp.field_center(2))) == cols[2], "Feld unter dem Finger")
-	check(wp.drop(wp.to_global(wp.field_center(2))) == cols[2] and chosen == [cols[2]], "Loslassen wählt die Farbe")
+	var lr := wp.to_global(wp.wheel_center) + Vector2(120, 100)   # Viertel unten rechts = dritte Farbe
+	check(wp.hover(lr) == cols[2], "Viertel unter dem Finger")
+	check(wp.drop(lr) == cols[2] and chosen == [cols[2]], "Loslassen wählt die Farbe")
 	check(not wp.is_open(), "danach geschlossen")
+	check(not wp.has_method("open_fields") and not t.has_method("open_color_fields"),
+		"keine Farbfelder beim Ziehen mehr (Nutzerwunsch 25.10.2026)")
 	s.flip()
 	t.apply_view(s.view_for(0))
 	t.open_color_wheel()

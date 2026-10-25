@@ -33,7 +33,8 @@ extends GameTable
 #  - handover_to(seat): geplante Übergabe; Abstammungsregel bei hello.bk (jüngerer Zweig → handover own:true); Fehlschlag nach
 #    handover_timeout_ms prüft das Socket (check_now) und taut auf.
 #  - Vorsichtiges Neuverbinden: online_check (Probe als Gast durch die Oberfläche), dann probe_done(). Ohne Empfänger: sofort anmelden.
-#  - Schließen der App beendet den Online-Raum nicht (Übernahme möglich); nur leave() („Tisch verlassen“) schickt {k:"end"}.
+#  - Schließen der App beendet den Online-Raum nicht (Übernahme möglich); nur leave() („Tisch verlassen“) schickt {k:"end"}. Seit Beta
+#    1.6.16 (Raum behalten) übergibt leave() den Raum dem RoomKeeper (gleicher Raumcode beim nächsten Eröffnen, open_online).
 # Mau-Mau Flip (Beta 1.6.2, WLAN und Spiel-WLAN, docs/module/uebergabe.md 10.2/10.3/10.7/10.9–10.11):
 #  - Ersatz-Rangfolge ohne WLAN-Sperre: erst Link „wlan“, dann „online“ (nur mit Raum); im Spiel-WLAN (wlan.ap) je Gruppe zuerst
 #    Geräte, die eines öffnen können (ap.perm vor ap.ok). Geplante Übergabe auch im WLAN, Spiel-WLAN und gemischt (how lan/qr/online).
@@ -712,11 +713,54 @@ func back_to_lobby() -> void:
 		clear_saved(save_path)
 
 
-# „Tisch verlassen“: ausdrückliches Ende – „bye“ an alle, der Online-Raum wird beendet, der Speicherstand gelöscht.
+# „Tisch verlassen“: ausdrückliches Ende – „bye“ an alle, der Speicherstand wird gelöscht. Beta 1.6.16 (Raum behalten,
+# docs/module/raum_behalten.md): Der Online-Raum endet nicht mehr, der RoomKeeper hält ihn (beim nächsten Eröffnen derselbe Raumcode);
+# ohne RoomKeeper.enabled (Tests) wie bisher {k:"end"}.
 func leave() -> void:
+	_keep_room()
 	_close_session()
 	if autosave:
 		clear_saved(save_path)
+
+
+# Beta 1.6.16: Raumcode, den leave() dem RoomKeeper übergäbe ("" = keiner) – für den Hinweis in „Partie verlassen?“/„Lobby schließen?“
+func keepable_room() -> String:
+	if not RoomKeeper.enabled or session == null or session.relay == null:
+		return ""
+	var r := session.relay
+	return r.room if r.room != "" and r.token != "" and r.state in ["open", "away", "check"] else ""
+
+
+# Beta 1.6.16: Online-Raum an den RoomKeeper geben (Online-Gäste bekommen „bye“). Mit gid und den Platz-Token der Partie erkennt er
+# Gäste mit einer Sicherung dieser Partie und schickt ihnen „bye“ statt 4503 (sonst übernähme einer den verlassenen Raum).
+func _keep_room() -> void:
+	if not RoomKeeper.enabled or session == null or session.relay == null:
+		return
+	var toks: Array = []
+	for s in seats:
+		if s is Dictionary and str((s as Dictionary).get("token", "")) != "":
+			toks.append(str(s.token))
+	for p in session.players.values():
+		if not bool(p.get("local", false)) and str(p.get("token", "")) != "" and not toks.has(str(p.token)):
+			toks.append(str(p.token))
+	var game_gid := gid
+	var r := session.detach_online("Der Gastgeber hat das Spiel beendet.")
+	if r != null:
+		RoomKeeper.keep(r, game_gid, toks)
+
+
+# Beta 1.6.16 (Raum behalten): Online öffnen – zuerst der gemerkte eigene Raum (laufender RoomKeeper: Anschluss übernehmen; Datei:
+# open_existing, bei Fehlschlag neuer Raum), sonst ein neuer Raum.
+func open_online(url: String) -> Error:
+	if session == null:
+		return ERR_UNCONFIGURED
+	var kept := RoomKeeper.take(url) if RoomKeeper.enabled else {}
+	if kept.get("node") is NetRelayHost:
+		session.adopt_online(kept.node as NetRelayHost)
+		return OK
+	if not kept.is_empty():
+		return session.open_online_kept(url, kept)
+	return session.open_online(url)
 
 
 # end_room (Beta 1.6.1): Online-Raum beim Vermittler beenden ({k:"end"}); beim Abtreten (handover_shutdown) bleibt er offen.

@@ -3,7 +3,8 @@ extends RefCounted
 # Regeloptionen (docs/BETA1_PLAN.md Abschnitt 4, Regelbericht Abschnitte 1.13, 2 und 4). Standard = Voreinstellung „offiziell“
 # (Fassung 2024). from_dict() nimmt nur bekannte Schlüssel und gültige Werte an (JSON-Zahlen kommen als float), alles andere
 # bleibt beim Standard. describe() liefert kurze deutsche Zeilen für die Regelübersicht.
-# Hausregeln mit Zusatzkarten: Kartentausch (swap_cards, swap_direction; in „Familie“ an), Glücksspiel (gamble_cards) und
+# Hausregeln mit Zusatzkarten: Kartentausch (swap_cards, swap_direction; in „Familie“ an), Glücksspiel (gamble_cards, Trefferstufe
+# gamble_odds) und
 # Farbe mit ablegen (discard_color; beide in keiner Voreinstellung an). Ohne sie bleibt alles wie im Grundspiel.
 
 # Auswahl-Optionen: Schlüssel → erlaubte Werte, der erste ist der Standard.
@@ -21,6 +22,7 @@ const CHOICES := {
 	"swap_cards": ["off", "on"],               # Hausregel Kartentausch: 4 zusätzliche Karten (116), siehe docs/module/A.md
 	"swap_direction": ["clockwise", "counter", "play", "against"],  # Platz+1, Platz−1, in bzw. gegen die Spielrichtung
 	"gamble_cards": ["off", "on"],             # Hausregel Glücksspiel: 2 zusätzliche Joker, siehe docs/module/A.md
+	"gamble_odds": ["rare", "medium", "often"],  # Glücksspiel-Treffer (Nutzer 25.10.2026): geheime Quote 1:1 bis 1:10 / 1:5 / 1:3 (GAMBLE_MAX_Q)
 	"discard_color": ["off", "on"],            # Hausregel Farbe mit ablegen: 6 zusätzliche Karten, siehe docs/module/A.md
 	"flip_surprise": ["off", "on"],            # Hausregel Flip-Überraschung: Karte oben nach dem Flip wirkt, als hätte der Flip-Spieler sie gelegt
 	"flip_mode": ["pile", "card"],             # Flip wendet die ganze Ablage (offiziell) oder nur die gelegte Flip-Karte (Hausregel)
@@ -43,11 +45,14 @@ const PRESETS := {
 	"offiziell": {},
 	"klassisch500": {"scoring": "points500"},
 	"familie": {"round_end": "last", "stacking": "same", "penalty_turn": "play", "wild_restriction": "free", "mau_penalty": 1,
-		"swap_cards": "on", "swap_direction": "play", "gamble_cards": "on", "discard_color": "on", "flip_surprise": "on",
-		"flip_mode": "card", "draw_play": "any", "counter_round": "on"},
+		"swap_cards": "on", "swap_direction": "play", "gamble_cards": "on", "gamble_odds": "medium", "discard_color": "on",
+		"flip_surprise": "on", "flip_mode": "card", "draw_play": "any", "counter_round": "on"},
 	"mau_mau": {"stacking": "same", "wild_restriction": "enforce", "mau_penalty": 1},
 }
 const PRESET_TITLES := {"offiziell": "Offiziell", "klassisch500": "Klassisch 500", "familie": "Familie", "mau_mau": "Mau-Mau-Tradition"}
+# Glücksspiel-Treffer: größte geheime Quote 1:q je Stufe (q gleichverteilt 1 … Wert; Anteil der Drucke mit 0 im Mittel 71 / 54 / 39 %).
+# „Selten“ ist der Stand bis 1.6.15 (ältere Gastgeber kennen den Schlüssel nicht und losen weiter bis 1:10).
+const GAMBLE_MAX_Q := {"rare": 10, "medium": 5, "often": 3}
 
 var round_end := "first"
 var scoring := "none"
@@ -70,6 +75,7 @@ var flip_last_card := "execute"
 var swap_cards := "off"
 var swap_direction := "clockwise"
 var gamble_cards := "off"
+var gamble_odds := "rare"
 var discard_color := "off"
 var flip_surprise := "off"
 var flip_mode := "pile"
@@ -104,13 +110,14 @@ const OLD_FAMILIE := {"round_end": "last", "stacking": "same", "penalty_turn": "
 # enforce oder, nach bluff → free, mit free), werden zur heutigen „Familie“ (0.1.4). Liefert eine Kopie, d bleibt unverändert.
 # Ohne Schlüssel flip_mode (bis 1.0.1) wird die damalige „Familie“ (heutige ohne flip_mode = card) zur heutigen (1.0.2), ebenso
 # ohne Schlüssel draw_play (bis 1.1.2) die damalige „Familie“ (heutige ohne draw_play = any) zur heutigen (1.1.3), ebenso ohne
-# Schlüssel counter_round (bis 1.6.10) die damalige „Familie“ (heutige ohne Kontern) zur heutigen (1.6.11).
+# Schlüssel counter_round (bis 1.6.10) die damalige „Familie“ (heutige ohne Kontern) zur heutigen (1.6.11), ebenso ohne Schlüssel
+# gamble_odds (bis 1.6.15) die damalige „Familie“ (Glücksspiel-Treffer „Selten“) zur heutigen („Mittel“, Nutzer 25.10.2026).
 static func migrate_dict(d: Dictionary) -> Dictionary:
 	var out := d.duplicate()
 	if str(out.get("wild_restriction", "")) == "bluff":
 		out["wild_restriction"] = "free"
 	var mine := RuleConfig.from_dict(out).to_dict()
-	if not d.has("flip_mode") or not d.has("draw_play") or not d.has("counter_round"):
+	if not d.has("flip_mode") or not d.has("draw_play") or not d.has("counter_round") or not d.has("gamble_odds"):
 		var fam := RuleConfig.from_dict(out)
 		if not d.has("flip_mode"):
 			fam.flip_mode = "card"
@@ -118,6 +125,8 @@ static func migrate_dict(d: Dictionary) -> Dictionary:
 			fam.draw_play = "any"
 		if not d.has("counter_round"):
 			fam.counter_round = "on"
+		if not d.has("gamble_odds"):
+			fam.gamble_odds = "medium"
 		if fam.preset_name() == "familie":
 			out.merge(RuleConfig.preset("familie").to_dict(), true)
 			return out
@@ -177,11 +186,14 @@ func equals(other: RuleConfig) -> bool:
 	return other != null and to_dict() == other.to_dict()
 
 
-# Name der passenden Voreinstellung oder "" bei eigenen Regeln. Ohne Kartentausch-Karten zählt deren Richtung nicht.
+# Name der passenden Voreinstellung oder "" bei eigenen Regeln. Ohne Kartentausch-Karten zählt deren Richtung nicht, ohne
+# Glücksspiel-Joker deren Trefferstufe nicht.
 func preset_name() -> String:
 	var mine := to_dict()
 	if swap_cards == "off":
 		mine["swap_direction"] = CHOICES["swap_direction"][0]
+	if gamble_cards == "off":
+		mine["gamble_odds"] = CHOICES["gamble_odds"][0]
 	if wild_restriction == "free":   # dann zählt der (in der Oberfläche entfallene) Schalter nicht
 		mine["wild_counts_for_bluff"] = FLAGS["wild_counts_for_bluff"]
 	for p in PRESETS:
@@ -305,11 +317,27 @@ func describe() -> Array[String]:
 		out.append(I18n.t("Kartentausch: 4 zusätzliche Karten%s. Wer eine legt, lässt alle ihre ganze Hand weitergeben, %s.") % [total, swap_direction_text()])
 	if gamble_cards == "on":
 		out.append(I18n.t("Glücksspiel: 2 zusätzliche Joker%s. Wer einen legt, setzt Karte um Karte verdeckt und drückt den Glücksspielknopf – bei einem Treffer 1 bis 10 Karten ziehen und den Einsatz zurücknehmen. Nach einem Druck ohne Treffer weiter riskieren oder aufhören (der Einsatz kommt unter die Ablage); mit leerer Hand bist du fertig.") % total)
+		out.append(I18n.t("Glücksspiel-Treffer: %s – je Glücksspiel wird geheim eine Trefferquote zwischen 1:1 und 1:%d ausgelost.") % [gamble_odds_title(gamble_odds), gamble_max_q()])
 	if discard_color == "on":
 		out.append(I18n.t("Farbe ablegen: 6 zusätzliche Karten%s. Wer eine legt, legt dazu eigene Karten dieser Farbe ab, du wählst aus; Joker bleiben auf der Hand. Beim Ablege-Joker wählst du erst die Ablegefarbe, danach die Farbe, mit der es weitergeht.") % total)
 	if extras > 1:
 		out.append(I18n.t("Gespielt wird mit %d Karten.") % card_count())
 	return out
+
+
+# Glücksspiel-Treffer: größte geheime Quote 1:q dieser Regeln (10, 5 oder 3).
+func gamble_max_q() -> int:
+	return int(GAMBLE_MAX_Q.get(gamble_odds, 10))
+
+
+# Kurzname einer Trefferstufe („Selten“, „Mittel“, „Oft“).
+static func gamble_odds_title(value: String) -> String:
+	match value:
+		"medium":
+			return I18n.t("Mittel")
+		"often":
+			return I18n.t("Oft")
+	return I18n.t("Selten")
 
 
 # Tauschrichtung als Satzteil, z. B. „immer im Uhrzeigersinn“ oder „in der aktuellen Spielrichtung“.

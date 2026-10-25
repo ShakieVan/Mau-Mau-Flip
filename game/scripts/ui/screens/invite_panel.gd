@@ -7,6 +7,8 @@ extends VBoxContainer
 # Weg „Online (Internet)“ (docs/online/ENTWURF.md 3): Umschalter oben rechts; ohne Vermittler-Adresse Hinweis und Knopf zu den
 # Einstellungen, sonst „Online öffnen“ → Raumcode groß, Link, QR-Code, „Teilen“ (Android-Teilen-Menü, sonst Zwischenablage) und
 # „Online schließen“. Leuchtet, bis der erste Online-Gast da ist (InviteSteps.online_glow), dann Haken.
+# Beta 1.6.16 (Raum behalten, docs/module/raum_behalten.md): Hält die App noch den eigenen Raum von vorhin (RoomKeeper), öffnet die
+# Lobby ihn sofort wieder (reopen_kept_room, Weg „Online“) und sagt „Gleicher Raumcode wie vorhin – warte auf Mitspieler …“.
 
 const GLOW_COLOR := Color("#F59E1B")
 const DONE_COLOR := Color("#2E9E6A")
@@ -85,6 +87,7 @@ func setup(host_table: HostTable, port_failed := false) -> void:
 			apply())
 		host.session.online_changed.connect(func(_s: String, _i: Dictionary) -> void: refresh_online())
 	refresh_online()
+	reopen_kept_room()
 
 
 # Anzahl Mitspieler (ohne Gastgeber und Computer) aus der Lobby
@@ -160,7 +163,13 @@ func online_info() -> Dictionary:
 	return host.session.online_info() if host != null and host.session != null else {}
 
 
-# Online öffnen (Vermittler aus den Einstellungen)
+# Beta 1.6.16: offener Raum ist der gemerkte eigene Raum von vorhin (gleicher Raumcode)
+func kept_room() -> bool:
+	return host != null and host.session != null and host.session.online_kept
+
+
+# Online öffnen (Vermittler aus den Einstellungen). Beta 1.6.16: mit dem gemerkten eigenen Raum von vorhin, falls es ihn noch gibt
+# (HostTable.open_online, RoomKeeper) – derselbe Raumcode.
 func open_online() -> void:
 	if host == null or host.session == null:
 		return
@@ -168,8 +177,20 @@ func open_online() -> void:
 	if url == "":
 		refresh_online()
 		return
-	host.session.open_online(url)
+	host.open_online(url)
 	refresh_online()
+
+
+# Beta 1.6.16 (Raum behalten): Hält die App noch den eigenen Raum von vorhin, öffnet die neue Lobby ihn gleich wieder und zeigt den
+# Weg „Online (Internet)“ – wer den Code oder Link noch hat, kommt so wieder hinein.
+func reopen_kept_room() -> bool:
+	if host == null or host.session == null or not RoomKeeper.enabled or relay_url() == "" or online_state() != "off":
+		return false
+	if RoomKeeper.reusable(relay_url()).is_empty():
+		return false
+	open_online()
+	show_way("online")
+	return true
 
 
 func close_online() -> void:
@@ -225,7 +246,8 @@ func refresh_online() -> void:
 		_on_code.text = code
 		_on_link.text = link.trim_prefix("https://")
 		_on_status.text = I18n.t("Online-Verbindung unterbrochen – verbinde neu …") if st != "open" else \
-			(I18n.t("1 Mitspieler online") if online_guests == 1 else (I18n.t("%d Mitspieler online") % online_guests if online_guests > 1 else I18n.t("Warte auf Mitspieler …")))
+			(I18n.t("1 Mitspieler online") if online_guests == 1 else (I18n.t("%d Mitspieler online") % online_guests if online_guests > 1 else \
+			(I18n.t("Gleicher Raumcode wie vorhin – warte auf Mitspieler …") if kept_room() else I18n.t("Warte auf Mitspieler …"))))
 		if link != _on_qr_text:
 			_on_qr_text = link
 			_on_qr.texture = null

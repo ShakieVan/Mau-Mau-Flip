@@ -1,23 +1,20 @@
 class_name WishPicker
 extends Node2D
-# Farbwahl für Wünscher (06 Abschnitt 1.5, „Joker in einer Geste“). Name WishPicker statt ColorPicker: Godot hat bereits eine
-# Klasse ColorPicker.
-# - Felder: Beim Ziehen eines Jokers fächern vier Farbfelder um die Ablage auf (Farben der aktiven Seite), jedes mit Formsymbol
-#   und der Anzahl eigener Karten dieser Farbe. Die Hand meldet die Fingerposition mit hover(), loslassen mit drop().
-# - Farbrad (Rückfall per Tipp): vier Viertel um die Bildschirmmitte; Tipp wählt, Tipp daneben bricht ab.
-# Ursprung = Mitte der Ablage. Eingaben im Farbrad gibt der Tisch über handle_input() weiter.
+# Farbwahl für Wünscher (06 Abschnitt 1.5). Name WishPicker statt ColorPicker: Godot hat bereits eine Klasse ColorPicker.
+# Farbrad nach dem Legen: vier Viertel um die Bildschirmmitte, jedes mit Formsymbol und der Anzahl eigener Karten dieser Farbe;
+# Tipp wählt, Tipp daneben bricht ab. Eingaben gibt der Tisch über handle_input() weiter.
+# Die Farbfelder um die Ablage beim Ziehen eines Jokers sind entfallen (Nutzerwunsch 25.10.2026: man landete zu oft versehentlich
+# darauf; die Farbwahl über das Farbrad nach dem Legen reicht).
 
 signal color_chosen(color: String)
 signal cancelled
 
-const FIELD := 104.0
-const OFFSET := Vector2(150.0, 128.0)
 const WHEEL_R := 210.0
 const WHEEL_INNER := 92.0
 
 var side := "hell"
 var counts: Dictionary = {}
-var mode := ""                       # "" | "fields" | "wheel"
+var mode := ""                       # "" | "wheel"
 var hovered := ""
 var wheel_center := Vector2.ZERO     # lokal (Bildschirmmitte), vom Tisch gesetzt
 var night := 0.0
@@ -25,6 +22,7 @@ var title := ""                      # Farbrad: Frage über dem Rad (z. B. beim 
 
 var _open := 0.0
 var _tween: Tween
+var _press_seen := false             # Farbrad: Druck seit dem Öffnen (siehe handle_input)
 
 
 func is_open() -> bool:
@@ -33,10 +31,6 @@ func is_open() -> bool:
 
 func colors() -> Array[String]:
 	return UiPalette.colors_of(side)
-
-
-func open_fields(active_side: String, own_counts: Dictionary = {}) -> void:
-	_start("fields", active_side, own_counts)
 
 
 func open_wheel(active_side: String, own_counts: Dictionary = {}, question := "") -> void:
@@ -58,6 +52,7 @@ func _start(m: String, active_side: String, own_counts: Dictionary) -> void:
 	counts = own_counts
 	hovered = ""
 	_open = 0.0
+	_press_seen = false
 	if _tween and _tween.is_valid():
 		_tween.kill()
 	_tween = create_tween()
@@ -67,31 +62,9 @@ func _start(m: String, active_side: String, own_counts: Dictionary) -> void:
 	queue_redraw()
 
 
-# Lage der Felder (lokal): oben links, oben rechts, unten rechts, unten links – in Farbreihenfolge der Seite
-func field_center(i: int) -> Vector2:
-	var dirs := [Vector2(-1, -1), Vector2(1, -1), Vector2(1, 1), Vector2(-1, 1)]
-	var d: Vector2 = dirs[i % 4]
-	return d * OFFSET * _open
-
-
-func field_rect(i: int) -> Rect2:
-	var c := field_center(i)
-	return Rect2(c - Vector2.ONE * FIELD * 0.5, Vector2.ONE * FIELD)
-
-
-# Farbe unter einer globalen Position (Felder: großzügige Trefferfläche, Farbrad: Viertel)
+# Farbe unter einer globalen Position (Viertel des Farbrads), sonst ""
 func color_at(global_pos: Vector2) -> String:
 	var p := to_local(global_pos)
-	if mode == "fields":
-		var best := ""
-		var best_d := FIELD * 0.95
-		var cols := colors()
-		for i in 4:
-			var d := p.distance_to(field_center(i))
-			if d < best_d:
-				best_d = d
-				best = cols[i]
-		return best
 	if mode == "wheel":
 		var v := p - wheel_center
 		var l := v.length()
@@ -134,14 +107,19 @@ func cancel() -> void:
 
 
 # Farbrad: Tipp wählt, Tipp außerhalb bricht ab. Gibt true zurück, wenn das Ereignis verbraucht wurde.
+# Ein Loslassen zählt nur nach einem Druck seit dem Öffnen (Nutzerbefund 25.10.2026, Doppeltipp mit dem Stift auf einen Joker): Beim
+# Stift kommt die nachgebildete Berührung vor dem Mausereignis (App.enable_pen_touch), die Hand öffnet das Rad also schon beim
+# Loslassen der Berührung – das Maus-Loslassen desselben Tipps landete dann hier und brach als „Tipp daneben“ sofort ab. Beim Finger
+# ist die Reihenfolge umgekehrt (nachgebildete Maus zuerst).
 func handle_input(event: InputEvent, global_pos: Vector2) -> bool:
 	if mode != "wheel":
 		return false
 	var mb := event as InputEventMouseButton
 	if mb != null and mb.button_index == MOUSE_BUTTON_LEFT:
 		if mb.pressed:
+			_press_seen = true
 			hover(global_pos)
-		else:
+		elif _press_seen:
 			drop(global_pos)
 		return true
 	if event is InputEventMouseMotion:
@@ -151,50 +129,8 @@ func handle_input(event: InputEvent, global_pos: Vector2) -> bool:
 
 
 func _draw() -> void:
-	if mode == "fields":
-		_draw_fields()
-	elif mode == "wheel":
+	if mode == "wheel":
 		_draw_wheel()
-
-
-func _draw_fields() -> void:
-	var cols := colors()
-	var nf := UiFonts.text(800, 90.0)
-	for i in 4:
-		var col := cols[i]
-		var hot := col == hovered
-		var dim := hovered != "" and not hot
-		var s := (1.18 if hot else 1.0) * clampf(_open, 0.0, 1.2)
-		var c := field_center(i)
-		var r := Rect2(c - Vector2.ONE * FIELD * 0.5 * s, Vector2.ONE * FIELD * s)
-		var fill := UiPalette.fill(col)
-		var glow := UiPalette.glow(col)
-		if hot:
-			draw_circle(c, FIELD * 0.85 * s, Color(glow, 0.28))
-		var shadow := StyleBoxFlat.new()
-		shadow.bg_color = Color(0, 0, 0, 0)
-		shadow.shadow_color = Color(0, 0, 0, 0.35)
-		shadow.shadow_size = 12
-		shadow.shadow_offset = Vector2(0, 6)
-		shadow.set_corner_radius_all(int(26 * s))
-		draw_style_box(shadow, r)
-		var sb := StyleBoxFlat.new()
-		sb.bg_color = fill if not dim else fill.lerp(Color(0.5, 0.5, 0.55), 0.45)
-		sb.set_corner_radius_all(int(26 * s))
-		sb.border_color = UiPalette.CREAM if side == "hell" else glow
-		sb.set_border_width_all(int((6 if hot else 4) * s))
-		sb.anti_aliasing = true
-		draw_style_box(sb, r)
-		var sym_col := UiPalette.CREAM if fill.get_luminance() < 0.6 else UiPalette.INK
-		var isz := 52.0 * s
-		draw_texture_rect(UiIcons.symbol(col, 104, sym_col, fill), Rect2(c - Vector2(isz * 0.5, isz * 0.62), Vector2(isz, isz)), false)
-		var n := int(counts.get(col, 0))
-		var label := "×%d" % n
-		if s < 0.35:
-			continue
-		var fs := maxi(int(UiFonts.px(18) * s), 1)
-		var lw := nf.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-		draw_string(nf, c + Vector2(-lw * 0.5, FIELD * 0.36 * s), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, sym_col)
 
 
 func _draw_wheel() -> void:

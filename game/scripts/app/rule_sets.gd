@@ -137,6 +137,8 @@ static func comparable(cfg: RuleConfig) -> Dictionary:
 	var d := cfg.to_dict()
 	if cfg.swap_cards == "off":
 		d["swap_direction"] = RuleConfig.CHOICES["swap_direction"][0]
+	if cfg.gamble_cards == "off":
+		d["gamble_odds"] = RuleConfig.CHOICES["gamble_odds"][0]
 	return d
 
 

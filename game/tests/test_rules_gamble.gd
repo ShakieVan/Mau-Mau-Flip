@@ -3,7 +3,8 @@ extends "res://tests/test_rules_views.gd"
 # Gebaute Fälle: Kartendaten aller 8 Deckvarianten (Kartenzahl, Gesichter, Prüfsummen, Codes, Sortierung), Optionen und Texte,
 # Rundenstart, Legen und Phase "gamble" samt Ablehnungen, Setzen/Drücken mit vorgegebenen Würfen (MauGame.force_rolls), Treffer,
 # Fertigwerden bei round_end first/last, letzte Karte, Mau-Fenster und Erwischen im Glücksspiel, offene Stapelstrafe, Flip,
-# leere Stapel, zu zweit, mit Kartentausch, Zufall (Quote gleichverteilt, Treffer 1/q, Werte 1–10), Lecktest (Quote und
+# leere Stapel, zu zweit, mit Kartentausch, Zufall (Quote gleichverteilt, Treffer 1/q, Werte 1–10), Trefferstufe gamble_odds
+# (Selten/Mittel/Oft: Obergrenze 10/5/3, Familie, Hebung, Texte App/Browser, Spielstand, Bot), Lecktest (Quote und
 # Einsatzgesichter nie bei anderen), to_dict/from_dict mitten im Glücksspiel und Bot-Entscheidungen. Danach die Zufallsprüfungen
 # aus test_rules_views.gd mit Glücksspiel (gamble_mode() = true), ein Stärketest und der Bot-Dauerlauf mit ALLEN Hausregeln an
 # (Kartentausch, Glücksspiel, Farbe mit ablegen): Standard 2000 Partien (RULES_GAMBLE_GAMES, godot_run.ps1 -EnvPairs
@@ -44,6 +45,7 @@ func _initialize() -> void:
 	_gb_two_players()
 	_gb_with_swap()
 	_gb_random()
+	_gb_odds()
 	_gb_leak()
 	_gb_round_trip()
 	_gb_bot_decisions()
@@ -766,6 +768,108 @@ func _gb_random() -> void:
 				seq.append(int(gb_ev(r.events, "gamble_roll").value))
 		seqs.append(seq)
 	check(seqs[0] == seqs[1] and (seqs[0] as Array).size() >= 2, "gleicher Seed: gleiche Quote und Würfe (%s)" % str(seqs[0]))
+
+
+# --- Glücksspiel-Treffer (gamble_odds, Nutzer 25.10.2026: „Das Glücksrad macht viel zu oft 0“) ---
+
+func _gb_odds() -> void:
+	# Optionen, Standard, Voreinstellungen
+	check(RuleConfig.CHOICES["gamble_odds"] == ["rare", "medium", "often"] and RuleConfig.new().gamble_odds == "rare"
+		and RuleConfig.new().gamble_max_q() == 10, "Standard: Selten (bis 1:10, wie bis 1.6.15)")
+	for p in RuleConfig.preset_names():
+		check(RuleConfig.preset(p).gamble_odds == ("medium" if p == "familie" else "rare"), "Voreinstellung %s: Trefferstufe" % p)
+	check(RuleConfig.preset("familie").gamble_max_q() == 5 and gb_cfg({"gamble_odds": "often"}).gamble_max_q() == 3, "Obergrenzen 10 / 5 / 3")
+	check(RuleConfig.from_dict({"gamble_odds": "immer"}).gamble_odds == "rare", "ungültige Stufe bleibt beim Standard")
+	var fam := RuleConfig.preset("familie")
+	fam.gamble_odds = "rare"
+	check(fam.preset_name() == "", "Familie mit Selten = eigene Regeln")
+	var off := RuleConfig.from_dict({"gamble_odds": "often"})
+	check(off.preset_name() == "offiziell" and RuleSets.same(off, RuleConfig.new()), "ohne Glücksspiel zählt die Stufe nicht")
+	# Hebung: alte Familie ohne den Schlüssel (bis 1.6.15) → heutige Familie mit Mittel; eigene Sätze bleiben bei Selten
+	var old := RuleConfig.preset("familie").to_dict()
+	old.erase("gamble_odds")
+	var lifted := RuleConfig.from_dict(RuleConfig.migrate_dict(old))
+	check(lifted.preset_name() == "familie" and lifted.gamble_odds == "medium", "alte Familie wird gehoben (Mittel)")
+	var older := old.duplicate()
+	older.erase("counter_round")                     # Familie 1.6.10: ohne Kontern und ohne Trefferstufe
+	check(RuleConfig.from_dict(RuleConfig.migrate_dict(older)).preset_name() == "familie", "Familie 1.6.10 wird gehoben")
+	var own := gb_cfg({"round_end": "last"}).to_dict()
+	own.erase("gamble_odds")
+	check(RuleConfig.from_dict(RuleConfig.migrate_dict(own)).gamble_odds == "rare", "eigene Regeln ohne Schlüssel: Selten")
+	var now := gb_cfg({"gamble_odds": "often"}).to_dict()
+	check(RuleConfig.from_dict(RuleConfig.migrate_dict(now)).gamble_odds == "often", "gespeicherte Stufe bleibt")
+	# Quote je Stufe gleichverteilt bis zur Obergrenze
+	for odds in ["rare", "medium", "often"]:
+		var g := gb_make({"hands": [["hell_gluecksspiel", "hell_gelb_1"], ["hell_blau_1"], ["hell_gruen_1"]], "top": "hell_rot_5"},
+			{"gamble_odds": odds})
+		var top := int(RuleConfig.GAMBLE_MAX_Q[odds])
+		var qs := {}
+		var n := 1500 * top
+		for i in n:
+			g._start_gamble(0, [])
+			qs[int(g.gamble.q)] = int(qs.get(int(g.gamble.q), 0)) + 1
+		var ok := qs.size() == top
+		for q in range(1, top + 1):
+			if absf(float(qs.get(q, 0)) / n - 1.0 / top) > 0.025:
+				ok = false
+		check(ok, "Stufe %s: Quote 1:1 bis 1:%d gleichverteilt (%s)" % [odds, top, str(qs)])
+		# … und echte Drucke: Anteil der Nullen etwa 1 − Mittel(1/q) (71 / 54 / 39 %)
+		var zeros := 0
+		var presses := 0
+		for i in 3000:
+			g._start_gamble(0, [])
+			presses += 1
+			if g._roll() == 0:
+				zeros += 1
+		var want := 0.0
+		for q in range(1, top + 1):
+			want += (1.0 - 1.0 / q) / top
+		check(absf(float(zeros) / presses - want) < 0.04, "Stufe %s: %.0f %% Nullen (erwartet %.0f %%)" % [odds, 100.0 * zeros / presses, 100.0 * want])
+		g.gamble = {}
+	# Spielstand: Stufe und Quote kommen mit
+	var h := gb_make({"hands": [["hell_gluecksspiel", "hell_gelb_1", "hell_gelb_2"], ["hell_blau_1"], ["hell_gruen_1"]], "top": "hell_rot_5"},
+		{"gamble_odds": "often"})
+	gb_play(h, 0, "hell_gluecksspiel", "Glücksspiel (Oft)", "rot")
+	var h2 := MauGame.from_dict(JSON.parse_string(JSON.stringify(h.to_dict())))
+	check(h2.config.gamble_odds == "often" and int(h2.gamble.q) == int(h.gamble.q) and int(h.gamble.q) <= 3, "Spielstand: Stufe Oft und Quote erhalten")
+	# Texte (App)
+	var med := gb_cfg({"gamble_odds": "medium"})
+	check("\n".join(RulesText.card_help("hell_gluecksspiel", med)).contains("1:1 und 1:5")
+		and "\n".join(RulesText.card_help("hell_gluecksspiel", gb_cfg({"gamble_odds": "often"}))).contains("1:1 und 1:3"), "Kartenhilfe nennt die Obergrenze")
+	check(str(RulesText.overview(med)).contains("zwischen 1:1 und 1:5"), "Übersicht nennt die Obergrenze")
+	var desc := "\n".join(med.describe())
+	check(desc.contains("Glücksspiel-Treffer: Mittel") and desc.contains("1:1 und 1:5"), "describe: " + desc)
+	check(not "\n".join(RuleConfig.from_dict({"gamble_odds": "medium"}).describe()).contains("Glücksspiel-Treffer"), "describe ohne Glücksspiel")
+	check(RulesBar.summary(med).contains("Glücksspiel-Treffer: Mittel") and not RulesBar.summary(RuleConfig.new()).contains("Glücksspiel-Treffer"),
+		"Kurzbeschreibung")
+	var row := -1
+	for i in RulesScreen.EXTRA_OPTIONS.size():
+		if str(RulesScreen.EXTRA_OPTIONS[i][0]) == "gamble_odds":
+			row = i
+	check(row > 0 and str(RulesScreen.EXTRA_OPTIONS[row - 1][0]) == "gamble_cards" and (RulesScreen.EXTRA_OPTIONS[row][3] as Array).size() == 3,
+		"Regelauswahl: Zeile „Glücksspiel-Treffer“ direkt nach „Glücksspiel“")
+	# Browser: gleiche msgids, gleiche Obergrenzen, Übersetzungen
+	var web := ProjectSettings.globalize_path("res://").path_join("../webclient").simplify_path()
+	var karten := FileAccess.get_file_as_string(web.path_join("karten.js"))
+	var po := FileAccess.get_file_as_string(web.path_join("i18n_po.js"))
+	for msg in ["Für jedes Glücksspiel wird geheim eine Trefferquote zwischen 1:1 und 1:%d ausgelost.",
+			"Glücksspiel-Treffer: %s – je Glücksspiel wird geheim eine Trefferquote zwischen 1:1 und 1:%d ausgelost."]:
+		check(karten.contains("tr('%s'" % msg) and po.contains(JSON.stringify(msg)), "Browser mit Übersetzung: " + msg)
+	check(karten.contains("({ rare: 10, medium: 5, often: 3 })") and RuleConfig.GAMBLE_MAX_Q == {"rare": 10, "medium": 5, "often": 3},
+		"Browser: gleiche Obergrenzen wie RuleConfig.GAMBLE_MAX_Q")
+	# Bot: Je öfter es trifft, desto eher hört er auf
+	var hand := []
+	for i in 3:
+		hand.append({"id": i, "face": "hell_gelb_%d" % (i + 1)})
+	var v := {"hand": hand, "gamble": {"seat": 0, "stake": 2, "need": "stake", "last": 0}, "rules": {"gamble_odds": "rare"}}
+	var p_rare := MauBot.stop_chance(v, 2)
+	v.rules.gamble_odds = "medium"
+	var p_med := MauBot.stop_chance(v, 2)
+	v.rules.gamble_odds = "often"
+	var p_often := MauBot.stop_chance(v, 2)
+	check(p_rare < p_med and p_med < p_often and p_often <= 0.9, "Bot: aufhören Selten %.2f < Mittel %.2f < Oft %.2f" % [p_rare, p_med, p_often])
+	v.erase("rules")
+	check(is_equal_approx(MauBot.stop_chance(v, 2), p_rare), "Bot: ohne Angabe wie Selten")
 
 
 # --- Lecktest an gebauten Lagen ---
