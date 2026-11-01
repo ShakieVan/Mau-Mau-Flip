@@ -659,11 +659,6 @@ func run() -> void:
 	clock += 30000
 	tf.tick(0.2)
 	check(not rb.gray, "nach der Sperrzeit wieder aktiv")
-	var obs := tf.obstacles()
-	check(obs.size() >= 1 and obs[0].size.x > 200.0, "Hindernisse: Reaktionsknöpfe (%s)" % str(obs))
-	tf.open_menu(1)
-	check(tf.obstacles().size() == 2, "Hindernisse: dazu das offene Menü")
-	tf.close_menu(false)
 	var cover := covered_by_reactions()
 	check(cover.is_empty(), "Knöpfe verdecken nichts (%s)" % str(cover))
 
@@ -785,6 +780,29 @@ func run() -> void:
 				sample.catch_targets = []
 	UiFonts.set_level("normal", root)
 
+	# Beta 1.6.17: Großer Modus, zwei Spalten ragten bei 720–750 px Höhe in ☰ (Bild optik_1615_gross_tag). Sie passen ohne Scrollen, wenn
+	# die Knöpfe (5 + 5) nicht schon über „Sortieren“ stehen. Höhen: virtuelle Maße bei Streckung „expand“ für 21:9/20:9, 19,5:9, 19:9, 16:9
+	for h: float in [720.0, 738.0, 746.0, 758.0, 800.0, 900.0]:
+		await setup("client", 1, 4)
+		var menu_rects: Array = [Rect2(14, 10, 104, 104), Rect2(14, 126, 104, 104)]         # ← und ☰ wie TableScreen._layout im großen Modus
+		tf.avoid_cb = func() -> Array: return menu_rects
+		t.set_big(true)
+		t.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+		t.size = Vector2(1600.0, h)
+		t._layout()
+		show(sample.view_for(0))
+		await create_timer(1.0).timeout
+		tf.tick(0.2)
+		var bar := tf.reactions
+		var rx := bar.get_global_transform_with_canvas()
+		var hits: Array = []
+		for rc: Vector2 in bar.centers:
+			var rr := Rect2(rx * rc - Vector2.ONE * bar.r, Vector2.ONE * bar.r * 2.0)
+			hits.append_array(menu_rects.filter(func(m: Rect2) -> bool: return rr.intersects(m)))
+		check(bar.visible and hits.is_empty() and bar.r >= 22.0, "Höhe %.0f: Knöpfe frei von ← und ☰, ≥ 44 px (r %.1f, %s)" % [h, bar.r, str(hits)])
+		var cover_h := covered_by_reactions()
+		check(cover_h.is_empty(), "Höhe %.0f: Knöpfe verdecken nichts (%s)" % [h, str(cover_h)])
+
 	await cushion_checks()
 	await surprise_checks()
 
@@ -833,11 +851,6 @@ func run() -> void:
 	check(not tz.menu.key_on("kissen_geheim") and not tz.menu.key_on("kissen_name") and tz.menu.note.contains("Das Kissen muss sich erst wieder aufpusten."),
 		"Übung: danach beide gesperrt (%s)" % tz.menu.note)
 	tz.close_menu(false)
-	check(ts.bar_obstacles().size() >= 1, "TableScreen.bar_obstacles läuft mit")
-	tz.open_menu(bot_seat)
-	var with_menu := ts.bar_obstacles().size()
-	tz.close_menu(false)
-	check(with_menu == ts.bar_obstacles().size() + 1, "Sofort-Leiste meidet das offene Menü")
 	# Gerätetest 1.6.3: TableScreen meldet Rückfragen und Menüs über modal_cb (Reaktionsknopf verschwindet darunter)
 	check(tz.modal_cb.is_valid() and not tz.covered(), "TableScreen: modal_cb verdrahtet, nichts offen")
 	ts.open_menu()

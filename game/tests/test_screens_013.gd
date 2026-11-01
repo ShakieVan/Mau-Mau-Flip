@@ -152,22 +152,24 @@ func net_flow() -> void:
 		return
 	var seat := int(gts.view.get("seat", -1))
 	var gname := host.seat_name(seat)
-	check(not hts._sub_hint.visible, "M4: ohne getrennten Gast keine Leiste")
+	check(not hts._sub_dots.visible and not hts._sub_hint.visible, "M4: ohne getrennten Gast weder „…“ noch Leiste")
 	# Gast weg (App abgewürgt)
 	nav2.queue_free()
 	nav2 = null
 	check(await _wait_for(func() -> bool: return host.game != null and not bool(host.game.connected[seat]), 4.0), "M4: Gastgeber sieht den Gast getrennt")
-	# Beta 1.4.2: sofort die Leiste „… ist getrennt“ mit „Computer übernimmt“ und „Aus dem Spiel nehmen“ (keine 30-s-Frist mehr)
-	check(await _wait_for(func() -> bool: return hts._sub_hint.visible, 2.0) and hts._sub_hint_label.text == "%s ist getrennt" % gname
-			and hts._sub_btn.is_visible_in_tree() and hts._kick_btn.is_visible_in_tree(),
-		"M4: sofort „%s ist getrennt“ mit beiden Knöpfen (%s)" % [gname, hts._sub_hint_label.text])
+	# Beta 1.4.2: sofort „… ist getrennt“ mit „Computer übernimmt“ und „Aus dem Spiel nehmen“ (keine 30-s-Frist mehr); Beta 1.6.17: hinter „…“
+	check(await _wait_for(func() -> bool: return hts._sub_dots.visible, 2.0) and hts._sub_hint_label.text == "%s ist getrennt" % gname and not hts._sub_hint.visible,
+		"M4: sofort „…“, Leiste zu (%s)" % hts._sub_hint_label.text)
+	hts.toggle_bar()
+	check(hts._sub_btn.is_visible_in_tree() and hts._kick_btn.is_visible_in_tree(), "M4: „…“ zeigt beide Knöpfe")
 	var r := hts._sub_hint.get_global_rect()
 	check(Rect2(0, 0, 1600, 720).encloses(r), "M4: Leiste im Bild (%s)" % r)
 	hts.ask_substitute()
 	check(hts._confirm != null and is_instance_valid(hts._confirm), "M4: Rückfrage")
+	check(not hts._sub_hint.visible, "M4: Leiste zu, solange die Rückfrage steht")
 	hts._confirm._answer(true)
 	await frames(2)
-	check(host.is_substituted(seat) and not hts._sub_hint.visible, "M4: Computer spielt für den Gast, Leiste weg")
+	check(host.is_substituted(seat) and not hts._sub_dots.visible and not hts._sub_hint.visible, "M4: Computer spielt für den Gast, „…“ weg")
 	await wait(0.5)
 	# Gast kommt zurück: spielt selbst weiter
 	nav3 = _guest_nav()

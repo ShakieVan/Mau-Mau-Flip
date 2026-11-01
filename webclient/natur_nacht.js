@@ -1,7 +1,7 @@
 /* Mau-Mau Flip (Beta 1.6.12): „Natur-Überraschungen“ im Browser-Client „Lite“ – die Nachttiere (docs/module/natur.md 3.3, Aufgabe T6).
  * Glühwürmchen, Eule, Fledermaus, Mond mit Schlafmütze, Polarlicht, Katzen-Sternbild, UFO, Satellit, Motte, Igel, Komet, Lampion und
  * die Sternschnuppe (Bestand, im leuchtenden Stil der App: game/scripts/ui/shooting_star_fx.gd); ab 1.6.15 Feuerwerk und Astronaut am
- * Mond, das UFO ist nicht mehr scheu (weicht zweimal aus, der dritte Tipp verscheucht es).
+ * Mond; das UFO lässt sich ab 1.6.17 nicht mehr verscheuchen (weicht bei jedem Tipp nur aus).
  * Vertrag und Hilfen: Dateikopf von webclient/natur.js (M.Natur.art(id, {baue(ctx, zufall)}), M.Natur.stil, M.Natur.h).
  * Alles selbst gezeichnet (Inline-SVG und CSS-Verläufe), kein Ton, kein Text, kein Netz, kein filter/backdrop-filter.
  * stelle(t) ist rein in t (gleicher Samen + gleiches t = gleiches Bild); Reaktionen auf Tipp und Abgang laufen ab der gemerkten Zeit.
@@ -640,8 +640,8 @@
   });
 
   /* ================================================================ 18 UFO leuchtet den Stapel an
-   * 1.6.15 (Nutzer: „nicht so einfach verscheuchen“): nicht mehr scheu, Ziehen stört es nicht; der 1. und 2. Tipp lassen es zur Seite
-   * ausweichen (Kegel flackert), erst der 3. verscheucht es. */
+   * 1.6.17 (Nutzer: „nicht verscheuchen lassen“): nicht scheu, Ziehen stört es nicht; jeder Tipp lässt es nur zur Seite ausweichen
+   * (Kegel flackert), danach kehrt es zurück. */
   N.art('ufo', {
     baue(ctx, z) {
       const o = ctx.ort, st = o.stapel || { x: o.x - 60, y: o.y + 62, w: 120, h: 180 };
@@ -673,7 +673,7 @@
       const E = { kg: q('.kg'), kp: q('.kp'), bl: q('.bl'), fk: Array.from(root.querySelectorAll('.fk')) };
       const fz = E.fk.map(() => ({ ph: z(), x: zz(z, -0.6, 0.6), v: zz(z, 0.5, 0.8) }));
       const tAn = 1.9, tAus = 4.4;
-      // 1.6.15: nicht mehr scheu; 1. und 2. Tipp → Satz zur Seite (DS), zitternd dort (DH), zurück über den Stapel (DB); 3. Tipp → davon
+      // jeder Tipp → Satz zur Seite (DS), zitternd dort (DH), zurück über den Stapel (DB)
       const DS = 0.22, DH = 0.9, DB = 0.8, DX = 64;
       const ausweich = [];   // [{at, x, y}] je Ausweich-Tipp (rein in t: stelle liest nur diese Liste)
       const blockiert = x => ctx.schutz.some(q => q.name !== 'stapel' && flaeche(kasten(H0.x + x, H0.y - 2 * SK, 76 * SK, 36 * SK), q) > 0);
@@ -686,7 +686,7 @@
         return { x: d.x * (1 - u), y: d.y * (1 - u) };
       };
       const versatz = t => { let i = -1; ausweich.forEach((d, j) => { if (d.at <= t) i = j; }); return i < 0 ? null : { off: segment(i, t), seit: t - ausweich[i].at }; };
-      const inst = { el: root, dauer, cur: 0, leaveT: null, tippMax: 3, tipps: 0 };
+      const inst = { el: root, dauer, cur: 0, leaveT: null, tippMax: 99 };
       const grund = t => {
         const tL = inst.dauer - 0.8;
         if (t < 1.5) {
@@ -743,8 +743,6 @@
       };
       inst.treffer = p => { const { g } = lage(inst.cur); return Math.hypot(p.x - g.x, (p.y - g.y) * 1.6) <= 60; };
       inst.tipp = p => {
-        inst.tipps++;
-        if (inst.tipps >= 3) { inst.leaveT = inst.cur; inst.dauer = Math.min(inst.dauer, inst.cur + 0.42); return; }
         // weg vom Finger, sonst zur freieren Seite; liegt dort ein Platz oder Knopf, zur anderen
         const { g } = lage(inst.cur);
         let s = p && Math.abs(g.x - p.x) >= 5 ? Math.sign(g.x - p.x) : (ausweich.length ? -Math.sign(ausweich[ausweich.length - 1].x) : freieSeite);

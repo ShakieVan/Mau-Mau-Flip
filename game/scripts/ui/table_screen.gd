@@ -77,10 +77,12 @@ var _handover_pending := false
 var _sub_btn: Button                 # Gastgeber, Sofort-Leiste: „Computer übernimmt“ (M4; seit Beta 1.4.2 sofort, ohne 30-s-Frist)
 var _kick_btn: Button                # … und „Aus dem Spiel nehmen“ (Beta 1.4.2)
 var _sub_seat := -1                  # Platz, für den die Leiste gerade steht
+var _sub_dots: PulseDotsButton       # Beta 1.6.17: pulsierender „…“-Knopf, solange jemand weg ist; öffnet die Leiste (toggle_bar)
+var _sub_open := false               # Leiste offen (nur nach Tipp auf „…“)
+var _sub_close_ms := 0               # … schließt sich dann von selbst
 var _sub_hint: PanelContainer        # die Leiste: „Kim ist getrennt“ bzw. „Kim ist kurz in einer anderen App“ + beide Knöpfe
 var _sub_hint_label: Label
 var _sub_more: Label                 # „+1“: weitere Abwesende (über „Mitspieler“ erreichbar)
-var _bar_btns: BoxContainer            # beide Knöpfe: untereinander, bei wenig Höhe nebeneinander (_place_bar)
 var _sub_hint_seat := -1             # (alt, Kontrollbilder) = _sub_seat
 var _sub_next_ms := 0                # nächste Prüfung der Abwesenheit
 var _seat_mgr: SeatManager           # Feld „Mitspieler“ (Gastgeber im Netzwerkspiel, Beta 1.4.2)
@@ -151,7 +153,11 @@ func build() -> void:
 	top_layer.add_child(_top)
 	_build_top()
 	# Beta 1.6.3 (Necken): das Menü am Gegner meidet Zurück- und ☰-Knopf (liegen eine Ebene darüber)
-	table.tease.avoid_cb = func() -> Array: return [_menu_btn.get_global_rect(), _burger.get_global_rect()]
+	table.tease.avoid_cb = func() -> Array:
+		var out := [_menu_btn.get_global_rect(), _burger.get_global_rect()]
+		if _sub_dots != null and _sub_dots.visible:
+			out.append(_sub_dots.get_global_rect())
+		return out
 	table.tease.modal_cb = is_modal_open        # Gerätetest 1.6.3: Reaktionsknöpfe weg, solange eine Rückfrage/ein Menü offen ist
 	# Verdrahtung Tisch und Hand
 	table.action.connect(_on_table_action)
@@ -320,12 +326,18 @@ func _build_top() -> void:
 	_conn_later.visible = false
 	_conn_later.pressed.connect(pause_to_menu)
 	row.add_child(_conn_later)
-	# Sofort-Leiste (Beta 1.4.2): „Kim ist getrennt“ + „Computer übernimmt“ + „Aus dem Spiel nehmen“ (beide mit Rückfrage)
+	# Sofort-Leiste (Beta 1.4.2): „Kim ist getrennt“ + „Computer übernimmt“ + „Aus dem Spiel nehmen“ (beide mit Rückfrage);
+	# Beta 1.6.17: hinter dem pulsierenden „…“-Knopf
+	_sub_dots = PulseDotsButton.new()
+	_sub_dots.name = "AbwesendKnopf"
+	_sub_dots.visible = false
+	_sub_dots.pressed.connect(toggle_bar)
+	_top.add_child(_sub_dots)
 	_sub_hint = ScreenKit.card(12.0, false)
 	_sub_hint.name = "Abwesend"
 	_sub_hint.visible = false
 	_top.add_child(_sub_hint)
-	# untereinander: Satz, dann die beiden Knöpfe (schmal; normal rechts über dem Mau-Knopf, im großen Modus oben links)
+	# untereinander: Satz, dann die beiden Knöpfe (unter dem „…“-Knopf)
 	var bar := ScreenKit.vbox(8)
 	_sub_hint.add_child(bar)
 	var head := ScreenKit.hbox(10)
@@ -344,18 +356,13 @@ func _build_top() -> void:
 	_sub_btn.add_theme_font_size_override("font_size", UiFonts.size("hinweis"))
 	_sub_btn.custom_minimum_size.y = BAR_BTN_H
 	_sub_btn.pressed.connect(ask_substitute)
-	_bar_btns = BoxContainer.new()
-	_bar_btns.vertical = true
-	_bar_btns.add_theme_constant_override("separation", 8)
-	_bar_btns.name = "Knoepfe"
-	bar.add_child(_bar_btns)
-	_bar_btns.add_child(_sub_btn)
+	bar.add_child(_sub_btn)
 	_kick_btn = ScreenKit.button("Aus dem Spiel nehmen", "GhostButton")
 	_kick_btn.name = "AusDemSpiel"
 	_kick_btn.add_theme_font_size_override("font_size", UiFonts.size("hinweis"))
 	_kick_btn.custom_minimum_size.y = BAR_BTN_H
 	_kick_btn.pressed.connect(ask_kick)
-	_bar_btns.add_child(_kick_btn)
+	bar.add_child(_kick_btn)
 	_style_bar(false)
 
 
@@ -403,96 +410,59 @@ func _layout() -> void:
 	var k := minf(1.0, (sz.x - 32.0) / maxf(_conn.size.x, 1.0))
 	_conn.scale = Vector2(k, k)
 	_conn.position = Vector2((sz.x - _conn.size.x * k) * 0.5, 16.0)
-	_bar_shape(true, 0)
+	_bar_font()
+	_place_bar(sz)
+
+
+# Beta 1.6.17 (Nutzerbefund 31.10.2026): Die Sofort-Leiste stand dauerhaft rechts über dem Mau-Knopf und verdeckte dort „Behalten“, der
+# Zug ließ sich nicht beenden. Jetzt steht auf dem Tisch nur der „…“-Knopf: normal als dritter Knopf neben ☰, im großen Modus rechts im
+# Kopf der Spielerliste (links liegt der riesige Stapel; am Rundenende weicht er dem Menü oben rechts). Die Leiste öffnet sich darunter.
+func _place_bar(sz: Vector2) -> void:
+	var ds := BigLayout.HEAD_H + 8.0 if table.big else ScreenKit.TOUCH
+	_sub_dots.custom_minimum_size = Vector2(ds, ds)
+	_sub_dots.size = Vector2(ds, ds)
 	if table.big:
-		_sub_hint.position = Vector2(14.0 + _menu_btn.size.x + 14.0, 10.0)
+		var head := BigLayout.list_head_rect(sz)
+		var right := _round_menu.position.x - 10.0 if _round_menu.visible else head.end.x
+		_sub_dots.position = Vector2(right - ds, head.get_center().y - ds * 0.5)
 	else:
-		_place_bar(sz, true)
-
-
-# Sofort-Leiste im normalen Modus: rechts, möglichst direkt über dem Mau-Knopf, aber ohne Gegnerplätze (Fächer) und Hinweisleiste
-# zu verdecken (Gerätetest 1.4.2, n_06: bei großer Schrift lag sie über dem rechten Fächer und dem Hinweis). Passt sie nirgends,
-# wird ihre Schrift schrittweise kleiner; sonst die Lage mit der kleinsten Überdeckung. force = false: eine freie Lage bleibt.
-func _place_bar(sz: Vector2, force := false) -> void:
-	var mau := table.mau_button.get_global_rect()
-	var bottom := mau.position.y - 10.0 if mau.size.y > 1.0 else sz.y - 200.0
-	var blocks := bar_obstacles()
-	if not force and _sub_hint.size.x > 1.0 and _bar_overlap(Rect2(_sub_hint.position, _sub_hint.size), blocks) <= 0.0 \
-			and _sub_hint.position.y + _sub_hint.size.y <= bottom + 0.5:
-		return
-	var best := Vector2(-1, -1)
-	var best_cost := INF
-	var best_shape := [true, 0]
-	# Knöpfe untereinander (wie bisher), sonst nebeneinander (flacher); je Anordnung die Schrift schrittweise kleiner
-	for shape in [[true, 0], [false, 0], [true, 2], [false, 2], [true, 4], [false, 4], [false, 6]]:
-		_bar_shape(bool(shape[0]), int(shape[1]))
-		var bs := _sub_hint.size
-		var x := sz.x - bs.x - 16.0
-		var y := bottom - bs.y
-		while y >= 10.0:
-			var cost := _bar_overlap(Rect2(Vector2(x, y), bs), blocks)
-			if cost < best_cost - 0.5:
-				best_cost = cost
-				best = Vector2(x, y)
-				best_shape = shape
-			if cost <= 0.0:
-				break
-			y -= 8.0
-		if best_cost <= 0.0:
-			break
-	_bar_shape(bool(best_shape[0]), int(best_shape[1]))
-	if best.x < 0.0:
-		best = Vector2(sz.x - _sub_hint.size.x - 16.0, maxf(bottom - _sub_hint.size.y, 10.0))
-	_sub_hint.position = best
-
-
-func _bar_shape(stacked: bool, shrink: int) -> void:
-	_bar_btns.vertical = stacked
-	_bar_font(shrink)
+		_sub_dots.position = _burger.position + Vector2(_burger.size.x + 12.0, 0.0)
 	_sub_hint.reset_size()
+	var bs := _sub_hint.size
+	_sub_hint.position = Vector2(clampf(_sub_dots.position.x, 16.0, maxf(sz.x - bs.x - 16.0, 16.0)),
+		clampf(_sub_dots.position.y + ds + 10.0, 10.0, maxf(sz.y - bs.y - 10.0, 10.0)))
 
 
-func _bar_font(shrink: int) -> void:
-	_sub_hint_label.add_theme_font_size_override("font_size", UiFonts.size("text") - shrink)
-	_sub_more.add_theme_font_size_override("font_size", UiFonts.size("text") - shrink)
+func _bar_font() -> void:
+	_sub_hint_label.add_theme_font_size_override("font_size", UiFonts.size("text"))
+	_sub_more.add_theme_font_size_override("font_size", UiFonts.size("text"))
 	for b: Button in [_sub_btn, _kick_btn]:
-		b.add_theme_font_size_override("font_size", UiFonts.size("hinweis") - shrink)
+		b.add_theme_font_size_override("font_size", UiFonts.size("hinweis"))
 
 
-static func _bar_overlap(r: Rect2, blocks: Array[Rect2]) -> float:
-	var a := 0.0
-	for b in blocks:
-		a += r.intersection(b).get_area()
-	return a
+# Tipp auf „…“: Leiste auf bzw. wieder zu. Sie bleibt nur kurz offen (wie das Necken-Menü), Tipp daneben schließt sie (_input).
+func toggle_bar() -> void:
+	_sub_open = not _sub_open and _sub_seat >= 0
+	_sub_close_ms = Time.get_ticks_msec() + int(TeaseFx.MENU_IDLE_S * 1000.0)
+	_sub_hint.visible = _sub_open
+	if _sub_open:
+		_place_bar(size if size.x > 10.0 else Vector2(1600, 720))
 
 
-# Was die Sofort-Leiste nicht verdecken soll (Bildschirmkoordinaten): Gegnerplätze samt Fächer und die Hinweisleiste
-func bar_obstacles() -> Array[Rect2]:
-	var out: Array[Rect2] = []
-	for s in (view.get("players", []) as Array).size():
-		var node := table.seat_node(s)
-		if node == null or not node.visible or s == int(view.get("seat", -1)):
-			continue
-		var av := node.avatar_global()
-		var r := Rect2(av - Vector2(34, 34), Vector2(68, 68))
-		r = r.expand(av + Vector2(node.fan_max_w * 0.5 + 40.0, 0.0))   # Name und Kartenzahl rechts vom Avatar
-		for c: Dictionary in node.fan_cards():
-			var w := float(c.width)
-			var p: Vector2 = c.pos
-			r = r.merge(Rect2(p - Vector2(w * 0.6, w * 0.85), Vector2(w * 1.2, w * 1.7)))
-		out.append(r.grow(4.0))
-	# Ziehstapel und Ablage (die flache Leiste lag sonst über der Ablage)
-	for c: CardView in [table.pile_top(), table.discard_top()]:
-		if c != null and is_instance_valid(c) and c.is_visible_in_tree():
-			var w := c.width * c.global_scale.x
-			out.append(Rect2(c.global_position - Vector2(w * 0.6, w * 0.85), Vector2(w * 1.2, w * 1.7)))
-	var hb := table.hint_bar
-	if hb != null and hb.hint != "":
-		var tw := UiFonts.text(700, 100.0).get_string_size(hb.hint, HORIZONTAL_ALIGNMENT_LEFT, -1, UiFonts.size("hinweisleiste")).x + 40.0
-		var cx := hb.get_global_rect().get_center().x
-		out.append(Rect2(cx - tw * 0.5 - 6.0, hb.global_position.y + hb.hint_y - hb.hint_h() * 0.5 - 6.0, tw + 12.0, hb.hint_h() + 12.0))
-	out.append_array(table.tease.obstacles())   # Reaktionsknöpfe (Beta 1.6.5) und offenes Necken-Menü
-	return out
+func _close_bar() -> void:
+	_sub_open = false
+	_sub_hint.visible = false
+
+
+# Tipp neben die offene Leiste: zu, der Tipp wirkt normal weiter (nicht verbraucht, wie beim Necken-Menü). „…“ selbst: toggle_bar.
+func _input(event: InputEvent) -> void:
+	var mb := event as InputEventMouseButton
+	if not _sub_open or mb == null or not mb.pressed:
+		return
+	for c: Control in [_sub_hint, _sub_dots]:
+		if Rect2(Vector2.ZERO, c.size).has_point(c.get_global_transform_with_canvas().affine_inverse() * mb.position):
+			return
+	_close_bar()
 
 
 func _process(_delta: float) -> void:
@@ -524,9 +494,14 @@ func _process(_delta: float) -> void:
 			_sync_foreign_ap()
 			if is_net_host() and _switch_ok() and _switch.take_game_wifi_request():
 				open_own_wifi()                             # Übernahme bzw. geplante Übergabe qr: eigenes Spiel-WLAN
-			if _sub_hint.visible and not table.big:
-				_place_bar(size if size.x > 10.0 else Vector2(1600, 720))   # Hinweis oder Plätze haben sich geändert
-		_sub_hint.visible = _sub_seat >= 0 and not table.wish_picker.is_open() and not is_seat_manager_open()
+			if _sub_dots.visible:
+				_place_bar(size if size.x > 10.0 else Vector2(1600, 720))   # Menü am Rundenende, längerer Name
+		_sub_dots.visible = _sub_seat >= 0 and not table.wish_picker.is_open() and not is_seat_manager_open()
+		_sub_dots.night = table.night
+		_sub_dots.reduced = table.reduced
+		if not _sub_dots.visible or Time.get_ticks_msec() >= _sub_close_ms:
+			_sub_open = false
+		_sub_hint.visible = _sub_open
 		if _sub_hint.visible and bool(_sub_hint.get_meta("night", false)) != (table.night > 0.5):
 			ScreenKit.set_card_night(_sub_hint, table.night > 0.5)
 			_style_bar(table.night > 0.5)
@@ -1301,6 +1276,9 @@ func _sync_menu_night() -> void:
 func on_back() -> bool:
 	if leaving:
 		return true
+	if _sub_open:
+		_close_bar()
+		return true
 	if is_seat_manager_open():
 		_seat_mgr.on_back()
 		return true
@@ -1579,8 +1557,8 @@ func rejoin() -> void:
 
 # Sofort-Leiste, solange ein Gast getrennt oder in einer anderen App ist (zuerst der, auf den das Spiel wartet, dann wer dran ist):
 # „Kim ist getrennt“ bzw. „Kim ist kurz in einer anderen App“, dazu sofort „Computer übernimmt“ und „Aus dem Spiel nehmen“ (beide
-# mit Rückfrage; Beta 1.4.2 ersetzt den Knopf nach 30 s). Weitere Abwesende: „+1“, erreichbar über „Mitspieler“. Kommt der Gast
-# zurück, verschwindet die Leiste; eine Vertretung endet von selbst (HostTable._on_rejoined).
+# mit Rückfrage; Beta 1.4.2 ersetzt den Knopf nach 30 s; Beta 1.6.17: hinter dem „…“-Knopf). Weitere Abwesende: „+1“, erreichbar über
+# „Mitspieler“. Kommt der Gast zurück, verschwinden Knopf und Leiste; eine Vertretung endet von selbst (HostTable._on_rejoined).
 func _refresh_substitute() -> void:
 	if _sub_btn == null:
 		return
@@ -1600,7 +1578,9 @@ func _refresh_substitute() -> void:
 			_sub_more.text = ("+%d" % (absent.size() - 1)) if absent.size() > 1 else ""
 	_sub_hint_seat = _sub_seat
 	_sub_more.visible = _sub_more.text != ""
-	_sub_hint.visible = _sub_seat >= 0
+	_sub_dots.visible = _sub_seat >= 0
+	if _sub_seat < 0:
+		_close_bar()
 	if _sub_seat != old_seat or _sub_hint_label.text != old_text or _sub_more.text != old_more:
 		_layout()
 
@@ -1608,6 +1588,7 @@ func _refresh_substitute() -> void:
 func ask_substitute() -> void:
 	if _sub_seat < 0 or not source is HostTable:
 		return
+	_close_bar()
 	var seat := _sub_seat
 	var who := (source as HostTable).seat_name(seat)
 	if _confirm != null and is_instance_valid(_confirm):
@@ -1624,6 +1605,7 @@ func ask_substitute() -> void:
 func ask_kick() -> void:
 	if _sub_seat < 0 or not source is HostTable:
 		return
+	_close_bar()
 	if _confirm != null and is_instance_valid(_confirm):
 		_confirm.queue_free()
 	_confirm = SeatManager.ask_remove(_top, source as HostTable, _sub_seat, _refresh_substitute)

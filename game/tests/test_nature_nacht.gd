@@ -3,8 +3,8 @@ extends SceneTree
 # echten TableView (nature_check.gd, Uhren aus):
 #   - nature_check für jede Nacht-id (4 Größen × 2/4/8 Spieler: Sichtbarkeit, deckt, Aufräumen, hit, leave ≤ 0,5 s, Bestimmtheit),
 #   - Reaktion beim Antippen über NatureFx.tap (Zustand danach), Scheu der Motte (notice_press), Ortsereignisse,
-#   - 1.6.15: UFO nicht mehr scheu (Druck daneben/auf den Stapel und draw lassen es bleiben, shuffle nicht), weicht beim 1. und 2. Tipp
-#     aus, erst der 3. verscheucht es; Feuerwerk: Tipp zündet einen Knall an der Stelle (höchstens zweimal); Astronaut: Salto,
+#   - 1.6.17: UFO lässt sich nicht verscheuchen (Druck daneben/auf den Stapel, draw, shuffle, mau, catch, finish lassen es bleiben), weicht
+#     bei jedem Tipp nur aus; Feuerwerk: Tipp zündet einen Knall an der Stelle (höchstens zweimal); Astronaut: Salto,
 #   - ruhige Varianten (Mond mit Mütze, Polarlicht, Sternbild): keine Bewegung (Hülle und Pose über die Zeit gleich),
 #   - make(id) liefert genau die Nachttiere, Quelltext ohne Ton, Vibration und Netz.
 # Umgebungsvariable NUR=<id,…> prüft nur diese ids (schneller beim Nachbessern).
@@ -201,7 +201,7 @@ func tap_checks() -> void:
 			var p: Array = c.get("P")
 			check(not (q[10] as Vector2).is_equal_approx(p[10]), "Sternbild: Schwanz wackelt")
 	if ids.has("ufo"):
-		# 1.6.15: 1. und 2. Tipp → weicht zur Seite aus (bleibt), erst der 3. verscheucht es
+		# 1.6.17: Jeder Tipp → weicht zur Seite aus und bleibt, keiner verscheucht es
 		var c := tappable("ufo", 2.6)
 		check(c != null, "UFO: freie Stelle über dem Stapel")
 		if c != null:
@@ -215,13 +215,12 @@ func tap_checks() -> void:
 			nf.seek(2.6 + 2.2)
 			check(tap_point("ufo").distance_to(p0) < 12.0, "UFO: gleitet zurück über den Stapel")
 			var sd := c.seed_value
-			check(nf.tap(tap_point("ufo")), "UFO: 2. Tipp trifft")
-			check(not c.leaving(), "UFO: 2. Tipp verscheucht es nicht")
-			nf.seek(2.6 + 2.6)
-			check(nf.tap(tap_point("ufo")), "UFO: 3. Tipp trifft")
-			check(c.leaving(), "UFO: 3. Tipp – saust davon")
-			nf.seek(2.6 + 2.6 + 0.5)
-			check(c.is_done(), "UFO: nach 0,5 s weg")
+			for i in 4:
+				check(nf.tap(tap_point("ufo")), "UFO: %d. Tipp trifft" % (i + 2))
+				check(not c.leaving(), "UFO: %d. Tipp verscheucht es nicht" % (i + 2))
+				nf.seek(2.6 + 2.5 + 0.3 * float(i))
+			check(c.tap_count() == 5, "UFO: alle Tipps gezählt (%d)" % c.tap_count())
+			check(not c.is_done() and float(c.get("alpha")) > 0.9, "UFO: nach fünf Tipps noch da")
 			# rein in t: gleicher Samen, gleiche Tipps → gleiche Lage
 			nf.spawn("ufo", sd)
 			nf.seek(2.6)
@@ -301,16 +300,14 @@ func shy_checks() -> void:
 	var ids := only()
 	NatureCheck.show(t, 4, 1)
 	if ids.has("ufo"):
-		# 1.6.15: nicht mehr scheu – Druck daneben, auf den Stapel und Ziehen lassen es bleiben; Mischen vertreibt es
+		# 1.6.17: lässt sich nicht verscheuchen – Druck daneben, auf den Stapel, Ziehen, Mischen und Ansagen lassen es bleiben
 		var c := spawn_at("ufo", 5, 3.0)
 		nf.notice_press(nf.world_bounds().get_center() + Vector2(100, 0))
 		nf.notice_press(t.draw_pile_position())
 		check(not c.leaving(), "UFO: nicht scheu bei Druck in 130 px und auf den Stapel")
-		nf.on_event({"e": "draw", "seat": 2, "count": 1})
-		check(not c.leaving(), "UFO: bleibt bei draw")
-		nf.on_event({"e": "shuffle"})
-		check(c.leaving(), "UFO: geht bei shuffle")
-		c = spawn_at("ufo", 5, 3.0)
+		for ev in ["draw", "shuffle", "mau", "catch", "finish"]:
+			nf.on_event({"e": ev, "seat": 2, "count": 1})
+			check(not c.leaving(), "UFO: bleibt bei %s" % ev)
 		check(float(c.get("beam")) > 0.9, "UFO: Lichtkegel an")
 		nf.seek(3.2)
 		c.leave(true)

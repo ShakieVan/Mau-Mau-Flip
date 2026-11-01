@@ -55,6 +55,17 @@ func _init() -> void:
 		var need := 150.0 if not TableLayout.compact(n) else 100.0
 		check(n == 2 or min_d >= need, "n=%d: Abstand der Plätze %.0f ≥ %.0f" % [n, min_d, need])
 	check(not TableLayout.compact(6) and TableLayout.compact(7), "Abzeichen ab 7 Spielern")
+	# Beta 1.6.17: Der „…“-Knopf neben ☰ (TableScreen._place_bar) liegt bei keiner Spielerzahl auf einem Kopf. Größen: virtuelle Maße bei
+	# Streckung „expand“ für 21:9, 20:9, 19,5:9, 19:9, 16:9
+	var dots := Rect2(14.0 + 84.0 + 12.0 + 84.0 + 12.0, 10.0, 84.0, 84.0).grow(-2.0)
+	for sz: Vector2 in [Vector2(1680, 720), Vector2(1600, 720), Vector2(1600, 738), Vector2(1600, 758), Vector2(1600, 900)]:
+		for n in range(2, 11):
+			var q := TableLayout.seat_positions(n, 0, sz)
+			var free := true
+			for a in range(1, n):
+				var half := 112.0 if not TableLayout.compact(n) else 78.0
+				free = free and not dots.intersects(Rect2(q[a] - Vector2(half, 34.0), Vector2(half * 2.0, 68.0)))
+			check(free, "„…“ frei: %s, n=%d" % [sz, n])
 	# Fächer: bleibt in der Breite, Überlänge wird als „+n“ gezählt, symmetrisch
 	for k in [1, 2, 5, 9, 14, 25]:
 		var f := TableLayout.fan(k, 60.0, 210.0)

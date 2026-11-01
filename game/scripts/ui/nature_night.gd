@@ -10,8 +10,8 @@ extends RefCounted
 #   mond_muetze     Zipfelmütze fällt auf die Mondsichel, der Mond schläft („z“); Tipp: wacht kurz auf; ruhig: nur Blende
 #   polarlicht      drei wogende Vorhänge (additiv, höchstens 0,35); ruhig: ohne Wogen
 #   sternbild       Katze aus 11 Sternen (Form aus der Tabelle), Linien wachsen; Tipp: Funkeln, Schwanz wackelt; ruhig: Blende
-#   ufo             schwebt über den Ziehstapel, Lichtkegel ≤ 0,22, Funken; ab 1.6.15 nicht mehr scheu: 1. und 2. Tipp → weicht zur
-#                   Seite aus (Kegel flackert), erst der 3. Tipp verscheucht es
+#   ufo             schwebt über den Ziehstapel, Lichtkegel ≤ 0,22, Funken; lässt sich ab 1.6.17 nicht verscheuchen: jeder Tipp → weicht
+#                   zur Seite aus (Kegel flackert) und kehrt zurück
 #   satellit        heller Punkt mit Solarflächen und rotem Blinklicht, blitzt einmal auf
 #   motte           taumelt heran und umkreist den Ablage-Ring (verweilt, wo sie zu sehen ist); scheu
 #   igel            tippelt am Plattformrand, schnüffelt, kehrt um; Tipp: rollt sich ein
@@ -1223,7 +1223,7 @@ class Ufo extends NightBase:
 	const ALIEN := Color("#7CFFB2")
 	const LIGHTS := [Color("#FF4FD8"), Color("#FFE14D"), Color("#3FF2E6"), Color("#FF4FD8"), Color("#FFE14D")]
 	const BEAM := Color("#B5FFF6")
-	# Ausweichen (1.6.15): 1. und 2. Tipp → kurzer Satz zur Seite (DODGE_S), bleibt zitternd dort (DODGE_HOLD), gleitet zurück (DODGE_BACK)
+	# Ausweichen (1.6.15): jeder Tipp → kurzer Satz zur Seite (DODGE_S), bleibt zitternd dort (DODGE_HOLD), gleitet zurück (DODGE_BACK)
 	const DODGE_S := 0.22
 	const DODGE_HOLD := 0.9
 	const DODGE_BACK := 0.8
@@ -1302,15 +1302,12 @@ class Ufo extends NightBase:
 		var cr := touches(box(hover + Vector2(DODGE_X * s, -8.0 * s), he), ["stapel"])
 		free_side = -1.0 if cr and not cl else 1.0
 
-	# Nicht mehr scheu (1.6.15): der 1. und 2. Tipp lassen es ausweichen, erst der 3. verscheucht es
+	# Lässt sich nicht verscheuchen (1.6.17, Nutzerwunsch): jeder Tipp lässt es nur ausweichen
 	func tap_limit() -> int:
-		return 3
+		return 99
 
 	func on_tap(p: Vector2) -> void:
 		add_tap(p)
-		if taps.size() >= 3:
-			leave(true)
-			return
 		# weg vom Finger, sonst zur freieren Seite; liegt dort ein Platz oder Knopf, zur anderen
 		var side := signf(pos.x - p.x)
 		if absf(pos.x - p.x) < 4.0 * s:

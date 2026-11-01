@@ -3,9 +3,9 @@
 Stand 16.10.2026, Entwurf (noch ohne Gegenprüfung). Nutzerwunsch vom 16.10.2026: „alle, und auch im Browser“. Gemeint sind zufällige, seltene Bild-Ereignisse ohne Ton, wie heute Schmetterling und Sternschnuppe (`fun_fx.gd`), jetzt auch im Lite. Ideen des Nutzers: Marienkäfer, Glühwürmchen, Eule, dazu die Reaktionen beim Antippen von Marienkäfer, Glühwürmchen und Eule.
 
 Kurz:
-- 23 neue Ereignisse (11 tags, 12 nachts). Schmetterling und Sternschnuppe kommen als „Bestand“ in denselben Takt, macht 25. Ab Beta 1.6.15 vier weitere (Hoppelhase, Strand mit Palme, Feuerwerk, Astronaut am Mond), macht 29; das UFO ist nicht mehr scheu (Abschnitt 13).
+- 23 neue Ereignisse (11 tags, 12 nachts). Schmetterling und Sternschnuppe kommen als „Bestand“ in denselben Takt, macht 25. Ab Beta 1.6.15 vier weitere (Hoppelhase, Strand mit Palme, Feuerwerk, Astronaut am Mond), macht 29; das UFO lässt sich ab 1.6.17 nicht mehr verscheuchen (Abschnitte 13 und 14).
 - Ein gemeinsamer Planer je Gerät mit einer gemeinsamen Datentabelle (App und Lite gleich). Es läuft nie mehr als ein Ereignis, im Schnitt etwa alle 3 Minuten eins.
-- Drei Ebenen. Fast alles liegt **unter** den Spielelementen. Nur Biene und UFO liegen über Hand bzw. Stapel, und nur kurz, durchscheinend und nie im eigenen Zug.
+- Drei Ebenen. Fast alles liegt **unter** den Spielelementen. Nur Biene und UFO liegen über Hand bzw. Stapel, und nur kurz und durchscheinend. Beide starten nur im fremden Zug; die Biene geht, wenn der eigene Zug beginnt, das UFO bleibt ab 1.6.17.
 - Kein Ton, kein Text, nichts übers Netz, keine fremden Grafiken.
 - Kleine Eingriffe: `table_view.gd` etwa 14 Zeilen, `fun_fx.gd` etwa 8 Zeilen, `app.js` 2 Zeilen, `index.html` 3 Zeilen. `tisch.js`, `style.css`, `tease_*.gd` und `necken.js` bleiben unberührt.
 
@@ -70,8 +70,8 @@ Schutzflächen sind: Hand (`cards_rect`), Ziehstapel (+12 px), Ablage mit Farbri
 - `hinten`/`mitte` liegen unter allem und decken nichts. Ein Ort muss aber so gewählt sein, dass das Tier in der Hauptphase zu mindestens 60 % der Zeit sichtbar ist.
 - `vorn`:
   - **Biene:** Hand ≤ 2 s, ≤ 26 px, nie im linken oberen Viertel einer Karte (Eckindex, AGENTS 8).
-  - **UFO:** Ziehstapel ≤ 3 s, nur mit dem durchscheinenden Lichtkegel (Deckkraft ≤ 0,22), der Körper schwebt darüber. Ab 1.6.15 nicht mehr scheu (siehe 3.3 Nr. 18).
-  - Beide **nur außerhalb des eigenen Zugs**.
+  - **UFO:** Ziehstapel ≤ 3 s, nur mit dem durchscheinenden Lichtkegel (Deckkraft ≤ 0,22), der Körper schwebt darüber. Lässt sich ab 1.6.17 nicht mehr verscheuchen (siehe 3.3 Nr. 18). Tipps auf den Stapel gehen durch.
+  - Beide **starten nur außerhalb des eigenen Zugs**. Die Biene geht, wenn der eigene Zug beginnt; das UFO bleibt ab 1.6.17.
 
 ## 3. Die Ereignisse
 
@@ -101,7 +101,7 @@ Größen in Pixeln bei Höhe 720. „Fremder Zug“ heißt: startet nur, wenn ma
 | 15 | `mond_muetze` | Nacht | Zufall 1, 1 je Partie | hinten · `mond` | 10–12 | wacht kurz auf | ruhig |
 | 16 | `polarlicht` | Nacht | Zufall 1, 1 je Partie | hinten · `himmel_oben` | 12–14 | – | ruhig |
 | 17 | `sternbild` | Nacht | Zufall 1, 1 je Partie | hinten · `himmel_frei` | 9–10 | funkelt | ruhig |
-| 18 | `ufo` | Nacht | Zufall 1, 1 je Partie, fremder Zug | vorn · `stapel_oben` | 7–8 (bis 1.6.14: 6–7) | 1. und 2. Tipp: weicht aus, 3. Tipp: saust davon (bis 1.6.14: sofort davon; scheu) | aus |
+| 18 | `ufo` | Nacht | Zufall 1, 1 je Partie, fremder Zug | vorn · `stapel_oben` | 7–8 (bis 1.6.14: 6–7) | jeder Tipp: weicht aus (bis 1.6.16: der 3. Tipp vertrieb es; bis 1.6.14: sofort davon, scheu) | aus |
 | 19 | `satellit` | Nacht | Zufall 2 | hinten · `himmel_oben` | 9–11 | – | aus |
 | 20 | `motte` | Nacht | Zufall 2, fremder Zug | mitte · `ablage_ring` | 6–8 | scheu | aus |
 | 21 | `igel` | Nacht | Zufall 2 | mitte · `band_vorn_seite` | 10–14 | rollt sich ein | aus |
@@ -306,20 +306,19 @@ Bestand: In der App zeichnet weiter `FunFx.SkyNode` (Abschnitt 7.1), im Lite kom
 - **Lite:** SVG `<line>` mit wachsendem `stroke-dasharray`.
 - **Ruhig:** Sterne und Linien blenden gemeinsam ein (1,5 s), stehen und blenden aus.
 
-**18 UFO leuchtet den Stapel an** (höchstens einmal je Partie, nur im fremden Zug, nicht im Glücksspiel)
+**18 UFO leuchtet den Stapel an** (höchstens einmal je Partie, startet nur im fremden Zug, nicht im Glücksspiel)
 - **Bewegung:**
   - Einflug in einer Kurve vom oberen Rand (1,5 s, schaukelt ±8°).
   - Schwebt 3 s und wippt ±3 px, die Lichterkette läuft.
   - Nach 0,4 s fällt für 2,5 s ein Lichtkegel auf den Stapel: Deckkraft ≤ 0,22, unten Kartenbreite + 20, 4–6 Funken steigen auf.
   - Danach geht der Kegel aus, das UFO beschleunigt schräg nach oben (0,8 s). Größe 72×34.
-- **Abbruch:** Kegel aus und sofort hinaus bei:
-  - Ereignis `shuffle` (bis 1.6.14 auch `draw`),
-  - Beginn des eigenen Zugs,
+- **Vorzeitig hinaus** (Kegel aus) nur noch, wenn es sonst Spiel oder Bild stört, siehe 4.5:
+  - Seitenwechsel zum Tag, Rundenende,
+  - Glücksspiel oder Auswahl (Tischmitte frei), Dialog oder Menü,
   - die Mau-Katze will kommen.
-- **Nicht mehr scheu (ab 1.6.15, Nutzerwunsch „Das Ufo bitte nicht so einfach verscheuchen lassen“):** Ein Druck in der Nähe oder auf den Stapel und das Ziehen eines Mitspielers stören es nicht mehr (bis 1.6.14: Berührung im Umkreis von 130 px und `draw` → sofort hinaus; weil es über dem Stapel schwebt, vertrieb es fast jedes Ziehen).
-- **Antippen** (das UFO selbst schwebt über dem Stapel, nicht auf ihm; Tabelle `tipp: "ausweichen"`, höchstens 3 Tipps):
-  - 1. und 2. Tipp: Es weicht aus – ein kurzer Satz zur Seite (0,22 s, 62 px, weg vom Finger bzw. zur freieren Seite, nie auf einen Platz oder Knopf), es schaukelt, der Lichtkegel flackert (0,55 s); 0,9 s später gleitet es in 0,8 s zurück über den Stapel.
-  - 3. Tipp: saust davon (wie bisher beim ersten Tipp).
+- **Lässt sich nicht verscheuchen (ab 1.6.17, Nutzerwunsch „Bitte beim Ufo-Event, dieses nicht verscheuchen lassen“):** Weder Tipps noch Druck in der Nähe oder auf den Stapel noch `draw`, `shuffle`, `mau`, `finish`, `catch`, das Erwischt-Fenster, der Beginn des eigenen Zugs oder ein Necken-Effekt vertreiben es (bis 1.6.14 reichten Druck und `draw`; bis 1.6.16 der 3. Tipp, `shuffle`, Ansagen, Erwischt-Fenster, eigener Zug und Necken). Zu zweit oder mit schnellen Bots konnte der eigene Zug schon beginnen, bevor der Lichtkegel an war.
+- **Antippen** (das UFO selbst schwebt über dem Stapel, nicht auf ihm; Tabelle `tipp: "ausweichen"`, `tap_limit` 99):
+  - Jeder Tipp: Es weicht aus – ein kurzer Satz zur Seite (0,22 s, 62 px, weg vom Finger bzw. zur freieren Seite, nie auf einen Platz oder Knopf), es schaukelt, der Lichtkegel flackert (0,55 s); 0,9 s später gleitet es in 0,8 s zurück über den Stapel.
   - Die Tippzeiten werden gemerkt (App `taps`/`dodges`, Lite `ausweich`), die Pose bleibt rein in t.
   - Kern: `NatureCreature.tap_limit()` (Standard 1) bzw. Lite `inst.tippMax`; `NatureFx.tap` bzw. `_druck` zählen die Tipps je Ereignis.
 - **App:** Untertasse aus 2 Ellipsen (#B8C0D8/#6B7394) mit Rand #19C6D4, Kuppel Cyan α 0,45 mit Glanz, 5 Lichter abwechselnd Pink/Gelb/Türkis. Kegel als Trapez mit `draw_polygon` und Eckfarben (oben α 0,22, unten α 0,06), additiv.
@@ -467,11 +466,12 @@ beende(c): faellig = now + zufall(abstand_s) × (reduziert ? 2 : 1); letztes_end
 |---|---|---|
 | Seite wechselt (`flip`-Ereignis oder `night` über 0,5) | Ereignis der alten Seite | schnell (0,4 s, wegfliegen bzw. ausblenden) |
 | `round_over`, `game_over`, `round_start`, `deal`, `seats` | alle | schnell |
-| eigener Zug beginnt, Erwischt-Fenster öffnet, `mau`, `finish`, `catch` | Ebene `vorn` (Biene, UFO) und Motte | schnell |
+| eigener Zug beginnt, Erwischt-Fenster öffnet, `mau`, `finish`, `catch` | scheue Arten (Biene, Motte; bis 1.6.16 auch das UFO) | schnell |
+| `gamble_start`, Glücksspiel- und Auswahlphasen | Ebene `vorn` (Biene, UFO) und Motte bei `gamble_start` (Tischmitte frei) | schnell |
 | Dialog oder Menü öffnet (4.4 Nr. 3) | Ebene `vorn` | schnell; `hinten`/`mitte` laufen hinter dem Dialog weiter |
-| Necken-Effekt beginnt | Ebene `vorn` | schnell |
+| Necken-Effekt beginnt | Biene (bis 1.6.16 auch das UFO) | schnell |
 | Mau-Katze will kommen (`FunFx`, 7.1) | alle | schnell, die Katze kommt danach |
-| Ereignisse am Ort: UFO bei `shuffle` (ab 1.6.15 nicht mehr bei `draw`), Motte bei `play`/`flip`/`discard_color`/`stake_discard`/`shuffle`, Biene bei Kartenverlust/Sortieren/`swap_hands` | dieses | schnell |
+| Ereignisse am Ort: Motte bei `play`/`flip`/`discard_color`/`stake_discard`/`shuffle`, Biene bei Kartenverlust/Sortieren/`swap_hands` | dieses | schnell |
 | Größe, großer Modus an, „reduziert“ an (nicht ruhige Einträge) | alle betroffenen | sofort entfernen |
 | App im Hintergrund bzw. Lite-Tab verdeckt | – | Uhr steht. Nach mehr als 2 s Pause wird `faellig` frühestens `erst_s` später. |
 
@@ -479,7 +479,7 @@ beende(c): faellig = now + zufall(abstand_s) × (reduziert ? 2 : 1); letztes_end
 
 - **App:**
   - `TableView._tap` ruft `nature.tap(wp)` als **letzten** Fall vor `return false`. Erwischt, Ablage, Glücksspiel, Mau-Katze, Ziehen, Kopf und Fächer sind also schon geprüft.
-  - `nature.tap` gibt false zurück, wenn der Punkt in einer Schutzfläche liegt (2.3), sonst true nur bei einem Treffer auf ein Tier mit `tipp` (Radius mindestens `treffer_min_r`). Höchstens eine Reaktion je Ereignis; ab 1.6.15 höchstens `NatureCreature.tap_limit()` (UFO 3, Feuerwerk 2), im Lite `inst.tippMax`. `tap_at`/`tap_pos` gelten für den ersten Tipp, weitere merkt sich das Tier selbst (`add_tap`/`taps`).
+  - `nature.tap` gibt false zurück, wenn der Punkt in einer Schutzfläche liegt (2.3), sonst true nur bei einem Treffer auf ein Tier mit `tipp` (Radius mindestens `treffer_min_r`). Höchstens eine Reaktion je Ereignis; ab 1.6.15 höchstens `NatureCreature.tap_limit()` (Feuerwerk 2, ab 1.6.17 UFO 99), im Lite `inst.tippMax`. `tap_at`/`tap_pos` gelten für den ersten Tipp, weitere merkt sich das Tier selbst (`add_tap`/`taps`).
   - Zusätzlich meldet `_gui_input` jeden Druck an `nature.notice_press(wp)` (Scheu). Diese Meldung verbraucht nie etwas.
 - **Lite:**
   - Ein `pointerdown`-Hörer in der Einfangphase am Tischwurzel-Element meldet jeden Druck als Scheu.
@@ -528,8 +528,8 @@ Felder:
 - `troedeln`: Anlass Trödeln
 - `ruhig`: auch bei „reduziert“, dann in der ruhigen Variante
 - `tipp`: Reaktion, "" = keine
-- `scheu`: geht bei Berührung in `scheu_r`
-- `fremder_zug`: nur, wenn ich nicht dran bin
+- `scheu`: geht bei Berührung in `scheu_r`, ab 1.6.17 auch der Schalter für den Abgang bei eigenem Zug, Erwischt-Fenster und Ansagen (4.5)
+- `fremder_zug`: startet nur, wenn ich nicht dran bin
 - `je_partie`/`je_runde`: Obergrenzen (0 = frei)
 - `deckt`/`deckt_max_s`: was die Ebene `vorn` kurz decken darf
 - `bestand`: App zeichnet über `FunFx.SkyNode`
@@ -678,7 +678,7 @@ Kein `send`, kein `fetch`, keine Felder in Sicht oder Protokoll, keine Änderung
   - **Bedingungen:** nichts im großen Modus, bei Dialog (`modal_cb`), Erwischt-Fenster, `round_over`, color, gamble, discard_pick, Regie < 2 s ruhig. „Reduziert“: nur die ruhigen, Abstände ×2. `fremder_zug` nicht im eigenen Zug.
   - **Flip:** Tagereignis läuft, `on_event(flip)` → Abgang ≤ 0,4 s; Anlass nach Ruhe + 1,5 s mit festem Samen; verfällt nach 6 s; Regenbogen höchstens einmal je Runde.
   - **Trödeln:** Schnecke ab 35 s, einmal je Spieler und Partie; nicht im Katzenzug; die Katze verdrängt ein laufendes Ereignis (`make_room`) und kommt danach.
-  - **Abbruch:** eigener Zug, `mau`/`catch`, Dialog, Necken-Effekt (vorn), `draw` (UFO), `play` (Motte), Handberührung (Biene), Größe, großer Modus und „reduziert“ entsprechend 4.5.
+  - **Abbruch:** eigener Zug, `mau`/`catch` (Biene, Motte), Dialog (vorn), Necken-Effekt (Biene), `play` (Motte), Handberührung (Biene), Größe, großer Modus und „reduziert“ entsprechend 4.5; das UFO bleibt bei allem außer Dialog, Glücksspiel/Auswahl, Seitenwechsel, Rundenende und Katze.
   - **Mit echter `TableView`** (wie `test_ui_tease.gd`), mit gespawnten Tieren ohne Bedingungen:
     - Tipp auf den Stapel unter dem UFO → Aktion `draw` kommt;
     - Tipp auf die Ablage neben der Motte → „Ablage durchsehen“ öffnet;
@@ -780,7 +780,7 @@ Kein `send`, kein `fetch`, keine Felder in Sicht oder Protokoll, keine Änderung
 1. **Takt:** Im Schnitt etwa ein Ereignis alle 3 min. Schmetterling und Sternschnuppe kommen dadurch seltener als bisher (etwa alle 20 statt alle 1–3 min).
 2. **Keine eigene Einstellung.** „Effekte reduziert“ lässt nur die fünf ruhigen übrig. Ein Schalter „Natur-Überraschungen“ ließe sich später als eine Aufgabe nachrüsten (Einstellung, Menüs App und Lite, `.po`).
 3. **Großer Modus und Lite hochkant:** aus.
-4. **Über Karten** nur Biene (Handkarte) und UFO (Stapel), beide nur außerhalb des eigenen Zugs.
+4. **Über Karten** nur Biene (Handkarte) und UFO (Stapel), beide starten nur außerhalb des eigenen Zugs; das UFO bleibt ab 1.6.17, wenn der eigene Zug beginnt (Abschnitt 14).
 5. **Schnecke** auch beim eigenen Trödeln; sie kriecht am Plattformrand Richtung Trödler.
 6. **„Tischrand“** heißt bei Spatz, Eule, Igel und Marienkäfer die Außenkante der Richtungs-Plattform.
 7. **Vorführung** per 7 Tipps auf den freien Himmel (auch ein kleines Easter Egg) und `?natur=reihe` im Lite.
@@ -821,3 +821,13 @@ Nutzerwünsche vom 23.10.2026: „Das Ufo bitte nicht so einfach verscheuchen la
 - **Tests:** `test_nature_fx` (29 Einträge, UFO nicht scheu, bleibt bei `draw`, geht bei `shuffle`, Anker), `test_nature_tag` (nature_check für alle 13 Tagtiere, Schreck-Sprung, Palme schüttelt sich und verliert eine Kokosnuss, Sand allein nimmt keinen Tipp, Hase von einer Seite zur anderen mit Stauchen/Strecken und kaum unter der Hinweisleiste, Strand in der Ecke, Palme zwischen Hand und Mau-Knopf, am Ende alles weg), `test_nature_nacht` (14 Nachttiere, UFO-Ausweichen bestimmt und erst der 3. Tipp vertreibt es, Feuerwerk-Knall an der Tippstelle und höchstens zwei, Astronaut-Salto), `test_web_contract` (29 Ereignisse), Lite `lite_natur.html` (29 Einträge, UFO bleibt bei `draw`/Stapel-Tipp, neuer Block mit echten Arten und echtem Druck auf eine freie Stelle).
 - **Kontrollbilder:** Die Shot-Tests schreiben jetzt `optik_<STAND>_…` (Umgebung `STAND`, Standard 1615; `SHOT_DIR` auch für die Tagbilder); `tools/webtest/natur_bilder.ps1` kann mit `-TippNach <s>` die Reaktion zeigen (Zusatz `_tipp`) und macht für Strand und Feuerwerk zusätzlich ein Desktop-Bild. Abgelegt als JPEG: App `optik_1615_natur_{hoppelhase,strand,ufo,feuerwerk,astronaut}.jpg`, Übersichten `optik_1615_natur_tag.jpg`/`_nacht.jpg`, `optik_1615_natur_8spieler.jpg`, `optik_1615_natur_nacht_8sp.jpg`, `optik_1615_natur_900.jpg`; Lite `optik_1615_lite_natur_{hoppelhase,strand,feuerwerk,astronaut}[_tipp].jpg`, `optik_1615_lite_natur_ufo_tipp.jpg`, `optik_1615_lite_natur_strand_desktop.jpg`.
 - **Offen:** Gerätetest (S21/S10, Ruckeln des Feuerwerks am S10), iPhone/Safari. Im Lite-Desktop-Fenster (Bühne schmaler, z. B. 1280 × 800) reicht die Palmenkrone hinter das rechte Ende der Plattform; sie liegt dahinter (Ebene hinten), das wirkt wie „der Tisch steht am Strand“. Der Hase ist im Lite vorn auf dem Rand nicht antippbar, solange er über `#hand-zone` (untere 270 px) hüpft – an den Seiten schon.
+
+## 14. Nachtrag: Beta 1.6.17 – UFO lässt sich nicht verscheuchen (31.10.2026)
+
+Nutzerwunsch vom 31.10.2026: „Bitte beim Ufo-Event, dieses nicht verscheuchen lassen.“
+
+- **Festlegung:** Nichts, was die Spieler tun oder ansagen, vertreibt das UFO. Jeder Tipp lässt es nur ausweichen (`tap_limit` bzw. `tippMax` 99 statt 3). Es bleibt auch bei `shuffle`, `mau`, `finish`, `catch`, im Erwischt-Fenster, wenn der eigene Zug beginnt, und bei Necken-Effekten.
+- **Weiter vorzeitig hinaus** (Kegel aus, 3.3 Nr. 18): Seitenwechsel zum Tag, Rundenende, `gamble_start` und Phasen außer `turn`/`drawn` (Tischmitte frei), offener Dialog oder Menü, die Mau-Katze will auf den Stapel, sowie Größenwechsel, großer Modus und „reduziert“. Das stört sonst Spiel oder Bild und hat nichts mit Verscheuchen zu tun.
+- **Start unverändert:** `fremder_zug` bleibt, das UFO beginnt nur im Zug eines anderen. Tipps auf den Stapel gehen wie bisher durch (zieht), auch im eigenen Zug.
+- **Kern:** Der Abgang bei eigenem Zug, Erwischt-Fenster und Ansagen sowie beim Necken hängt jetzt an `scheu` statt an Ebene/`fremder_zug`; Biene und Motte verhalten sich wie bisher. Die Tabelle ändert sich nicht. `PLACE_GO`/`ORT_WEG` ohne `stapel_oben`.
+- **Tests:** `test_nature_fx`, `test_nature_nacht` und `webclient/test/lite_natur.html` prüfen, dass das UFO bleibt (fünf Tipps, alle genannten Ereignisse) und bei `gamble_start` und offenem Dialog weiter geht.

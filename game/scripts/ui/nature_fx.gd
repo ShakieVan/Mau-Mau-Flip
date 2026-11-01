@@ -26,10 +26,9 @@ const NIGHT_PATH := "res://scripts/ui/nature_night.gd"
 const TURN_PHASES := ["turn", "drawn"]
 const ALL_GO := ["round_over", "game_over", "round_start", "deal", "seats", "start"]
 const FRONT_GO := ["mau", "finish", "catch", "gamble_start"]
-# Ereignisse am Ort (4.5): UFO am Stapel, Motte am Ablage-Ring, Biene auf der Hand. Ab 1.6.15 bleibt das UFO beim Ziehen (Nutzerwunsch:
-# „nicht so einfach verscheuchen“), nur das Mischen des Stapels vertreibt es.
-const PLACE_GO := {"stapel_oben": ["shuffle"], "ablage_ring": ["play", "flip", "discard_color", "stake_discard", "shuffle"],
-	"handkarte": ["swap_hands"]}
+# Ereignisse am Ort (4.5): Motte am Ablage-Ring, Biene auf der Hand. Das UFO bleibt ab 1.6.17 auch beim Mischen (Nutzerwunsch: „nicht
+# verscheuchen lassen“).
+const PLACE_GO := {"ablage_ring": ["play", "flip", "discard_color", "stake_discard", "shuffle"], "handkarte": ["swap_hands"]}
 const HAND_GO := ["play", "draw", "stake", "stake_back", "discard_color", "unplay"]   # eigene Hand ändert sich
 const TOP_LEFT := Rect2(0, 0, 280, 110)                 # Zurück- und ☰-Knopf (TableScreen)
 const RING_R := 116.0                                   # TableView.ColorRingView.R
@@ -546,7 +545,8 @@ func on_event(ev: Dictionary) -> void:
 				counts["partie"] = {}
 				troedel["players"] = {}
 	elif FRONT_GO.has(k):
-		if c != null and (c.layer == "vorn" or bool(c.e.get("fremder_zug", false))):
+		# Das UFO (vorn, nicht scheu) bleibt; nur das Glücksspiel räumt auch von ihm die Tischmitte
+		if c != null and (bool(c.e["scheu"]) or (k == "gamble_start" and c.layer == "vorn")):
 			_leave(c, k)
 	elif k == "skip_all":
 		comet_block_until = now + float(NT.timing("komet_sperre_s"))
@@ -595,8 +595,8 @@ func _observe(L: Dictionary) -> void:
 		_leave(c, "seite")
 		return
 	var front := c.layer == "vorn"
-	var foreign := front or bool(c.e["fremder_zug"])
-	if foreign and (bool(L["mein_zug"]) or bool(L["fang"])):
+	var shy := bool(c.e["scheu"])             # Biene und Motte; das UFO bleibt ab 1.6.17 auch im eigenen Zug und im Erwischt-Fenster
+	if shy and (bool(L["mein_zug"]) or bool(L["fang"])):
 		_leave(c, "mein_zug" if bool(L["mein_zug"]) else "erwischt")
 		return
 	if front and not TURN_PHASES.has(L["phase"]):
@@ -605,7 +605,7 @@ func _observe(L: Dictionary) -> void:
 	if front and bool(L["dialog"]):
 		_leave(c, "dialog")
 		return
-	if front and not alt.is_empty() and int(L["necken"]) > int(alt["necken"]):
+	if front and shy and not alt.is_empty() and int(L["necken"]) > int(alt["necken"]):
 		_leave(c, "necken")
 		return
 	if (c.e["deckt"] as Array).has("hand") and (bool(L["gewaehlt"]) or bool(L["hand_beruehrt"])
@@ -823,7 +823,7 @@ func tap(wp: Vector2) -> bool:
 	if c != null and not c.still and not c.bridge:
 		var lp := _to_layer(c, wp)
 		if bool(c.node.call("hit", lp)):
-			# höchstens tap_limit() Reaktionen je Ereignis (Standard 1; UFO 3, Feuerwerk 2); tap_at/tap_pos = erster Tipp
+			# höchstens tap_limit() Reaktionen je Ereignis (Standard 1; Feuerwerk 2, UFO 99); tap_at/tap_pos = erster Tipp
 			if str(c.e["tipp"]) != "" and not c.leaving() and int(c.node.call("tap_count")) < int(c.node.call("tap_limit")):
 				c.tapped = true
 				if float(c.node.get("tap_at")) < 0.0:

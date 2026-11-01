@@ -126,7 +126,7 @@ func leave_time(_fast: bool) -> float:
 	return float(NT.timing("abgang_s"))
 
 
-# Wie viele Tipps das Tier annimmt (Beta 1.6.15: UFO 3, Feuerwerk 2; sonst 1)
+# Wie viele Tipps das Tier annimmt (Feuerwerk 2, ab Beta 1.6.17 UFO 99; sonst 1)
 func tap_limit() -> int:
 	return 1
 

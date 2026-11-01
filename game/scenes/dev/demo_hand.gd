@@ -108,6 +108,8 @@ func take_card(id: int) -> Dictionary:
 
 
 func receive_card(card: Dictionary, _from_global: Vector2) -> void:
+	if _find(int(card.get("id", -1))) != null:   # wie HandView: Landet der Flug erst nach dem Abgleich (langes Bild), ist die Karte schon da
+		return
 	var cv := CardView.new()
 	cv.width = W
 	add_child(cv)

@@ -4,8 +4,8 @@ extends SceneTree
 #   Tabelle (29 Einträge seit 1.6.15, Felder, ruhig, vorn, Shader-Formeln), Plattform-Punkt = DirectionRing.point_at, Dauerlauf 10 h
 #   (Abstände, nie zwei gleichzeitig, auch nicht mit Katze/Himmel/Necken, Wiederholungssperre, Obergrenzen, Seite, alle Zufallsereignisse),
 #   Bedingungen (großer Modus, Dialog, Erwischt, Rundenende, Phasen, Regie < 2 s ruhig, reduziert, fremder Zug), Flip-Anlass,
-#   Trödeln (Schnecke, Katze), Abbruch (eigener Zug, mau, Dialog, Necken, shuffle – UFO bleibt beim Ziehen –, play, Hand, Größe, großer
-#   Modus, reduziert), Anker ecke_unten_rechts (Strand),
+#   Trödeln (Schnecke, Katze), Abbruch (eigener Zug, mau, Dialog, Necken, play, Hand, Größe, großer Modus, reduziert; das UFO lässt sich
+#   nicht verscheuchen), Anker ecke_unten_rechts (Strand),
 #   Tippen am echten Tisch (Stapel unter dem UFO, Ablage neben der Motte, Kopf, Biene über der Hand, freier Spatz, Leere),
 #   Ebenen, Aufräumen (1000 Ereignisse), Bestand-Brücke, keine Töne/kein Netz im Quelltext, Vorführung, nature_check am Probe-Tier.
 
@@ -641,8 +641,21 @@ func abort_checks() -> void:
 	var u := spawned("ufo")
 	nf.on_event({"e": "draw", "seat": 2, "count": 1})
 	check(not u.leaving() and nf.current != null, "Abbruch: UFO bleibt bei draw (1.6.15)")
-	nf.on_event({"e": "shuffle"})
-	check(u.leaving(), "Abbruch: UFO geht bei shuffle")
+	# 1.6.17: Das UFO lässt sich nicht verscheuchen, auch nicht vom Mischen, von Ansagen, vom Erwischt-Fenster, vom eigenen Zug und vom Necken
+	for ev in ["shuffle", "mau", "catch", "finish"]:
+		nf.on_event({"e": ev, "seat": 2})
+		check(not u.leaving() and nf.current != null, "Abbruch: UFO bleibt bei %s (1.6.17)" % ev)
+	t.apply_view(view_for(1, 4, "turn", [2]))
+	nf.tick(0.5)
+	check(not u.leaving() and nf.current != null, "Abbruch: UFO bleibt im Erwischt-Fenster (1.6.17)")
+	t.apply_view(view_for(0))
+	nf.tick(0.5)
+	check(not u.leaving() and nf.current != null, "Abbruch: UFO bleibt, wenn der eigene Zug beginnt (1.6.17)")
+	nf.lage_override["necken"] = 1
+	nf.tick(0.5)
+	check(not u.leaving() and nf.current != null, "Abbruch: UFO bleibt beim Necken (1.6.17)")
+	nf.on_event({"e": "gamble_start", "seat": 2})
+	check(u.leaving(), "Abbruch: UFO räumt die Tischmitte für das Glücksspiel")
 	await fresh(4, 1)
 	u = spawned("ufo")
 	nf.notice_press(nf.world_bounds().get_center() + Vector2(60, 0))

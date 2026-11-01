@@ -13,9 +13,9 @@
  *  - Bedingungen am echten Tisch: großer Modus, Fenster, Erwischt-Fenster, Phasen, Regie < 2 s ruhig, reduziert (nur ruhige, Abstände ×2),
  *    fremder Zug, Lobby, enges Fenster (hochkant)
  *  - Abgang und Abbruch nach 4.5, Schnecke beim Trödeln (verdrängt ein laufendes Ereignis, einmal je Spieler und Partie)
- *  - Tippen: Stapel unter dem UFO zieht (das UFO bleibt, nicht mehr scheu), Handkarte unter der Biene wird angetippt (Biene geht), Kopf
+ *  - Tippen: Stapel unter dem UFO zieht (das UFO bleibt, nicht scheu), Handkarte unter der Biene wird angetippt (Biene geht), Kopf
  *    öffnet das Necken-Menü, freie Stelle auf dem Spatz gibt eine Reaktion ohne App-Aktion; nie preventDefault; Vorführung per 7 Tipps
- *  - 1.6.15 mit den echten Arten: UFO weicht beim 1. und 2. Tipp aus, der 3. verscheucht es; Feuerwerk zündet an der Tippstelle (höchstens
+ *  - mit den echten Arten: UFO weicht bei jedem Tipp nur aus (1.6.17); Feuerwerk zündet an der Tippstelle (höchstens
  *    zweimal); Astronaut macht einen Salto; Hoppelhase springt erschrocken hoch; Palme schüttelt sich, eine Kokosnuss fällt; der Strand
  *    liegt hinter dem Mau-Knopf
  *  - generisch für jede angemeldete Art (MMF.Natur.arten()) in 1180×720, 1558×720 und 2000×720: Sichtbarkeit, deckt, Aufräumen,
@@ -473,10 +473,26 @@
       n.zeige('motte', { seed: 1 }); n.tick(0.1);
       n.sicht([{ e: 'mau', seat: 1 }], App().view);
       weg('mau: Motte geht');
+      n.zeige('biene', { seed: 1 }); n.tick(0.1);
+      await zustand(1, { hints: { playable: [], text: '', catch: [2] } });
+      weg('Erwischt-Fenster: Biene geht');
+      await zustand(1);
+      // 1.6.17: Das UFO lässt sich nicht verscheuchen
+      const ufoBleibt = titel => { tick(0.3, 0.05); ok(!!cur() && cur().id === 'ufo' && cur().ende === null, titel); };
       n.zeige('ufo', { seed: 1 }); n.tick(0.1);
       await zustand(1, { hints: { playable: [], text: '', catch: [2] } });
-      weg('Erwischt-Fenster: UFO geht');
+      ufoBleibt('Erwischt-Fenster: UFO bleibt');
+      await zustand(0);
+      ufoBleibt('eigener Zug beginnt: UFO bleibt');
       await zustand(1);
+      for (const k of ['mau', 'finish', 'catch', 'shuffle']) {
+        n.sicht([{ e: k, seat: 1 }], App().view);
+        ufoBleibt(k + ': UFO bleibt');
+      }
+      w.MMF.Necken.zeige({ k: 'react', from: 1, r: 'lachen' });
+      ufoBleibt('Necken-Effekt beginnt: UFO bleibt');
+      w.MMF.Necken.abraeumen();
+      if (cur()) n._weg(cur(), 'test');
       // Glücksspiel bzw. Auswahl eines Mitspielers: vorn macht die Tischmitte frei
       n.zeige('ufo', { seed: 1 }); n.tick(0.1);
       n.sicht([{ e: 'gamble_start', seat: 1 }], App().view);
@@ -527,8 +543,7 @@
       n.sicht([{ e: 'draw', seat: 2, count: 1 }], App().view);
       tick(0.5, 0.05);
       ok(!!cur() && cur().id === 'ufo' && cur().ende === null, 'draw: UFO bleibt (1.6.15)');
-      n.sicht([{ e: 'shuffle' }], App().view);
-      weg('shuffle: UFO geht');
+      n._weg(cur(), 'test');
       n.zeige('motte', { seed: 1 }); n.tick(0.1);
       n.sicht([{ e: 'play', seat: 2, card: 9, face: 'hell_rot_3' }], App().view);
       weg('play: Motte geht');
@@ -639,7 +654,7 @@
       App().antippen = id => { spione.antippen.push(id); };
       App().spielen = () => { spione.spielen++; };
       App().gegnerAnsicht = () => { spione.gegner++; };
-      // UFO über dem Stapel: Tipp auf den Stapel zieht, UFO geht
+      // UFO über dem Stapel: Tipp auf den Stapel zieht, UFO bleibt
       n.zeige('ufo', { seed: 1 }); n.tick(0.1);
       const sm = mitte(buehneRect($('#stapel')));
       const c1 = zuClient(sm), z1 = w.document.elementFromPoint(c1.x, c1.y);
@@ -803,7 +818,7 @@
         w.document.querySelectorAll('.modal:not([hidden])').forEach(m => { try { App().schliesse(m.id); } catch (e) { /* egal */ } if (!m.hidden) m.hidden = true; });
       };
       await seite('dunkel');
-      // UFO: 1. und 2. Tipp → weicht aus, 3. → davon
+      // UFO: jeder Tipp → weicht aus, keiner verscheucht es (1.6.17)
       let p = antippbar('ufo', 2.6);
       ok(!!p, 'UFO: freie Stelle zum Antippen (' + befund + ')');
       if (p) {
@@ -819,10 +834,11 @@
         if (p) { druck(p); ok(cur().tipps === 2 && cur().ende === null, 'UFO: 2. Tipp – bleibt'); }
         tick(0.4, 0.05);
         p = freierPunkt();
-        if (p) { druck(p); ok(!!cur() && cur().tipps === 3 && cur().inst.leaveT !== null, 'UFO: 3. Tipp – saust davon (' + JSON.stringify({ t: cur() && cur().t, tipps: cur() && cur().tipps, inst: cur() && cur().inst.tipps, leave: cur() && cur().inst.leaveT }) + ')'); }
+        if (p) { druck(p); ok(!!cur() && cur().tipps === 3 && cur().ende === null && cur().inst.leaveT === null, 'UFO: 3. Tipp – bleibt (' + JSON.stringify({ t: cur() && cur().t, tipps: cur() && cur().tipps, leave: cur() && cur().inst.leaveT }) + ')'); }
         else ok(false, 'UFO: Stelle für den 3. Tipp');
-        tick(0.5, 0.05);
-        ok(!cur() || cur().id !== 'ufo', 'UFO: danach weg');
+        tick(0.3, 0.05);
+        ok(!!cur() && cur().id === 'ufo' && cur().ende === null, 'UFO: auch danach noch da');
+        if (cur()) n._weg(cur(), 'test');
       }
       // Feuerwerk: Tipp zündet einen Knall an der Stelle, höchstens zweimal
       p = antippbar('feuerwerk', 2.2);

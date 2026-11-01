@@ -137,7 +137,7 @@ func net_flow() -> void:
 	var sm := hts._seat_mgr
 	check(hts.is_seat_manager_open() and sm.page == "dazuholen" and sm.invite != null and sm.invite.is_visible_in_tree(), "M: Feld „Mitspieler“ mit Einladefeld")
 	check(host.session.join_open, "M: Warteliste offen, solange das Feld offen ist")
-	check(not hts._sub_hint.visible, "M: keine Leiste ohne Abwesende")
+	check(not hts._sub_dots.visible and not hts._sub_hint.visible, "M: kein „…“ ohne Abwesende")
 	# --- W: Gast mitten in der Partie
 	nav2 = _guest_nav()
 	await frames(2)
@@ -214,10 +214,27 @@ func net_flow() -> void:
 	UiApp.app().settings.set_value("grosser_modus", true)
 	await frames(3)
 	check(hts.table.big, "S: großer Modus an")
+	# Beta 1.6.17: Die zehn Reaktionsknöpfe ragten als zwei Spalten in ☰ (Bild optik_1615_gross_tag)
+	var rb := hts.table.tease.reactions
+	check(await _wait_for(func() -> bool: return rb.visible and rb.centers.size() == TeaseMenu.REACT_ORDER.size(), 4.0), "S: Reaktionsknöpfe sichtbar")
+	await wait(0.3)
+	var rxf := rb.get_global_transform_with_canvas()
+	var on_menu := false
+	for rc: Vector2 in rb.centers:
+		var rr := Rect2(rxf * rc - Vector2.ONE * rb.r, Vector2.ONE * rb.r * 2.0)
+		on_menu = on_menu or rr.intersects(hts._menu_btn.get_global_rect()) or rr.intersects(hts._burger.get_global_rect())
+	check(not on_menu and rb.r >= 22.0, "S: Reaktionsknöpfe frei von ← und ☰, ≥ 44 px (r %.1f, ☰ %s, erster Knopf %s)" % [rb.r, hts._burger.get_global_rect(), rxf * rb.centers[0]])
 	nav2.queue_free()
 	nav2 = null
-	check(await _wait_for(func() -> bool: return hts._sub_hint.visible, 4.0) and hts._sub_hint_label.text == "%s ist getrennt" % host.seat_name(gseat)
-			and hts._sub_btn.is_visible_in_tree() and hts._kick_btn.is_visible_in_tree(), "S: sofort beide Knöpfe (%s)" % hts._sub_hint_label.text)
+	check(await _wait_for(func() -> bool: return hts._sub_dots.visible, 4.0) and hts._sub_hint_label.text == "%s ist getrennt" % host.seat_name(gseat)
+			and not hts._sub_hint.visible, "S: sofort „…“, Leiste zu (%s)" % hts._sub_hint_label.text)
+	await frames(2)
+	var dots := hts._sub_dots.get_global_rect()
+	var pile_end := BigLayout.discard_pos(Vector2(1600, 720)).x + BigLayout.pile_w(Vector2(1600, 720)) * 0.5
+	check(dots.position.x > pile_end and dots.end.y <= BigLayout.list_rect(Vector2(1600, 720)).position.y and Rect2(0, 0, 1600, 720).encloses(dots),
+		"S: „…“ im Kopf der Spielerliste, nicht auf den Stapeln (%s)" % dots)
+	hts.toggle_bar()
+	check(hts._sub_btn.is_visible_in_tree() and hts._kick_btn.is_visible_in_tree(), "S: „…“ zeigt beide Knöpfe")
 	check(Rect2(0, 0, 1600, 720).encloses(hts._sub_hint.get_global_rect()), "S: Leiste im Bild (%s)" % hts._sub_hint.get_global_rect())
 	hts.ask_kick()
 	await frames(1)
@@ -227,7 +244,7 @@ func net_flow() -> void:
 	check(await _wait_for(func() -> bool: return host.seats.size() == 3, 4.0), "S: Gast heraus")
 	check(await _wait_for(func() -> bool: return hts.table._seats.size() == 2 and not hts.table.director.is_busy(), 12.0), "S: zwei Gegner in der Liste")
 	await wait(0.3)
-	check(not hts._sub_hint.visible, "S: Leiste weg")
+	check(not hts._sub_dots.visible and not hts._sub_hint.visible, "S: „…“ und Leiste weg")
 	hts._leave_now()
 	await wait(0.5)
 

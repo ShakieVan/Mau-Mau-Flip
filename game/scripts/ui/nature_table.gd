@@ -4,8 +4,8 @@ extends RefCounted
 # Quelle der Wahrheit für App und Browser: webclient/natur.js enthält dieselbe Tabelle als JSON zwischen /*NATUR-DATEN*/ und /*ENDE*/,
 # test_web_contract.gd vergleicht beide (nach JSON.parse_string(JSON.stringify(...)), so stimmen Ganzzahl und Kommazahl überein).
 # Rein und ohne Knoten: Einträge, Zeiten, gewichtete Kandidaten. Den Ablauf (Planer) macht NatureFx (nature_fx.gd).
-# Beta 1.6.15: Hoppelhase und Strand mit Palme (Tag), Feuerwerk und Astronaut am Mond (Nacht); das UFO ist nicht mehr scheu und weicht
-# beim 1. und 2. Tipp aus, erst der 3. verscheucht es (tipp „ausweichen“, natur.md 3.3 Nr. 18).
+# Beta 1.6.15: Hoppelhase und Strand mit Palme (Tag), Feuerwerk und Astronaut am Mond (Nacht). Das UFO ist nicht scheu und weicht bei
+# jedem Tipp nur aus (tipp „ausweichen“, ab 1.6.17 lässt es sich nicht mehr verscheuchen, natur.md 3.3 Nr. 18).
 # Felder je Ereignis: zufall/nach_flip Gewichte (0 = nie), troedeln Anlass Trödeln (Schnecke), ebene hinten|mitte|vorn, ort Anker
 # (Abschnitt 2.2), dauer [min, max] s, ruhig (auch bei „Effekte reduziert“, dann ruhige Variante), tipp Reaktion ("" = keine),
 # scheu (geht bei Berührung in scheu_r), fremder_zug (nur, wenn man nicht selbst dran ist), je_partie/je_runde Obergrenzen

@@ -146,28 +146,67 @@ func removed_flow() -> void:
 	gct.client.retry_ms = [60000]
 	gct.client._lost("Hintergrund (Test)")
 	check(await _wait_for(func() -> bool: return host.game != null and not bool(host.game.connected[gseat]), 4.0), "Gastgeber sieht den Gast getrennt")
-	# P: Sofort-Leiste bei sehr großer Schrift frei von Plätzen und Hinweis
+	# P: „…“ bei sehr großer Schrift frei von Plätzen, Stapeln, Hinweis und Knöpfen; die Leiste bleibt zu, bis man tippt
 	UiApp.app().settings.set_value("schrift", "sehr_gross")
 	UiFonts.set_level("sehr_gross")
 	await frames(3)
 	hts._layout()
-	check(await _wait_for(func() -> bool: return hts._sub_hint.visible and hts.table._seats.size() == 3 and not hts.table.director.is_busy(), 12.0), "P: Leiste sichtbar, drei Gegner")
+	check(await _wait_for(func() -> bool: return hts._sub_dots.visible and hts.table._seats.size() == 3 and not hts.table.director.is_busy(), 12.0), "P: „…“ sichtbar, drei Gegner")
 	await wait(0.7)
 	await frames(2)
+	check(not hts._sub_hint.visible, "P: Leiste zu")
+	var dots := hts._sub_dots.get_global_rect()
+	var blocks := _dots_blocks(hts)
+	check(blocks.size() >= 10, "P: Plätze, Stapel, Knöpfe als Hindernisse (%d, Hinweis „%s“, Plätze %d)" % [blocks.size(), hts.table.hint_bar.hint, (hts.view.get("players", []) as Array).size()])
+	check(Rect2(0, 0, 1600, 720).encloses(dots), "P: „…“ im Bild (%s)" % dots)
+	var under := blocks.filter(func(b: Rect2) -> bool: return dots.intersects(b))
+	check(under.is_empty(), "P: „…“ verdeckt nichts (%s; %s)" % [dots, under])
+	# T (Nutzerbefund 31.10.2026): Die Leiste lag über „Behalten“, der Zug ließ sich nicht beenden. Jetzt wirkt der Tipp, ob sie offen ist oder nicht
+	var keep: PillButton = hts.table._act_btns["keep"]
+	var keeps := [0]
+	var count_keep := func() -> void: keeps[0] += 1
+	keep.pressed.connect(count_keep)
+	keep.visible = true
+	hts.table._layout_action_buttons()
+	var keep_at := keep.get_global_rect().get_center()
+	nav2.visible = false                 # der Gast liegt im selben Fenster über dem Tisch des Gastgebers
+	_tap(keep_at)
+	check(keeps[0] == 1, "T: „Behalten“ erreichbar, solange jemand weg ist")
+	_tap(dots.get_center())
+	check(hts._sub_open and hts._sub_hint.visible and hts._sub_btn.is_visible_in_tree() and hts._kick_btn.is_visible_in_tree(), "T: Tipp auf „…“ öffnet die Leiste")
 	var bar := hts._sub_hint.get_global_rect()
-	var blocks := hts.bar_obstacles()
-	check(blocks.size() >= 3, "P: Plätze und Hinweis als Hindernisse (%d, Hinweis „%s“, Plätze %d)" % [blocks.size(), hts.table.hint_bar.hint, (hts.view.get("players", []) as Array).size()])
-	check(Rect2(0, 0, 1600, 720).encloses(bar), "P: Leiste im Bild (%s)" % bar)
-	check(TableScreen._bar_overlap(bar, blocks) <= 0.0, "P: Leiste verdeckt nichts (%s; %s)" % [bar, blocks])
-	var mau := hts.table.mau_button.get_global_rect()
-	check(not bar.intersects(mau), "P: Leiste nicht über dem Mau-Knopf")
+	check(Rect2(0, 0, 1600, 720).encloses(bar), "T: Leiste im Bild (%s)" % bar)
+	check(not bar.intersects(hts.table.mau_button.get_global_rect()) and not bar.intersects(keep.get_global_rect()), "T: Leiste frei von Mau-Knopf und „Behalten“ (%s)" % bar)
+	_tap(bar.get_center() + Vector2(0.0, bar.size.y * 0.5 - 4.0))
+	check(hts._sub_hint.visible and hts._confirm == null, "T: Tipp in die Leiste neben die Knöpfe lässt sie offen")
+	keep.visible = true
+	_tap(keep_at)
+	check(keeps[0] == 2 and not hts._sub_hint.visible, "T: Tipp auf „Behalten“ wirkt und schließt die Leiste")
+	keep.pressed.disconnect(count_keep)
+	keep.visible = false
+	nav2.visible = true
+	_tap(dots.get_center())
+	check(hts._sub_hint.visible, "T: wieder auf")
+	_tap(dots.get_center())
+	check(not hts._sub_open and not hts._sub_hint.visible, "T: zweiter Tipp auf „…“ schließt")
+	hts.toggle_bar()
+	_tap(Vector2(800, 360))
+	check(not hts._sub_hint.visible, "T: Tipp daneben schließt")
+	hts.toggle_bar()
+	hts._sub_close_ms = 0
+	await frames(2)
+	check(not hts._sub_hint.visible, "T: schließt sich von selbst")
+	hts.toggle_bar()
+	check(hts.on_back() and not hts._sub_hint.visible and hts._confirm == null, "T: Zurück-Taste schließt zuerst die Leiste")
 	UiApp.app().settings.set_value("schrift", "normal")
 	UiFonts.set_level("normal")
 	hts._layout()
 	# R: Gastgeber nimmt den Gast heraus; das „bye“ erreicht ihn nicht
 	await _until_host_turn(host)
+	hts.toggle_bar()
 	check(host.remove_seat(gseat), "R: Herausnehmen angenommen")
 	check(await _wait_for(func() -> bool: return host.seats.size() == 3, 4.0), "R: Gast heraus")
+	check(await _wait_for(func() -> bool: return not hts._sub_dots.visible and not hts._sub_hint.visible, 2.0), "R: „…“ und offene Leiste weg")
 	gct.client._retry_at = Time.get_ticks_msec()       # App wieder vorn: sofort neu verbinden (mit altem Token)
 	check(await _wait_for(func() -> bool: return gts._conn.visible and gts._conn_rejoin.visible, 6.0),
 		"R: Leiste mit „Wieder beitreten“ (%s, %s)" % [gts._conn_label.text, gct.connection_state()])
@@ -219,3 +258,47 @@ func removed_flow() -> void:
 
 func _until_host_turn(host: HostTable) -> void:
 	await _wait_for(func() -> bool: return host.game != null and host.game.state == "turn", 4.0)
+
+
+func _tap(pos: Vector2) -> void:
+	for pressed in [true, false]:
+		var e := InputEventMouseButton.new()
+		e.button_index = MOUSE_BUTTON_LEFT
+		e.pressed = pressed
+		e.button_mask = MOUSE_BUTTON_MASK_LEFT if pressed else 0
+		e.position = pos
+		e.global_position = pos
+		root.push_input(e, true)
+
+
+# Was der „…“-Knopf nicht verdecken darf (Bildschirmkoordinaten): Knöpfe, Gegnerplätze samt Fächer, Stapel, Hinweisleiste, Reaktionsknöpfe
+func _dots_blocks(ts: TableScreen) -> Array[Rect2]:
+	var out: Array[Rect2] = [ts._menu_btn.get_global_rect(), ts._burger.get_global_rect(), ts.table.mau_button.get_global_rect()]
+	for s in (ts.view.get("players", []) as Array).size():
+		var node := ts.table.seat_node(s)
+		if node == null or not node.visible or s == int(ts.view.get("seat", -1)):
+			continue
+		var av := node.avatar_global()
+		var r := Rect2(av - Vector2(34, 34), Vector2(68, 68))
+		r = r.expand(av + Vector2(node.fan_max_w * 0.5 + 40.0, 0.0))   # Name und Kartenzahl rechts vom Avatar
+		for c: Dictionary in node.fan_cards():
+			var w := float(c.width)
+			var p: Vector2 = c.pos
+			r = r.merge(Rect2(p - Vector2(w * 0.6, w * 0.85), Vector2(w * 1.2, w * 1.7)))
+		out.append(r.grow(4.0))
+	for c: CardView in [ts.table.pile_top(), ts.table.discard_top()]:
+		if c != null and is_instance_valid(c) and c.is_visible_in_tree():
+			var w := c.width * c.global_scale.x
+			out.append(Rect2(c.global_position - Vector2(w * 0.6, w * 0.85), Vector2(w * 1.2, w * 1.7)))
+	var hb := ts.table.hint_bar
+	if hb != null and hb.hint != "":
+		var tw := UiFonts.text(700, 100.0).get_string_size(hb.hint, HORIZONTAL_ALIGNMENT_LEFT, -1, UiFonts.size("hinweisleiste")).x + 40.0
+		var cx := hb.get_global_rect().get_center().x
+		out.append(Rect2(cx - tw * 0.5 - 6.0, hb.global_position.y + hb.hint_y - hb.hint_h() * 0.5 - 6.0, tw + 12.0, hb.hint_h() + 12.0))
+	var rb := ts.table.tease.reactions
+	if rb != null and rb.visible:
+		out.append(Rect2(rb.get_global_transform_with_canvas() * rb.bounds().position, rb.bounds().size))
+	ts.table._layout_action_buttons(true)                              # „Behalten“ & Co., auch wenn sie gerade nicht zu sehen sind
+	for key in ["pick", "undo", "accept", "challenge", "keep"]:
+		out.append((ts.table._act_btns[key] as PillButton).get_global_rect())
+	return out

@@ -29,7 +29,7 @@
  *     hulle(t),      {x, y, w, h} in Bühnen-px (Höhe 720) oder null, wenn nichts zu sehen ist (Tests: Sichtbarkeit, deckt, Scheu, Treffer)
  *     treffer?(p),   Tipp p {x, y} trifft das Tier (fehlt: Abstand zur Mitte der Hülle ≤ max(treffer_min_r, halbe Hüllengröße))
  *     tipp?(p),      Reaktion auf einen Tipp ins Leere (nur Arten mit „tipp“ in der Tabelle, höchstens tippMax-mal je Ereignis)
- *     tippMax?,      so viele Tipps nimmt die Art (Standard 1; 1.6.15: UFO 3 – weicht zweimal aus, der dritte verscheucht es –, Feuerwerk 2)
+ *     tippMax?,      so viele Tipps nimmt die Art (Standard 1; Feuerwerk 2; ab 1.6.17 UFO 99 – weicht immer nur aus, lässt sich nicht verscheuchen)
  *     scheu?(p),     wird vor dem schnellen Abgang einer scheuen Art gerufen (Berührung in scheu_r)
  *     ereignis?(e),  Spielereignis {e, …} gesehen; true = schnell abgehen (Ereignisse am Ort ergänzt der Kern selbst, siehe ORT_WEG)
  *     abgang(),      schnell abgehen (wegfliegen bzw. ausblenden); Rückgabe Sekunden bis zum Ende (Standard abgang_s, höchstens 1,5)
@@ -109,9 +109,9 @@
   const ZUG_PHASEN = ['turn', 'drawn'];
   const ALLE_WEG = ['round_over', 'game_over', 'round_start', 'deal', 'seats', 'start'];
   const VORN_WEG = ['mau', 'finish', 'catch', 'gamble_start'];
-  // Ereignisse am Ort (Abschnitt 4.5): UFO am Stapel, Motte am Ablage-Ring, Biene auf der Hand. Ab 1.6.15 bleibt das UFO beim Ziehen
-  // (Nutzerwunsch: „nicht so einfach verscheuchen“), nur das Mischen des Stapels vertreibt es.
-  const ORT_WEG = { stapel_oben: ['shuffle'], ablage_ring: ['play', 'flip', 'discard_color', 'stake_discard', 'shuffle'], handkarte: ['swap_hands'] };
+  // Ereignisse am Ort (Abschnitt 4.5): Motte am Ablage-Ring, Biene auf der Hand. Das UFO bleibt ab 1.6.17 auch beim Mischen (Nutzerwunsch:
+  // „nicht verscheuchen lassen“).
+  const ORT_WEG = { ablage_ring: ['play', 'flip', 'discard_color', 'stake_discard', 'shuffle'], handkarte: ['swap_hands'] };
   const HAND_WEG = ['play', 'draw', 'stake', 'stake_back', 'discard_color', 'unplay'];   // eigene Hand ändert sich
   const PROTOKOLL_MAX = 60;
   const KW = 190, KH = Math.round(KW * 870 / 560);   // Handkarte (hand.js)
@@ -489,7 +489,8 @@
             if ((e.round | 0) === 1) { this.zaehler.partie = {}; this.tr.spieler = {}; }
           }
         } else if (VORN_WEG.indexOf(k) >= 0) {
-          if (c && (c.ebene === 'vorn' || c.e.fremder_zug)) this._abgang(c, k);
+          // das UFO (vorn, nicht scheu) bleibt; nur das Glücksspiel räumt auch von ihm die Tischmitte
+          if (c && (c.e.scheu || (k === 'gamble_start' && c.ebene === 'vorn'))) this._abgang(c, k);
         } else if (k === 'skip_all') this.kometSperreBis = this.now + Z.komet_sperre_s;
         const cc = this.current && !this.current.stehen ? this.current : null;
         if (!cc || cc.ende !== null) continue;
@@ -525,11 +526,11 @@
       if (L.reduziert && !c.e.ruhig) { this._weg(c, 'reduziert'); return; }
       if (c.ende !== null) return;
       if (c.e.seite !== L.seite && c.anlass !== 'zeige') { this._abgang(c, 'seite'); return; }   // zeige: auch auf der anderen Seite (Tests)
-      const vorn = c.ebene === 'vorn', fz = vorn || c.e.fremder_zug;
-      if (fz && (L.meinZug || L.fang)) { this._abgang(c, L.meinZug ? 'mein_zug' : 'erwischt'); return; }
+      const vorn = c.ebene === 'vorn', scheu = c.e.scheu;   // Biene und Motte; das UFO bleibt ab 1.6.17 auch im eigenen Zug und im Erwischt-Fenster
+      if (scheu && (L.meinZug || L.fang)) { this._abgang(c, L.meinZug ? 'mein_zug' : 'erwischt'); return; }
       if (vorn && ZUG_PHASEN.indexOf(L.phase) < 0) { this._abgang(c, 'phase'); return; }   // Glücksspiel, Ablege-/Farbauswahl: Mitte frei
       if (vorn && L.dialog) { this._abgang(c, 'dialog'); return; }
-      if (vorn && alt && L.necken > alt.necken) { this._abgang(c, 'necken'); return; }
+      if (vorn && scheu && alt && L.necken > alt.necken) { this._abgang(c, 'necken'); return; }
       if (c.e.deckt.indexOf('hand') >= 0 && (L.gewaehlt || (alt && alt.handSig !== L.handSig) || this._handGedrueckt)) this._abgang(c, 'hand');
     },
     _abgang(c, grund) {

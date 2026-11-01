@@ -1417,14 +1417,28 @@ func _block_reactions_big() -> void:
 	var sb := Rect2()
 	if sort_btn is Control and (sort_btn as Control).is_visible_in_tree():
 		sb = _g2l_rect((sort_btn as Control).get_global_rect())
+	# Beta 1.6.17 (Nutzerbefund 31.10.2026): Lücke am linken Rand zwischen ☰ und „Sortieren“. Die zwei Spalten sind in Normalgröße 280 px
+	# hoch, bei 720 px Bildhöhe sind nur 248 px frei; sie ragten 28 px in ☰. Die kleinste Form passt sich deshalb ein (46 statt 48 px,
+	# Abstand 4 statt 10). Das reicht auf jedem Gerät, die virtuelle Höhe ist nie kleiner als 720 (Streckung „expand“), Scrollen ist unnötig.
+	var left_bottom := sb.position.y - 12.0 if sb.has_area() else hint_top - 12.0
+	var left_top := 6.0
+	if avoid_cb.is_valid():
+		for g in avoid_cb.call():
+			var gr := _g2l_rect(g as Rect2)
+			if gr.position.x < 12.0 + 2.0 * (2.0 * TeaseMenu.REACT_BTN_R + REACT_GAP):
+				left_top = maxf(left_top, gr.end.y + 4.0)
 	var cands: Array = []
 	for f: float in [k(), lerpf(k(), 1.0, 0.5), 1.0]:
-		var r := TeaseMenu.REACT_BTN_R * f
-		var gap := REACT_GAP * f
 		# Beta 1.6.15 (zehn Knöpfe): zuletzt je Größe auch zwei Spalten am linken Rand über „Sortieren“ (unter dem Menüknopf;
 		# der Block 5 + 5 läge dort auf dem Ziehstapel)
 		for c: int in [cols, 2]:
 			var rws := ceili(float(n) / c)
+			var r := TeaseMenu.REACT_BTN_R * f
+			var gap := REACT_GAP * f
+			if c == 2 and is_equal_approx(f, 1.0):
+				var room := left_bottom - left_top
+				r = clampf((room - 4.0 * (rws - 1)) / (2.0 * rws), 22.0, r)
+				gap = clampf((room - 2.0 * r * rws) / (rws - 1), 4.0, gap)
 			var shape := Vector2(2.0 * r * c + gap * (c - 1), 2.0 * r * rws + gap * (rws - 1))
 			var add := func(top_left: Vector2) -> void:
 				cands.append({"pos": top_left, "rel": Rect2(Vector2.ZERO, shape), "r": r, "gap": gap, "cols": c})
@@ -1433,9 +1447,9 @@ func _block_reactions_big() -> void:
 				if c == cols:
 					add.call(Vector2(sb.end.x + 14.0, sb.end.y - shape.y))
 			if c == cols:
-				add.call(Vector2(12.0, hint_top - 8.0 - shape.y))
+				add.call(Vector2(12.0, hint_top - 4.0 - shape.y))   # Beta 1.6.17: 4 statt 8, bei 16:9 ragte der Block 4 px in den Stapel
 			else:
-				add.call(Vector2(12.0, (sb.position.y if sb.has_area() else hint_top) - 12.0 - shape.y))
+				add.call(Vector2(12.0, left_bottom - shape.y))
 	var best := _choose(cands, {"hard": hard, "soft": blk.soft})
 	var tl: Vector2 = best.pos
 	var br := float(best.r)
@@ -1537,16 +1551,6 @@ func covered() -> bool:
 	if table.wish_picker.is_open() or table.backs_viewer.visible or table.help_popup.visible:
 		return true
 	return modal_cb.is_valid() and bool(modal_cb.call())
-
-
-# Flächen für die Sofort-Leiste (TableScreen.bar_obstacles, Bildschirmkoordinaten): Reaktionsknöpfe und Menü
-func obstacles() -> Array[Rect2]:
-	var out: Array[Rect2] = []
-	if reactions != null and reactions.visible:
-		out.append(Rect2(reactions.get_global_transform_with_canvas() * reactions.bounds().position, reactions.bounds().size))
-	if menu != null and is_instance_valid(menu):
-		out.append(Rect2(menu.get_global_transform_with_canvas() * Vector2.ZERO, menu.size))
-	return out
 
 
 # ================================================================= Töne und Vibration
