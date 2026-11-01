@@ -1,6 +1,7 @@
 extends SceneTree
 # Beta 1.2.1: Statistik je Gerät (AppStats) – Zählen aus Ereignissen, Weitergeben nur „Partien auf diesem Gerät“, Speichern und
-# Laden, kaputte Datei (Rückgriff auf .bak bzw. leer), Zurücksetzen, Satz fürs Rundenende.
+# Laden, kaputte Datei (Rückgriff auf .bak bzw. leer), Zurücksetzen, Satz fürs Rundenende. Dazu die Glücksspiel-Zähler je Trefferstufe,
+# auch an den Ereignissen echter Bot-Partien.
 
 var ok := 0
 var failed := 0
@@ -74,8 +75,86 @@ func _init() -> void:
 	check(s.rows().size() == AppStats.KEYS.size() and str(s.rows()[AppStats.KEYS.find("groesste_hand")][1]) == "–", "Zeilen: Höchstwert 0 als –")
 	for k in AppStats.KEYS:
 		check(AppStats.LABELS.has(k), "Beschriftung für " + k)
+	_gamble_counters(path)
+	_gamble_real_games(path)
 	for p in [path, path + ".bak", path + ".tmp"]:
 		if FileAccess.file_exists(p):
 			DirAccess.remove_absolute(p)
 	print("RESULT: %d ok, %d failed" % [ok, failed])
 	quit(1 if failed > 0 else 0)
+
+
+func _gamble_counters(path: String) -> void:
+	var s := AppStats.new(path)
+	s.reset()
+	var medium := {"seat": 1, "rules": {"gamble_odds": "medium"}}
+	var key := AppStats.gamble_key
+	# Erster Druck 0, dann weiter bis zum Treffer; auch der Zug eines Mitspielers zählt, in getrennten Lieferungen
+	s.record([{"e": "gamble_start", "seat": 0}], medium, "host")
+	check(s.value(key.call("medium", "spiele")) == 0, "Glücksspiel: Zählt erst beim Druck")
+	s.record([{"e": "gamble_roll", "seat": 0, "value": 0}], medium, "host")
+	s.record([{"e": "gamble_roll", "seat": 0, "value": 4}], medium, "host")
+	s.record([{"e": "gamble_start", "seat": 1}, {"e": "gamble_roll", "seat": 1, "value": 7}], medium, "solo")
+	check(s.value(key.call("medium", "spiele")) == 2 and s.value(key.call("medium", "spiele0")) == 1, "Glücksspiel: nur der erste Druck je Spiel")
+	check(s.value(key.call("medium", "drucke")) == 3 and s.value(key.call("medium", "drucke0")) == 1, "Glücksspiel: alle Drucke")
+	check(s.value("gluecksspiel_max") == 7, "Höchster Treffer zählt weiter nur den eigenen")
+	# Gast und Weitergeben würfeln nicht auf diesem Gerät bzw. zählen nur Partien; ohne Start zählt kein erster Druck
+	var before := s.data.duplicate()
+	s.record([{"e": "gamble_start", "seat": 0}, {"e": "gamble_roll", "seat": 0, "value": 0}], medium, "client")
+	s.record([{"e": "gamble_start", "seat": 0}, {"e": "gamble_roll", "seat": 0, "value": 0}], medium, "pass")
+	check(s.data == before, "Glücksspiel: Gast und Weitergeben zählen nicht")
+	s.record([{"e": "gamble_roll", "seat": 0, "value": 0}], medium, "host")
+	check(s.value(key.call("medium", "spiele")) == 2 and s.value(key.call("medium", "drucke")) == 4, "Fortgesetztes Glücksspiel: nur bei den Drucken")
+	# Stufen getrennt, unbekannte Stufe zählt nicht, ohne Angabe Selten
+	s.record([{"e": "gamble_start"}, {"e": "gamble_roll", "value": 2}], {"seat": 1, "rules": {"gamble_odds": "often"}}, "host")
+	s.record([{"e": "gamble_start"}, {"e": "gamble_roll", "value": 0}], {"seat": 1, "rules": {}}, "host")
+	var before2 := s.data.duplicate()
+	s.record([{"e": "gamble_start"}, {"e": "gamble_roll", "value": 0}], {"seat": 1, "rules": {"gamble_odds": "kaputt"}}, "host")
+	check(s.value(key.call("often", "spiele")) == 1 and s.value(key.call("rare", "spiele0")) == 1 and s.data == before2, "Stufen getrennt")
+	# Zeilen, Erwartung, Laden, Zurücksetzen
+	check(AppStats.gamble_expected("rare") == 71 and AppStats.gamble_expected("medium") == 54 and AppStats.gamble_expected("often") == 39, "erwartete Anteile")
+	var rows := s.gamble_rows()
+	check(rows.size() == 6 and s.rows().size() == AppStats.KEYS.size() + 6, "je Stufe zwei Zeilen (%d)" % rows.size())
+	check(str(rows[2][0]) == "Glücksspiel „Mittel“: 0 beim ersten Druck (erwartet 54 %)" and str(rows[2][1]) == "1 von 2 · 50 %", "Zeile: %s" % str(rows[2]))
+	check(str(rows[3][0]) == "Glücksspiel „Mittel“: 0 bei allen Drucken" and str(rows[3][1]) == "2 von 4 · 50 %", "Zeile: %s" % str(rows[3]))
+	check(AppStats.new(path).data == s.data, "Glücksspiel-Zähler nach dem Laden gleich")
+	check(s.reset() and s.gamble_rows().is_empty() and s.is_empty(), "Zurücksetzen löscht die Glücksspiel-Zähler")
+
+
+# Echte Partien mit Bots: Die Zähler stimmen mit den Ereignissen überein, und der Anteil der 0 beim ersten Druck liegt beim erwarteten Wert
+func _gamble_real_games(path: String) -> void:
+	var cfg := RuleConfig.preset("familie")
+	check(cfg.gamble_odds == "medium", "Familie spielt Mittel")
+	var s := AppStats.new(path)
+	s.reset()
+	var starts := 0
+	var rolls := 0
+	var zeros := 0
+	for i in 250:
+		var g := MauGame.create(cfg, RulesFixture.players(3 + i % 4, "bot"), 7_700_017 * i + 3)
+		g.start_round()
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 104_729 * i + 5
+		for step in 5000:
+			if not g.state in MauGame.PLAY_PHASES:
+				break
+			var seat := g.current_seat()
+			var res := g.apply(seat, MauBot.choose(g.view_for(seat), rng.randi(), 2))
+			check(bool(res.ok), "Bot-Aktion angenommen")
+			if not bool(res.ok):
+				return
+			for e in res.events:
+				if str(e.e) == "gamble_start":
+					starts += 1
+				elif str(e.e) == "gamble_roll":
+					rolls += 1
+					zeros += 1 if int(e.value) == 0 else 0
+			s.record(res.events, g.view_for(seat), "host")
+	var games := s.value(AppStats.gamble_key("medium", "spiele"))
+	var first_zero := s.value(AppStats.gamble_key("medium", "spiele0"))
+	check(starts > 200 and games > 200 and games <= starts, "Glücksspiele gezählt (%d von %d Starts)" % [games, starts])
+	check(s.value(AppStats.gamble_key("medium", "drucke")) == rolls and s.value(AppStats.gamble_key("medium", "drucke0")) == zeros, "alle Drucke wie in den Ereignissen")
+	check(s.value(AppStats.gamble_key("rare", "drucke")) == 0 and s.value(AppStats.gamble_key("often", "drucke")) == 0, "andere Stufen bleiben leer")
+	var share := 100.0 * first_zero / maxf(games, 1)
+	check(absf(share - AppStats.gamble_expected("medium")) < 8.0, "0 beim ersten Druck: %.1f %% (erwartet %d %%)" % [share, AppStats.gamble_expected("medium")])
+	print("Echte Partien: %d Glücksspiele, 0 beim ersten Druck %.1f %%, %d Drucke" % [games, share, rolls])

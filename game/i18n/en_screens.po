@@ -191,6 +191,15 @@ msgstr "Only on this device, for you as a player (practice, host or guest)."
 msgid "Beim Weitergeben spielen mehrere an diesem Gerät, darum zählen dort nur die Partien."
 msgstr "In Pass the phone, several people play on this device, so only games are counted there."
 
+msgid "Die Glücksspiel-Zeilen zählen jedes Glücksspiel am Tisch, egal wer es legt, wenn dieses Gerät würfelt (Übung oder Gastgeber)."
+msgstr "The Gamble lines count every Gamble at the table, whoever plays it, when this device rolls the dice (practice or host)."
+
+msgid "Glücksspiel „%s“: 0 beim ersten Druck (erwartet %s)"
+msgstr "Gamble “%s”: 0 on the first press (expected %s)"
+
+msgid "Glücksspiel „%s“: 0 bei allen Drucken"
+msgstr "Gamble “%s”: 0 across all presses"
+
 msgid "Noch keine Partie gespielt."
 msgstr "No games played yet."
 

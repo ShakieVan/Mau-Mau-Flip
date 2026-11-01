@@ -17,6 +17,7 @@ var _browser_btn: Button
 var _share_status: Label
 var _stats_list: VBoxContainer
 var _stats_titles: VBoxContainer           # Spaßtitel (1.4.4), über den Zahlen
+var _stats_gamble_note: Label              # Hinweis zu den Glücksspiel-Zeilen, nur wenn es sie gibt
 var _stats_confirm: ConfirmBox
 var _relay: LineEdit
 var _relay_status: Label
@@ -390,6 +391,10 @@ func _build_stats(box: VBoxContainer) -> void:
 	_stats_list = ScreenKit.vbox(6)
 	_stats_list.name = "StatistikZahlen"
 	box.add_child(_stats_list)
+	_stats_gamble_note = ScreenKit.hint(AppStats.GAMBLE_NOTE, UiFonts.size("klein"))
+	_stats_gamble_note.name = "StatistikGluecksspielHinweis"
+	_stats_gamble_note.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	box.add_child(_stats_gamble_note)
 	var pass_note := ScreenKit.hint(AppStats.PASS_NOTE, UiFonts.size("klein"))
 	pass_note.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	box.add_child(pass_note)
@@ -418,9 +423,11 @@ func _fill_stats() -> void:
 	for c in _stats_titles.get_children():
 		c.queue_free()
 	var st := _stats()
+	_stats_gamble_note.visible = false
 	if st == null or bool(st.call("is_empty")):
 		_stats_list.add_child(ScreenKit.text_block(AppStats.EMPTY, UiFonts.size("text")))
 		return
+	_stats_gamble_note.visible = not (st.call("gamble_rows") as Array).is_empty()
 	_fill_titles(st)
 	for entry in st.call("rows"):
 		var r := ScreenKit.hbox(12)

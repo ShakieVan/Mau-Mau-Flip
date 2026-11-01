@@ -89,6 +89,16 @@ static func load_config(rules: Variant) -> RuleConfig:
 	return RuleConfig.from_dict(migrate(rules if rules is Dictionary else {}))
 
 
+# Regeln, mit denen ein Gastgeber gerade spielt (view.rules, Lobby), zum Anzeigen: ohne die Hebung alter „Familie“-Regeln. Ein älterer
+# Gastgeber kennt die neueren Schlüssel nicht und spielt ohne sie; bis 1.6.15 lost er das Glücksspiel bis 1:10, die Hebung zeigte „Mittel“
+# (bis 1:5, Fund 01.11.2026). Zum Speichern bleibt es bei load_config.
+static func live_config(rules: Variant) -> RuleConfig:
+	var d: Dictionary = (rules as Dictionary).duplicate() if rules is Dictionary else {}
+	if str(d.get("wild_restriction", "")) == "bluff":
+		d["wild_restriction"] = "free"
+	return RuleConfig.from_dict(d)
+
+
 # Liste der Sätze bereinigen; null = gar keine Liste (dann gilt der Standard []).
 static func sanitize_sets(value: Variant) -> Variant:
 	if not value is Array:

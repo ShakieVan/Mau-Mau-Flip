@@ -714,7 +714,7 @@ func _on_lobby(l: Dictionary) -> void:
 	var cfg := RuleSets.load_config(rules)
 	var welcomed := client.client.host_name if client != null and client.client != null else ""
 	host_name = RuleSets.host_name_in_lobby(l, welcomed if welcomed != "" else I18n.t("Gastgeber"))
-	_lobby_rules.text = "\n".join(PackedStringArray(cfg.describe()))
+	_lobby_rules.text = "\n".join(PackedStringArray(RuleSets.live_config(rules).describe()))
 	_lobby_hint.text = lobby_hint(host_name)
 	if waiting:
 		# mitten in der Partie auf der Warteliste: der Gastgeber holt einen gleich an den Tisch

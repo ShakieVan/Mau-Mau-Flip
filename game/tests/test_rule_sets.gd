@@ -282,6 +282,14 @@ func migration_013(path: String) -> void:
 	RuleSets.remember_host({"wild_restriction": "bluff", "mau_penalty": 2}, "Kim", st)
 	check(RuleSets.host_config(st).wild_restriction == "free" and RuleSets.host_name(st) == "Kim", "neu gemerkte Gastgeber-Regeln: bluff → free")
 	check(RuleSets.load_config({"wild_restriction": "enforce"}).wild_restriction == "enforce", "App prüft bleibt")
+	# Anzeige der laufenden Partie: Ein Gastgeber bis 1.6.15 kennt gamble_odds nicht und lost bis 1:10, seine „Familie“ wird nicht gehoben
+	var old_host := RuleConfig.preset("familie").to_dict()
+	old_host.erase("gamble_odds")
+	check(RuleSets.live_config(old_host).gamble_odds == "rare" and RuleSets.live_config(old_host).gamble_max_q() == 10, "alter Gastgeber: Anzeige bis 1:10")
+	check(RuleSets.load_config(old_host).gamble_odds == "medium", "Speichern hebt die alte Familie weiter")
+	check(RuleSets.live_config(RuleConfig.preset("familie").to_dict()).equals(RuleConfig.preset("familie")), "heutiger Gastgeber: Anzeige unverändert")
+	check(RuleSets.live_config({"wild_restriction": "bluff"}).wild_restriction == "free", "Anzeige: bluff → free")
+	check(RuleSets.live_config(null).equals(RuleConfig.new()) and RuleSets.live_config({}).equals(RuleConfig.new()), "Anzeige ohne Regeln: Grundeinstellung")
 	# Tempo der Computergegner
 	check(is_equal_approx(float(st.get_value("bot_tempo")), 0.5) and is_equal_approx(AppSettings.think_factor(0.5), 1.0), "Tempo: Standard 0,5 = Faktor 1")
 	check(AppSettings.think_factor(0.0) > 2.0 and AppSettings.think_factor(1.0) < 0.5, "Tempo: gemütlich langsamer, flott schneller")

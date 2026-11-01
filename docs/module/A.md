@@ -468,6 +468,15 @@ Nutzerwunsch (AGENTS.md Nr. 26), Festlegung des Koordinators, umgesetzt im Regel
 - Ruft „Mau!“ vor dem Setzen der vorletzten Karte (und vor dem Glücksspiel als vorletzte Karte).
 - **Stärke** zu dritt gegen zwei Zufallsbots mit Glücksspiel: 257 von 600 Partien (43 %), Schwelle im Test 36 %.
 
+### Zähler in der Statistik
+
+Nutzerbefund 01.11.2026 („fast keine 0er“, am PC kein Fehler gefunden): `AppStats` zählt je Trefferstufe den ersten Druck je Glücksspiel und alle Drucke, jeweils mit dem Anteil der 0, und zeigt sie unter „Deine Statistik“.
+
+- **Nur wo das Gerät würfelt** (Übung, Gastgeber), dort aber jedes Glücksspiel am Tisch, egal wer es legt. Gast und Weitergeben zählen nicht.
+- **Vergleichswert** nur beim ersten Druck: 71 / 54 / 39 % (`AppStats.gamble_expected`). Bei allen Drucken hängt der Anteil davon ab, wie oft die Spieler aufhören.
+- **Aussagekraft:** Über 10 Glücksspiele streut „Mittel“ stark (höchstens 2 Nullen: 3 %, mindestens 8: 9 %). Erst ab etwa 50 Glücksspielen ist eine deutliche Abweichung ein Hinweis auf einen Fehler (bei 50 liegen etwa 95 % der Läufe zwischen 40 und 68 %).
+- Ein Glücksspiel, das nach einem App-Neustart weiterläuft, zählt nur bei den Drucken. Zurücksetzen löscht die Zähler mit der übrigen Statistik.
+
 ### Texte
 
 - Trefferstufe: Kartenhilfe und Übersicht nennen die Obergrenze („zwischen 1:1 und 1:%d“), `describe()` hat bei `on` die Zeile

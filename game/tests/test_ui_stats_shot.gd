@@ -50,6 +50,17 @@ func run() -> void:
 		(s as ScrollContainer).ensure_control_visible(reset_btn)
 	await _frames(20)
 	await _save("statistik_einstellungen")
+	var note := screen.find_child("StatistikGluecksspielHinweis", true, false) as Control
+	check(note != null and not note.visible, "ohne Glücksspiele kein Hinweis")
+	# Glücksspiel-Zähler (Stufe Mittel): zwei Zeilen und der Hinweis
+	stats.data.merge({"gs_medium_spiele": 12, "gs_medium_spiele0": 3, "gs_medium_drucke": 20, "gs_medium_drucke0": 8}, true)
+	stats.changed.emit()
+	await _frames(20)
+	check(list.get_child_count() == AppStats.KEYS.size() + 2 and note.visible, "Glücksspiel-Zeilen und Hinweis")
+	for s in screen.find_children("*", "ScrollContainer", true, false):
+		(s as ScrollContainer).ensure_control_visible(note)
+	await _frames(20)
+	await _save("statistik_gluecksspiel")
 	# Zurücksetzen: Rückfrage, „Behalten“ ändert nichts
 	reset_btn.pressed.emit()
 	await _frames(5)

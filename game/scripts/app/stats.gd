@@ -6,6 +6,9 @@ extends RefCounted
 # Quelle: dieselben Ereignisse und Sichten wie der Tisch (TableScreen._on_state → record). Eine Partie beginnt mit
 # round_start{round: 1}; Fortsetzen eines gespeicherten Spiels oder Neuverbinden zählt nicht doppelt (kein neues round_start).
 # Alle Texte dieser Statistik stehen hier gesammelt (LABELS, Sätze in round_note), damit die englische Fassung eine Stelle hat.
+# Glücksspiel-Zähler (Nutzerbefund 01.11.2026: Zeigt der Knopf zu selten 0?): je Trefferstufe flache Schlüssel gs_<stufe>_<feld>.
+# Sie zählen jedes Glücksspiel am Tisch, egal wer es legt, aber nur, wo dieses Gerät würfelt (solo, host): So misst die Statistik den
+# echten Zufall im echten Spiel. Ein Glücksspiel, das nach einem App-Neustart weiterläuft, zählt nur bei den Drucken (erster Druck unbekannt).
 
 signal changed
 
@@ -16,10 +19,12 @@ const VERSION := 1
 const KEYS := ["partien", "runden", "runden_gewonnen", "partien_gewonnen", "mau_mau", "erwischt_selbst", "erwischt_worden",
 	"groesste_hand", "gluecksspiel_max", "kartentausch", "flip", "partien_weitergeben", "gezogen", "aussetzen"]
 const MAX_KEYS := ["groesste_hand", "gluecksspiel_max"]   # Höchstwerte statt Summen
+const GAMBLE_FIELDS := ["spiele", "spiele0", "drucke", "drucke0"]   # erster Druck je Glücksspiel, davon 0; alle Drucke, davon 0
 
 const TITLE := "Deine Statistik"
 const INTRO := "Nur auf diesem Gerät, für dich als Spieler (Übung, Gastgeber oder Gast)."
 const PASS_NOTE := "Beim Weitergeben spielen mehrere an diesem Gerät, darum zählen dort nur die Partien."
+const GAMBLE_NOTE := "Die Glücksspiel-Zeilen zählen jedes Glücksspiel am Tisch, egal wer es legt, wenn dieses Gerät würfelt (Übung oder Gastgeber)."
 const EMPTY := "Noch keine Partie gespielt."
 const RESET := "Statistik zurücksetzen"
 const RESET_TITLE := "Statistik zurücksetzen?"
@@ -46,6 +51,7 @@ const LABELS := {
 
 var path := PATH
 var data := {}
+var _gamble_first := false      # gamble_start gesehen, der erste Druck dieses Glücksspiels steht noch aus (nicht gespeichert)
 
 
 func _init(save_path := PATH) -> void:
@@ -58,16 +64,29 @@ func _init(save_path := PATH) -> void:
 		if json.parse(FileAccess.get_file_as_string(candidate)) != OK or not json.data is Dictionary:
 			continue
 		var loaded: Dictionary = json.data
-		for key in KEYS:
+		for key in all_keys():
 			var v: Variant = loaded.get(key, 0)
 			if (v is float or v is int) and float(v) >= 0.0 and float(v) < 1.0e9:
 				data[key] = int(v)
 		break
 
 
+# Alle gespeicherten Zähler: die angezeigten KEYS und die Glücksspiel-Zähler je Trefferstufe
+static func all_keys() -> Array:
+	var out: Array = KEYS.duplicate()
+	for odds in RuleConfig.CHOICES["gamble_odds"]:
+		for field in GAMBLE_FIELDS:
+			out.append(gamble_key(str(odds), str(field)))
+	return out
+
+
+static func gamble_key(odds: String, field: String) -> String:
+	return "gs_%s_%s" % [odds, field]
+
+
 static func empty() -> Dictionary:
 	var d := {}
-	for key in KEYS:
+	for key in all_keys():
 		d[key] = 0
 	return d
 
@@ -77,7 +96,7 @@ func value(key: String) -> int:
 
 
 func is_empty() -> bool:
-	for key in KEYS:
+	for key in all_keys():
 		if value(key) > 0:
 			return false
 	return true
@@ -110,6 +129,7 @@ func record(events: Array, view: Dictionary, mode: String) -> String:
 	var note := ""
 	var me := int(view.get("seat", -1))
 	var shared := mode == "pass"
+	var dice_here := mode == "solo" or mode == "host"
 	for raw in events:
 		if not raw is Dictionary:
 			continue
@@ -117,6 +137,10 @@ func record(events: Array, view: Dictionary, mode: String) -> String:
 		var e := str(ev.get("e", ""))
 		if e == "round_start" and int(ev.get("round", 0)) == 1:
 			_add("partien_weitergeben" if shared else "partien")
+		if dice_here and e == "gamble_start":
+			_gamble_first = true
+		elif dice_here and e == "gamble_roll":
+			_count_gamble(int(ev.get("value", 0)), view)
 		if shared or me < 0:
 			continue
 		var seat := int(ev.get("seat", -2))
@@ -177,7 +201,38 @@ func rows() -> Array:
 	for key in KEYS:
 		var v := value(key)
 		out.append([str(LABELS[key]), "–" if v == 0 and MAX_KEYS.has(key) else str(v)])
+	out.append_array(gamble_rows())
 	return out
+
+
+# Glücksspiel-Zeilen je Trefferstufe, die schon gedrückt wurde: Anteil der 0 beim ersten Druck (mit dem erwarteten Wert) und bei allen
+# Drucken. Bei allen Drucken gibt es keinen festen Vergleichswert, er hängt davon ab, wie oft die Spieler aufhören.
+func gamble_rows() -> Array:
+	var out: Array = []
+	for raw in RuleConfig.CHOICES["gamble_odds"]:
+		var odds := str(raw)
+		var title := RuleConfig.gamble_odds_title(odds)
+		var games := value(gamble_key(odds, "spiele"))
+		if games > 0:
+			out.append([I18n.t("Glücksspiel „%s“: 0 beim ersten Druck (erwartet %s)") % [title, "%d %%" % gamble_expected(odds)],
+				_share_text(value(gamble_key(odds, "spiele0")), games)])
+		var presses := value(gamble_key(odds, "drucke"))
+		if presses > 0:
+			out.append([I18n.t("Glücksspiel „%s“: 0 bei allen Drucken") % title, _share_text(value(gamble_key(odds, "drucke0")), presses)])
+	return out
+
+
+# Erwarteter Anteil der 0 beim ersten Druck in Prozent: Quote 1:q gleich wahrscheinlich bis zur Obergrenze der Stufe (71 / 54 / 39)
+static func gamble_expected(odds: String) -> int:
+	var top := int(RuleConfig.GAMBLE_MAX_Q.get(odds, 10))
+	var sum := 0.0
+	for q in range(1, top + 1):
+		sum += 1.0 - 1.0 / q
+	return roundi(100.0 * sum / top)
+
+
+static func _share_text(part: int, whole: int) -> String:
+	return (I18n.t("%d von %d") % [part, whole]) + " · %d %%" % roundi(100.0 * part / whole)
 
 
 # Spaßtitel (FunTitles): [{key, title, why, power}], höchstens drei, stärkste zuerst; leer, solange keiner verdient ist
@@ -189,6 +244,21 @@ static func _seat_of(entry: Variant) -> int:
 	if entry is Dictionary:
 		return int((entry as Dictionary).get("seat", -1))
 	return int(entry) if entry is int or entry is float else -1
+
+
+func _count_gamble(roll: int, view: Dictionary) -> void:
+	var rules: Variant = view.get("rules", {})
+	var odds := str((rules as Dictionary).get("gamble_odds", "rare")) if rules is Dictionary else "rare"
+	if not (RuleConfig.CHOICES["gamble_odds"] as Array).has(odds):
+		return
+	_add(gamble_key(odds, "drucke"))
+	if roll == 0:
+		_add(gamble_key(odds, "drucke0"))
+	if _gamble_first:
+		_gamble_first = false
+		_add(gamble_key(odds, "spiele"))
+		if roll == 0:
+			_add(gamble_key(odds, "spiele0"))
 
 
 func _add(key: String, n := 1) -> void:

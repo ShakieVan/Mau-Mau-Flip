@@ -24,7 +24,7 @@ var _tabs: Dictionary = {}     # "regeln"/"bedienung" → Button
 static func open(parent: Node, rules: Variant, is_night: bool, cards := true, first_tab := "regeln") -> IngameHelp:
 	var o := IngameHelp.new()
 	o.theme = UiTheme.get_theme()
-	o.cfg = RuleSets.load_config(rules) if rules is Dictionary and not (rules as Dictionary).is_empty() else RuleConfig.new()
+	o.cfg = RuleSets.live_config(rules)
 	o.night = is_night
 	o.show_cards = cards
 	o.tab = first_tab
