@@ -33,7 +33,7 @@ extends RefCounted
 #   Tauschrichtung weiter (Ereignis swap_hands), danach ist der Nächste in Spielrichtung dran. Mau-Fenster und Rufe verfallen.
 #   Als letzte Karte: fertig wie sonst; der Tausch läuft nur unter den Übrigen und entfällt, wenn die Runde damit endet.
 # - Glücksspiel (gamble_cards = on): Joker mit Farbwahl, danach Phase "gamble" für den Leger. Je Glücksspiel wird geheim eine
-#   Trefferquote q (1–10, mit gamble_odds medium 1–5, often 1–3) gelost (nur in to_dict, nie in Sicht oder Ereignissen). Reihum {a:"stake"} (eine Handkarte verdeckt auf
+#   Trefferquote q (1 bis gamble_max, Regler 3–10, Standard 10) gelost (nur in to_dict, nie in Sicht oder Ereignissen). Reihum {a:"stake"} (eine Handkarte verdeckt auf
 #   den Einsatz) und {a:"press"}: Treffer (Wahrscheinlichkeit 1/q) → 1–10 Karten ziehen, Einsatz zurück, Zug vorbei; sonst 0 →
 #   ist die Hand leer, kommt der Einsatz unter die Ablage und der Spieler ist fertig, sonst der nächste Einsatz.
 #   {a:"stop"} (Aufhören, immer erlaubt): nach mindestens einem Druck ohne Treffer statt weiterzusetzen. Der Einsatz kommt unter
@@ -1371,7 +1371,7 @@ func _after_hand_shrinks(p: int) -> void:
 		mau_open = p
 
 
-# Glücksspiel beginnt: geheime Trefferquote 1:q (q gleich wahrscheinlich 1 … 10, 5 oder 3 nach gamble_odds, Nutzer 25.10.2026) aus
+# Glücksspiel beginnt: geheime Trefferquote 1:q (q gleich wahrscheinlich 1 … gamble_max, Regler 3–10, Nutzer 07.11.2026) aus
 # dem Spielzufall, Phase "gamble" für den Leger.
 func _start_gamble(p: int, ev: Array) -> void:
 	gamble = {"seat": p, "q": _rng.randi_range(1, config.gamble_max_q()), "stake": [], "need": "stake", "last": -1}

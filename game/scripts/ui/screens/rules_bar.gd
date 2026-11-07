@@ -112,7 +112,7 @@ static func summary(cfg: RuleConfig, extras_first := false) -> String:
 	if str(cfg.get("counter_round")) == "on":
 		parts.append(I18n.t("Kontern"))
 	if cfg.gamble_cards == "on":
-		parts.append(I18n.t("Glücksspiel-Treffer: %s") % RuleConfig.gamble_odds_title(cfg.gamble_odds))
+		parts.append(I18n.t("Glücksspiel-Treffer: %s") % RuleConfig.gamble_max_title(cfg.gamble_max))
 	parts.append(I18n.t("%d Handkarten") % cfg.hand_size)
 	parts.append(I18n.t("Rückseiten sichtbar") if cfg.backs_visible else I18n.t("Rückseiten verdeckt"))
 	var extras := extras_text(cfg)

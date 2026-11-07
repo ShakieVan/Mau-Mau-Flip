@@ -376,8 +376,8 @@ msgstr "Gamble wild card (two per side): You stake cards face down in turn and p
 msgid "Glücksspiel: 2 zusätzliche Joker%s. Wer einen legt, setzt Karte um Karte verdeckt und drückt den Glücksspielknopf – bei einem Treffer 1 bis 10 Karten ziehen und den Einsatz zurücknehmen. Nach einem Druck ohne Treffer weiter riskieren oder aufhören (der Einsatz kommt unter die Ablage); mit leerer Hand bist du fertig."
 msgstr "Gamble: 2 extra wild cards%s. Whoever plays one stakes card after card face down and presses the gamble button – on a hit, draw 1 to 10 cards and take the stake back. After a press without a hit, keep risking it or stop (the stake goes under the discard pile); with an empty hand you are out."
 
-msgid "Glücksspiel-Treffer: %s – je Glücksspiel wird geheim eine Trefferquote zwischen 1:1 und 1:%d ausgelost."
-msgstr "Gamble hits: %s – for each gamble, a hit rate between 1:1 and 1:%d is drawn in secret."
+msgid "Glücksspiel-Treffer: Je Glücksspiel wird geheim eine Trefferquote zwischen 1:1 und 1:%d ausgelost."
+msgstr "Gamble hits: For each gamble, a hit rate between 1:1 and 1:%d is drawn in secret."
 
 msgid "Glücksspiel-Treffer"
 msgstr "Gamble hits"
@@ -385,17 +385,17 @@ msgstr "Gamble hits"
 msgid "Wie oft der Glücksspielknopf trifft (1 bis 10 Karten ziehen) statt 0 zu zeigen – nur mit Glücksspiel"
 msgstr "How often the gamble button hits (draw 1 to 10 cards) instead of showing 0 – Gamble only"
 
-msgid "Selten (bis 1:10)"
-msgstr "Rare (up to 1:10)"
+msgid "oft"
+msgstr "often"
 
-msgid "Mittel (bis 1:5)"
-msgstr "Medium (up to 1:5)"
+msgid "selten"
+msgstr "rarely"
 
-msgid "Oft (bis 1:3)"
-msgstr "Often (up to 1:3)"
+msgid "bis 1:%d"
+msgstr "up to 1:%d"
 
-msgid "Mittel"
-msgstr "Medium"
+msgid "im Mittel %s Nullen"
+msgstr "on average %s zeros"
 
 msgid "Glücksspiel-Treffer: %s"
 msgstr "Gamble hits: %s"

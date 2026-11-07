@@ -6,7 +6,8 @@ extends RefCounted
 # Quelle: dieselben Ereignisse und Sichten wie der Tisch (TableScreen._on_state → record). Eine Partie beginnt mit
 # round_start{round: 1}; Fortsetzen eines gespeicherten Spiels oder Neuverbinden zählt nicht doppelt (kein neues round_start).
 # Alle Texte dieser Statistik stehen hier gesammelt (LABELS, Sätze in round_note), damit die englische Fassung eine Stelle hat.
-# Glücksspiel-Zähler (Nutzerbefund 01.11.2026: Zeigt der Knopf zu selten 0?): je Trefferstufe flache Schlüssel gs_<stufe>_<feld>.
+# Glücksspiel-Zähler (Nutzerbefund 01.11.2026: Zeigt der Knopf zu selten 0?): je Obergrenze der Trefferquote (Regler 3–10, seit
+# 07.11.2026) flache Schlüssel gs_<obergrenze>_<feld>; die Zähler der früheren Stufen (gs_rare_… usw.) übernimmt das Laden.
 # Sie zählen jedes Glücksspiel am Tisch, egal wer es legt, aber nur, wo dieses Gerät würfelt (solo, host): So misst die Statistik den
 # echten Zufall im echten Spiel. Ein Glücksspiel, das nach einem App-Neustart weiterläuft, zählt nur bei den Drucken (erster Druck unbekannt).
 
@@ -66,22 +67,39 @@ func _init(save_path := PATH) -> void:
 		var loaded: Dictionary = json.data
 		for key in all_keys():
 			var v: Variant = loaded.get(key, 0)
-			if (v is float or v is int) and float(v) >= 0.0 and float(v) < 1.0e9:
+			if _count_ok(v):
 				data[key] = int(v)
+		# Zähler der früheren Stufen (1.6.18: gs_rare_…, gs_medium_…, gs_often_…) gehören zu den Obergrenzen 10, 5 und 3
+		for level in RuleConfig.GAMBLE_MAX_Q:
+			for field in GAMBLE_FIELDS:
+				var old: Variant = loaded.get("gs_%s_%s" % [level, field], 0)
+				if _count_ok(old):
+					var key := gamble_key(int(RuleConfig.GAMBLE_MAX_Q[level]), str(field))
+					data[key] = value(key) + int(old)
 		break
 
 
-# Alle gespeicherten Zähler: die angezeigten KEYS und die Glücksspiel-Zähler je Trefferstufe
+static func _count_ok(v: Variant) -> bool:
+	return (v is float or v is int) and float(v) >= 0.0 and float(v) < 1.0e9
+
+
+# Alle gespeicherten Zähler: die angezeigten KEYS und die Glücksspiel-Zähler je Obergrenze der Trefferquote (3 bis 10)
 static func all_keys() -> Array:
 	var out: Array = KEYS.duplicate()
-	for odds in RuleConfig.CHOICES["gamble_odds"]:
+	for top in gamble_tops():
 		for field in GAMBLE_FIELDS:
-			out.append(gamble_key(str(odds), str(field)))
+			out.append(gamble_key(top, str(field)))
 	return out
 
 
-static func gamble_key(odds: String, field: String) -> String:
-	return "gs_%s_%s" % [odds, field]
+# Mögliche Obergrenzen der Glücksspiel-Quote (Regler 1:3 bis 1:10)
+static func gamble_tops() -> Array:
+	var limits: Array = RuleConfig.NUMBERS["gamble_max"]
+	return range(int(limits[1]), int(limits[2]) + 1)
+
+
+static func gamble_key(top: int, field: String) -> String:
+	return "gs_%d_%s" % [top, field]
 
 
 static func empty() -> Dictionary:
@@ -205,30 +223,20 @@ func rows() -> Array:
 	return out
 
 
-# Glücksspiel-Zeilen je Trefferstufe, die schon gedrückt wurde: Anteil der 0 beim ersten Druck (mit dem erwarteten Wert) und bei allen
-# Drucken. Bei allen Drucken gibt es keinen festen Vergleichswert, er hängt davon ab, wie oft die Spieler aufhören.
+# Glücksspiel-Zeilen je Obergrenze, mit der schon gedrückt wurde (aufsteigend wie der Regler): Anteil der 0 beim ersten Druck (mit dem
+# erwarteten Wert, RuleConfig.gamble_zero_percent) und bei allen Drucken. Bei allen Drucken gibt es keinen festen Vergleichswert, er
+# hängt davon ab, wie oft die Spieler aufhören.
 func gamble_rows() -> Array:
 	var out: Array = []
-	for raw in RuleConfig.CHOICES["gamble_odds"]:
-		var odds := str(raw)
-		var title := RuleConfig.gamble_odds_title(odds)
-		var games := value(gamble_key(odds, "spiele"))
+	for top in gamble_tops():
+		var games := value(gamble_key(top, "spiele"))
 		if games > 0:
-			out.append([I18n.t("Glücksspiel „%s“: 0 beim ersten Druck (erwartet %s)") % [title, "%d %%" % gamble_expected(odds)],
-				_share_text(value(gamble_key(odds, "spiele0")), games)])
-		var presses := value(gamble_key(odds, "drucke"))
+			out.append([I18n.t("Glücksspiel bis 1:%d: 0 beim ersten Druck (erwartet %s)") % [top, "%d %%" % RuleConfig.gamble_zero_percent(top)],
+				_share_text(value(gamble_key(top, "spiele0")), games)])
+		var presses := value(gamble_key(top, "drucke"))
 		if presses > 0:
-			out.append([I18n.t("Glücksspiel „%s“: 0 bei allen Drucken") % title, _share_text(value(gamble_key(odds, "drucke0")), presses)])
+			out.append([I18n.t("Glücksspiel bis 1:%d: 0 bei allen Drucken") % top, _share_text(value(gamble_key(top, "drucke0")), presses)])
 	return out
-
-
-# Erwarteter Anteil der 0 beim ersten Druck in Prozent: Quote 1:q gleich wahrscheinlich bis zur Obergrenze der Stufe (71 / 54 / 39)
-static func gamble_expected(odds: String) -> int:
-	var top := int(RuleConfig.GAMBLE_MAX_Q.get(odds, 10))
-	var sum := 0.0
-	for q in range(1, top + 1):
-		sum += 1.0 - 1.0 / q
-	return roundi(100.0 * sum / top)
 
 
 static func _share_text(part: int, whole: int) -> String:
@@ -247,18 +255,15 @@ static func _seat_of(entry: Variant) -> int:
 
 
 func _count_gamble(roll: int, view: Dictionary) -> void:
-	var rules: Variant = view.get("rules", {})
-	var odds := str((rules as Dictionary).get("gamble_odds", "rare")) if rules is Dictionary else "rare"
-	if not (RuleConfig.CHOICES["gamble_odds"] as Array).has(odds):
-		return
-	_add(gamble_key(odds, "drucke"))
+	var top := RuleConfig.gamble_max_in(view.get("rules", {}))
+	_add(gamble_key(top, "drucke"))
 	if roll == 0:
-		_add(gamble_key(odds, "drucke0"))
+		_add(gamble_key(top, "drucke0"))
 	if _gamble_first:
 		_gamble_first = false
-		_add(gamble_key(odds, "spiele"))
+		_add(gamble_key(top, "spiele"))
 		if roll == 0:
-			_add(gamble_key(odds, "spiele0"))
+			_add(gamble_key(top, "spiele0"))
 
 
 func _add(key: String, n := 1) -> void:

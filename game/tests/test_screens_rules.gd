@@ -181,7 +181,7 @@ func card_help() -> void:
 	check(tf.contains("gewinnst die Runde") and not tf.contains("Mau"), "Kartentausch, Erster fertig, ohne Mau")
 	# Glücksspiel
 	var g := "\n".join(PackedStringArray(RulesText.card_help("hell_gluecksspiel", on)))
-	check(RulesText.card_help("hell_gluecksspiel", on)[0].begins_with("Joker: passt immer") and g.contains("1:1 und 1:5")   # Familie: Treffer „Mittel“
+	check(RulesText.card_help("hell_gluecksspiel", on)[0].begins_with("Joker: passt immer") and g.contains("1:1 und 1:6")   # Familie: Treffer bis 1:6
 		and g.contains("Glücksspielknopf") and g.contains("1 bis 10") and g.contains("darfst du auch aufhören"), "Glücksspiel: Ablauf (mit Aufhören)")
 	check(g.contains("Ziehstrafe"), "Glücksspiel mit Stapeln: passt nicht unter einer Ziehstrafe")
 	# Farbe mit ablegen
@@ -203,7 +203,7 @@ func rules_editor() -> void:
 	rs.start_tab = "anpassen"
 	nav.push(rs, false)
 	await frames(3)
-	for key in ["swap_cards", "swap_direction", "gamble_cards", "gamble_odds", "discard_color"]:
+	for key in ["swap_cards", "swap_direction", "gamble_cards", "gamble_max", "discard_color"]:
 		check(rs._controls.has(key), "Editor: Zeile %s" % key)
 	if not rs._controls.has("swap_cards"):
 		return
@@ -241,10 +241,14 @@ func rules_editor() -> void:
 			if not CardTextures.has_image(str(k)):
 				keys_ok = false
 	check(keys_ok, "Kartenbilder: 5 Zeilen, alle Bilder vorhanden (%d)" % thumbs.size())
-	# Glücksspiel-Treffer (Nutzer 25.10.2026): ohne Glücksspiel gesperrt, Standard „Selten“
-	var odds := rs._controls["gamble_odds"] as Container
-	check(locked(odds) and chosen(odds) == "rare" and choice_button(odds, "medium").text == "Mittel (bis 1:5)",
-		"Glücksspiel-Treffer ohne Glücksspiel gesperrt, Selten")
+	# Glücksspiel-Treffer (Regler 1:3 bis 1:10, Nutzer 07.11.2026): ohne Glücksspiel gesperrt, Standard bis 1:10
+	var odds := rs._controls["gamble_max"] as Container
+	var slider := odds.find_child("Regler", true, false) as HSlider
+	var odds_text := func() -> String:
+		return (odds.find_child("Quote", true, false) as Label).text + " · " + (odds.find_child("Nullen", true, false) as Label).text
+	check(slider != null and slider.min_value == 3.0 and slider.max_value == 10.0 and slider.step == 1.0 and slider.value == 10.0,
+		"Regler 3 bis 10 in ganzen Schritten, Standard 10")
+	check(slider != null and not slider.editable and odds_text.call() == "bis 1:10 · im Mittel 71 % Nullen", "ohne Glücksspiel gesperrt (%s)" % odds_text.call())
 	# Voreinstellung Familie (0.1.4): alle Zusatzkarten an, 124 Karten, Tausch in Spielrichtung
 	choice_button(rs._preset_row, "familie").pressed.emit()
 	await frames(1)
@@ -309,13 +313,32 @@ func rules_editor() -> void:
 	await frames(1)
 	check(ga.button_pressed and dc.button_pressed and sw.button_pressed and count.call() == "124 Karten" and RulesBar.current().flip_surprise == "on",
 		"Familie: Schalter an, Flip-Überraschung an")
-	check(not locked(odds) and chosen(odds) == "medium", "Familie: Glücksspiel-Treffer „Mittel“, bedienbar")
-	choice_button(odds, "often").pressed.emit()
+	check(slider.editable and slider.value == 6.0 and odds_text.call() == "bis 1:6 · im Mittel 59 % Nullen", "Familie: bis 1:6, bedienbar")
+	slider.value = 7.0
 	await frames(1)
-	check(RulesBar.current().gamble_odds == "often" and chosen(rs._preset_row) == "", "Oft: eigene Regeln")
-	choice_button(odds, "medium").pressed.emit()
+	check(RulesBar.current().gamble_max == 7 and chosen(rs._preset_row) == "" and odds_text.call() == "bis 1:7 · im Mittel 63 % Nullen",
+		"Regler auf 1:7: gespeichert, eigene Regeln (%s)" % odds_text.call())
+	slider.value = 3.0
 	await frames(1)
-	check(chosen(rs._preset_row) == "familie", "zurück auf Mittel: wieder Familie")
+	check(RulesBar.current().gamble_max == 3 and RulesBar.current().to_dict().gamble_odds == "often" and odds_text.call() == "bis 1:3 · im Mittel 39 % Nullen",
+		"Regler auf 1:3 (Stufe für ältere Geräte: oft)")
+	slider.value = 6.0
+	await frames(1)
+	check(chosen(rs._preset_row) == "familie", "zurück auf 1:6: wieder Familie")
+	TranslationServer.set_locale("en")
+	await frames(2)
+	check(odds_text.call() == "up to 1:6 · on average 59 % zeros", "Sprachwechsel: Anzeige am Regler englisch (%s)" % odds_text.call())
+	TranslationServer.set_locale("de")
+	await frames(2)
+	check(odds_text.call() == "bis 1:6 · im Mittel 59 % Nullen", "zurück auf Deutsch (%s)" % odds_text.call())
+	# Breite: Regler, Beschriftungen und Wert passen in die Zeile
+	var odds_rect := odds.get_global_rect()
+	check(slider.size.x >= 240.0 and odds_rect.end.x <= rs._editor.get_global_rect().end.x + 1.0, "Regler im Bild (%s, Regler %.0f px)" % [str(odds_rect), slider.size.x])
+	rs.apply_preset("offiziell")
+	await frames(1)
+	check(not slider.editable and slider.value == 10.0 and odds_text.call().begins_with("bis 1:10"), "Offiziell setzt den Regler zurück und sperrt ihn")
+	rs.apply_preset("familie")
+	await frames(1)
 	# Flip dreht (1.0.2): Familie „Nur die gelegte Karte“; „Ganze Ablage“ macht eigene Regeln daraus
 	var fm := rs._controls["flip_mode"] as Container
 	check(chosen(fm) == "card" and choice_button(fm, "pile").text == "Ganze Ablage (offiziell)" and choice_button(fm, "card").text == "Nur die gelegte Karte",

@@ -115,10 +115,13 @@
     return n === 1 ? tr('Der Nächste zieht 1 Karte und setzt aus.') : tr('Der Nächste zieht %d Karten und setzt aus.', n);
   }
   // Kartenhilfe passend zu den aktiven Regeln: {titel, zeilen, kern} (kern = ohne „Passt auf“, Wert und Hausregel-Hinweis)
-  // Glücksspiel-Treffer (Hausregel gamble_odds, Nutzer 25.10.2026; wie RuleConfig.GAMBLE_MAX_Q): größte geheime Quote 1:q und Kurzname.
-  // Ohne Angabe (älterer Gastgeber) „Selten“ bis 1:10.
-  const glueckMax = r => ({ rare: 10, medium: 5, often: 3 })[r && r.gamble_odds] || 10;
-  const glueckStufe = r => tr({ medium: 'Mittel', often: 'Oft' }[r && r.gamble_odds] || 'Selten');
+  // Glücksspiel-Treffer (wie RuleConfig.gamble_max_in): größte geheime Quote 1:q. Seit dem Regler (Nutzer 07.11.2026) gamble_max 3–10;
+  // Gastgeber 1.6.16–1.6.18 schicken nur die Stufe gamble_odds (wie RuleConfig.GAMBLE_MAX_Q), ältere nichts (dann bis 1:10).
+  const glueckMax = r => {
+    const m = r ? parseInt(r.gamble_max, 10) : NaN;
+    if (!isNaN(m)) return Math.max(3, Math.min(10, m));
+    return ({ rare: 10, medium: 5, often: 3 })[r && r.gamble_odds] || 10;
+  };
   function hilfe(key, regeln) {
     const r = regeln || {};
     const k = zerlege(key);
@@ -257,7 +260,7 @@
     if (r.swap_cards === 'on') z.push(tr('Kartentausch: Wer einen legt, lässt alle ihre ganze Hand an den Nächsten weitergeben, %s.', tauschRichtung(r)));
     if (r.gamble_cards === 'on') {
       z.push(tr('Glücksspiel (2 Joker): verdeckt setzen und drücken – weiter riskieren oder aufhören. Treffer: 1 bis 10 Karten ziehen, Einsatz zurück; Aufhören: Einsatz unter die Ablage.'));
-      z.push(tr('Glücksspiel-Treffer: %s – je Glücksspiel wird geheim eine Trefferquote zwischen 1:1 und 1:%d ausgelost.', glueckStufe(r), glueckMax(r)));
+      z.push(tr('Glücksspiel-Treffer: Je Glücksspiel wird geheim eine Trefferquote zwischen 1:1 und 1:%d ausgelost.', glueckMax(r)));
     }
     if (r.discard_color === 'on') z.push(tr('Farbe ablegen: Wer eine Ablegen-Karte legt, wählt eigene Karten dieser Farbe zum Mitablegen; Joker bleiben auf der Hand. Beim Ablegen-Joker tippst du eine Karte der Ablegefarbe an und wählst zum Schluss die Spielfarbe.'));
     if (r.flip_mode === 'card') z.push(tr('Flip dreht nur die gelegte Karte: Oben liegt ihre andere Seite, die übrige Ablage bleibt zur Seite gelegt.'));

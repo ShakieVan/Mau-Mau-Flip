@@ -91,7 +91,8 @@ static func load_config(rules: Variant) -> RuleConfig:
 
 # Regeln, mit denen ein Gastgeber gerade spielt (view.rules, Lobby), zum Anzeigen: ohne die Hebung alter „Familie“-Regeln. Ein älterer
 # Gastgeber kennt die neueren Schlüssel nicht und spielt ohne sie; bis 1.6.15 lost er das Glücksspiel bis 1:10, die Hebung zeigte „Mittel“
-# (bis 1:5, Fund 01.11.2026). Zum Speichern bleibt es bei load_config.
+# (bis 1:5, Fund 01.11.2026); ein Gastgeber 1.6.16 bis 1.6.18 mit „Familie“ lost bis 1:5, die Hebung zeigte die heutige (bis 1:6).
+# Zum Speichern bleibt es bei load_config.
 static func live_config(rules: Variant) -> RuleConfig:
 	var d: Dictionary = (rules as Dictionary).duplicate() if rules is Dictionary else {}
 	if str(d.get("wild_restriction", "")) == "bluff":
@@ -148,7 +149,7 @@ static func comparable(cfg: RuleConfig) -> Dictionary:
 	if cfg.swap_cards == "off":
 		d["swap_direction"] = RuleConfig.CHOICES["swap_direction"][0]
 	if cfg.gamble_cards == "off":
-		d["gamble_odds"] = RuleConfig.CHOICES["gamble_odds"][0]
+		RuleConfig.neutral_gamble(d)
 	return d
 
 

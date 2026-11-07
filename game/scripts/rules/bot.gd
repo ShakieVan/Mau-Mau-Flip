@@ -288,8 +288,9 @@ static func _gamble(view: Dictionary, hints: Dictionary, rng: RandomNumberGenera
 	return {"a": "stake", "card": best_id}
 
 
-# Glücksspiel-Treffer (gamble_odds): mittlere Trefferchance je Druck im Verhältnis zu „Selten“ (29 / 46 / 61 %), gerundet.
-const ODDS_RISK := {"rare": 1.0, "medium": 1.5, "often": 2.0}
+# Glücksspiel-Treffer (Obergrenze gamble_max 3–10): mittlere Trefferchance je Druck im Verhältnis zu 1:10 (29 %), auf 0,1 gerundet
+# (1:3 61 %, 1:5 46 %); bei 1:3 und 1:5 die Werte der früheren Stufen „Oft“ und „Mittel“ (genau 2,09 und 1,56).
+const ODDS_RISK := {3: 2.0, 4: 1.8, 5: 1.5, 6: 1.4, 7: 1.3, 8: 1.2, 9: 1.1, 10: 1.0}
 
 
 # Wahrscheinlichkeit, beim Glücksspiel aufzuhören (die Trefferquote kennt der Bot nicht): Je größer der Einsatz, desto eher
@@ -303,15 +304,15 @@ static func stop_chance(view: Dictionary, level: int) -> float:
 	if level <= 0:
 		return 0.3
 	var stake := int((view.get("gamble", {}) as Dictionary).get("stake", 0))
-	var p := (0.1 + 0.18 * float(stake - 1)) * float(ODDS_RISK.get(_gamble_odds(view), 1.0))
+	var p := (0.1 + 0.18 * float(stake - 1)) * float(ODDS_RISK.get(_gamble_max(view), 1.0))
 	if hand == 2:
 		p -= 0.2
 	return clampf(p, 0.0, 0.9)
 
 
-# Trefferstufe des Glücksspiels aus den Regeln der Sicht ("rare" ohne Angabe, z. B. bei einem älteren Gastgeber).
-static func _gamble_odds(view: Dictionary) -> String:
-	return str((view.get("rules", {}) as Dictionary).get("gamble_odds", "rare"))
+# Obergrenze der Glücksspiel-Quote aus den Regeln der Sicht (10 ohne Angabe, z. B. bei einem älteren Gastgeber).
+static func _gamble_max(view: Dictionary) -> int:
+	return RuleConfig.gamble_max_in(view.get("rules", {}))
 
 
 # Wert einer Ablegen-Karte, die n weitere Karten mitnimmt, bei hand Karten auf der Hand: leert sie die Hand, sehr hoch; nimmt sie
@@ -548,9 +549,9 @@ static func _turn(view: Dictionary, hints: Dictionary, rng: RandomNumberGenerato
 				s = 8.0 + swap_value(view)
 			"gluecksspiel":
 				# Mit kleiner Hand ist die Chance aufs Fertigwerden gut (bei 3 Restkarten fast 50 %); sonst aufsparen – passt
-				# nichts anderes, wird er trotzdem gelegt (statt zu ziehen). Trifft es öfter (gamble_odds), lohnt es erst mit
-				# weniger Karten (3 Restkarten: Selten 47 %, Mittel 27 %, Oft 14 %).
-				var shift := int({"medium": 1, "often": 2}.get(_gamble_odds(view), 0))
+				# nichts anderes, wird er trotzdem gelegt (statt zu ziehen). Trifft es öfter (kleineres gamble_max), lohnt es erst mit
+				# weniger Karten (3 Restkarten: bis 1:10 47 %, bis 1:5 27 %, bis 1:3 14 %); Stufen wie RuleConfig.gamble_level.
+				var shift := int({"medium": 1, "often": 2}.get(RuleConfig.gamble_level(_gamble_max(view)), 0))
 				s = 2.0 + (30.0 if hand.size() <= 4 - shift else (8.0 if hand.size() <= 6 - shift else 0.0))
 			"ablegen":
 				s = _discard_value(_color_count(view, ctab[code], id), hand.size(), 5.0)

@@ -4,7 +4,8 @@ extends AppScreen
 # Bezeichnungen, Voreinstellungen). Jede Änderung landet sofort in App.settings "regeln".
 # Die Hausregeln mit Zusatzkarten (Kartentausch samt Tauschrichtung, Glücksspiel, Farbe mit ablegen) stehen in einem eigenen
 # Abschnitt mit kleinen Kartenbildern; die Kartenzahl der Partie (112–124) steht oben neben den Voreinstellungen und im
-# Abschnittskopf. Die Tauschrichtung ist nur mit Kartentausch bedienbar, die Glücksspiel-Treffer (Nutzer 25.10.2026) nur mit Glücksspiel.
+# Abschnittskopf. Die Tauschrichtung ist nur mit Kartentausch bedienbar, die Glücksspiel-Treffer nur mit Glücksspiel (Regler von 1:3 bis
+# 1:10, Nutzer 07.11.2026; vorher drei Stufen).
 # Gespeicherte Regelsätze (RuleSets, Nutzerwunsch 06.10.2026): Abschnitt „Gespeichert“ unter den Voreinstellungen. Kopfreihe:
 # Bezeichnung, Hinweis „Antippen lädt, × löscht“ und rechts „Speichern unter …“ (RuleSetSaveBox). Darunter die Knöpfe über die
 # ganze Breite, umbrechend: zuerst – falls vorhanden – „Zuletzt gespielt bei <Gastgeber>“ (Regeln des letzten Gastgebers, von
@@ -44,8 +45,8 @@ const EXTRA_OPTIONS := [
 	["swap_cards", "Kartentausch", "4 Zusatzkarten: Alle geben ihre ganze Hand weiter", "an_aus", ["hell_rot_tausch", "dunkel_tuerkis_tausch"]],
 	["swap_direction", "Tauschrichtung", "Wohin die Hände wandern (nur mit Kartentausch)", [["clockwise", "Im Uhrzeigersinn"], ["counter", "Gegen den Uhrzeigersinn"], ["play", "In Spielrichtung"], ["against", "Gegen die Spielrichtung"]], []],
 	["gamble_cards", "Glücksspiel", "2 Joker: verdeckt setzen und drücken – weiter riskieren oder aufhören", "an_aus", ["hell_gluecksspiel", "dunkel_gluecksspiel"]],
-	["gamble_odds", "Glücksspiel-Treffer", "Wie oft der Glücksspielknopf trifft (1 bis 10 Karten ziehen) statt 0 zu zeigen – nur mit Glücksspiel",
-		[["rare", "Selten (bis 1:10)"], ["medium", "Mittel (bis 1:5)"], ["often", "Oft (bis 1:3)"]], []],
+	["gamble_max", "Glücksspiel-Treffer", "Wie oft der Glücksspielknopf trifft (1 bis 10 Karten ziehen) statt 0 zu zeigen – nur mit Glücksspiel",
+		"regler", []],
 	["discard_color", "Farbe mit ablegen", "6 Zusatzkarten: Karten der Farbe mit ablegen, du wählst aus", "an_aus", ["hell_gruen_ablegen", "hell_ablegen_joker"]],
 ]
 const LABEL_W := 380.0
@@ -396,6 +397,8 @@ func _option_row(opt: Array) -> Control:
 		ScreenKit.style_switch(c)
 		c.toggled.connect(func(on: bool) -> void: set_option(key, ("on" if on else "off") if as_text else on))
 		ctrl = c
+	elif str(kind) == "regler":
+		ctrl = _slider(key)
 	else:
 		var limits: Array = RuleConfig.NUMBERS[key]
 		var step := int(opt[4]) if opt.size() > 4 else 1
@@ -403,6 +406,65 @@ func _option_row(opt: Array) -> Control:
 	ctrl.name = key
 	_controls[key] = ctrl
 	return ScreenKit.row(str(opt[1]), ctrl, LABEL_W, str(opt[2]))
+
+
+# Regler „Glücksspiel-Treffer“ (Nutzer 07.11.2026: „von 1:3 bis 1:10 stufenlos“): links „oft“ (bis 1:3), rechts „selten“ (bis 1:10),
+# daneben die Obergrenze und der erwartete Anteil der 0 beim ersten Druck. Er rastet bei jeder ganzen Quote ein (die geheime Quote ist
+# immer 1:q mit ganzem q); jeder neue Wert wird sofort übernommen und gespeichert. Griff wie beim Tempo-Regler der Einstellungen.
+func _slider(key: String) -> HBoxContainer:
+	var limits: Array = RuleConfig.NUMBERS[key]
+	var h := ScreenKit.hbox(12)
+	h.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	h.add_child(ScreenKit.label("oft", "HintLabel", UiFonts.size("hinweis")))
+	var s := HSlider.new()
+	s.name = "Regler"
+	s.min_value = float(limits[1])
+	s.max_value = float(limits[2])
+	s.step = 1.0
+	s.tick_count = int(limits[2]) - int(limits[1]) + 1
+	s.ticks_on_borders = true
+	s.value = float(cfg.get(key))
+	s.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	s.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	s.custom_minimum_size = Vector2(240, ScreenKit.TOUCH)
+	s.focus_mode = Control.FOCUS_NONE
+	s.add_theme_icon_override("grabber", UiTheme.grabber_texture(46, UiPalette.CREAM, UiPalette.INK))
+	s.add_theme_icon_override("grabber_highlight", UiTheme.grabber_texture(46, UiPalette.PAPER_D, UiPalette.INK))
+	s.add_theme_icon_override("grabber_disabled", UiTheme.grabber_texture(46, UiPalette.PAPER_D, UiPalette.INK))
+	h.add_child(s)
+	h.add_child(ScreenKit.label("selten", "HintLabel", UiFonts.size("hinweis")))
+	var info := ScreenKit.vbox(0)
+	info.name = "Wert"
+	info.alignment = BoxContainer.ALIGNMENT_CENTER
+	var top := ScreenKit.label("", "", UiFonts.size("zeile"))
+	top.name = "Quote"
+	top.add_theme_font_override("font", UiFonts.text(800))
+	info.add_child(top)
+	var zeros := ScreenKit.label("", "HintLabel", UiFonts.size("klein"))
+	zeros.name = "Nullen"
+	info.add_child(zeros)
+	# Feste Breite für den längsten Text, damit der Regler beim Ziehen nicht hin und her springt
+	var widest := 0.0
+	for t in [[top, RuleConfig.gamble_max_title(int(limits[2]))], [zeros, I18n.t("im Mittel %s Nullen") % "88 %"]]:
+		var l := t[0] as Label
+		widest = maxf(widest, l.get_theme_font("font").get_string_size(str(t[1]), HORIZONTAL_ALIGNMENT_LEFT, -1, l.get_theme_font_size("font_size")).x)
+	info.custom_minimum_size.x = ceilf(widest) + 8.0
+	h.add_child(info)
+	s.value_changed.connect(func(v: float) -> void:
+		_show_slider(h, int(v))
+		set_option(key, int(v)))
+	_show_slider(h, int(s.value))
+	return h
+
+
+# Anzeige neben dem Regler: „bis 1:7“ und „im Mittel 63 % Nullen“
+func _show_slider(ctrl: Control, top: int) -> void:
+	var q := ctrl.find_child("Quote", true, false) as Label
+	var z := ctrl.find_child("Nullen", true, false) as Label
+	if q != null:
+		q.text = RuleConfig.gamble_max_title(top)
+	if z != null:
+		z.text = I18n.t("im Mittel %s Nullen") % ("%d %%" % RuleConfig.gamble_zero_percent(top))
 
 
 # Zeile einer Hausregel: vorn die Kartenbilder (bzw. Platz dafür), damit Bezeichnungen und Bedienelemente bündig bleiben
@@ -464,6 +526,9 @@ func _refresh() -> void:
 			(ctrl as CheckButton).set_pressed_no_signal(bool(cfg.get(key)))
 		elif str(kind) == "an_aus":
 			(ctrl as CheckButton).set_pressed_no_signal(str(cfg.get(key)) == "on")
+		elif str(kind) == "regler":
+			(ctrl.find_child("Regler", true, false) as HSlider).set_value_no_signal(float(cfg.get(key)))
+			_show_slider(ctrl, int(cfg.get(key)))
 		else:
 			var state: Dictionary = ctrl.get_meta("value")
 			state.v = int(cfg.get(key))
@@ -482,7 +547,7 @@ func _refresh_enabled() -> void:
 	_dim("scoring", cfg.round_end == "first")
 	_dim("mau_penalty", cfg.mau_call != "off")
 	_dim("swap_direction", cfg.swap_cards == "on", true)
-	_dim("gamble_odds", cfg.gamble_cards == "on", true)
+	_dim("gamble_max", cfg.gamble_cards == "on", true)
 	var n := cfg.card_count()
 	for l in _count_labels:
 		l.text = I18n.t("%d Karten") % n
@@ -493,7 +558,7 @@ func _refresh_enabled() -> void:
 		pill.tooltip_text = "Kartenzahl der Partie"
 
 
-# active = false: Zeile halb durchsichtig; lock: zusätzlich alle Knöpfe des Bedienelements gesperrt
+# active = false: Zeile halb durchsichtig; lock: zusätzlich alle Knöpfe und Regler des Bedienelements gesperrt
 func _dim(key: String, active: bool, lock := false) -> void:
 	var ctrl: Control = _controls.get(key)
 	if ctrl != null and ctrl.get_parent() != null:
@@ -503,6 +568,9 @@ func _dim(key: String, active: bool, lock := false) -> void:
 				(b as BaseButton).disabled = not active
 			if ctrl is BaseButton:
 				(ctrl as BaseButton).disabled = not active
+			for s in ctrl.find_children("*", "Slider", true, false):
+				(s as Slider).editable = active
+				(s as Slider).mouse_filter = Control.MOUSE_FILTER_STOP if active else Control.MOUSE_FILTER_IGNORE
 
 
 func _render_overview() -> void:
@@ -664,3 +732,6 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_TRANSLATION_CHANGED and _overview_text != null and cfg != null:
 		_refresh_enabled()
 		_render_overview()
+		var odds: Control = _controls.get("gamble_max")
+		if odds != null:
+			_show_slider(odds, cfg.gamble_max)

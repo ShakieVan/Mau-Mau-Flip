@@ -285,8 +285,18 @@ func migration_013(path: String) -> void:
 	# Anzeige der laufenden Partie: Ein Gastgeber bis 1.6.15 kennt gamble_odds nicht und lost bis 1:10, seine „Familie“ wird nicht gehoben
 	var old_host := RuleConfig.preset("familie").to_dict()
 	old_host.erase("gamble_odds")
-	check(RuleSets.live_config(old_host).gamble_odds == "rare" and RuleSets.live_config(old_host).gamble_max_q() == 10, "alter Gastgeber: Anzeige bis 1:10")
-	check(RuleSets.load_config(old_host).gamble_odds == "medium", "Speichern hebt die alte Familie weiter")
+	old_host.erase("gamble_max")
+	check(RuleSets.live_config(old_host).gamble_max == 10 and RuleSets.live_config(old_host).gamble_max_q() == 10, "alter Gastgeber: Anzeige bis 1:10")
+	check(RuleSets.load_config(old_host).gamble_max == 6, "Speichern hebt die alte Familie weiter (bis 1:6)")
+	# Gastgeber 1.6.16 bis 1.6.18 (Stufen statt Regler): Anzeige und Speichern mit der Obergrenze der Stufe
+	var level_host := RuleConfig.preset("familie").to_dict()
+	level_host.erase("gamble_max")
+	level_host["gamble_odds"] = "often"
+	check(RuleSets.live_config(level_host).gamble_max == 3 and RuleSets.load_config(level_host).gamble_max == 3, "Gastgeber mit Stufe „Oft“: bis 1:3")
+	level_host["gamble_odds"] = "medium"
+	check(RuleSets.live_config(level_host).gamble_max == 5, "Gastgeber mit Familie 1.6.18: Anzeige bis 1:5 (so lost er)")
+	check(RuleSets.load_config(level_host).preset_name() == "familie" and RuleSets.load_config(level_host).gamble_max == 6,
+		"Gastgeber mit Familie 1.6.18: Speichern hebt auf die heutige Familie (bis 1:6)")
 	check(RuleSets.live_config(RuleConfig.preset("familie").to_dict()).equals(RuleConfig.preset("familie")), "heutiger Gastgeber: Anzeige unverändert")
 	check(RuleSets.live_config({"wild_restriction": "bluff"}).wild_restriction == "free", "Anzeige: bluff → free")
 	check(RuleSets.live_config(null).equals(RuleConfig.new()) and RuleSets.live_config({}).equals(RuleConfig.new()), "Anzeige ohne Regeln: Grundeinstellung")

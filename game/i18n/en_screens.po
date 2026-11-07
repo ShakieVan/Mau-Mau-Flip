@@ -194,11 +194,11 @@ msgstr "In Pass the phone, several people play on this device, so only games are
 msgid "Die Glücksspiel-Zeilen zählen jedes Glücksspiel am Tisch, egal wer es legt, wenn dieses Gerät würfelt (Übung oder Gastgeber)."
 msgstr "The Gamble lines count every Gamble at the table, whoever plays it, when this device rolls the dice (practice or host)."
 
-msgid "Glücksspiel „%s“: 0 beim ersten Druck (erwartet %s)"
-msgstr "Gamble “%s”: 0 on the first press (expected %s)"
+msgid "Glücksspiel bis 1:%d: 0 beim ersten Druck (erwartet %s)"
+msgstr "Gamble up to 1:%d: 0 on the first press (expected %s)"
 
-msgid "Glücksspiel „%s“: 0 bei allen Drucken"
-msgstr "Gamble “%s”: 0 across all presses"
+msgid "Glücksspiel bis 1:%d: 0 bei allen Drucken"
+msgstr "Gamble up to 1:%d: 0 across all presses"
 
 msgid "Noch keine Partie gespielt."
 msgstr "No games played yet."

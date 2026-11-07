@@ -87,16 +87,16 @@ func _init() -> void:
 func _gamble_counters(path: String) -> void:
 	var s := AppStats.new(path)
 	s.reset()
-	var medium := {"seat": 1, "rules": {"gamble_odds": "medium"}}
+	var medium := {"seat": 1, "rules": {"gamble_max": 5}}
 	var key := AppStats.gamble_key
 	# Erster Druck 0, dann weiter bis zum Treffer; auch der Zug eines Mitspielers zählt, in getrennten Lieferungen
 	s.record([{"e": "gamble_start", "seat": 0}], medium, "host")
-	check(s.value(key.call("medium", "spiele")) == 0, "Glücksspiel: Zählt erst beim Druck")
+	check(s.value(key.call(5, "spiele")) == 0, "Glücksspiel: Zählt erst beim Druck")
 	s.record([{"e": "gamble_roll", "seat": 0, "value": 0}], medium, "host")
 	s.record([{"e": "gamble_roll", "seat": 0, "value": 4}], medium, "host")
 	s.record([{"e": "gamble_start", "seat": 1}, {"e": "gamble_roll", "seat": 1, "value": 7}], medium, "solo")
-	check(s.value(key.call("medium", "spiele")) == 2 and s.value(key.call("medium", "spiele0")) == 1, "Glücksspiel: nur der erste Druck je Spiel")
-	check(s.value(key.call("medium", "drucke")) == 3 and s.value(key.call("medium", "drucke0")) == 1, "Glücksspiel: alle Drucke")
+	check(s.value(key.call(5, "spiele")) == 2 and s.value(key.call(5, "spiele0")) == 1, "Glücksspiel: nur der erste Druck je Spiel")
+	check(s.value(key.call(5, "drucke")) == 3 and s.value(key.call(5, "drucke0")) == 1, "Glücksspiel: alle Drucke")
 	check(s.value("gluecksspiel_max") == 7, "Höchster Treffer zählt weiter nur den eigenen")
 	# Gast und Weitergeben würfeln nicht auf diesem Gerät bzw. zählen nur Partien; ohne Start zählt kein erster Druck
 	var before := s.data.duplicate()
@@ -104,27 +104,40 @@ func _gamble_counters(path: String) -> void:
 	s.record([{"e": "gamble_start", "seat": 0}, {"e": "gamble_roll", "seat": 0, "value": 0}], medium, "pass")
 	check(s.data == before, "Glücksspiel: Gast und Weitergeben zählen nicht")
 	s.record([{"e": "gamble_roll", "seat": 0, "value": 0}], medium, "host")
-	check(s.value(key.call("medium", "spiele")) == 2 and s.value(key.call("medium", "drucke")) == 4, "Fortgesetztes Glücksspiel: nur bei den Drucken")
-	# Stufen getrennt, unbekannte Stufe zählt nicht, ohne Angabe Selten
-	s.record([{"e": "gamble_start"}, {"e": "gamble_roll", "value": 2}], {"seat": 1, "rules": {"gamble_odds": "often"}}, "host")
+	check(s.value(key.call(5, "spiele")) == 2 and s.value(key.call(5, "drucke")) == 4, "Fortgesetztes Glücksspiel: nur bei den Drucken")
+	# Obergrenzen getrennt; Stufe eines älteren Stands = deren Obergrenze, ohne Angabe oder ungültig bis 1:10
+	s.record([{"e": "gamble_start"}, {"e": "gamble_roll", "value": 2}], {"seat": 1, "rules": {"gamble_max": 3}}, "host")
 	s.record([{"e": "gamble_start"}, {"e": "gamble_roll", "value": 0}], {"seat": 1, "rules": {}}, "host")
-	var before2 := s.data.duplicate()
 	s.record([{"e": "gamble_start"}, {"e": "gamble_roll", "value": 0}], {"seat": 1, "rules": {"gamble_odds": "kaputt"}}, "host")
-	check(s.value(key.call("often", "spiele")) == 1 and s.value(key.call("rare", "spiele0")) == 1 and s.data == before2, "Stufen getrennt")
-	# Zeilen, Erwartung, Laden, Zurücksetzen
-	check(AppStats.gamble_expected("rare") == 71 and AppStats.gamble_expected("medium") == 54 and AppStats.gamble_expected("often") == 39, "erwartete Anteile")
+	s.record([{"e": "gamble_start"}, {"e": "gamble_roll", "value": 3}], {"seat": 1, "rules": {"gamble_max": 7}}, "host")
+	s.record([{"e": "gamble_start"}, {"e": "gamble_roll", "value": 0}], {"seat": 1, "rules": {"gamble_odds": "often"}}, "host")
+	check(s.value(key.call(3, "spiele")) == 2 and s.value(key.call(3, "spiele0")) == 1 and s.value(key.call(10, "spiele0")) == 2
+		and s.value(key.call(7, "spiele")) == 1 and s.value(key.call(7, "spiele0")) == 0, "Obergrenzen getrennt")
+	# Zeilen (aufsteigend wie der Regler), Erwartung, Laden, Zurücksetzen
 	var rows := s.gamble_rows()
-	check(rows.size() == 6 and s.rows().size() == AppStats.KEYS.size() + 6, "je Stufe zwei Zeilen (%d)" % rows.size())
-	check(str(rows[2][0]) == "Glücksspiel „Mittel“: 0 beim ersten Druck (erwartet 54 %)" and str(rows[2][1]) == "1 von 2 · 50 %", "Zeile: %s" % str(rows[2]))
-	check(str(rows[3][0]) == "Glücksspiel „Mittel“: 0 bei allen Drucken" and str(rows[3][1]) == "2 von 4 · 50 %", "Zeile: %s" % str(rows[3]))
+	check(rows.size() == 8 and s.rows().size() == AppStats.KEYS.size() + 8, "je Obergrenze zwei Zeilen (%d)" % rows.size())
+	check(str(rows[0][0]) == "Glücksspiel bis 1:3: 0 beim ersten Druck (erwartet 39 %)" and str(rows[0][1]) == "1 von 2 · 50 %", "Zeile: %s" % str(rows[0]))
+	check(str(rows[2][0]) == "Glücksspiel bis 1:5: 0 beim ersten Druck (erwartet 54 %)" and str(rows[2][1]) == "1 von 2 · 50 %", "Zeile: %s" % str(rows[2]))
+	check(str(rows[3][0]) == "Glücksspiel bis 1:5: 0 bei allen Drucken" and str(rows[3][1]) == "2 von 4 · 50 %", "Zeile: %s" % str(rows[3]))
+	check(str(rows[4][0]) == "Glücksspiel bis 1:7: 0 beim ersten Druck (erwartet 63 %)" and str(rows[6][0]).begins_with("Glücksspiel bis 1:10:"), "Zeilen 1:7 und 1:10")
 	check(AppStats.new(path).data == s.data, "Glücksspiel-Zähler nach dem Laden gleich")
 	check(s.reset() and s.gamble_rows().is_empty() and s.is_empty(), "Zurücksetzen löscht die Glücksspiel-Zähler")
+	# Stand 1.6.18 (Zähler je Stufe gs_rare_… / gs_medium_… / gs_often_…): Laden übernimmt sie zu 1:10 / 1:5 / 1:3, Speichern ohne sie
+	var f := FileAccess.open(path, FileAccess.WRITE)
+	f.store_string(JSON.stringify({"version": 1, "partien": 4, "gs_rare_spiele": 12, "gs_rare_spiele0": 9, "gs_medium_spiele": 5,
+		"gs_medium_drucke": 8, "gs_medium_drucke0": 3, "gs_often_spiele0": 2, "gs_often_spiele": 6, "gs_kaputt_spiele": 99}))
+	f.close()
+	var legacy := AppStats.new(path)
+	check(legacy.value("partien") == 4 and legacy.value(key.call(10, "spiele")) == 12 and legacy.value(key.call(10, "spiele0")) == 9
+		and legacy.value(key.call(5, "spiele")) == 5 and legacy.value(key.call(5, "drucke0")) == 3 and legacy.value(key.call(3, "spiele")) == 6
+		and not legacy.data.has("gs_rare_spiele"), "Zähler von 1.6.18 übernommen")
+	check(legacy.gamble_rows().size() == 4, "Zeilen aus übernommenen Zählern (%d)" % legacy.gamble_rows().size())
 
 
 # Echte Partien mit Bots: Die Zähler stimmen mit den Ereignissen überein, und der Anteil der 0 beim ersten Druck liegt beim erwarteten Wert
 func _gamble_real_games(path: String) -> void:
 	var cfg := RuleConfig.preset("familie")
-	check(cfg.gamble_odds == "medium", "Familie spielt Mittel")
+	check(cfg.gamble_max == 6, "Familie spielt bis 1:6")
 	var s := AppStats.new(path)
 	s.reset()
 	var starts := 0
@@ -150,11 +163,11 @@ func _gamble_real_games(path: String) -> void:
 					rolls += 1
 					zeros += 1 if int(e.value) == 0 else 0
 			s.record(res.events, g.view_for(seat), "host")
-	var games := s.value(AppStats.gamble_key("medium", "spiele"))
-	var first_zero := s.value(AppStats.gamble_key("medium", "spiele0"))
+	var games := s.value(AppStats.gamble_key(6, "spiele"))
+	var first_zero := s.value(AppStats.gamble_key(6, "spiele0"))
 	check(starts > 200 and games > 200 and games <= starts, "Glücksspiele gezählt (%d von %d Starts)" % [games, starts])
-	check(s.value(AppStats.gamble_key("medium", "drucke")) == rolls and s.value(AppStats.gamble_key("medium", "drucke0")) == zeros, "alle Drucke wie in den Ereignissen")
-	check(s.value(AppStats.gamble_key("rare", "drucke")) == 0 and s.value(AppStats.gamble_key("often", "drucke")) == 0, "andere Stufen bleiben leer")
+	check(s.value(AppStats.gamble_key(6, "drucke")) == rolls and s.value(AppStats.gamble_key(6, "drucke0")) == zeros, "alle Drucke wie in den Ereignissen")
+	check(s.value(AppStats.gamble_key(10, "drucke")) == 0 and s.value(AppStats.gamble_key(3, "drucke")) == 0, "andere Obergrenzen bleiben leer")
 	var share := 100.0 * first_zero / maxf(games, 1)
-	check(absf(share - AppStats.gamble_expected("medium")) < 8.0, "0 beim ersten Druck: %.1f %% (erwartet %d %%)" % [share, AppStats.gamble_expected("medium")])
+	check(absf(share - RuleConfig.gamble_zero_percent(6)) < 8.0, "0 beim ersten Druck: %.1f %% (erwartet %d %%)" % [share, RuleConfig.gamble_zero_percent(6)])
 	print("Echte Partien: %d Glücksspiele, 0 beim ersten Druck %.1f %%, %d Drucke" % [games, share, rolls])

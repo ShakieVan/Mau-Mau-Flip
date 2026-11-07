@@ -3,8 +3,8 @@ extends "res://tests/test_rules_views.gd"
 # Gebaute Fälle: Kartendaten aller 8 Deckvarianten (Kartenzahl, Gesichter, Prüfsummen, Codes, Sortierung), Optionen und Texte,
 # Rundenstart, Legen und Phase "gamble" samt Ablehnungen, Setzen/Drücken mit vorgegebenen Würfen (MauGame.force_rolls), Treffer,
 # Fertigwerden bei round_end first/last, letzte Karte, Mau-Fenster und Erwischen im Glücksspiel, offene Stapelstrafe, Flip,
-# leere Stapel, zu zweit, mit Kartentausch, Zufall (Quote gleichverteilt, Treffer 1/q, Werte 1–10), Trefferstufe gamble_odds
-# (Selten/Mittel/Oft: Obergrenze 10/5/3, Familie, Hebung, Texte App/Browser, Spielstand, Bot), Lecktest (Quote und
+# leere Stapel, zu zweit, mit Kartentausch, Zufall (Quote gleichverteilt, Treffer 1/q, Werte 1–10), Glücksspiel-Treffer gamble_max
+# (Regler 3–10, Stufe gamble_odds älterer Geräte, Familie, Hebung, Texte App/Browser, Spielstand, Bot), Lecktest (Quote und
 # Einsatzgesichter nie bei anderen), to_dict/from_dict mitten im Glücksspiel und Bot-Entscheidungen. Danach die Zufallsprüfungen
 # aus test_rules_views.gd mit Glücksspiel (gamble_mode() = true), ein Stärketest und der Bot-Dauerlauf mit ALLEN Hausregeln an
 # (Kartentausch, Glücksspiel, Farbe mit ablegen): Standard 2000 Partien (RULES_GAMBLE_GAMES, godot_run.ps1 -EnvPairs
@@ -770,39 +770,83 @@ func _gb_random() -> void:
 	check(seqs[0] == seqs[1] and (seqs[0] as Array).size() >= 2, "gleicher Seed: gleiche Quote und Würfe (%s)" % str(seqs[0]))
 
 
-# --- Glücksspiel-Treffer (gamble_odds, Nutzer 25.10.2026: „Das Glücksrad macht viel zu oft 0“) ---
+# --- Glücksspiel-Treffer (Nutzer 25.10.2026: „Das Glücksrad macht viel zu oft 0“; Regler 1:3 bis 1:10 seit 07.11.2026) ---
+
+# Regeln wie von einem Gastgeber 1.6.16 bis 1.6.18: nur die Stufe gamble_odds, kein gamble_max
+func _legacy_odds(over: Dictionary, level: String) -> Dictionary:
+	var d := gb_cfg(over).to_dict()
+	d.erase("gamble_max")
+	d["gamble_odds"] = level
+	return d
+
 
 func _gb_odds() -> void:
-	# Optionen, Standard, Voreinstellungen
-	check(RuleConfig.CHOICES["gamble_odds"] == ["rare", "medium", "often"] and RuleConfig.new().gamble_odds == "rare"
-		and RuleConfig.new().gamble_max_q() == 10, "Standard: Selten (bis 1:10, wie bis 1.6.15)")
+	# Option, Standard, Voreinstellungen
+	check(RuleConfig.NUMBERS["gamble_max"] == [10, 3, 10] and RuleConfig.new().gamble_max == 10 and RuleConfig.new().gamble_max_q() == 10
+		and RuleConfig.new().gamble_odds == "rare", "Standard: bis 1:10 (wie bis 1.6.15), Stufe „rare“ für ältere Geräte")
 	for p in RuleConfig.preset_names():
-		check(RuleConfig.preset(p).gamble_odds == ("medium" if p == "familie" else "rare"), "Voreinstellung %s: Trefferstufe" % p)
-	check(RuleConfig.preset("familie").gamble_max_q() == 5 and gb_cfg({"gamble_odds": "often"}).gamble_max_q() == 3, "Obergrenzen 10 / 5 / 3")
-	check(RuleConfig.from_dict({"gamble_odds": "immer"}).gamble_odds == "rare", "ungültige Stufe bleibt beim Standard")
+		check(RuleConfig.preset(p).gamble_max == (6 if p == "familie" else 10), "Voreinstellung %s: Obergrenze" % p)
+	var all_ok := true
+	for top: int in range(3, 11):
+		var c := gb_cfg({"gamble_max": top})
+		var level := "often" if top == 3 else ("medium" if top <= 6 else "rare")
+		var d := c.to_dict()
+		if c.gamble_max_q() != top or d.gamble_max != top or d.gamble_odds != level or not RuleConfig.from_dict(d).equals(c):
+			all_ok = false
+	check(all_ok, "jede Obergrenze 3 … 10: Rundreise, Stufe für ältere Geräte (3 oft, 4–6 mittel, 7–10 selten)")
+	check(gb_cfg({"gamble_max": 1}).gamble_max == 3 and gb_cfg({"gamble_max": 25}).gamble_max == 10 and gb_cfg({"gamble_max": 7.0}).gamble_max == 7
+		and gb_cfg({"gamble_max": "6"}).gamble_max == 6 and gb_cfg({"gamble_max": true}).gamble_max == 10, "Obergrenze geklemmt, JSON-Zahl, ungültig = Standard")
+	check(RuleConfig.from_dict({"gamble_odds": "immer"}).gamble_max == 10, "ungültige Stufe bleibt beim Standard")
+	# Ältere Regeln mit Stufe: Obergrenze der Stufe; mit beiden Schlüsseln zählt gamble_max (auch in umgekehrter Reihenfolge)
+	check(RuleConfig.from_dict(_legacy_odds({}, "often")).gamble_max == 3 and RuleConfig.from_dict(_legacy_odds({}, "medium")).gamble_max == 5
+		and RuleConfig.from_dict(_legacy_odds({}, "rare")).gamble_max == 10, "Stufe eines Gastgebers 1.6.16–1.6.18: 3 / 5 / 10")
+	check(RuleConfig.from_dict({"gamble_max": 7, "gamble_odds": "often"}).gamble_max == 7 and RuleConfig.from_dict({"gamble_odds": "often", "gamble_max": 7}).gamble_max == 7,
+		"gamble_max geht vor der Stufe")
+	var c4 := RuleConfig.new()
+	c4.gamble_odds = "medium"
+	check(c4.gamble_max == 5 and c4.gamble_odds == "medium", "Stufe setzen = deren Obergrenze")
+	check(RuleConfig.gamble_max_in(null) == 10 and RuleConfig.gamble_max_in({}) == 10 and RuleConfig.gamble_max_in({"gamble_odds": "often"}) == 3
+		and RuleConfig.gamble_max_in({"gamble_max": 8}) == 8, "gamble_max_in: empfangene Regeln")
+	check(RuleConfig.gamble_zero_percent(10) == 71 and RuleConfig.gamble_zero_percent(5) == 54 and RuleConfig.gamble_zero_percent(3) == 39
+		and RuleConfig.gamble_zero_percent(6) == 59 and RuleConfig.gamble_zero_percent(7) == 63, "erwarteter Anteil der 0: 39 / 54 / 59 / 63 / 71 %")
 	var fam := RuleConfig.preset("familie")
-	fam.gamble_odds = "rare"
-	check(fam.preset_name() == "", "Familie mit Selten = eigene Regeln")
-	var off := RuleConfig.from_dict({"gamble_odds": "often"})
-	check(off.preset_name() == "offiziell" and RuleSets.same(off, RuleConfig.new()), "ohne Glücksspiel zählt die Stufe nicht")
-	# Hebung: alte Familie ohne den Schlüssel (bis 1.6.15) → heutige Familie mit Mittel; eigene Sätze bleiben bei Selten
+	fam.gamble_max = 5
+	check(fam.preset_name() == "", "Familie mit bis 1:5 = eigene Regeln")
+	fam.gamble_max = 6
+	check(fam.preset_name() == "familie", "zurück auf bis 1:6: Familie")
+	var off := RuleConfig.from_dict({"gamble_max": 4})
+	check(off.preset_name() == "offiziell" and RuleSets.same(off, RuleConfig.new()), "ohne Glücksspiel zählt die Obergrenze nicht")
+	# Hebung: alte Familie ohne beide Schlüssel (bis 1.6.15) → heutige Familie (bis 1:6); eigene Sätze bleiben bei 1:10
 	var old := RuleConfig.preset("familie").to_dict()
 	old.erase("gamble_odds")
+	old.erase("gamble_max")
 	var lifted := RuleConfig.from_dict(RuleConfig.migrate_dict(old))
-	check(lifted.preset_name() == "familie" and lifted.gamble_odds == "medium", "alte Familie wird gehoben (Mittel)")
+	check(lifted.preset_name() == "familie" and lifted.gamble_max == 6, "alte Familie wird gehoben (bis 1:6)")
 	var older := old.duplicate()
 	older.erase("counter_round")                     # Familie 1.6.10: ohne Kontern und ohne Trefferstufe
 	check(RuleConfig.from_dict(RuleConfig.migrate_dict(older)).preset_name() == "familie", "Familie 1.6.10 wird gehoben")
 	var own := gb_cfg({"round_end": "last"}).to_dict()
 	own.erase("gamble_odds")
-	check(RuleConfig.from_dict(RuleConfig.migrate_dict(own)).gamble_odds == "rare", "eigene Regeln ohne Schlüssel: Selten")
-	var now := gb_cfg({"gamble_odds": "often"}).to_dict()
-	check(RuleConfig.from_dict(RuleConfig.migrate_dict(now)).gamble_odds == "often", "gespeicherte Stufe bleibt")
-	# Quote je Stufe gleichverteilt bis zur Obergrenze
-	for odds in ["rare", "medium", "often"]:
+	own.erase("gamble_max")
+	check(RuleConfig.from_dict(RuleConfig.migrate_dict(own)).gamble_max == 10, "eigene Regeln ohne Schlüssel: bis 1:10")
+	# Stände 1.6.16–1.6.18 (nur Stufe): Familie mit „Mittel“ (bis 1:5) wird zur heutigen (bis 1:6), alles andere behält die Obergrenze der Stufe
+	var fam_old := RuleConfig.from_dict(RuleConfig.migrate_dict(_legacy_odds(RuleConfig.PRESETS.familie, "medium")))
+	check(fam_old.preset_name() == "familie" and fam_old.gamble_max == 6, "Familie 1.6.18 (Mittel) wird gehoben (bis 1:6)")
+	check(RuleConfig.from_dict(_legacy_odds(RuleConfig.PRESETS.familie, "medium")).gamble_max == 5, "ohne Hebung (Anzeige): bis 1:5 wie gelost")
+	var fam_often := RuleConfig.from_dict(RuleConfig.migrate_dict(_legacy_odds(RuleConfig.PRESETS.familie, "often")))
+	var fam_rare := RuleConfig.from_dict(RuleConfig.migrate_dict(_legacy_odds(RuleConfig.PRESETS.familie, "rare")))
+	check(fam_often.gamble_max == 3 and fam_often.preset_name() == "" and fam_rare.gamble_max == 10 and fam_rare.preset_name() == "",
+		"Familie 1.6.18 mit „Oft“/„Selten“ bleibt eigene Regeln (bis 1:3 / 1:10)")
+	var own_med := RuleConfig.from_dict(RuleConfig.migrate_dict(_legacy_odds({"round_end": "last"}, "medium")))
+	check(RuleConfig.from_dict(RuleConfig.migrate_dict(_legacy_odds({"round_end": "last"}, "often"))).gamble_max == 3 and own_med.gamble_max == 5,
+		"eigene Sätze 1.6.16–1.6.18: Obergrenze der Stufe")
+	var now := gb_cfg({"gamble_max": 8}).to_dict()
+	check(RuleConfig.from_dict(RuleConfig.migrate_dict(now)).gamble_max == 8, "gespeicherte Obergrenze bleibt")
+	# Quote gleichverteilt bis zur Obergrenze (die früheren Stufen, Familie und Zwischenwerte)
+	for top: int in [10, 7, 6, 5, 4, 3]:
 		var g := gb_make({"hands": [["hell_gluecksspiel", "hell_gelb_1"], ["hell_blau_1"], ["hell_gruen_1"]], "top": "hell_rot_5"},
-			{"gamble_odds": odds})
-		var top := int(RuleConfig.GAMBLE_MAX_Q[odds])
+			{"gamble_max": top})
+		var odds := "bis 1:%d" % top
 		var qs := {}
 		var n := 1500 * top
 		for i in n:
@@ -812,8 +856,8 @@ func _gb_odds() -> void:
 		for q in range(1, top + 1):
 			if absf(float(qs.get(q, 0)) / n - 1.0 / top) > 0.025:
 				ok = false
-		check(ok, "Stufe %s: Quote 1:1 bis 1:%d gleichverteilt (%s)" % [odds, top, str(qs)])
-		# … und echte Drucke: Anteil der Nullen etwa 1 − Mittel(1/q) (71 / 54 / 39 %)
+		check(ok, "%s: Quote 1:1 bis 1:%d gleichverteilt (%s)" % [odds, top, str(qs)])
+		# … und echte Drucke: Anteil der Nullen etwa 1 − Mittel(1/q) (71 / 63 / 59 / 54 / 48 / 39 %)
 		var zeros := 0
 		var presses := 0
 		for i in 3000:
@@ -824,52 +868,67 @@ func _gb_odds() -> void:
 		var want := 0.0
 		for q in range(1, top + 1):
 			want += (1.0 - 1.0 / q) / top
-		check(absf(float(zeros) / presses - want) < 0.04, "Stufe %s: %.0f %% Nullen (erwartet %.0f %%)" % [odds, 100.0 * zeros / presses, 100.0 * want])
+		check(absf(float(zeros) / presses - want) < 0.04, "%s: %.0f %% Nullen (erwartet %.0f %%)" % [odds, 100.0 * zeros / presses, 100.0 * want])
 		g.gamble = {}
-	# Spielstand: Stufe und Quote kommen mit
+	# Spielstand: Obergrenze und Quote kommen mit
 	var h := gb_make({"hands": [["hell_gluecksspiel", "hell_gelb_1", "hell_gelb_2"], ["hell_blau_1"], ["hell_gruen_1"]], "top": "hell_rot_5"},
-		{"gamble_odds": "often"})
-	gb_play(h, 0, "hell_gluecksspiel", "Glücksspiel (Oft)", "rot")
+		{"gamble_max": 4})
+	gb_play(h, 0, "hell_gluecksspiel", "Glücksspiel (bis 1:4)", "rot")
 	var h2 := MauGame.from_dict(JSON.parse_string(JSON.stringify(h.to_dict())))
-	check(h2.config.gamble_odds == "often" and int(h2.gamble.q) == int(h.gamble.q) and int(h.gamble.q) <= 3, "Spielstand: Stufe Oft und Quote erhalten")
+	check(h2.config.gamble_max == 4 and int(h2.gamble.q) == int(h.gamble.q) and int(h.gamble.q) <= 4, "Spielstand: bis 1:4 und Quote erhalten")
 	# Texte (App)
-	var med := gb_cfg({"gamble_odds": "medium"})
+	var med := gb_cfg({"gamble_max": 5})
 	check("\n".join(RulesText.card_help("hell_gluecksspiel", med)).contains("1:1 und 1:5")
-		and "\n".join(RulesText.card_help("hell_gluecksspiel", gb_cfg({"gamble_odds": "often"}))).contains("1:1 und 1:3"), "Kartenhilfe nennt die Obergrenze")
+		and "\n".join(RulesText.card_help("hell_gluecksspiel", gb_cfg({"gamble_max": 3}))).contains("1:1 und 1:3")
+		and "\n".join(RulesText.card_help("hell_gluecksspiel", gb_cfg({"gamble_max": 7}))).contains("1:1 und 1:7"), "Kartenhilfe nennt die Obergrenze")
 	check(str(RulesText.overview(med)).contains("zwischen 1:1 und 1:5"), "Übersicht nennt die Obergrenze")
-	var desc := "\n".join(med.describe())
-	check(desc.contains("Glücksspiel-Treffer: Mittel") and desc.contains("1:1 und 1:5"), "describe: " + desc)
-	check(not "\n".join(RuleConfig.from_dict({"gamble_odds": "medium"}).describe()).contains("Glücksspiel-Treffer"), "describe ohne Glücksspiel")
-	check(RulesBar.summary(med).contains("Glücksspiel-Treffer: Mittel") and not RulesBar.summary(RuleConfig.new()).contains("Glücksspiel-Treffer"),
+	var desc := "\n".join(gb_cfg({"gamble_max": 7}).describe())
+	check(desc.contains("Glücksspiel-Treffer: Je Glücksspiel wird geheim eine Trefferquote zwischen 1:1 und 1:7 ausgelost."), "describe: " + desc)
+	check(not "\n".join(RuleConfig.from_dict({"gamble_max": 5}).describe()).contains("Glücksspiel-Treffer"), "describe ohne Glücksspiel")
+	check(RulesBar.summary(gb_cfg({"gamble_max": 7})).contains("Glücksspiel-Treffer: bis 1:7") and not RulesBar.summary(RuleConfig.new()).contains("Glücksspiel-Treffer"),
 		"Kurzbeschreibung")
 	var row := -1
 	for i in RulesScreen.EXTRA_OPTIONS.size():
-		if str(RulesScreen.EXTRA_OPTIONS[i][0]) == "gamble_odds":
+		if str(RulesScreen.EXTRA_OPTIONS[i][0]) == "gamble_max":
 			row = i
-	check(row > 0 and str(RulesScreen.EXTRA_OPTIONS[row - 1][0]) == "gamble_cards" and (RulesScreen.EXTRA_OPTIONS[row][3] as Array).size() == 3,
-		"Regelauswahl: Zeile „Glücksspiel-Treffer“ direkt nach „Glücksspiel“")
+	check(row > 0 and str(RulesScreen.EXTRA_OPTIONS[row - 1][0]) == "gamble_cards" and str(RulesScreen.EXTRA_OPTIONS[row][3]) == "regler",
+		"Regelauswahl: Regler „Glücksspiel-Treffer“ direkt nach „Glücksspiel“")
 	# Browser: gleiche msgids, gleiche Obergrenzen, Übersetzungen
 	var web := ProjectSettings.globalize_path("res://").path_join("../webclient").simplify_path()
 	var karten := FileAccess.get_file_as_string(web.path_join("karten.js"))
 	var po := FileAccess.get_file_as_string(web.path_join("i18n_po.js"))
 	for msg in ["Für jedes Glücksspiel wird geheim eine Trefferquote zwischen 1:1 und 1:%d ausgelost.",
-			"Glücksspiel-Treffer: %s – je Glücksspiel wird geheim eine Trefferquote zwischen 1:1 und 1:%d ausgelost."]:
+			"Glücksspiel-Treffer: Je Glücksspiel wird geheim eine Trefferquote zwischen 1:1 und 1:%d ausgelost."]:
 		check(karten.contains("tr('%s'" % msg) and po.contains(JSON.stringify(msg)), "Browser mit Übersetzung: " + msg)
-	check(karten.contains("({ rare: 10, medium: 5, often: 3 })") and RuleConfig.GAMBLE_MAX_Q == {"rare": 10, "medium": 5, "often": 3},
-		"Browser: gleiche Obergrenzen wie RuleConfig.GAMBLE_MAX_Q")
-	# Bot: Je öfter es trifft, desto eher hört er auf
+	check(karten.contains("({ rare: 10, medium: 5, often: 3 })") and RuleConfig.GAMBLE_MAX_Q == {"rare": 10, "medium": 5, "often": 3}
+		and karten.contains("parseInt(r.gamble_max, 10)") and karten.contains("Math.max(3, Math.min(10, m))"),
+		"Browser: gamble_max (3–10), sonst Stufe wie RuleConfig.GAMBLE_MAX_Q")
+	# Bot: Je öfter es trifft (kleinere Obergrenze), desto eher hört er auf; bei 1:10, 1:5 und 1:3 wie mit den früheren Stufen
 	var hand := []
 	for i in 3:
 		hand.append({"id": i, "face": "hell_gelb_%d" % (i + 1)})
-	var v := {"hand": hand, "gamble": {"seat": 0, "stake": 2, "need": "stake", "last": 0}, "rules": {"gamble_odds": "rare"}}
+	var v := {"hand": hand, "gamble": {"seat": 0, "stake": 2, "need": "stake", "last": 0}, "rules": {"gamble_max": 10}}
+	var p_last := -1.0
+	var mono := true
+	for top: int in range(10, 2, -1):
+		v.rules.gamble_max = top
+		var p := MauBot.stop_chance(v, 2)
+		if p <= p_last or p > 0.9:
+			mono = false
+		p_last = p
+	check(mono and MauBot.ODDS_RISK.size() == 8, "Bot: aufhören steigt von bis 1:10 bis bis 1:3")
+	v.rules = {"gamble_max": 10}
 	var p_rare := MauBot.stop_chance(v, 2)
-	v.rules.gamble_odds = "medium"
+	v.rules = {"gamble_odds": "medium"}
 	var p_med := MauBot.stop_chance(v, 2)
-	v.rules.gamble_odds = "often"
+	v.rules = {"gamble_max": 5}
+	var p_five := MauBot.stop_chance(v, 2)
+	v.rules = {"gamble_odds": "often"}
 	var p_often := MauBot.stop_chance(v, 2)
-	check(p_rare < p_med and p_med < p_often and p_often <= 0.9, "Bot: aufhören Selten %.2f < Mittel %.2f < Oft %.2f" % [p_rare, p_med, p_often])
+	check(is_equal_approx(p_rare, 0.28) and is_equal_approx(p_med, 0.42) and is_equal_approx(p_five, p_med) and is_equal_approx(p_often, 0.56),
+		"Bot: wie früher bei Selten %.2f / Mittel %.2f / Oft %.2f" % [p_rare, p_med, p_often])
 	v.erase("rules")
-	check(is_equal_approx(MauBot.stop_chance(v, 2), p_rare), "Bot: ohne Angabe wie Selten")
+	check(is_equal_approx(MauBot.stop_chance(v, 2), p_rare), "Bot: ohne Angabe wie bis 1:10")
 
 
 # --- Lecktest an gebauten Lagen ---
