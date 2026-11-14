@@ -180,9 +180,15 @@ public final class Updater {
     }
 
     // Signaturen und Versionsnummer: ab Android 9 (API 28) über signingInfo/getLongVersionCode, davor über die alten Felder.
+    // Android 9 und 10 (API 28/29) lesen die Zertifikate einer APK-DATEI (getPackageArchiveInfo) nur mit dem alten GET_SIGNATURES
+    // ein; mit GET_SIGNING_CERTIFICATES allein bleibt signingInfo dort null, die geladene Datei galt als „nicht signiert“ und jedes
+    // In-App-Update wurde abgelehnt (Nutzerbefund 14.11.2026, Tablet SM-P200 mit Android 9). Darum ab API 28 beide Flags anfragen;
+    // signers() fällt auf das alte Feld zurück, wenn signingInfo fehlt.
     @SuppressWarnings("deprecation")
     private static int signatureFlag() {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.P ? PackageManager.GET_SIGNING_CERTIFICATES : PackageManager.GET_SIGNATURES;
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+                ? PackageManager.GET_SIGNING_CERTIFICATES | PackageManager.GET_SIGNATURES
+                : PackageManager.GET_SIGNATURES;
     }
 
     @SuppressWarnings("deprecation")
@@ -192,12 +198,11 @@ public final class Updater {
 
     @SuppressWarnings("deprecation")
     private static Set<Signature> signers(PackageInfo info) {
-        Signature[] list;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            list = info.signingInfo == null ? null : info.signingInfo.getApkContentsSigners();
-        } else {
-            list = info.signatures;
+        Signature[] list = null;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && info.signingInfo != null) {
+            list = info.signingInfo.getApkContentsSigners();
         }
+        if (list == null || list.length == 0) list = info.signatures;   // vor API 28 und als Rückfall (Android 9/10, APK-Datei)
         return list == null ? Collections.emptySet() : new HashSet<>(Arrays.asList(list));
     }
 
