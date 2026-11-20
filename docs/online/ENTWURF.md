@@ -1,6 +1,6 @@
 # Online-Spiel, Schritt 1 – Entwurf
 
-Stand 08.10.2026. Grundlage: AGENTS.md „Geplant: Online-Spiel, Schritt 1“, Netzprotokoll `docs/BETA1_PLAN.md` Abschnitt 5.
+Stand 08.10.2026. Grundlage: `docs/VERLAUF.md` „Geplant: Online-Spiel, Schritt 1“ (stand damals in AGENTS.md), Netzprotokoll `docs/BETA1_PLAN.md` Abschnitt 5.
 Ziel: Spielen über das Internet mit einem Vermittler (Cloudflare Worker + Durable Object). Die Spiellogik bleibt beim
 Gastgeber-Handy (`NetHostSession`, `HostTable`); der Vermittler reicht nur Textrahmen durch und kennt keine Spielinhalte.
 

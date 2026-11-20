@@ -1,6 +1,6 @@
 class_name BigLayout
 extends RefCounted
-# Geometrie des großen Modus (Beta 1.1.1, AGENTS.md „Geplant für Beta 1.1.1“) als reine Funktionen, headless testbar
+# Geometrie des großen Modus (Beta 1.1.1, docs/VERLAUF.md „Erledigt in Beta 1.1.1“) als reine Funktionen, headless testbar
 # (tests/test_ui_big_layout.gd). Basis 1600×720 quer. Links riesig der Nachziehstapel, daneben riesig die Ablage (fast volle
 # Höhe; die Hand darf die untere Hälfte überdecken, die Karten sind symmetrisch), rechts daneben die aktuelle Farbe als Wort und
 # Symbol, ganz rechts die endlos rollende Spielerliste über dem Mau-Knopf. Knöpfe bleiben an ihren Stellen, nur größer.

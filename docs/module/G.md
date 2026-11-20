@@ -108,7 +108,7 @@ Der Ruf ist eine normale Aktion `{a:"mau"}`. Das Regelwerk erzeugt das Ereignis 
 | `game/tests/test_game_local.gd` | Übungsspiel (1 Mensch + 3 Bots) bis Rundenende und weiter in Runde 2; Denkpausen; Weitergeben mit 3 Menschen (+0/1 Bot) und 2 Menschen + 2 Bots: Sichtschutz vor jedem Menschenwechsel, nie eine fremde Hand in `state_changed`, keine fremden gezogenen Gesichter; Speichern und Fortsetzen |
 | `game/tests/test_game_net.gd` | HostTable und ClientTables über 127.0.0.1 (TCP 24890/24891): Lobby mit Bot und Sitzordnung (Gastgeber nicht auf Platz 0), ganze Runde, Lecktest auf allen empfangenen Nachrichten, Fehlaktionen, Trennen und Wiederkommen mit Token, Ersatz-Bot, nächste Runde, Versionsablehnung mit `/apk`-Hinweis, Fortsetzen samt Token, „bye“ |
 
-Ergebnisse: siehe `docs/IMPLEMENTIERUNG.md`.
+Ergebnisse: siehe `docs/archiv/IMPLEMENTIERUNG_0.1.1.md`.
 
 ## Offene Punkte
 

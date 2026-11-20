@@ -75,14 +75,15 @@ Voreinstellungen „Offiziell“, „Familie“, „Mau-Mau-Tradition“ und „
 ./tools/build.ps1 -Target Relay # Vermittler prüfen (relay/public, Kerntest in Chrome headless)
 ```
 
-Die Tests laufen teils parallel. War genau dieser Stand schon vollständig grün, überspringt der Bau sie („Tests für diesen Stand schon grün, übersprungen“); `-NoTestCache` erzwingt sie, `-SkipTests` lässt sie für schnelle Probebauten weg. Einzelheiten: [docs/IMPLEMENTIERUNG.md](docs/IMPLEMENTIERUNG.md#prüfen).
+Die Tests laufen teils parallel. War genau dieser Stand schon vollständig grün, überspringt der Bau sie („Tests für diesen Stand schon grün, übersprungen“); `-NoTestCache` erzwingt sie, `-SkipTests` lässt sie für schnelle Probebauten weg. Einzelheiten: [docs/TESTS.md](docs/TESTS.md).
 
 Android benötigt zusätzlich JDK 17, das Android-SDK und den Signaturschlüssel in `.tools/` (nicht im Repo).
 
 ## Unterlagen
 
-- [Projektkontext und Entscheidungen](AGENTS.md)
-- [Bauplan der Beta](docs/BETA1_PLAN.md) und [Module](docs/module/)
+- [Projektkontext und Entscheidungen](AGENTS.md), [Verlauf aller Versionen](docs/VERLAUF.md)
+- [Schnittstellen-Vertrag](docs/BETA1_PLAN.md) (Karten, Regeln, Netzprotokoll) und [Module](docs/module/)
+- [Bau und Tests](docs/TESTS.md)
 - [Recherche](docs/recherche/README.md): Regeln, Netz ohne Internet, Browser-Gäste, Hand und Effekte
 - [Gestaltung „Papier & Neon“](art/entwurf/a-papier-neon/README.md)
 - [Mau-Ton und Katzen](audio/entwurf/mau/README.md), [Spieltöne](audio/sfx_README.md)

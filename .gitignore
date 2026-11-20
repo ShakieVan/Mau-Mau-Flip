@@ -2,7 +2,6 @@
 .tools/
 game/.godot/
 builds/*
-!builds/README.md
 *.tmp
 
 # Fremdmaterial: urheberrechtlich geschützt, nur lokale Höranalyse/Stilvorlage – nie veröffentlichen, nie ins Spiel übernehmen

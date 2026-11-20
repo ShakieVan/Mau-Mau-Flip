@@ -13,7 +13,7 @@ Stand 04.10.2026, Nachtschicht. Umgesetzt ist `docs/BETA1_PLAN.md` Abschnitt 5 v
 | `game/scripts/net/net_client.gd` | `NetClient` | App-Mitspieler mit Godot-`WebSocketPeer`, Token je Gastgeber-Adresse, Auto-Reconnect, Ping, Zeitgrenze |
 | `game/scripts/net/net_discovery.gd` | `NetDiscovery` | UDP-Suche „MMF?“ auf 24692, gerichtete Rundrufe, Liste mit Alter |
 | `game/scripts/net/net_addresses.gd` | `NetAddresses` | Eigene Adressen für QR und Suche, Multicast-Sperre und WLAN-Bindung – dünne Hülle um `NetAndroid` (Modul C) mit Rückfall auf `IP.get_local_interfaces()` |
-| `game/scripts/net/net_log.gd` | `NetLog` | Netzprotokoll `user://netz.log` (wie Draw2Race) |
+| `game/scripts/net/net_log.gd` | `NetLog` | Netzprotokoll `user://netz.log` (wie Draw2Race); nie eingebunden, am 20.11.2026 entfernt |
 | `game/tests/test_net_protocol.gd`, `test_net_server.gd`, `test_net_session.gd`, `test_net_binding.gd` | | Tests (siehe unten) |
 | `game/tests/net_browser_host.gd` | | Godot-Seite des Browser-Tests (absichtlich kein `test_*.gd`, läuft nur mit Chrome) |
 | `tools/nettest/browser_test.ps1`, `tools/nettest/page/` | | Browser-Test mit Chrome headless bzw. Chrome am Handy |
@@ -242,7 +242,7 @@ Der Gastgeber öffnet in „Spiel eröffnen“ per Knopf „Spiel-WLAN öffnen�
 
 ## Gastgeber-Lobby „Spiel eröffnen“ (Beta 1.0.2)
 
-Für Menschen ohne Technikhintergrund (AGENTS.md, „Geplant für Beta 1.0.2“).
+Für Menschen ohne Technikhintergrund (damals AGENTS.md „Geplant für Beta 1.0.2“, heute `docs/VERLAUF.md` „Erledigt in Beta 1.0.2“).
 
 - **Aufbau** (`host_lobby.gd`): Kopfzeile „So geht's“ (`host_help_dialog.gd`, darin die frühere Anleitung „Ohne App spielen“), „Regeln“ (Regel-Editor; die Regelzeile `RulesBar` steht ohne eigenen Knopf unter der Spielerliste) und „Start“ (immer sichtbar, ab 2 Spielern aktiv). Darunter `LobbyPager` (`lobby_pager.gd`): zwei Seiten, die verdeckte ragt 112 px ins Bild; Wischen (in `_input` erkannt, auch über Knöpfen und der Liste, Knopfdrücke bricht `NOTIFICATION_SCROLL_BEGIN` ab), Einrasten nach Weg (18 %) oder Schwung, Gummiband an den Enden, schmaler pulsierender Blätter-Hinweis am offenen Rand (Tipp blättert). `show_page(i, animate)` für Tests. Seite 1 `InvitePanel` (`invite_panel.gd`) mit ① WLAN (`GameWifiPanel`) und ② Spiel (QR, Adresse, „Mit der App? Einfach „Beitreten“ antippen.“, ohne Netz „Noch kein WLAN aktiv“). Seite 2: Spielerliste, Regelzeile, Spielerzahl, Computer − / +.
 - **Zustände von ①** (`GameWifiPanel.detect_mode`): `none` (großer Knopf „Spiel-WLAN öffnen“), `wlan` („Mitspieler verbinden sich mit demselben WLAN“ + „Lieber eigenes Spiel-WLAN“), `hotspot` (normaler Hotspot läuft: nutzen, App ändert ihn nie), `starting`, `game_wifi` (WLAN-QR, Name, Passwort, „Spiel-WLAN schließen“), `problem` (Text, „Neu öffnen“, „Zurück“). Netz alle 1,5 s neu bewertet. `GameWifiPanel.net_stub = {mode, urls}` ersetzt Netzzustand und Adressen in Tests und Kontrollbildern.
